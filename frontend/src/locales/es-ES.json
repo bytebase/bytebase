@@ -2132,7 +2132,7 @@
       "text-to-sql-disabled-placeholder": "Habilite la capacidad de ChatSQL suministrando una clave de API de OpenAI.",
       "run-automatically": "Ejecutar automáticamente",
       "conversation": {
-        "conversaciones": "Conversaciones",
+        "conversations": "Conversaciones",
         "untitled": "Conversación sin título",
         "delete": "Eliminar conversación",
         "rename": "Renombrar conversación",
@@ -2140,190 +2140,231 @@
         "exit-conversation-mode": "Salir del modo de chat",
         "history-conversations": "Historial de conversaciones",
         "historial-de-conversaciones": "Ver historial de conversaciones",
-        "nueva-conversacion": "Comenzar nueva conversación",
-        "sin-mensaje": "No hay mensajes en esta conversación",
+        "new-conversation": "Comenzar nueva conversación",
+        "no-message": "No hay mensajes en esta conversación",
         "tips": {
-          "sugerir-prompt": "Sugiriendo promts...",
-          "mas": "Más",
-          "no-mas": "No más"
-        },
-        "sugerencia-preestablecida": {
-          "1": "¿Qué departamento tiene más empleados?",
-          "2": "¿Qué gerente tiene más reportes directos en cada departamento?",
-          "3": "¿Cuál es la proporción de género en cada departamento?"
-        },
-        "declaracion-copiada": "Declaración copiada al portapapeles",
-        "no-mostrar-de-nuevo": "No mostrar de nuevo"
-      },
-      "aprobacion-personalizada": {
-        "self": "Aprobación personalizada",
-        "regla-de-seguridad": {
-          "self": "Regla de seguridad",
-          "reglas-de-seguridad": "Reglas de seguridad",
-          "reglas-de-riesgo-x": {
-            "bajo": "Reglas de riesgo bajo",
-            "moderado": "Reglas de riesgo moderado",
-            "alto": "Reglas de riesgo alto"
-          },
-          "activo": "Activo",
-          "agregar-regla": "Agregar regla",
-          "editar-regla": "Editar regla",
-          "eliminar": "Eliminar regla de seguridad",
-          "reglas-por-defecto": {
-            "self": "Reglas por defecto",
-            "descripcion": "Las reglas por defecto se ejecutarán cuando un problema no cumpla con las reglas personalizadas."
-          },
-          "riesgo": {
-            "self": "Riesgo",
-            "seleccionar": "Seleccionar riesgo",
-            "nivel-de-riesgo": {
-              "0": "Por defecto",
-              "100": "Bajo",
-              "200": "Moderado",
-              "300": "Alto"
-            },
-            "espacio-de-nombres": {
-              "dml": "DML",
-              "ddl": "DDL",
-              "crear_base_de_datos": "Crear base de datos"
-            },
-            "factor": {
-              "filas_afectadas": "Filas afectadas",
-              "id_de_entorno": "ID de entorno",
-              "id_de_proyecto": "ID de proyecto",
-              "nombre_de_base_de_datos": "Nombre de base de datos",
-              "motor_de_base_de_datos": "Motor de base de datos",
-              "sql_type": "Tipo SQL"
-            }
-          },
-          "condition": {
-            "self": "Condición",
-            "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con los problemas ejecutados en el entorno \"prod\".",
-            "add": "Agregar condición",
-            "add-group": "Agregar grupo de condiciones",
-            "group": {
-              "or": {
-                "description": "Cualquiera de los siguientes es verdadero..."
-              },
-              "and": {
-                "description": "Todos los siguientes son verdaderos..."
-              },
-              "tooltip": "Un grupo de condiciones es una colección de condiciones conectadas por operadores \"Y\" y \"O\"."
-            },
-            "input-value": "Valor de entrada",
-            "add-condition-in-group-placeholder": "Agregar {plus} para agregar condición",
-            "select-value": "Seleccionar valor",
-            "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
-            "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición"
-          },
-          "template": {
-            "templates": "Plantillas",
-            "load": "Cargar",
-            "presets": {
-              "environment-prod-high": "Se considera que el riesgo para el entorno de producción es alto.",
-              "environment-dev-low": "El valor de riesgo para el entorno de desarrollo se considera bajo.",
-              "dml-in-environment-prod-10k-rows-high": "En el entorno de producción, si el número de filas a actualizar o eliminar supera los 10000, se considera que el riesgo es alto.",
-              "create-database-in-environment-prod-moderate": "Crear una base de datos en el entorno de producción se considera un riesgo moderado."
-            },
-            "load-template": "Cargar plantilla",
-            "view": "Ver plantilla"
-          },
-          "rule-name": "Nombre de la regla",
-          "view-rule": "Ver regla",
-          "source": {
-            "select": "Seleccionar tipo",
-            "self": "Tipo"
-          },
-          "input-rule-name": "Ingrese el nombre de la regla",
-          "search": "Buscar regla"
-        },
-        "approval-flow": {
-          "self": "Flujo de aprobación",
-          "description": "Para cada tipo de operación, configure una condición personalizada, un riesgo y un flujo de aprobación.",
-          "approval-flows": "Flujos de aprobación",
-          "approval-nodes": "Nodos de aprobación",
-          "type": {
-            "system": "Sistema",
-            "custom": "Personalizado"
-          },
-          "delete": "Eliminar flujo de aprobación",
-          "search": "Buscar flujo de aprobación",
-          "select": "Seleccionar flujo de aprobación",
-          "create-approval-flow": "Crear flujo de aprobación",
-          "edit-approval-flow": "Editar flujo de aprobación",
-          "node": {
-            "nodes": "Nodos de aprobación",
-            "description": "Solo se requiere una aprobación en este nodo cuando hay múltiples aprobadores.",
-            "order": "Orden",
-            "approver": "Aprobador",
-            "group": {
-              "WORKSPACE_OWNER": "Propietario del espacio de trabajo",
-              "WORKSPACE_DBA": "DBA",
-              "PROJECT_OWNER": "Propietario del proyecto",
-              "PROJECT_MEMBER": "Miembro del proyecto"
-            },
-            "add": "Agregar nodo",
-            "delete": "Eliminar nodo de aprobación"
-          },
-          "presets": {
-            "owner-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
-            "owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
-            "dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
-            "admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
-            "owner-dba-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
-          },
-          "view-approval-flow": "Ver flujo de aprobación",
-          "skip": "Omitir aprobación manual",
-          "risk-not-configured-tips": "Asegúrese de haber definido {link}.",
-          "the-related-risk-rules": "las reglas de riesgo relacionadas"
-        },
-        "risk": {
-          "self": "Riesgo",
-          "risk-center": "Centro de riesgo",
-          "description": "El Centro de riesgo define los niveles de riesgo para diferentes operaciones de base de datos en diferentes condiciones. Y los niveles de riesgo determinan los flujos de aprobación personalizados correspondientes."
-        },
-        "workflow-center": {
-          "workflow": "Flujo de trabajo"
-        },
-        "rule": {
-          "rules": "Reglas"
-        },
-        "issue-review": {
-          "approve-issue": "¿Aprobar problema?",
-          "form": {
-            "placeholder": "(Opcional) Agregar una nota...",
-            "note": "Nota"
-          },
-          "you": "Tú",
-          "generating-approval-flow": "Generando flujo de aprobación",
-          "approved-issue": "problema aprobado"
+          "suggest-prompt": "Sugiriendo promts...",
+          "more": "Más",
+          "no-more": "No más"
         }
       },
-      "slow-query": {
-        "self": "Consulta lenta",
-        "slow-queries": "Consultas lentas",
-        "last-query-time": "Último tiempo de consulta",
-        "database-name": "Nombre de la base de datos",
-        "sql-statement": "Sentencia SQL",
-        "total-query-count": "Recuento total de consultas",
-        "query-time-95-percent": "Tiempo de consulta (95%)",
-        "query-time-avg": "Tiempo de consulta promedio",
-        "rows-examined-95-percent": "Filas examinadas (95%)",
-        "rows-sent-95-percent": "Filas enviadas (95%)",
-        "rows-examined-avg": "Filas examinadas promedio",
-        "rows-sent-avg": "Filas enviadas promedio",
-        "query-start-time": "Tiempo de inicio de consulta",
-        "rows-examined": "Filas examinadas",
-        "rows-sent": "Filas enviadas",
-        "lock-time": "Tiempo de bloqueo",
-        "query-time": "Tiempo de consulta",
-        "attention-description": "Registro y análisis de consultas lentas para {versiones}.\nBytebase sincronizará periódicamente los registros de consultas lentas desde las instancias.",
-        "sync-job-started": "Se iniciaron trabajos de sincronización. Por favor, espere a que los trabajos se completen.",
-        "detail": "Detalle de consulta lenta"
+      "preset-suggestion": {
+        "1": "¿Qué departamento tiene más empleados?",
+        "2": "¿Qué gerente tiene más reportes directos en cada departamento?",
+        "3": "¿Cuál es la proporción de género en cada departamento?"
       },
-      "principal": {
-        "select": "Seleccionar usuario"
-      }
+      "statement-copied": "Declaración copiada al portapapeles",
+      "dont-show-again": "No mostrar de nuevo"
+    }
+  },
+  "custom-approval": {
+    "self": "Aprobación personalizada",
+    "security-rule": {
+      "self": "Regla de seguridad",
+      "security-rules": "Reglas de seguridad",
+      "x-risk-rules": {
+        "low": "Reglas de riesgo bajo",
+        "moderate": "Reglas de riesgo moderado",
+        "high": "Reglas de riesgo alto"
+      },
+      "active": "Activo",
+      "add-rule": "Agregar regla",
+      "edit-rule": "Editar regla",
+      "delete": "Eliminar regla de seguridad",
+      "default-rules": {
+        "self": "Reglas por defecto",
+        "description": "Las reglas por defecto se ejecutarán cuando un problema no cumpla con las reglas personalizadas."
+      },
+      "risk": {
+        "self": "Riesgo",
+        "select": "Seleccionar riesgo",
+        "risk-level": {
+          "0": "Por defecto",
+          "100": "Bajo",
+          "200": "Moderado",
+          "300": "Alto"
+        },
+        "namespace": {
+          "dml": "DML",
+          "ddl": "DDL",
+          "create_database": "Crear base de datos"
+        },
+        "factor": {
+          "affected_rows": "Filas afectadas",
+          "environment_id": "ID de entorno",
+          "project_id": "ID de proyecto",
+          "database_name": "Nombre de base de datos",
+          "db_engine": "Motor de base de datos",
+          "sql_type": "Tipo SQL"
+        }
+      },
+      "condition": {
+        "self": "Condición",
+        "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con los problemas ejecutados en el entorno \"prod\".",
+        "add": "Agregar condición",
+        "add-group": "Agregar grupo de condiciones",
+        "group": {
+          "or": {
+            "description": "Cualquiera de los siguientes es verdadero..."
+          },
+          "and": {
+            "description": "Todos los siguientes son verdaderos..."
+          },
+          "tooltip": "Un grupo de condiciones es una colección de condiciones conectadas por operadores \"Y\" y \"O\"."
+        },
+        "input-value": "Valor de entrada",
+        "add-condition-in-group-placeholder": "Agregar {plus} para agregar condición",
+        "select-value": "Seleccionar valor",
+        "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
+        "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición"
+      },
+      "template": {
+        "templates": "Plantillas",
+        "load": "Cargar",
+        "presets": {
+          "environment-prod-high": "Se considera que el riesgo para el entorno de producción es alto.",
+          "environment-dev-low": "El valor de riesgo para el entorno de desarrollo se considera bajo.",
+          "dml-in-environment-prod-10k-rows-high": "En el entorno de producción, si el número de filas a actualizar o eliminar supera los 10000, se considera que el riesgo es alto.",
+          "create-database-in-environment-prod-moderate": "Crear una base de datos en el entorno de producción se considera un riesgo moderado."
+        },
+        "load-template": "Cargar plantilla",
+        "view": "Ver plantilla"
+      },
+      "rule-name": "Nombre de la regla",
+      "view-rule": "Ver regla",
+      "source": {
+        "select": "Seleccionar tipo",
+        "self": "Tipo"
+      },
+      "input-rule-name": "Ingrese el nombre de la regla",
+      "search": "Buscar regla"
+    },
+    "approval-flow": {
+      "self": "Flujo de aprobación",
+      "description": "Para cada tipo de operación, configure una condición personalizada, un riesgo y un flujo de aprobación.",
+      "approval-flows": "Flujos de aprobación",
+      "approval-nodes": "Nodos de aprobación",
+      "type": {
+        "system": "Sistema",
+        "custom": "Personalizado"
+      },
+      "delete": "Eliminar flujo de aprobación",
+      "search": "Buscar flujo de aprobación",
+      "select": "Seleccionar flujo de aprobación",
+      "create-approval-flow": "Crear flujo de aprobación",
+      "edit-approval-flow": "Editar flujo de aprobación",
+      "node": {
+        "nodes": "Nodos de aprobación",
+        "description": "Solo se requiere una aprobación en este nodo cuando hay múltiples aprobadores.",
+        "order": "Orden",
+        "approver": "Aprobador",
+        "group": {
+          "WORKSPACE_OWNER": "Propietario del espacio de trabajo",
+          "WORKSPACE_DBA": "DBA",
+          "PROJECT_OWNER": "Propietario del proyecto",
+          "PROJECT_MEMBER": "Miembro del proyecto"
+        },
+        "add": "Agregar nodo",
+        "delete": "Eliminar nodo de aprobación",
+        "select-approver": "Seleccionar aprobador",
+        "roles": {
+          "system": "Roles del sistema",
+          "custom": "Roles personalizados"
+        }
+      },
+      "presets": {
+        "owner-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
+        "owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
+        "dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
+        "admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
+        "owner-dba-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
+      },
+      "view-approval-flow": "Ver flujo de aprobación",
+      "skip": "Omitir aprobación manual",
+      "risk-not-configured-tips": "Asegúrese de haber definido {link}.",
+      "the-related-risk-rules": "las reglas de riesgo relacionadas"
+    },
+    "risk": {
+      "self": "Riesgo",
+      "risk-center": "Centro de riesgo",
+      "description": "El Centro de riesgo define los niveles de riesgo para diferentes operaciones de base de datos en diferentes condiciones. Y los niveles de riesgo determinan los flujos de aprobación personalizados correspondientes."
+    },
+    "workflow-center": {
+      "workflow": "Flujo de trabajo"
+    },
+    "rule": {
+      "rules": "Reglas"
+    },
+    "issue-review": {
+      "approve-issue": "¿Aprobar problema?",
+      "form": {
+        "placeholder": "(Opcional) Agregar una nota...",
+        "note": "Nota"
+      },
+      "you": "Tú",
+      "generating-approval-flow": "Generando flujo de aprobación",
+      "approved-issue": "problema aprobado"
+    }
+  },
+  "slow-query": {
+    "self": "Consulta lenta",
+    "slow-queries": "Consultas lentas",
+    "report-slow-query": "Reportar consulta lenta",
+    "report": "Reportar",
+    "last-query-time": "Hora de la última consulta",
+    "database-name": "Nombre de la base de datos",
+    "sql-statement": "Sentencia SQL",
+    "total-query-count": "Total de consultas",
+    "query-count-percent": "% de consultas",
+    "max-query-time": "Tiempo máximo de consulta",
+    "avg-query-time": "Tiempo promedio de consulta",
+    "query-time-percent": "% de tiempo de consulta",
+    "max-rows-examined": "Máximo de filas examinadas",
+    "avg-rows-examined": "Promedio de filas examinadas",
+    "max-rows-sent": "Máximo de filas enviadas",
+    "avg-rows-sent": "Promedio de filas enviadas",
+    "rows-sent-avg": "Promedio de filas enviadas",
+    "query-start-time": "Hora de inicio de la consulta",
+    "rows-examined": "Filas examinadas",
+    "rows-sent": "Filas enviadas",
+    "lock-time": "Tiempo de bloqueo",
+    "query-time": "Tiempo de consulta",
+    "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias.\nPara una instancia de MySQL, {slow_query} debe estar habilitado primero.\nPara una instancia de PostgreSQL, {pg_stat_statements} debe estar habilitado primero en cada base de datos.",
+    "sync-job-started": "Se iniciaron trabajos de sincronización. Espere a que los trabajos se completen.",
+    "detail": "Detalles de la consulta lenta",
+    "filter": {
+      "from-date": "Desde fecha",
+      "to-date": "Hasta fecha"
+    }
+  },
+  "principal": {
+    "select": "Seleccionar usuario"
+  },
+  "role": {
+    "self": "Rol",
+    "setting": {
+      "description": "Definir roles personalizados y aplicarlos a los miembros del proyecto.",
+      "add": "Agregar rol",
+      "edit": "Editar rol",
+      "title-placeholder": "Ingrese el título del rol",
+      "name-placeholder": "Ingrese el nombre del rol",
+      "description-placeholder": "Ingrese la descripción del rol",
+      "validation": {
+        "duplicated": "Duplicado {recurso}",
+        "required": "{recurso} es obligatorio",
+        "pattern": "{recurso} solo puede contener letras minúsculas, números y guiones. Debe comenzar con una letra minúscula.",
+        "max-length": "{recurso} puede contener hasta {length} caracteres"
+      },
+      "delete": "Eliminar rol"
+    },
+    "select": "Seleccionar rol",
+    "select-roles": "Seleccionar roles",
+    "title": "Título",
+    "owner": {
+      "description": "Rol de propietario del proyecto definido por el sistema"
+    },
+    "developer": {
+      "description": "Rol de desarrollador del proyecto definido por el sistema"
     }
   }
 }
