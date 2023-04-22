@@ -1262,7 +1262,7 @@
     "dashboard": {
       "modal": {
         "title": "¿Cómo configurar '@:{'common.project'}'?",
-        "content": "El proyecto de Bytebase es similar al concepto de proyecto en otras herramientas de desarrollo comunes.\n\nUn proyecto tiene sus propios miembros, y cada problema y base de datos siempre pertenece a un solo proyecto.\n\nUn proyecto también puede configurarse para enlazarlo con un repositorio y habilitar el flujo de trabajo de GitOps.",
+        "content": "El proyecto de Bytebase es similar al concepto de proyecto en otras herramientas de desarrollo comunes.\n\nUn proyecto tiene sus propios miembros, y cada incidencia y base de datos siempre pertenece a un solo proyecto.\n\nUn proyecto también puede configurarse para enlazarlo con un repositorio y habilitar el flujo de trabajo de GitOps.",
         "cancel": "Descartar",
         "confirm": "No volver a mostrar"
       },
@@ -1517,12 +1517,12 @@
     "revoke-access": "¿Está seguro de revocar el acceso de '{0}' de '{1}'?",
     "grant-data-source": "Conceder origen de datos",
     "grant-database": "Conceder base de datos",
-    "requested-issue": "Problema solicitado",
+    "requested-issue": "Incidencia solicitada",
     "successfully-revoked-member-principal-name-access-from-props-datasource-name": "Se revocó correctamente el acceso de '{0}' de '{1}'.",
     "your-issue-id-e-g-1234": "Su ID de incidencia (por ejemplo, 1234)",
     "member-principal-name-already-exists": "{0} ya existe",
     "successfully-granted-datasource-name-to-addedmember-principal-name": "Se concedió correctamente '{0}' a '{1}'.",
-    "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "También vinculamos la base de datos concedida al problema solicitado '{0}'.",
+    "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "También vinculamos la base de datos concedida a la incidencia solicitada '{0}'.",
     "new-data-source": "Nuevo origen de datos",
     "connection-name-string-copied-to-clipboard": "Cadena de nombre de conexión {0} copiada al portapapeles.",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC no puede conectar al socket {0}",
@@ -1566,7 +1566,7 @@
     "download-as-csv": "Descargar como CSV",
     "download-as-json": "Descargar como JSON",
     "only-select-allowed": "Solo se permiten declaraciones {select} para ejecutar.",
-    "want-to-action": "Si desea {want}, haga clic en el botón {action} y envíe un problema.",
+    "want-to-action": "Si desea {want}, haga clic en el botón {action} y envíe una incidencia.",
     "table-schema-placeholder": "Seleccione una tabla para ver su esquema",
     "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
     "notify-multiple-statements": "Se detectaron múltiples declaraciones SQL. El Editor de SQL solo ejecuta la primera declaración. Puede seleccionar otra declaración y ejecutarla individualmente.",
@@ -1630,7 +1630,7 @@
   "schema-editor": {
     "self": "Editor de esquema",
     "use-tips": "Haz clic en una base de datos/tabla para comenzar.",
-    "preview-issue": "Problema de vista previa",
+    "preview-issue": "Vista previa de incidencia",
     "sync-sql-from-schema-editor": "Sincronizar SQL desde el Editor de esquema",
     "raw-sql": "SQL sin procesar",
     "search-database-and-table": "Buscar base de datos y tabla",
@@ -1801,11 +1801,11 @@
       },
       "bb-feature-lgtm": {
         "title": "Verificación LGTM",
-        "desc": "Comprueba si el problema tiene un comentario \"LGTM\"."
+        "desc": "Comprueba si la incidencia tiene un comentario \"LGTM\"."
       },
       "bb-feature-im-approval": {
         "title": "Aprobación IM",
-        "desc": "Aprobación de problemas con integración de IM."
+        "desc": "Aprobación de incidencias con integración de IM."
       },
       "bb-feature-sql-review": {
         "title": "Desbloquee más de 100 verificaciones de revisión de SQL",
@@ -1895,7 +1895,7 @@
       "confirm-to-duplicate-sheet": "¿Confirmar para duplicar esta hoja?"
     },
     "linked-issue": "Incidencia vinculada",
-    "from-sheet-warning": "La hoja proviene del problema {issue}. Es de solo lectura y solo se muestra una parte de ella."
+    "from-sheet-warning": "La hoja proviene de la incidencia {issue}. Es de solo lectura y solo se muestra una parte de ella."
   },
   "engine": {
     "mysql": "MySQL",
@@ -2173,7 +2173,7 @@
       "delete": "Eliminar regla de seguridad",
       "default-rules": {
         "self": "Reglas por defecto",
-        "description": "Las reglas por defecto se ejecutarán cuando un problema no cumpla con las reglas personalizadas."
+        "description": "Las reglas por defecto se ejecutarán cuando una incidencia no cumpla con las reglas personalizadas."
       },
       "risk": {
         "self": "Riesgo",
@@ -2200,7 +2200,7 @@
       },
       "condition": {
         "self": "Condición",
-        "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con los problemas ejecutados en el entorno \"prod\".",
+        "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con las incidencias ejecutadas en el entorno \"prod\".",
         "add": "Agregar condición",
         "add-group": "Agregar grupo de condiciones",
         "group": {
@@ -2296,14 +2296,14 @@
       "rules": "Reglas"
     },
     "issue-review": {
-      "approve-issue": "¿Aprobar problema?",
+      "approve-issue": "¿Aprobar incidencia?",
       "form": {
         "placeholder": "(Opcional) Agregar una nota...",
         "note": "Nota"
       },
       "you": "Tú",
       "generating-approval-flow": "Generando flujo de aprobación",
-      "approved-issue": "problema aprobado"
+      "approved-issue": "incidencia aprobada"
     }
   },
   "slow-query": {
