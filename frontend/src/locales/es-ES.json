@@ -1544,7 +1544,8 @@
   },
   "setting": {
     "project": {
-      "description": "Este es el panel de proyectos de administración que enumera todos los proyectos en Bytebase."
+      "description": "Este es el panel de proyectos de administración que enumera todos los proyectos en Bytebase.",
+      "show-archived": "Mostrar proyectos archivados"
     },
     "label": {
       "key": "Clave",
@@ -1697,7 +1698,7 @@
     "select-reference-column": "Seleccionar una columna de referencia"
   },
   "label": {
-    "empty-label-value": "<Valor vacío>",
+    "empty-label-value": "<Valor Vacío>",
     "no-label": "Sin etiquetas",
     "error": {
       "key-necessary": "Se requiere una clave",
@@ -1719,49 +1720,58 @@
     "db-name-template-tips": "Si tus bases de datos de inquilinos siguen una plantilla de nombres, puedes especificarla aquí. Por ejemplo, si las bases de datos se llaman db1__SH, db1__BJ, db1__GZ, entonces la plantilla podría ser {placeholder}. {link}.",
     "confirm-change": "¿Estás seguro de cambiar '{label}'?",
     "parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
-    "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}.",
-    "oauth": {
-      "unknown-event": "Tipo de evento inesperado, OAuth falló."
+    "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}."
+  },
+  "oauth": {
+    "unknown-event": "Tipo de evento inesperado, OAuth falló."
+  },
+  "subscription": {
+    "try-for-free": "Prueba gratis",
+    "inquire-enterprise-plan": "Consulta el Plan de Empresas",
+    "enterprise-free-trial": "{days}-días de prueba gratuita para la empresa",
+    "button": {
+      "free-trial": "{days}-días de prueba gratuita",
+      "upgrade": "Actualizar",
+      "contact-us": "Contáctanos",
+      "view-subscription": "Ver suscripción"
     },
-    "subscription": {
-      "trial-start-modal": {
-        "title": "Inicia tu prueba de {plan}",
-        "content": "¡Tu prueba de {plan} ha comenzado! Puedes acceder a las funciones de {plan} antes del {date}.",
-        "button": "Entendido",
-        "subscription-page": "página de suscripción",
-        "subscription": "Ve a la {page} para conocer estas funciones y nuestros planes."
+    "trial-start-modal": {
+      "title": "Comience su prueba de {plan}",
+      "content": "¡Su prueba de {plan} ha comenzado! Puede acceder a las funciones de {plan} antes del {date}.",
+      "button": "Entendido",
+      "subscription-page": "página de suscripción",
+      "subscription": "Visite la {page} para conocer estas funciones y nuestros planes."
+    },
+    "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de equipo/empresa.",
+    "upload-license": "Subir licencia",
+    "upgrade-trial-button": "Actualizar prueba",
+    "start-n-days-trial": "Comienza una prueba de {days} días (no se requiere tarjeta de crédito)",
+    "successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
+    "successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
+    "require-subscription": "Esta función requiere {requiredPlan}, por favor compra la licencia Bytebase para desbloquear esta función.",
+    "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}.",
+    "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
+    "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
+    "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
+    "update": {
+      "success": {
+        "title": "Licencia actualizada con éxito",
+        "description": "Se desbloquearon funciones premium en el plan de suscripción."
       },
-      "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de equipo/empresa.",
-      "upload-license": "Subir licencia",
-      "upgrade-trial-button": "Actualizar prueba",
-      "start-n-days-trial": "Comienza una prueba de {days} días (no se requiere tarjeta de crédito)",
-      "successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
-      "successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
-      "require-subscription": "Esta función requiere {requiredPlan}, por favor compra la licencia Bytebase para desbloquear esta función.",
-      "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}.",
-      "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
-      "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
-      "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
-      "update": {
-        "success": {
-          "title": "Licencia actualizada con éxito",
-          "description": "Se desbloquearon funciones premium en el plan de suscripción."
-        },
-        "failure": {
-          "title": "Error al actualizar la licencia",
-          "description": "Por favor, comprueba si tu licencia es válida."
-        }
+      "failure": {
+        "title": "Error al actualizar la licencia",
+        "description": "Por favor, comprueba si tu licencia es válida."
+      }
+    },
+    "features": {
+      "bb-feature-task-schedule-time": {
+        "title": "Establecer horario de tareas",
+        "desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."
       },
-      "features": {
-        "bb-feature-task-schedule-time": {
-          "title": "Establecer horario de tareas",
-          "desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."
-        },
-        "bb-feature-instance-count": {
-          "title": "Límite de cantidad de instancias",
-          "desc": "Has alcanzado el límite máximo de cantidad de instancias. Por favor, actualiza para obtener más cuota de instancias.",
-          "remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias."
-        },
+      "bb-feature-instance-count": {
+        "title": "Límite de cantidad de instancias",
+        "desc": "Has alcanzado el límite máximo de cantidad de instancias. Por favor, actualiza para obtener más cuota de instancias.",
+        "remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias.",
         "runoutof": "Te has quedado sin tu cuota de instancias {total}.",
         "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
       },
