@@ -481,7 +481,7 @@
         "branding": "Marca",
         "only-owner-can-edit": "Solo el propietario del espacio de trabajo puede actualizar la configuración.",
         "logo": "Logo",
-        "logo-aspect": "El tamaño sugerido para el logotipo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
+        "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
         "select-logo": "Subir un archivo",
         "drag-logo": "o arrastrar aquí",
         "logo-upload-tip": "{extensión} hasta {tamaño} MiB",
@@ -1845,7 +1845,7 @@
       },
       "bb-feature-branding": {
         "title": "Personalización",
-        "desc": "Personaliza el logotipo."
+        "desc": "Personaliza el logo."
       },
       "bb-feature-online-migration": {
         "title": "Migración en línea",
@@ -2025,14 +2025,14 @@
         "you-have-done": "Has completado:",
         "add-an-instance": "Agregar una instancia",
         "create-a-project": "Crear un proyecto",
-        "create-an-issue": "Crear un problema",
+        "create-an-issue": "Crear una incidencia",
         "create-a-new-database": "Crear una nueva base de datos",
         "keep-going-with-bytebase": "¡Continúa con Bytebase!"
       }
     }
   },
   "schema-diagram": {
-    "self": "Diagrama de esquema",
+    "self": "Diagrama de Esquema",
     "fit-content-with-view": "Ajustar contenido dentro de la vista"
   },
   "identity-provider": {
@@ -2049,7 +2049,8 @@
     "environment": "Entorno",
     "instance": "Instancia",
     "project": "Proyecto",
-    "idp": "Proveedor de Identidad"
+    "idp": "Proveedor de Identidad",
+    "role": "Rol"
   },
   "resource-id": {
     "self": "ID de {resource}",
@@ -2101,226 +2102,226 @@
           "description": "Estos códigos son el último recurso para acceder a su cuenta en caso de que pierda su código de autenticación de dos factores. Si no puede encontrar estos códigos, perderá el acceso a su cuenta."
         }
       },
-      "recovery-codes-saved": "He guardado mis códigos de recuperación",
-      "recovery-codes": {
-        "self": "Códigos de recuperación",
-        "description": "Los códigos de recuperación se pueden utilizar para acceder a su cuenta en caso de que no pueda recibir códigos de autenticación de dos factores."
-      },
-      "disable": {
-        "self": "Desactivar la autenticación de dos factores",
-        "description": "Está a punto de desactivar la autenticación de dos factores para su cuenta. Ya no se le pedirá que ingrese el código de seguridad generado por su aplicación de autenticación cuando inicie sesión."
-      },
-      "your-two-factor-secret": {
-        "self": "Su secreto de dos factores",
-        "description": "Copie el código e ingréselo manualmente en su aplicación TOTP.",
-        "copy-succeed": "Secreto copiado al portapapeles. Péguelo en su aplicación."
-      },
-      "messages": {
-        "2fa-enabled": "La autenticación de dos factores está activada.",
-        "2fa-disabled": "La autenticación de dos factores está desactivada.",
-        "recovery-codes-regenerated": "Los códigos de recuperación se han regenerado.",
-        "2fa-required": "Se requiere autenticación de dos factores en su espacio de trabajo. Actívelo antes de poder continuar.",
-        "cannot-disable": "No puede desactivar la autenticación de dos factores porque su administrador la requiere en el espacio de trabajo."
-      },
-      "plugin": {
-        "ai": {
-          "examples": "Ejemplos",
-          "text-to-sql-placeholder": "Utilice lenguaje natural y Bytebase lo convertirá en SQL",
-          "text-to-sql-disabled-placeholder": "Habilite la capacidad de ChatSQL suministrando una clave de API de OpenAI.",
-          "run-automatically": "Ejecutar automáticamente",
-          "conversation": {
-            "conversaciones": "Conversaciones",
-            "untitled": "Conversación sin título",
-            "delete": "Eliminar conversación",
-            "rename": "Renombrar conversación",
-            "select-or-create": "Seleccione o {crear} una conversación para comenzar.",
-            "exit-conversation-mode": "Salir del modo de chat",
-            "history-conversations": "Historial de conversaciones",
-            "historial-de-conversaciones": "Ver historial de conversaciones",
-            "nueva-conversacion": "Comenzar nueva conversación",
-            "sin-mensaje": "No hay mensajes en esta conversación",
-            "tips": {
-              "sugerir-prompt": "Sugiriendo promts...",
-              "mas": "Más",
-              "no-mas": "No más"
-            },
-            "sugerencia-preestablecida": {
-              "1": "¿Qué departamento tiene más empleados?",
-              "2": "¿Qué gerente tiene más reportes directos en cada departamento?",
-              "3": "¿Cuál es la proporción de género en cada departamento?"
-            },
-            "declaracion-copiada": "Declaración copiada al portapapeles",
-            "no-mostrar-de-nuevo": "No mostrar de nuevo"
+      "recovery-codes-saved": "He guardado mis códigos de recuperación"
+    },
+    "recovery-codes": {
+      "self": "Códigos de recuperación",
+      "description": "Los códigos de recuperación se pueden utilizar para acceder a su cuenta en caso de que no pueda recibir códigos de autenticación de dos factores."
+    },
+    "disable": {
+      "self": "Desactivar la autenticación de dos factores",
+      "description": "Está a punto de desactivar la autenticación de dos factores para su cuenta. Ya no se le pedirá que ingrese el código de seguridad generado por su aplicación de autenticación cuando inicie sesión."
+    },
+    "your-two-factor-secret": {
+      "self": "Su secreto de dos factores",
+      "description": "Copie el código e ingréselo manualmente en su aplicación TOTP.",
+      "copy-succeed": "Secreto copiado al portapapeles. Péguelo en su aplicación."
+    },
+    "messages": {
+      "2fa-enabled": "La autenticación de dos factores está activada.",
+      "2fa-disabled": "La autenticación de dos factores está desactivada.",
+      "recovery-codes-regenerated": "Los códigos de recuperación se han regenerado.",
+      "2fa-required": "Se requiere autenticación de dos factores en su espacio de trabajo. Actívelo antes de poder continuar.",
+      "cannot-disable": "No puede desactivar la autenticación de dos factores porque su administrador la requiere en el espacio de trabajo."
+    },
+    "plugin": {
+      "ai": {
+        "examples": "Ejemplos",
+        "text-to-sql-placeholder": "Utilice lenguaje natural y Bytebase lo convertirá en SQL",
+        "text-to-sql-disabled-placeholder": "Habilite la capacidad de ChatSQL suministrando una clave de API de OpenAI.",
+        "run-automatically": "Ejecutar automáticamente",
+        "conversation": {
+          "conversaciones": "Conversaciones",
+          "untitled": "Conversación sin título",
+          "delete": "Eliminar conversación",
+          "rename": "Renombrar conversación",
+          "select-or-create": "Seleccione o {crear} una conversación para comenzar.",
+          "exit-conversation-mode": "Salir del modo de chat",
+          "history-conversations": "Historial de conversaciones",
+          "historial-de-conversaciones": "Ver historial de conversaciones",
+          "nueva-conversacion": "Comenzar nueva conversación",
+          "sin-mensaje": "No hay mensajes en esta conversación",
+          "tips": {
+            "sugerir-prompt": "Sugiriendo promts...",
+            "mas": "Más",
+            "no-mas": "No más"
           },
-          "aprobacion-personalizada": {
-            "self": "Aprobación personalizada",
-            "regla-de-seguridad": {
-              "self": "Regla de seguridad",
-              "reglas-de-seguridad": "Reglas de seguridad",
-              "reglas-de-riesgo-x": {
-                "bajo": "Reglas de riesgo bajo",
-                "moderado": "Reglas de riesgo moderado",
-                "alto": "Reglas de riesgo alto"
-              },
-              "activo": "Activo",
-              "agregar-regla": "Agregar regla",
-              "editar-regla": "Editar regla",
-              "eliminar": "Eliminar regla de seguridad",
-              "reglas-por-defecto": {
-                "self": "Reglas por defecto",
-                "descripcion": "Las reglas por defecto se ejecutarán cuando un problema no cumpla con las reglas personalizadas."
-              },
-              "riesgo": {
-                "self": "Riesgo",
-                "seleccionar": "Seleccionar riesgo",
-                "nivel-de-riesgo": {
-                  "0": "Por defecto",
-                  "100": "Bajo",
-                  "200": "Moderado",
-                  "300": "Alto"
-                },
-                "espacio-de-nombres": {
-                  "dml": "DML",
-                  "ddl": "DDL",
-                  "crear_base_de_datos": "Crear base de datos"
-                },
-                "factor": {
-                  "filas_afectadas": "Filas afectadas",
-                  "id_de_entorno": "ID de entorno",
-                  "id_de_proyecto": "ID de proyecto",
-                  "nombre_de_base_de_datos": "Nombre de base de datos",
-                  "motor_de_base_de_datos": "Motor de base de datos",
-                  "sql_type": "Tipo SQL"
-                }
-              },
-              "condition": {
-                "self": "Condición",
-                "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con los problemas ejecutados en el entorno \"prod\".",
-                "add": "Agregar condición",
-                "add-group": "Agregar grupo de condiciones",
-                "group": {
-                  "or": {
-                    "description": "Cualquiera de los siguientes es verdadero..."
-                  },
-                  "and": {
-                    "description": "Todos los siguientes son verdaderos..."
-                  },
-                  "tooltip": "Un grupo de condiciones es una colección de condiciones conectadas por operadores \"Y\" y \"O\"."
-                },
-                "input-value": "Valor de entrada",
-                "add-condition-in-group-placeholder": "Agregar {plus} para agregar condición",
-                "select-value": "Seleccionar valor",
-                "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
-                "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición"
-              },
-              "template": {
-                "templates": "Plantillas",
-                "load": "Cargar",
-                "presets": {
-                  "environment-prod-high": "Se considera que el riesgo para el entorno de producción es alto.",
-                  "environment-dev-low": "El valor de riesgo para el entorno de desarrollo se considera bajo.",
-                  "dml-in-environment-prod-10k-rows-high": "En el entorno de producción, si el número de filas a actualizar o eliminar supera los 10000, se considera que el riesgo es alto.",
-                  "create-database-in-environment-prod-moderate": "Crear una base de datos en el entorno de producción se considera un riesgo moderado."
-                },
-                "load-template": "Cargar plantilla",
-                "view": "Ver plantilla"
-              },
-              "rule-name": "Nombre de la regla",
-              "view-rule": "Ver regla",
-              "source": {
-                "select": "Seleccionar tipo",
-                "self": "Tipo"
-              },
-              "input-rule-name": "Ingrese el nombre de la regla",
-              "search": "Buscar regla"
+          "sugerencia-preestablecida": {
+            "1": "¿Qué departamento tiene más empleados?",
+            "2": "¿Qué gerente tiene más reportes directos en cada departamento?",
+            "3": "¿Cuál es la proporción de género en cada departamento?"
+          },
+          "declaracion-copiada": "Declaración copiada al portapapeles",
+          "no-mostrar-de-nuevo": "No mostrar de nuevo"
+        },
+        "aprobacion-personalizada": {
+          "self": "Aprobación personalizada",
+          "regla-de-seguridad": {
+            "self": "Regla de seguridad",
+            "reglas-de-seguridad": "Reglas de seguridad",
+            "reglas-de-riesgo-x": {
+              "bajo": "Reglas de riesgo bajo",
+              "moderado": "Reglas de riesgo moderado",
+              "alto": "Reglas de riesgo alto"
             },
-            "approval-flow": {
-              "self": "Flujo de aprobación",
-              "description": "Para cada tipo de operación, configure una condición personalizada, un riesgo y un flujo de aprobación.",
-              "approval-flows": "Flujos de aprobación",
-              "approval-nodes": "Nodos de aprobación",
-              "type": {
-                "system": "Sistema",
-                "custom": "Personalizado"
-              },
-              "delete": "Eliminar flujo de aprobación",
-              "search": "Buscar flujo de aprobación",
-              "select": "Seleccionar flujo de aprobación",
-              "create-approval-flow": "Crear flujo de aprobación",
-              "edit-approval-flow": "Editar flujo de aprobación",
-              "node": {
-                "nodes": "Nodos de aprobación",
-                "description": "Solo se requiere una aprobación en este nodo cuando hay múltiples aprobadores.",
-                "order": "Orden",
-                "approver": "Aprobador",
-                "group": {
-                  "WORKSPACE_OWNER": "Propietario del espacio de trabajo",
-                  "WORKSPACE_DBA": "DBA",
-                  "PROJECT_OWNER": "Propietario del proyecto",
-                  "PROJECT_MEMBER": "Miembro del proyecto"
-                },
-                "add": "Agregar nodo",
-                "delete": "Eliminar nodo de aprobación"
-              },
-              "presets": {
-                "owner-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
-                "owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
-                "dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
-                "admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
-                "owner-dba-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
-              },
-              "view-approval-flow": "Ver flujo de aprobación",
-              "skip": "Omitir aprobación manual",
-              "risk-not-configured-tips": "Asegúrese de haber definido {link}.",
-              "the-related-risk-rules": "las reglas de riesgo relacionadas"
+            "activo": "Activo",
+            "agregar-regla": "Agregar regla",
+            "editar-regla": "Editar regla",
+            "eliminar": "Eliminar regla de seguridad",
+            "reglas-por-defecto": {
+              "self": "Reglas por defecto",
+              "descripcion": "Las reglas por defecto se ejecutarán cuando un problema no cumpla con las reglas personalizadas."
             },
-            "risk": {
+            "riesgo": {
               "self": "Riesgo",
-              "risk-center": "Centro de riesgo",
-              "description": "El Centro de riesgo define los niveles de riesgo para diferentes operaciones de base de datos en diferentes condiciones. Y los niveles de riesgo determinan los flujos de aprobación personalizados correspondientes."
-            },
-            "workflow-center": {
-              "workflow": "Flujo de trabajo"
-            },
-            "rule": {
-              "rules": "Reglas"
-            },
-            "issue-review": {
-              "approve-issue": "¿Aprobar problema?",
-              "form": {
-                "placeholder": "(Opcional) Agregar una nota...",
-                "note": "Nota"
+              "seleccionar": "Seleccionar riesgo",
+              "nivel-de-riesgo": {
+                "0": "Por defecto",
+                "100": "Bajo",
+                "200": "Moderado",
+                "300": "Alto"
               },
-              "you": "Tú",
-              "generating-approval-flow": "Generando flujo de aprobación",
-              "approved-issue": "problema aprobado"
-            }
+              "espacio-de-nombres": {
+                "dml": "DML",
+                "ddl": "DDL",
+                "crear_base_de_datos": "Crear base de datos"
+              },
+              "factor": {
+                "filas_afectadas": "Filas afectadas",
+                "id_de_entorno": "ID de entorno",
+                "id_de_proyecto": "ID de proyecto",
+                "nombre_de_base_de_datos": "Nombre de base de datos",
+                "motor_de_base_de_datos": "Motor de base de datos",
+                "sql_type": "Tipo SQL"
+              }
+            },
+            "condition": {
+              "self": "Condición",
+              "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con los problemas ejecutados en el entorno \"prod\".",
+              "add": "Agregar condición",
+              "add-group": "Agregar grupo de condiciones",
+              "group": {
+                "or": {
+                  "description": "Cualquiera de los siguientes es verdadero..."
+                },
+                "and": {
+                  "description": "Todos los siguientes son verdaderos..."
+                },
+                "tooltip": "Un grupo de condiciones es una colección de condiciones conectadas por operadores \"Y\" y \"O\"."
+              },
+              "input-value": "Valor de entrada",
+              "add-condition-in-group-placeholder": "Agregar {plus} para agregar condición",
+              "select-value": "Seleccionar valor",
+              "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
+              "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición"
+            },
+            "template": {
+              "templates": "Plantillas",
+              "load": "Cargar",
+              "presets": {
+                "environment-prod-high": "Se considera que el riesgo para el entorno de producción es alto.",
+                "environment-dev-low": "El valor de riesgo para el entorno de desarrollo se considera bajo.",
+                "dml-in-environment-prod-10k-rows-high": "En el entorno de producción, si el número de filas a actualizar o eliminar supera los 10000, se considera que el riesgo es alto.",
+                "create-database-in-environment-prod-moderate": "Crear una base de datos en el entorno de producción se considera un riesgo moderado."
+              },
+              "load-template": "Cargar plantilla",
+              "view": "Ver plantilla"
+            },
+            "rule-name": "Nombre de la regla",
+            "view-rule": "Ver regla",
+            "source": {
+              "select": "Seleccionar tipo",
+              "self": "Tipo"
+            },
+            "input-rule-name": "Ingrese el nombre de la regla",
+            "search": "Buscar regla"
           },
-          "slow-query": {
-            "self": "Consulta lenta",
-            "slow-queries": "Consultas lentas",
-            "last-query-time": "Último tiempo de consulta",
-            "database-name": "Nombre de la base de datos",
-            "sql-statement": "Sentencia SQL",
-            "total-query-count": "Recuento total de consultas",
-            "query-time-95-percent": "Tiempo de consulta (95%)",
-            "query-time-avg": "Tiempo de consulta promedio",
-            "rows-examined-95-percent": "Filas examinadas (95%)",
-            "rows-sent-95-percent": "Filas enviadas (95%)",
-            "rows-examined-avg": "Filas examinadas promedio",
-            "rows-sent-avg": "Filas enviadas promedio",
-            "query-start-time": "Tiempo de inicio de consulta",
-            "rows-examined": "Filas examinadas",
-            "rows-sent": "Filas enviadas",
-            "lock-time": "Tiempo de bloqueo",
-            "query-time": "Tiempo de consulta",
-            "attention-description": "Registro y análisis de consultas lentas para {versiones}.\nBytebase sincronizará periódicamente los registros de consultas lentas desde las instancias.",
-            "sync-job-started": "Se iniciaron trabajos de sincronización. Por favor, espere a que los trabajos se completen.",
-            "detail": "Detalle de consulta lenta"
+          "approval-flow": {
+            "self": "Flujo de aprobación",
+            "description": "Para cada tipo de operación, configure una condición personalizada, un riesgo y un flujo de aprobación.",
+            "approval-flows": "Flujos de aprobación",
+            "approval-nodes": "Nodos de aprobación",
+            "type": {
+              "system": "Sistema",
+              "custom": "Personalizado"
+            },
+            "delete": "Eliminar flujo de aprobación",
+            "search": "Buscar flujo de aprobación",
+            "select": "Seleccionar flujo de aprobación",
+            "create-approval-flow": "Crear flujo de aprobación",
+            "edit-approval-flow": "Editar flujo de aprobación",
+            "node": {
+              "nodes": "Nodos de aprobación",
+              "description": "Solo se requiere una aprobación en este nodo cuando hay múltiples aprobadores.",
+              "order": "Orden",
+              "approver": "Aprobador",
+              "group": {
+                "WORKSPACE_OWNER": "Propietario del espacio de trabajo",
+                "WORKSPACE_DBA": "DBA",
+                "PROJECT_OWNER": "Propietario del proyecto",
+                "PROJECT_MEMBER": "Miembro del proyecto"
+              },
+              "add": "Agregar nodo",
+              "delete": "Eliminar nodo de aprobación"
+            },
+            "presets": {
+              "owner-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
+              "owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
+              "dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
+              "admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
+              "owner-dba-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
+            },
+            "view-approval-flow": "Ver flujo de aprobación",
+            "skip": "Omitir aprobación manual",
+            "risk-not-configured-tips": "Asegúrese de haber definido {link}.",
+            "the-related-risk-rules": "las reglas de riesgo relacionadas"
           },
-          "principal": {
-            "select": "Seleccionar usuario"
+          "risk": {
+            "self": "Riesgo",
+            "risk-center": "Centro de riesgo",
+            "description": "El Centro de riesgo define los niveles de riesgo para diferentes operaciones de base de datos en diferentes condiciones. Y los niveles de riesgo determinan los flujos de aprobación personalizados correspondientes."
+          },
+          "workflow-center": {
+            "workflow": "Flujo de trabajo"
+          },
+          "rule": {
+            "rules": "Reglas"
+          },
+          "issue-review": {
+            "approve-issue": "¿Aprobar problema?",
+            "form": {
+              "placeholder": "(Opcional) Agregar una nota...",
+              "note": "Nota"
+            },
+            "you": "Tú",
+            "generating-approval-flow": "Generando flujo de aprobación",
+            "approved-issue": "problema aprobado"
           }
+        },
+        "slow-query": {
+          "self": "Consulta lenta",
+          "slow-queries": "Consultas lentas",
+          "last-query-time": "Último tiempo de consulta",
+          "database-name": "Nombre de la base de datos",
+          "sql-statement": "Sentencia SQL",
+          "total-query-count": "Recuento total de consultas",
+          "query-time-95-percent": "Tiempo de consulta (95%)",
+          "query-time-avg": "Tiempo de consulta promedio",
+          "rows-examined-95-percent": "Filas examinadas (95%)",
+          "rows-sent-95-percent": "Filas enviadas (95%)",
+          "rows-examined-avg": "Filas examinadas promedio",
+          "rows-sent-avg": "Filas enviadas promedio",
+          "query-start-time": "Tiempo de inicio de consulta",
+          "rows-examined": "Filas examinadas",
+          "rows-sent": "Filas enviadas",
+          "lock-time": "Tiempo de bloqueo",
+          "query-time": "Tiempo de consulta",
+          "attention-description": "Registro y análisis de consultas lentas para {versiones}.\nBytebase sincronizará periódicamente los registros de consultas lentas desde las instancias.",
+          "sync-job-started": "Se iniciaron trabajos de sincronización. Por favor, espere a que los trabajos se completen.",
+          "detail": "Detalle de consulta lenta"
+        },
+        "principal": {
+          "select": "Seleccionar usuario"
         }
       }
     }
