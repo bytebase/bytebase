@@ -30,10 +30,16 @@
           {{ item.log.statistics.count }}
         </div>
         <div class="bb-grid-cell">
+          {{ (item.log.statistics.countPercent * 100).toFixed(2) }}%
+        </div>
+        <div class="bb-grid-cell">
           {{ durationText(item.log.statistics.maximumQueryTime) }}
         </div>
         <div class="bb-grid-cell">
           {{ durationText(item.log.statistics.averageQueryTime) }}
+        </div>
+        <div class="bb-grid-cell">
+          {{ (item.log.statistics.queryTimePercent * 100).toFixed(2) }}%
         </div>
         <div class="bb-grid-cell">
           {{
@@ -147,11 +153,19 @@ const columns = computed(() => {
       width: "minmax(6rem, auto)",
     },
     {
+      title: t("slow-query.query-count-percent"),
+      width: "minmax(6rem, auto)",
+    },
+    {
       title: t("slow-query.max-query-time"),
       width: "minmax(6rem, auto)",
     },
     {
       title: t("slow-query.avg-query-time"),
+      width: "minmax(6rem, auto)",
+    },
+    {
+      title: t("slow-query.query-time-percent"),
       width: "minmax(6rem, auto)",
     },
     {
@@ -208,9 +222,9 @@ const toggleExpandRow = (item: ComposedSlowQueryLog) => {
 
 const durationText = (duration: Duration | undefined) => {
   if (!duration) return "-";
-  const nanos = duration.nanos;
-  if (!nanos) return "0";
-  return (nanos / 1e9).toFixed(6);
+  const { seconds, nanos } = duration;
+  const total = seconds + nanos / 1e9;
+  return total.toFixed(6);
 };
 
 watch(
