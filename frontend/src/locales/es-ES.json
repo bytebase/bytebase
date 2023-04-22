@@ -484,7 +484,7 @@
         "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
         "select-logo": "Subir un archivo",
         "drag-logo": "o arrastrar aquí",
-        "logo-upload-tip": "{extensión} hasta {tamaño} MiB",
+        "logo-upload-tip": "{extension} hasta {size} MiB",
         "logo-upload-succeed": "Logo actualizado correctamente",
         "security": "Seguridad",
         "watermark": {
@@ -530,7 +530,7 @@
       "remove-sensitive-column-tips": "¿Exponer esta columna?"
     },
     "access-control": {
-      "description": "Permitir a los desarrolladores ejecutar consultas para las siguientes bases de datos en ambientes de producción desde el Editor de SQL. {enlace}",
+      "description": "Permitir a los desarrolladores ejecutar consultas para las siguientes bases de datos en ambientes de producción desde el Editor de SQL. {link}",
       "add-rule": "Añadir regla",
       "remove-policy-tips": "¿Eliminar esta regla?",
       "inactive-rules": "Reglas inactivas",
@@ -865,7 +865,7 @@
         "mysql": {
           "password": "SU_CONTRASEÑA_DE_BD",
           "user": "bytebase{'@'}%",
-          "template": "A continuación se muestra un ejemplo para crear el usuario {password} con la contraseña {contraseña} y otorgar al usuario los privilegios necesarios."
+          "template": "A continuación se muestra un ejemplo para crear el usuario {password} con la contraseña {password} y otorgar al usuario los privilegios necesarios."
         },
         "clickhouse": {
           "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {password} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {link} y luego ejecutar la siguiente consulta para crear el usuario.",
@@ -1399,7 +1399,7 @@
       "description-highlight": "Si desea habilitar el inicio de sesión de terceros a través de sus VCS configurados, configure en SSO.",
       "add-git-provider": {
         "self": "Agregar un proveedor de Git",
-        "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS. A continuación se muestran los pasos para configurar esto, también puede seguir nuestra {guía}.",
+        "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS. A continuación se muestran los pasos para configurar esto, también puede seguir nuestra {guide}.",
         "gitlab-self-host": "Autoalojamiento de GitLab",
         "gitlab-self-host-admin-requirement": "Debe ser un administrador de su instancia de GitLab elegida para configurar esto. De lo contrario, debe solicitar al administrador de su instancia de GitLab que registre Bytebase como una aplicación OAuth de instancia de GitLab y luego proporcionarle ese ID de aplicación y secreto para completar en el paso 'información de la aplicación OAuth'.",
         "gitlab-com-admin-requirement": "Su cuenta debe tener acceso de administrador a cualquiera de los repositorios que se van a vincular. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de a un usuario humano.",
