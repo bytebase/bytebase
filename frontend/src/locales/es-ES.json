@@ -971,7 +971,7 @@
       "send-reset-link": "Enviar enlace de restablecimiento",
       "return-to-sign-in": "Volver a iniciar sesión"
     },
-    "activar": {
+    "activate": {
       "title": "Active su cuenta {type}"
     }
   },
