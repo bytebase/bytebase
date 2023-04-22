@@ -215,7 +215,7 @@
     "yes": "Sí",
     "advanced": "Avanzado",
     "restart": "Reiniciar",
-    "want-help": "Quieres ayuda",
+    "want-help": "Buscar Ayuda",
     "operation": "Operación",
     "rollback": "Revertir",
     "total": "Total",
@@ -225,8 +225,8 @@
     "domain": "Dominio",
     "demo-mode": "Demostración",
     "operations": "Operaciones",
-    "on": "Activar",
-    "off": "Desactivar",
+    "on": "Encendido",
+    "off": "Apagado",
     "verify": "Verificar",
     "regenerate": "Regenerar",
     "download": "Descargar",
@@ -235,7 +235,12 @@
     "will-override-current-data": "Se sobrescribirán los datos actuales.",
     "rollout": "Implementar",
     "uploading": "Subiendo",
-    "active": "Activo"
+    "active": "Activo",
+    "added": "Agregado",
+    "revoke": "Revocar",
+    "cannot-undo-this-action": "No se puede deshacer esta acción.",
+    "expand": "Expandir",
+    "collapse": "Colapsar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
