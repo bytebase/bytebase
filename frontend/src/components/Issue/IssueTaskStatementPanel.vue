@@ -31,7 +31,7 @@
         }}</span>
       </div>
       <button
-        v-if="allowApplyTaskStateToOthers"
+        v-if="create && allowApplyTaskStateToOthers"
         :disabled="isEmpty(state.editStatement)"
         type="button"
         class="btn-small py-1 px-3 my-auto"
@@ -56,7 +56,10 @@
           <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
         </label>
 
-        <UploadProgressButton :upload="handleUploadFile">
+        <UploadProgressButton
+          v-if="allowUploadSheetForTask"
+          :upload="handleUploadFile"
+        >
           {{ $t("issue.upload-sql") }}
         </UploadProgressButton>
       </template>

@@ -3,6 +3,7 @@ import { cloneDeep, isUndefined } from "lodash-es";
 import { provideIssueLogic, useIssueLogic } from "./index";
 import {
   flattenTaskList,
+  getPatchingTaskList,
   maybeFormatStatementOnSave,
   TaskTypeWithSheetId,
   TaskTypeWithStatement,
@@ -35,6 +36,7 @@ export default defineComponent({
       allowApplyTaskStateToOthers: baseAllowApplyTaskStateToOthers,
       applyTaskStateToOthers: baseApplyTaskStateToOthers,
       onStatusChanged,
+      dialog,
     } = useIssueLogic();
     const databaseStore = useDatabaseStore();
     const taskStore = useTaskStore();
@@ -114,6 +116,7 @@ export default defineComponent({
             (detail) => (detail.statement = newStatement)
           );
         } else {
+          // Call patchAllTasksInIssue for tenant mode
           const issueEntity = issue.value as Issue;
           taskStore
             .patchAllTasksInIssue({
@@ -135,18 +138,26 @@ export default defineComponent({
           const task = selectedTask.value as TaskCreate;
           task.statement = newStatement;
         } else {
-          // otherwise, patch the task
+          // Ask whether to apply the change to all pending tasks if possible.
           const task = selectedTask.value as Task;
-          patchTask(
-            task.id,
-            {
-              statement: maybeFormatStatementOnSave(
-                newStatement,
-                task.database
-              ),
-              updatedTs: task.updatedTs,
-            },
-            postUpdated
+          getPatchingTaskList(issue.value as Issue, task, dialog).then(
+            (patchingTaskList) => {
+              if (patchingTaskList.length === 0) return;
+              const patchRequestList = patchingTaskList.map((task) => {
+                patchTask(
+                  task.id,
+                  {
+                    statement: maybeFormatStatementOnSave(
+                      newStatement,
+                      task.database
+                    ),
+                    updatedTs: task.updatedTs,
+                  },
+                  postUpdated
+                );
+              });
+              return Promise.allSettled(patchRequestList);
+            }
           );
         }
       }

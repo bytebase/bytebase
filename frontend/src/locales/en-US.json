@@ -329,7 +329,12 @@
       "cancel-generating": "Cancel generating the SQL rollback",
       "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change.\nWarning: If the table does not have a primary key. Undo SQL may affect\nduplicate rows. Please carefully confirm before executing.\n{link}"
     },
-    "skip-failed-in-current-stage": "Skip failed tasks in current stage"
+    "skip-failed-in-current-stage": "Skip failed tasks in current stage",
+    "apply-change-to-all-pending-tasks": {
+      "title": "Apply change to all pending tasks?",
+      "self": "Apply change to all pending tasks",
+      "current-only": "Only apply change to current task"
+    }
   },
   "banner": {
     "update-license": "Update license",
