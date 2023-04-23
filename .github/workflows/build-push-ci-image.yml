@@ -11,7 +11,12 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   docker:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platforms: linux/amd64,linux/x86_64,linux/arm64
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - name: Extract build args
@@ -31,6 +36,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           file: scripts/Dockerfile
+          platforms: ${{ matrix.platforms }}
           push: true
           tags: bytebase/bytebase:release-ci
           build-args: |
