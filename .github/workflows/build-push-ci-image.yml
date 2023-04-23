@@ -11,13 +11,6 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   docker:
-    strategy:
-      matrix:
-        flavor: [debian]
-        include:
-          - flavor: debian
-            dockerfile: scripts/Dockerfile
-            platforms: linux/amd64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -37,8 +30,8 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v4
         with:
-          file: ${{ matrix.dockerfile }}
-          platforms: ${{ matrix.platforms }}
+          file: scripts/Dockerfile
+          platforms: linux/amd64
           push: true
           tags: bytebase/bytebase:release-ci
           build-args: |
