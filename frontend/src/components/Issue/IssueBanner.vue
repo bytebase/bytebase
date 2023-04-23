@@ -55,24 +55,21 @@ const showPendingReview = computed(() => {
 });
 
 const showCancelBanner = computed(() => {
-  if (issue.value.status == "CANCELED") {
-    return true;
-  }
-
-  const task = activeTask(issue.value.pipeline);
-  return task.status == "CANCELED";
+  return issue.value.status === "CANCELED";
 });
 
 const showSuccessBanner = computed(() => {
-  return issue.value.status == "DONE";
+  return issue.value.status === "DONE";
 });
 
 const showPendingRollout = computed(() => {
+  if (issue.value.status !== "OPEN") return false;
   const task = activeTask(issue.value.pipeline);
   return task.status == "PENDING_APPROVAL";
 });
 
 const showEarliestAllowedTimeBanner = computed(() => {
+  if (issue.value.status !== "OPEN") return false;
   const task = activeTask(issue.value.pipeline);
 
   if (task.status !== "PENDING") {

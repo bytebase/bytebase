@@ -633,6 +633,7 @@
   },
   "issue": {
     "waiting-approval": "Waiting Approval",
+    "waiting-rollout": "Waiting Rollout",
     "opened-by-at": "opened by {creator} at {time}",
     "commit-by-at": "commit {id} {title} by {author} at {time}",
     "status-transition": {
@@ -742,8 +743,7 @@
     },
     "waiting-to-rollout": "Waiting to rollout",
     "waiting-for-review": "Waiting for review",
-    "issue-name": "Issue name",
-    "waiting-for-my-approval": "Waiting for my approval"
+    "issue-name": "Issue name"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
