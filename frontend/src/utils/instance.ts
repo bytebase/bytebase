@@ -78,7 +78,6 @@ export const instanceHasAlterSchema = (
   instanceOrEngine: Instance | EngineType
 ): boolean => {
   const engine = engineOfInstance(instanceOrEngine);
-  if (engine === "MONGODB") return false;
   if (engine === "REDIS") return false;
   return true;
 };

@@ -416,6 +416,8 @@ export const getPatchingTaskList = async (
         d.resolve([]);
       },
     });
+  } else {
+    d.resolve([task]);
   }
 
   return d.promise;
