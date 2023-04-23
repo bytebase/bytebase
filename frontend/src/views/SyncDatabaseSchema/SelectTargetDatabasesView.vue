@@ -27,7 +27,7 @@
     <Splitpanes
       class="default-theme border rounded-lg w-full h-144 flex flex-row overflow-hidden mt-4"
     >
-      <Pane min-size="10" size="20">
+      <Pane min-size="20" size="25">
         <div
           class="w-full h-full relative flex flex-col justify-start items-start overflow-y-auto pb-2"
         >
@@ -51,7 +51,7 @@
               >
                 <div
                   class="w-full text-center rounded cursor-pointer hover:bg-white"
-                  :class="state.showDatabaseWithDiff && 'bg-white'"
+                  :class="state.showDatabaseWithDiff && 'bg-white shadow'"
                   @click="state.showDatabaseWithDiff = true"
                 >
                   With diff
@@ -61,7 +61,7 @@
                 </div>
                 <div
                   class="w-full text-center rounded cursor-pointer hover:bg-white"
-                  :class="!state.showDatabaseWithDiff && 'bg-white'"
+                  :class="!state.showDatabaseWithDiff && 'bg-white shadow'"
                   @click="state.showDatabaseWithDiff = false"
                 >
                   No diff
@@ -76,24 +76,27 @@
             class="w-full grow flex flex-col justify-start items-start p-2 -mt-2 gap-1"
           >
             <div
-              v-for="database of state.showDatabaseWithDiff
-                ? databaseListWithDiff
-                : databaseListWithoutDiff"
+              v-for="database of shownDatabaseList"
               :key="database.id"
-              class="w-full flex flex-row justify-start items-center px-2 py-2 cursor-pointer text-sm rounded hover:bg-gray-50"
+              class="w-full flex flex-row justify-start items-center px-2 py-2 cursor-pointer text-sm text-ellipsis whitespace-nowrap rounded hover:bg-gray-50"
               :class="
                 database.id === state.selectedDatabaseId ? '!bg-gray-100' : ''
               "
-              @click="state.selectedDatabaseId = database.id"
+              @click="() => (state.selectedDatabaseId = database.id)"
             >
-              <InstanceEngineIcon :instance="database.instance" />
-              <span class="mx-0.5 text-gray-400"
-                >({{ database.instance.environment.name }})</span
-              >
-              <span>{{ database.name }}</span>
-              <span class="ml-0.5 text-gray-400"
-                >({{ database.instance.name }})</span
-              >
+              <InstanceEngineIcon
+                class="shrink-0"
+                :instance="database.instance"
+              />
+              <NEllipsis :tooltip="false">
+                <span class="mx-0.5 text-gray-400"
+                  >({{ database.instance.environment.name }})</span
+                >
+                <span>{{ database.name }}</span>
+                <span class="ml-0.5 text-gray-400"
+                  >({{ database.instance.name }})</span
+                >
+              </NEllipsis>
             </div>
             <div
               v-if="targetDatabaseList.length === 0"
@@ -110,7 +113,7 @@
           </div>
         </div>
       </Pane>
-      <Pane min-size="60" size="80" class="overflow-y-auto">
+      <Pane min-size="60" size="75">
         <main ref="diffViewerRef" class="p-4 w-full h-full overflow-y-auto">
           <div
             v-show="shouldShowDiff"
@@ -190,6 +193,7 @@
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import axios from "axios";
+import { NEllipsis } from "naive-ui";
 import { PropType, computed, onMounted, reactive, ref, watch } from "vue";
 import { CodeDiff } from "v-code-diff";
 import { useI18n } from "vue-i18n";
@@ -211,6 +215,7 @@ import {
 } from "@/types";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
+import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 
 interface SourceSchema {
   environmentId: EnvironmentId;
@@ -302,12 +307,19 @@ const previewSchemaChangeMessage = computed(() => {
 });
 const databaseListWithDiff = computed(() => {
   return targetDatabaseList.value.filter(
-    (db) => databaseDiffCache[db.id].raw !== ""
+    (db) => databaseDiffCache[db.id]?.raw !== ""
   );
 });
 const databaseListWithoutDiff = computed(() => {
   return targetDatabaseList.value.filter(
-    (db) => databaseDiffCache[db.id].raw === ""
+    (db) => databaseDiffCache[db.id]?.raw === ""
+  );
+});
+const shownDatabaseList = computed(() => {
+  return (
+    (state.showDatabaseWithDiff
+      ? databaseListWithDiff.value
+      : databaseListWithoutDiff.value) || []
   );
 });
 

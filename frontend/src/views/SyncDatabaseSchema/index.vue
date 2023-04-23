@@ -26,7 +26,6 @@
           </span>
           <ProjectSelect
             class="!w-60 shrink-0"
-            :disabled="!allowSelectProject"
             :selected-id="state.projectId"
             @select-project-id="(projectId: ProjectId)=>{
               state.projectId = projectId
@@ -67,7 +66,7 @@
           </DatabaseSelect>
         </div>
         <div class="w-full flex flex-row justify-start items-center">
-          <span class="flex w-40 items-center">
+          <span class="flex w-40 items-center shrink-0">
             {{ $t("database.sync-schema.schema-version.self") }}
           </span>
           <div
@@ -130,8 +129,9 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import { head, isNull, isUndefined } from "lodash-es";
-import { NEllipsis } from "naive-ui";
+import { NEllipsis, useDialog } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -151,7 +151,6 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
-import dayjs from "dayjs";
 
 const SELECT_SOURCE_DATABASE = 0;
 const SELECT_TARGET_DATABASE_LIST = 1;
@@ -171,15 +170,6 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
-const props = withDefaults(
-  defineProps<{
-    projectId?: ProjectId;
-  }>(),
-  {
-    projectId: undefined,
-  }
-);
-
 const allowedEngineTypeList: EngineType[] = ["MYSQL", "POSTGRES"];
 const allowedMigrationTypeList: MigrationType[] = [
   "BASELINE",
@@ -189,6 +179,7 @@ const allowedMigrationTypeList: MigrationType[] = [
 
 const { t } = useI18n();
 const router = useRouter();
+const dialog = useDialog();
 const projectStore = useProjectStore();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
@@ -224,14 +215,10 @@ const allowNext = computed(() => {
     return (
       isValidId(state.sourceSchema.environmentId) &&
       isValidId(state.sourceSchema.databaseId) &&
-      !isNull(state.sourceSchema.migrationHistory)
+      !isUndefined(state.sourceSchema.migrationHistory)
     );
   }
   return true;
-});
-
-const allowSelectProject = computed(() => {
-  return props.projectId === undefined;
 });
 
 const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
@@ -281,10 +268,32 @@ const isValidId = (id: any) => {
 };
 
 const tryChangeStep = async (
-  _: number,
+  oldStep: number,
   newStep: number,
   allowChangeCallback: () => void
 ) => {
+  if (oldStep === 1 && newStep === 0) {
+    const targetDatabaseList =
+      targetDatabaseViewRef.value?.targetDatabaseList || [];
+    if (targetDatabaseList.length > 0) {
+      dialog.create({
+        positiveText: t("common.confirm"),
+        negativeText: t("common.cancel"),
+        title: t("deployment-config.confirm-to-revert"),
+        closable: false,
+        maskClosable: false,
+        closeOnEsc: false,
+        onNegativeClick: () => {
+          // nothing to do
+        },
+        onPositiveClick: () => {
+          state.currentStep = newStep as Step;
+          allowChangeCallback();
+        },
+      });
+      return;
+    }
+  }
   state.currentStep = newStep as Step;
   allowChangeCallback();
 };
