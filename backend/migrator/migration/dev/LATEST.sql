@@ -381,7 +381,8 @@ CREATE TABLE db (
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
-    name TEXT NOT NULL
+    name TEXT NOT NULL,
+    secrets JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_db_instance_id ON db(instance_id);
