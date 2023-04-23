@@ -214,9 +214,15 @@ const tryFinishSetup = async () => {
     style: "SUCCESS",
     title: t("two-factor.messages.2fa-enabled"),
   });
-  router.replace({
-    name: "setting.profile",
-  });
+  if (router.currentRoute.value.name === "2fa.setup") {
+    router.replace({
+      path: "/",
+    });
+  } else {
+    router.replace({
+      name: "setting.profile",
+    });
+  }
 };
 
 watch(
