@@ -41,6 +41,14 @@
             </div>
           </div>
         </div>
+        <div v-if="locale === 'es-ES'" class="w-1/2 pt-2">
+          <a href="https://discord.gg/huyw7gRsyA" target="_blank">
+            <img
+              src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4"
+              alt="invitación a discord"
+            />
+          </a>
+        </div>
       </div>
     </template>
   </Drawer>
