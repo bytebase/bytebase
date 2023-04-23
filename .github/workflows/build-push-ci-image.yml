@@ -35,6 +35,7 @@ jobs:
           file: scripts/Dockerfile
           platforms: linux/amd64,linux/x86_64
           push: true
+          provenance: false
           tags: bytebase/bytebase:release-ci
           build-args: |
             RELEASE=release
