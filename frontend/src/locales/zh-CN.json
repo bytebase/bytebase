@@ -272,7 +272,6 @@
       "syntax": "语法",
       "compatibility": "兼容性",
       "connection": "连接",
-      "migration-schema": "变更 schema",
       "sql-review": "SQL 审核",
       "earliest-allowed-time": "最早执行时间",
       "ghost-sync": "gh-ost 同步",
