@@ -22,6 +22,8 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const systemSchemas = "'information_schema', 'pg_catalog', 'pg_toast', '_timescaledb_cache', '_timescaledb_catalog', '_timescaledb_internal', '_timescaledb_config', 'timescaledb_information', 'timescaledb_experimental'"
+
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	version, err := driver.getVersion(ctx)
@@ -148,28 +150,28 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 	return databaseMetadata, err
 }
 
+var listForeignKeyQuery = `
+SELECT
+	n.nspname AS fk_schema,
+	conrelid::regclass AS fk_table,
+	conname AS fk_name,
+	(SELECT nspname FROM pg_namespace JOIN pg_class ON pg_namespace.oid = pg_class.relnamespace WHERE c.confrelid = pg_class.oid) AS fk_ref_schema,
+	confrelid::regclass AS fk_ref_table,
+	confdeltype AS delete_option,
+	confupdtype AS update_option,
+	confmatchtype AS match_option,
+	pg_get_constraintdef(c.oid) AS fk_def
+FROM
+	pg_constraint c
+	JOIN pg_namespace n ON n.oid = c.connamespace` + fmt.Sprintf(`
+WHERE
+	n.nspname NOT IN(%s)
+	AND c.contype = 'f'
+ORDER BY fk_schema, fk_table, fk_name;`, systemSchemas)
+
 func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
-	query := `
-	SELECT
-		n.nspname AS fk_schema,
-		conrelid::regclass AS fk_table,
-		conname AS fk_name,
-		(SELECT nspname FROM pg_namespace JOIN pg_class ON pg_namespace.oid = pg_class.relnamespace WHERE c.confrelid = pg_class.oid) AS fk_ref_schema,
-		confrelid::regclass AS fk_ref_table,
-		confdeltype AS delete_option,
-		confupdtype AS update_option,
-		confmatchtype AS match_option,
-		pg_get_constraintdef(c.oid) AS fk_def
-	FROM
-		pg_constraint c
-		JOIN pg_namespace n ON n.oid = c.connamespace
-	WHERE
-		n.nspname NOT IN('pg_catalog', 'information_schema')
-		AND c.contype = 'f'
-	ORDER BY fk_schema, fk_table, fk_name;
-	`
 	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
-	rows, err := txn.Query(query)
+	rows, err := txn.Query(listForeignKeyQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -279,13 +281,14 @@ func formatTableNameFromRegclass(name string) string {
 	return strings.Trim(name, `"`)
 }
 
+var listSchemaQuery = fmt.Sprintf(`
+SELECT nspname
+FROM pg_catalog.pg_namespace
+WHERE nspname NOT IN (%s);
+`, systemSchemas)
+
 func getSchemas(txn *sql.Tx) ([]string, error) {
-	query := `
-		SELECT nspname
-		FROM pg_catalog.pg_namespace
-		WHERE nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast');
-	`
-	rows, err := txn.Query(query)
+	rows, err := txn.Query(listSchemaQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -306,6 +309,17 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 	return result, nil
 }
 
+var listTableQuery = `
+SELECT tbl.schemaname, tbl.tablename,
+	pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+	pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+	GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
+	obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment
+FROM pg_catalog.pg_tables tbl
+LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass` + fmt.Sprintf(`
+WHERE tbl.schemaname NOT IN (%s)
+ORDER BY tbl.schemaname, tbl.tablename;`, systemSchemas)
+
 // getTables gets all tables of a database.
 func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	columnMap, err := getTableColumns(txn)
@@ -322,17 +336,7 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	}
 
 	tableMap := make(map[string][]*storepb.TableMetadata)
-	query := `
-		SELECT tbl.schemaname, tbl.tablename,
-			pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-			pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-			GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
-			obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment
-		FROM pg_catalog.pg_tables tbl
-		LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass
-		WHERE tbl.schemaname NOT IN ('pg_catalog', 'information_schema')
-		ORDER BY tbl.schemaname, tbl.tablename;`
-	rows, err := txn.Query(query)
+	rows, err := txn.Query(listTableQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -363,27 +367,27 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	return tableMap, nil
 }
 
+var listColumnQuery = `
+SELECT
+	cols.table_schema,
+	cols.table_name,
+	cols.column_name,
+	cols.data_type,
+	cols.ordinal_position,
+	cols.column_default,
+	cols.is_nullable,
+	cols.collation_name,
+	cols.udt_schema,
+	cols.udt_name,
+	pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
+FROM INFORMATION_SCHEMA.COLUMNS AS cols` + fmt.Sprintf(`
+WHERE cols.table_schema NOT IN (%s)
+ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, systemSchemas)
+
 // getTableColumns gets the columns of a table.
 func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
-
-	query := `
-		SELECT
-			cols.table_schema,
-			cols.table_name,
-			cols.column_name,
-			cols.data_type,
-			cols.ordinal_position,
-			cols.column_default,
-			cols.is_nullable,
-			cols.collation_name,
-			cols.udt_schema,
-			cols.udt_name,
-			pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
-		FROM INFORMATION_SCHEMA.COLUMNS AS cols
-		WHERE cols.table_schema NOT IN ('pg_catalog', 'information_schema')
-		ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`
-	rows, err := txn.Query(query)
+	rows, err := txn.Query(listColumnQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -422,14 +426,15 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	return columnsMap, nil
 }
 
+var listViewQuery = `
+SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views` + fmt.Sprintf(`
+WHERE schemaname NOT IN (%s);`, systemSchemas)
+
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
-	query := `
-		SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views
-		WHERE schemaname NOT IN ('pg_catalog', 'information_schema');`
-	rows, err := txn.Query(query)
+	rows, err := txn.Query(listViewQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -541,22 +546,23 @@ func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
 	return extensions, nil
 }
 
+var listIndexQuery = `
+SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
+	FROM information_schema.table_constraints
+	WHERE constraint_schema = idx.schemaname
+	AND constraint_name = idx.indexname
+	AND table_schema = idx.schemaname
+	AND table_name = idx.tablename
+	AND constraint_type = 'PRIMARY KEY') AS primary,
+	obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment` + fmt.Sprintf(`
+FROM pg_indexes AS idx WHERE idx.schemaname NOT IN (%s)
+ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, systemSchemas)
+
 // getIndexes gets all indices of a database.
 func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
-	query := `
-		SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
-			FROM information_schema.table_constraints
-			WHERE constraint_schema = idx.schemaname
-			AND constraint_name = idx.indexname
-			AND table_schema = idx.schemaname
-			AND table_name = idx.tablename
-			AND constraint_type = 'PRIMARY KEY') AS primary,
-			obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment
-		FROM pg_indexes AS idx WHERE idx.schemaname NOT IN ('pg_catalog', 'information_schema')
-		ORDER BY idx.schemaname, idx.tablename, idx.indexname;`
-	rows, err := txn.Query(query)
+	rows, err := txn.Query(listIndexQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -614,24 +620,24 @@ func getIndexMethodType(stmt string) string {
 	return matches[1]
 }
 
+var listFunctionQuery = `
+select n.nspname as function_schema,
+	p.proname as function_name,
+	case when l.lanname = 'internal' then p.prosrc
+			else pg_get_functiondef(p.oid)
+			end as definition
+from pg_proc p
+left join pg_namespace n on p.pronamespace = n.oid
+left join pg_language l on p.prolang = l.oid
+left join pg_type t on t.oid = p.prorettype ` + fmt.Sprintf(`
+where n.nspname not in (%s)
+order by function_schema, function_name;`, systemSchemas)
+
 // getFunctions gets all functions of a database.
 func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 	functionMap := make(map[string][]*storepb.FunctionMetadata)
 
-	query := `
-		select n.nspname as function_schema,
-			p.proname as function_name,
-			case when l.lanname = 'internal' then p.prosrc
-					else pg_get_functiondef(p.oid)
-					end as definition
-		from pg_proc p
-		left join pg_namespace n on p.pronamespace = n.oid
-		left join pg_language l on p.prolang = l.oid
-		left join pg_type t on t.oid = p.prorettype 
-		where n.nspname not in ('pg_catalog', 'information_schema')
-		order by function_schema, function_name;`
-
-	rows, err := txn.Query(query)
+	rows, err := txn.Query(listFunctionQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -641,6 +647,10 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 		var schemaName string
 		if err := rows.Scan(&schemaName, &function.Name, &function.Definition); err != nil {
 			return nil, err
+		}
+		// Skip internal functions.
+		if strings.Contains(function.Definition, "$libdir/timescaledb") {
+			continue
 		}
 
 		functionMap[schemaName] = append(functionMap[schemaName], function)
