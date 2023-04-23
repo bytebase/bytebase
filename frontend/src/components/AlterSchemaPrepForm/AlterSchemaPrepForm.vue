@@ -9,9 +9,9 @@
               <NTabPane :tab="$t('alter-schema.alter-db-group')" name="TENANT">
                 <ProjectTenantView
                   class="overflow-y-auto"
-                  style="max-height: calc(100vh - 320px)"
+                  style="max-height: calc(100vh - 360px)"
                   :state="state"
-                  :database-list="databaseList"
+                  :database-list="schemaDatabaseList"
                   :environment-list="environmentList"
                   :project="state.project"
                   @dismiss="cancel"
@@ -24,10 +24,10 @@
                 <DatabaseTable
                   mode="PROJECT_SHORT"
                   class="overflow-y-auto"
-                  style="max-height: calc(100vh - 360px)"
+                  style="max-height: calc(100vh - 400px)"
                   table-class="border"
                   :custom-click="true"
-                  :database-list="databaseList"
+                  :database-list="schemaDatabaseList"
                   :show-selection-column="true"
                   @select-database="
                     (db: Database) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
@@ -79,7 +79,7 @@
             <ProjectStandardView
               :state="state"
               :project="state.project"
-              :database-list="databaseList"
+              :database-list="schemaDatabaseList"
               :environment-list="environmentList"
               @select-database="selectDatabase"
             >
@@ -104,16 +104,34 @@
             />
           </aside>
           <!-- a simple table -->
-          <div class="overflow-y-auto" style="max-height: calc(100vh - 300px)">
+          <div class="overflow-y-auto" style="max-height: calc(100vh - 340px)">
             <DatabaseTable
               mode="ALL_SHORT"
               table-class="border"
               :custom-click="true"
-              :database-list="databaseList"
+              :database-list="schemaDatabaseList"
               @select-database="selectDatabase"
             />
           </div>
         </template>
+
+        <div
+          v-if="isAlterSchema && schemalessDatabaseList.length > 0"
+          class="px-0.5 mt-4"
+        >
+          <NCheckbox v-model:checked="state.showSchemaLessDatabaseList">
+            {{ $t("database.show-schemaless-databases") }}
+          </NCheckbox>
+          <DatabaseTable
+            v-if="state.showSchemaLessDatabaseList"
+            :mode="projectId ? 'PROJECT_SHORT' : 'ALL_SHORT'"
+            class="overflow-y-auto mt-2"
+            table-class="border"
+            :schemaless="true"
+            :row-clickable="false"
+            :database-list="schemalessDatabaseList"
+          />
+        </div>
       </div>
     </div>
 
@@ -183,7 +201,7 @@
 import dayjs from "dayjs";
 import { computed, reactive, PropType, ref } from "vue";
 import { useRouter } from "vue-router";
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabs, NTabPane, NCheckbox } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../DatabaseTable.vue";
@@ -215,6 +233,7 @@ type LocalState = ProjectStandardState &
   ProjectTenantState & {
     project?: Project;
     searchText: string;
+    showSchemaLessDatabaseList: boolean;
     showSchemaEditorModal: boolean;
     showFeatureModal: boolean;
   };
@@ -262,6 +281,7 @@ const state = reactive<LocalState>({
   deployingTenantDatabaseList: [],
   label: "bb.environment",
   searchText: "",
+  showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
   showFeatureModal: false,
 });
@@ -293,10 +313,6 @@ const databaseList = computed(() => {
   }
 
   list = list.filter((db) => db.syncStatus === "OK");
-  if (isAlterSchema.value) {
-    // We disallow users to alter schema for MongoDB databases.
-    list = list.filter((db) => instanceHasAlterSchema(db.instance));
-  }
 
   const keyword = state.searchText.trim();
   list = list.filter((db) =>
@@ -309,6 +325,26 @@ const databaseList = computed(() => {
   );
 
   return sortDatabaseList(cloneDeep(list), environmentList.value);
+});
+
+const schemaDatabaseList = computed(() => {
+  if (isAlterSchema.value) {
+    return databaseList.value.filter((db) =>
+      instanceHasAlterSchema(db.instance)
+    );
+  }
+
+  return databaseList.value;
+});
+
+const schemalessDatabaseList = computed(() => {
+  if (isAlterSchema.value) {
+    return databaseList.value.filter(
+      (db) => !instanceHasAlterSchema(db.instance)
+    );
+  }
+
+  return databaseList.value;
 });
 
 const flattenSelectedDatabaseIdList = computed(() => {
@@ -366,7 +402,7 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 const generateMultiDb = async () => {
   const selectedDatabaseIdList = [...flattenSelectedDatabaseIdList.value];
   const selectedDatabaseList = selectedDatabaseIdList.map(
-    (id) => databaseList.value.find((db) => db.id === id)!
+    (id) => schemaDatabaseList.value.find((db) => db.id === id)!
   );
 
   if (isAlterSchema.value && allowUsingSchemaEditor(selectedDatabaseList)) {
