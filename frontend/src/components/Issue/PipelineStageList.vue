@@ -10,6 +10,7 @@
         :create="create"
         :active="isActiveStage(stage)"
         :status="taskStatusOfStage(stage, i)"
+        :ignore-task-check-status="true"
       />
 
       <div class="text" @click.prevent="onClickStage(stage, i)">
