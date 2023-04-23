@@ -71,6 +71,7 @@
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
+    - [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest)
     - [DependentColumn](#bytebase-v1-DependentColumn)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
@@ -90,13 +91,13 @@
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [Secret](#bytebase-v1-Secret)
-    - [SetSecretRequest](#bytebase-v1-SetSecretRequest)
     - [SlowQueryDetails](#bytebase-v1-SlowQueryDetails)
     - [SlowQueryLog](#bytebase-v1-SlowQueryLog)
     - [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics)
     - [TableMetadata](#bytebase-v1-TableMetadata)
     - [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
+    - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
     - [Backup.BackupState](#bytebase-v1-Backup-BackupState)
@@ -1285,6 +1286,21 @@ DatabaseMetadata is the metadata for databases.
 
 
 
+<a name="bytebase-v1-DeleteSecretRequest"></a>
+
+### DeleteSecretRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the secret to be deleted. Format: environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret} |
+
+
+
+
+
+
 <a name="bytebase-v1-DependentColumn"></a>
 
 ### DependentColumn
@@ -1605,25 +1621,10 @@ Secret is the secret of the database now.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | name is the unique name of the secret, which is specified by the client. Format: environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret} |
-| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the secret resource was created initally. |
-| updated_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the secret resource was updated. |
+| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was created initally. |
+| updated_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was updated. |
 | value | [string](#string) |  | The value of the secret. |
 | description | [string](#string) |  | The decsription of the secret. |
-
-
-
-
-
-
-<a name="bytebase-v1-SetSecretRequest"></a>
-
-### SetSecretRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| secret | [Secret](#bytebase-v1-Secret) |  | The secret to be set. |
 
 
 
@@ -1752,6 +1753,23 @@ The database&#39;s `name` field is used to identify the database to update. Form
 
 
 
+<a name="bytebase-v1-UpdateSecretRequest"></a>
+
+### UpdateSecretRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| secret | [Secret](#bytebase-v1-Secret) |  | The secret to be created or updated. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
+| allow_missing | [bool](#bool) |  | If true, the secret will be created if it does not exist. |
+
+
+
+
+
+
 <a name="bytebase-v1-ViewMetadata"></a>
 
 ### ViewMetadata
@@ -1823,7 +1841,8 @@ The type of the backup.
 | ListBackup | [ListBackupRequest](#bytebase-v1-ListBackupRequest) | [ListBackupResponse](#bytebase-v1-ListBackupResponse) |  |
 | ListSlowQueries | [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest) | [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse) |  |
 | ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) |  |
-| SetSecret | [SetSecretRequest](#bytebase-v1-SetSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
+| UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
+| DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

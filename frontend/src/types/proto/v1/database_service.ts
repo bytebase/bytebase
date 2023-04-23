@@ -3,6 +3,7 @@ import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
+import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
@@ -638,9 +639,22 @@ export interface ListSecretsResponse {
   nextPageToken: string;
 }
 
-export interface SetSecretRequest {
-  /** The secret to be set. */
+export interface UpdateSecretRequest {
+  /** The secret to be created or updated. */
   secret?: Secret;
+  /** The mask of the fields to be updated. */
+  updateMask?: string[];
+  /** If true, the secret will be created if it does not exist. */
+  allowMissing: boolean;
+}
+
+export interface DeleteSecretRequest {
+  /**
+   * The name of the secret to be deleted.
+   * Format:
+   * environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+   */
+  name: string;
 }
 
 /** Secret is the secret of the database now. */
@@ -651,9 +665,9 @@ export interface Secret {
    * environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
    */
   name: string;
-  /** The timestamp when the secret resource was created initally. */
+  /** Not used. The timestamp when the secret resource was created initally. */
   createdTime?: Date;
-  /** The timestamp when the secret resource was updated. */
+  /** Not used. The timestamp when the secret resource was updated. */
   updatedTime?: Date;
   /** The value of the secret. */
   value: string;
@@ -4088,22 +4102,28 @@ export const ListSecretsResponse = {
   },
 };
 
-function createBaseSetSecretRequest(): SetSecretRequest {
-  return { secret: undefined };
+function createBaseUpdateSecretRequest(): UpdateSecretRequest {
+  return { secret: undefined, updateMask: undefined, allowMissing: false };
 }
 
-export const SetSecretRequest = {
-  encode(message: SetSecretRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const UpdateSecretRequest = {
+  encode(message: UpdateSecretRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.secret !== undefined) {
       Secret.encode(message.secret, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.allowMissing === true) {
+      writer.uint32(24).bool(message.allowMissing);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SetSecretRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateSecretRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetSecretRequest();
+    const message = createBaseUpdateSecretRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4114,6 +4134,20 @@ export const SetSecretRequest = {
 
           message.secret = Secret.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.allowMissing = reader.bool();
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -4123,25 +4157,89 @@ export const SetSecretRequest = {
     return message;
   },
 
-  fromJSON(object: any): SetSecretRequest {
-    return { secret: isSet(object.secret) ? Secret.fromJSON(object.secret) : undefined };
+  fromJSON(object: any): UpdateSecretRequest {
+    return {
+      secret: isSet(object.secret) ? Secret.fromJSON(object.secret) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      allowMissing: isSet(object.allowMissing) ? Boolean(object.allowMissing) : false,
+    };
   },
 
-  toJSON(message: SetSecretRequest): unknown {
+  toJSON(message: UpdateSecretRequest): unknown {
     const obj: any = {};
     message.secret !== undefined && (obj.secret = message.secret ? Secret.toJSON(message.secret) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    message.allowMissing !== undefined && (obj.allowMissing = message.allowMissing);
     return obj;
   },
 
-  create(base?: DeepPartial<SetSecretRequest>): SetSecretRequest {
-    return SetSecretRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UpdateSecretRequest>): UpdateSecretRequest {
+    return UpdateSecretRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SetSecretRequest>): SetSecretRequest {
-    const message = createBaseSetSecretRequest();
+  fromPartial(object: DeepPartial<UpdateSecretRequest>): UpdateSecretRequest {
+    const message = createBaseUpdateSecretRequest();
     message.secret = (object.secret !== undefined && object.secret !== null)
       ? Secret.fromPartial(object.secret)
       : undefined;
+    message.updateMask = object.updateMask ?? undefined;
+    message.allowMissing = object.allowMissing ?? false;
+    return message;
+  },
+};
+
+function createBaseDeleteSecretRequest(): DeleteSecretRequest {
+  return { name: "" };
+}
+
+export const DeleteSecretRequest = {
+  encode(message: DeleteSecretRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteSecretRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteSecretRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteSecretRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: DeleteSecretRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteSecretRequest>): DeleteSecretRequest {
+    return DeleteSecretRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DeleteSecretRequest>): DeleteSecretRequest {
+    const message = createBaseDeleteSecretRequest();
+    message.name = object.name ?? "";
     return message;
   },
 };
@@ -5242,9 +5340,9 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    setSecret: {
-      name: "SetSecret",
-      requestType: SetSecretRequest,
+    updateSecret: {
+      name: "UpdateSecret",
+      requestType: UpdateSecretRequest,
       requestStream: false,
       responseType: Secret,
       responseStream: false,
@@ -5261,7 +5359,7 @@ export const DatabaseServiceDefinition = {
               114,
               101,
               116,
-              34,
+              50,
               66,
               47,
               118,
@@ -5275,6 +5373,83 @@ export const DatabaseServiceDefinition = {
               101,
               116,
               46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              115,
+              101,
+              99,
+              114,
+              101,
+              116,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    deleteSecret: {
+      name: "DeleteSecret",
+      requestType: DeleteSecretRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              61,
+              42,
+              59,
+              47,
+              118,
+              49,
+              47,
+              123,
               110,
               97,
               109,
@@ -5377,7 +5552,8 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: ListSecretsRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListSecretsResponse>>;
-  setSecret(request: SetSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Secret>>;
+  updateSecret(request: UpdateSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Secret>>;
+  deleteSecret(request: DeleteSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -5423,7 +5599,8 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListSecretsRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListSecretsResponse>;
-  setSecret(request: DeepPartial<SetSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Secret>;
+  updateSecret(request: DeepPartial<UpdateSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Secret>;
+  deleteSecret(request: DeepPartial<DeleteSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 
 declare var self: any | undefined;

@@ -10,6 +10,7 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "v1/common.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "generated-go/v1";
 
@@ -76,14 +77,22 @@ service DatabaseService {
   }
 
   rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/secrets"};
+    option (google.api.http) = {
+      get: "/v1/{parent=environments/*/instances/*/databases/*}/secrets"
+    };
     option (google.api.method_signature) = "parent";
   }
 
-  rpc SetSecret (SetSecretRequest) returns (Secret) {
+  rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
     option (google.api.http) = {
-      post: "/v1/{secret.name=environments/*/instances/*/databases/*/secrets/*}";
+      patch: "/v1/{secret.name=environments/*/instances/*/databases/*/secrets/*}";
       body: "secret";
+    };
+  }
+
+  rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=environments/*/instances/*/databases/*/secrets/*}"
     };
   }
 }
@@ -663,9 +672,22 @@ message ListSecretsResponse {
   string next_page_token = 2;
 }
 
-message SetSecretRequest {
-  // The secret to be set.
+message UpdateSecretRequest {
+  // The secret to be created or updated.
   Secret secret = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The mask of the fields to be updated.
+  google.protobuf.FieldMask update_mask = 2;
+
+  // If true, the secret will be created if it does not exist.
+  bool allow_missing = 3;
+}
+
+message DeleteSecretRequest {
+  // The name of the secret to be deleted.
+  // Format:
+  // environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // Secret is the secret of the database now.
@@ -675,10 +697,10 @@ message Secret {
   // environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // The timestamp when the secret resource was created initally.
+  // Not used. The timestamp when the secret resource was created initally.
   google.protobuf.Timestamp created_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The timestamp when the secret resource was updated.
+  // Not used. The timestamp when the secret resource was updated.
   google.protobuf.Timestamp updated_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The value of the secret.
