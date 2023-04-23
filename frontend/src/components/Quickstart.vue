@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="showQuickstart"
     class="py-2 px-4 w-full flex-shrink-0 border-t border-block-border hidden lg:block"
   >
     <p
@@ -74,9 +75,16 @@
 <script setup lang="ts">
 import { computed, unref, Ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { storeToRefs } from "pinia";
+
 import { hasWorkspacePermission } from "../utils";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import { pushNotification, useCurrentUser, useUIStateStore } from "@/store";
+import {
+  pushNotification,
+  useActuatorStore,
+  useCurrentUser,
+  useUIStateStore,
+} from "@/store";
 
 type IntroItem = {
   name: string | Ref<string>;
@@ -85,11 +93,18 @@ type IntroItem = {
   click?: () => void;
 };
 
+const actuatorStore = useActuatorStore();
 const uiStateStore = useUIStateStore();
 const { t } = useI18n();
 const kbarHandler = useKBarHandler();
 
 const currentUser = useCurrentUser();
+const { isDemo } = storeToRefs(actuatorStore);
+
+const showQuickstart = computed(() => {
+  // Do not show quickstart in demo mode since we don't expect user to alter the data
+  return !isDemo.value && !uiStateStore.getIntroStateByKey("hidden");
+});
 
 const introList = computed(() => {
   const introList: IntroItem[] = [

@@ -43,10 +43,10 @@
               horizontal
               class="default-theme"
             >
-              <Pane :size="isDisconnected ? 100 : 60">
+              <Pane>
                 <EditorPanel />
               </Pane>
-              <Pane :size="isDisconnected ? 0 : 40">
+              <Pane v-if="!isDisconnected" :size="40">
                 <ResultPanel />
               </Pane>
             </Splitpanes>
@@ -95,6 +95,8 @@
         </div>
       </Pane>
     </Splitpanes>
+
+    <Quickstart />
 
     <SchemaEditorModal
       v-if="alterSchemaState.showModal"
