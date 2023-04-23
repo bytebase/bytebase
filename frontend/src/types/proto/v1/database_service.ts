@@ -605,6 +605,62 @@ export interface SlowQueryDetails {
   sqlText: string;
 }
 
+export interface ListSecretsRequest {
+  /**
+   * The parent of the secret.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   */
+  parent: string;
+  /**
+   * Not used. The maximum number of databases to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 databases will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * Not used. A page token, received from a previous `ListSecrets` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListSecrets` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListSecretsResponse {
+  /** The list of secrets. */
+  secrets: Secret[];
+  /**
+   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
+export interface SetSecretRequest {
+  /** The secret to be set. */
+  secret?: Secret;
+}
+
+/** Secret is the secret of the database now. */
+export interface Secret {
+  /**
+   * name is the unique name of the secret, which is specified by the client.
+   * Format:
+   * environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+   */
+  name: string;
+  /** The timestamp when the secret resource was created initally. */
+  createdTime?: Date;
+  /** The timestamp when the secret resource was updated. */
+  updatedTime?: Date;
+  /** The value of the secret. */
+  value: string;
+  /** The decsription of the secret. */
+  description: string;
+}
+
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
   return { name: "" };
 }
@@ -3873,6 +3929,333 @@ export const SlowQueryDetails = {
   },
 };
 
+function createBaseListSecretsRequest(): ListSecretsRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListSecretsRequest = {
+  encode(message: ListSecretsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSecretsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListSecretsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag != 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListSecretsRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListSecretsRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListSecretsRequest>): ListSecretsRequest {
+    return ListSecretsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListSecretsRequest>): ListSecretsRequest {
+    const message = createBaseListSecretsRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListSecretsResponse(): ListSecretsResponse {
+  return { secrets: [], nextPageToken: "" };
+}
+
+export const ListSecretsResponse = {
+  encode(message: ListSecretsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.secrets) {
+      Secret.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSecretsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListSecretsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.secrets.push(Secret.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListSecretsResponse {
+    return {
+      secrets: Array.isArray(object?.secrets) ? object.secrets.map((e: any) => Secret.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListSecretsResponse): unknown {
+    const obj: any = {};
+    if (message.secrets) {
+      obj.secrets = message.secrets.map((e) => e ? Secret.toJSON(e) : undefined);
+    } else {
+      obj.secrets = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListSecretsResponse>): ListSecretsResponse {
+    return ListSecretsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListSecretsResponse>): ListSecretsResponse {
+    const message = createBaseListSecretsResponse();
+    message.secrets = object.secrets?.map((e) => Secret.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseSetSecretRequest(): SetSecretRequest {
+  return { secret: undefined };
+}
+
+export const SetSecretRequest = {
+  encode(message: SetSecretRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.secret !== undefined) {
+      Secret.encode(message.secret, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SetSecretRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetSecretRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.secret = Secret.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetSecretRequest {
+    return { secret: isSet(object.secret) ? Secret.fromJSON(object.secret) : undefined };
+  },
+
+  toJSON(message: SetSecretRequest): unknown {
+    const obj: any = {};
+    message.secret !== undefined && (obj.secret = message.secret ? Secret.toJSON(message.secret) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SetSecretRequest>): SetSecretRequest {
+    return SetSecretRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SetSecretRequest>): SetSecretRequest {
+    const message = createBaseSetSecretRequest();
+    message.secret = (object.secret !== undefined && object.secret !== null)
+      ? Secret.fromPartial(object.secret)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSecret(): Secret {
+  return { name: "", createdTime: undefined, updatedTime: undefined, value: "", description: "" };
+}
+
+export const Secret = {
+  encode(message: Secret, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.createdTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdTime), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.updatedTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedTime), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.value !== "") {
+      writer.uint32(34).string(message.value);
+    }
+    if (message.description !== "") {
+      writer.uint32(42).string(message.description);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Secret {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSecret();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.createdTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.updatedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        case 5:
+          if (tag != 42) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Secret {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      createdTime: isSet(object.createdTime) ? fromJsonTimestamp(object.createdTime) : undefined,
+      updatedTime: isSet(object.updatedTime) ? fromJsonTimestamp(object.updatedTime) : undefined,
+      value: isSet(object.value) ? String(object.value) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+    };
+  },
+
+  toJSON(message: Secret): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.createdTime !== undefined && (obj.createdTime = message.createdTime.toISOString());
+    message.updatedTime !== undefined && (obj.updatedTime = message.updatedTime.toISOString());
+    message.value !== undefined && (obj.value = message.value);
+    message.description !== undefined && (obj.description = message.description);
+    return obj;
+  },
+
+  create(base?: DeepPartial<Secret>): Secret {
+    return Secret.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Secret>): Secret {
+    const message = createBaseSecret();
+    message.name = object.name ?? "";
+    message.createdTime = object.createdTime ?? undefined;
+    message.updatedTime = object.updatedTime ?? undefined;
+    message.value = object.value ?? "";
+    message.description = object.description ?? "";
+    return message;
+  },
+};
+
 export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
 export const DatabaseServiceDefinition = {
   name: "DatabaseService",
@@ -4781,6 +5164,176 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    listSecrets: {
+      name: "ListSecrets",
+      requestType: ListSecretsRequest,
+      requestStream: false,
+      responseType: ListSecretsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              61,
+              18,
+              59,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              115,
+              101,
+              99,
+              114,
+              101,
+              116,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    setSecret: {
+      name: "SetSecret",
+      requestType: SetSecretRequest,
+      requestStream: false,
+      responseType: Secret,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              76,
+              58,
+              6,
+              115,
+              101,
+              99,
+              114,
+              101,
+              116,
+              34,
+              66,
+              47,
+              118,
+              49,
+              47,
+              123,
+              115,
+              101,
+              99,
+              114,
+              101,
+              116,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              115,
+              101,
+              99,
+              114,
+              101,
+              116,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -4820,6 +5373,11 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: ListSlowQueriesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListSlowQueriesResponse>>;
+  listSecrets(
+    request: ListSecretsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListSecretsResponse>>;
+  setSecret(request: SetSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Secret>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -4861,6 +5419,11 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListSlowQueriesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListSlowQueriesResponse>;
+  listSecrets(
+    request: DeepPartial<ListSecretsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListSecretsResponse>;
+  setSecret(request: DeepPartial<SetSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Secret>;
 }
 
 declare var self: any | undefined;
