@@ -1878,7 +1878,8 @@
         "title": "共享 SQL 脚本",
         "desc": "将 SQL 脚本分享给项目成员，或者公开给所有人。"
       }
-    }
+    },
+    "feature-require-subscription": "{feature} 需要 {requiredPlan}。"
   },
   "sheet": {
     "self": "工作表",

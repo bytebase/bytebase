@@ -126,6 +126,21 @@ export const useSubscriptionStore = defineStore("subscription", {
       );
       return t("subscription.require-subscription", { requiredPlan: plan });
     },
+    getFeatureRequiredPlanString(type: FeatureType): string {
+      const { t } = useI18n();
+      const minRequiredPlan = this.getMinimumRequiredPlan(type);
+
+      const requiredPlan = t(
+        `subscription.plan.${planTypeToString(minRequiredPlan)}.title`
+      );
+      const feature = t(
+        `subscription.features.${type.replace(/\./g, "-")}.title`
+      );
+      return t("subscription.feature-require-subscription", {
+        feature,
+        requiredPlan,
+      });
+    },
     setSubscription(subscription: Subscription) {
       this.subscription = subscription;
     },
