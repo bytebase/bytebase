@@ -636,7 +636,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| secrets | [SecretEntry](#bytebase-store-SecretEntry) | repeated | The secrets is the list of secrets. |
+| secret_entries | [SecretEntry](#bytebase-store-SecretEntry) | repeated | The list of secrets. |
 
 
 

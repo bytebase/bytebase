@@ -183,8 +183,8 @@ export interface InstanceRoleMetadata {
 }
 
 export interface Secrets {
-  /** The secrets is the list of secrets. */
-  secrets: SecretEntry[];
+  /** The list of secrets. */
+  secretEntries: SecretEntry[];
 }
 
 export interface SecretEntry {
@@ -1546,12 +1546,12 @@ export const InstanceRoleMetadata = {
 };
 
 function createBaseSecrets(): Secrets {
-  return { secrets: [] };
+  return { secretEntries: [] };
 }
 
 export const Secrets = {
   encode(message: Secrets, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.secrets) {
+    for (const v of message.secretEntries) {
       SecretEntry.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
@@ -1569,7 +1569,7 @@ export const Secrets = {
             break;
           }
 
-          message.secrets.push(SecretEntry.decode(reader, reader.uint32()));
+          message.secretEntries.push(SecretEntry.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -1581,15 +1581,19 @@ export const Secrets = {
   },
 
   fromJSON(object: any): Secrets {
-    return { secrets: Array.isArray(object?.secrets) ? object.secrets.map((e: any) => SecretEntry.fromJSON(e)) : [] };
+    return {
+      secretEntries: Array.isArray(object?.secretEntries)
+        ? object.secretEntries.map((e: any) => SecretEntry.fromJSON(e))
+        : [],
+    };
   },
 
   toJSON(message: Secrets): unknown {
     const obj: any = {};
-    if (message.secrets) {
-      obj.secrets = message.secrets.map((e) => e ? SecretEntry.toJSON(e) : undefined);
+    if (message.secretEntries) {
+      obj.secretEntries = message.secretEntries.map((e) => e ? SecretEntry.toJSON(e) : undefined);
     } else {
-      obj.secrets = [];
+      obj.secretEntries = [];
     }
     return obj;
   },
@@ -1600,7 +1604,7 @@ export const Secrets = {
 
   fromPartial(object: DeepPartial<Secrets>): Secrets {
     const message = createBaseSecrets();
-    message.secrets = object.secrets?.map((e) => SecretEntry.fromPartial(e)) || [];
+    message.secretEntries = object.secretEntries?.map((e) => SecretEntry.fromPartial(e)) || [];
     return message;
   },
 };

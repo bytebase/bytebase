@@ -224,8 +224,8 @@ message InstanceRoleMetadata {
 }
 
 message Secrets {
-  // The secrets is the list of secrets.
-  repeated SecretEntry secrets = 1;
+  // The list of secrets.
+  repeated SecretEntry secret_entries = 1;
 }
 
 message SecretEntry {
