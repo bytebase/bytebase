@@ -132,6 +132,7 @@
           name="instance-user"
           :instance-id="state.instanceId"
           :selected-id="state.instanceUserId"
+          :filter="filterInstanceUser"
           @select="selectInstanceUser"
         />
       </div>
@@ -243,6 +244,8 @@ import {
 } from "vue";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
+import { useEventListener } from "@vueuse/core";
+
 import {
   DatabaseLabelForm,
   DatabaseNameTemplateTips,
@@ -273,12 +276,15 @@ import {
   PITRContext,
 } from "../types";
 import {
+  type InstanceUser,
+  INTERNAL_RDS_INSTANCE_USER_LIST,
+} from "@/types/InstanceUser";
+import {
   hasWorkspacePermission,
   instanceHasCollationAndCharacterSet,
   instanceHasCreateDatabase,
   issueSlug,
 } from "../utils";
-import { useEventListener } from "@vueuse/core";
 import {
   hasFeature,
   useCurrentUser,
@@ -491,6 +497,13 @@ export default defineComponent({
       state.assigneeId = assigneeId;
     };
 
+    const filterInstanceUser = (user: InstanceUser) => {
+      if (INTERNAL_RDS_INSTANCE_USER_LIST.includes(user.name)) {
+        return false;
+      }
+      return true;
+    };
+
     const cancel = () => {
       emit("dismiss");
     };
@@ -627,6 +640,7 @@ export default defineComponent({
       selectInstance,
       selectInstanceUser,
       selectAssignee,
+      filterInstanceUser,
       cancel,
       create,
     };
