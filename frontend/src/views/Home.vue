@@ -26,7 +26,7 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :title="$t('issue.waiting-for-my-approval')"
+          :title="$t('issue.waiting-approval')"
           :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
@@ -47,7 +47,7 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :title="$t('common.assigned')"
+          :title="$t('issue.waiting-rollout')"
           :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
