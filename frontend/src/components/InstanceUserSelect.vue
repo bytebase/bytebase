@@ -1,7 +1,7 @@
 <template>
   <BBSelect
     :selected-item="selectedInstanceUser"
-    :item-list="instanceUserList"
+    :item-list="filteredInstanceUserList"
     :placeholder="$t('instance.select-database-user')"
     :show-prefix-item="true"
     @select-item="handleSelectItem"
@@ -13,22 +13,27 @@
 </template>
 
 <script lang="ts">
+import { PropType, computed, defineComponent, ref, watch } from "vue";
+
 import { useInstanceStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { InstanceUser } from "@/types/InstanceUser";
-import { defineComponent, ref, watch } from "vue";
 
 export default defineComponent({
   name: "InstanceUserSelect",
   components: {},
   props: {
     selectedId: {
-      type: Number,
-      default: UNKNOWN_ID,
+      type: String,
+      default: undefined,
     },
     instanceId: {
       type: Number,
       default: UNKNOWN_ID,
+    },
+    filter: {
+      type: Function as PropType<(user: InstanceUser) => boolean>,
+      default: undefined,
     },
   },
   emits: ["select"],
@@ -56,13 +61,18 @@ export default defineComponent({
       }
     );
 
+    const filteredInstanceUserList = computed(() => {
+      if (!props.filter) return instanceUserList.value;
+      return instanceUserList.value.filter(props.filter);
+    });
+
     const handleSelectItem = (instanceUser: InstanceUser) => {
       emit("select", instanceUser.id);
     };
 
     return {
       selectedInstanceUser,
-      instanceUserList,
+      filteredInstanceUserList,
       handleSelectItem,
     };
   },
