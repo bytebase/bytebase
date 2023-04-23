@@ -235,7 +235,6 @@ const TaskCheckTypeOrderList: TaskCheckType[] = [
   "bb.task-check.database.statement.syntax",
   "bb.task-check.database.statement.type",
   "bb.task-check.database.connect",
-  "bb.task-check.instance.migration-schema",
   "bb.task-check.database.statement.advise",
   "bb.task-check.issue.lgtm",
   "bb.task-check.database.statement.affected-rows.report",
@@ -261,10 +260,6 @@ const TaskCheckTypeNameDict = new Map<TaskCheckType, string>([
   ["bb.task-check.database.statement.advise", "task.check-type.sql-review"],
   ["bb.task-check.database.statement.type", "task.check-type.statement-type"],
   ["bb.task-check.database.connect", "task.check-type.connection"],
-  [
-    "bb.task-check.instance.migration-schema",
-    "task.check-type.migration-schema",
-  ],
   ["bb.task-check.database.ghost.sync", "task.check-type.ghost-sync"],
   ["bb.task-check.issue.lgtm", "task.check-type.lgtm"],
   ["bb.task-check.pitr.mysql", "task.check-type.pitr"],
