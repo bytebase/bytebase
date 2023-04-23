@@ -274,7 +274,6 @@
       "syntax": "Sintaxis",
       "compatibility": "Compatibilidad",
       "connection": "Conexión",
-      "migration-schema": "Esquema de migración",
       "sql-review": "Revisión de SQL",
       "earliest-allowed-time": "Hora permitida más temprana",
       "ghost-sync": "Sincronización gh-ost",
