@@ -30,12 +30,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           file: scripts/Dockerfile
-          platforms: linux/amd64,linux/x86_64
+          platforms: linux/x86_64
           push: true
-          provenance: false
           tags: bytebase/bytebase:release-ci
           build-args: |
             RELEASE=release
