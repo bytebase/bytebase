@@ -84,9 +84,13 @@
     - [ListBackupResponse](#bytebase-v1-ListBackupResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
     - [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse)
+    - [ListSecretsRequest](#bytebase-v1-ListSecretsRequest)
+    - [ListSecretsResponse](#bytebase-v1-ListSecretsResponse)
     - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
+    - [Secret](#bytebase-v1-Secret)
+    - [SetSecretRequest](#bytebase-v1-SetSecretRequest)
     - [SlowQueryDetails](#bytebase-v1-SlowQueryDetails)
     - [SlowQueryLog](#bytebase-v1-SlowQueryLog)
     - [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics)
@@ -1506,6 +1510,41 @@ When paginating, all other parameters provided to `ListDatabases` must match the
 
 
 
+<a name="bytebase-v1-ListSecretsRequest"></a>
+
+### ListSecretsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent of the secret. Format: environments/{environment}/instances/{instance}/databases/{database} |
+| page_size | [int32](#int32) |  | Not used. The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListSecrets` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListSecrets` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSecretsResponse"></a>
+
+### ListSecretsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| secrets | [Secret](#bytebase-v1-Secret) | repeated | The list of secrets. |
+| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
 <a name="bytebase-v1-ListSlowQueriesRequest"></a>
 
 ### ListSlowQueriesRequest
@@ -1551,6 +1590,40 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | tables | [TableMetadata](#bytebase-v1-TableMetadata) | repeated | The tables is the list of tables in a schema. |
 | views | [ViewMetadata](#bytebase-v1-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-v1-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
+
+
+
+
+
+
+<a name="bytebase-v1-Secret"></a>
+
+### Secret
+Secret is the secret of the database now.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | name is the unique name of the secret, which is specified by the client. Format: environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret} |
+| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the secret resource was created initally. |
+| updated_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the secret resource was updated. |
+| value | [string](#string) |  | The value of the secret. |
+| description | [string](#string) |  | The decsription of the secret. |
+
+
+
+
+
+
+<a name="bytebase-v1-SetSecretRequest"></a>
+
+### SetSecretRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| secret | [Secret](#bytebase-v1-Secret) |  | The secret to be set. |
 
 
 
@@ -1749,6 +1822,8 @@ The type of the backup.
 | CreateBackup | [CreateBackupRequest](#bytebase-v1-CreateBackupRequest) | [Backup](#bytebase-v1-Backup) |  |
 | ListBackup | [ListBackupRequest](#bytebase-v1-ListBackupRequest) | [ListBackupResponse](#bytebase-v1-ListBackupResponse) |  |
 | ListSlowQueries | [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest) | [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse) |  |
+| ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) |  |
+| SetSecret | [SetSecretRequest](#bytebase-v1-SetSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
 
  
 
