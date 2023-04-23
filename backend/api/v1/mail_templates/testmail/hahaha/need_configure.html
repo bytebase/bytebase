@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<meta content="text/html; charset=UTF-8" />
+<html lang="en">
+    <head>
+        <style type="text/css">
+            .mail-heading {
+                font-size: 32px;
+                line-height: 1.3;
+                font-weight: 700;
+                text-align: center;
+                letter-spacing:-1px;
+            }
+            .mail-text {
+                font-size: 16px;
+                line-height: 20px;
+                margin-top: 16px;
+                margin-left:0;
+                margin-right:0;
+                word-wrap: normal;
+            }
+        </style>
+    </head>
+    <body style="background-color: #ffffff;font-family:-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Roboto,Oxygen-Sans,Ubuntu,Cantarell,&quot;Helvetica Neue&quot;,sans-serif">
+        <h1 data-id="mail-heading" class="mail-heading">Configure your database slow query report</h1>
+        <p data-id="mail-first-graph" class="mail-text">
+            You have successfully configured the mail server in Bytebase.
+            <br>
+        </p>
+        <p class="mail-text">
+            Next, you can visit
+            <a href="{{VISIT_URL}}"><span class="mail-text">{{VISIT_URL}}</span></a> 
+            to enable slow query log collection.
+            <br>
+        </p>
+        <p class="mail-text">
+            Once configured, Bytebase will send you slow query report every week, and the email will list the slow queries collected on the enabled instances.
+            <br>
+        </p>
+        <p class="mail-text">
+            Please read our doc <a href="{{DOC_LINK}}"><span class="mail-text">{{DOC_LINK}}</span></a> for detailed instructions.
+            <br>
+        </p>
+    </body>
+</html>
