@@ -15,7 +15,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            platforms: linux/amd64,linux/x86_64
+            platforms: linux/amd64,linux/x86_64,linux/arm64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
