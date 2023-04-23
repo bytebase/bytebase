@@ -66,6 +66,7 @@ export default defineComponent({
           (detail) => (detail.statement = newStatement)
         );
       } else {
+        // Call patchAllTasksInIssue for tenant mode
         const issueEntity = issue.value as Issue;
         taskStore
           .patchAllTasksInIssue({

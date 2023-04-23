@@ -97,6 +97,8 @@
 import { computed, onMounted, PropType, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
+import { useDialog } from "naive-ui";
+
 import {
   pipelineType,
   PipelineType,
@@ -162,6 +164,8 @@ const projectStore = useProjectStore();
 
 const create = computed(() => props.create);
 const issue = computed(() => props.issue);
+
+const dialog = useDialog();
 
 const {
   project,
@@ -387,6 +391,7 @@ provideIssueLogic(
     selectedStatement,
     allowApplyTaskStateToOthers,
     applyTaskStateToOthers,
+    dialog,
   },
   true
   // This is the root logic, could be overwritten by other (standard, gh-ost, tenant...) logic providers.
