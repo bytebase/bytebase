@@ -1,4 +1,5 @@
-import { Ref } from "vue";
+import type { Ref } from "vue";
+import { type useDialog } from "naive-ui";
 import { IssueTemplate } from "@/plugins";
 import {
   Database,
@@ -78,6 +79,9 @@ type IssueLogic = {
   // status transition
   allowApplyIssueStatusTransition(issue: Issue, to: IssueStatus): boolean;
   allowApplyTaskStatusTransition(task: Task, to: TaskStatus): boolean;
+
+  // misc
+  dialog: ReturnType<typeof useDialog>;
 };
 
 export default IssueLogic;

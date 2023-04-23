@@ -34,12 +34,18 @@ import {
   dialectOfEngine,
   languageOfEngine,
 } from "@/types";
-import { useIssueLogic } from "./index";
-import { isDev, isTaskTriggeredByVCS, taskCheckRunSummary } from "@/utils";
+import { IssueLogic, useIssueLogic } from "./index";
+import {
+  defer,
+  isDev,
+  isTaskTriggeredByVCS,
+  taskCheckRunSummary,
+} from "@/utils";
 import { maybeApplyRollbackParams } from "@/plugins/issue/logic/initialize/standard";
+import { t } from "@/plugins/i18n";
 
 export const useCommonLogic = () => {
-  const { create, issue, selectedTask, createIssue, onStatusChanged } =
+  const { create, issue, selectedTask, createIssue, onStatusChanged, dialog } =
     useIssueLogic();
   const route = useRoute();
   const currentUser = useCurrentUser();
@@ -171,21 +177,33 @@ export const useCommonLogic = () => {
       const task = selectedTask.value as TaskCreate;
       task.statement = newStatement;
     } else {
-      // otherwise, patch the task
+      // Ask whether to apply the change to all pending tasks if possible.
       const task = selectedTask.value as Task;
-      patchTask(
-        task.id,
-        {
-          statement: maybeFormatStatementOnSave(newStatement, task.database),
-          updatedTs: task.updatedTs,
-        },
-        postUpdated
+      getPatchingTaskList(issue.value as Issue, task, dialog).then(
+        (patchingTaskList) => {
+          if (patchingTaskList.length === 0) return;
+          const patchRequestList = patchingTaskList.map((task) => {
+            patchTask(
+              task.id,
+              {
+                statement: maybeFormatStatementOnSave(
+                  newStatement,
+                  task.database
+                ),
+                updatedTs: task.updatedTs,
+              },
+              postUpdated
+            );
+          });
+          return Promise.allSettled(patchRequestList);
+        }
       );
     }
   };
 
   const updateSheetId = (sheetId: SheetId | undefined) => {
     if (!create.value) {
+      console.log("sheet id");
       return;
     }
 
@@ -368,4 +386,39 @@ export const isTaskEditable = (task: Task): boolean => {
   }
 
   return false;
+};
+
+export const getPatchingTaskList = async (
+  issue: Issue,
+  task: Task,
+  dialog: IssueLogic["dialog"]
+) => {
+  const patchableTaskList = flattenTaskList<Task>(issue).filter(
+    (task) => TaskTypeWithStatement.includes(task.type) && isTaskEditable(task)
+  );
+  const d = defer<Task[]>();
+  if (patchableTaskList.length > 1) {
+    dialog.info({
+      title: t("task.apply-change-to-all-pending-tasks.title"),
+      style: "width: auto",
+      negativeText: t("task.apply-change-to-all-pending-tasks.current-only"),
+      positiveText: t("task.apply-change-to-all-pending-tasks.self"),
+      onPositiveClick: () => {
+        d.resolve(patchableTaskList);
+      },
+      onNegativeClick: () => {
+        d.resolve([task]);
+      },
+      autoFocus: false,
+      maskClosable: false,
+      closeOnEsc: false,
+      onClose: () => {
+        d.resolve([]);
+      },
+    });
+  } else {
+    d.resolve([task]);
+  }
+
+  return d.promise;
 };

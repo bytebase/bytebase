@@ -272,7 +272,6 @@
       "syntax": "语法",
       "compatibility": "兼容性",
       "connection": "连接",
-      "migration-schema": "变更 schema",
       "sql-review": "SQL 审核",
       "earliest-allowed-time": "最早执行时间",
       "ghost-sync": "gh-ost 同步",
@@ -325,9 +324,14 @@
       "generating": "生成中",
       "empty-rollback-statement": "回滚语句为空",
       "cancel-generating": "取消生成回滚语句",
-      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。{link}"
+      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。\n警告：如果你的数据表没有主键，回滚语句可能\n会影响重复的行。执行前请注意确认。\n{link}"
     },
-    "skip-failed-in-current-stage": "跳过当前阶段失败的任务"
+    "skip-failed-in-current-stage": "跳过当前阶段失败的任务",
+    "apply-change-to-all-pending-tasks": {
+      "title": "应用到所有未执行任务？",
+      "self": "应用到所有未执行任务",
+      "current-only": "只应用到当前任务"
+    }
   },
   "banner": {
     "update-license": "更新证书",
@@ -626,6 +630,7 @@
   },
   "issue": {
     "waiting-approval": "等待批准",
+    "waiting-rollout": "等待发布",
     "opened-by-at": "{id} 由 {creator} 开启于 {time}",
     "commit-by-at": "{id} {title} 由 {author} 提交于 {time}",
     "status-transition": {
@@ -735,8 +740,7 @@
     },
     "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
-    "issue-name": "工单名称",
-    "waiting-for-my-approval": "等待我审批"
+    "issue-name": "工单名称"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1168,7 +1172,8 @@
     "doesnt-match-database-name-template": "不符合租户数据库名称模板",
     "doesnt-match-tenant-value": "与租户标签值不匹配",
     "should-follow-database-name-template": "需要遵循租户数据库名称模板",
-    "all": "所有数据库"
+    "all": "所有数据库",
+    "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1367,7 +1372,9 @@
         "view-by-roles": "按角色查看",
         "cannot-remove-last-owner": "不能移除项目的最后一个所有者",
         "revoke-role-from-user": "撤销 '{user}' 的 '{role}' 角色",
-        "remove-user": "移除 '{user}'"
+        "remove-user": "移除 '{user}'",
+        "inactive-members": "未激活的成员",
+        "show-inactive": "查看未激活的成员"
       }
     },
     "mode": {
@@ -1876,7 +1883,8 @@
         "title": "共享 SQL 脚本",
         "desc": "将 SQL 脚本分享给项目成员，或者公开给所有人。"
       }
-    }
+    },
+    "feature-require-subscription": "{feature} 需要 {requiredPlan}。"
   },
   "sheet": {
     "self": "工作表",
@@ -2304,24 +2312,32 @@
   "slow-query": {
     "self": "慢查询",
     "slow-queries": "慢查询",
+    "report-slow-query": "报告慢查询",
+    "report": "报告",
     "last-query-time": "最近执行时间",
     "database-name": "数据库名",
     "sql-statement": "SQL 语句",
     "total-query-count": "总执行次数",
-    "query-time-95-percent": "执行时长（95%）",
-    "query-time-avg": "平均执行时长",
-    "rows-examined-95-percent": "扫描行数（95%）",
-    "rows-sent-95-percent": "返回行数（95%）",
-    "rows-examined-avg": "平均扫描行数",
-    "rows-sent-avg": "平均返回行数",
+    "query-count-percent": "执行次数比例",
+    "max-query-time": "最大执行时长",
+    "avg-query-time": "平均执行时长",
+    "query-time-percent": "执行时长比例",
+    "max-rows-examined": "最大扫描行数",
+    "avg-rows-examined": "平均扫描行数",
+    "max-rows-sent": "最大返回行数",
+    "avg-rows-sent": "平均返回行数",
     "query-start-time": "执行开始时间",
     "rows-examined": "解析行数",
     "rows-sent": "返回行数",
     "lock-time": "持有锁时长",
     "query-time": "执行时长",
-    "attention-description": "为 {versions} 记录和分析慢查询。\nBytebase 会定期从实例上同步慢查询日志。",
+    "attention-description": "Bytebase 定期从实例上同步慢查询日志。\n对 MySQL 实例，需要先开启 {slow_query}。\n对 PostgreSQL 实例，需要先在各个数据库中开启 {pg_stat_statements}。",
     "sync-job-started": "同步作业已启动。请等待同步完成。",
-    "detail": "慢查询详情"
+    "detail": "慢查询详情",
+    "filter": {
+      "from-date": "开始日期",
+      "to-date": "结束日期"
+    }
   },
   "principal": {
     "select": "选择用户"

@@ -25,4 +25,5 @@ enum Engine {
   MSSQL = 11;
   REDSHIFT = 12;
   MARIADB = 13;
+  OCEANBASE = 14;
 }

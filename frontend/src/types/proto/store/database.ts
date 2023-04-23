@@ -182,6 +182,20 @@ export interface InstanceRoleMetadata {
   grant: string;
 }
 
+export interface Secrets {
+  /** The list of secrets. */
+  items: SecretItem[];
+}
+
+export interface SecretItem {
+  /** The name is the name of the secret. */
+  name: string;
+  /** The value is the value of the secret. */
+  value: string;
+  /** The description is the description of the secret. */
+  description: string;
+}
+
 function createBaseDatabaseMetadata(): DatabaseMetadata {
   return { name: "", schemas: [], characterSet: "", collation: "", extensions: [] };
 }
@@ -1527,6 +1541,150 @@ export const InstanceRoleMetadata = {
     const message = createBaseInstanceRoleMetadata();
     message.name = object.name ?? "";
     message.grant = object.grant ?? "";
+    return message;
+  },
+};
+
+function createBaseSecrets(): Secrets {
+  return { items: [] };
+}
+
+export const Secrets = {
+  encode(message: Secrets, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.items) {
+      SecretItem.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Secrets {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSecrets();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.items.push(SecretItem.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Secrets {
+    return { items: Array.isArray(object?.items) ? object.items.map((e: any) => SecretItem.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: Secrets): unknown {
+    const obj: any = {};
+    if (message.items) {
+      obj.items = message.items.map((e) => e ? SecretItem.toJSON(e) : undefined);
+    } else {
+      obj.items = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Secrets>): Secrets {
+    return Secrets.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Secrets>): Secrets {
+    const message = createBaseSecrets();
+    message.items = object.items?.map((e) => SecretItem.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSecretItem(): SecretItem {
+  return { name: "", value: "", description: "" };
+}
+
+export const SecretItem = {
+  encode(message: SecretItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SecretItem {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSecretItem();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SecretItem {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      value: isSet(object.value) ? String(object.value) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+    };
+  },
+
+  toJSON(message: SecretItem): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.value !== undefined && (obj.value = message.value);
+    message.description !== undefined && (obj.description = message.description);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SecretItem>): SecretItem {
+    return SecretItem.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SecretItem>): SecretItem {
+    const message = createBaseSecretItem();
+    message.name = object.name ?? "";
+    message.value = object.value ?? "";
+    message.description = object.description ?? "";
     return message;
   },
 };

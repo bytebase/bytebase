@@ -858,10 +858,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if instance == nil {
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance not found for database %v", d.DatabaseID))
 			}
-			if instance.Engine == db.MongoDB && d.MigrationType != db.Data && d.MigrationType != db.Baseline {
-				// We disallow user to create non-data migration for MongoDB.
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot create non-data migration for MongoDB, consider using data migration(DML) instead.")
-			}
 			matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, []*store.DatabaseMessage{database})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
@@ -1121,7 +1117,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	case db.Snowflake:
 		// Snowflake needs to use upper case of DatabaseName.
 		databaseName = strings.ToUpper(databaseName)
-	case db.MySQL, db.MariaDB:
+	case db.MySQL, db.MariaDB, db.OceanBase:
 		// For MySQL, we need to use different case of DatabaseName depends on the variable `lower_case_table_names`.
 		// https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
 		// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
@@ -1258,7 +1254,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *store.D
 func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, databaseName, adminDatasourceUser string) (string, error) {
 	var stmt string
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB:
+	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation), nil
 	case db.MSSQL:
 		return fmt.Sprintf(`CREATE DATABASE "%s";`, databaseName), nil

@@ -1,0 +1,24 @@
+name: Proto linter
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "release/*.*.*"
+    paths:
+      - "proto/**"
+
+jobs:
+  lint-protos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup buf
+        uses: bufbuild/buf-setup-action@v1
+      - name: buf lint
+        uses: bufbuild/buf-lint-action@v1
+        with:
+          input: 'proto'

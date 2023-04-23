@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -17,13 +18,20 @@ import (
 
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var version string
-	if err := driver.db.QueryRowContext(ctx, "SELECT @@VERSION").Scan(&version); err != nil {
+	var version, fullVersion string
+	if err := driver.db.QueryRowContext(ctx, "SELECT SERVERPROPERTY('productversion'), @@VERSION").Scan(&version, &fullVersion); err != nil {
 		return nil, err
+	}
+	tokens := strings.Fields(fullVersion)
+	for _, token := range tokens {
+		if len(token) == 4 && strings.HasPrefix(token, "20") {
+			version = fmt.Sprintf("%s (%s)", version, token)
+			break
+		}
 	}
 
 	var databases []*storepb.DatabaseMetadata
-	rows, err := driver.db.QueryContext(ctx, "SELECT name, collation_name FROM master.sys.databases")
+	rows, err := driver.db.QueryContext(ctx, "SELECT name, collation_name FROM master.sys.databases WHERE name NOT IN ('master', 'model', 'msdb', 'tempdb', 'rdscore')")
 	if err != nil {
 		return nil, err
 	}

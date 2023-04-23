@@ -126,7 +126,7 @@ func (s *Store) composeTask(ctx context.Context, task *TaskMessage) (*api.Task, 
 	}
 	composedTask.Updater = updater
 
-	taskRunRawList, err := s.listTaskRun(ctx, &TaskRunFind{
+	taskRunRawList, err := s.ListTaskRun(ctx, &TaskRunFind{
 		TaskID: &composedTask.ID,
 	})
 	if err != nil {

@@ -175,19 +175,25 @@ export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
 export const useSlowQueryPolicyList = () => {
   const store = useSlowQueryPolicyStore();
   const currentUser = useCurrentUser();
+  const ready = ref(false);
   watchEffect(() => {
     if (currentUser.value.id === UNKNOWN_ID) return;
 
-    store.fetchPolicyListByResourceTypeAndPolicyType(
-      "instance",
-      "bb.policy.slow-query"
-    );
+    ready.value = false;
+    store
+      .fetchPolicyListByResourceTypeAndPolicyType(
+        "instance",
+        "bb.policy.slow-query"
+      )
+      .finally(() => {
+        ready.value = true;
+      });
   });
-
-  return computed(() => {
+  const list = computed(() => {
     return store.getPolicyListByResourceTypeAndPolicyType(
       "instance",
       "bb.policy.slow-query"
     );
   });
+  return { list, ready };
 };

@@ -593,26 +593,39 @@ func (*Scheduler) CanPrincipalChangeTaskStatus(principalID int, issue *store.Iss
 	return principalID == issue.Assignee.ID
 }
 
-// ClearRunningTasks changes all RUNNING tasks to CANCELED.
+// ClearRunningTasks changes all RUNNING tasks and taskRuns to CANCELED.
 // When there are running tasks and Bytebase server is shutdown, these task executors are stopped, but the tasks' status are still RUNNING.
 // When Bytebase is restarted, the task scheduler will re-schedule those RUNNING tasks, which should be CANCELED instead.
 // So we change their status to CANCELED before starting the scheduler.
+// And corresponding taskRuns are also changed to CANCELED.
 func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 	taskFind := &api.TaskFind{StatusList: &[]api.TaskStatus{api.TaskRunning}}
 	runningTasks, err := s.store.ListTasks(ctx, taskFind)
 	if err != nil {
 		return errors.Wrap(err, "failed to get running tasks")
 	}
-	if len(runningTasks) == 0 {
-		return nil
+	if len(runningTasks) > 0 {
+		var taskIDs []int
+		for _, task := range runningTasks {
+			taskIDs = append(taskIDs, task.ID)
+		}
+		if err := s.store.BatchPatchTaskStatus(ctx, taskIDs, api.TaskCanceled, api.SystemBotID); err != nil {
+			return errors.Wrapf(err, "failed to change task %v's status to %s", taskIDs, api.TaskCanceled)
+		}
 	}
 
-	var taskIDs []int
-	for _, task := range runningTasks {
-		taskIDs = append(taskIDs, task.ID)
+	runningTaskRuns, err := s.store.ListTaskRun(ctx, &store.TaskRunFind{StatusList: &[]api.TaskRunStatus{api.TaskRunRunning}})
+	if err != nil {
+		return errors.Wrap(err, "failed to get running task runs")
 	}
-	if err := s.store.BatchPatchTaskStatus(ctx, taskIDs, api.TaskCanceled, api.SystemBotID); err != nil {
-		return errors.Wrapf(err, "failed to change task %v's status to %s", taskIDs, api.TaskCanceled)
+	if len(runningTaskRuns) > 0 {
+		var taskRunIDs []int
+		for _, taskRun := range runningTaskRuns {
+			taskRunIDs = append(taskRunIDs, taskRun.ID)
+		}
+		if err := s.store.BatchPatchTaskRunStatus(ctx, taskRunIDs, api.TaskRunCanceled, api.SystemBotID); err != nil {
+			return errors.Wrapf(err, "failed to change task run %v's status to %s", taskRunIDs, api.TaskRunCanceled)
+		}
 	}
 
 	for _, task := range runningTasks {

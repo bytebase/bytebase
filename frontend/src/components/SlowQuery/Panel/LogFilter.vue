@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-2 space-y-2">
+  <div v-if="ready" class="mb-2 space-y-2">
     <div
       v-if="
         filterTypes.includes('project') || filterTypes.includes('environment')
@@ -7,15 +7,6 @@
       class="flex items-center gap-x-4"
     >
       <div class="flex-1 flex items-center gap-x-4">
-        <ProjectSelect
-          v-if="filterTypes.includes('project')"
-          :project="params.project?.id ?? UNKNOWN_ID"
-          :include-default-project="canVisitDefaultProject"
-          :include-all="true"
-          :disabled="loading"
-          @update:project="changeProjectId"
-        />
-
         <EnvironmentTabFilter
           v-if="filterTypes.includes('environment')"
           class="flex-1"
@@ -33,6 +24,14 @@
 
     <div class="flex items-center gap-x-4">
       <NInputGroup class="flex-1">
+        <ProjectSelect
+          v-if="filterTypes.includes('project')"
+          :project="params.project?.id ?? UNKNOWN_ID"
+          :include-default-project="canVisitDefaultProject"
+          :include-all="true"
+          :disabled="loading"
+          @update:project="changeProjectId"
+        />
         <InstanceSelect
           v-if="filterTypes.includes('instance')"
           :instance="params.instance?.id ?? UNKNOWN_ID"
@@ -55,13 +54,25 @@
         />
         <NDatePicker
           v-if="filterTypes.includes('time-range')"
-          :value="params.timeRange"
+          :value="params.fromTime"
           :disabled="loading"
           :is-date-disabled="isDateDisabled"
-          type="daterange"
+          :placeholder="$t('slow-query.filter.from-date')"
+          type="date"
           clearable
-          style="width: 16rem"
-          @update:value="changeTimeRange"
+          style="width: 10rem"
+          @update:value="changeFromTime($event)"
+        />
+        <NDatePicker
+          v-if="filterTypes.includes('time-range')"
+          :value="params.toTime"
+          :disabled="loading"
+          :is-date-disabled="isDateDisabled"
+          :placeholder="$t('slow-query.filter.to-date')"
+          type="date"
+          clearable
+          style="width: 10rem"
+          @update:value="changeToTime($event)"
         />
       </NInputGroup>
 
@@ -119,7 +130,7 @@ const emit = defineEmits<{
 }>();
 
 const currentUser = useCurrentUser();
-const policyList = useSlowQueryPolicyList();
+const { list: policyList, ready } = useSlowQueryPolicyList();
 
 const canVisitDefaultProject = computed(() => {
   return hasWorkspacePermission(
@@ -156,12 +167,32 @@ const changeProjectId = (id: ProjectId | undefined) => {
   }
   update({ project: undefined });
 };
-const changeTimeRange = (timeRange: [number, number] | null) => {
-  if (!timeRange) {
-    update({ timeRange: undefined });
+const changeTime = (
+  fromTime: number | undefined,
+  toTime: number | undefined
+) => {
+  if (fromTime && toTime && fromTime > toTime) {
+    // Swap if from > to
+    changeTime(toTime, fromTime);
     return;
   }
-  update({ timeRange });
+  if (fromTime) {
+    // fromTime is the start of the day
+    fromTime = dayjs(fromTime).startOf("day").valueOf();
+  }
+  if (toTime) {
+    // toTime is the end of the day
+    toTime = dayjs(toTime).endOf("day").valueOf();
+  }
+  update({ fromTime, toTime });
+};
+const changeFromTime = (fromTime: number | undefined) => {
+  const { toTime } = props.params;
+  changeTime(fromTime, toTime);
+};
+const changeToTime = (toTime: number | undefined) => {
+  const { fromTime } = props.params;
+  changeTime(fromTime, toTime);
 };
 
 const update = (params: Partial<SlowQueryFilterParams>) => {

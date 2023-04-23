@@ -275,7 +275,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceWorkspaceDeveloperProjectRouteACL(tc.plan, tc.path, tc.method, tc.queryParams, tc.principalID, roleFinder)
+			err := enforceWorkspaceDeveloperProjectRouteACL(tc.plan, tc.path, tc.method, tc.queryParams, tc.principalID, projectRolesFinderForTest)
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)

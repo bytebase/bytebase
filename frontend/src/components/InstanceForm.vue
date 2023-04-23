@@ -719,6 +719,8 @@ const getDefaultPort = (engine: EngineType) => {
     return "1433";
   } else if (engine === "REDSHIFT") {
     return "5439";
+  } else if (engine === "OCEANBASE") {
+    return "2883";
   }
   return "3306";
 };
@@ -772,6 +774,7 @@ const EngineIconPath = {
   MSSQL: new URL("../assets/db-mssql.svg", import.meta.url).href,
   REDSHIFT: new URL("../assets/db-redshift.svg", import.meta.url).href,
   MARIADB: new URL("../assets/db-mariadb.png", import.meta.url).href,
+  OCEANBASE: new URL("../assets/db-oceanbase.png", import.meta.url).href,
 };
 
 const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
@@ -785,14 +788,14 @@ const currentMongoDBConnectionSchema = computed(() => {
 const allowCreate = computed(() => {
   if (basicInformation.value.engine === "SPANNER") {
     return (
-      basicInformation.value.name &&
+      basicInformation.value.name.trim() &&
       isValidSpannerHost(adminDataSource.value.host) &&
       adminDataSource.value.updatedPassword
     );
   }
 
   return (
-    basicInformation.value.name &&
+    basicInformation.value.name.trim() &&
     resourceIdField.value?.resourceId &&
     resourceIdField.value?.isValidated &&
     adminDataSource.value.host
@@ -865,6 +868,8 @@ const defaultPort = computed(() => {
     return "5439";
   } else if (basicInformation.value.engine == "MARIADB") {
     return "3306";
+  } else if (basicInformation.value.engine == "OCEANBASE") {
+    return "2883";
   }
   return "3306";
 });
@@ -964,7 +969,7 @@ const changeInstanceEngine = (engine: EngineType) => {
 };
 
 const handleInstanceNameInput = (event: Event) => {
-  basicInformation.value.name = (event.target as HTMLInputElement).value.trim();
+  basicInformation.value.name = (event.target as HTMLInputElement).value;
 };
 
 const handleInstanceHostInput = (event: Event) => {
@@ -1230,7 +1235,7 @@ const doCreate = async () => {
 
   const instanceCreate: InstanceCreate = {
     resourceId: resourceIdField.value?.resourceId as string,
-    name: basicInformation.value.name,
+    name: basicInformation.value.name.trim(),
     engine: basicInformation.value.engine,
     externalLink: basicInformation.value.externalLink,
     environmentId: basicInformation.value.environmentId,
@@ -1286,8 +1291,8 @@ const doUpdate = async () => {
   let instanceInfoChanged = false;
   let dataSourceListChanged = false;
 
-  if (basicInformation.value.name != props.instance.name) {
-    patchedInstance.name = basicInformation.value.name;
+  if (basicInformation.value.name.trim() != props.instance.name) {
+    patchedInstance.name = basicInformation.value.name.trim();
     instanceInfoChanged = true;
   }
   if (basicInformation.value.externalLink != props.instance.externalLink) {
@@ -1407,7 +1412,7 @@ const doUpdate = async () => {
       module: "bytebase",
       style: "SUCCESS",
       title: t("instance.successfully-updated-instance-instance-name", [
-        basicInformation.value.name,
+        basicInformation.value.name.trim(),
       ]),
     });
     state.isRequesting = false;

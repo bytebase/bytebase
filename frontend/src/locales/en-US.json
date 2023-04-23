@@ -274,7 +274,6 @@
       "syntax": "Syntax",
       "compatibility": "Compatibility",
       "connection": "Connection",
-      "migration-schema": "Migration schema",
       "sql-review": "SQL review",
       "earliest-allowed-time": "Earliest allowed time",
       "ghost-sync": "gh-ost sync",
@@ -327,9 +326,14 @@
       "generating": "Generating",
       "empty-rollback-statement": "The rollback statement is empty",
       "cancel-generating": "Cancel generating the SQL rollback",
-      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change. {link}"
+      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change.\nWarning: If the table does not have a primary key. Undo SQL may affect\nduplicate rows. Please carefully confirm before executing.\n{link}"
     },
-    "skip-failed-in-current-stage": "Skip failed tasks in current stage"
+    "skip-failed-in-current-stage": "Skip failed tasks in current stage",
+    "apply-change-to-all-pending-tasks": {
+      "title": "Apply change to all pending tasks?",
+      "self": "Apply change to all pending tasks",
+      "current-only": "Only apply change to current task"
+    }
   },
   "banner": {
     "update-license": "Update license",
@@ -628,6 +632,7 @@
   },
   "issue": {
     "waiting-approval": "Waiting Approval",
+    "waiting-rollout": "Waiting Rollout",
     "opened-by-at": "opened by {creator} at {time}",
     "commit-by-at": "commit {id} {title} by {author} at {time}",
     "status-transition": {
@@ -737,8 +742,7 @@
     },
     "waiting-to-rollout": "Waiting to rollout",
     "waiting-for-review": "Waiting for review",
-    "issue-name": "Issue name",
-    "waiting-for-my-approval": "Waiting for my approval"
+    "issue-name": "Issue name"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1170,7 +1174,8 @@
     "doesnt-match-database-name-template": "Doesn't match tenant database name template",
     "doesnt-match-tenant-value": "Doesn't match label value",
     "should-follow-database-name-template": "Should follow tenant database name template",
-    "all": "All databases"
+    "all": "All databases",
+    "show-schemaless-databases": "Show schemaless databases. (Alter Schema is not applicable for schemaless databases.)"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1369,7 +1374,9 @@
         "view-by-roles": "View by roles",
         "cannot-remove-last-owner": "Cannot remove the last owner of a project",
         "revoke-role-from-user": "Revoke '{role}' from '{user}'",
-        "remove-user": "Remove '{user}'"
+        "remove-user": "Remove '{user}'",
+        "inactive-members": "Inactive members",
+        "show-inactive": "Show inactive members"
       }
     },
     "mode": {
@@ -1747,6 +1754,7 @@
     "successfully-start-trial": "Successfully start free trial for {days} days",
     "successfully-upgrade-trial": "Successfully upgrade free trial to {plan}",
     "require-subscription": "This feature requires {requiredPlan}, please purchase Bytebase license to unlock this feature.",
+    "feature-require-subscription": "{feature} requires {requiredPlan}.",
     "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}.",
     "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required",
     "trial-for-days": "You can start a free trial for {days} days - no credit card required",
@@ -2307,24 +2315,33 @@
   "slow-query": {
     "self": "Slow query",
     "slow-queries": "Slow queries",
+    "report-slow-query": "Report slow query",
+    "report": "Report",
     "last-query-time": "Last query time",
     "database-name": "Database name",
     "sql-statement": "SQL statement",
     "total-query-count": "Total query count",
-    "query-time-95-percent": "Query time (95%)",
-    "query-time-avg": "Query time avg.",
-    "rows-examined-95-percent": "Rows examined (95%)",
-    "rows-sent-95-percent": "Rows sent (95%)",
-    "rows-examined-avg": "Rows examined avg.",
+    "query-count-percent": "Query count %",
+    "max-query-time": "Max query time",
+    "avg-query-time": "Avg query time",
+    "query-time-percent": "Query time %",
+    "max-rows-examined": "Max rows examined",
+    "avg-rows-examined": "Avg rows examined",
+    "max-rows-sent": "Max rows sent",
+    "avg-rows-sent": "Avg rows sent",
     "rows-sent-avg": "Rows sent avg.",
     "query-start-time": "Query start time",
     "rows-examined": "Rows examined",
     "rows-sent": "Rows sent",
     "lock-time": "Lock time",
     "query-time": "Query time",
-    "attention-description": "Logging and analyzing slow queries for {versions}.\nBytebase will periodically sync slow query logs from instances.",
+    "attention-description": "Bytebase periodically syncs slow query logs from instances.\nFor MySQL instance, {slow_query} must be enabled first.\nFor PostgreSQL instance, {pg_stat_statements} must be enabled first in each database.",
     "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
-    "detail": "Slow Query Detail"
+    "detail": "Slow Query Detail",
+    "filter": {
+      "from-date": "From date",
+      "to-date": "To date"
+    }
   },
   "principal": {
     "select": "Select user"

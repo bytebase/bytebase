@@ -3,6 +3,7 @@ import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
+import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
@@ -581,6 +582,10 @@ export interface SlowQueryStatistics {
   averageRowsExamined: number;
   /** The maximum rows examined of the slow query log. */
   maximumRowsExamined: number;
+  /** The percentage of the query time. */
+  queryTimePercent: number;
+  /** The percentage of the count. */
+  countPercent: number;
   /** Samples are details of the sample slow query logs with the same fingerprint. */
   samples: SlowQueryDetails[];
 }
@@ -599,6 +604,75 @@ export interface SlowQueryDetails {
   rowsExamined: number;
   /** The sql text of the slow query log. */
   sqlText: string;
+}
+
+export interface ListSecretsRequest {
+  /**
+   * The parent of the secret.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   */
+  parent: string;
+  /**
+   * Not used. The maximum number of databases to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 databases will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * Not used. A page token, received from a previous `ListSecrets` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListSecrets` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListSecretsResponse {
+  /** The list of secrets. */
+  secrets: Secret[];
+  /**
+   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
+export interface UpdateSecretRequest {
+  /** The secret to be created or updated. */
+  secret?: Secret;
+  /** The mask of the fields to be updated. */
+  updateMask?: string[];
+  /** If true, the secret will be created if it does not exist. */
+  allowMissing: boolean;
+}
+
+export interface DeleteSecretRequest {
+  /**
+   * The name of the secret to be deleted.
+   * Format:
+   * environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+   */
+  name: string;
+}
+
+/** Secret is the secret of the database now. */
+export interface Secret {
+  /**
+   * name is the unique name of the secret, which is specified by the client.
+   * Format:
+   * environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+   */
+  name: string;
+  /** Not used. The timestamp when the secret resource was created initally. */
+  createdTime?: Date;
+  /** Not used. The timestamp when the secret resource was updated. */
+  updatedTime?: Date;
+  /** The value of the secret. */
+  value: string;
+  /** The decsription of the secret. */
+  description: string;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -3528,6 +3602,8 @@ function createBaseSlowQueryStatistics(): SlowQueryStatistics {
     maximumRowsSent: 0,
     averageRowsExamined: 0,
     maximumRowsExamined: 0,
+    queryTimePercent: 0,
+    countPercent: 0,
     samples: [],
   };
 }
@@ -3561,8 +3637,14 @@ export const SlowQueryStatistics = {
     if (message.maximumRowsExamined !== 0) {
       writer.uint32(72).int64(message.maximumRowsExamined);
     }
+    if (message.queryTimePercent !== 0) {
+      writer.uint32(81).double(message.queryTimePercent);
+    }
+    if (message.countPercent !== 0) {
+      writer.uint32(89).double(message.countPercent);
+    }
     for (const v of message.samples) {
-      SlowQueryDetails.encode(v!, writer.uint32(82).fork()).ldelim();
+      SlowQueryDetails.encode(v!, writer.uint32(98).fork()).ldelim();
     }
     return writer;
   },
@@ -3638,7 +3720,21 @@ export const SlowQueryStatistics = {
           message.maximumRowsExamined = longToNumber(reader.int64() as Long);
           continue;
         case 10:
-          if (tag != 82) {
+          if (tag != 81) {
+            break;
+          }
+
+          message.queryTimePercent = reader.double();
+          continue;
+        case 11:
+          if (tag != 89) {
+            break;
+          }
+
+          message.countPercent = reader.double();
+          continue;
+        case 12:
+          if (tag != 98) {
             break;
           }
 
@@ -3664,6 +3760,8 @@ export const SlowQueryStatistics = {
       maximumRowsSent: isSet(object.maximumRowsSent) ? Number(object.maximumRowsSent) : 0,
       averageRowsExamined: isSet(object.averageRowsExamined) ? Number(object.averageRowsExamined) : 0,
       maximumRowsExamined: isSet(object.maximumRowsExamined) ? Number(object.maximumRowsExamined) : 0,
+      queryTimePercent: isSet(object.queryTimePercent) ? Number(object.queryTimePercent) : 0,
+      countPercent: isSet(object.countPercent) ? Number(object.countPercent) : 0,
       samples: Array.isArray(object?.samples) ? object.samples.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
     };
   },
@@ -3681,6 +3779,8 @@ export const SlowQueryStatistics = {
     message.maximumRowsSent !== undefined && (obj.maximumRowsSent = Math.round(message.maximumRowsSent));
     message.averageRowsExamined !== undefined && (obj.averageRowsExamined = Math.round(message.averageRowsExamined));
     message.maximumRowsExamined !== undefined && (obj.maximumRowsExamined = Math.round(message.maximumRowsExamined));
+    message.queryTimePercent !== undefined && (obj.queryTimePercent = message.queryTimePercent);
+    message.countPercent !== undefined && (obj.countPercent = message.countPercent);
     if (message.samples) {
       obj.samples = message.samples.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
     } else {
@@ -3708,6 +3808,8 @@ export const SlowQueryStatistics = {
     message.maximumRowsSent = object.maximumRowsSent ?? 0;
     message.averageRowsExamined = object.averageRowsExamined ?? 0;
     message.maximumRowsExamined = object.maximumRowsExamined ?? 0;
+    message.queryTimePercent = object.queryTimePercent ?? 0;
+    message.countPercent = object.countPercent ?? 0;
     message.samples = object.samples?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
     return message;
   },
@@ -3837,6 +3939,417 @@ export const SlowQueryDetails = {
     message.rowsSent = object.rowsSent ?? 0;
     message.rowsExamined = object.rowsExamined ?? 0;
     message.sqlText = object.sqlText ?? "";
+    return message;
+  },
+};
+
+function createBaseListSecretsRequest(): ListSecretsRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListSecretsRequest = {
+  encode(message: ListSecretsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSecretsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListSecretsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag != 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListSecretsRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListSecretsRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListSecretsRequest>): ListSecretsRequest {
+    return ListSecretsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListSecretsRequest>): ListSecretsRequest {
+    const message = createBaseListSecretsRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListSecretsResponse(): ListSecretsResponse {
+  return { secrets: [], nextPageToken: "" };
+}
+
+export const ListSecretsResponse = {
+  encode(message: ListSecretsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.secrets) {
+      Secret.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSecretsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListSecretsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.secrets.push(Secret.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListSecretsResponse {
+    return {
+      secrets: Array.isArray(object?.secrets) ? object.secrets.map((e: any) => Secret.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListSecretsResponse): unknown {
+    const obj: any = {};
+    if (message.secrets) {
+      obj.secrets = message.secrets.map((e) => e ? Secret.toJSON(e) : undefined);
+    } else {
+      obj.secrets = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListSecretsResponse>): ListSecretsResponse {
+    return ListSecretsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListSecretsResponse>): ListSecretsResponse {
+    const message = createBaseListSecretsResponse();
+    message.secrets = object.secrets?.map((e) => Secret.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateSecretRequest(): UpdateSecretRequest {
+  return { secret: undefined, updateMask: undefined, allowMissing: false };
+}
+
+export const UpdateSecretRequest = {
+  encode(message: UpdateSecretRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.secret !== undefined) {
+      Secret.encode(message.secret, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.allowMissing === true) {
+      writer.uint32(24).bool(message.allowMissing);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateSecretRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateSecretRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.secret = Secret.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.allowMissing = reader.bool();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateSecretRequest {
+    return {
+      secret: isSet(object.secret) ? Secret.fromJSON(object.secret) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      allowMissing: isSet(object.allowMissing) ? Boolean(object.allowMissing) : false,
+    };
+  },
+
+  toJSON(message: UpdateSecretRequest): unknown {
+    const obj: any = {};
+    message.secret !== undefined && (obj.secret = message.secret ? Secret.toJSON(message.secret) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    message.allowMissing !== undefined && (obj.allowMissing = message.allowMissing);
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateSecretRequest>): UpdateSecretRequest {
+    return UpdateSecretRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<UpdateSecretRequest>): UpdateSecretRequest {
+    const message = createBaseUpdateSecretRequest();
+    message.secret = (object.secret !== undefined && object.secret !== null)
+      ? Secret.fromPartial(object.secret)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
+    message.allowMissing = object.allowMissing ?? false;
+    return message;
+  },
+};
+
+function createBaseDeleteSecretRequest(): DeleteSecretRequest {
+  return { name: "" };
+}
+
+export const DeleteSecretRequest = {
+  encode(message: DeleteSecretRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteSecretRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteSecretRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteSecretRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: DeleteSecretRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteSecretRequest>): DeleteSecretRequest {
+    return DeleteSecretRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DeleteSecretRequest>): DeleteSecretRequest {
+    const message = createBaseDeleteSecretRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseSecret(): Secret {
+  return { name: "", createdTime: undefined, updatedTime: undefined, value: "", description: "" };
+}
+
+export const Secret = {
+  encode(message: Secret, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.createdTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdTime), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.updatedTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedTime), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.value !== "") {
+      writer.uint32(34).string(message.value);
+    }
+    if (message.description !== "") {
+      writer.uint32(42).string(message.description);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Secret {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSecret();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.createdTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.updatedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        case 5:
+          if (tag != 42) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Secret {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      createdTime: isSet(object.createdTime) ? fromJsonTimestamp(object.createdTime) : undefined,
+      updatedTime: isSet(object.updatedTime) ? fromJsonTimestamp(object.updatedTime) : undefined,
+      value: isSet(object.value) ? String(object.value) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+    };
+  },
+
+  toJSON(message: Secret): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.createdTime !== undefined && (obj.createdTime = message.createdTime.toISOString());
+    message.updatedTime !== undefined && (obj.updatedTime = message.updatedTime.toISOString());
+    message.value !== undefined && (obj.value = message.value);
+    message.description !== undefined && (obj.description = message.description);
+    return obj;
+  },
+
+  create(base?: DeepPartial<Secret>): Secret {
+    return Secret.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Secret>): Secret {
+    const message = createBaseSecret();
+    message.name = object.name ?? "";
+    message.createdTime = object.createdTime ?? undefined;
+    message.updatedTime = object.updatedTime ?? undefined;
+    message.value = object.value ?? "";
+    message.description = object.description ?? "";
     return message;
   },
 };
@@ -4749,6 +5262,253 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    listSecrets: {
+      name: "ListSecrets",
+      requestType: ListSecretsRequest,
+      requestStream: false,
+      responseType: ListSecretsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              61,
+              18,
+              59,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              115,
+              101,
+              99,
+              114,
+              101,
+              116,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    updateSecret: {
+      name: "UpdateSecret",
+      requestType: UpdateSecretRequest,
+      requestStream: false,
+      responseType: Secret,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              76,
+              58,
+              6,
+              115,
+              101,
+              99,
+              114,
+              101,
+              116,
+              50,
+              66,
+              47,
+              118,
+              49,
+              47,
+              123,
+              115,
+              101,
+              99,
+              114,
+              101,
+              116,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              115,
+              101,
+              99,
+              114,
+              101,
+              116,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    deleteSecret: {
+      name: "DeleteSecret",
+      requestType: DeleteSecretRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              61,
+              42,
+              59,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              115,
+              101,
+              99,
+              114,
+              101,
+              116,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -4788,6 +5548,12 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: ListSlowQueriesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListSlowQueriesResponse>>;
+  listSecrets(
+    request: ListSecretsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListSecretsResponse>>;
+  updateSecret(request: UpdateSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Secret>>;
+  deleteSecret(request: DeleteSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -4829,6 +5595,12 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListSlowQueriesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListSlowQueriesResponse>;
+  listSecrets(
+    request: DeepPartial<ListSecretsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListSecretsResponse>;
+  updateSecret(request: DeepPartial<UpdateSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Secret>;
+  deleteSecret(request: DeepPartial<DeleteSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 
 declare var self: any | undefined;

@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="showQuickstart"
     class="py-2 px-4 w-full flex-shrink-0 border-t border-block-border hidden lg:block"
   >
     <p
@@ -7,7 +8,7 @@
     >
       <span>🎈 {{ $t("common.quickstart") }}</span>
 
-      <button class="btn-icon" @click.prevent="hideQuickstart">
+      <button class="btn-icon" @click.prevent="() => hideQuickstart()">
         <heroicons-solid:x class="w-4 h-4" />
       </button>
     </p>
@@ -69,14 +70,63 @@
       </div>
     </div>
   </div>
+  <div
+    v-if="showBookDemo"
+    class="bg-accent px-3 py-3 flex flex-wrap md:flex-nowrap items-center justify-between"
+  >
+    <p class="ml-3 py-2 flex-1 font-medium text-white truncate">
+      <a
+        href="https://cal.com/adela-bytebase/30min"
+        target="_blank"
+        class="flex underline"
+      >
+        <heroicons-outline:calendar class="mr-1 w-6 h-6" />
+        {{ $t("banner.request-demo") }}
+      </a>
+    </p>
+
+    <div class="shrink-0 flex items-center gap-x-2">
+      <button
+        v-if="showTrialButton"
+        type="button"
+        class="flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-accent bg-white hover:bg-indigo-50"
+        @click="startTrial"
+      >
+        {{
+          $t("subscription.start-n-days-trial", {
+            days: subscriptionStore.trialingDays,
+          })
+        }}
+      </button>
+
+      <button
+        type="button"
+        class="flex p-2 rounded-md hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-white"
+        @click.prevent="() => hideQuickstart()"
+      >
+        <span class="sr-only">{{ $t("common.dismiss") }}</span>
+        <!-- Heroicon name: outline/x -->
+        <heroicons-outline:x class="h-6 w-6 text-white" />
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, unref, Ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { hasWorkspacePermission } from "../utils";
+import { storeToRefs } from "pinia";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import { pushNotification, useCurrentUser, useUIStateStore } from "@/store";
+
+import { hasWorkspacePermission } from "@/utils";
+import {
+  pushNotification,
+  useActuatorStore,
+  useCurrentUser,
+  useSubscriptionStore,
+  useUIStateStore,
+} from "@/store";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 type IntroItem = {
   name: string | Ref<string>;
@@ -85,11 +135,19 @@ type IntroItem = {
   click?: () => void;
 };
 
+const actuatorStore = useActuatorStore();
 const uiStateStore = useUIStateStore();
+const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 const kbarHandler = useKBarHandler();
 
 const currentUser = useCurrentUser();
+const { isDemo } = storeToRefs(actuatorStore);
+
+const show = computed(() => {
+  // Do not show quickstart in demo mode since we don't expect user to alter the data
+  return !isDemo.value && !uiStateStore.getIntroStateByKey("hidden");
+});
 
 const introList = computed(() => {
   const introList: IntroItem[] = [
@@ -174,6 +232,23 @@ const introList = computed(() => {
   return introList;
 });
 
+const showQuickstart = computed(() => {
+  if (!show.value) return false;
+  if (introList.value.every((intro) => intro.done.value)) return false;
+  return true;
+});
+
+const showBookDemo = computed(() => {
+  if (!show.value) return false;
+  if (showQuickstart.value) return false;
+  return true;
+});
+
+const showTrialButton = computed(() => {
+  if (!showBookDemo.value) return false;
+  return subscriptionStore.canUpgradeTrial && !subscriptionStore.isTrialing;
+});
+
 const currentStep = computed(() => {
   let i = 0;
   const list = introList.value;
@@ -214,21 +289,37 @@ const percent = computed(() => {
   return `${percent}%`;
 });
 
-const hideQuickstart = () => {
+const hideQuickstart = (silent = false) => {
   uiStateStore
     .saveIntroStateByKey({
       key: "hidden",
       newState: true,
     })
     .then(() => {
-      pushNotification({
-        module: "bytebase",
-        style: "INFO",
-        title: t("quick-start.notice.title"),
-        description: t("quick-start.notice.desc"),
-        manualHide: true,
-      });
+      if (!silent) {
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: t("quick-start.notice.title"),
+          description: t("quick-start.notice.desc"),
+          manualHide: true,
+        });
+      }
     });
+};
+
+const startTrial = () => {
+  subscriptionStore.trialSubscription(PlanType.ENTERPRISE).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.success"),
+      description: t("subscription.successfully-start-trial", {
+        days: subscriptionStore.trialingDays,
+      }),
+    });
+    hideQuickstart(true /* silent */);
+  });
 };
 
 useKBarEventOnce("open", () => {

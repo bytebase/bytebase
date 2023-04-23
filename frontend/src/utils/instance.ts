@@ -7,12 +7,12 @@ import {
   languageOfEngine,
   MaybeRef,
 } from "../types";
-import { semverCompare } from "./util";
 
 export const supportedEngineList = () => {
   const engines: EngineType[] = [
     "MYSQL",
     "POSTGRES",
+    "OCEANBASE",
     "TIDB",
     "SNOWFLAKE",
     "CLICKHOUSE",
@@ -78,7 +78,6 @@ export const instanceHasAlterSchema = (
   instanceOrEngine: Instance | EngineType
 ): boolean => {
   const engine = engineOfInstance(instanceOrEngine);
-  if (engine === "MONGODB") return false;
   if (engine === "REDIS") return false;
   return true;
 };
@@ -148,17 +147,6 @@ export const instanceHasCollationAndCharacterSet = (
     "REDSHIFT",
   ];
   return !excludedList.includes(engine);
-};
-
-export const instanceSupportSlowQuery = (instance: Instance) => {
-  const { engine } = instance;
-  if (engine === "MYSQL") {
-    return semverCompare(instance.engineVersion, "5.7", "gte");
-  }
-  if (engine === "POSTGRES") {
-    return true;
-  }
-  return false;
 };
 
 export const engineOfInstance = (instanceOrEngine: Instance | EngineType) => {

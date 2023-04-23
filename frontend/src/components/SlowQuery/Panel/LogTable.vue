@@ -3,72 +3,113 @@
     :column-list="columns"
     :data-source="slowQueryLogList"
     :show-placeholder="showPlaceholder"
+    :is-row-clickable="
+      (row) => instanceHasSlowQueryDetail(row.database.instance)
+    "
+    :is-row-expanded="isSelectedRow"
     class="border compact w-auto overflow-x-auto"
     header-class="capitalize"
     @click-row="(log: ComposedSlowQueryLog) => $emit('select', log)"
   >
-    <template #item="{ item: { log, database } }: SlowQueryLogRow">
-      <template v-if="log.statistics">
+    <template #item="{ item }: SlowQueryLogRow">
+      <template v-if="item.log.statistics">
+        <div class="bb-grid-cell whitespace-nowrap !pl-1 !pr-1">
+          <NButton quaternary size="tiny" @click.stop="toggleExpandRow(item)">
+            <heroicons:chevron-right
+              class="w-4 h-4 transition-transform duration-150 cursor-pointer"
+              :class="[isSelectedRow(item) && 'rotate-90']"
+            />
+          </NButton>
+        </div>
         <div class="bb-grid-cell text-xs font-mono">
           <div class="truncate">
-            {{ log.statistics.sqlFingerprint }}
+            {{ item.log.statistics.sqlFingerprint }}
           </div>
         </div>
         <div class="bb-grid-cell">
-          {{ log.statistics.count }}
+          {{ item.log.statistics.count }}
+        </div>
+        <div class="bb-grid-cell">
+          {{ (item.log.statistics.countPercent * 100).toFixed(2) }}%
+        </div>
+        <div class="bb-grid-cell">
+          {{ durationText(item.log.statistics.maximumQueryTime) }}
+        </div>
+        <div class="bb-grid-cell">
+          {{ durationText(item.log.statistics.averageQueryTime) }}
+        </div>
+        <div class="bb-grid-cell">
+          {{ (item.log.statistics.queryTimePercent * 100).toFixed(2) }}%
         </div>
         <div class="bb-grid-cell">
           {{
-            log.statistics.nightyFifthPercentileQueryTime?.seconds.toFixed(6)
+            instanceHasSlowQueryDetail(item.database.instance)
+              ? item.log.statistics.maximumRowsExamined
+              : "-"
           }}
         </div>
         <div class="bb-grid-cell">
-          {{ log.statistics.averageQueryTime?.seconds.toFixed(6) }}
+          {{
+            instanceHasSlowQueryDetail(item.database.instance)
+              ? item.log.statistics.averageRowsExamined
+              : "-"
+          }}
         </div>
         <div class="bb-grid-cell">
-          {{ log.statistics.nightyFifthPercentileRowsExamined }}
+          {{
+            instanceHasSlowQueryDetail(item.database.instance)
+              ? item.log.statistics.maximumRowsSent
+              : "-"
+          }}
         </div>
         <div class="bb-grid-cell">
-          {{ log.statistics.averageRowsExamined }}
-        </div>
-        <div class="bb-grid-cell">
-          {{ log.statistics.nightyFifthPercentileRowsSent }}
-        </div>
-        <div class="bb-grid-cell">
-          {{ log.statistics.averageRowsSent }}
+          {{ item.log.statistics.averageRowsSent }}
         </div>
         <div v-if="showProjectColumn" class="bb-grid-cell">
-          <ProjectName :project="database.project" :link="false" />
+          <ProjectName :project="item.database.project" :link="false" />
         </div>
         <div v-if="showEnvironmentColumn" class="bb-grid-cell">
           <EnvironmentName
-            :environment="database.instance.environment"
+            :environment="item.database.instance.environment"
             :link="false"
           />
         </div>
         <div v-if="showInstanceColumn" class="bb-grid-cell">
-          <InstanceName :instance="database.instance" :link="false" />
+          <InstanceName :instance="item.database.instance" :link="false" />
         </div>
         <div v-if="showDatabaseColumn" class="bb-grid-cell">
-          <DatabaseName :database="database" :link="false" />
+          <DatabaseName :database="item.database" :link="false" />
         </div>
         <div class="bb-grid-cell whitespace-nowrap !pr-4">
           {{
-            dayjs(log.statistics.latestLogTime).format("YYYY-MM-DD HH:mm:ss")
+            dayjs(item.log.statistics.latestLogTime).format(
+              "YYYY-MM-DD HH:mm:ss"
+            )
           }}
         </div>
       </template>
+    </template>
+
+    <template #expanded-item="{ item }: SlowQueryLogRow">
+      <div class="w-full max-h-[20rem] overflow-auto text-xs pl-2">
+        <HighlightCodeBlock
+          :code="item.log.statistics?.sqlFingerprint"
+          class="whitespace-pre-wrap"
+        />
+      </div>
     </template>
   </BBGrid>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
+import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import type { ComposedSlowQueryLog } from "@/types";
 import { DatabaseName, InstanceName, EnvironmentName } from "@/components/v2";
+import { instanceHasSlowQueryDetail } from "@/utils";
 
 export type SlowQueryLogRow = BBGridRow<ComposedSlowQueryLog>;
 
@@ -96,9 +137,13 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
+const selectedSlowQueryLog = shallowRef<ComposedSlowQueryLog>();
 
 const columns = computed(() => {
   const columns = [
+    {
+      width: "auto",
+    },
     {
       title: t("slow-query.sql-statement"),
       width: "minmax(20rem, 1fr)",
@@ -108,27 +153,35 @@ const columns = computed(() => {
       width: "minmax(6rem, auto)",
     },
     {
-      title: t("slow-query.query-time-95-percent"),
+      title: t("slow-query.query-count-percent"),
       width: "minmax(6rem, auto)",
     },
     {
-      title: t("slow-query.query-time-avg"),
+      title: t("slow-query.max-query-time"),
       width: "minmax(6rem, auto)",
     },
     {
-      title: t("slow-query.rows-examined-95-percent"),
+      title: t("slow-query.avg-query-time"),
       width: "minmax(6rem, auto)",
     },
     {
-      title: t("slow-query.rows-examined-avg"),
+      title: t("slow-query.query-time-percent"),
       width: "minmax(6rem, auto)",
     },
     {
-      title: t("slow-query.rows-sent-95-percent"),
+      title: t("slow-query.max-rows-examined"),
       width: "minmax(6rem, auto)",
     },
     {
-      title: t("slow-query.rows-sent-avg"),
+      title: t("slow-query.avg-rows-examined"),
+      width: "minmax(6rem, auto)",
+    },
+    {
+      title: t("slow-query.max-rows-sent"),
+      width: "minmax(6rem, auto)",
+    },
+    {
+      title: t("slow-query.avg-rows-sent"),
       width: "minmax(6rem, auto)",
     },
     props.showProjectColumn && {
@@ -154,4 +207,31 @@ const columns = computed(() => {
   ].filter((col) => !!col) as BBGridColumn[];
   return columns;
 });
+
+const isSelectedRow = (item: ComposedSlowQueryLog) => {
+  return selectedSlowQueryLog.value === item;
+};
+
+const toggleExpandRow = (item: ComposedSlowQueryLog) => {
+  if (selectedSlowQueryLog.value === item) {
+    selectedSlowQueryLog.value = undefined;
+  } else {
+    selectedSlowQueryLog.value = item;
+  }
+};
+
+const durationText = (duration: Duration | undefined) => {
+  if (!duration) return "-";
+  const { seconds, nanos } = duration;
+  const total = seconds + nanos / 1e9;
+  return total.toFixed(6);
+};
+
+watch(
+  () => props.slowQueryLogList,
+  () => {
+    selectedSlowQueryLog.value = undefined;
+  },
+  { immediate: true }
+);
 </script>

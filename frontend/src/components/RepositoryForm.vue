@@ -173,16 +173,21 @@
           class="text-accent"
         />
       </div>
-      <div class="mt-1 textinfolabel">
-        <template v-if="isProjectSchemaChangeTypeSDL">
+      <div class="mt-1 textinfolabel space-x-1">
+        <span v-if="isProjectSchemaChangeTypeSDL">
           {{ $t("project.settings.schema-path-template-sdl-description") }}
-        </template>
+        </span>
         <template v-else>
-          {{ $t("repository.schema-writeback-description") }}
-          <span class="font-medium text-main">{{
-            $t("repository.schema-writeback-protected-branch")
-          }}</span>
+          <span>{{ $t("repository.schema-writeback-description") }}</span>
+          <span class="font-medium text-main">
+            {{ $t("repository.schema-writeback-protected-branch") }}
+          </span>
         </template>
+        <span v-if="!hasFeature('bb.feature.vcs-schema-write-back')">
+          {{
+            $t(getFeatureRequiredPlanString("bb.feature.vcs-schema-write-back"))
+          }}
+        </span>
         <LearnMoreLink
           url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#schema-path-template"
           class="ml-1"
@@ -198,10 +203,19 @@
         :disabled="!allowEdit"
       />
       <input
-        v-else
+        v-else-if="isProjectSchemaChangeTypeSDL"
+        id="schemapathtemplate"
+        v-model="repositoryConfig.schemaPathTemplate"
+        name="schemapathtemplate"
         type="text"
         class="textfield mt-2 w-full"
-        :value="getRquiredPlanString('bb.feature.vcs-schema-write-back')"
+        :disabled="!allowEdit"
+      />
+      <input
+        v-else-if="isProjectSchemaChangeTypeDDL"
+        type="text"
+        class="textfield mt-2 w-full"
+        :value="getRequiredPlanString('bb.feature.vcs-schema-write-back')"
         :disabled="true"
       />
       <div v-if="schemaTagPlaceholder" class="mt-2 textinfolabel">
@@ -248,7 +262,7 @@
         v-else
         type="text"
         class="textfield mt-2 w-full"
-        :value="getRquiredPlanString('bb.feature.vcs-sheet-sync')"
+        :value="getRequiredPlanString('bb.feature.vcs-sheet-sync')"
         :disabled="true"
       />
       <div class="mt-2 textinfolabel capitalize">
@@ -520,7 +534,9 @@ export default defineComponent({
       schemaTagPlaceholder,
       state,
       hasFeature,
-      getRquiredPlanString: subscriptionStore.getRquiredPlanString,
+      getRequiredPlanString: subscriptionStore.getRquiredPlanString,
+      getFeatureRequiredPlanString:
+        subscriptionStore.getFeatureRequiredPlanString,
       isProjectSchemaChangeTypeDDL,
       isProjectSchemaChangeTypeSDL,
       canEnableSQLReview,
