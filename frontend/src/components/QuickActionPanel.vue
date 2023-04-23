@@ -88,21 +88,6 @@
       </div>
 
       <div
-        v-if="quickAction === 'quickaction.bb.database.schema.sync'"
-        class="flex flex-col items-center w-24 py-1"
-      >
-        <button
-          class="btn-icon-primary p-3 relative"
-          @click.prevent="syncDatabaseSchema"
-        >
-          <heroicons-outline:refresh class="w-5 h-5" />
-          <BBBetaBadge :corner="true" class="top-1" />
-        </button>
-        <h3 class="mt-1.5 text-center text-sm font-normal text-main">
-          {{ $t("quick-action.sync-schema") }}
-        </h3>
-      </div>
-      <div
         v-if="isDev && quickAction === 'quickaction.bb.database.troubleshoot'"
         class="flex flex-col items-center w-24 py-1"
       >
@@ -227,14 +212,6 @@
         @dismiss="state.showModal = false"
       />
     </template>
-    <template
-      v-else-if="state.quickActionType == 'quickaction.bb.database.schema.sync'"
-    >
-      <SyncDatabaseSchemaPrepForm
-        :project-id="projectId"
-        @dismiss="state.showModal = false"
-      />
-    </template>
   </BBModal>
   <FeatureModal
     v-if="state.showFeatureModal && state.featureName !== ''"
@@ -257,13 +234,11 @@ import {
   useSubscriptionStore,
 } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
-import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
-import SyncDatabaseSchemaPrepForm from "./SyncDatabaseSchemaPrepForm.vue";
 
 interface LocalState {
   showModal: boolean;
@@ -341,12 +316,6 @@ const alterSchema = () => {
   state.showModal = true;
 };
 
-const syncDatabaseSchema = () => {
-  state.modalTitle = t("database.sync-schema.title");
-  state.quickActionType = "quickaction.bb.database.schema.sync";
-  state.showModal = true;
-};
-
 const changeData = () => {
   state.modalTitle = t("database.change-data");
   state.quickActionType = "quickaction.bb.database.data.update";
@@ -399,10 +368,6 @@ const QuickActionMap: Record<string, Partial<Action>> = {
   "quickaction.bb.database.troubleshoot": {
     name: t("quick-action.troubleshoot"),
     perform: () => router.push({ path: "/issue/new" }),
-  },
-  "quickaction.bb.database.schema.sync": {
-    name: t("quick-action.sync-schema"),
-    perform: () => syncDatabaseSchema(),
   },
   "quickaction.bb.environment.create": {
     name: t("quick-action.add-environment"),

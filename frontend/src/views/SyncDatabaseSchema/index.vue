@@ -6,11 +6,11 @@
     />
   </p>
   <BBStepTab
-    class="mb-8 p-4"
+    class="p-4 h-auto min-h-[calc(100%-40px)] overflow-y-auto"
     :step-item-list="stepTabList"
     :show-cancel="false"
     :allow-next="allowNext"
-    :finish-title="$t('two-factor.setup-steps.recovery-codes-saved')"
+    :finish-title="$t('database.sync-schema.preview-issue')"
     :current-step="state.currentStep"
     @cancel="cancelSetup"
     @try-change-step="tryChangeStep"
@@ -115,6 +115,7 @@
     </template>
     <template #1>
       <SelectTargetDatabasesView
+        ref="targetDatabaseViewRef"
         :project-id="state.projectId as ProjectId"
         :source-schema="state.sourceSchema as any"
       />
@@ -131,10 +132,15 @@
 <script lang="ts" setup>
 import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { hasFeature, useDatabaseStore, useInstanceStore } from "@/store";
+import {
+  hasFeature,
+  useDatabaseStore,
+  useInstanceStore,
+  useProjectStore,
+} from "@/store";
 import {
   DatabaseId,
   EngineType,
@@ -145,6 +151,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
+import dayjs from "dayjs";
 
 const SELECT_SOURCE_DATABASE = 0;
 const SELECT_TARGET_DATABASE_LIST = 1;
@@ -182,8 +189,11 @@ const allowedMigrationTypeList: MigrationType[] = [
 
 const { t } = useI18n();
 const router = useRouter();
+const projectStore = useProjectStore();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
+const targetDatabaseViewRef =
+  ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
   currentStep: SELECT_SOURCE_DATABASE,
   sourceSchema: {},
@@ -249,7 +259,6 @@ const handleSourceEnvironmentSelect = async (environmentId: EnvironmentId) => {
 };
 
 const handleSourceDatabaseSelect = async (databaseId: DatabaseId) => {
-  console.log("databaseId", databaseId);
   if (isValidId(databaseId)) {
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
     if (database) {
@@ -278,11 +287,67 @@ const tryChangeStep = async (
 ) => {
   state.currentStep = newStep as Step;
   allowChangeCallback();
-  console.log(state);
 };
 
 const tryFinishSetup = async () => {
-  // TODO: call backend to finish setup
+  if (!targetDatabaseViewRef.value) {
+    return;
+  }
+
+  const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
+  const targetDatabaseDiffList = targetDatabaseList
+    .map((db) => {
+      const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.id];
+      return {
+        id: db.id,
+        diff: diff.edited,
+      };
+    })
+    .filter((item) => item.diff !== "");
+  const databaseIdList = targetDatabaseDiffList.map((item) => item.id);
+  const statementList = targetDatabaseDiffList.map((item) => item.diff);
+
+  const project = await projectStore.getOrFetchProjectById(state.projectId!);
+
+  const isTenantProject = project.tenantMode === "TENANT";
+  const query: Record<string, any> = {
+    template: "bb.issue.database.schema.update",
+    project: project.id,
+    mode: "normal",
+    ghost: undefined,
+  };
+  if (isTenantProject) {
+    query.mode = "tenant";
+    query.sql = statementList.join("\n");
+    query.name = generateIssueName(targetDatabaseList.map((db) => db.name));
+  } else {
+    query.databaseList = databaseIdList.join(",");
+    query.sqlList = JSON.stringify(statementList);
+    query.name = generateIssueName(targetDatabaseList.map((db) => db.name));
+  }
+
+  const routeInfo = {
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query,
+  };
+  router.push(routeInfo);
+};
+
+const generateIssueName = (databaseNameList: string[]) => {
+  const issueNameParts: string[] = [];
+  if (databaseNameList.length === 1) {
+    issueNameParts.push(`[${databaseNameList[0]}]`);
+  } else {
+    issueNameParts.push(`[${databaseNameList.length} databases]`);
+  }
+  issueNameParts.push(`Alter schema`);
+  const datetime = dayjs().format("@MM-DD HH:mm");
+  const tz = "UTC" + dayjs().format("ZZ");
+  issueNameParts.push(`${datetime} ${tz}`);
+  return issueNameParts.join(" ");
 };
 
 const cancelSetup = () => {
