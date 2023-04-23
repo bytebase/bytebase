@@ -1,0 +1,3 @@
+ALTER TABLE db ADD COLUMN secrets JSONB;
+UPDATE db SET secrets = '{}';
+ALTER TABLE db ALTER COLUMN secrets SET NOT NULL;
