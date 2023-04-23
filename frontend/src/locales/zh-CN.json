@@ -327,7 +327,12 @@
       "cancel-generating": "取消生成回滚语句",
       "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。\n警告：如果你的数据表没有主键，回滚语句可能\n会影响重复的行。执行前请注意确认。\n{link}"
     },
-    "skip-failed-in-current-stage": "跳过当前阶段失败的任务"
+    "skip-failed-in-current-stage": "跳过当前阶段失败的任务",
+    "apply-change-to-all-pending-tasks": {
+      "title": "应用到所有未执行任务？",
+      "self": "应用到所有未执行任务",
+      "current-only": "只应用到当前任务"
+    }
   },
   "banner": {
     "update-license": "更新证书",
