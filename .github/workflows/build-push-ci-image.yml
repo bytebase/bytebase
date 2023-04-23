@@ -31,7 +31,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           file: scripts/Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/x86_64
           push: true
           tags: bytebase/bytebase:release-ci
           build-args: |
