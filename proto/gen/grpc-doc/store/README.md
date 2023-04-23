@@ -40,7 +40,7 @@
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
-    - [SecretEntry](#bytebase-store-SecretEntry)
+    - [SecretItem](#bytebase-store-SecretItem)
     - [Secrets](#bytebase-store-Secrets)
     - [TableMetadata](#bytebase-store-TableMetadata)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
@@ -611,9 +611,9 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 
 
-<a name="bytebase-store-SecretEntry"></a>
+<a name="bytebase-store-SecretItem"></a>
 
-### SecretEntry
+### SecretItem
 
 
 
@@ -636,7 +636,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| secrets | [SecretEntry](#bytebase-store-SecretEntry) | repeated | The secrets is the list of secrets. |
+| items | [SecretItem](#bytebase-store-SecretItem) | repeated | The list of secrets. |
 
 
 

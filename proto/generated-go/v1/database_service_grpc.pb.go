@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -31,7 +32,8 @@ const (
 	DatabaseService_ListBackup_FullMethodName           = "/bytebase.v1.DatabaseService/ListBackup"
 	DatabaseService_ListSlowQueries_FullMethodName      = "/bytebase.v1.DatabaseService/ListSlowQueries"
 	DatabaseService_ListSecrets_FullMethodName          = "/bytebase.v1.DatabaseService/ListSecrets"
-	DatabaseService_SetSecret_FullMethodName            = "/bytebase.v1.DatabaseService/SetSecret"
+	DatabaseService_UpdateSecret_FullMethodName         = "/bytebase.v1.DatabaseService/UpdateSecret"
+	DatabaseService_DeleteSecret_FullMethodName         = "/bytebase.v1.DatabaseService/DeleteSecret"
 )
 
 // DatabaseServiceClient is the client API for DatabaseService service.
@@ -50,7 +52,8 @@ type DatabaseServiceClient interface {
 	ListBackup(ctx context.Context, in *ListBackupRequest, opts ...grpc.CallOption) (*ListBackupResponse, error)
 	ListSlowQueries(ctx context.Context, in *ListSlowQueriesRequest, opts ...grpc.CallOption) (*ListSlowQueriesResponse, error)
 	ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error)
-	SetSecret(ctx context.Context, in *SetSecretRequest, opts ...grpc.CallOption) (*Secret, error)
+	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error)
+	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type databaseServiceClient struct {
@@ -169,9 +172,18 @@ func (c *databaseServiceClient) ListSecrets(ctx context.Context, in *ListSecrets
 	return out, nil
 }
 
-func (c *databaseServiceClient) SetSecret(ctx context.Context, in *SetSecretRequest, opts ...grpc.CallOption) (*Secret, error) {
+func (c *databaseServiceClient) UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error) {
 	out := new(Secret)
-	err := c.cc.Invoke(ctx, DatabaseService_SetSecret_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, DatabaseService_UpdateSecret_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *databaseServiceClient) DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, DatabaseService_DeleteSecret_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +206,8 @@ type DatabaseServiceServer interface {
 	ListBackup(context.Context, *ListBackupRequest) (*ListBackupResponse, error)
 	ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error)
 	ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error)
-	SetSecret(context.Context, *SetSecretRequest) (*Secret, error)
+	UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error)
+	DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
 
@@ -238,8 +251,11 @@ func (UnimplementedDatabaseServiceServer) ListSlowQueries(context.Context, *List
 func (UnimplementedDatabaseServiceServer) ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSecrets not implemented")
 }
-func (UnimplementedDatabaseServiceServer) SetSecret(context.Context, *SetSecretRequest) (*Secret, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetSecret not implemented")
+func (UnimplementedDatabaseServiceServer) UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSecret not implemented")
+}
+func (UnimplementedDatabaseServiceServer) DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSecret not implemented")
 }
 func (UnimplementedDatabaseServiceServer) mustEmbedUnimplementedDatabaseServiceServer() {}
 
@@ -470,20 +486,38 @@ func _DatabaseService_ListSecrets_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_SetSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetSecretRequest)
+func _DatabaseService_UpdateSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSecretRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DatabaseServiceServer).SetSecret(ctx, in)
+		return srv.(DatabaseServiceServer).UpdateSecret(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DatabaseService_SetSecret_FullMethodName,
+		FullMethod: DatabaseService_UpdateSecret_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).SetSecret(ctx, req.(*SetSecretRequest))
+		return srv.(DatabaseServiceServer).UpdateSecret(ctx, req.(*UpdateSecretRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DatabaseService_DeleteSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSecretRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).DeleteSecret(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_DeleteSecret_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).DeleteSecret(ctx, req.(*DeleteSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -544,8 +578,12 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DatabaseService_ListSecrets_Handler,
 		},
 		{
-			MethodName: "SetSecret",
-			Handler:    _DatabaseService_SetSecret_Handler,
+			MethodName: "UpdateSecret",
+			Handler:    _DatabaseService_UpdateSecret_Handler,
+		},
+		{
+			MethodName: "DeleteSecret",
+			Handler:    _DatabaseService_DeleteSecret_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
