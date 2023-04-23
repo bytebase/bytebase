@@ -56,7 +56,7 @@
           <template #table="{ issueList, loading }">
             <IssueTable
               :show-placeholder="!loading"
-              :title="$t('issue.waiting-for-my-approval')"
+              :title="$t('issue.waiting-approval')"
               :issue-list="issueList"
             />
           </template>
