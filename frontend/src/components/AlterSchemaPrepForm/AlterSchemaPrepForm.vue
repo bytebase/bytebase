@@ -7,57 +7,71 @@
             <!-- tenant mode project -->
             <NTabs v-model:value="state.alterType">
               <NTabPane :tab="$t('alter-schema.alter-db-group')" name="TENANT">
-                <ProjectTenantView
+                <div
                   class="overflow-y-auto"
                   style="max-height: calc(100vh - 360px)"
-                  :state="state"
-                  :database-list="schemaDatabaseList"
-                  :environment-list="environmentList"
-                  :project="state.project"
-                  @dismiss="cancel"
-                />
+                >
+                  <ProjectTenantView
+                    :state="state"
+                    :database-list="schemaDatabaseList"
+                    :environment-list="environmentList"
+                    :project="state.project"
+                    @dismiss="cancel"
+                  />
+                  <SchemalessDatabaseTable
+                    mode="PROJECT"
+                    :database-list="schemalessDatabaseList"
+                  />
+                </div>
               </NTabPane>
               <NTabPane
                 :tab="$t('alter-schema.alter-multiple-db')"
                 name="MULTI_DB"
               >
-                <DatabaseTable
-                  mode="PROJECT_SHORT"
+                <div
                   class="overflow-y-auto"
                   style="max-height: calc(100vh - 400px)"
-                  table-class="border"
-                  :custom-click="true"
-                  :database-list="schemaDatabaseList"
-                  :show-selection-column="true"
-                  @select-database="
+                >
+                  <DatabaseTable
+                    mode="PROJECT_SHORT"
+                    table-class="border"
+                    :custom-click="true"
+                    :database-list="schemaDatabaseList"
+                    :show-selection-column="true"
+                    @select-database="
                     (db: Database) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
                   "
-                >
-                  <template
-                    #selection-all="{ databaseList: renderedDatabaseList }"
                   >
-                    <input
-                      v-if="renderedDatabaseList.length > 0"
-                      type="checkbox"
-                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                      v-bind="getAllSelectionState(renderedDatabaseList)"
-                      @input="
-                        toggleAllDatabasesSelection(
-                          renderedDatabaseList,
-                          ($event.target as HTMLInputElement).checked
-                        )
-                      "
-                    />
-                  </template>
-                  <template #selection="{ database }">
-                    <input
-                      type="checkbox"
-                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                      :checked="isDatabaseSelected(database)"
-                      @input="(e: any) => toggleDatabaseSelection(database, e.target.checked)"
-                    />
-                  </template>
-                </DatabaseTable>
+                    <template
+                      #selection-all="{ databaseList: renderedDatabaseList }"
+                    >
+                      <input
+                        v-if="renderedDatabaseList.length > 0"
+                        type="checkbox"
+                        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                        v-bind="getAllSelectionState(renderedDatabaseList)"
+                        @input="
+                          toggleAllDatabasesSelection(
+                            renderedDatabaseList,
+                            ($event.target as HTMLInputElement).checked
+                          )
+                        "
+                      />
+                    </template>
+                    <template #selection="{ database }">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                        :checked="isDatabaseSelected(database)"
+                        @input="(e: any) => toggleDatabaseSelection(database, e.target.checked)"
+                      />
+                    </template>
+                  </DatabaseTable>
+                  <SchemalessDatabaseTable
+                    mode="PROJECT"
+                    :database-list="schemalessDatabaseList"
+                  />
+                </div>
               </NTabPane>
               <template #suffix>
                 <BBTableSearch
@@ -76,23 +90,33 @@
           </template>
           <template v-else>
             <!-- standard mode project, single/multiple databases ui -->
-            <ProjectStandardView
-              :state="state"
-              :project="state.project"
-              :database-list="schemaDatabaseList"
-              :environment-list="environmentList"
-              @select-database="selectDatabase"
+            <div
+              class="overflow-y-auto"
+              style="max-height: calc(100vh - 380px)"
             >
-              <template #header>
-                <div class="flex items-center justify-end mx-2 mb-2">
-                  <BBTableSearch
-                    class="m-px"
-                    :placeholder="$t('database.search-database')"
-                    @change-text="(text: string) => (state.searchText = text)"
-                  />
-                </div>
-              </template>
-            </ProjectStandardView>
+              <ProjectStandardView
+                :state="state"
+                :project="state.project"
+                :database-list="schemaDatabaseList"
+                :environment-list="environmentList"
+                @select-database="selectDatabase"
+              >
+                <template #header>
+                  <div class="flex items-center justify-end mx-2 mb-2">
+                    <BBTableSearch
+                      class="m-px"
+                      :placeholder="$t('database.search-database')"
+                      @change-text="(text: string) => (state.searchText = text)"
+                    />
+                  </div>
+                </template>
+              </ProjectStandardView>
+              <SchemalessDatabaseTable
+                mode="PROJECT"
+                class="px-2"
+                :database-list="schemalessDatabaseList"
+              />
+            </div>
           </template>
         </template>
         <template v-else>
@@ -112,26 +136,13 @@
               :database-list="schemaDatabaseList"
               @select-database="selectDatabase"
             />
+
+            <SchemalessDatabaseTable
+              mode="PROJECT"
+              :database-list="schemalessDatabaseList"
+            />
           </div>
         </template>
-
-        <div
-          v-if="isAlterSchema && schemalessDatabaseList.length > 0"
-          class="px-0.5 mt-4"
-        >
-          <NCheckbox v-model:checked="state.showSchemaLessDatabaseList">
-            {{ $t("database.show-schemaless-databases") }}
-          </NCheckbox>
-          <DatabaseTable
-            v-if="state.showSchemaLessDatabaseList"
-            :mode="projectId ? 'PROJECT_SHORT' : 'ALL_SHORT'"
-            class="overflow-y-auto mt-2"
-            table-class="border"
-            :schemaless="true"
-            :row-clickable="false"
-            :database-list="schemalessDatabaseList"
-          />
-        </div>
       </div>
     </div>
 
@@ -201,7 +212,7 @@
 import dayjs from "dayjs";
 import { computed, reactive, PropType, ref } from "vue";
 import { useRouter } from "vue-router";
-import { NTabs, NTabPane, NCheckbox } from "naive-ui";
+import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../DatabaseTable.vue";
@@ -226,6 +237,7 @@ import ProjectStandardView, {
 import ProjectTenantView, {
   State as ProjectTenantState,
 } from "./ProjectTenantView.vue";
+import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
 import GhostDialog from "./GhostDialog.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
 

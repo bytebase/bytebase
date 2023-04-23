@@ -1174,7 +1174,7 @@
     "doesnt-match-tenant-value": "与租户标签值不匹配",
     "should-follow-database-name-template": "需要遵循租户数据库名称模板",
     "all": "所有数据库",
-    "show-schemaless-databases": "显示无模式的数据库"
+    "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
