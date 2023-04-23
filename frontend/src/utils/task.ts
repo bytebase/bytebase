@@ -4,6 +4,7 @@ import { useCurrentUser, useDatabaseStore } from "@/store";
 import {
   Issue,
   Task,
+  TaskCheckStatus,
   TaskCheckType,
   TaskCreate,
   TaskDatabaseCreatePayload,
@@ -243,4 +244,13 @@ export const canSkipTask = (
   }
 
   return false;
+};
+
+export const checkStatusOfTask = (task: Task): TaskCheckStatus | undefined => {
+  if (task.status === "PENDING" || task.status === "PENDING_APPROVAL") {
+    const summary = taskCheckRunSummary(task);
+    if (summary.errorCount > 0) return "ERROR";
+    if (summary.warnCount > 0) return "WARN";
+  }
+  return undefined;
 };
