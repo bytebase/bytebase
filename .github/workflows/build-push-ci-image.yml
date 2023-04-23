@@ -13,10 +13,12 @@ jobs:
   docker:
     strategy:
       matrix:
+        flavor: [debian]
         include:
-          - os: ubuntu-latest
-            platforms: linux/amd64,linux/x86_64,linux/arm64
-    runs-on: ${{ matrix.os }}
+          - flavor: debian
+            dockerfile: scripts/Dockerfile
+            platforms: linux/amd64,linux/x86_64
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Extract build args
@@ -35,7 +37,7 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v4
         with:
-          file: scripts/Dockerfile
+          file: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platforms }}
           push: true
           tags: bytebase/bytebase:release-ci
