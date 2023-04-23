@@ -225,10 +225,10 @@ message InstanceRoleMetadata {
 
 message Secrets {
   // The list of secrets.
-  repeated SecretEntry secret_entries = 1;
+  repeated SecretItem items = 1;
 }
 
-message SecretEntry {
+message SecretItem {
   // The name is the name of the secret.
   string name = 1;
 
