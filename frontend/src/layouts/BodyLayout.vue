@@ -225,7 +225,7 @@
       </div>
     </div>
 
-    <Quickstart v-if="showQuickstart" />
+    <Quickstart />
   </div>
 
   <TrialModal
@@ -253,7 +253,6 @@ import {
   useActuatorStore,
   useCurrentUser,
   useSubscriptionStore,
-  useUIStateStore,
 } from "@/store";
 
 interface LocalState {
@@ -273,7 +272,6 @@ export default defineComponent({
   setup() {
     const actuatorStore = useActuatorStore();
     const subscriptionStore = useSubscriptionStore();
-    const uiStateStore = useUIStateStore();
     const route = useRoute();
     const router = useRouter();
 
@@ -343,11 +341,6 @@ export default defineComponent({
       return !(name === "workspace.home" || name === "workspace.profile");
     });
 
-    const showQuickstart = computed(() => {
-      // Do not show quickstart in demo mode since we don't expect user to alter the data
-      return !isDemo.value && !uiStateStore.getIntroStateByKey("hidden");
-    });
-
     const version = computed(() => {
       const v = actuatorStore.version;
       if (v.split(".").length == 3) {
@@ -382,7 +375,6 @@ export default defineComponent({
       route,
       quickActionList,
       showBreadcrumb,
-      showQuickstart,
       version,
       gitCommit,
       currentPlan,
