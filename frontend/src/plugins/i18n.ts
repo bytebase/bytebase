@@ -4,7 +4,7 @@ import { useLocalStorage } from "@vueuse/core";
 import _ from "lodash-es";
 
 const localPathPrefix = "../locales/";
-const validLocaleList = ["en-US", "zh-CN"];
+const validLocaleList = ["en-US", "zh-CN", "es-ES"];
 
 const getValidLocale = () => {
   const storage = useLocalStorage("bytebase_options", {}) as any;
