@@ -13,11 +13,11 @@ jobs:
   docker:
     strategy:
       matrix:
-        flavor: [debian]
+        flavor: [debian]d
         include:
           - flavor: debian
             dockerfile: scripts/Dockerfile
-            platforms: linux/amd64,linux/x86_64
+            platforms: linux/amd64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
