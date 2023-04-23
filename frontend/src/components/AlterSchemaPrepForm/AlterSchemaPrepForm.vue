@@ -7,57 +7,71 @@
             <!-- tenant mode project -->
             <NTabs v-model:value="state.alterType">
               <NTabPane :tab="$t('alter-schema.alter-db-group')" name="TENANT">
-                <ProjectTenantView
+                <div
                   class="overflow-y-auto"
-                  style="max-height: calc(100vh - 320px)"
-                  :state="state"
-                  :database-list="databaseList"
-                  :environment-list="environmentList"
-                  :project="state.project"
-                  @dismiss="cancel"
-                />
+                  style="max-height: calc(100vh - 360px)"
+                >
+                  <ProjectTenantView
+                    :state="state"
+                    :database-list="schemaDatabaseList"
+                    :environment-list="environmentList"
+                    :project="state.project"
+                    @dismiss="cancel"
+                  />
+                  <SchemalessDatabaseTable
+                    mode="PROJECT"
+                    :database-list="schemalessDatabaseList"
+                  />
+                </div>
               </NTabPane>
               <NTabPane
                 :tab="$t('alter-schema.alter-multiple-db')"
                 name="MULTI_DB"
               >
-                <DatabaseTable
-                  mode="PROJECT_SHORT"
+                <div
                   class="overflow-y-auto"
-                  style="max-height: calc(100vh - 360px)"
-                  table-class="border"
-                  :custom-click="true"
-                  :database-list="databaseList"
-                  :show-selection-column="true"
-                  @select-database="
+                  style="max-height: calc(100vh - 400px)"
+                >
+                  <DatabaseTable
+                    mode="PROJECT_SHORT"
+                    table-class="border"
+                    :custom-click="true"
+                    :database-list="schemaDatabaseList"
+                    :show-selection-column="true"
+                    @select-database="
                     (db: Database) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
                   "
-                >
-                  <template
-                    #selection-all="{ databaseList: renderedDatabaseList }"
                   >
-                    <input
-                      v-if="renderedDatabaseList.length > 0"
-                      type="checkbox"
-                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                      v-bind="getAllSelectionState(renderedDatabaseList)"
-                      @input="
-                        toggleAllDatabasesSelection(
-                          renderedDatabaseList,
-                          ($event.target as HTMLInputElement).checked
-                        )
-                      "
-                    />
-                  </template>
-                  <template #selection="{ database }">
-                    <input
-                      type="checkbox"
-                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                      :checked="isDatabaseSelected(database)"
-                      @input="(e: any) => toggleDatabaseSelection(database, e.target.checked)"
-                    />
-                  </template>
-                </DatabaseTable>
+                    <template
+                      #selection-all="{ databaseList: renderedDatabaseList }"
+                    >
+                      <input
+                        v-if="renderedDatabaseList.length > 0"
+                        type="checkbox"
+                        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                        v-bind="getAllSelectionState(renderedDatabaseList)"
+                        @input="
+                          toggleAllDatabasesSelection(
+                            renderedDatabaseList,
+                            ($event.target as HTMLInputElement).checked
+                          )
+                        "
+                      />
+                    </template>
+                    <template #selection="{ database }">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                        :checked="isDatabaseSelected(database)"
+                        @input="(e: any) => toggleDatabaseSelection(database, e.target.checked)"
+                      />
+                    </template>
+                  </DatabaseTable>
+                  <SchemalessDatabaseTable
+                    mode="PROJECT"
+                    :database-list="schemalessDatabaseList"
+                  />
+                </div>
               </NTabPane>
               <template #suffix>
                 <BBTableSearch
@@ -76,23 +90,33 @@
           </template>
           <template v-else>
             <!-- standard mode project, single/multiple databases ui -->
-            <ProjectStandardView
-              :state="state"
-              :project="state.project"
-              :database-list="databaseList"
-              :environment-list="environmentList"
-              @select-database="selectDatabase"
+            <div
+              class="overflow-y-auto"
+              style="max-height: calc(100vh - 380px)"
             >
-              <template #header>
-                <div class="flex items-center justify-end mx-2 mb-2">
-                  <BBTableSearch
-                    class="m-px"
-                    :placeholder="$t('database.search-database')"
-                    @change-text="(text: string) => (state.searchText = text)"
-                  />
-                </div>
-              </template>
-            </ProjectStandardView>
+              <ProjectStandardView
+                :state="state"
+                :project="state.project"
+                :database-list="schemaDatabaseList"
+                :environment-list="environmentList"
+                @select-database="selectDatabase"
+              >
+                <template #header>
+                  <div class="flex items-center justify-end mx-2 mb-2">
+                    <BBTableSearch
+                      class="m-px"
+                      :placeholder="$t('database.search-database')"
+                      @change-text="(text: string) => (state.searchText = text)"
+                    />
+                  </div>
+                </template>
+              </ProjectStandardView>
+              <SchemalessDatabaseTable
+                mode="PROJECT"
+                class="px-2"
+                :database-list="schemalessDatabaseList"
+              />
+            </div>
           </template>
         </template>
         <template v-else>
@@ -104,13 +128,18 @@
             />
           </aside>
           <!-- a simple table -->
-          <div class="overflow-y-auto" style="max-height: calc(100vh - 300px)">
+          <div class="overflow-y-auto" style="max-height: calc(100vh - 340px)">
             <DatabaseTable
               mode="ALL_SHORT"
               table-class="border"
               :custom-click="true"
-              :database-list="databaseList"
+              :database-list="schemaDatabaseList"
               @select-database="selectDatabase"
+            />
+
+            <SchemalessDatabaseTable
+              mode="PROJECT"
+              :database-list="schemalessDatabaseList"
             />
           </div>
         </template>
@@ -208,6 +237,7 @@ import ProjectStandardView, {
 import ProjectTenantView, {
   State as ProjectTenantState,
 } from "./ProjectTenantView.vue";
+import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
 import GhostDialog from "./GhostDialog.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
 
@@ -215,6 +245,7 @@ type LocalState = ProjectStandardState &
   ProjectTenantState & {
     project?: Project;
     searchText: string;
+    showSchemaLessDatabaseList: boolean;
     showSchemaEditorModal: boolean;
     showFeatureModal: boolean;
   };
@@ -262,6 +293,7 @@ const state = reactive<LocalState>({
   deployingTenantDatabaseList: [],
   label: "bb.environment",
   searchText: "",
+  showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
   showFeatureModal: false,
 });
@@ -293,10 +325,6 @@ const databaseList = computed(() => {
   }
 
   list = list.filter((db) => db.syncStatus === "OK");
-  if (isAlterSchema.value) {
-    // We disallow users to alter schema for MongoDB databases.
-    list = list.filter((db) => instanceHasAlterSchema(db.instance));
-  }
 
   const keyword = state.searchText.trim();
   list = list.filter((db) =>
@@ -309,6 +337,26 @@ const databaseList = computed(() => {
   );
 
   return sortDatabaseList(cloneDeep(list), environmentList.value);
+});
+
+const schemaDatabaseList = computed(() => {
+  if (isAlterSchema.value) {
+    return databaseList.value.filter((db) =>
+      instanceHasAlterSchema(db.instance)
+    );
+  }
+
+  return databaseList.value;
+});
+
+const schemalessDatabaseList = computed(() => {
+  if (isAlterSchema.value) {
+    return databaseList.value.filter(
+      (db) => !instanceHasAlterSchema(db.instance)
+    );
+  }
+
+  return databaseList.value;
 });
 
 const flattenSelectedDatabaseIdList = computed(() => {
@@ -366,7 +414,7 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 const generateMultiDb = async () => {
   const selectedDatabaseIdList = [...flattenSelectedDatabaseIdList.value];
   const selectedDatabaseList = selectedDatabaseIdList.map(
-    (id) => databaseList.value.find((db) => db.id === id)!
+    (id) => schemaDatabaseList.value.find((db) => db.id === id)!
   );
 
   if (isAlterSchema.value && allowUsingSchemaEditor(selectedDatabaseList)) {

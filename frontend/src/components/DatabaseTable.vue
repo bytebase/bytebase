@@ -5,6 +5,7 @@
       :data-source="pagedDataSource"
       :custom-header="true"
       :class="tableClass"
+      :row-clickable="rowClickable"
       @click-row="clickDatabase"
     >
       <template #header>
@@ -316,6 +317,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  schemaless: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["select-database"]);
@@ -386,11 +391,13 @@ const columnListMap = computed(() => {
     title: t("common.name"),
     width: "minmax(auto, 1.5fr)",
   };
-  const SCHEMA_VERSION = {
-    title: t("common.schema-version"),
-    width: { lg: "minmax(auto, 1fr)" },
-    class: "hidden lg:flex",
-  };
+  const SCHEMA_VERSION = props.schemaless
+    ? undefined
+    : {
+        title: t("common.schema-version"),
+        width: { lg: "minmax(auto, 1fr)" },
+        class: "hidden lg:flex",
+      };
   const PROJECT = {
     title: t("common.project"),
     width: "minmax(auto, 1fr)",
@@ -408,7 +415,7 @@ const columnListMap = computed(() => {
     width: "auto",
     class: "items-center",
   };
-  return new Map<Mode, BBGridColumn[]>([
+  return new Map<Mode, (BBGridColumn | undefined)[]>([
     [
       "ALL",
       [NAME, SCHEMA_VERSION, PROJECT, ENVIRONMENT, INSTANCE, SYNC_STATUS],
@@ -422,7 +429,7 @@ const columnListMap = computed(() => {
 });
 
 const showSchemaVersionColumn = computed(() => {
-  return props.mode !== "ALL_TINY";
+  return props.mode !== "ALL_TINY" && !props.schemaless;
 });
 
 const showInstanceColumn = computed(() => {
@@ -449,7 +456,7 @@ const showMiscColumn = computed(() => {
 });
 
 const columnList = computed(() => {
-  const list = cloneDeep(columnListMap.value.get(props.mode)!);
+  const list = cloneDeep(columnListMap.value.get(props.mode)!).filter(Boolean);
   if (props.showSelectionColumn) {
     list.unshift({
       title: "",
@@ -457,7 +464,7 @@ const columnList = computed(() => {
       class: "items-center !px-2",
     });
   }
-  return list;
+  return list as BBGridColumn[];
 });
 
 const table = useVueTable<Database>({
@@ -466,7 +473,7 @@ const table = useVueTable<Database>({
   },
   get columns() {
     return columnList.value.map<ColumnDef<Database>>((col, index) => ({
-      header: col.title,
+      header: col.title!,
     }));
   },
   getCoreRowModel: getCoreRowModel(),
