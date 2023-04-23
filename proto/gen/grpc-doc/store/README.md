@@ -40,6 +40,8 @@
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
+    - [SecretEntry](#bytebase-store-SecretEntry)
+    - [Secrets](#bytebase-store-Secrets)
     - [TableMetadata](#bytebase-store-TableMetadata)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
@@ -603,6 +605,38 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | tables | [TableMetadata](#bytebase-store-TableMetadata) | repeated | The tables is the list of tables in a schema. |
 | views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
+
+
+
+
+
+
+<a name="bytebase-store-SecretEntry"></a>
+
+### SecretEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of the secret. |
+| value | [string](#string) |  | The value is the value of the secret. |
+| description | [string](#string) |  | The description is the description of the secret. |
+
+
+
+
+
+
+<a name="bytebase-store-Secrets"></a>
+
+### Secrets
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| secrets | [SecretEntry](#bytebase-store-SecretEntry) | repeated | The secrets is the list of secrets. |
 
 
 
