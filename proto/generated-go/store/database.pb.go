@@ -997,6 +997,120 @@ func (x *InstanceRoleMetadata) GetGrant() string {
 	return ""
 }
 
+type Secrets struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The secrets is the list of secrets.
+	Secrets []*SecretEntry `protobuf:"bytes,1,rep,name=secrets,proto3" json:"secrets,omitempty"`
+}
+
+func (x *Secrets) Reset() {
+	*x = Secrets{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_database_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Secrets) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Secrets) ProtoMessage() {}
+
+func (x *Secrets) ProtoReflect() protoreflect.Message {
+	mi := &file_store_database_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Secrets.ProtoReflect.Descriptor instead.
+func (*Secrets) Descriptor() ([]byte, []int) {
+	return file_store_database_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *Secrets) GetSecrets() []*SecretEntry {
+	if x != nil {
+		return x.Secrets
+	}
+	return nil
+}
+
+type SecretEntry struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name is the name of the secret.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The value is the value of the secret.
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	// The description is the description of the secret.
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+}
+
+func (x *SecretEntry) Reset() {
+	*x = SecretEntry{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_database_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SecretEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretEntry) ProtoMessage() {}
+
+func (x *SecretEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_store_database_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretEntry.ProtoReflect.Descriptor instead.
+func (*SecretEntry) Descriptor() ([]byte, []int) {
+	return file_store_database_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SecretEntry) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *SecretEntry) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+func (x *SecretEntry) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
 var File_store_database_proto protoreflect.FileDescriptor
 
 var file_store_database_proto_rawDesc = []byte{
@@ -1140,9 +1254,19 @@ var file_store_database_proto_rawDesc = []byte{
 	0x61, 0x6e, 0x63, 0x65, 0x52, 0x6f, 0x6c, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
 	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
 	0x6e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x67, 0x72, 0x61, 0x6e, 0x74, 0x18, 0x07, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x05, 0x67, 0x72, 0x61, 0x6e, 0x74, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65,
-	0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x01, 0x28, 0x09, 0x52, 0x05, 0x67, 0x72, 0x61, 0x6e, 0x74, 0x22, 0x40, 0x0a, 0x07, 0x53, 0x65,
+	0x63, 0x72, 0x65, 0x74, 0x73, 0x12, 0x35, 0x0a, 0x07, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73,
+	0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x45, 0x6e,
+	0x74, 0x72, 0x79, 0x52, 0x07, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x22, 0x59, 0x0a, 0x0b,
+	0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x12, 0x0a, 0x04, 0x6e,
+	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12,
+	0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
+	0x76, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63,
+	0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72,
+	0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1157,7 +1281,7 @@ func file_store_database_proto_rawDescGZIP() []byte {
 	return file_store_database_proto_rawDescData
 }
 
-var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_store_database_proto_goTypes = []interface{}{
 	(*DatabaseMetadata)(nil),       // 0: bytebase.store.DatabaseMetadata
 	(*SchemaMetadata)(nil),         // 1: bytebase.store.SchemaMetadata
@@ -1170,7 +1294,9 @@ var file_store_database_proto_goTypes = []interface{}{
 	(*ExtensionMetadata)(nil),      // 8: bytebase.store.ExtensionMetadata
 	(*ForeignKeyMetadata)(nil),     // 9: bytebase.store.ForeignKeyMetadata
 	(*InstanceRoleMetadata)(nil),   // 10: bytebase.store.InstanceRoleMetadata
-	(*wrapperspb.StringValue)(nil), // 11: google.protobuf.StringValue
+	(*Secrets)(nil),                // 11: bytebase.store.Secrets
+	(*SecretEntry)(nil),            // 12: bytebase.store.SecretEntry
+	(*wrapperspb.StringValue)(nil), // 13: google.protobuf.StringValue
 }
 var file_store_database_proto_depIdxs = []int32{
 	1,  // 0: bytebase.store.DatabaseMetadata.schemas:type_name -> bytebase.store.SchemaMetadata
@@ -1181,13 +1307,14 @@ var file_store_database_proto_depIdxs = []int32{
 	3,  // 5: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
 	7,  // 6: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
 	9,  // 7: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
-	11, // 8: bytebase.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
+	13, // 8: bytebase.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
 	5,  // 9: bytebase.store.ViewMetadata.dependent_columns:type_name -> bytebase.store.DependentColumn
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	12, // 10: bytebase.store.Secrets.secrets:type_name -> bytebase.store.SecretEntry
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_store_database_proto_init() }
@@ -1328,6 +1455,30 @@ func file_store_database_proto_init() {
 				return nil
 			}
 		}
+		file_store_database_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Secrets); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_database_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SecretEntry); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1335,7 +1486,7 @@ func file_store_database_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_database_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
