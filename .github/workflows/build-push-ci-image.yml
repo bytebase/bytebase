@@ -13,7 +13,7 @@ jobs:
   docker:
     strategy:
       matrix:
-        flavor: [debian]d
+        flavor: [debian]
         include:
           - flavor: debian
             dockerfile: scripts/Dockerfile
