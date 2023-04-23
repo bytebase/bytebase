@@ -858,10 +858,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if instance == nil {
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance not found for database %v", d.DatabaseID))
 			}
-			if instance.Engine == db.MongoDB && d.MigrationType != db.Data && d.MigrationType != db.Baseline {
-				// We disallow user to create non-data migration for MongoDB.
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot create non-data migration for MongoDB, consider using data migration(DML) instead.")
-			}
 			matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, []*store.DatabaseMessage{database})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
