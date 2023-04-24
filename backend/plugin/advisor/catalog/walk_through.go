@@ -1315,7 +1315,7 @@ func (d *DatabaseState) createSchema(name string) *SchemaState {
 	return schema
 }
 
-func (d *DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughError) {
+func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughError) {
 	p := tidbparser.New()
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.

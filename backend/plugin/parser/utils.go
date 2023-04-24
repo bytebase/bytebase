@@ -195,6 +195,8 @@ func collapseUnion(query string) (string, error) {
 	return buf.String(), nil
 }
 
+// SplitMultiSQLAndNormalize split multiple SQLs and normalize them.
+// For MySQL, filter DELIMITER statements and replace all non-semicolon delimiters with semicolons.
 func SplitMultiSQLAndNormalize(engineType EngineType, statement string) ([]SingleSQL, error) {
 	switch engineType {
 	case MySQL:
