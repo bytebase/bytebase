@@ -116,6 +116,8 @@ const handleSave = async (
       title: t("common.updated"),
     });
     dialog.value = undefined;
+  } catch {
+    // nothing, exception has been handled already
   } finally {
     state.loading = false;
   }

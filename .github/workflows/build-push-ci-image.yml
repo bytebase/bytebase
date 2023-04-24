@@ -11,13 +11,6 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   docker:
-    strategy:
-      matrix:
-        flavor: [debian]
-        include:
-          - flavor: debian
-            dockerfile: scripts/Dockerfile
-            platforms: linux/amd64,linux/x86_64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -26,6 +19,8 @@ jobs:
           echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
           echo "BUILD_USER=$(id -u -n)" >> $GITHUB_ENV
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Login to DockerHub
@@ -37,8 +32,8 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v4
         with:
-          file: ${{ matrix.dockerfile }}
-          platforms: ${{ matrix.platforms }}
+          file: scripts/Dockerfile
+          platforms: linux/amd64
           push: true
           tags: bytebase/bytebase:release-ci
           build-args: |

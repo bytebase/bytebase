@@ -557,7 +557,6 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 		ResourceID: &environmentID,
 	})
@@ -665,6 +664,7 @@ func (s DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteS
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	upperSecretName := strings.ToUpper(secretName)
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 		ResourceID: &environmentID,
 	})
@@ -705,7 +705,7 @@ func (s DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteS
 			secretsMap[secret.Name] = secret
 		}
 	}
-	delete(secretsMap, secretName)
+	delete(secretsMap, upperSecretName)
 
 	// Flatten the map to a slice.
 	var secretItems []*storepb.SecretItem
@@ -1363,15 +1363,19 @@ func isSecretValid(secret *storepb.SecretItem) error {
 		return errors.Errorf("invalid secret name: %s, name must not start with the 'BYTEBASE_' prefix", secret.Name)
 	}
 	// Names must not start with a number.
-	if unicode.IsNumber(rune(secret.Name[0])) {
+	if unicode.IsDigit(rune(secret.Name[0])) {
 		return errors.Errorf("invalid secret name: %s, name must not start with a number", secret.Name)
 	}
 
 	// Names can only contain alphanumeric characters ([a-z], [A-Z], [0-9]) or underscores (_). Spaces are not allowed.
 	for _, c := range secret.Name {
-		if !unicode.IsLetter(c) && !unicode.IsNumber(c) && c != '_' {
+		if !isLetter(c) && !unicode.IsDigit(c) && c != '_' {
 			return errors.Errorf("invalid secret name: %s, expect [a-z], [A-Z], [0-9], '_', but meet: %v", secret.Name, c)
 		}
 	}
 	return nil
+}
+
+func isLetter(c rune) bool {
+	return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
 }
