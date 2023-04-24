@@ -52,13 +52,13 @@
         </template>
       </BBTableCell>
       <!-- Started -->
-      <BBTableCell class="table-cell w-12">{{
-        humanizeTs(taskRun.createdTs)
-      }}</BBTableCell>
+      <BBTableCell class="table-cell w-12">
+        {{ dayjs(taskRun.createdTs * 1000).format("YYYY-MM-DD HH:mm") }}
+      </BBTableCell>
       <!-- Ended -->
-      <BBTableCell class="table-cell w-12">{{
-        humanizeTs(taskRun.updatedTs)
-      }}</BBTableCell>
+      <BBTableCell class="table-cell w-12">
+        {{ humanizeDuration(taskRun.updatedTs - taskRun.createdTs) }}
+      </BBTableCell>
     </template>
   </BBTable>
 </template>
@@ -100,7 +100,7 @@ const columnList = computed((): BBTableColumn[] => [
     title: t("task.started"),
   },
   {
-    title: t("task.ended"),
+    title: t("task.execution-time"),
   },
 ]);
 
