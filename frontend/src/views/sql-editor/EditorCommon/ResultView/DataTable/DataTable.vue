@@ -84,7 +84,7 @@ import { escape } from "lodash-es";
 
 import useTableColumnWidthLogic from "./useTableResize";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
-import { getHighlightHTMLByKeyWords } from "@/utils";
+import { getHighlightHTMLByRegExp } from "@/utils";
 
 export type DataTableColumn = {
   key: string;
@@ -131,17 +131,21 @@ const isSensitiveColumn = (index: number): boolean => {
 };
 
 const renderCellValue = (value: any) => {
-  const str = escape(String(value));
+  const str = String(value);
   if (str.length === 0) {
     return `<br style="min-width: 1rem; display: inline-flex;" />`;
   }
 
   const { keyword } = props;
   if (!keyword) {
-    return str;
+    return escape(str);
   }
 
-  return getHighlightHTMLByKeyWords(str, escape(keyword));
+  return getHighlightHTMLByRegExp(
+    escape(str),
+    escape(keyword),
+    false /* !caseSensitive */
+  );
 };
 
 const scrollTo = (x: number, y: number) => {

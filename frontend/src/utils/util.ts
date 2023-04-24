@@ -3,7 +3,7 @@ import dayOfYear from "dayjs/plugin/dayOfYear";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
-import { round } from "lodash-es";
+import { escapeRegExp, round } from "lodash-es";
 import semver from "semver";
 
 dayjs.extend(dayOfYear);
@@ -169,6 +169,16 @@ export function getStringCookie(name: string): string {
 export function getHighlightHTMLByKeyWords(s: string, k: string) {
   if (!k) return s;
   return s.replaceAll(k, `<b class="text-accent">${k}</b>`);
+}
+
+export function getHighlightHTMLByRegExp(
+  s: string,
+  pattern: string,
+  caseSensitive = false
+) {
+  const flags = caseSensitive ? "g" : "gi";
+  const re = new RegExp(escapeRegExp(pattern), flags);
+  return s.replaceAll(re, (k) => `<b class="text-accent">${k}</b>`);
 }
 
 export type Defer<T> = {
