@@ -332,7 +332,8 @@
       "title": "应用到所有未执行任务？",
       "self": "应用到所有未执行任务",
       "current-only": "只应用到当前任务"
-    }
+    },
+    "execution-time": "执行时间"
   },
   "banner": {
     "update-license": "更新证书",
