@@ -75,7 +75,7 @@ func TestIsSecretValid(t *testing.T) {
 		// Disallow empty value.
 		{
 			item: &storepb.SecretItem{
-				Name:        "name",
+				Name:        "NAME",
 				Value:       "",
 				Description: "",
 			},
@@ -84,7 +84,7 @@ func TestIsSecretValid(t *testing.T) {
 		// Name cannot start with a number.
 		{
 			item: &storepb.SecretItem{
-				Name:        "1name",
+				Name:        "1NAME",
 				Value:       "pwd",
 				Description: "",
 			},
@@ -99,10 +99,10 @@ func TestIsSecretValid(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		// Names can only contain alphanumeric characters ([a-z], [A-Z], [0-9]) or underscores (_). Spaces are not allowed.
+		// Names can only contain alphanumeric characters ([A-Z], [0-9]) or underscores (_). Spaces are not allowed.
 		{
 			item: &storepb.SecretItem{
-				Name:        "name with space",
+				Name:        "NAME WITH SPACE",
 				Value:       "pwd",
 				Description: "",
 			},
@@ -110,7 +110,7 @@ func TestIsSecretValid(t *testing.T) {
 		},
 		{
 			item: &storepb.SecretItem{
-				Name:        "name-with-hyphen",
+				Name:        "NAME-WITH-DASH",
 				Value:       "pwd",
 				Description: "",
 			},
@@ -118,7 +118,7 @@ func TestIsSecretValid(t *testing.T) {
 		},
 		{
 			item: &storepb.SecretItem{
-				Name:        "name_with_special_characters_©",
+				Name:        "NAME_WITH_SPECIAL_CHARACTER_©",
 				Value:       "pwd",
 				Description: "",
 			},
@@ -126,7 +126,31 @@ func TestIsSecretValid(t *testing.T) {
 		},
 		{
 			item: &storepb.SecretItem{
-				Name:        "name_with_special_characters_normal",
+				Name:        "NAME_WITH_SPECIAL_CHARACTER_ç",
+				Value:       "pwd",
+				Description: "",
+			},
+			wantErr: true,
+		},
+		{
+			item: &storepb.SecretItem{
+				Name:        "NAME_WITH_SPECIAL_CHARACTER_Ⅷ",
+				Value:       "pwd",
+				Description: "",
+			},
+			wantErr: true,
+		},
+		{
+			item: &storepb.SecretItem{
+				Name:        "NAME_WITH_LOWER_CASE_a",
+				Value:       "pwd",
+				Description: "",
+			},
+			wantErr: true,
+		},
+		{
+			item: &storepb.SecretItem{
+				Name:        "NORMAL_NAME",
 				Value:       "pwd",
 				Description: "",
 			},
