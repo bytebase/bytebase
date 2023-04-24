@@ -72,7 +72,7 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, _ *store.TaskChec
 		return nil, err
 	}
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
-	// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
+	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(payload.Statement, materials)
 
 	switch instance.Engine {
