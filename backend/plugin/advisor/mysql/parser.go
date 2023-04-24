@@ -23,63 +23,80 @@ func newParser() *tidbparser.Parser {
 }
 
 func parseStatement(statement string, charset string, collation string) ([]ast.StmtNode, []advisor.Advice) {
+	list, err := parser.SplitMultiSQLAndNormalize(parser.MySQL, statement)
+	if err != nil {
+		return nil, []advisor.Advice{
+			{
+				Status:  advisor.Error,
+				Code:    advisor.Internal,
+				Title:   "Split multi-SQL error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	var result []ast.StmtNode
+	var adviceList []advisor.Advice
 	p := newParser()
-
-	root, _, err := p.Parse(statement, charset, collation)
-	if err != nil {
-		return nil, []advisor.Advice{
-			{
-				Status:  advisor.Error,
-				Code:    advisor.StatementSyntaxError,
-				Title:   advisor.SyntaxErrorTitle,
-				Content: err.Error(),
-			},
+	for _, sql := range list {
+		if sql.Empty {
+			continue
 		}
-	}
-
-	// sikp the setting line stage
-	if len(root) == 0 {
-		return root, nil
-	}
-
-	// setting line stage
-	sqlList, err := parser.SplitMultiSQL(parser.MySQL, statement)
-	if err != nil {
-		return nil, []advisor.Advice{
-			{
-				Status:  advisor.Error,
-				Code:    advisor.Internal,
-				Title:   "Split multi-SQL error",
-				Content: err.Error(),
-			},
+		if parser.IsTiDBUnsupportDDLStmt(sql.Text) {
+			// skip the TiDB parser unsupported DDL statement
+			continue
 		}
-	}
-	if len(sqlList) != len(root) {
-		return nil, []advisor.Advice{
-			{
-				Status:  advisor.Error,
-				Code:    advisor.Internal,
-				Title:   "Split multi-SQL error",
-				Content: fmt.Sprintf("split multi-SQL failed: the length should be %d, but get %d. stmt: \"%s\"", len(root), len(sqlList), statement),
-			},
-		}
-	}
 
-	for i, node := range root {
-		node.SetText(nil, strings.TrimSpace(node.Text()))
-		node.SetOriginTextPosition(sqlList[i].LastLine)
-		if n, ok := node.(*ast.CreateTableStmt); ok {
-			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
-				return nil, []advisor.Advice{
-					{
-						Status:  advisor.Error,
-						Code:    advisor.Internal,
-						Title:   "Set line error",
-						Content: err.Error(),
-					},
-				}
+		nodes, warns, err := p.Parse(sql.Text, charset, collation)
+		if err != nil {
+			return nil, []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.StatementSyntaxError,
+					Title:   advisor.SyntaxErrorTitle,
+					Content: err.Error(),
+					Line:    sql.LastLine,
+				},
 			}
 		}
+		for _, warn := range warns {
+			adviceList = append(adviceList, advisor.Advice{
+				Status:  advisor.Warn,
+				Code:    advisor.StatementSyntaxError,
+				Title:   "Syntax Warning",
+				Content: warn.Error(),
+				Line:    sql.LastLine,
+			})
+		}
+		if len(nodes) == 0 {
+			continue
+		}
+		if len(nodes) > 1 {
+			return nil, append(adviceList, advisor.Advice{
+				Status:  advisor.Error,
+				Code:    advisor.Internal,
+				Title:   "Split multi-SQL error",
+				Content: fmt.Sprintf("get more than one sql after split: %s", sql.Text),
+				Line:    sql.LastLine,
+			})
+		}
+		node := nodes[0]
+		node.SetText(nil, strings.TrimSpace(node.Text()))
+		node.SetOriginTextPosition(sql.LastLine)
+		if n, ok := node.(*ast.CreateTableStmt); ok {
+			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
+				return nil, append(adviceList, advisor.Advice{
+					Status:  advisor.Error,
+					Code:    advisor.Internal,
+					Title:   "Set line error",
+					Content: err.Error(),
+					Line:    sql.LastLine,
+				})
+			}
+		}
+		result = append(result, node)
 	}
-	return root, nil
+
+	return result, adviceList
 }
