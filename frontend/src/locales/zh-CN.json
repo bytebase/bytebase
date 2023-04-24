@@ -1645,7 +1645,7 @@
     "admin-mode": {
       "self": "管理员模式"
     },
-    "read-only-mode-not-allowed": "实例{instance}无法通过只读模式访问。",
+    "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
     "run-selected": "运行选中的语句",
     "clear-screen": "清屏"
   },
