@@ -54,7 +54,7 @@
           <router-link
             to="/setting/role"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.roles") }}</router-link
+            >{{ $t("settings.sidebar.custom-roles") }}</router-link
           >
           <router-link
             v-if="showProjectItem"
