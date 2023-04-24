@@ -400,7 +400,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "role",
                 name: "setting.workspace.role",
-                meta: { title: () => t("settings.sidebar.roles") },
+                meta: { title: () => t("settings.sidebar.custom-roles") },
                 component: () => import("../views/SettingWorkspaceRole.vue"),
                 props: true,
               },

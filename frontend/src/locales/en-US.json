@@ -387,7 +387,7 @@
       "sensitive-data": "Data Anonymization",
       "access-control": "Data Access Control",
       "audit-log": "Audit Log",
-      "roles": "Roles",
+      "custom-roles": "Custom Roles",
       "mail-delivery": "Mail Delivery"
     },
     "profile": {
