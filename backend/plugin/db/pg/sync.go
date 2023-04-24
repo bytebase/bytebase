@@ -715,7 +715,7 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 		item := storepb.SlowQueryStatisticsItem{
 			SqlFingerprint:   fingerprint,
 			Count:            calls,
-			LatestLogTime:    timestamppb.New(now),
+			LatestLogTime:    timestamppb.New(now.UTC()),
 			TotalQueryTime:   durationpb.New(time.Duration(totalExecTime * float64(time.Millisecond))),
 			MaximumQueryTime: durationpb.New(time.Duration(maxExecTime * float64(time.Millisecond))),
 			TotalRowsSent:    rows,

@@ -475,7 +475,7 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (m
 	logs := make([]*slowLog, 0, db.SlowQueryMaxSamplePerDay)
 	query := `
 		SELECT
-			start_time,
+			convert_tz(start_time, @@log_timestamps, 'UTC'),
 			query_time,
 			lock_time,
 			rows_sent,
