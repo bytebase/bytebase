@@ -9,9 +9,11 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // FindDatabase finds a list of Database instances.
@@ -161,6 +163,7 @@ type DatabaseMessage struct {
 	SuccessfulSyncTimeTs int64
 	SchemaVersion        string
 	Labels               map[string]string
+	Secrets              *storepb.Secrets
 }
 
 // UpdateDatabaseMessage is the mssage for updating a database.
@@ -175,6 +178,7 @@ type UpdateDatabaseMessage struct {
 	SchemaVersion        *string
 	Labels               *map[string]string
 	SourceBackupID       *int
+	Secrets              *storepb.Secrets
 }
 
 // FindDatabaseMessage is the message for finding databases.
@@ -292,6 +296,14 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
 func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID int, create *DatabaseMessage) (int, error) {
+	emptySecret := &storepb.Secrets{
+		Items: []*storepb.SecretItem{},
+	}
+	secretsString, err := protojson.Marshal(emptySecret)
+	if err != nil {
+		return 0, err
+	}
+
 	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
 	query := `
 		INSERT INTO db (
@@ -302,9 +314,10 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 			name,
 			sync_status,
 			last_successful_sync_ts,
-			schema_version
+			schema_version,
+			secrets
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			updater_id = EXCLUDED.updater_id
 		RETURNING id`
@@ -316,8 +329,9 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 		api.DefaultProjectUID,
 		create.DatabaseName,
 		api.OK,
-		0,  /* last_successful_sync_ts */
-		"", /* schema_version */
+		0,             /* last_successful_sync_ts */
+		"",            /* schema_version */
+		secretsString, /* secrets */
 	).Scan(
 		&databaseUID,
 	); err != nil {
@@ -343,6 +357,11 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		return nil, errors.Errorf("instance %q not found", create.InstanceID)
 	}
 
+	secretsString, err := protojson.Marshal(create.Secrets)
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -359,9 +378,10 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			name,
 			sync_status,
 			last_successful_sync_ts,
-			schema_version
+			schema_version,
+			secrets
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
 			name = EXCLUDED.name,
@@ -377,6 +397,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		api.OK,
 		create.SuccessfulSyncTimeTs,
 		create.SchemaVersion,
+		secretsString,
 	).Scan(
 		&databaseUID,
 	); err != nil {
@@ -418,6 +439,13 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	}
 	if v := patch.SchemaVersion; v != nil {
 		set, args = append(set, fmt.Sprintf("schema_version = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Secrets; v != nil {
+		secretsString, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, fmt.Sprintf("secrets = $%d", len(args)+1)), append(args, secretsString)
 	}
 	args = append(args, instance.UID, patch.DatabaseName)
 
@@ -572,7 +600,8 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			) keys,
 			ARRAY_AGG (
 				db_label.value
-			) label_values
+			) label_values,
+			db.secrets
 		FROM db
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
@@ -591,6 +620,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			Labels: make(map[string]string),
 		}
 		var keys, values []sql.NullString
+		var secretsString string
 		if err := rows.Scan(
 			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
@@ -602,9 +632,15 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&databaseMessage.SchemaVersion,
 			pq.Array(&keys),
 			pq.Array(&values),
+			&secretsString,
 		); err != nil {
 			return nil, err
 		}
+		var secret storepb.Secrets
+		if err := protojson.Unmarshal([]byte(secretsString), &secret); err != nil {
+			return nil, err
+		}
+		databaseMessage.Secrets = &secret
 		if len(keys) != len(values) {
 			return nil, errors.Errorf("invalid length of database label keys and values")
 		}
