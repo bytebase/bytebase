@@ -129,7 +129,6 @@ const props = defineProps({
 });
 
 const ROLE_OWNER = "roles/OWNER";
-const ROLE_DEVELOPER = "roles/DEVELOPER";
 const { t } = useI18n();
 const currentUser = useCurrentUser();
 const projectResourceName = computed(
@@ -273,7 +272,7 @@ const addMember = async () => {
         name: principal.name,
       }),
     });
-    state.roleList = [ROLE_DEVELOPER];
+    state.roleList = [];
     state.principalId = undefined;
   } finally {
     state.adding = false;
