@@ -81,7 +81,7 @@ func parseStatement(statement string, charset string, collation string) ([]ast.S
 				Line:    sql.LastLine,
 			})
 		}
-		node := nodes[1]
+		node := nodes[0]
 		node.SetText(nil, strings.TrimSpace(node.Text()))
 		node.SetOriginTextPosition(sql.LastLine)
 		if n, ok := node.(*ast.CreateTableStmt); ok {

@@ -1346,7 +1346,7 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 		if len(nodes) > 1 {
 			return nil, NewParseError(fmt.Sprintf("get more than one sql after split: %s", sql.Text))
 		}
-		node := nodes[1]
+		node := nodes[0]
 		node.SetText(nil, strings.TrimSpace(node.Text()))
 		node.SetOriginTextPosition(sql.LastLine)
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
