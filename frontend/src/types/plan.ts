@@ -7,6 +7,8 @@ import {
 
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
+  // General
+  | "bb.feature.custom-role"
   // Admin & Security
   | "bb.feature.sso"
   | "bb.feature.2fa"
