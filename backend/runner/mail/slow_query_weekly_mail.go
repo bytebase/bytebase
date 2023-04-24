@@ -1,3 +1,4 @@
+// Package mail contains the slow query weekly mail sender.
 package mail
 
 import (
@@ -178,7 +179,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 		} else {
 			for _, user := range users {
 				apiValue.SMTPTo = user.Email
-				if err := s.send(apiValue, fmt.Sprintf("Database slow query weekly report %s", generateDateRange(now)), body); err != nil {
+				if err := send(apiValue, fmt.Sprintf("Database slow query weekly report %s", generateDateRange(now)), body); err != nil {
 					log.Error("Failed to send need config slow query policy email", zap.String("user", user.Name), zap.String("email", user.Email), zap.Error(err))
 				}
 			}
@@ -214,7 +215,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 				for _, member := range binding.Members {
 					apiValue.SMTPTo = member.Email
 					subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
-					if err := s.send(apiValue, subject, body); err != nil {
+					if err := send(apiValue, subject, body); err != nil {
 						log.Error("Failed to send need config slow query policy email", zap.String("user", member.Name), zap.String("email", member.Email), zap.Error(err))
 					}
 				}
@@ -390,7 +391,7 @@ func engineTypeString(engine db.Type) string {
 	return ""
 }
 
-func (s *SlowQueryWeeklyMailSender) send(mailSetting *api.SettingWorkspaceMailDeliveryValue, subject string, body string) error {
+func send(mailSetting *api.SettingWorkspaceMailDeliveryValue, subject string, body string) error {
 	email := mail.NewEmailMsg()
 
 	email.SetFrom(fmt.Sprintf("Bytebase <%s>", mailSetting.SMTPFrom)).
@@ -554,7 +555,7 @@ func (s *SlowQueryWeeklyMailSender) generateEnvironmentContent(
 		if _, err := buf.Write(environmentNoInstanceConfigured); err != nil {
 			return err
 		}
-		return
+		return nil
 	}
 
 	sort.Slice(instances, func(i, j int) bool {
@@ -643,7 +644,7 @@ func (s *SlowQueryWeeklyMailSender) generateEnvironmentContent(
 		}
 	}
 
-	return
+	return nil
 }
 
 func engineOrder(engine db.Type) int {
@@ -657,7 +658,7 @@ func engineOrder(engine db.Type) int {
 	}
 }
 
-func (s *SlowQueryWeeklyMailSender) sendNeedConfigSlowQueryPolicyEmail(mailSetting *api.SettingWorkspaceMailDeliveryValue, visitURL string) error {
+func (*SlowQueryWeeklyMailSender) sendNeedConfigSlowQueryPolicyEmail(mailSetting *api.SettingWorkspaceMailDeliveryValue, visitURL string) error {
 	email := mail.NewEmailMsg()
 
 	needConfigureTemplate, err := emailTemplates.ReadFile("templates/for-dba/need_configure.html")
