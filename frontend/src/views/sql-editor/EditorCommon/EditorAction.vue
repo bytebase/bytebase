@@ -13,22 +13,22 @@
           }}
         </span>
 
-        <span class="hidden sm:inline"
-          >({{ keyboardShortcutStr("cmd_or_ctrl+⏎") }})</span
-        >
+        <span class="hidden sm:inline ml-1">
+          ({{ keyboardShortcutStr("cmd_or_ctrl+⏎") }})
+        </span>
       </NButton>
       <NButton :disabled="!allowQuery" @click="handleExplainQuery">
         <mdi:play class="h-5 w-5 -ml-1.5" />
         <span>Explain</span>
-        <span class="hidden sm:inline"
-          >({{ keyboardShortcutStr("cmd_or_ctrl+E") }})</span
-        >
+        <span class="hidden sm:inline ml-1">
+          ({{ keyboardShortcutStr("cmd_or_ctrl+E") }})
+        </span>
       </NButton>
       <NButton :disabled="!allowQuery" @click="handleFormatSQL">
         <span>{{ $t("sql-editor.format") }}</span>
-        <span class="hidden sm:inline"
-          >({{ keyboardShortcutStr("shift+opt_or_alt+F") }})</span
-        >
+        <span class="hidden sm:inline ml-1">
+          ({{ keyboardShortcutStr("shift+opt_or_alt+F") }})
+        </span>
       </NButton>
       <NButton
         v-if="showClearScreen"
@@ -36,8 +36,8 @@
         @click="handleClearScreen"
       >
         <span>{{ $t("sql-editor.clear-screen") }}</span>
-        <span class="hidden sm:inline"
-          >({{ keyboardShortcutStr("shift+opt_or_alt+C") }})</span
+        <span class="hidden sm:inline ml-1">
+          ({{ keyboardShortcutStr("shift+opt_or_alt+C") }})</span
         >
       </NButton>
     </div>
@@ -56,9 +56,9 @@
         >
           <carbon:save class="h-5 w-5 -ml-1" />
           <span class="ml-1">{{ $t("common.save") }}</span>
-          <span class="hidden sm:inline ml-1"
-            >({{ keyboardShortcutStr("cmd_or_ctrl+S") }})</span
-          >
+          <span class="hidden sm:inline ml-1">
+            ({{ keyboardShortcutStr("cmd_or_ctrl+S") }})
+          </span>
         </NButton>
         <NPopover
           trigger="click"
