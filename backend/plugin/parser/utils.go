@@ -195,6 +195,40 @@ func collapseUnion(query string) (string, error) {
 	return buf.String(), nil
 }
 
+func SplitMultiSQLAndNormalize(engineType EngineType, statement string) ([]SingleSQL, error) {
+	switch engineType {
+	case MySQL:
+		list, err := SplitMultiSQL(MySQL, statement)
+		if err != nil {
+			return nil, err
+		}
+
+		var result []SingleSQL
+		delimiter := `;`
+		for _, sql := range list {
+			if IsDelimiter(sql.Text) {
+				delimiter, err = ExtractDelimiter(sql.Text)
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
+			if delimiter != ";" {
+				result = append(result, SingleSQL{
+					Text:     fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)),
+					LastLine: sql.LastLine,
+					Empty:    sql.Empty,
+				})
+			} else {
+				result = append(result, sql)
+			}
+		}
+		return result, nil
+	default:
+		return SplitMultiSQL(engineType, statement)
+	}
+}
+
 // SplitMultiSQL splits statement into a slice of the single SQL.
 func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error) {
 	var list []SingleSQL

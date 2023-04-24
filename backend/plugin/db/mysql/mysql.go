@@ -258,24 +258,12 @@ func splitAndTransformDelimiter(statement string) ([]string, error) {
 	var trunks []string
 
 	var out bytes.Buffer
-	statements, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	statements, err := bbparser.SplitMultiSQLAndNormalize(bbparser.MySQL, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split SQL statements")
 	}
-	delimiter := `;`
 	for _, singleSQL := range statements {
 		stmt := singleSQL.Text
-		if bbparser.IsDelimiter(stmt) {
-			delimiter, err = bbparser.ExtractDelimiter(stmt)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to extract delimiter")
-			}
-			continue
-		}
-		if delimiter != ";" {
-			// Trim delimiter
-			stmt = fmt.Sprintf("%s;", stmt[:len(stmt)-len(delimiter)])
-		}
 		if _, err = out.Write([]byte(stmt)); err != nil {
 			return nil, errors.Wrapf(err, "failed to write SQL statement")
 		}
