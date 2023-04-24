@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/utils"
 	"github.com/bytebase/bytebase/backend/store"
+	backendutils "github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewSchemaUpdateSDLExecutor creates a schema update (SDL) task executor.
@@ -72,7 +73,11 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *store.Ta
 		return true, nil, err
 	}
 
-	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database.DatabaseName, exec.dbFactory, statement)
+	materials := backendutils.GetSecretMapFromDatabaseMessage(database)
+	// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
+	renderedStatement := backendutils.RenderStatement(statement, materials)
+
+	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database.DatabaseName, exec.dbFactory, renderedStatement)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
