@@ -239,7 +239,8 @@
     "cannot-undo-this-action": "这个操作无法撤销",
     "expand": "展开",
     "collapse": "收起",
-    "select": "选择"
+    "select": "选择",
+    "optional": "可选"
   },
   "error-page": {
     "go-back-home": "回到主页"
