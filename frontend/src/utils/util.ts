@@ -33,6 +33,11 @@ export function humanizeTs(ts: number): string {
   return time.local().format("MMM D YYYY");
 }
 
+export function humanizeDuration(seconds: number): string {
+  if (seconds <= 1) return "Less than 1s";
+  return `${seconds}s`;
+}
+
 export function bytesToString(size: number): string {
   const unitList = ["B", "KB", "MB", "GB", "TB"];
   let i = 0;
