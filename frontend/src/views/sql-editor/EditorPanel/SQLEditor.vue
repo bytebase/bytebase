@@ -28,6 +28,7 @@ import {
   useSheetStore,
   useInstanceById,
   useDBSchemaStore,
+  useUIStateStore,
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
@@ -56,6 +57,7 @@ const databaseStore = useDatabaseStore();
 const dbSchemaStore = useDBSchemaStore();
 const sqlEditorStore = useSQLEditorStore();
 const sheetStore = useSheetStore();
+const uiStateStore = useUIStateStore();
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -132,6 +134,10 @@ const handleEditorReady = async () => {
       const query = selectedValue || typedValue || "";
       await emit("execute", query, {
         databaseType: selectedInstanceEngine.value,
+      });
+      uiStateStore.saveIntroStateByKey({
+        key: "data.query",
+        newState: true,
       });
     },
   });
