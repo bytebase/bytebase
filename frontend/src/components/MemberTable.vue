@@ -281,7 +281,9 @@ export default defineComponent({
     const hasMoreThanOneOwner = computed(
       () =>
         dataSource.value[0].list.filter(
-          (m) => m.principal.type !== "SYSTEM_BOT"
+          (m) =>
+            m.principal.type !== "SYSTEM_BOT" &&
+            m.principal.type !== "SERVICE_ACCOUNT"
         ).length > 1
     );
 
