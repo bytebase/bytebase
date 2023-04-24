@@ -119,8 +119,11 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 	}
 
 	host, port := dataSource.Host, dataSource.Port
-	if host == "" || port == "" {
-		host, port = adminDataSource.Host, adminDataSource.Port
+	if host == "" {
+		host = adminDataSource.Host
+	}
+	if port == "" {
+		port = adminDataSource.Port
 	}
 
 	dbBinDir := ""
