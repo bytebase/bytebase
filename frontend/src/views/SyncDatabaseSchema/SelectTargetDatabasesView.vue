@@ -29,7 +29,7 @@
             >{{ sourceDatabase.name }}</a
           >
         </div>
-        <div>
+        <div v-if="!isEqual(sourceSchema.migrationHistory.id, UNKNOWN_ID)">
           <span>{{ $t("database.sync-schema.schema-version.self") }} - </span>
           <a
             class="normal-link inline-flex items-center"
@@ -46,7 +46,7 @@
     </div>
 
     <Splitpanes
-      class="default-theme border rounded-lg w-full h-144 flex flex-row overflow-hidden mt-4"
+      class="default-theme relative border rounded-lg w-full h-144 flex flex-row overflow-hidden mt-4"
     >
       <Pane min-size="20" size="25">
         <div
@@ -213,6 +213,13 @@
             }}
           </div>
         </main>
+        <div
+          v-show="state.isLoading"
+          class="absolute inset-0 z-10 bg-white bg-opacity-40 backdrop-blur-sm w-full h-full flex flex-col justify-center items-center"
+        >
+          <BBSpin />
+          <span class="mt-1">{{ $t("common.loading") }}</span>
+        </div>
       </Pane>
     </Splitpanes>
   </div>
@@ -231,6 +238,7 @@
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import axios from "axios";
+import { isEqual } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { PropType, computed, onMounted, reactive, ref, watch } from "vue";
 import { CodeDiff } from "v-code-diff";
@@ -249,6 +257,7 @@ import {
   EnvironmentId,
   MigrationHistory,
   ProjectId,
+  UNKNOWN_ID,
   dialectOfEngine,
 } from "@/types";
 import { migrationHistorySlug } from "@/utils";
