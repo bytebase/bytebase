@@ -126,6 +126,22 @@ func TestIsSecretValid(t *testing.T) {
 		},
 		{
 			item: &storepb.SecretItem{
+				Name:        "name_with_special_characters_ç",
+				Value:       "pwd",
+				Description: "",
+			},
+			wantErr: true,
+		},
+		{
+			item: &storepb.SecretItem{
+				Name:        "name_with_special_characters_Ⅷ",
+				Value:       "pwd",
+				Description: "",
+			},
+			wantErr: true,
+		},
+		{
+			item: &storepb.SecretItem{
 				Name:        "name_with_special_characters_normal",
 				Value:       "pwd",
 				Description: "",
