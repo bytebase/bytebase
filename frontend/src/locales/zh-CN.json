@@ -385,7 +385,7 @@
       "sensitive-data": "数据脱敏",
       "access-control": "数据访问控制",
       "audit-log": "审计日志",
-      "roles": "角色",
+      "custom-roles": "自定义角色",
       "mail-delivery": "邮件传输"
     },
     "profile": {
