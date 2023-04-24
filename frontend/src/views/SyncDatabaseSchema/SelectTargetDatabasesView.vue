@@ -46,7 +46,7 @@
     </div>
 
     <div
-      class="default-theme relative border rounded-lg w-full h-144 flex flex-row overflow-hidden mt-4"
+      class="relative border rounded-lg w-full h-144 flex flex-row overflow-hidden mt-4"
     >
       <div class="w-1/4 min-w-[256px] max-w-xs h-full border-r">
         <div

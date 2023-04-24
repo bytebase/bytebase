@@ -217,8 +217,22 @@ const allowNext = computed(() => {
       isValidId(state.sourceSchema.databaseId) &&
       !isUndefined(state.sourceSchema.migrationHistory)
     );
+  } else {
+    if (!targetDatabaseViewRef.value) {
+      return false;
+    }
+    const targetDatabaseList = targetDatabaseViewRef.value?.targetDatabaseList;
+    const targetDatabaseDiffList = targetDatabaseList
+      .map((db) => {
+        const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.id];
+        return {
+          id: db.id,
+          diff: diff?.edited || "",
+        };
+      })
+      .filter((item) => item.diff !== "");
+    return targetDatabaseDiffList.length > 0;
   }
-  return true;
 });
 
 const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
