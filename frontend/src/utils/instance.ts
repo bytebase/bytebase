@@ -12,16 +12,16 @@ export const supportedEngineList = () => {
   const engines: EngineType[] = [
     "MYSQL",
     "POSTGRES",
-    "OCEANBASE",
     "TIDB",
     "SNOWFLAKE",
     "CLICKHOUSE",
     "MONGODB",
-    "SPANNER",
     "REDIS",
+    "SPANNER",
     "ORACLE",
-    "MSSQL",
+    "OCEANBASE",
     "MARIADB",
+    "MSSQL",
     "REDSHIFT",
   ];
   return engines;
@@ -132,6 +132,7 @@ export const instanceHasSSL = (
     "REDIS",
     "ORACLE",
     "MARIADB",
+    "OCEANBASE",
   ].includes(engine);
 };
 

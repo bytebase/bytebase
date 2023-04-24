@@ -109,17 +109,21 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 // Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
 func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, databaseName string) (db.Driver, error) {
 	dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
+	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	// If there are no read-only data source, fall back to admin data source.
 	if dataSource == nil {
-		dataSource = utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		dataSource = adminDataSource
 	}
 	if dataSource == nil {
 		return nil, common.Errorf(common.Internal, "data source not found for instance %q", instance.Title)
 	}
 
 	host, port := dataSource.Host, dataSource.Port
-	if dataSource.Host != "" || dataSource.Port != "" {
-		host, port = dataSource.Host, dataSource.Port
+	if host == "" {
+		host = adminDataSource.Host
+	}
+	if port == "" {
+		port = adminDataSource.Port
 	}
 
 	dbBinDir := ""

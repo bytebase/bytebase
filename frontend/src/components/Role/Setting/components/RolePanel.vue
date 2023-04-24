@@ -79,6 +79,7 @@ import { ResourceIdField } from "@/components/v2";
 import { pushNotification, useRoleStore } from "@/store";
 import { extractRoleResourceName } from "@/utils";
 import { ValidatedMessage } from "@/types";
+import { useCustomRoleSettingContext } from "../context";
 
 type LocalState = {
   role: Role;
@@ -98,6 +99,8 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const store = useRoleStore();
+const { hasCustomRoleFeature, showFeatureModal } =
+  useCustomRoleSettingContext();
 const state = reactive<LocalState>({
   role: Role.fromJSON({}),
   dirty: false,
@@ -124,6 +127,15 @@ const allowSave = computed(() => {
 });
 
 const handleSave = async () => {
+  if (!hasCustomRoleFeature.value) {
+    showFeatureModal.value = true;
+
+    // Getting crazy to adjust the z-indexes of the modal and the panel drawer
+    // so just close the panel drawer here.
+    emit("close");
+    return;
+  }
+
   state.loading = true;
   try {
     await store.upsertRole(state.role);

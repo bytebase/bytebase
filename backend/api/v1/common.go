@@ -31,6 +31,7 @@ const (
 	riskPrefix                   = "risks/"
 	reviewPrefix                 = "reviews/"
 	rolePrefix                   = "roles/"
+	secretNamePrefix             = "secrets/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -110,6 +111,15 @@ func getEnvironmentInstanceDatabaseID(name string) (string, string, string, erro
 		return "", "", "", err
 	}
 	return tokens[0], tokens[1], tokens[2], nil
+}
+
+func getEnvironmentInstanceDatabaseIDSecretName(name string) (string, string, string, string, error) {
+	// the instance request should be environments/{environment-id}/instances/{instance-id}/databases/{database-id}/secrets/{secret-name}
+	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseIDPrefix, secretNamePrefix)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], tokens[3], nil
 }
 
 func getEnvironmentIDInstanceDatabaseIDBackupName(name string) (string, string, string, string, error) {

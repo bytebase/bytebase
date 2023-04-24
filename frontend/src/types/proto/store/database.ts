@@ -183,11 +183,11 @@ export interface InstanceRoleMetadata {
 }
 
 export interface Secrets {
-  /** The secrets is the list of secrets. */
-  secrets: SecretEntry[];
+  /** The list of secrets. */
+  items: SecretItem[];
 }
 
-export interface SecretEntry {
+export interface SecretItem {
   /** The name is the name of the secret. */
   name: string;
   /** The value is the value of the secret. */
@@ -1546,13 +1546,13 @@ export const InstanceRoleMetadata = {
 };
 
 function createBaseSecrets(): Secrets {
-  return { secrets: [] };
+  return { items: [] };
 }
 
 export const Secrets = {
   encode(message: Secrets, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.secrets) {
-      SecretEntry.encode(v!, writer.uint32(10).fork()).ldelim();
+    for (const v of message.items) {
+      SecretItem.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -1569,7 +1569,7 @@ export const Secrets = {
             break;
           }
 
-          message.secrets.push(SecretEntry.decode(reader, reader.uint32()));
+          message.items.push(SecretItem.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -1581,15 +1581,15 @@ export const Secrets = {
   },
 
   fromJSON(object: any): Secrets {
-    return { secrets: Array.isArray(object?.secrets) ? object.secrets.map((e: any) => SecretEntry.fromJSON(e)) : [] };
+    return { items: Array.isArray(object?.items) ? object.items.map((e: any) => SecretItem.fromJSON(e)) : [] };
   },
 
   toJSON(message: Secrets): unknown {
     const obj: any = {};
-    if (message.secrets) {
-      obj.secrets = message.secrets.map((e) => e ? SecretEntry.toJSON(e) : undefined);
+    if (message.items) {
+      obj.items = message.items.map((e) => e ? SecretItem.toJSON(e) : undefined);
     } else {
-      obj.secrets = [];
+      obj.items = [];
     }
     return obj;
   },
@@ -1600,17 +1600,17 @@ export const Secrets = {
 
   fromPartial(object: DeepPartial<Secrets>): Secrets {
     const message = createBaseSecrets();
-    message.secrets = object.secrets?.map((e) => SecretEntry.fromPartial(e)) || [];
+    message.items = object.items?.map((e) => SecretItem.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseSecretEntry(): SecretEntry {
+function createBaseSecretItem(): SecretItem {
   return { name: "", value: "", description: "" };
 }
 
-export const SecretEntry = {
-  encode(message: SecretEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const SecretItem = {
+  encode(message: SecretItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -1623,10 +1623,10 @@ export const SecretEntry = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SecretEntry {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SecretItem {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSecretEntry();
+    const message = createBaseSecretItem();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1660,7 +1660,7 @@ export const SecretEntry = {
     return message;
   },
 
-  fromJSON(object: any): SecretEntry {
+  fromJSON(object: any): SecretItem {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       value: isSet(object.value) ? String(object.value) : "",
@@ -1668,7 +1668,7 @@ export const SecretEntry = {
     };
   },
 
-  toJSON(message: SecretEntry): unknown {
+  toJSON(message: SecretItem): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.value !== undefined && (obj.value = message.value);
@@ -1676,12 +1676,12 @@ export const SecretEntry = {
     return obj;
   },
 
-  create(base?: DeepPartial<SecretEntry>): SecretEntry {
-    return SecretEntry.fromPartial(base ?? {});
+  create(base?: DeepPartial<SecretItem>): SecretItem {
+    return SecretItem.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SecretEntry>): SecretEntry {
-    const message = createBaseSecretEntry();
+  fromPartial(object: DeepPartial<SecretItem>): SecretItem {
+    const message = createBaseSecretItem();
     message.name = object.name ?? "";
     message.value = object.value ?? "";
     message.description = object.description ?? "";

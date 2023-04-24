@@ -268,6 +268,19 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
+            path: "sync-schema",
+            name: "workspace.sync-schema",
+            meta: { title: () => startCase(t("database.sync-schema.title")) },
+            components: {
+              content: () => import("../views/SyncDatabaseSchema/index.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
             path: "anomaly-center",
             name: "workspace.anomaly-center",
             meta: { title: () => t("anomaly-center") },
@@ -387,7 +400,7 @@ const routes: Array<RouteRecordRaw> = [
               {
                 path: "role",
                 name: "setting.workspace.role",
-                meta: { title: () => t("settings.sidebar.roles") },
+                meta: { title: () => t("settings.sidebar.custom-roles") },
                 component: () => import("../views/SettingWorkspaceRole.vue"),
                 props: true,
               },
@@ -1326,6 +1339,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.home" ||
     to.name === "workspace.inbox" ||
     to.name === "workspace.slow-query" ||
+    to.name === "workspace.sync-schema" ||
     to.name === "workspace.anomaly-center" ||
     to.name === "workspace.project" ||
     to.name === "workspace.instance" ||

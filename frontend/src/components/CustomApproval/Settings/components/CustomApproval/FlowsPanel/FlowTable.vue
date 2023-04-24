@@ -132,11 +132,15 @@ const editApprovalTemplate = (rule: LocalApprovalRule) => {
 };
 
 const deleteRule = async (rule: LocalApprovalRule) => {
-  await store.deleteRule(rule);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.deleted"),
-  });
+  try {
+    await store.deleteRule(rule);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.deleted"),
+    });
+  } catch {
+    // nothing, exception has been handled already
+  }
 };
 </script>

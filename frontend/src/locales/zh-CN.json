@@ -238,7 +238,9 @@
     "revoke": "撤销",
     "cannot-undo-this-action": "这个操作无法撤销",
     "expand": "展开",
-    "collapse": "收起"
+    "collapse": "收起",
+    "select": "选择",
+    "optional": "可选"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -331,7 +333,8 @@
       "title": "应用到所有未执行任务？",
       "self": "应用到所有未执行任务",
       "current-only": "只应用到当前任务"
-    }
+    },
+    "execution-time": "执行时间"
   },
   "banner": {
     "update-license": "更新证书",
@@ -382,7 +385,7 @@
       "sensitive-data": "数据脱敏",
       "access-control": "数据访问控制",
       "audit-log": "审计日志",
-      "roles": "角色",
+      "custom-roles": "自定义角色",
       "mail-delivery": "邮件传输"
     },
     "profile": {
@@ -762,7 +765,6 @@
     "create-project": "@:common.create@:common.project",
     "edit-data": "编辑数据",
     "troubleshoot": "问题排查",
-    "sync-schema": "库表同步",
     "transfer-in-db": "转移数据库",
     "request-db": "申请数据库",
     "from-unassigned-databases": "从未分配的数据库",
@@ -1148,7 +1150,24 @@
     "selected-n-databases": "已选择 {n} 个数据库",
     "sync-schema": {
       "title": "库表同步",
+      "description": "Bytebase 支持将一个数据库的指定 Schema 版本同步到其他数据库。",
+      "select-source-schema": "选择源数据库",
+      "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
+      "source-database": "源数据库",
+      "source-schema": "源 Schema",
+      "schema-version": {
+        "self": "Schema 版本",
+        "description": "每次通过 Bytebase 应用模式变更时，都会记录模式版本。"
+      },
+      "target-databases": "目标数据库",
+      "with-diff": "有差异",
+      "no-diff": "无差异",
+      "message": {
+        "select-a-target-database-first": "请先选择一个目标数据库。",
+        "no-target-databases": "无目标数据库",
+        "no-diff-found": "未发现差异。"
+      },
       "to-database": "选择待同步的数据库",
       "from-database": "选择源数据库",
       "schema-change-preview": "预览 '{database}' 的 Schema 变更",
@@ -1834,6 +1853,10 @@
       "bb-feature-rbac": {
         "title": "角色管理",
         "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色。"
+      },
+      "bb-feature-custom-role": {
+        "title": "自定义角色",
+        "desc": "定义自定义角色，你可以将它们应用到项目成员上。"
       },
       "bb-feature-watermark": {
         "title": "水印设置",
