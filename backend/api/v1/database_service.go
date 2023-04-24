@@ -557,6 +557,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 		ResourceID: &environmentID,
 	})
@@ -599,16 +600,18 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	}
 
 	var newSecret storepb.SecretItem
-	if _, ok := secretsMap[secretName]; !ok {
+	// We store the secret name in upper case to avoid case sensitive issue, but we should use the original secret name in error message.
+	upperSecretName := strings.ToUpper(secretName)
+	if _, ok := secretsMap[upperSecretName]; !ok {
 		// If the secret is not existed and allow_missing is false, we will not create it.
 		if !request.AllowMissing {
 			return nil, status.Errorf(codes.NotFound, "secret %q not found", secretName)
 		}
-		newSecret.Name = secretName
+		newSecret.Name = upperSecretName
 		newSecret.Value = request.Secret.Value
 		newSecret.Description = request.Secret.Description
 	} else {
-		oldSecret := secretsMap[secretName]
+		oldSecret := secretsMap[upperSecretName]
 		newSecret.Name = oldSecret.Name
 		newSecret.Value = oldSecret.Value
 		newSecret.Description = oldSecret.Description
@@ -628,7 +631,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	secretsMap[secretName] = &newSecret
+	secretsMap[upperSecretName] = &newSecret
 	// Flatten the map to a slice.
 	var secretItems []*storepb.SecretItem
 	for _, secret := range secretsMap {
@@ -649,7 +652,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 
 	// Get the secret from the updated database.
 	for _, secret := range updatedDatabase.Secrets.Items {
-		if secret.Name == secretName {
+		if secret.Name == upperSecretName {
 			return stripeAndConvertToServiceSecret(secret, updatedDatabase.EnvironmentID, updatedDatabase.InstanceID, updatedDatabase.DatabaseName), nil
 		}
 	}
