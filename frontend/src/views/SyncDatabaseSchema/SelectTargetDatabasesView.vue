@@ -15,7 +15,7 @@
           <span>{{ $t("common.environment") }} - </span>
           <a
             class="normal-link inline-flex items-center"
-            :href="`/environment/${environmentSlug(environment)}`"
+            :href="`/environment#${environment.id}`"
             >{{ environment.name }}</a
           >
         </div>
