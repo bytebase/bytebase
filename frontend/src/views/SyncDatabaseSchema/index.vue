@@ -80,7 +80,7 @@
                 databaseMigrationHistoryList(state.sourceSchema.databaseId as DatabaseId)
               "
               :placeholder="$t('change-history.select')"
-              :show-prefix-item="true"
+              :show-prefix-item="databaseMigrationHistoryList(state.sourceSchema.databaseId as DatabaseId).length > 0"
               @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
             >
               <template #menuItem="{ item: migrationHistory }">
@@ -384,8 +384,23 @@ watch(
       ).filter((migrationHistory) =>
         allowedMigrationTypeList.includes(migrationHistory.type)
       );
-      // Default select the first migration history.
-      state.sourceSchema.migrationHistory = head(migrationHistoryList);
+
+      if (migrationHistoryList.length > 0) {
+        // Default select the first migration history.
+        state.sourceSchema.migrationHistory = head(migrationHistoryList);
+      } else {
+        // If database has no migration history, we will use its latest schema.
+        const schema = await databaseStore.fetchDatabaseSchemaById(
+          databaseId as DatabaseId
+        );
+        state.sourceSchema.migrationHistory = {
+          id: UNKNOWN_ID,
+          updatedTs: Date.now() / 1000,
+          schema: schema,
+          version: "Latest version",
+          description: "the latest schema of database",
+        } as any as MigrationHistory;
+      }
     } else {
       state.sourceSchema.migrationHistory = undefined;
     }

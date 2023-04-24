@@ -1150,7 +1150,7 @@
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
       "title": "Sync Schema",
-      "description": "Bytebase supports synchronizing a specified schema version of one database to another.",
+      "description": "Bytebase supports synchronizing a specified schema version of one database to others.",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
       "select-project": "Select project",

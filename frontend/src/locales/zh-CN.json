@@ -1148,7 +1148,7 @@
     "selected-n-databases": "已选择 {n} 个数据库",
     "sync-schema": {
       "title": "库表同步",
-      "description": "Bytebase supports synchronizing a specified schema version of one database to another.",
+      "description": "Bytebase 支持将一个数据库的指定 Schema 版本同步到其他数据库。",
       "select-source-schema": "选择源数据库",
       "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
