@@ -108,11 +108,15 @@ const updateRow = async (row: Row, rule: string | undefined) => {
 
   const { source } = props;
   const { level } = row;
-  await store.updateRuleFlow(source, level, rule);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
+  try {
+    await store.updateRuleFlow(source, level, rule);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  } catch {
+    // nothing, exception has been handled already
+  }
 };
 </script>
