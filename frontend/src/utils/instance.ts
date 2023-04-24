@@ -132,6 +132,7 @@ export const instanceHasSSL = (
     "REDIS",
     "ORACLE",
     "MARIADB",
+    "OCEANBASE",
   ].includes(engine);
 };
 
