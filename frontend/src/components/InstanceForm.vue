@@ -388,6 +388,7 @@
               <label for="host" class="textlabel block">
                 {{ $t("data-source.read-replica-host") }}
               </label>
+              <span class="textinfolabel">({{ $t("common.optional") }})</span>
             </div>
             <input
               id="host"
@@ -408,6 +409,7 @@
               <label for="port" class="textlabel block">
                 {{ $t("data-source.read-replica-port") }}
               </label>
+              <span class="textinfolabel">({{ $t("common.optional") }})</span>
             </div>
             <input
               id="port"
