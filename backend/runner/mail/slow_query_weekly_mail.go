@@ -72,6 +72,7 @@ func (s *SlowQueryWeeklyMailSender) Run(ctx context.Context, wg *sync.WaitGroup)
 		case <-ticker.C:
 			log.Debug("Slow query weekly mail sender received tick")
 			now := time.Now()
+			// Send email every Saturday in 00:00 ~ 00:59.
 			if now.Weekday() == time.Saturday && now.Hour() == 0 {
 				s.sendEmail(ctx, now)
 			}
