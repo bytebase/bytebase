@@ -61,7 +61,7 @@
               />
               <i18n-t
                 class="textinfolabel flex items-center"
-                keypath="sql-editor.read-only-mode-not-allowed"
+                keypath="sql-editor.allow-admin-mode-only"
                 tag="div"
               >
                 <template #instance>

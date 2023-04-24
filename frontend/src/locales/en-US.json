@@ -1647,7 +1647,7 @@
     "admin-mode": {
       "self": "Admin mode"
     },
-    "read-only-mode-not-allowed": "Instance {instance} is not accessible in read-only mode.",
+    "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "run-selected": "Run selected",
     "clear-screen": "Clear screen"
   },
