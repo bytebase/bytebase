@@ -17,6 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
@@ -32,14 +33,16 @@ type SettingService struct {
 	store          *store.Store
 	profile        *config.Profile
 	licenseService enterpriseAPI.LicenseService
+	stateCfg       *state.State
 }
 
 // NewSettingService creates a new setting service.
-func NewSettingService(store *store.Store, profile *config.Profile, licenseService enterpriseAPI.LicenseService) *SettingService {
+func NewSettingService(store *store.Store, profile *config.Profile, licenseService enterpriseAPI.LicenseService, stateCfg *state.State) *SettingService {
 	return &SettingService{
 		store:          store,
 		profile:        profile,
 		licenseService: licenseService,
+		stateCfg:       stateCfg,
 	}
 }
 
@@ -179,6 +182,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			apiValue.Password = &oldValue.Password
 		}
 		if request.ValidateOnly {
+			s.stateCfg.TestSlowQueryWeeklyEmailChan <- true
 			if err := s.sendTestEmail(ctx, apiValue); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to validate smtp setting: %v", err)
 			}
