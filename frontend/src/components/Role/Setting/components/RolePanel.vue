@@ -129,6 +129,9 @@ const allowSave = computed(() => {
 const handleSave = async () => {
   if (!hasCustomRoleFeature.value) {
     showFeatureModal.value = true;
+
+    // Getting crazy to adjust the z-indexes of the modal and the panel drawer
+    // so just close the panel drawer here.
     emit("close");
     return;
   }
