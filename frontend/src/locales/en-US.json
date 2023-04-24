@@ -241,7 +241,8 @@
     "cannot-undo-this-action": "You cannot undo this action",
     "expand": "Expand",
     "collapse": "Collapse",
-    "select": "Select"
+    "select": "Select",
+    "optional": "Optional"
   },
   "error-page": {
     "go-back-home": "Go back home"
