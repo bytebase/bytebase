@@ -67,6 +67,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/apprun"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
+	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/rollbackrun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -141,6 +142,7 @@ type Server struct {
 	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
 	SlowQuerySyncer    *slowquerysync.Syncer
+	MailSender         *mail.SlowQueryWeeklyMailSender
 	BackupRunner       *backuprun.Runner
 	AnomalyScanner     *anomaly.Scanner
 	ApplicationRunner  *apprun.Runner
@@ -312,6 +314,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
 		InstanceSlowQuerySyncChan:      make(chan *api.Instance, 100),
 		InstanceOutstandingConnections: make(map[int]int),
+		TestSlowQueryWeeklyEmailChan:   make(chan bool, 100),
 	}
 	s.store = storeInstance
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
@@ -413,6 +416,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
 		s.ApprovalRunner = approval.NewRunner(storeInstance, s.dbFactory, s.stateCfg, s.ActivityManager, s.licenseService)
+
+		s.MailSender = mail.NewSender(s.store, s.stateCfg)
 
 		s.TaskScheduler = taskrun.NewScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile, s.MetricReporter)
 		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
@@ -564,7 +569,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
-	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile, s.licenseService))
+	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile, s.licenseService, s.stateCfg))
 	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService())
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
@@ -843,6 +848,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.SchemaSyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.SlowQuerySyncer.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.MailSender.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
