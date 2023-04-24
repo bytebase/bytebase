@@ -593,3 +593,76 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 	}
 }
+
+func TestMySQLSplitMultiSQLAndNormalize(t *testing.T) {
+	tests := []testData{
+		{
+			statement: `select * from t;
+			/* sdfasdf */`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `select * from t;`,
+						LastLine: 1,
+					},
+				},
+			},
+		},
+		{
+			statement: `
+			DROP PROCEDURE IF EXISTS p1;
+			
+			DELIMITER //
+			
+			CREATE PROCEDURE p1()
+			BEGIN
+				SELECT count(*) from t;
+			END//
+
+			DELIMITER ;
+			DROP PROCEDURE IF EXISTS p2;
+			
+			DELIMITER //
+			
+			CREATE PROCEDURE p2()
+			BEGIN
+				SELECT count(*) from t;
+			END//
+			`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     `DROP PROCEDURE IF EXISTS p1;`,
+						LastLine: 2,
+					},
+					{
+						Text: `CREATE PROCEDURE p1()
+			BEGIN
+				SELECT count(*) from t;
+			END;`,
+						LastLine: 9,
+					},
+					{
+						Text:     `DROP PROCEDURE IF EXISTS p2;`,
+						LastLine: 12,
+					},
+					{
+						Text: `CREATE PROCEDURE p2()
+			BEGIN
+				SELECT count(*) from t;
+			END;`,
+						LastLine: 19,
+					},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		res, err := SplitMultiSQLAndNormalize(MySQL, test.statement)
+		errStr := ""
+		if err != nil {
+			errStr = err.Error()
+		}
+		require.Equal(t, test.want, resData{res, errStr}, test.statement)
+	}
+}
