@@ -45,10 +45,10 @@
       </div>
     </div>
 
-    <Splitpanes
-      class="default-theme relative border rounded-lg w-full h-144 flex flex-row overflow-hidden mt-4"
+    <div
+      class="relative border rounded-lg w-full h-144 flex flex-row overflow-hidden mt-4"
     >
-      <Pane min-size="20" size="25">
+      <div class="w-1/4 min-w-[256px] max-w-xs h-full border-r">
         <div
           class="w-full h-full relative flex flex-col justify-start items-start overflow-y-auto pb-2"
         >
@@ -73,7 +73,7 @@
                 class="w-full grid grid-cols-2 bg-gray-100 p-0.5 gap-0.5 rounded text-sm leading-6"
               >
                 <div
-                  class="w-full text-center rounded cursor-pointer hover:bg-white"
+                  class="w-full text-center rounded cursor-pointer select-none hover:bg-white"
                   :class="state.showDatabaseWithDiff && 'bg-white shadow'"
                   @click="state.showDatabaseWithDiff = true"
                 >
@@ -83,7 +83,7 @@
                   >
                 </div>
                 <div
-                  class="w-full text-center rounded cursor-pointer hover:bg-white"
+                  class="w-full text-center rounded cursor-pointer select-none hover:bg-white"
                   :class="!state.showDatabaseWithDiff && 'bg-white shadow'"
                   @click="state.showDatabaseWithDiff = false"
                 >
@@ -123,7 +123,7 @@
               <div class="grow"></div>
               <button
                 class="hidden shrink-0 group-hover:block ml-1 p-0.5 rounded bg-white hover:shadow"
-                @click="handleUnselectDatabase(database)"
+                @click.stop="handleUnselectDatabase(database)"
               >
                 <heroicons-outline:minus class="w-4 h-auto text-gray-500" />
               </button>
@@ -146,8 +146,8 @@
             </div>
           </div>
         </div>
-      </Pane>
-      <Pane min-size="60" size="75">
+      </div>
+      <div class="w-3/4 grow h-full">
         <main ref="diffViewerRef" class="p-4 w-full h-full overflow-y-auto">
           <div
             v-show="shouldShowDiff"
@@ -220,8 +220,8 @@
           <BBSpin />
           <span class="mt-1">{{ $t("common.loading") }}</span>
         </div>
-      </Pane>
-    </Splitpanes>
+      </div>
+    </div>
   </div>
 
   <TargetDatabasesSelectPanel
@@ -243,7 +243,6 @@ import { NEllipsis } from "naive-ui";
 import { PropType, computed, onMounted, reactive, ref, watch } from "vue";
 import { CodeDiff } from "v-code-diff";
 import { useI18n } from "vue-i18n";
-import { Splitpanes, Pane } from "splitpanes";
 import {
   pushNotification,
   useDatabaseStore,
@@ -274,7 +273,7 @@ interface SourceSchema {
 interface LocalState {
   isLoading: boolean;
   showDatabaseWithDiff: boolean;
-  selectedDatabaseId?: DatabaseId;
+  selectedDatabaseId: DatabaseId | undefined;
   selectedDatabaseIdList: DatabaseId[];
   showSelectDatabasePanel: boolean;
 }
@@ -300,6 +299,7 @@ const state = reactive<LocalState>({
   isLoading: true,
   showDatabaseWithDiff: true,
   showSelectDatabasePanel: false,
+  selectedDatabaseId: undefined,
   selectedDatabaseIdList: [],
 });
 const databaseSchemaCache = reactive<Record<DatabaseId, string>>({});
@@ -339,7 +339,7 @@ const targetDatabaseSchema = computed(() => {
     : "";
 });
 const shouldShowDiff = computed(() => {
-  return state.selectedDatabaseId;
+  return Boolean(state.selectedDatabaseId);
 });
 const previewSchemaChangeMessage = computed(() => {
   if (!state.selectedDatabaseId) {
