@@ -236,3 +236,52 @@ export function clearObject(obj: any) {
   keys.forEach((key) => delete obj[key]);
   return obj;
 }
+
+const MODIFIERS = [
+  "cmd",
+  "ctrl",
+  "cmd_or_ctrl",
+  "opt",
+  "alt",
+  "opt_or_alt",
+  "shift",
+] as const;
+export type ModifierKey = typeof MODIFIERS[number];
+
+export const modifierKeyText = (mod: ModifierKey) => {
+  const isMac = navigator.userAgent.search("Mac") !== -1;
+  if (mod === "cmd" || (mod === "cmd_or_ctrl" && isMac)) {
+    return "⌘"; // U+2318
+  }
+  if (mod === "ctrl" && isMac) {
+    return "⌃"; // U+2303
+  }
+  if ((mod === "ctrl" && !isMac) || (mod === "cmd_or_ctrl" && !isMac)) {
+    return "Ctrl";
+  }
+  if (mod === "opt" || (mod === "opt_or_alt" && isMac)) {
+    return "⌥"; // U+2325
+  }
+  if (mod === "alt" || (mod === "opt_or_alt" && !isMac)) {
+    return "Alt";
+  }
+  if (mod === "shift" && isMac) {
+    return "⇧"; // U+21E7
+  }
+  if (mod === "shift" && !isMac) {
+    return "Shift";
+  }
+  console.assert(false, "should never reach this line");
+  return "";
+};
+
+export const keyboardShortcutStr = (str: string) => {
+  const parts = str.split("+");
+  return parts
+    .map((part) => {
+      const mod = part as ModifierKey;
+      if (MODIFIERS.includes(mod)) return modifierKeyText(mod);
+      return part;
+    })
+    .join("+");
+};
