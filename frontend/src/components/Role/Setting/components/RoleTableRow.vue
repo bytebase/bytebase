@@ -32,6 +32,7 @@ import type { Role } from "@/types/proto/v1/role_service";
 import { useWorkspacePermission } from "@/utils";
 import { SpinnerButton } from "@/components/v2";
 import { useRoleStore } from "@/store";
+import { useCustomRoleSettingContext } from "../context";
 
 const props = defineProps<{
   role: Role;
@@ -42,6 +43,8 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { hasCustomRoleFeature, showFeatureModal } =
+  useCustomRoleSettingContext();
 
 const description = computed(() => {
   const { role } = props;
@@ -68,6 +71,11 @@ const allowEdit = computed(() => {
 });
 
 const deleteRole = async () => {
+  if (!hasCustomRoleFeature.value) {
+    showFeatureModal.value = true;
+    return;
+  }
+
   await useRoleStore().deleteRole(props.role);
 };
 </script>

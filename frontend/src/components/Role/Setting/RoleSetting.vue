@@ -30,17 +30,25 @@
       :mode="state.detail.mode"
       @close="state.detail.role = undefined"
     />
+
+    <FeatureModal
+      v-if="showFeatureModal"
+      feature="bb.feature.custom-role"
+      @cancel="showFeatureModal = false"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { NButton } from "naive-ui";
 
 import { RoleTable, RolePanel } from "./components";
-import { useRoleStore } from "@/store";
+import FeatureModal from "@/components/FeatureModal.vue";
+import { featureToRef, useRoleStore } from "@/store";
 import { Role } from "@/types/proto/v1/role_service";
 import { useWorkspacePermission } from "@/utils";
+import { provideCustomRoleSettingContext } from "./context";
 
 type LocalState = {
   ready: boolean;
@@ -64,6 +72,9 @@ const state = reactive<LocalState>({
     keyword: "",
   },
 });
+
+const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
+const showFeatureModal = ref(false);
 
 const allowAdmin = useWorkspacePermission(
   "bb.permission.workspace.manage-general"
@@ -99,4 +110,9 @@ const prepare = async () => {
   }
 };
 onMounted(prepare);
+
+provideCustomRoleSettingContext({
+  hasCustomRoleFeature,
+  showFeatureModal,
+});
 </script>
