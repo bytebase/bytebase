@@ -280,11 +280,8 @@ export default defineComponent({
 
     const hasMoreThanOneOwner = computed(
       () =>
-        dataSource.value[0].list.filter(
-          (m) =>
-            m.principal.type !== "SYSTEM_BOT" &&
-            m.principal.type !== "SERVICE_ACCOUNT"
-        ).length > 1
+        dataSource.value[0].list.filter((m) => m.principal.type === "END_USER")
+          .length > 1
     );
 
     const allowEdit = computed(() => {
