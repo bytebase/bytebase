@@ -70,29 +70,3 @@
             You can visit&nbsp;<a href="{{VISIT_URL}}"><span class="mail-text">{{VISIT_URL}}</span></a>&nbsp;to enable/disable slow query collection.
             <br>
         </p>
-        <!-- TODO(junyi): For loop this div block to generate multiple environments block.-->
-        <div style="margin-top: 32px;">
-            <h2 class="env-title text-center"> {{ENV_NAME}} </h2>
-            <!-- TODO(junyi): For loop this div block to generate multiple instance in one environment.-->
-            <div style="margin-top: 24px;">
-                <h2 class="instance-tile text-center"><a href="{{INSTANCE_LINK}}">{{INSTANCE_NAME}}</a></h2>
-                <!-- TODO(junyi) Use the following p block if no instance has configured slow query collection.-->
-                <p class="hint-text text-center">💤&nbsp;&nbsp;&nbsp;No instance has configured slow query collection</p>
-                <!-- TODO(junyi) Use the following p block if no slow query found in all configured instances.-->
-                <p class="hint-text text-center">🎉&nbsp;&nbsp;&nbsp;No slow query found in all configured instances</p>
-                <!-- TODO(junyi): Using the following table block if there are any slow queries.-->
-                <table id="slow-query-table" style="margin: auto">
-                    <tr>
-                        <th>DB</th>
-                        <th>Slow Query</th>
-                    </tr>
-                    <!-- TODO(junyi) For loop this tr block to generate all slow query entry in table element.-->
-                    <tr>
-                        <td>{{DB_NAME}}</td>
-                        <td><span class="sql-text">{{SLOW_QUERY}}</span></td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-    </body>
-</html>
