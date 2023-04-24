@@ -1,8 +1,8 @@
 <template>
   <p class="text-sm text-gray-500 px-4">
-    {{ $t("two-factor.description") }}
+    {{ $t("database.sync-schema.description") }}
     <LearnMoreLink
-      url="https://www.bytebase.com/docs/administration/2fa?source=console"
+      url="https://www.bytebase.com/docs/change-database/synchronize-schema?source=console"
     />
   </p>
   <BBStepTab

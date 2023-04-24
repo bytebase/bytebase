@@ -1,25 +1,46 @@
 <template>
   <div class="w-full">
-    <div class="w-full flex flex-row justify-start items-start gap-4">
-      <span>Source schema</span>
-      <div>
+    <div class="w-full flex flex-row justify-start items-start gap-8">
+      <span>{{ $t("database.sync-schema.source-schema") }}</span>
+      <div class="space-y-2">
         <div>
-          <span>Project - </span>
-          <span>{{ project.name }}</span>
+          <span>{{ $t("common.project") }} - </span>
+          <a
+            class="normal-link inline-flex items-center"
+            :href="`/project/${projectSlug(project)}`"
+            >{{ project.name }}</a
+          >
         </div>
         <div>
-          <span>Environment - </span>
-          <span>{{ environment.name }}</span>
+          <span>{{ $t("common.environment") }} - </span>
+          <a
+            class="normal-link inline-flex items-center"
+            :href="`/environment/${environmentSlug(environment)}`"
+            >{{ environment.name }}</a
+          >
         </div>
       </div>
-      <div>
+      <div class="space-y-2">
         <div>
-          <span>Database - </span>
-          <span>{{ sourceDatabase.name }}</span>
+          <span>{{ $t("common.database") }} - </span>
+          <a
+            class="normal-link inline-flex items-center"
+            :href="`/db/${databaseSlug(sourceDatabase)}`"
+            >{{ sourceDatabase.name }}</a
+          >
         </div>
         <div>
-          <span>Schema version - </span>
-          <span>{{ sourceSchema.migrationHistory.version }}</span>
+          <span>{{ $t("database.sync-schema.schema-version.self") }} - </span>
+          <a
+            class="normal-link inline-flex items-center"
+            :href="`/db/${databaseSlug(
+              sourceDatabase
+            )}/history/${migrationHistorySlug(
+              sourceSchema.migrationHistory.id,
+              sourceSchema.migrationHistory.version
+            )}`"
+            >{{ sourceSchema.migrationHistory.version }}</a
+          >
         </div>
       </div>
     </div>
@@ -37,7 +58,9 @@
             <div
               class="w-full bg-white border-b p-2 px-3 flex flex-row justify-between items-center sticky top-0 z-[1]"
             >
-              <span class="text-sm">Target databases</span>
+              <span class="text-sm">{{
+                $t("database.sync-schema.target-databases")
+              }}</span>
               <button
                 class="p-0.5 rounded bg-gray-100 hover:shadow hover:opacity-80"
                 @click="state.showSelectDatabasePanel = true"
@@ -54,7 +77,7 @@
                   :class="state.showDatabaseWithDiff && 'bg-white shadow'"
                   @click="state.showDatabaseWithDiff = true"
                 >
-                  With diff
+                  {{ $t("database.sync-schema.with-diff") }}
                   <span class="text-gray-400"
                     >({{ databaseListWithDiff.length }})</span
                   >
@@ -64,7 +87,7 @@
                   :class="!state.showDatabaseWithDiff && 'bg-white shadow'"
                   @click="state.showDatabaseWithDiff = false"
                 >
-                  No diff
+                  {{ $t("database.sync-schema.no-diff") }}
                   <span class="text-gray-400"
                     >({{ databaseListWithoutDiff.length }})</span
                   >
@@ -78,7 +101,7 @@
             <div
               v-for="database of shownDatabaseList"
               :key="database.id"
-              class="w-full flex flex-row justify-start items-center px-2 py-2 cursor-pointer text-sm text-ellipsis whitespace-nowrap rounded hover:bg-gray-50"
+              class="w-full group flex flex-row justify-start items-center px-2 py-1 leading-8 cursor-pointer text-sm text-ellipsis whitespace-nowrap rounded hover:bg-gray-50"
               :class="
                 database.id === state.selectedDatabaseId ? '!bg-gray-100' : ''
               "
@@ -97,17 +120,28 @@
                   >({{ database.instance.name }})</span
                 >
               </NEllipsis>
+              <div class="grow"></div>
+              <button
+                class="hidden shrink-0 group-hover:block ml-1 p-0.5 rounded bg-white hover:shadow"
+                @click="handleUnselectDatabase(database)"
+              >
+                <heroicons-outline:minus class="w-4 h-auto text-gray-500" />
+              </button>
             </div>
             <div
               v-if="targetDatabaseList.length === 0"
               class="w-full h-full -mt-4 flex flex-col justify-center items-center"
             >
-              <span class="text-gray-400">No target databases</span>
+              <span class="text-gray-400">{{
+                $t("database.sync-schema.message.no-target-databases")
+              }}</span>
               <button
                 class="btn btn-primary mt-2 flex flex-row justify-center items-center"
                 @click="state.showSelectDatabasePanel = true"
               >
-                <heroicons-outline:plus class="w-4 h-auto mr-1" />Select
+                <heroicons-outline:plus class="w-4 h-auto mr-1" />{{
+                  $t("common.select")
+                }}
               </button>
             </div>
           </div>
@@ -133,7 +167,9 @@
               v-show="targetDatabaseSchema === sourceDatabaseSchema"
               class="w-full h-auto px-3 py-2 overflow-y-auto border rounded"
             >
-              <p>No diff found.</p>
+              <p>
+                {{ $t("database.sync-schema.message.no-diff-found") }}
+              </p>
             </div>
             <div class="w-full flex flex-col justify-start mt-4 mb-2 leading-8">
               <div class="flex flex-row justify-start items-center">
@@ -172,7 +208,9 @@
             v-show="!shouldShowDiff"
             class="w-full h-full flex flex-col justify-center items-center"
           >
-            Please select a target database first.
+            {{
+              $t("database.sync-schema.message.select-a-target-database-first")
+            }}
           </div>
         </main>
       </Pane>
@@ -213,6 +251,7 @@ import {
   ProjectId,
   dialectOfEngine,
 } from "@/types";
+import { migrationHistorySlug } from "@/utils";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
@@ -330,6 +369,15 @@ onMounted(() => {
 const handleSelectedDatabaseIdListChanged = (databaseIdList: DatabaseId[]) => {
   state.selectedDatabaseIdList = databaseIdList;
   state.showSelectDatabasePanel = false;
+};
+
+const handleUnselectDatabase = (database: Database) => {
+  state.selectedDatabaseIdList = state.selectedDatabaseIdList.filter(
+    (id) => id !== database.id
+  );
+  if (state.selectedDatabaseId === database.id) {
+    state.selectedDatabaseId = undefined;
+  }
 };
 
 const copyStatement = () => {

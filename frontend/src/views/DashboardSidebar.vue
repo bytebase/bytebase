@@ -44,7 +44,7 @@
         class="outline-item group flex items-center px-2 py-2 capitalize"
       >
         <heroicons-outline:refresh class="w-5 h-5 mr-2" />
-        {{ $t("quick-action.sync-schema") }}
+        {{ $t("database.sync-schema.title") }}
       </router-link>
       <router-link
         to="/slow-query"

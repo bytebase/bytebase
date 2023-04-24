@@ -6,7 +6,7 @@
     @update:show="(show) => !show && $emit('close')"
   >
     <NDrawerContent
-      :title="$t('role.setting.edit')"
+      :title="$t('database.sync-schema.target-databases')"
       :closable="true"
       class="w-[30rem] max-w-[100vw] relative"
     >
@@ -119,7 +119,7 @@
         <div class="flex items-center justify-end gap-x-2">
           <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
           <NButton type="primary" @click="handleConfirm">
-            {{ $t("common.update") }}
+            {{ $t("common.select") }}
           </NButton>
         </div>
       </template>
