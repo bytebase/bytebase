@@ -47,8 +47,6 @@ const props = defineProps({
   },
 });
 
-console.log(props.functionList);
-
 const { t } = useI18n();
 
 const isPostgres = props.database.instance.engine === "POSTGRES";
