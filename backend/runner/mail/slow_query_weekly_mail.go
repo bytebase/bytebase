@@ -251,8 +251,8 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 	endDate := now.AddDate(0, 0, -1)
 	var buf bytes.Buffer
 	headerString := strings.ReplaceAll(string(header), "{{PROJECT_NAME}}", project.Title)
-	headerString = strings.ReplaceAll(headerString, "{{BEGIN_DATE}}", beginDate.Format("2006.01.02"))
-	headerString = strings.ReplaceAll(headerString, "{{END_DATE}}", endDate.Format("2006.01.02"))
+	headerString = strings.ReplaceAll(headerString, "{{BEGIN_DATE}}", beginDate.UTC().Format("2006.01.02"))
+	headerString = strings.ReplaceAll(headerString, "{{END_DATE}}", endDate.UTC().Format("2006.01.02"))
 	beginUnix := beginDate.Truncate(24 * time.Hour).Unix()
 	endUnix := now.Truncate(24 * time.Hour).Add(-1 * time.Second).Unix()
 	projectURL := fmt.Sprintf("%s/slow-query?project=%d&fromTime=%d&toTime=%d", strings.TrimSuffix(visitURL, "/"), project.UID, beginUnix, endUnix)
@@ -594,8 +594,8 @@ func (s *SlowQueryWeeklyMailSender) generateEnvironmentContent(
 
 			if !hasSlowQueryInInstance {
 				hasSlowQueryInInstance = true
-				beginUnix := beginDate.Truncate(24 * time.Hour).Unix()
-				endUnix := endDate.Truncate(24 * time.Hour).Add(-1 * time.Second).Unix()
+				beginUnix := beginDate.Truncate(24 * time.Hour).UTC().Unix()
+				endUnix := endDate.Truncate(24 * time.Hour).Add(-1 * time.Second).UTC().Unix()
 				instanceURL := fmt.Sprintf("%s/slow-query?instance=%d&fromTime=%d&toTime=%d", strings.TrimSuffix(visitURL, "/"), instance.UID, beginUnix, endUnix)
 				instanceHeaderString := strings.ReplaceAll(string(instanceHeader), "{{INSTANCE_LINK}}", instanceURL)
 				instanceHeaderString = strings.ReplaceAll(instanceHeaderString, "{{INSTANCE_NAME}}", instance.Title)
