@@ -681,7 +681,14 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 	}
 
 	result := make(map[string]*storepb.SlowQueryStatistics)
-	query := `
+	version, err := driver.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var query string
+	// Postgres 13 changed the column names of pg_stat_statements.
+	if version >= "130000" {
+		query = `
 		SELECT
 			pg_database.datname,
 			query,
@@ -694,6 +701,21 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 			JOIN pg_database ON pg_database.oid = pg_stat_statements.dbid
 		WHERE max_exec_time >= 1000;
 	`
+	} else {
+		query = `
+		SELECT
+			pg_database.datname,
+			query,
+			calls,
+			total_time,
+			max_time,
+			rows
+		FROM
+			pg_stat_statements
+			JOIN pg_database ON pg_database.oid = pg_stat_statements.dbid
+		WHERE max_time >= 1000;
+		`
+	}
 
 	slowQueryStatisticsRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
@@ -762,19 +784,19 @@ func (driver *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
 		return util.FormatErrorWithQuery(err, showSharedPreloadLibraries)
 	}
 
-	showPGStatStatementsInfo := `SELECT dealloc, stats_reset FROM pg_stat_statements_info;`
+	checkPGStatStatements := `SELECT count(*) FROM pg_stat_statements limit 10;`
 
-	pgStatStatementsInfoRows, err := driver.db.QueryContext(ctx, showPGStatStatementsInfo)
+	pgStatStatementsInfoRows, err := driver.db.QueryContext(ctx, checkPGStatStatements)
 	if err != nil {
-		return util.FormatErrorWithQuery(err, showPGStatStatementsInfo)
+		return util.FormatErrorWithQuery(err, checkPGStatStatements)
 	}
 	defer pgStatStatementsInfoRows.Close()
 	// no need to scan rows, just check if there is any row
 	if !pgStatStatementsInfoRows.Next() {
-		return errors.New("pg_stat_statements_info is empty")
+		return errors.New("pg_stat_statements is empty")
 	}
 	if err := pgStatStatementsInfoRows.Err(); err != nil {
-		return util.FormatErrorWithQuery(err, showPGStatStatementsInfo)
+		return util.FormatErrorWithQuery(err, checkPGStatStatements)
 	}
 
 	return nil
