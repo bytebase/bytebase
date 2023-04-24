@@ -1856,6 +1856,10 @@
         "title": "Role management",
         "desc": "Role management can assign a particular role (e.g. DBA) to a member."
       },
+      "bb-feature-custom-role": {
+        "title": "Custom role",
+        "desc": "Defining custom roles, and you may apply them to project members."
+      },
       "bb-feature-watermark": {
         "title": "Watermark",
         "desc": "Display visible watermarks on pages, including username, ID and email."
