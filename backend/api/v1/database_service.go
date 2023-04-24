@@ -653,6 +653,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	return &v1pb.Secret{}, nil
 }
 
+// DeleteSecret deletes a secret of a database.
 func (s DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteSecretRequest) (*emptypb.Empty, error) {
 	environmentID, instanceID, databaseName, secretName, err := getEnvironmentInstanceDatabaseIDSecretName(request.Name)
 	if err != nil {
