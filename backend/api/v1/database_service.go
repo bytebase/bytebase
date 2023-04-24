@@ -624,6 +624,9 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 			}
 		}
 	}
+	if err := isSecretValid(&newSecret); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
 
 	secretsMap[secretName] = &newSecret
 	// Flatten the map to a slice.
@@ -1345,6 +1348,10 @@ func isSecretValid(secret *storepb.SecretItem) error {
 	// Names can not be empty.
 	if secret.Name == "" {
 		return errors.Errorf("invalid secret name: %s, name can not be empty", secret.Name)
+	}
+	// Values can not be empty.
+	if secret.Value == "" {
+		return errors.Errorf("the value of secret: %s can not be empty", secret.Name)
 	}
 
 	// Names must not start with the 'BYTEBASE_' prefix.
