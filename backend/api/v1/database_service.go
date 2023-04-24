@@ -553,7 +553,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.InvalidArgument, "secret is required")
 	}
 
-	environmentID, instanceID, databaseName, secretName, err := getEnvironmentInstanceDatabaseIDSecretName(request.Secret.Name)
+	environmentID, instanceID, databaseName, updateSecretName, err := getEnvironmentInstanceDatabaseIDSecretName(request.Secret.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -599,16 +599,16 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	}
 
 	var newSecret storepb.SecretItem
-	if _, ok := secretsMap[secretName]; !ok {
+	if _, ok := secretsMap[updateSecretName]; !ok {
 		// If the secret is not existed and allow_missing is false, we will not create it.
 		if !request.AllowMissing {
-			return nil, status.Errorf(codes.NotFound, "secret %q not found", secretName)
+			return nil, status.Errorf(codes.NotFound, "secret %q not found", updateSecretName)
 		}
-		newSecret.Name = secretName
+		newSecret.Name = updateSecretName
 		newSecret.Value = request.Secret.Value
 		newSecret.Description = request.Secret.Description
 	} else {
-		oldSecret := secretsMap[secretName]
+		oldSecret := secretsMap[updateSecretName]
 		newSecret.Name = oldSecret.Name
 		newSecret.Value = oldSecret.Value
 		newSecret.Description = oldSecret.Description
@@ -628,7 +628,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	secretsMap[secretName] = &newSecret
+	secretsMap[updateSecretName] = &newSecret
 	// Flatten the map to a slice.
 	var secretItems []*storepb.SecretItem
 	for _, secret := range secretsMap {
@@ -649,7 +649,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 
 	// Get the secret from the updated database.
 	for _, secret := range updatedDatabase.Secrets.Items {
-		if secret.Name == secretName {
+		if secret.Name == updateSecretName {
 			return stripeAndConvertToServiceSecret(secret, updatedDatabase.EnvironmentID, updatedDatabase.InstanceID, updatedDatabase.DatabaseName), nil
 		}
 	}
@@ -657,11 +657,12 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 }
 
 // DeleteSecret deletes a secret of a database.
-func (s DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteSecretRequest) (*emptypb.Empty, error) {
+func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteSecretRequest) (*emptypb.Empty, error) {
 	environmentID, instanceID, databaseName, secretName, err := getEnvironmentInstanceDatabaseIDSecretName(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 		ResourceID: &environmentID,
 	})
@@ -1360,15 +1361,19 @@ func isSecretValid(secret *storepb.SecretItem) error {
 		return errors.Errorf("invalid secret name: %s, name must not start with the 'BYTEBASE_' prefix", secret.Name)
 	}
 	// Names must not start with a number.
-	if unicode.IsNumber(rune(secret.Name[0])) {
+	if unicode.IsDigit(rune(secret.Name[0])) {
 		return errors.Errorf("invalid secret name: %s, name must not start with a number", secret.Name)
 	}
 
-	// Names can only contain alphanumeric characters ([a-z], [A-Z], [0-9]) or underscores (_). Spaces are not allowed.
+	// Names can only contain alphanumeric characters ([A-Z], [0-9]) or underscores (_). Spaces are not allowed.
 	for _, c := range secret.Name {
-		if !unicode.IsLetter(c) && !unicode.IsNumber(c) && c != '_' {
+		if !isUpperCaseLetter(c) && !unicode.IsDigit(c) && c != '_' {
 			return errors.Errorf("invalid secret name: %s, expect [a-z], [A-Z], [0-9], '_', but meet: %v", secret.Name, c)
 		}
 	}
 	return nil
+}
+
+func isUpperCaseLetter(c rune) bool {
+	return 'A' <= c && c <= 'Z'
 }
