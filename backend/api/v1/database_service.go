@@ -1368,7 +1368,7 @@ func isSecretValid(secret *storepb.SecretItem) error {
 	// Names can only contain alphanumeric characters ([A-Z], [0-9]) or underscores (_). Spaces are not allowed.
 	for _, c := range secret.Name {
 		if !isUpperCaseLetter(c) && !unicode.IsDigit(c) && c != '_' {
-			return errors.Errorf("invalid secret name: %s, expect [a-z], [A-Z], [0-9], '_', but meet: %v", secret.Name, c)
+			return errors.Errorf("invalid secret name: %s, expect [A-Z], [0-9], '_', but meet: %v", secret.Name, c)
 		}
 	}
 	return nil
