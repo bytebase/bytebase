@@ -37,6 +37,7 @@ var (
 		"SYS":        true,
 		"LBACSYS":    true,
 		"ORAAUDITOR": true,
+		"__public":   true,
 	}
 )
 
