@@ -1191,7 +1191,22 @@
     "doesnt-match-tenant-value": "与租户标签值不匹配",
     "should-follow-database-name-template": "需要遵循租户数据库名称模板",
     "all": "所有数据库",
-    "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）"
+    "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
+    "secret": {
+      "new": "新增保密信息",
+      "edit": "编辑保密信息",
+      "name-placeholder": "输入保密信息名称",
+      "description-placeholder": "输入描述",
+      "value": "值",
+      "value-placeholder": "输入值（仅写入）",
+      "validation": {
+        "duplicated-name": "保密信息名称重复",
+        "name-pattern-mismatch": "保密信息名称应该由大写字母和 _（下划线）组成",
+        "cannot-be-changed-later": "创建之后无法修改"
+      },
+      "self": "保密信息",
+      "delete-tips": "删除保密信息"
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",

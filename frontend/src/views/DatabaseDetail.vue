@@ -181,6 +181,9 @@
       <template v-if="selectedTabItem?.hash === 'slow-query'">
         <DatabaseSlowQueryPanel :database="database" />
       </template>
+      <template v-if="selectedTabItem?.hash === 'settings'">
+        <DatabaseSettingsPanel :database="database" />
+      </template>
     </div>
 
     <BBModal
@@ -310,6 +313,7 @@ import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
 import DatabaseMigrationHistoryPanel from "@/components/DatabaseMigrationHistoryPanel.vue";
 import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
+import { DatabaseSettingsPanel } from "@/components/DatabaseDetail";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 import { DatabaseLabelProps } from "@/components/DatabaseLabels";
 import { SelectDatabaseLabel } from "@/components/TransferDatabaseForm";
@@ -383,6 +387,7 @@ const databaseTabItemList = computed((): DatabaseTabItem[] => {
     { name: t("change-history.self"), hash: "change-history" },
     { name: t("common.backup-and-restore"), hash: "backup-and-restore" },
     { name: startCase(t("slow-query.slow-queries")), hash: "slow-query" },
+    { name: t("common.settings"), hash: "settings" },
   ];
 });
 
