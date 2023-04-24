@@ -945,7 +945,9 @@ const allowUpdate = computed((): boolean => {
 });
 
 const isEngineBeta = (engine: EngineType): boolean => {
-  return ["ORACLE", "MSSQL", "REDSHIFT", "MARIADB"].includes(engine);
+  return ["ORACLE", "MSSQL", "REDSHIFT", "MARIADB", "OCEANBASE"].includes(
+    engine
+  );
 };
 
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
