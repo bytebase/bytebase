@@ -60,9 +60,16 @@
       class="pt-4 border-t border-block-border flex justify-between"
       :class="[sticky && 'pb-4 bg-white sticky bottom-0 z-10']"
     >
-      <button type="button" class="btn-normal" @click.prevent="cancel">
-        {{ $t("bbkit.common.cancel") }}
-      </button>
+      <div>
+        <button
+          v-if="showCancel"
+          type="button"
+          class="btn-normal"
+          @click.prevent="cancel"
+        >
+          {{ $t("bbkit.common.cancel") }}
+        </button>
+      </div>
       <div class="flex flex-row space-x-2">
         <button
           v-if="state.currentStep != 0"
@@ -110,11 +117,13 @@ interface LocalState {
 withDefaults(
   defineProps<{
     stepItemList: BBStepTabItem[];
+    showCancel?: boolean;
     allowNext?: boolean;
     finishTitle?: string;
     sticky?: boolean;
   }>(),
   {
+    showCancel: true,
     allowNext: true,
     finishTitle: "bbkit.common.finish",
     sticky: false,

@@ -1,6 +1,6 @@
 <template>
   <BBSelect
-    :selected-item="state.selectedDatabase"
+    :selected-item="selectedDatabase"
     :item-list="databaseList"
     :disabled="disabled"
     :placeholder="$t('database.select')"
@@ -43,7 +43,6 @@ import {
 
 interface LocalState {
   selectedId?: number;
-  selectedDatabase?: Database;
 }
 
 export default defineComponent({
@@ -153,6 +152,12 @@ export default defineComponent({
       return list;
     });
 
+    const selectedDatabase = computed(() => {
+      return databaseList.value.find(
+        (database: Database) => database.id == state.selectedId
+      );
+    });
+
     const invalidateSelectionIfNeeded = () => {
       if (
         state.selectedId != UNKNOWN_ID &&
@@ -186,9 +191,6 @@ export default defineComponent({
       (selectedId) => {
         invalidateSelectionIfNeeded();
         state.selectedId = selectedId;
-        state.selectedDatabase = databaseList.value.find(
-          (database) => database.id === selectedId
-        );
       }
     );
 
@@ -196,6 +198,7 @@ export default defineComponent({
       UNKNOWN_ID,
       state,
       databaseList,
+      selectedDatabase,
       onSelectChange,
     };
   },
