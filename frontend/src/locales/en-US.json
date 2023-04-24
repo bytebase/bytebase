@@ -240,7 +240,8 @@
     "revoke": "Revoke",
     "cannot-undo-this-action": "You cannot undo this action",
     "expand": "Expand",
-    "collapse": "Collapse"
+    "collapse": "Collapse",
+    "select": "Select"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -764,7 +765,6 @@
     "create-project": "@:common.create @:common.project",
     "edit-data": "Edit Data",
     "troubleshoot": "Troubleshoot",
-    "sync-schema": "Sync Schema",
     "transfer-in-db": "Transfer in DB",
     "request-db": "Request DB",
     "from-unassigned-databases": "From unassigned databases",
@@ -1149,8 +1149,25 @@
     "restore-database": "Restore database",
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
-      "title": "Synchronize Schema",
+      "title": "Sync Schema",
+      "description": "Bytebase supports synchronizing a specified schema version of one database to another.",
+      "select-source-schema": "Select source schema",
+      "select-target-databases": "Select target databases",
       "select-project": "Select project",
+      "source-database": "Source database",
+      "source-schema": "Source schema",
+      "schema-version": {
+        "self": "Schema version",
+        "description": "Schema version is recorded each time a schema change is applied via Bytebase"
+      },
+      "target-databases": "Target databases",
+      "with-diff": "With diff",
+      "no-diff": "No diff",
+      "message": {
+        "select-a-target-database-first": "Please select a target database first.",
+        "no-target-databases": "No target databases",
+        "no-diff-found": "No diff found."
+      },
       "to-database": "Apply to database",
       "from-database": "From database",
       "schema-change-preview": "Preview Schema change for '{database}'",
