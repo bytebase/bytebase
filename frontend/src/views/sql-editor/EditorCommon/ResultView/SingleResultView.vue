@@ -68,6 +68,7 @@
         :columns="columns"
         :data="data"
         :sensitive="sensitive"
+        :keyword="state.search"
       />
     </div>
   </template>
@@ -182,11 +183,11 @@ const data = computed(() => {
   }
 
   const data = props.result.data[2];
-  const search = keyword.value;
+  const search = keyword.value.trim().toLowerCase();
   let temp = data;
   if (search) {
     temp = data.filter((item) => {
-      return item.some((col) => String(col).includes(search));
+      return item.some((col) => String(col).toLowerCase().includes(search));
     });
   }
   return temp;
@@ -274,7 +275,7 @@ const visualizeExplain = () => {
     const statement = executeParams.query || "";
     if (!statement) return;
 
-    const lines: string[][] = queryResult.data[2];
+    const lines: string[][] = queryResult.resultList[0].data[2];
     const explain = lines.map((line) => line[0]).join("\n");
     if (!explain) return;
 
