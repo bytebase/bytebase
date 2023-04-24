@@ -37,8 +37,8 @@
       >
         <span>{{ $t("sql-editor.clear-screen") }}</span>
         <span class="hidden sm:inline ml-1">
-          ({{ keyboardShortcutStr("shift+opt_or_alt+C") }})</span
-        >
+          ({{ keyboardShortcutStr("shift+opt_or_alt+C") }})
+        </span>
       </NButton>
     </div>
     <div
