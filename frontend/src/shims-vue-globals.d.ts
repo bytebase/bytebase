@@ -4,6 +4,7 @@ import type {
   environmentName,
   environmentSlug,
   humanizeTs,
+  humanizeDuration,
   instanceName,
   instanceSlug,
   projectName,
@@ -20,6 +21,7 @@ declare module "vue" {
     console: Console;
     dayjs: typeof dayjs;
     humanizeTs: typeof humanizeTs;
+    humanizeDuration: typeof humanizeDuration;
     isDev: boolean;
     isRelease: boolean;
     sizeToFit: typeof sizeToFit;
