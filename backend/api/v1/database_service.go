@@ -22,6 +22,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/store"
@@ -48,15 +49,17 @@ const (
 // DatabaseService implements the database service.
 type DatabaseService struct {
 	v1pb.UnimplementedDatabaseServiceServer
-	store        *store.Store
-	BackupRunner *backuprun.Runner
+	store          *store.Store
+	BackupRunner   *backuprun.Runner
+	licenseService enterpriseAPI.LicenseService
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner, licenseService enterpriseAPI.LicenseService) *DatabaseService {
 	return &DatabaseService{
-		store:        store,
-		BackupRunner: br,
+		store:          store,
+		BackupRunner:   br,
+		licenseService: licenseService,
 	}
 }
 
@@ -549,6 +552,10 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 
 // UpdateSecret updates a secret of a database.
 func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.UpdateSecretRequest) (*v1pb.Secret, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureSQLTemplate) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSQLTemplate.AccessErrorMessage())
+	}
+
 	if request.Secret == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "secret is required")
 	}
@@ -658,6 +665,10 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 
 // DeleteSecret deletes a secret of a database.
 func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteSecretRequest) (*emptypb.Empty, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureSQLTemplate) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSQLTemplate.AccessErrorMessage())
+	}
+
 	environmentID, instanceID, databaseName, secretName, err := getEnvironmentInstanceDatabaseIDSecretName(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
