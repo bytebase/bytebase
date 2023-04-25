@@ -15,6 +15,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/github/gh-ost v1.1.5
+	github.com/go-pkgz/expirable-cache/v2 v2.0.0
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
