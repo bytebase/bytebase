@@ -26,6 +26,8 @@ const (
 	SheetFromGitLab SheetSource = "GITLAB"
 	// SheetFromGitHub is the sheet synced from GitHub (for both GitHub.com and GitHub Enterprise).
 	SheetFromGitHub SheetSource = "GITHUB"
+	// SheetFromBitbucket is the sheet synced from Bitbucket.
+	SheetFromBitbucket SheetSource = "BITBUCKET"
 )
 
 // SheetType is the type of sheet.

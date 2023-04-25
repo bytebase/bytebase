@@ -364,7 +364,11 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // PatchTask patches the statement, earliest allowed time and rollbackEnabled for a task.
 func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
-	if taskPatch.Statement != nil {
+	if taskPatch.Statement != nil && taskPatch.SheetID != nil {
+		return errors.New("cannot update both statement and sheet_id")
+	}
+
+	if taskPatch.Statement != nil || taskPatch.SheetID != nil {
 		if err := canUpdateTaskStatement(task); err != nil {
 			return err
 		}
@@ -416,7 +420,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	}
 
 	// Trigger task checks.
-	if taskPatch.Statement != nil {
+	if taskPatch.Statement != nil || taskPatch.SheetID != nil {
 		dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
 		if err != nil {
 			return err
@@ -501,6 +505,9 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			}
 		}
 	}
+
+	// TODO(p0ny): sheet, create update sheet activity
+	// if taskPatch.SheetID != nil {}
 
 	// Update statement activity.
 	if taskPatch.Statement != nil {
