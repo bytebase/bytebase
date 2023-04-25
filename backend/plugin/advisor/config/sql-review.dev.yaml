@@ -159,6 +159,8 @@ ruleList:
       list:
         - SERIAL
         - BIGSERIAL
+        - INT
+        - BIGINT
   - type: index.create-concurrently
     level: WARNING
   - type: system.charset.allowlist
