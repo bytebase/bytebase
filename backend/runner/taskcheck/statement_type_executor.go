@@ -66,7 +66,7 @@ func (exec *StatementTypeExecutor) Run(ctx context.Context, _ *store.TaskCheckRu
 	}
 
 	materials := backendutils.GetSecretMapFromDatabaseMessage(database)
-	// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
+	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := backendutils.RenderStatement(payload.Statement, materials)
 
 	switch instance.Engine {

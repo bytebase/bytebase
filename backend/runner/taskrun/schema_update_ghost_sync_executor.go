@@ -101,7 +101,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 	}
 
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
-	// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
+	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
 
 	config, err := utils.GetGhostConfig(task.ID, database, adminDataSource, exec.secret, instanceUsers, tableName, renderedStatement, false, 10000000)

@@ -74,7 +74,7 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *store.Ta
 	}
 
 	materials := backendutils.GetSecretMapFromDatabaseMessage(database)
-	// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
+	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := backendutils.RenderStatement(statement, materials)
 
 	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database.DatabaseName, exec.dbFactory, renderedStatement)
