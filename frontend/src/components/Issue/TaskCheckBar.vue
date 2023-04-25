@@ -12,22 +12,7 @@
       @select-task-check-type="viewCheckRunDetail"
     />
 
-    <button
-      v-if="showRunCheckButton"
-      type="button"
-      class="btn-small py-0.5 inline-flex items-center gap-1"
-      :disabled="hasRunningTaskCheck"
-      @click.prevent="runChecks"
-    >
-      <template v-if="hasRunningTaskCheck">
-        <BBSpin class="w-4 h-4" />
-        {{ $t("task.checking") }}
-      </template>
-      <template v-else>
-        <heroicons-outline:play class="w-4 h-4" />
-        {{ $t("task.run-task") }}
-      </template>
-    </button>
+    <RunTaskCheckButton v-if="allowRunTask" @run-checks="runChecks" />
 
     <BBModal
       v-if="state.showModal"
@@ -82,6 +67,7 @@ import { cloneDeep } from "lodash-es";
 import { Task, TaskCheckRun, TaskCheckStatus, TaskCheckType } from "@/types";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import TaskCheckRunPanel from "./TaskCheckRunPanel.vue";
+import RunTaskCheckButton from "./RunTaskCheckButton.vue";
 import { BBTabFilterItem } from "@/bbkit/types";
 import { humanizeTs } from "@/utils";
 
@@ -93,7 +79,7 @@ interface LocalState {
 
 export default defineComponent({
   name: "TaskCheckBar",
-  components: { TaskCheckBadgeBar, TaskCheckRunPanel },
+  components: { TaskCheckBadgeBar, TaskCheckRunPanel, RunTaskCheckButton },
   props: {
     allowRunTask: {
       type: Boolean,
@@ -148,25 +134,6 @@ export default defineComponent({
       return tabTaskCheckRunList.value[index];
     });
 
-    const showRunCheckButton = computed((): boolean => {
-      if (!props.allowRunTask) return false;
-      return (
-        props.task.status == "PENDING" ||
-        props.task.status == "PENDING_APPROVAL" ||
-        props.task.status == "RUNNING" ||
-        props.task.status == "FAILED"
-      );
-    });
-
-    const hasRunningTaskCheck = computed((): boolean => {
-      for (const check of props.task.taskCheckRunList) {
-        if (check.status == "RUNNING") {
-          return true;
-        }
-      }
-      return false;
-    });
-
     // Returns the most severe status
     const taskCheckStatus = (taskCheckRun: TaskCheckRun): TaskCheckStatus => {
       let value: TaskCheckStatus = "SUCCESS";
@@ -192,8 +159,8 @@ export default defineComponent({
       state.selectedTaskCheckType = undefined;
     };
 
-    const runChecks = () => {
-      emit("run-checks", props.task);
+    const runChecks = (taskList: Task[]) => {
+      emit("run-checks", taskList);
     };
 
     return {
@@ -201,8 +168,6 @@ export default defineComponent({
       tabTaskCheckRunList,
       tabItemList,
       selectedTaskCheckRun,
-      showRunCheckButton,
-      hasRunningTaskCheck,
       taskCheckStatus,
       viewCheckRunDetail,
       dismissDialog,
