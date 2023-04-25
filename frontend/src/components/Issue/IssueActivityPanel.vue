@@ -159,7 +159,6 @@ import type {
   ActivityIssueFieldUpdatePayload,
   ActivityCreate,
   IssueSubscriber,
-  Task,
   ActivityIssueCommentCreatePayload,
 } from "@/types";
 import { sizeToFit } from "@/utils";
@@ -182,9 +181,6 @@ interface LocalState {
   editCommentMode: boolean;
   activeActivity?: Activity;
 }
-const emit = defineEmits<{
-  (event: "run-checks", task: Task): void;
-}>();
 
 const activityStore = useActivityStore();
 const route = useRoute();
@@ -297,10 +293,6 @@ const doCreateComment = (comment: string, clear = true) => {
     }
     if (!isSubscribed) {
       addSubscriberId(currentUser.value.id);
-    }
-
-    if (comment === "LGTM") {
-      emit("run-checks", logic.selectedTask.value as Task);
     }
   });
 };
