@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -475,17 +476,17 @@ func passCheck(taskCheckRunList []*store.TaskCheckRunMessage, checkType api.Task
 
 // ExecuteMigrationDefault executes migration.
 func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.Driver, mi *db.MigrationInfo, statement string, executeBeforeCommitTx func(tx *sql.Tx) error) (migrationHistoryID string, updatedSchema string, resErr error) {
-	execFunc := func() error {
+	execFunc := func(execStatement string) error {
 		if driver.GetType() == db.Oracle && executeBeforeCommitTx != nil {
 			oracleDriver, ok := driver.(*oracle.Driver)
 			if !ok {
 				return errors.New("failed to cast driver to oracle driver")
 			}
-			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, statement, executeBeforeCommitTx); err != nil {
+			if _, _, err := oracleDriver.ExecuteMigrationWithBeforeCommitTxFunc(ctx, execStatement, executeBeforeCommitTx); err != nil {
 				return err
 			}
 		} else {
-			if _, err := driver.Execute(ctx, statement, false /* createDatabase */); err != nil {
+			if _, err := driver.Execute(ctx, execStatement, false /* createDatabase */); err != nil {
 				return err
 			}
 		}
@@ -495,7 +496,7 @@ func ExecuteMigrationDefault(ctx context.Context, store *store.Store, driver db.
 }
 
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
-func ExecuteMigrationWithFunc(ctx context.Context, store *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, execFunc func() error) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationWithFunc(ctx context.Context, s *store.Store, driver db.Driver, m *db.MigrationInfo, statement string, execFunc func(execStatement string) error) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
 	// For baseline migration, we also record the live schema to detect the schema drift.
@@ -504,7 +505,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, store *store.Store, driver db
 		return "", "", err
 	}
 
-	insertedID, err := BeginMigration(ctx, store, m, prevSchemaBuf.String(), statement)
+	insertedID, err := BeginMigration(ctx, s, m, prevSchemaBuf.String(), statement)
 	if err != nil {
 		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 			return insertedID, prevSchemaBuf.String(), nil
@@ -515,7 +516,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, store *store.Store, driver db
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := EndMigration(ctx, store, startedNs, insertedID, updatedSchema, resErr == nil /* isDone */); err != nil {
+		if err := EndMigration(ctx, s, startedNs, insertedID, updatedSchema, resErr == nil /* isDone */); err != nil {
 			log.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.String("migration_id", migrationHistoryID),
@@ -532,7 +533,23 @@ func ExecuteMigrationWithFunc(ctx context.Context, store *store.Store, driver db
 		doMigrate = false
 	}
 	if doMigrate {
-		if err := execFunc(); err != nil {
+		var renderedStatement = statement
+		// The m.DatabaseID is nil means the migration is a instance level migration
+		if m.DatabaseID != nil {
+			database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				UID: m.DatabaseID,
+			})
+			if err != nil {
+				return "", "", err
+			}
+			if database == nil {
+				return "", "", errors.Errorf("database %d not found", *m.DatabaseID)
+			}
+			materials := GetSecretMapFromDatabaseMessage(database)
+			// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
+			renderedStatement = RenderStatement(statement, materials)
+		}
+		if err := execFunc(renderedStatement); err != nil {
 			return "", "", err
 		}
 	}
@@ -767,4 +784,48 @@ func userCanApprove(step *storepb.ApprovalStep, users []*store.UserMessage, poli
 
 func convertToRoleName(role api.Role) string {
 	return fmt.Sprintf("roles/%s", role)
+}
+
+// RenderStatement renders the given template statement with the given key-value map.
+func RenderStatement(templateStatement string, secrets map[string]string) string {
+	// Happy path for empty template statement.
+	if templateStatement == "" {
+		return ""
+	}
+	// Optimizations for databases without secrets.
+	if len(secrets) == 0 {
+		return templateStatement
+	}
+	// Don't render statement larger than 1MB.
+	if len(templateStatement) > 1024*1024 {
+		return templateStatement
+	}
+
+	// The regular expression consists of:
+	// \${{: matches the string ${{, where $ is escaped with a backslash.
+	// \s*: matches zero or more whitespace characters.
+	// secrets\.: matches the string secrets., where . is escaped with a backslash.
+	// (?P<name>[A-Z0-9_]+): uses a named capture group name to match the secret name. The capture group is defined using the syntax (?P<name>) and matches one or more uppercase letters, digits, or underscores.
+	re := regexp.MustCompile(`\${{\s*secrets\.(?P<name>[A-Z0-9_]+)\s*}}`)
+	matches := re.FindAllStringSubmatch(templateStatement, -1)
+	for _, match := range matches {
+		name := match[1]
+		if value, ok := secrets[name]; ok {
+			templateStatement = strings.ReplaceAll(templateStatement, match[0], value)
+		}
+	}
+	return templateStatement
+}
+
+// GetSecretMapFromDatabaseMessage extracts the secret map from the given database message.
+func GetSecretMapFromDatabaseMessage(databaseMessage *store.DatabaseMessage) map[string]string {
+	materials := make(map[string]string)
+	if databaseMessage.Secrets == nil || len(databaseMessage.Secrets.Items) == 0 {
+		return materials
+	}
+
+	for _, item := range databaseMessage.Secrets.Items {
+		materials[item.Name] = item.Value
+	}
+	return materials
 }

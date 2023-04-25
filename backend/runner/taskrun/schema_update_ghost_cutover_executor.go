@@ -123,7 +123,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, err
 	}
 
-	execFunc := func() error {
+	execFunc := func(_ string) error {
 		if err := os.Remove(postponeFilename); err != nil {
 			return errors.Wrap(err, "failed to remove postpone flag file")
 		}
