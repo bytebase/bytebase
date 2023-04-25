@@ -787,8 +787,8 @@ func convertToRoleName(role api.Role) string {
 }
 
 // RenderStatement renders the given template statement with the given key-value map.
-func RenderStatement(templateStatement string, materials map[string]string) string {
-	// 	The regular expression consists of:
+func RenderStatement(templateStatement string, secrets map[string]string) string {
+	// The regular expression consists of:
 	// \${{: matches the string ${{, where $ is escaped with a backslash.
 	// \s*: matches zero or more whitespace characters.
 	// secrets\.: matches the string secrets., where . is escaped with a backslash.
@@ -797,7 +797,7 @@ func RenderStatement(templateStatement string, materials map[string]string) stri
 	matches := re.FindAllStringSubmatch(templateStatement, -1)
 	for _, match := range matches {
 		name := match[1]
-		if value, ok := materials[name]; ok {
+		if value, ok := secrets[name]; ok {
 			templateStatement = strings.ReplaceAll(templateStatement, match[0], value)
 		}
 	}
