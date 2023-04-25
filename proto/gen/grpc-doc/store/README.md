@@ -67,6 +67,11 @@
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
   
+- [store/sheet.proto](#store_sheet-proto)
+    - [SheetPayload](#bytebase-store-SheetPayload)
+    - [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue)
+    - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
+  
 - [store/slow_query.proto](#store_slow_query-proto)
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
     - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
@@ -979,6 +984,74 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ENCRYPTION_STARTTLS | 2 |  |
 | ENCRYPTION_SSL_TLS | 3 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_sheet-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/sheet.proto
+
+
+
+<a name="bytebase-store-SheetPayload"></a>
+
+### SheetPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_payload | [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload) |  |  |
+| used_by_issues | [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue) | repeated | used_by_issues link to the issues where the sheet is used. |
+
+
+
+
+
+
+<a name="bytebase-store-SheetPayload-UsedByIssue"></a>
+
+### SheetPayload.UsedByIssue
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_id | [int64](#int64) |  |  |
+| issue_title | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SheetPayload-VCSPayload"></a>
+
+### SheetPayload.VCSPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| file_name | [string](#string) |  |  |
+| file_path | [string](#string) |  |  |
+| size | [int64](#int64) |  |  |
+| author | [string](#string) |  |  |
+| last_commit_id | [string](#string) |  |  |
+| last_sync_ts | [int64](#int64) |  |  |
+
+
+
+
+
+ 
 
  
 
