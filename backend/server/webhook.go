@@ -942,7 +942,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 		if fileInfo.fType == fileTypeSchema {
 			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 				// Create one issue per schema file for SDL project.
-				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName, creatorID)
+				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
 				activityCreateList = append(activityCreateList, activityCreateListForFile...)
 				if len(migrationDetailListForFile) != 0 {
 					databaseName := fileInfo.migrationInfo.Database
@@ -963,7 +963,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 			// 1) DML is always migration-based.
 			// 2) We may have a limitation in SDL implementation.
 			// 3) User just wants to break the glass.
-			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repo, pushEvent, fileInfo, creatorID)
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repo, pushEvent, fileInfo)
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
 			if len(migrationDetailListForFile) != 0 {
@@ -1211,7 +1211,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 
 // prepareIssueFromSDLFile returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string, creatorID int) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	dbName := schemaInfo.Database
 	if dbName == "" && repo.Project.TenantMode == api.TenantModeDisabled {
 		log.Debug("Ignored schema file without a database name", zap.String("file", file))
@@ -1225,7 +1225,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 	}
 
 	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
-		CreatorID:  creatorID,
+		CreatorID:  api.SystemBotID,
 		ProjectID:  repo.ProjectID,
 		Name:       file,
 		Statement:  sdl,
@@ -1270,7 +1270,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 
 // prepareIssueFromFile returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileInfo fileInfo, creatorID int) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileInfo fileInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	content, err := s.readFileContent(ctx, pushEvent, repo, fileInfo.item.FileName)
 	if err != nil {
 		return nil, []*api.ActivityCreate{
@@ -1287,7 +1287,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 		// A non-YAML file means the whole file content is the SQL statement
 		if !fileInfo.item.IsYAML {
 			sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
-				CreatorID:  creatorID,
+				CreatorID:  api.SystemBotID,
 				ProjectID:  repo.ProjectID,
 				Name:       fileInfo.item.FileName,
 				Statement:  content,
@@ -1323,7 +1323,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 		}
 
 		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
-			CreatorID:  creatorID,
+			CreatorID:  api.SystemBotID,
 			ProjectID:  repo.ProjectID,
 			Name:       fileInfo.item.FileName,
 			Statement:  migrationFile.Statement,
@@ -1373,7 +1373,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 
 	if fileInfo.item.ItemType == vcs.FileItemTypeAdded {
 		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
-			CreatorID:  creatorID,
+			CreatorID:  api.SystemBotID,
 			ProjectID:  repo.ProjectID,
 			Name:       fileInfo.item.FileName,
 			Statement:  content,
