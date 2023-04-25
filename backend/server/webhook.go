@@ -1444,11 +1444,25 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			log.Error("issue not found by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
 			return nil
 		}
+
+		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+			CreatorID:  api.SystemBotID,
+			ProjectID:  issue.Project.UID,
+			Name:       fileName,
+			Statement:  statement,
+			Visibility: api.ProjectSheet,
+			Source:     api.SheetFromBytebase,
+			Type:       api.SheetForSQL,
+		})
+		if err != nil {
+			return err
+		}
+
 		// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
 		log.Debug("Patching task for modified file VCS push event", zap.String("fileName", fileName), zap.Int("issueID", issue.UID), zap.Int("taskID", task.ID))
 		taskPatch := api.TaskPatch{
 			ID:        task.ID,
-			Statement: &statement,
+			SheetID:   &sheet.ID,
 			UpdaterID: api.SystemBotID,
 		}
 		if err := s.TaskScheduler.PatchTask(ctx, task, &taskPatch, issue); err != nil {
