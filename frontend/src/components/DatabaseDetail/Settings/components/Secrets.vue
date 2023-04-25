@@ -105,20 +105,6 @@
 
             <div class="flex flex-col gap-y-2">
               <div class="textlabel">
-                {{ $t("common.description") }}
-              </div>
-              <div>
-                <NInput
-                  v-model:value="detail.secret.description"
-                  type="textarea"
-                  :autosize="{ minRows: 3, maxRows: 10 }"
-                  :placeholder="$t('database.secret.description-placeholder')"
-                />
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-y-2">
-              <div class="textlabel">
                 {{ $t("database.secret.value") }}
                 <span class="ml-0.5 text-error">*</span>
               </div>
@@ -135,6 +121,20 @@
                       ? 'error'
                       : undefined
                   "
+                />
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-y-2">
+              <div class="textlabel">
+                {{ $t("common.description") }}
+              </div>
+              <div>
+                <NInput
+                  v-model:value="detail.secret.description"
+                  type="textarea"
+                  :autosize="{ minRows: 3, maxRows: 10 }"
+                  :placeholder="$t('database.secret.description-placeholder')"
                 />
               </div>
             </div>
