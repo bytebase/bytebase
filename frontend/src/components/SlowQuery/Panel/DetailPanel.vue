@@ -88,10 +88,10 @@
                 </div>
               </div>
               <div class="bb-grid-cell">
-                {{ detail.queryTime?.seconds.toFixed(6) }}
+                {{ detail.queryTime?.seconds.toFixed(2) }}s
               </div>
               <div class="bb-grid-cell">
-                {{ detail.lockTime?.seconds.toFixed(6) }}
+                {{ detail.lockTime?.seconds.toFixed(2) }}s
               </div>
               <div class="bb-grid-cell">
                 {{ detail.rowsExamined }}

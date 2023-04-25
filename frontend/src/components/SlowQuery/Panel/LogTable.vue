@@ -224,7 +224,7 @@ const durationText = (duration: Duration | undefined) => {
   if (!duration) return "-";
   const { seconds, nanos } = duration;
   const total = seconds + nanos / 1e9;
-  return total.toFixed(6);
+  return total.toFixed(2) + "s";
 };
 
 watch(
