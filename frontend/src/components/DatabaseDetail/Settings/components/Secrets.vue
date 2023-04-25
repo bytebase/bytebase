@@ -5,7 +5,7 @@
         {{ $t("database.secret.self") }}
       </p>
       <FeatureBadge
-        feature="bb.feature.encrypted-secret"
+        feature="bb.feature.encrypted-secrets"
         class="text-accent ml-2"
       />
     </div>
@@ -179,8 +179,14 @@ import { cloneDeep } from "lodash-es";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import { Secret } from "@/types/proto/v1/database_service";
 import { type Database } from "@/types";
-import { pushNotification, useDatabaseSecretStore, hasFeature } from "@/store";
+import {
+  pushNotification,
+  useDatabaseSecretStore,
+  hasFeature,
+  useCurrentUser,
+} from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
+import { hasPermissionInProject, hasWorkspacePermission } from "@/utils";
 
 export type Detail = {
   secret: Secret;
@@ -206,6 +212,7 @@ const parent = computed(() => {
 });
 const detail = ref<Detail>();
 const showFeatureModal = ref(false);
+const currentUser = useCurrentUser();
 
 const COLUMNS = computed(() => {
   const columns: BBGridColumn[] = [
@@ -226,7 +233,17 @@ const COLUMNS = computed(() => {
 });
 
 const allowAdmin = computed(() => {
-  return true; // TODO: RBAC
+  return (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-database-secrets",
+      currentUser.value.role
+    ) ||
+    hasPermissionInProject(
+      props.database.project,
+      currentUser.value,
+      "bb.permission.project.manage-database-secrets"
+    )
+  );
 });
 
 const extractSecretName = (name: string) => {

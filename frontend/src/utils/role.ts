@@ -30,7 +30,8 @@ export type WorkspacePermissionType =
   // Can view sensitive information such as audit logs and debug logs
   | "bb.permission.workspace.audit-log"
   | "bb.permission.workspace.debug-log"
-  | "bb.permission.workspace.manage-mail-delivery";
+  | "bb.permission.workspace.manage-mail-delivery"
+  | "bb.permission.workspace.manage-database-secrets";
 
 // A map from a particular workspace permission to the respective enablement of a particular workspace role.
 // The key is the workspace permission type and the value is the workspace [DEVELOPER, DBA, OWNER] triplet.
@@ -60,6 +61,7 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.audit-log", [false, true, true]],
   ["bb.permission.workspace.debug-log", [false, true, true]],
   ["bb.permission.workspace.manage-mail-delivery", [false, false, true]],
+  ["bb.permission.workspace.manage-database-secrets", [false, true, true]],
 ]);
 
 // Returns true if RBAC is not enabled or the particular role has the particular permission.
@@ -96,7 +98,8 @@ export type ProjectPermissionType =
   | "bb.permission.project.change-database"
   | "bb.permission.project.admin-database"
   | "bb.permission.project.create-database"
-  | "bb.permission.project.transfer-database";
+  | "bb.permission.project.transfer-database"
+  | "bb.permission.project.manage-database-secrets";
 
 // Returns true if RBAC is not enabled or the particular project role has the particular project permission.
 export function hasProjectPermission(
@@ -126,6 +129,7 @@ export function hasProjectPermission(
         "bb.permission.project.transfer-database",
         [!hasFeature("bb.feature.dba-workflow"), true],
       ],
+      ["bb.permission.project.manage-database-secrets", [false, true]],
     ]);
 
   switch (role) {
