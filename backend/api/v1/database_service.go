@@ -552,8 +552,8 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 
 // UpdateSecret updates a secret of a database.
 func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.UpdateSecretRequest) (*v1pb.Secret, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecret) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecret.AccessErrorMessage())
+	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecrets) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecrets.AccessErrorMessage())
 	}
 
 	if request.Secret == nil {
@@ -665,8 +665,8 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 
 // DeleteSecret deletes a secret of a database.
 func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteSecretRequest) (*emptypb.Empty, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecret) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecret.AccessErrorMessage())
+	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecrets) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecrets.AccessErrorMessage())
 	}
 
 	environmentID, instanceID, databaseName, secretName, err := getEnvironmentInstanceDatabaseIDSecretName(request.Name)
