@@ -1,18 +1,20 @@
 <template>
   <div class="space-y-4">
     <div class="flex items-center">
-      <p class="text-lg font-medium leading-7 text-main flex">
-        {{ $t("database.secret.self") }}
-      </p>
-      <FeatureBadge
-        feature="bb.feature.encrypted-secrets"
-        class="text-accent ml-2"
-      />
-    </div>
-    <div class="flex justify-end">
-      <NButton type="primary" :disabled="!allowAdmin" @click="showDetail()">
-        {{ $t("database.secret.new") }}
-      </NButton>
+      <div class="flex-1 flex items-center">
+        <p class="text-lg font-medium leading-7 text-main flex">
+          {{ $t("database.secret.self") }}
+        </p>
+        <FeatureBadge
+          feature="bb.feature.encrypted-secrets"
+          class="text-accent ml-2"
+        />
+      </div>
+      <div class="flex justify-end">
+        <NButton type="primary" :disabled="!allowAdmin" @click="showDetail()">
+          {{ $t("database.secret.new") }}
+        </NButton>
+      </div>
     </div>
     <div>
       <BBGrid
