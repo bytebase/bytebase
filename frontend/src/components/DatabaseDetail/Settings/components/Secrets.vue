@@ -187,7 +187,6 @@ import {
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
 import { hasPermissionInProject, hasWorkspacePermission } from "@/utils";
-import DatabaseNameTemplateTips from "@/components/CreateDatabasePrepForm/DatabaseNameTemplateTips.vue";
 
 export type Detail = {
   secret: Secret;
