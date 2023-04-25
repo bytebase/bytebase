@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
 	"github.com/bytebase/bytebase/backend/runner/utils"
 	"github.com/bytebase/bytebase/backend/store"
+	backendutils "github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewStatementTypeExecutor creates a task check DML executor.
@@ -64,19 +65,23 @@ func (exec *StatementTypeExecutor) Run(ctx context.Context, _ *store.TaskCheckRu
 		}, nil
 	}
 
+	materials := backendutils.GetSecretMapFromDatabaseMessage(database)
+	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
+	renderedStatement := backendutils.RenderStatement(payload.Statement, materials)
+
 	switch instance.Engine {
 	case db.Postgres:
-		result, err = postgresqlStatementTypeCheck(payload.Statement, task.Type)
+		result, err = postgresqlStatementTypeCheck(renderedStatement, task.Type)
 		if err != nil {
 			return nil, err
 		}
 	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
-		result, err = mysqlStatementTypeCheck(payload.Statement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation, task.Type)
+		result, err = mysqlStatementTypeCheck(renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation, task.Type)
 		if err != nil {
 			return nil, err
 		}
 		if task.Type == api.TaskDatabaseSchemaUpdateSDL {
-			sdlAdvice, err := exec.mysqlSDLTypeCheck(ctx, payload.Statement, task)
+			sdlAdvice, err := exec.mysqlSDLTypeCheck(ctx, renderedStatement, task)
 			if err != nil {
 				return nil, err
 			}

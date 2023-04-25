@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewStatementTypeReportExecutor creates a task check statement type report executor.
@@ -66,11 +67,19 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, _ *store.TaskChec
 		collation = dbSchema.Metadata.Collation
 	}
 
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	materials := utils.GetSecretMapFromDatabaseMessage(database)
+	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
+	renderedStatement := utils.RenderStatement(payload.Statement, materials)
+
 	switch instance.Engine {
 	case db.Postgres:
-		return reportStatementTypeForPostgres(payload.Statement)
+		return reportStatementTypeForPostgres(renderedStatement)
 	case db.MySQL:
-		return reportStatementTypeForMySQL(payload.Statement, charset, collation)
+		return reportStatementTypeForMySQL(renderedStatement, charset, collation)
 	default:
 		return nil, errors.New("unsupported db type")
 	}
