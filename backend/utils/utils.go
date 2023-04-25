@@ -788,9 +788,13 @@ func convertToRoleName(role api.Role) string {
 
 // RenderStatement renders the given template statement with the given key-value map.
 func RenderStatement(templateStatement string, secrets map[string]string) string {
+	// Happy path for empty template statement.
 	if templateStatement == "" {
-		// Happy path for empty template statement.
 		return ""
+	}
+	// Optimizations for databases without secrets.
+	if len(secrets) == 0 {
+		return templateStatement
 	}
 	// Don't render statement larger than 1MB.
 	if len(templateStatement) > 1024*1024 {
