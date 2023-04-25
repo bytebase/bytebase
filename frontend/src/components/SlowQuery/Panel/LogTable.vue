@@ -7,7 +7,7 @@
       (row) => instanceHasSlowQueryDetail(row.database.instance)
     "
     :is-row-expanded="isSelectedRow"
-    class="border compact w-auto overflow-x-auto"
+    class="border w-auto overflow-x-auto"
     header-class="capitalize"
     @click-row="(log: ComposedSlowQueryLog) => $emit('select', log)"
   >
@@ -146,43 +146,43 @@ const columns = computed(() => {
     },
     {
       title: t("slow-query.sql-statement"),
-      width: "minmax(20rem, 1fr)",
+      width: "minmax(10rem, 1fr)",
     },
     {
       title: t("slow-query.total-query-count"),
-      width: "minmax(6rem, auto)",
+      width: "6rem",
     },
     {
       title: t("slow-query.query-count-percent"),
-      width: "minmax(6rem, auto)",
+      width: "6rem",
     },
     {
       title: t("slow-query.max-query-time"),
-      width: "minmax(6rem, auto)",
+      width: "6rem",
     },
     {
       title: t("slow-query.avg-query-time"),
-      width: "minmax(6rem, auto)",
+      width: "6rem",
     },
     {
       title: t("slow-query.query-time-percent"),
-      width: "minmax(6rem, auto)",
+      width: "6rem",
     },
     {
       title: t("slow-query.max-rows-examined"),
-      width: "minmax(6rem, auto)",
+      width: "6rem",
     },
     {
       title: t("slow-query.avg-rows-examined"),
-      width: "minmax(6rem, auto)",
+      width: "6rem",
     },
     {
       title: t("slow-query.max-rows-sent"),
-      width: "minmax(6rem, auto)",
+      width: "6rem",
     },
     {
       title: t("slow-query.avg-rows-sent"),
-      width: "minmax(6rem, auto)",
+      width: "6rem",
     },
     props.showProjectColumn && {
       title: t("common.project"),
@@ -190,15 +190,15 @@ const columns = computed(() => {
     },
     props.showEnvironmentColumn && {
       title: t("common.environment"),
-      width: "minmax(6rem, auto)",
+      width: "8rem",
     },
     props.showInstanceColumn && {
       title: t("common.instance"),
-      width: "minmax(12rem, 18rem)",
+      width: "12rem",
     },
     props.showDatabaseColumn && {
       title: t("common.database"),
-      width: "minmax(12rem, 18rem)",
+      width: "8rem",
     },
     {
       title: t("slow-query.last-query-time"),
