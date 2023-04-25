@@ -50,6 +50,9 @@ func (s *ReviewService) GetReview(ctx context.Context, request *v1pb.GetReviewRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
 	}
+	if issue == nil {
+		return nil, status.Errorf(codes.NotFound, "issue %d not found", reviewID)
+	}
 	review, err := convertToReview(ctx, s.store, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
@@ -66,6 +69,9 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
+	}
+	if issue == nil {
+		return nil, status.Errorf(codes.NotFound, "issue %d not found", reviewID)
 	}
 	payload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
@@ -198,6 +204,9 @@ func (s *ReviewService) UpdateReview(ctx context.Context, request *v1pb.UpdateRe
 	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &reviewID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get issue, error: %v", err)
+	}
+	if issue == nil {
+		return nil, status.Errorf(codes.NotFound, "issue %d not found", reviewID)
 	}
 
 	patch := &store.UpdateIssueMessage{}
