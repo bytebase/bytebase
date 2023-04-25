@@ -150,21 +150,21 @@
       <div class="w-3/4 grow h-full">
         <main ref="diffViewerRef" class="p-4 w-full h-full overflow-y-auto">
           <div
-            v-show="shouldShowDiff"
+            v-show="selectedDatabase"
             class="w-full h-auto flex flex-col justify-start items-start"
           >
             <div class="w-full flex flex-row justify-start items-center mb-2">
               <span>{{ previewSchemaChangeMessage }}</span>
             </div>
             <code-diff
-              v-show="targetDatabaseSchema !== sourceDatabaseSchema"
+              v-show="shouldShowDiff"
               class="code-diff-container w-full h-auto max-h-96 overflow-y-auto border rounded"
               :old-string="targetDatabaseSchema"
               :new-string="sourceDatabaseSchema"
               output-format="side-by-side"
             />
             <div
-              v-show="targetDatabaseSchema === sourceDatabaseSchema"
+              v-show="!shouldShowDiff"
               class="w-full h-auto px-3 py-2 overflow-y-auto border rounded"
             >
               <p>
@@ -205,7 +205,7 @@
             />
           </div>
           <div
-            v-show="!shouldShowDiff"
+            v-show="!selectedDatabase"
             class="w-full h-full flex flex-col justify-center items-center"
           >
             {{
@@ -338,8 +338,16 @@ const targetDatabaseSchema = computed(() => {
     ? databaseSchemaCache[state.selectedDatabaseId]
     : "";
 });
+const selectedDatabase = computed(() => {
+  return state.selectedDatabaseId
+    ? databaseStore.getDatabaseById(state.selectedDatabaseId)
+    : undefined;
+});
 const shouldShowDiff = computed(() => {
-  return Boolean(state.selectedDatabaseId);
+  return (
+    state.selectedDatabaseId &&
+    databaseDiffCache[state.selectedDatabaseId]?.raw !== ""
+  );
 });
 const previewSchemaChangeMessage = computed(() => {
   if (!state.selectedDatabaseId) {
@@ -429,7 +437,7 @@ watch(
   async () => {
     const schedule = setTimeout(() => {
       state.isLoading = true;
-    }, 1000);
+    }, 300);
 
     for (const id of state.selectedDatabaseIdList) {
       if (databaseSchemaCache[id]) {
