@@ -462,6 +462,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList:
       - key: list
         payload:
