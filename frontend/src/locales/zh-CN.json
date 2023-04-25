@@ -385,7 +385,7 @@
       "sensitive-data": "数据脱敏",
       "access-control": "数据访问控制",
       "audit-log": "审计日志",
-      "roles": "角色",
+      "custom-roles": "自定义角色",
       "mail-delivery": "邮件传输"
     },
     "profile": {
@@ -1645,7 +1645,7 @@
     "admin-mode": {
       "self": "管理员模式"
     },
-    "read-only-mode-not-allowed": "实例{instance}无法通过只读模式访问。",
+    "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
     "run-selected": "运行选中的语句",
     "clear-screen": "清屏"
   },
@@ -1853,6 +1853,10 @@
       "bb-feature-rbac": {
         "title": "角色管理",
         "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色。"
+      },
+      "bb-feature-custom-role": {
+        "title": "自定义角色",
+        "desc": "定义自定义角色，你可以将它们应用到项目成员上。"
       },
       "bb-feature-watermark": {
         "title": "水印设置",

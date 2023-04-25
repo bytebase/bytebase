@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pt-1 overflow-hidden grid grid-cols-5 gap-x-2 gap-y-4 md:inline-flex items-center"
+    class="pt-1 overflow-hidden grid grid-cols-5 gap-x-2 gap-y-4 md:inline-flex items-stretch"
   >
     <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
@@ -11,7 +11,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="createInstance">
           <heroicons-outline:plus-sm class="w-5 h-5" />
         </button>
-        <h3 class="mt-1.5 text-sm font-normal text-main tracking-tight">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("quick-action.add-instance") }}
         </h3>
       </div>
@@ -24,7 +26,7 @@
           <heroicons-outline:users class="w-5 h-5" />
         </router-link>
         <h3
-          class="mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.manage-user") }}
         </h3>
@@ -39,7 +41,7 @@
           <heroicons-outline:database class="w-5 h-5" />
         </button>
         <h3
-          class="mt-1.5 text-sm text-center font-normal text-main tracking-tight"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.new-db") }}
         </h3>
@@ -53,7 +55,7 @@
           <heroicons-outline:database class="w-5 h-5" />
         </button>
         <h3
-          class="mt-1.5 text-sm text-center font-normal text-main tracking-tight"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.request-db") }}
         </h3>
@@ -70,7 +72,9 @@
         >
           <heroicons-outline:pencil-alt class="w-5 h-5" />
         </button>
-        <h3 class="mt-1.5 text-center text-sm font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("database.alter-schema") }}
         </h3>
       </div>
@@ -82,7 +86,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="changeData">
           <heroicons-outline:pencil class="w-5 h-5" />
         </button>
-        <h3 class="mt-1.5 text-center text-sm font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("database.change-data") }}
         </h3>
       </div>
@@ -94,7 +100,9 @@
         <router-link to="/issue/new" class="btn-icon-primary p-3">
           <heroicons-outline:hand class="w-5 h-5" />
         </router-link>
-        <h3 class="mt-1.5 text-center text-sm font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("quick-action.troubleshoot") }}
         </h3>
       </div>
@@ -106,7 +114,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="createEnvironment">
           <heroicons-outline:plus-sm class="w-5 h-5" />
         </button>
-        <h3 class="mt-1.5 text-center text-sm font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("environment.create") }}
         </h3>
       </div>
@@ -121,7 +131,9 @@
         >
           <heroicons-outline:selector class="transform rotate-90 w-5 h-5" />
         </button>
-        <h3 class="mt-1.5 text-center text-sm font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("common.reorder") }}
         </h3>
       </div>
@@ -134,7 +146,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="createProject">
           <heroicons-outline:template class="w-5 h-5" />
         </button>
-        <h3 class="mt-1.5 text-center text-sm font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("quick-action.new-project") }}
         </h3>
       </div>
@@ -146,7 +160,9 @@
         <button class="btn-icon-primary p-3" @click.prevent="transferDatabase">
           <heroicons-outline:chevron-double-down class="w-5 h-5" />
         </button>
-        <h3 class="mt-1.5 text-center text-sm font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("quick-action.transfer-in-db") }}
         </h3>
       </div>

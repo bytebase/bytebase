@@ -387,7 +387,7 @@
       "sensitive-data": "Data Anonymization",
       "access-control": "Data Access Control",
       "audit-log": "Audit Log",
-      "roles": "Roles",
+      "custom-roles": "Custom Roles",
       "mail-delivery": "Mail Delivery"
     },
     "profile": {
@@ -1647,7 +1647,7 @@
     "admin-mode": {
       "self": "Admin mode"
     },
-    "read-only-mode-not-allowed": "Instance {instance} is not accessible in read-only mode.",
+    "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "run-selected": "Run selected",
     "clear-screen": "Clear screen"
   },
@@ -1855,6 +1855,10 @@
       "bb-feature-rbac": {
         "title": "Role management",
         "desc": "Role management can assign a particular role (e.g. DBA) to a member."
+      },
+      "bb-feature-custom-role": {
+        "title": "Custom role",
+        "desc": "Defining custom roles, and you may apply them to project members."
       },
       "bb-feature-watermark": {
         "title": "Watermark",

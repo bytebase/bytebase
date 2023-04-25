@@ -379,7 +379,6 @@
       "sensitive-data": "Anonimización de Datos",
       "access-control": "Control de Acceso a Datos",
       "audit-log": "Registro de auditoría",
-      "roles": "Roles",
       "mail-delivery": "Entrega de Correo"
     },
     "profile": {
@@ -1622,7 +1621,7 @@
     "admin-mode": {
       "self": "Modo administrador"
     },
-    "read-only-mode-not-allowed": "La instancia {instance} no es accesible en modo de solo lectura.",
+    "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "run-selected": "Ejecutar selección",
     "clear-screen": "Limpiar pantalla"
   },
