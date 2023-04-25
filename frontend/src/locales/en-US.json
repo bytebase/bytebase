@@ -1194,7 +1194,25 @@
     "doesnt-match-tenant-value": "Doesn't match label value",
     "should-follow-database-name-template": "Should follow tenant database name template",
     "all": "All databases",
-    "show-schemaless-databases": "Show schemaless databases. (Alter Schema is not applicable for schemaless databases.)"
+    "show-schemaless-databases": "Show schemaless databases. (Alter Schema is not applicable for schemaless databases.)",
+    "secret": {
+      "self": "Secret",
+      "new": "New secret",
+      "edit": "Edit secret",
+      "name-placeholder": "Input secret name",
+      "validation": {
+        "cannot-be-changed-later": "Cannot be changed later",
+        "duplicated-name": "Duplicated secret name",
+        "name-is-required": "Secret name is required",
+        "name-pattern-mismatch": "Secret name should contain only uppercase letters, digit, or _ (underscore)",
+        "name-cannot-prefix-with-bytebase": "Secret name cannot prefix with 'BYTEBASE_'",
+        "name-cannot-start-with-number": "Secret name cannot start with number"
+      },
+      "description-placeholder": "Input description",
+      "value": "Value",
+      "value-placeholder": "Input value (write only)",
+      "delete-tips": "Delete secret"
+    }
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1907,6 +1925,10 @@
       "bb-feature-shared-sql-script": {
         "title": "Shared SQL script",
         "desc": "Share your SQL scripts with project teammates or make them public to all."
+      },
+      "bb-feature-encrypted-secrets": {
+        "title": "Encrypted Secrets",
+        "desc": "Store your secrets of database and use them in your issue SQL scripts."
       }
     }
   },
