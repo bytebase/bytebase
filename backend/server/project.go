@@ -927,6 +927,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				sheetSource = api.SheetFromGitLab
 			case vcsPlugin.GitHub:
 				sheetSource = api.SheetFromGitHub
+			case vcsPlugin.Bitbucket:
+				sheetSource = api.SheetFromBitbucket
 			}
 			vscSheetType := api.SheetForSQL
 			sheetFind := &api.SheetFind{
