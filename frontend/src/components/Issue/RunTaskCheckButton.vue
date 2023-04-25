@@ -66,6 +66,8 @@ const actionList = computed(() => {
       },
     });
 
+    // Don't only show 'run checks in current stage' if we don't show 'run checks'
+    // since that might be weird.
     const taskListInStage = context.selectedStage.value.taskList as Task[];
     const runnableTaskList = taskListInStage.filter((task) =>
       allowRunChecksForTask(task)
