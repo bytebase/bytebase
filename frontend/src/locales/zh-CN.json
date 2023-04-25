@@ -334,7 +334,9 @@
       "self": "应用到所有未执行任务",
       "current-only": "只应用到当前任务"
     },
-    "execution-time": "执行时间"
+    "execution-time": "执行时间",
+    "run-checks": "运行检查",
+    "run-checks-in-current-stage": "运行当前阶段的所有检查"
   },
   "banner": {
     "update-license": "更新证书",

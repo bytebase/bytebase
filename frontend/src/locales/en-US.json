@@ -336,7 +336,9 @@
       "self": "Apply change to all pending tasks",
       "current-only": "Only apply change to current task"
     },
-    "execution-time": "Execution time"
+    "execution-time": "Execution time",
+    "run-checks": "Run checks",
+    "run-checks-in-current-stage": "Run checks in current stage"
   },
   "banner": {
     "update-license": "Update license",

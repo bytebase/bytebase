@@ -206,16 +206,17 @@ const issueTemplate = computed(
   () => templateForType(props.issue.type) || defaultTemplate()
 );
 
-const runTaskChecks = (task: Task) => {
-  taskStore
-    .runChecks({
+const runTaskChecks = (taskList: Task[]) => {
+  const requests = taskList.map((task) => {
+    return taskStore.runChecks({
       issueId: (props.issue as Issue).id,
       pipelineId: (props.issue as Issue).pipeline.id,
       taskId: task.id,
-    })
-    .then(() => {
-      emit("status-changed", true);
     });
+  });
+  Promise.allSettled(requests).then(() => {
+    emit("status-changed", true);
+  });
 };
 
 const currentPipelineType = computed((): PipelineType => {
