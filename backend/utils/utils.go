@@ -788,6 +788,15 @@ func convertToRoleName(role api.Role) string {
 
 // RenderStatement renders the given template statement with the given key-value map.
 func RenderStatement(templateStatement string, secrets map[string]string) string {
+	if templateStatement == "" {
+		// Happy path for empty template statement.
+		return ""
+	}
+	// Don't render statement larger than 1MB.
+	if len(templateStatement) > 1024*1024 {
+		return templateStatement
+	}
+
 	// The regular expression consists of:
 	// \${{: matches the string ${{, where $ is escaped with a backslash.
 	// \s*: matches zero or more whitespace characters.
