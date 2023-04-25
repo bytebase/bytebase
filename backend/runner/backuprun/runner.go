@@ -197,6 +197,9 @@ func (r *Runner) purgeBinlogFilesOnCloud(ctx context.Context, binlogDir string, 
 func (*Runner) purgeBinlogFilesLocal(binlogDir string, retentionPeriodTs int) error {
 	binlogFileInfoList, err := os.ReadDir(binlogDir)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
 		return errors.Wrapf(err, "failed to read backup directory %q", binlogDir)
 	}
 	for _, binlogFileInfo := range binlogFileInfoList {
@@ -213,7 +216,9 @@ func (*Runner) purgeBinlogFilesLocal(binlogDir string, retentionPeriodTs int) er
 			binlogFilePath := path.Join(binlogDir, binlogFileInfo.Name())
 			log.Debug("Deleting expired local binlog file for MySQL instance.", zap.String("path", binlogFilePath))
 			if err := os.Remove(binlogFilePath); err != nil {
-				log.Warn("Failed to remove an expired binlog file.", zap.String("path", binlogFilePath), zap.Error(err))
+				if !os.IsNotExist(err) {
+					log.Warn("Failed to remove an expired binlog file.", zap.String("path", binlogFilePath), zap.Error(err))
+				}
 				continue
 			}
 			log.Info("Deleted expired binlog file.", zap.String("path", binlogFilePath))
