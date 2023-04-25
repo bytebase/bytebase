@@ -353,6 +353,7 @@ type TaskPatch struct {
 	Payload *string
 
 	Statement         *string `jsonapi:"attr,statement"`
+	SheetID           *int    `jsonapi:"attr,sheetId"`
 	SchemaVersion     *string
 	RollbackEnabled   *bool `jsonapi:"attr,rollbackEnabled"`
 	RollbackSQLStatus *RollbackSQLStatus
