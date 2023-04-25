@@ -210,7 +210,7 @@ func (e FeatureType) Name() string {
 	case FeatureTaskScheduleTime:
 		return "Task schedule time"
 	case FeatureEncryptedSecret:
-		return "Secret"
+		return "Encrypted secret"
 	// VCS Integration
 	case FeatureVCSSchemaWriteBack:
 		return "Schema write-back"
