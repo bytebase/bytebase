@@ -328,7 +328,9 @@
       "cancel-generating": "Cancelar la generación de la reversión SQL",
       "sql-rollback-tips": "Cuando se habilita, Bytebase mantendrá los registros de reversión para el cambio de datos\ny le permitirá crear una nueva incidencia para revertir este cambio. {link}"
     },
-    "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual"
+    "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual",
+    "run-checks": "Ejecutar comprobaciones",
+    "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual"
   },
   "banner": {
     "update-license": "Actualizar licencia",
