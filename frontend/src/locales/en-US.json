@@ -1923,6 +1923,10 @@
       "bb-feature-shared-sql-script": {
         "title": "Shared SQL script",
         "desc": "Share your SQL scripts with project teammates or make them public to all."
+      },
+      "bb-feature-encrypted-secrets": {
+        "title": "Encrypted Secrets",
+        "desc": "Store your secrets of database and use them in your issue SQL scripts."
       }
     }
   },

@@ -1876,6 +1876,10 @@
       "bb-feature-shared-sql-script": {
         "title": "Script SQL compartido",
         "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
+      },
+      "bb-feature-encrypted-secrets": {
+        "title": "Secretos Encriptados",
+        "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
       }
     }
   },

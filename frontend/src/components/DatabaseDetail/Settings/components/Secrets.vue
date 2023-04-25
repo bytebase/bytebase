@@ -1,8 +1,14 @@
 <template>
   <div class="space-y-4">
-    <p class="text-lg font-medium leading-7 text-main">
-      {{ $t("database.secret.self") }}
-    </p>
+    <div class="flex items-center">
+      <p class="text-lg font-medium leading-7 text-main flex">
+        {{ $t("database.secret.self") }}
+      </p>
+      <FeatureBadge
+        feature="bb.feature.encrypted-secret"
+        class="text-accent ml-2"
+      />
+    </div>
     <div class="flex justify-end">
       <NButton type="primary" :disabled="!allowAdmin" @click="showDetail()">
         {{ $t("database.secret.new") }}
@@ -157,6 +163,11 @@
       </NDrawerContent>
     </NDrawer>
   </div>
+  <FeatureModal
+    v-if="showFeatureModal"
+    feature="bb.feature.encrypted-secrets"
+    @cancel="showFeatureModal = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -168,7 +179,7 @@ import { cloneDeep } from "lodash-es";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import { Secret } from "@/types/proto/v1/database_service";
 import { type Database } from "@/types";
-import { pushNotification, useDatabaseSecretStore } from "@/store";
+import { pushNotification, useDatabaseSecretStore, hasFeature } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
 
 export type Detail = {
@@ -194,6 +205,7 @@ const parent = computed(() => {
   return `environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.name}`;
 });
 const detail = ref<Detail>();
+const showFeatureModal = ref(false);
 
 const COLUMNS = computed(() => {
   const columns: BBGridColumn[] = [
@@ -225,6 +237,10 @@ const extractSecretName = (name: string) => {
 };
 
 const showDetail = (secret?: Secret) => {
+  if (!hasFeature("bb.feature.encrypted-secrets")) {
+    showFeatureModal.value = true;
+    return;
+  }
   detail.value = {
     secret: secret ? cloneDeep(secret) : Secret.fromJSON({}),
     mode: secret ? "UPDATE" : "CREATE",
@@ -299,6 +315,10 @@ const upsertSecret = (secret: Secret) => {
 const handleSave = async () => {
   if (!detail.value) return;
   detail.value.loading = true;
+  if (!hasFeature("bb.feature.encrypted-secrets")) {
+    showFeatureModal.value = true;
+    return;
+  }
   try {
     const { secret, mode, errors } = detail.value;
     if (errors.length > 0) return;
@@ -326,6 +346,10 @@ const handleSave = async () => {
 };
 
 const handleDelete = async (secret: Secret) => {
+  if (!hasFeature("bb.feature.encrypted-secrets")) {
+    showFeatureModal.value = true;
+    return;
+  }
   try {
     await useGracefulRequest(() => store.deleteSecret(secret.name));
     const index = secretList.value.findIndex((s) => s.name === secret.name);
