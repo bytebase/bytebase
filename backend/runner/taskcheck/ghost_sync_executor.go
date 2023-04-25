@@ -78,12 +78,16 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, _ *store.TaskCheckRunMessag
 		return nil, common.Wrapf(err, common.Internal, "invalid database schema update gh-ost sync payload")
 	}
 
-	tableName, err := utils.GetTableNameFromStatement(payload.Statement)
+	materials := utils.GetSecretMapFromDatabaseMessage(database)
+	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
+	renderedStatement := utils.RenderStatement(payload.Statement, materials)
+
+	tableName, err := utils.GetTableNameFromStatement(renderedStatement)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", payload.Statement)
 	}
 
-	config, err := utils.GetGhostConfig(task.ID, database, adminDataSource, e.secret, instanceUsers, tableName, payload.Statement, true, 20000000)
+	config, err := utils.GetGhostConfig(task.ID, database, adminDataSource, e.secret, instanceUsers, tableName, renderedStatement, true, 20000000)
 	if err != nil {
 		return nil, err
 	}

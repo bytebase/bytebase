@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser"
 	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewStatementAffectedRowsReportExecutor creates a task check statement affected rows report executor.
@@ -78,12 +79,16 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.
 	}
 	defer driver.Close(ctx)
 
+	materials := utils.GetSecretMapFromDatabaseMessage(database)
+	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
+	renderedStatement := utils.RenderStatement(payload.Statement, materials)
+
 	sqlDB := driver.GetDB()
 	switch instance.Engine {
 	case db.Postgres:
-		return reportStatementAffectedRowsForPostgres(ctx, sqlDB, payload.Statement)
+		return reportStatementAffectedRowsForPostgres(ctx, sqlDB, renderedStatement)
 	case db.MySQL:
-		return reportStatementAffectedRowsForMySQL(ctx, sqlDB, payload.Statement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation)
+		return reportStatementAffectedRowsForMySQL(ctx, sqlDB, renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation)
 	default:
 		return nil, errors.New("unsupported db type")
 	}

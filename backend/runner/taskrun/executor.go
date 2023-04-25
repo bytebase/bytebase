@@ -567,6 +567,7 @@ func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.
 	if err != nil {
 		return true, nil, err
 	}
+
 	migrationID, schema, err := executeMigration(ctx, store, dbFactory, stateCfg, task, statement, mi)
 	if err != nil {
 		return true, nil, err
