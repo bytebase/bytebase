@@ -2,8 +2,10 @@
 package postgres
 
 import (
+	"bufio"
 	"embed"
 	"io/fs"
+	"regexp"
 	"sort"
 
 	"bytes"
@@ -21,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -426,12 +429,99 @@ func StartSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, port i
 		return errors.Wrapf(err, "failed to init sample instance")
 	}
 
+	if err := turnOnPGStateStatements(pgDataDir); err != nil {
+		log.Warn("Failed to turn on pg_stat_statements", zap.Error(err))
+	}
+
 	if err := Start(port, pgBinDir, pgDataDir, mode == common.ReleaseModeDev /* serverLog */); err != nil {
 		return errors.Wrapf(err, "failed to start sample instance")
 	}
 
 	host := common.GetPostgresSocketDir()
-	return prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase)
+	if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
+		return errors.Wrapf(err, "failed to prepare sample database")
+	}
+
+	if err := createPGStatStatementsExtension(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
+		log.Warn("Failed to create pg_stat_statements extension", zap.Error(err))
+	}
+
+	return nil
+}
+
+func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, database string) error {
+	driver, err := db.Open(
+		ctx,
+		db.Postgres,
+		db.DriverConfig{},
+		db.ConnectionConfig{
+			Username: pgUser,
+			Password: "",
+			Host:     host,
+			Port:     port,
+			Database: database,
+		},
+		db.ConnectionContext{},
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to connect sample database")
+	}
+	defer driver.Close(ctx)
+
+	if _, err := driver.Execute(context.Background(), "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;", false); err != nil {
+		return errors.Wrapf(err, "failed to create pg_stat_statements extension")
+	}
+	log.Info("Successfully created pg_stat_statements extension")
+	return nil
+}
+
+// turnOnPGStateStatements turns on pg_stat_statements extension.
+// Only works for sample PostgreSQL.
+func turnOnPGStateStatements(pgDataDir string) error {
+	// Enable pg_stat_statements extension
+	// Add shared_preload_libraries = 'pg_stat_statements' to postgresql.conf
+	pgConfig := filepath.Join(pgDataDir, "postgresql.conf")
+
+	// Check config in postgresql.conf
+	configFile, err := os.OpenFile(pgConfig, os.O_APPEND|os.O_RDWR, 0600)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open postgresql.conf file")
+	}
+	defer configFile.Close()
+
+	scanner := bufio.NewScanner(configFile)
+	shardPreloadLibrariesReg := regexp.MustCompile(`^\s*shared_preload_libraries\s*=\s*'pg_stat_statements'`)
+	pgStatStatementsTrackReg := regexp.MustCompile(`^\s*pg_stat_statements.track\s*=`)
+	shardPreloadLibraries := false
+	pgStatStatementsTrack := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !shardPreloadLibraries && shardPreloadLibrariesReg.MatchString(line) {
+			shardPreloadLibraries = true
+		}
+
+		if !pgStatStatementsTrack && pgStatStatementsTrackReg.MatchString(line) {
+			pgStatStatementsTrack = true
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return errors.Wrapf(err, "failed to scan postgresql.conf file")
+	}
+
+	if !shardPreloadLibraries {
+		if _, err := configFile.WriteString("\nshared_preload_libraries = 'pg_stat_statements'\n"); err != nil {
+			return errors.Wrapf(err, "failed to write shared_preload_libraries = 'pg_stat_statements' to postgresql.conf file")
+		}
+	}
+
+	if !pgStatStatementsTrack {
+		if _, err := configFile.WriteString("\npg_stat_statements.track = all\n"); err != nil {
+			return errors.Wrapf(err, "failed to write pg_stat_statements.track = all to postgresql.conf file")
+		}
+	}
+
+	log.Info("Successfully added pg_stat_statements to postgresql.conf file")
+	return nil
 }
 
 func installInDir(tarName string, dir string) error {
