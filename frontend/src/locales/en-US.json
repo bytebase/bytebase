@@ -1204,7 +1204,9 @@
         "cannot-be-changed-later": "Cannot be changed later",
         "duplicated-name": "Duplicated secret name",
         "name-is-required": "Secret name is required",
-        "name-pattern-mismatch": "Secret name should contain only uppercase letters or _ (underscore)"
+        "name-pattern-mismatch": "Secret name should contain only uppercase letters, digit, or _ (underscore)",
+        "name-cannot-prefix-with-bytebase": "Secret name cannot prefix with 'BYTEBASE_'",
+        "name-cannot-start-with-number": "Secret name cannot start with number"
       },
       "description-placeholder": "Input description",
       "value": "Value",

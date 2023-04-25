@@ -1202,8 +1202,10 @@
       "value-placeholder": "输入值（仅写入）",
       "validation": {
         "duplicated-name": "保密信息名称重复",
-        "name-pattern-mismatch": "保密信息名称应该由大写字母和 _（下划线）组成",
-        "cannot-be-changed-later": "创建之后无法修改"
+        "name-pattern-mismatch": "秘密名称应该只由大写字母，数字和 _（下划线）组成",
+        "cannot-be-changed-later": "创建之后无法修改",
+        "name-cannot-prefix-with-bytebase": "秘密名称不能以 'BYTEBASE_' 为前缀",
+        "name-cannot-start-with-number": "秘密名称不能以数字开头"
       },
       "self": "保密信息",
       "delete-tips": "删除保密信息"

@@ -187,6 +187,7 @@ import {
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
 import { hasPermissionInProject, hasWorkspacePermission } from "@/utils";
+import DatabaseNameTemplateTips from "@/components/CreateDatabasePrepForm/DatabaseNameTemplateTips.vue";
 
 export type Detail = {
   secret: Secret;
@@ -282,7 +283,15 @@ const validate = (detail: Detail) => {
     const name = editableName.value;
     if (!name) {
       errors.push(t("database.secret.validation.name-is-required"));
-    } else if (!name.match(/^[A-Z_]{1,64}$/)) {
+    } else if (name.match(/^BYTEBASE_/)) {
+      errors.push(
+        t("database.secret.validation.name-cannot-prefix-with-bytebase")
+      );
+    } else if (name.match(/^[0-9]/)) {
+      errors.push(
+        t("database.secret.validation.name-cannot-start-with-number")
+      );
+    } else if (!name.match(/^[A-Z0-9_]{0,}$/)) {
       errors.push(t("database.secret.validation.name-pattern-mismatch"));
     }
   }

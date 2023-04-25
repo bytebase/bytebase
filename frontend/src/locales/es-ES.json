@@ -1168,7 +1168,14 @@
     "doesnt-match-database-name-template": "No coincide con la plantilla de nombre de base de datos de inquilino",
     "doesnt-match-tenant-value": "No coincide con el valor de la etiqueta",
     "should-follow-database-name-template": "Debe seguir la plantilla de nombre de base de datos de inquilino",
-    "all": "Todas las bases de datos"
+    "all": "Todas las bases de datos",
+    "secret": {
+      "validation": {
+        "name-cannot-prefix-with-bytebase": "El nombre secreto no puede tener el prefijo 'BYTEBASE_'",
+        "name-cannot-start-with-number": "El nombre secreto no puede comenzar con un número",
+        "name-pattern-mismatch": "El nombre secreto debe contener solo letras mayúsculas, dígitos o _ (guion bajo)"
+      }
+    }
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
