@@ -555,7 +555,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	}
 
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
-	code, _, _, err := oauth.Post(
+	code, _, resp, err := oauth.Post(
 		ctx,
 		p.client,
 		url,
@@ -578,10 +578,10 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	if code == http.StatusNotFound {
 		return common.Errorf(common.NotFound, "failed to create file through URL %s", url)
 	} else if code >= 300 {
-		return errors.Errorf("failed to create file through URL %s, status code: %d, body: %s",
+		return errors.Errorf("failed to create file through URL %s, status code: %d, response body: %s",
 			url,
 			code,
-			body,
+			resp,
 		)
 	}
 	return nil
@@ -606,7 +606,7 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
-	code, _, _, err := oauth.Put(
+	code, _, resp, err := oauth.Put(
 		ctx,
 		p.client,
 		url,
@@ -629,10 +629,10 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 	if code == http.StatusNotFound {
 		return common.Errorf(common.NotFound, "failed to overwrite file through URL %s", url)
 	} else if code >= 300 {
-		return errors.Errorf("failed to overwrite file through URL %s, status code: %d, body: %s",
+		return errors.Errorf("failed to overwrite file through URL %s, status code: %d, response body: %s",
 			url,
 			code,
-			body,
+			resp,
 		)
 	}
 	return nil
