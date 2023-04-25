@@ -942,7 +942,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 		if fileInfo.fType == fileTypeSchema {
 			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 				// Create one issue per schema file for SDL project.
-				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
+				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName, creatorID)
 				activityCreateList = append(activityCreateList, activityCreateListForFile...)
 				if len(migrationDetailListForFile) != 0 {
 					databaseName := fileInfo.migrationInfo.Database
@@ -963,7 +963,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 			// 1) DML is always migration-based.
 			// 2) We may have a limitation in SDL implementation.
 			// 3) User just wants to break the glass.
-			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repo, pushEvent, fileInfo)
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repo, pushEvent, fileInfo, creatorID)
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
 			if len(migrationDetailListForFile) != 0 {
@@ -1042,6 +1042,8 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
 	}
+
+	// TODO(p0ny): sheet, for each sheet, update the payload to backtrace the issue.
 
 	// Create a project activity after successfully creating the issue from the push event.
 	activityPayload, err := json.Marshal(
@@ -1209,7 +1211,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 
 // prepareIssueFromSDLFile returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string, creatorID int) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	dbName := schemaInfo.Database
 	if dbName == "" && repo.Project.TenantMode == api.TenantModeDisabled {
 		log.Debug("Ignored schema file without a database name", zap.String("file", file))
@@ -1222,12 +1224,26 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
+	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		CreatorID:  creatorID,
+		ProjectID:  repo.ProjectID,
+		Name:       file,
+		Statement:  sdl,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebase,
+		Type:       api.SheetForSQL,
+	})
+	if err != nil {
+		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
+		return nil, []*api.ActivityCreate{activityCreate}
+	}
+
 	var migrationDetailList []*api.MigrationDetail
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
 				MigrationType: db.MigrateSDL,
-				Statement:     sdl,
+				SheetID:       sheet.ID,
 			},
 		)
 		return migrationDetailList, nil
@@ -1244,7 +1260,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 			&api.MigrationDetail{
 				MigrationType: db.MigrateSDL,
 				DatabaseID:    database.UID,
-				Statement:     sdl,
+				SheetID:       sheet.ID,
 			},
 		)
 	}
@@ -1254,7 +1270,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 
 // prepareIssueFromFile returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileInfo fileInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileInfo fileInfo, creatorID int) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	content, err := s.readFileContent(ctx, pushEvent, repo, fileInfo.item.FileName)
 	if err != nil {
 		return nil, []*api.ActivityCreate{
@@ -1270,10 +1286,24 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		// A non-YAML file means the whole file content is the SQL statement
 		if !fileInfo.item.IsYAML {
+			sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+				CreatorID:  creatorID,
+				ProjectID:  repo.ProjectID,
+				Name:       fileInfo.item.FileName,
+				Statement:  content,
+				Visibility: api.ProjectSheet,
+				Source:     api.SheetFromBytebase,
+				Type:       api.SheetForSQL,
+			})
+			if err != nil {
+				activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+				return nil, []*api.ActivityCreate{activityCreate}
+			}
+
 			return []*api.MigrationDetail{
 				{
 					MigrationType: fileInfo.migrationInfo.Type,
-					Statement:     content,
+					SheetID:       sheet.ID,
 					SchemaVersion: fileInfo.migrationInfo.Version,
 				},
 			}, nil
@@ -1290,6 +1320,20 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 					errors.Wrap(err, "Failed to parse file content as YAML"),
 				),
 			}
+		}
+
+		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+			CreatorID:  creatorID,
+			ProjectID:  repo.ProjectID,
+			Name:       fileInfo.item.FileName,
+			Statement:  migrationFile.Statement,
+			Visibility: api.ProjectSheet,
+			Source:     api.SheetFromBytebase,
+			Type:       api.SheetForSQL,
+		})
+		if err != nil {
+			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+			return nil, []*api.ActivityCreate{activityCreate}
 		}
 
 		var migrationDetailList []*api.MigrationDetail
@@ -1311,7 +1355,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 					&api.MigrationDetail{
 						MigrationType: fileInfo.migrationInfo.Type,
 						DatabaseID:    db.UID,
-						Statement:     migrationFile.Statement,
+						SheetID:       sheet.ID,
 						SchemaVersion: fileInfo.migrationInfo.Version,
 					},
 				)
@@ -1328,13 +1372,27 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 	}
 
 	if fileInfo.item.ItemType == vcs.FileItemTypeAdded {
+		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+			CreatorID:  creatorID,
+			ProjectID:  repo.ProjectID,
+			Name:       fileInfo.item.FileName,
+			Statement:  content,
+			Visibility: api.ProjectSheet,
+			Source:     api.SheetFromBytebase,
+			Type:       api.SheetForSQL,
+		})
+		if err != nil {
+			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+			return nil, []*api.ActivityCreate{activityCreate}
+		}
+
 		var migrationDetailList []*api.MigrationDetail
 		for _, database := range databases {
 			migrationDetailList = append(migrationDetailList,
 				&api.MigrationDetail{
 					MigrationType: fileInfo.migrationInfo.Type,
 					DatabaseID:    database.UID,
-					Statement:     content,
+					SheetID:       sheet.ID,
 					SchemaVersion: fileInfo.migrationInfo.Version,
 				},
 			)
