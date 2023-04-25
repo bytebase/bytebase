@@ -76,7 +76,7 @@ const composeSlowQueryLogDatabase = async (
     return map;
   }, new Map<string, Database>());
 
-  return slowQueryLogList.slice(0, 5).map<ComposedSlowQueryLog>((log) => ({
+  return slowQueryLogList.map<ComposedSlowQueryLog>((log) => ({
     log,
     database: databaseMap.get(log.resource) ?? unknown("DATABASE"), // databaseMap.get(log.resource)!,
   }));
