@@ -1315,41 +1315,49 @@ func (d *DatabaseState) createSchema(name string) *SchemaState {
 	return schema
 }
 
-func (d *DatabaseState) parse(stmts string) ([]tidbast.StmtNode, *WalkThroughError) {
+func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughError) {
 	p := tidbparser.New()
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
 
-	nodeList, _, err := p.Parse(stmts, d.characterSet, d.collation)
+	list, err := parser.SplitMultiSQLAndNormalize(parser.MySQL, statement)
 	if err != nil {
 		return nil, NewParseError(err.Error())
 	}
 
-	// sikp the setting line stage
-	if len(nodeList) == 0 {
-		return nodeList, nil
-	}
+	var result []tidbast.StmtNode
+	for _, sql := range list {
+		if sql.Empty {
+			continue
+		}
+		if parser.IsTiDBUnsupportDDLStmt(sql.Text) {
+			// skip the TiDB parser unsupported DDL statement
+			continue
+		}
 
-	sqlList, err := parser.SplitMultiSQL(parser.MySQL, stmts)
-	if err != nil {
-		return nil, NewParseError(err.Error())
-	}
-	if len(sqlList) != len(nodeList) {
-		return nil, NewParseError(fmt.Sprintf("split multi-SQL failed: the length should be %d, but get %d. stmt: \"%s\"", len(nodeList), len(sqlList), stmts))
-	}
-
-	for i, node := range nodeList {
+		nodes, _, err := p.Parse(sql.Text, "", "")
+		if err != nil {
+			return nil, NewParseError(err.Error())
+		}
+		if len(nodes) == 0 {
+			continue
+		}
+		if len(nodes) > 1 {
+			return nil, NewParseError(fmt.Sprintf("get more than one sql after split: %s", sql.Text))
+		}
+		node := nodes[0]
 		node.SetText(nil, strings.TrimSpace(node.Text()))
-		node.SetOriginTextPosition(sqlList[i].LastLine)
+		node.SetOriginTextPosition(sql.LastLine)
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
 			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
 				return nil, NewParseError(err.Error())
 			}
 		}
+		result = append(result, node)
 	}
 
-	return nodeList, nil
+	return result, nil
 }
 
 func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, *WalkThroughError) {

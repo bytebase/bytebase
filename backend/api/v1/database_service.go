@@ -22,6 +22,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/store"
@@ -48,15 +49,17 @@ const (
 // DatabaseService implements the database service.
 type DatabaseService struct {
 	v1pb.UnimplementedDatabaseServiceServer
-	store        *store.Store
-	BackupRunner *backuprun.Runner
+	store          *store.Store
+	BackupRunner   *backuprun.Runner
+	licenseService enterpriseAPI.LicenseService
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner, licenseService enterpriseAPI.LicenseService) *DatabaseService {
 	return &DatabaseService{
-		store:        store,
-		BackupRunner: br,
+		store:          store,
+		BackupRunner:   br,
+		licenseService: licenseService,
 	}
 }
 
@@ -549,6 +552,10 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 
 // UpdateSecret updates a secret of a database.
 func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.UpdateSecretRequest) (*v1pb.Secret, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecret) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecret.AccessErrorMessage())
+	}
+
 	if request.Secret == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "secret is required")
 	}
@@ -658,6 +665,10 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 
 // DeleteSecret deletes a secret of a database.
 func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteSecretRequest) (*emptypb.Empty, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecret) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecret.AccessErrorMessage())
+	}
+
 	environmentID, instanceID, databaseName, secretName, err := getEnvironmentInstanceDatabaseIDSecretName(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -772,7 +783,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
 				}
-				t = t.AddDate(0, 0, 1)
+				t = t.AddDate(0, 0, 1).UTC()
 				startLogDate = &t
 			case comparatorTypeGreaterEqual:
 				if startLogDate != nil {
@@ -782,6 +793,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
 				}
+				t = t.UTC()
 				startLogDate = &t
 			case comparatorTypeLess:
 				if endLogDate != nil {
@@ -791,6 +803,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
 				}
+				t = t.UTC()
 				endLogDate = &t
 			case comparatorTypeLessEqual:
 				if endLogDate != nil {
@@ -800,7 +813,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
 				}
-				t = t.AddDate(0, 0, 1)
+				t = t.AddDate(0, 0, 1).UTC()
 				endLogDate = &t
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q %q %q", expr.key, expr.comparator, expr.value)
@@ -1368,7 +1381,7 @@ func isSecretValid(secret *storepb.SecretItem) error {
 	// Names can only contain alphanumeric characters ([A-Z], [0-9]) or underscores (_). Spaces are not allowed.
 	for _, c := range secret.Name {
 		if !isUpperCaseLetter(c) && !unicode.IsDigit(c) && c != '_' {
-			return errors.Errorf("invalid secret name: %s, expect [a-z], [A-Z], [0-9], '_', but meet: %v", secret.Name, c)
+			return errors.Errorf("invalid secret name: %s, expect [A-Z], [0-9], '_', but meet: %v", secret.Name, c)
 		}
 	}
 	return nil

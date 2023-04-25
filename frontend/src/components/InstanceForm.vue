@@ -388,6 +388,7 @@
               <label for="host" class="textlabel block">
                 {{ $t("data-source.read-replica-host") }}
               </label>
+              <span class="textinfolabel">({{ $t("common.optional") }})</span>
             </div>
             <input
               id="host"
@@ -408,6 +409,7 @@
               <label for="port" class="textlabel block">
                 {{ $t("data-source.read-replica-port") }}
               </label>
+              <span class="textinfolabel">({{ $t("common.optional") }})</span>
             </div>
             <input
               id="port"
@@ -945,7 +947,9 @@ const allowUpdate = computed((): boolean => {
 });
 
 const isEngineBeta = (engine: EngineType): boolean => {
-  return ["ORACLE", "MSSQL", "REDSHIFT", "MARIADB"].includes(engine);
+  return ["ORACLE", "MSSQL", "REDSHIFT", "MARIADB", "OCEANBASE"].includes(
+    engine
+  );
 };
 
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change

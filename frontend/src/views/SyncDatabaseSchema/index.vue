@@ -27,9 +27,7 @@
           <ProjectSelect
             class="!w-60 shrink-0"
             :selected-id="state.projectId"
-            @select-project-id="(projectId: ProjectId)=>{
-              state.projectId = projectId
-            }"
+            @select-project-id="handleSourceProjectSelect"
           />
         </div>
         <div class="w-full flex flex-row justify-start items-center">
@@ -217,8 +215,22 @@ const allowNext = computed(() => {
       isValidId(state.sourceSchema.databaseId) &&
       !isUndefined(state.sourceSchema.migrationHistory)
     );
+  } else {
+    if (!targetDatabaseViewRef.value) {
+      return false;
+    }
+    const targetDatabaseList = targetDatabaseViewRef.value?.targetDatabaseList;
+    const targetDatabaseDiffList = targetDatabaseList
+      .map((db) => {
+        const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.id];
+        return {
+          id: db.id,
+          diff: diff?.edited || "",
+        };
+      })
+      .filter((item) => item.diff !== "");
+    return targetDatabaseDiffList.length > 0;
   }
-  return true;
 });
 
 const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
@@ -236,6 +248,13 @@ const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
     return list.length > 0 ? [head(list)] : [];
   }
   return list;
+};
+
+const handleSourceProjectSelect = async (projectId: ProjectId) => {
+  if (projectId !== state.projectId) {
+    state.sourceSchema.databaseId = UNKNOWN_ID;
+  }
+  state.projectId = projectId;
 };
 
 const handleSourceEnvironmentSelect = async (environmentId: EnvironmentId) => {

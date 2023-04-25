@@ -60,7 +60,8 @@
           :placeholder="$t('slow-query.filter.from-date')"
           type="date"
           clearable
-          style="width: 10rem"
+          format="yyyy-MM-dd z"
+          style="width: 12rem"
           @update:value="changeFromTime($event)"
         />
         <NDatePicker
@@ -71,7 +72,8 @@
           :placeholder="$t('slow-query.filter.to-date')"
           type="date"
           clearable
-          style="width: 10rem"
+          format="yyyy-MM-dd z"
+          style="width: 12rem"
           @update:value="changeToTime($event)"
         />
       </NInputGroup>

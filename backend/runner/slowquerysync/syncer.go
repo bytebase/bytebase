@@ -127,6 +127,14 @@ func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.Inst
 }
 
 func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+
+	earliestDate := today.AddDate(0, 0, -retentionCycle)
+
+	if err := s.store.DeleteOutdatedSlowLog(ctx, instance.UID, earliestDate); err != nil {
+		return err
+	}
+
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		InstanceID: &instance.ResourceID,
 	})
@@ -275,7 +283,7 @@ func getLatestLogTime(logMap map[string]*storepb.SlowQueryStatistics) time.Time 
 }
 
 func (s *Syncer) syncMySQLSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
-	today := time.Now().Truncate(24 * time.Hour)
+	today := time.Now().UTC().Truncate(24 * time.Hour)
 
 	earliestDate := today.AddDate(0, 0, -retentionCycle)
 
