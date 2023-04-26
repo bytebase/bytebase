@@ -625,45 +625,45 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *api.SheetFind, currentPr
 	where, args := []string{"TRUE"}, []any{}
 
 	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	// Standard fields
 	if v := find.RowStatus; v != nil {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.row_status = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.CreatorID; v != nil {
-		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	// Related fields
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.project_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.database_id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	// Domain fields
 	if v := find.Visibility; v != nil {
-		where, args = append(where, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.visibility = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PrincipalID; v != nil {
-		where, args = append(where, fmt.Sprintf("project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.OrganizerPrincipalID; v != nil {
 		// For now, we only need the starred sheets.
-		where, args = append(where, fmt.Sprintf("id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
 	}
 	if v := find.Source; v != nil {
-		where, args = append(where, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.source = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Type; v != nil {
-		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("sheet.type = $%d", len(args)+1)), append(args, *v)
 	}
-	statementField := fmt.Sprintf("LEFT(statement, %d)", common.MaxSheetSize)
+	statementField := fmt.Sprintf("LEFT(sheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
-		statementField = "statement"
+		statementField = "sheet.statement"
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
