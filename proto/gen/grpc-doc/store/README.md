@@ -29,6 +29,7 @@
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
+    - [SSHConfig](#bytebase-store-SSHConfig)
   
 - [store/database.proto](#store_database-proto)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
@@ -424,6 +425,25 @@ ANY means approving any node will proceed.
 | authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
 | sid | [string](#string) |  | sid and service_name are used for Oracle. |
 | service_name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SSHConfig"></a>
+
+### SSHConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  | The hostname of the SSH server agent. |
+| port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. |
+| user | [string](#string) |  | The user to login the server. |
+| password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
+| private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 
 
 

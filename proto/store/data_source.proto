@@ -15,3 +15,16 @@ message DataSourceOptions {
   string sid = 3;
   string service_name = 4;
 }
+
+message SSHConfig {
+  // The hostname of the SSH server agent.
+  string host = 1;
+  // The port of the SSH server agent. It's 22 typically.
+  string port = 2;
+  // The user to login the server.
+  string user = 3;
+  // The password to login the server. If it's empty string, no password is required.
+  string password = 4;
+  // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
+  string private_key = 5;
+}
