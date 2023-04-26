@@ -314,7 +314,7 @@ func getInsertAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, node *tid
 	if err != nil {
 		return 0, err
 	}
-	rowCount, err := getInsertAffectedRowsCountForMysql(res)
+	rowCount, err := getAffectedRowsCountForMysql(res)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get insert affected rows count for mysql, res %+v", res)
 	}
@@ -326,14 +326,14 @@ func getUpdateOrDeleteAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, n
 	if err != nil {
 		return 0, err
 	}
-	rowCount, err := getUpdateOrDeleteAffectedRowsCountForMysql(res)
+	rowCount, err := getAffectedRowsCountForMysql(res)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get update or delete affected rows count for mysql, res %+v", res)
 	}
 	return rowCount, nil
 }
 
-func getUpdateOrDeleteAffectedRowsCountForMysql(res []any) (int64, error) {
+func getAffectedRowsCountForMysql(res []any) (int64, error) {
 	// the res struct is []any{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
 		return 0, errors.Errorf("expected 3 but got %d", len(res))
@@ -345,11 +345,10 @@ func getUpdateOrDeleteAffectedRowsCountForMysql(res []any) (int64, error) {
 	if len(rowList) < 1 {
 		return 0, errors.Errorf("not found any data")
 	}
-	rowOne, ok := rowList[0].([]any)
-	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", rowList[0])
-	}
+
 	// MySQL EXPLAIN statement result has 12 columns.
+	// the column 9 is the data 'rows'.
+	// the first not-NULL value of column 9 is the affected rows count.
 	//
 	// mysql> explain delete from td;
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
@@ -357,35 +356,7 @@ func getUpdateOrDeleteAffectedRowsCountForMysql(res []any) (int64, error) {
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
 	// |  1 | DELETE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | NULL  |
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	if len(rowOne) != 12 {
-		return 0, errors.Errorf("expected 12 but got %d", len(rowOne))
-	}
-	// the column 9 is the data 'rows'.
-	switch rows := rowOne[9].(type) {
-	case int:
-		return int64(rows), nil
-	case int64:
-		return rows, nil
-	case string:
-		v, err := strconv.ParseInt(rows, 10, 64)
-		if err != nil {
-			return 0, errors.Errorf("expected int or int64 but got string(%s)", rows)
-		}
-		return v, nil
-	default:
-		return 0, errors.Errorf("expected int or int64 but got %t", rowOne[9])
-	}
-}
-
-func getInsertAffectedRowsCountForMysql(res []any) (int64, error) {
-	// the res struct is []any{columnName, columnTable, rowDataList}
-	if len(res) != 3 {
-		return 0, errors.Errorf("expected 3 but got %d", len(res))
-	}
-	rowList, ok := res[2].([]any)
-	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", res[2])
-	}
+	//
 	// mysql> explain insert into td select * from td;
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
 	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
@@ -393,33 +364,34 @@ func getInsertAffectedRowsCountForMysql(res []any) (int64, error) {
 	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
 	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	if len(rowList) < 2 {
-		return 0, errors.Errorf("not found any data")
-	}
-	// We need the row 2.
-	rowTwo, ok := rowList[1].([]any)
-	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", rowList[0])
-	}
-	// MySQL EXPLAIN statement result has 12 columns.
-	if len(rowTwo) != 12 {
-		return 0, errors.Errorf("expected 12 but got %d", len(rowTwo))
-	}
-	// the column 9 is the data 'rows'.
-	switch rows := rowTwo[9].(type) {
-	case int:
-		return int64(rows), nil
-	case int64:
-		return rows, nil
-	case string:
-		v, err := strconv.ParseInt(rows, 10, 64)
-		if err != nil {
-			return 0, errors.Errorf("expected int or int64 but got string(%s)", rows)
+
+	for _, rowAny := range rowList {
+		row, ok := rowAny.([]any)
+		if !ok {
+			return 0, errors.Errorf("expected []any but got %t", row)
 		}
-		return v, nil
-	default:
-		return 0, errors.Errorf("expected int or in64 but got %t", rowTwo[9])
+		if len(row) != 12 {
+			return 0, errors.Errorf("expected 12 but got %d", len(row))
+		}
+		switch col := row[9].(type) {
+		case int:
+			return int64(col), nil
+		case int32:
+			return int64(col), nil
+		case int64:
+			return col, nil
+		case string:
+			v, err := strconv.ParseInt(col, 10, 64)
+			if err != nil {
+				return 0, errors.Errorf("expected int or int64 but got string(%s)", col)
+			}
+			return v, nil
+		default:
+			continue
+		}
 	}
+
+	return 0, errors.Errorf("failed to extract rows from query plan")
 }
 
 // Query runs the EXPLAIN or SELECT statements for advisors.
