@@ -153,7 +153,7 @@ func getInsertAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, node *
 	}
 	rowCount, err := getAffectedRowsCountForPostgres(res)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to get affected rows count for postgres, res %+v", res)
 	}
 	return rowCount, nil
 }
@@ -165,7 +165,7 @@ func getUpdateOrDeleteAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB
 	}
 	rowCount, err := getAffectedRowsCountForPostgres(res)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to get affected rows count for postgres, res %+v", res)
 	}
 	return rowCount, nil
 }
@@ -316,7 +316,7 @@ func getInsertAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, node *tid
 	}
 	rowCount, err := getInsertAffectedRowsCountForMysql(res)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to get insert affected rows count for mysql, res %+v", res)
 	}
 	return rowCount, nil
 }
@@ -328,7 +328,7 @@ func getUpdateOrDeleteAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, n
 	}
 	rowCount, err := getUpdateOrDeleteAffectedRowsCountForMysql(res)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to get update or delete affected rows count for mysql, res %+v", res)
 	}
 	return rowCount, nil
 }
