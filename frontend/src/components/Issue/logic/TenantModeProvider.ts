@@ -1,6 +1,6 @@
 import { computed, defineComponent } from "vue";
-import { cloneDeep, isUndefined } from "lodash-es";
-import { useDatabaseStore, useTaskStore } from "@/store";
+import { cloneDeep, head } from "lodash-es";
+import { useDatabaseStore, useSheetStore, useTaskStore } from "@/store";
 import {
   Issue,
   IssueCreate,
@@ -9,6 +9,7 @@ import {
   TaskDatabaseSchemaUpdatePayload,
   MigrationContext,
   SheetId,
+  UNKNOWN_ID,
 } from "@/types";
 import {
   errorAssertion,
@@ -44,14 +45,14 @@ export default defineComponent({
         const issueEntity = issue.value as Issue;
         const task = issueEntity.pipeline.stageList[0].taskList[0];
         const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
-        return payload.statement;
+        return (
+          useSheetStore().getSheetById(payload.sheetId || UNKNOWN_ID)
+            ?.statement || ""
+        );
       }
     });
 
-    const updateStatement = (
-      newStatement: string,
-      postUpdated?: (updatedTask: Task) => void
-    ) => {
+    const updateStatement = (newStatement: string) => {
       if (create.value) {
         // For tenant deploy mode, we apply the statement to all stages and all tasks
         const allTaskList = flattenTaskList<TaskCreate>(issue.value);
@@ -72,20 +73,15 @@ export default defineComponent({
           .patchAllTasksInIssue({
             issueId: issueEntity.id,
             pipelineId: issueEntity.pipeline.id,
-            taskPatch: {
-              statement: newStatement,
-            },
+            taskPatch: {},
           })
           .then(() => {
             onStatusChanged(true);
-            if (postUpdated) {
-              postUpdated(issueEntity.pipeline.stageList[0].taskList[0]);
-            }
           });
       }
     };
 
-    const updateSheetId = (sheetId: SheetId | undefined) => {
+    const updateSheetId = (sheetId: SheetId) => {
       if (!create.value) {
         return;
       }
@@ -93,34 +89,51 @@ export default defineComponent({
       // For tenant deploy mode, we apply the sheetId to all stages and all tasks
       const allTaskList = flattenTaskList<TaskCreate>(issue.value);
       allTaskList.forEach((task) => {
+        task.statement = "";
         task.sheetId = sheetId;
       });
 
       const issueCreate = issue.value as IssueCreate;
       const context = issueCreate.createContext as MigrationContext;
       // We also apply it back to the CreateContext
-      context.detailList.forEach((detail) => (detail.sheetId = sheetId));
+      context.detailList.forEach((detail) => {
+        detail.statement = "";
+        detail.sheetId = sheetId;
+      });
     };
 
     // We are never allowed to "apply task state to other stages" in tenant mode.
     const allowApplyTaskStateToOthers = computed(() => false);
 
-    const doCreate = () => {
+    const doCreate = async () => {
       const issueCreate = cloneDeep(issue.value as IssueCreate);
 
       // for multi-tenancy issue pipeline (M * N)
       // createContext is up-to-date already
       // so we just format the statement if needed
       const context = issueCreate.createContext as MigrationContext;
-      context.detailList.forEach((detail) => {
-        const db = databaseStore.getDatabaseById(detail.databaseId!);
-        if (!isUndefined(detail.sheetId)) {
-          // If task already has sheet id, we do not need to save statement.
-          detail.statement = "";
-        } else {
-          detail.statement = maybeFormatStatementOnSave(detail.statement, db);
-        }
-      });
+      const detail = head(context.detailList);
+      if (!detail) {
+        // throw error
+        return;
+      }
+      const db = databaseStore.getDatabaseById(detail.databaseId!);
+      if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
+        const statement = maybeFormatStatementOnSave(detail.statement, db);
+        const sheet = await useSheetStore().createSheet({
+          projectId: issueCreate.projectId,
+          name: issueCreate.name + " - " + db.name,
+          statement: statement,
+          visibility: "PROJECT",
+          payload: {},
+        });
+        detail.statement = "";
+        detail.sheetId = sheet.id;
+      }
+      for (const detailItem of context.detailList) {
+        detailItem.statement = "";
+        detailItem.sheetId = detail.sheetId;
+      }
 
       createIssue(issueCreate);
     };

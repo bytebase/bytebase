@@ -13,16 +13,12 @@
         <template v-else>
           {{ $t("common.statement") }}
         </template>
-        <span v-if="create" class="text-red-600">*</span>
+        <span v-if="create" class="text-red-600 ml-1">*</span>
         <button
           v-if="!create && !hasFeature('bb.feature.sql-review')"
           type="button"
           class="ml-1 btn-small py-0.5 inline-flex items-center text-accent"
-          @click.prevent="
-            () => {
-              state.showFeatureModal = true;
-            }
-          "
+          @click.prevent="state.showFeatureModal = true"
         >
           🎈{{ $t("sql-review.unlock-full-feature") }}
         </button>
@@ -43,7 +39,6 @@
 
     <div class="space-x-2 flex items-center">
       <template v-if="create || state.editing">
-        <!-- mt-0.5 is to prevent jiggling between switching edit/none-edit -->
         <label
           v-if="allowFormatOnSave"
           class="mt-0.5 mr-2 inline-flex items-center gap-1"
@@ -56,10 +51,7 @@
           <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
         </label>
 
-        <UploadProgressButton
-          v-if="allowUploadSheetForTask"
-          :upload="handleUploadFile"
-        >
+        <UploadProgressButton :upload="handleUploadFile">
           {{ $t("issue.upload-sql") }}
         </UploadProgressButton>
       </template>
@@ -72,6 +64,7 @@
       >
         <heroicons-solid:pencil class="h-5 w-5" />
       </button>
+
       <template v-else-if="!create">
         <button
           v-if="state.editing"
@@ -95,7 +88,7 @@
   </div>
   <label class="sr-only">{{ $t("common.sql-statement") }}</label>
   <BBAttention
-    v-if="isTaskHasSheetId"
+    v-if="isTaskSheetOversize"
     :class="'my-2'"
     :style="`WARN`"
     :title="$t('issue.statement-from-sheet-warning')"
@@ -127,11 +120,10 @@
 </template>
 
 <script lang="ts" setup>
+import { isNumber } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { onMounted, reactive, watch, computed, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { isNumber, isUndefined } from "lodash-es";
-
 import {
   hasFeature,
   pushNotification,
@@ -139,23 +131,25 @@ import {
   useSheetStore,
   useUIStateStore,
 } from "@/store";
-import { useIssueLogic, TaskTypeWithSheetId } from "./logic";
+import { useIssueLogic } from "./logic";
 import {
   Database,
   dialectOfEngine,
+  SheetId,
   SQLDialect,
   Task,
   TaskCreate,
   TaskId,
+  UNKNOWN_ID,
 } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { sheetIdOfTask, useInstanceEditorLanguage } from "@/utils";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import { sheetIdOfTask, useInstanceEditorLanguage } from "@/utils";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 import UploadProgressButton from "../misc/UploadProgressButton.vue";
 
 interface LocalState {
+  taskSheetId?: SheetId;
   editing: boolean;
   editStatement: string;
   isUploadingFile: boolean;
@@ -178,7 +172,6 @@ defineProps({
 });
 
 const {
-  issue,
   create,
   allowEditStatement,
   selectedDatabase,
@@ -294,8 +287,17 @@ const useTempEditState = (state: LocalState) => {
 
 useTempEditState(state);
 
+const getOrFetchSheetStatementById = async (sheetId: SheetId) => {
+  if (!sheetId || sheetId === UNKNOWN_ID) {
+    return "";
+  }
+  return (await sheetStore.getOrFetchSheetById(sheetId)).statement;
+};
+
 const readonly = computed(() => {
-  return !state.editing || !allowEditStatement.value || isTaskHasSheetId.value;
+  return (
+    !state.editing || !allowEditStatement.value || isTaskSheetOversize.value
+  );
 });
 
 const { markers } = useSQLAdviceMarkers();
@@ -316,34 +318,21 @@ const formatOnSave = computed({
 
 const allowFormatOnSave = computed(() => language.value === "sql");
 
-const allowUploadSheetForTask = computed(() => {
-  if (!create.value) {
+const isTaskSheetOversize = computed(() => {
+  if (!state.taskSheetId || state.taskSheetId === UNKNOWN_ID) {
     return false;
   }
 
-  // Only allow DML.
-  if (issue.value.type !== "bb.issue.database.data.update") {
-    return false;
-  }
-
-  const task = selectedTask.value;
-  return TaskTypeWithSheetId.includes(task.type);
-});
-
-const isTaskHasSheetId = computed(() => {
-  const task = selectedTask.value;
-  if (create.value) {
-    return !isUndefined((task as TaskCreate).sheetId);
-  }
-  return !isUndefined(sheetIdOfTask(task as Task));
+  const taskSheet = sheetStore.getSheetById(state.taskSheetId);
+  return taskSheet.statement.length < taskSheet.size;
 });
 
 const shouldShowStatementEditButtonForUI = computed(() => {
   if (create.value) {
     return false;
   }
-  // For those task with sheet, it's readonly.
-  if (isTaskHasSheetId.value) {
+  // For those task sheet oversized, it's readonly.
+  if (isTaskSheetOversize.value) {
     return false;
   }
   if (state.editing) {
@@ -356,9 +345,14 @@ const shouldShowStatementEditButtonForUI = computed(() => {
   return true;
 });
 
-onMounted(() => {
+onMounted(async () => {
   if (create.value) {
     state.editing = true;
+  } else {
+    const sheetId = sheetIdOfTask(selectedTask.value as Task);
+    if (sheetId && sheetId !== UNKNOWN_ID) {
+      state.taskSheetId = sheetId;
+    }
   }
 });
 
@@ -378,24 +372,19 @@ watch(statement, (cur) => {
 });
 
 watch(
-  [selectedTask],
+  selectedTask,
   async () => {
-    if (isTaskHasSheetId.value) {
-      const task = selectedTask.value;
-      const sheetId = create.value
-        ? (task as TaskCreate).sheetId
-        : sheetIdOfTask(task as Task);
-      if (sheetId) {
-        const statement = (await sheetStore.getOrFetchSheetById(sheetId))
-          .statement;
-        // Update statement in the editor.
-        state.editStatement = statement;
-        // Only update statement when creating issue.
-        if (create.value) {
-          updateStatement(statement);
-        }
-      }
+    const task = selectedTask.value;
+    const sheetId = create.value
+      ? (task as TaskCreate).sheetId
+      : sheetIdOfTask(task as Task);
+    if (sheetId && sheetId !== UNKNOWN_ID) {
+      state.taskSheetId = sheetId;
+    } else {
+      state.taskSheetId = undefined;
     }
+
+    console.log(state.taskSheetId);
   },
   {
     immediate: true,
@@ -403,22 +392,44 @@ watch(
   }
 );
 
+watch(
+  () => state.taskSheetId,
+  async () => {
+    if (state.taskSheetId && state.taskSheetId !== UNKNOWN_ID) {
+      state.editStatement = await getOrFetchSheetStatementById(
+        state.taskSheetId
+      );
+    }
+  },
+  {
+    immediate: true,
+  }
+);
+
 const beginEdit = () => {
-  state.editStatement = statement.value;
   state.editing = true;
 };
 
-const saveEdit = () => {
+const saveEdit = async () => {
+  if (!state.taskSheetId || state.taskSheetId === UNKNOWN_ID) {
+    return;
+  }
+
   if (allowFormatOnSave.value && formatOnSave.value) {
     editorRef.value?.formatEditorContent();
   }
-  updateStatement(state.editStatement, () => {
-    state.editing = false;
+  await sheetStore.patchSheetById({
+    id: state.taskSheetId,
+    statement: state.editStatement,
   });
+  await updateStatement(state.editStatement);
+  state.editing = false;
 };
 
-const cancelEdit = () => {
-  state.editStatement = statement.value;
+const cancelEdit = async () => {
+  state.editStatement = await getOrFetchSheetStatementById(
+    state.taskSheetId || UNKNOWN_ID
+  );
   state.editing = false;
 };
 
@@ -437,7 +448,10 @@ const allowSaveSQL = computed((): boolean => {
 });
 
 const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
-  if (!allowUploadSheetForTask.value || !selectedDatabase.value) {
+  if (!selectedDatabase.value) {
+    return;
+  }
+  if (state.isUploadingFile) {
     return;
   }
 
@@ -458,7 +472,7 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
         payload: {},
       },
       {
-        timeout: 0, // 10 * 60 * 1000, // 10 minutes
+        timeout: 10 * 60 * 1000, // 10 minutes
         onUploadProgress: (event) => {
           console.debug("upload progress", event);
           const progress = event.progress;
