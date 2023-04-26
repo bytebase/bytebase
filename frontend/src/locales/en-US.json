@@ -552,7 +552,7 @@
       "not-show-till-next-release": "Don't show this till next version"
     },
     "mail-delivery": {
-      "description": "Enable mail delivery to receive email notification by configuring SMTP server information.",
+      "description": "Configuring SMTP information will enable users to receive database reports via email, such as slow query weekly reports.",
       "field": {
         "smtp-server-host": "SMTP Server Host",
         "smtp-server-port": "SMTP Server Port",

@@ -1,16 +1,16 @@
 <template>
-  <div class="w-full mt-4 space-y-4">
-    <div class="pt-4 border-b textinfolabel p-2">
-      {{ $t("settings.mail-delivery.description") }}
-      <a
-        class="normal-link inline-flex items-center"
-        href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
-        target="__BLANK"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4 ml-1" />
-      </a>
-    </div>
+  <div class="border-b textinfolabel p-2">
+    {{ $t("settings.mail-delivery.description") }}
+    <a
+      class="normal-link inline-flex items-center"
+      href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
+      target="__BLANK"
+    >
+      {{ $t("common.learn-more") }}
+      <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+    </a>
+  </div>
+  <div class="w-full space-y-4">
     <div class="w-full flex flex-col">
       <!-- Host and Port -->
       <div class="w-full flex flex-row gap-4 mt-8">
@@ -171,16 +171,16 @@
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.send-test-email-to") }}
           </div>
-          <div class="flex flex-row">
+          <div class="flex flex-row justify-start items-center mt-2">
             <BBTextField
-              class="text-main h-max mt-2 w-80"
+              class="text-main h-max w-80"
               :placeholder="'someone@gmail.com'"
               :value="state.testMailTo"
               @input="(e: any) => state.testMailTo = e.target.value"
             />
             <button
               type="button"
-              class="btn-primary inline-flex justify-center ml-5 mt-2"
+              class="btn-primary ml-5"
               :disabled="
                 state.testMailTo === '' ||
                 state.isSendLoading ||
