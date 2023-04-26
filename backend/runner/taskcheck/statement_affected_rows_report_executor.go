@@ -12,8 +12,10 @@ import (
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -156,7 +158,8 @@ func getInsertAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, node *
 	}
 	res, err := query(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()))
 	if err != nil {
-		return 0, err
+		// It affects zero row for explain errors such as incorrect statement.
+		return 0, nil
 	}
 	rowCount, err := getAffectedRowsCountForPostgres(res)
 	if err != nil {
@@ -324,7 +327,8 @@ func getInsertAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, node *tid
 	}
 	res, err := query(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()))
 	if err != nil {
-		return 0, err
+		// It affects zero row for explain errors such as incorrect statement.
+		return 0, nil
 	}
 	rowCount, err := getInsertAffectedRowsCountForMysql(res)
 	if err != nil {
@@ -430,6 +434,8 @@ func getInsertAffectedRowsCountForMysql(res []any) (int64, error) {
 		}
 		return v, nil
 	default:
+		val := fmt.Sprintf("%s", res)
+		log.Error("unexpected number of affected rows", zap.String("value", val))
 		return 0, errors.Errorf("expected int or in64 but got %t", rowTwo[9])
 	}
 }
