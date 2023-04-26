@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"

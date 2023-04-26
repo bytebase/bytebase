@@ -17,7 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser"
+	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
 var (

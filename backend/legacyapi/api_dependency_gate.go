@@ -12,7 +12,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor"
 	_ "github.com/bytebase/bytebase/backend/plugin/db"
 	_ "github.com/bytebase/bytebase/backend/plugin/metric"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	_ "github.com/bytebase/bytebase/backend/plugin/vcs"
 	_ "github.com/bytebase/bytebase/backend/plugin/webhook"
 )
