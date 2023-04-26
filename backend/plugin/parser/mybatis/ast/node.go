@@ -37,24 +37,8 @@ func (n *MapperNode) RestoreSQL(w io.Writer) error {
 	return nil
 }
 
-// QueryNodeType represents the type of query node in mybatis mapper xml begin with <select>, <update>, <insert>, <delete>.
-type QueryNodeType uint
-
-const (
-	// QueryNodeTypeSelect represents the select node.
-	QueryNodeTypeSelect QueryNodeType = iota
-	// QueryNodeTypeUpdate represents the update node.
-	QueryNodeTypeUpdate
-	// QueryNodeTypeInsert represents the insert node.
-	QueryNodeTypeInsert
-	// QueryNodeTypeDelete represents the delete node.
-	QueryNodeTypeDelete
-)
-
 // QueryNode represents a query node.
 type QueryNode struct {
-	// Type is the type of the query node.
-	Type QueryNodeType
 	// Id is the id of the query node.
 	Id string
 	// Children is the children of the query node.
