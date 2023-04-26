@@ -137,11 +137,10 @@ func getRows(res []any) (int64, error) {
 	if len(rowList) < 1 {
 		return 0, errors.Errorf("not found any data")
 	}
-	rowOne, ok := rowList[0].([]any)
-	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", rowList[0])
-	}
+
 	// MySQL EXPLAIN statement result has 12 columns.
+	// the column 9 is the data 'rows'.
+	// the first not-NULL value of column 9 is the affected rows count.
 	//
 	// mysql> explain delete from td;
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
@@ -149,22 +148,40 @@ func getRows(res []any) (int64, error) {
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
 	// |  1 | DELETE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | NULL  |
 	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	if len(rowOne) != 12 {
-		return 0, errors.Errorf("expected 12 but got %d", len(rowOne))
-	}
-	// the column 9 is the data 'rows'.
-	switch rows := rowOne[9].(type) {
-	case int:
-		return int64(rows), nil
-	case int64:
-		return rows, nil
-	case string:
-		v, err := strconv.ParseInt(rows, 10, 64)
-		if err != nil {
-			return 0, errors.Errorf("expected int or int64 but got string(%s)", rows)
+	//
+	// mysql> explain insert into td select * from td;
+	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
+	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
+	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
+	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+
+	for _, rowAny := range rowList {
+		row, ok := rowAny.([]any)
+		if !ok {
+			return 0, errors.Errorf("expected []any but got %t", row)
 		}
-		return v, nil
-	default:
-		return 0, errors.Errorf("expected int or int64 but got %t", rowOne[9])
+		if len(row) != 12 {
+			return 0, errors.Errorf("expected 12 but got %d", len(row))
+		}
+		switch col := row[9].(type) {
+		case int:
+			return int64(col), nil
+		case int32:
+			return int64(col), nil
+		case int64:
+			return col, nil
+		case string:
+			v, err := strconv.ParseInt(col, 10, 64)
+			if err != nil {
+				return 0, errors.Errorf("expected int or int64 but got string(%s)", col)
+			}
+			return v, nil
+		default:
+			continue
+		}
 	}
+
+	return 0, errors.Errorf("failed to extract rows from query plan")
 }
