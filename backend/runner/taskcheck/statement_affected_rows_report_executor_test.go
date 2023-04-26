@@ -13,7 +13,7 @@ func TestGetAffectedRowsCountForMysql(t *testing.T) {
 		res  []any
 	}{
 		{
-			name: "insert simple",
+			name: "delete simple",
 			want: 123,
 			res: []any{
 				[]string{
