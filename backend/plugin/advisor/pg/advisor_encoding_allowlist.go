@@ -6,7 +6,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
 var (
