@@ -43,7 +43,7 @@ require (
 	github.com/redis/go-redis/v9 v9.0.3
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/shopspring/decimal v1.3.1
-	github.com/sijms/go-ora/v2 v2.6.12
+	github.com/sijms/go-ora/v2 v2.7.1
 	github.com/snowflakedb/gosnowflake v1.6.19
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.2
