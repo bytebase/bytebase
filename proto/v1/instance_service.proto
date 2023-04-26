@@ -230,10 +230,29 @@ message DataSource {
   // sid and service_name are used for Oracle.
   string sid = 13;
   string service_name = 14;
+  // Connection over SSH.
+  SSHConfig ssh_config = 15;
 }
 
 enum DataSourceType {
   DATA_SOURCE_UNSPECIFIED = 0;
   ADMIN = 1;
   READ_ONLY = 2;
+}
+
+
+message SSHConfig {
+  // The hostname of the SSH server agent.
+  // Required.
+  string host = 1;
+  // The port of the SSH server agent. It's 22 typically.
+  // Required.
+  string port = 2;
+  // The user to login the server.
+  // Required.
+  string user = 3;
+  // The password to login the server. If it's empty string, no password is required.
+  string password = 4;
+  // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
+  string private_key = 5;
 }
