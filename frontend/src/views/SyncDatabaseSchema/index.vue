@@ -337,22 +337,15 @@ const tryFinishSetup = async () => {
 
   const project = await projectStore.getOrFetchProjectById(state.projectId!);
 
-  const isTenantProject = project.tenantMode === "TENANT";
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     project: project.id,
     mode: "normal",
     ghost: undefined,
   };
-  if (isTenantProject) {
-    query.mode = "tenant";
-    query.sql = statementList.join("\n");
-    query.name = generateIssueName(targetDatabaseList.map((db) => db.name));
-  } else {
-    query.databaseList = databaseIdList.join(",");
-    query.sqlList = JSON.stringify(statementList);
-    query.name = generateIssueName(targetDatabaseList.map((db) => db.name));
-  }
+  query.databaseList = databaseIdList.join(",");
+  query.sqlList = JSON.stringify(statementList);
+  query.name = generateIssueName(targetDatabaseList.map((db) => db.name));
 
   const routeInfo = {
     name: "workspace.issue.detail",
