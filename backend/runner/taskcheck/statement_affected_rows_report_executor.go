@@ -111,16 +111,14 @@ func reportStatementAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, 
 	for _, stmt := range stmts {
 		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, stmt)
 		if err != nil {
-			// nolint:nilerr
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusError,
-					Namespace: api.BBNamespace,
-					Code:      common.Internal.Int(),
-					Title:     "Failed to report statement affected rows",
-					Content:   err.Error(),
-				},
-			}, nil
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.Internal.Int(),
+				Title:     "Failed to report statement affected rows",
+				Content:   err.Error(),
+			})
+			continue
 		}
 		result = append(result, api.TaskCheckResult{
 			Status:    api.TaskCheckStatusSuccess,
@@ -255,40 +253,35 @@ func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, sta
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
 		if err != nil {
-			// nolint:nilerr
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusError,
-					Namespace: api.AdvisorNamespace,
-					Code:      advisor.StatementSyntaxError.Int(),
-					Title:     "Syntax error",
-					Content:   err.Error(),
-				},
-			}, nil
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.AdvisorNamespace,
+				Code:      advisor.StatementSyntaxError.Int(),
+				Title:     "Syntax error",
+				Content:   err.Error(),
+			})
+			continue
 		}
 		if len(root) != 1 {
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusError,
-					Namespace: api.BBNamespace,
-					Code:      common.Internal.Int(),
-					Title:     "Failed to report statement affected rows",
-					Content:   "Expect to get one node from parser",
-				},
-			}, nil
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.Internal.Int(),
+				Title:     "Failed to report statement affected rows",
+				Content:   "Expect to get one node from parser",
+			})
+			continue
 		}
 		affectedRows, err := getAffectedRowsForMysql(ctx, sqlDB, root[0])
 		if err != nil {
-			// nolint:nilerr
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusError,
-					Namespace: api.BBNamespace,
-					Code:      common.Internal.Int(),
-					Title:     "Failed to report statement affected rows",
-					Content:   err.Error(),
-				},
-			}, nil
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.Internal.Int(),
+				Title:     "Failed to report statement affected rows",
+				Content:   err.Error(),
+			})
+			continue
 		}
 		result = append(result, api.TaskCheckResult{
 			Status:    api.TaskCheckStatusSuccess,
