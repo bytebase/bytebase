@@ -65,6 +65,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				}
 			}
 		}
+		// TODO(d): fill in ssh config.
 
 		var tlsConfig db.TLSConfig
 		supportTLS := connectionInfo.Engine == db.ClickHouse || connectionInfo.Engine == db.MySQL || connectionInfo.Engine == db.TiDB || connectionInfo.Engine == db.MariaDB || connectionInfo.Engine == db.OceanBase

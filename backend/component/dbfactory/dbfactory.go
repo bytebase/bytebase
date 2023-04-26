@@ -151,6 +151,7 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 	if err != nil {
 		return nil, err
 	}
+	// TODO(d): fill in SSH config.
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
