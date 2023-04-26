@@ -63,5 +63,4 @@ func TestGetAffectedRowsCountForMysql(t *testing.T) {
 			a.Equal(tc.want, got)
 		})
 	}
-
 }
