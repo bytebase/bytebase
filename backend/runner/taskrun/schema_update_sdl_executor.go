@@ -54,14 +54,11 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *store.Ta
 
 	statement := payload.Statement
 	if payload.SheetID > 0 {
-		sheet, err := exec.store.GetSheet(ctx, &api.SheetFind{ID: &payload.SheetID, LoadFull: true}, api.SystemBotID)
+		sheetStatement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
 		if err != nil {
 			return true, nil, err
 		}
-		if sheet == nil {
-			return true, nil, errors.Errorf("sheet ID %v not found", payload.SheetID)
-		}
-		statement = sheet.Statement
+		statement = sheetStatement
 	}
 
 	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
