@@ -7,6 +7,7 @@
     :cross="true"
     :fullscreen="true"
     :font-size="SIZE"
+    :font-color="`rgba(128, 128, 128, .1)`"
     :line-height="SIZE"
     :width="GAP"
     :height="GAP"
