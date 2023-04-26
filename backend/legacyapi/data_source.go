@@ -42,8 +42,13 @@ type DataSourceOptions struct {
 	// AuthenticationDatabase is used for MongoDB only.
 	AuthenticationDatabase string `json:"authenticationDatabase" jsonapi:"attr,authenticationDatabase"`
 	// SID and ServiceName are used for Oracle.
-	SID         string `json:"sid" jsonapi:"attr,sid"`
-	ServiceName string `json:"serviceName" jsonapi:"attr,serviceName"`
+	SID           string `json:"sid" jsonapi:"attr,sid"`
+	ServiceName   string `json:"serviceName" jsonapi:"attr,serviceName"`
+	SSHHost       string `json:"sshHost" jsonapi:"attr,sshHost"`
+	SSHPort       string `json:"sshPort" jsonapi:"attr,sshPort"`
+	SSHUser       string `json:"sshUser" jsonapi:"attr,sshUser"`
+	SSHPassword   string `json:"sshPassword" jsonapi:"attr,sshPassword"`
+	SSHPrivateKey string `json:"sshPrivateKey" jsonapi:"attr,sshPrivateKey"`
 }
 
 // getDefaultDataSourceOptions returns the default data source options.

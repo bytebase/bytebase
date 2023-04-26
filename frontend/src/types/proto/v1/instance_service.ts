@@ -214,30 +214,26 @@ export interface DataSource {
   /** sid and service_name are used for Oracle. */
   sid: string;
   serviceName: string;
-  /** Connection over SSH. */
-  sshConfig?: SSHConfig;
-}
-
-export interface SSHConfig {
   /**
+   * Connection over SSH.
    * The hostname of the SSH server agent.
    * Required.
    */
-  host: string;
+  sshHost: string;
   /**
    * The port of the SSH server agent. It's 22 typically.
    * Required.
    */
-  port: string;
+  sshPort: string;
   /**
    * The user to login the server.
    * Required.
    */
-  user: string;
+  sshUser: string;
   /** The password to login the server. If it's empty string, no password is required. */
-  password: string;
+  sshPassword: string;
   /** The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK"). */
-  privateKey: string;
+  sshPrivateKey: string;
 }
 
 function createBaseGetInstanceRequest(): GetInstanceRequest {
@@ -1186,7 +1182,11 @@ function createBaseDataSource(): DataSource {
     authenticationDatabase: "",
     sid: "",
     serviceName: "",
-    sshConfig: undefined,
+    sshHost: "",
+    sshPort: "",
+    sshUser: "",
+    sshPassword: "",
+    sshPrivateKey: "",
   };
 }
 
@@ -1234,8 +1234,20 @@ export const DataSource = {
     if (message.serviceName !== "") {
       writer.uint32(114).string(message.serviceName);
     }
-    if (message.sshConfig !== undefined) {
-      SSHConfig.encode(message.sshConfig, writer.uint32(122).fork()).ldelim();
+    if (message.sshHost !== "") {
+      writer.uint32(122).string(message.sshHost);
+    }
+    if (message.sshPort !== "") {
+      writer.uint32(130).string(message.sshPort);
+    }
+    if (message.sshUser !== "") {
+      writer.uint32(138).string(message.sshUser);
+    }
+    if (message.sshPassword !== "") {
+      writer.uint32(146).string(message.sshPassword);
+    }
+    if (message.sshPrivateKey !== "") {
+      writer.uint32(154).string(message.sshPrivateKey);
     }
     return writer;
   },
@@ -1350,7 +1362,35 @@ export const DataSource = {
             break;
           }
 
-          message.sshConfig = SSHConfig.decode(reader, reader.uint32());
+          message.sshHost = reader.string();
+          continue;
+        case 16:
+          if (tag != 130) {
+            break;
+          }
+
+          message.sshPort = reader.string();
+          continue;
+        case 17:
+          if (tag != 138) {
+            break;
+          }
+
+          message.sshUser = reader.string();
+          continue;
+        case 18:
+          if (tag != 146) {
+            break;
+          }
+
+          message.sshPassword = reader.string();
+          continue;
+        case 19:
+          if (tag != 154) {
+            break;
+          }
+
+          message.sshPrivateKey = reader.string();
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -1377,7 +1417,11 @@ export const DataSource = {
       authenticationDatabase: isSet(object.authenticationDatabase) ? String(object.authenticationDatabase) : "",
       sid: isSet(object.sid) ? String(object.sid) : "",
       serviceName: isSet(object.serviceName) ? String(object.serviceName) : "",
-      sshConfig: isSet(object.sshConfig) ? SSHConfig.fromJSON(object.sshConfig) : undefined,
+      sshHost: isSet(object.sshHost) ? String(object.sshHost) : "",
+      sshPort: isSet(object.sshPort) ? String(object.sshPort) : "",
+      sshUser: isSet(object.sshUser) ? String(object.sshUser) : "",
+      sshPassword: isSet(object.sshPassword) ? String(object.sshPassword) : "",
+      sshPrivateKey: isSet(object.sshPrivateKey) ? String(object.sshPrivateKey) : "",
     };
   },
 
@@ -1397,8 +1441,11 @@ export const DataSource = {
     message.authenticationDatabase !== undefined && (obj.authenticationDatabase = message.authenticationDatabase);
     message.sid !== undefined && (obj.sid = message.sid);
     message.serviceName !== undefined && (obj.serviceName = message.serviceName);
-    message.sshConfig !== undefined &&
-      (obj.sshConfig = message.sshConfig ? SSHConfig.toJSON(message.sshConfig) : undefined);
+    message.sshHost !== undefined && (obj.sshHost = message.sshHost);
+    message.sshPort !== undefined && (obj.sshPort = message.sshPort);
+    message.sshUser !== undefined && (obj.sshUser = message.sshUser);
+    message.sshPassword !== undefined && (obj.sshPassword = message.sshPassword);
+    message.sshPrivateKey !== undefined && (obj.sshPrivateKey = message.sshPrivateKey);
     return obj;
   },
 
@@ -1422,119 +1469,11 @@ export const DataSource = {
     message.authenticationDatabase = object.authenticationDatabase ?? "";
     message.sid = object.sid ?? "";
     message.serviceName = object.serviceName ?? "";
-    message.sshConfig = (object.sshConfig !== undefined && object.sshConfig !== null)
-      ? SSHConfig.fromPartial(object.sshConfig)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseSSHConfig(): SSHConfig {
-  return { host: "", port: "", user: "", password: "", privateKey: "" };
-}
-
-export const SSHConfig = {
-  encode(message: SSHConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.host !== "") {
-      writer.uint32(10).string(message.host);
-    }
-    if (message.port !== "") {
-      writer.uint32(18).string(message.port);
-    }
-    if (message.user !== "") {
-      writer.uint32(26).string(message.user);
-    }
-    if (message.password !== "") {
-      writer.uint32(34).string(message.password);
-    }
-    if (message.privateKey !== "") {
-      writer.uint32(42).string(message.privateKey);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SSHConfig {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSSHConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag != 10) {
-            break;
-          }
-
-          message.host = reader.string();
-          continue;
-        case 2:
-          if (tag != 18) {
-            break;
-          }
-
-          message.port = reader.string();
-          continue;
-        case 3:
-          if (tag != 26) {
-            break;
-          }
-
-          message.user = reader.string();
-          continue;
-        case 4:
-          if (tag != 34) {
-            break;
-          }
-
-          message.password = reader.string();
-          continue;
-        case 5:
-          if (tag != 42) {
-            break;
-          }
-
-          message.privateKey = reader.string();
-          continue;
-      }
-      if ((tag & 7) == 4 || tag == 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SSHConfig {
-    return {
-      host: isSet(object.host) ? String(object.host) : "",
-      port: isSet(object.port) ? String(object.port) : "",
-      user: isSet(object.user) ? String(object.user) : "",
-      password: isSet(object.password) ? String(object.password) : "",
-      privateKey: isSet(object.privateKey) ? String(object.privateKey) : "",
-    };
-  },
-
-  toJSON(message: SSHConfig): unknown {
-    const obj: any = {};
-    message.host !== undefined && (obj.host = message.host);
-    message.port !== undefined && (obj.port = message.port);
-    message.user !== undefined && (obj.user = message.user);
-    message.password !== undefined && (obj.password = message.password);
-    message.privateKey !== undefined && (obj.privateKey = message.privateKey);
-    return obj;
-  },
-
-  create(base?: DeepPartial<SSHConfig>): SSHConfig {
-    return SSHConfig.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<SSHConfig>): SSHConfig {
-    const message = createBaseSSHConfig();
-    message.host = object.host ?? "";
-    message.port = object.port ?? "";
-    message.user = object.user ?? "";
-    message.password = object.password ?? "";
-    message.privateKey = object.privateKey ?? "";
+    message.sshHost = object.sshHost ?? "";
+    message.sshPort = object.sshPort ?? "";
+    message.sshUser = object.sshUser ?? "";
+    message.sshPassword = object.sshPassword ?? "";
+    message.sshPrivateKey = object.sshPrivateKey ?? "";
     return message;
   },
 };

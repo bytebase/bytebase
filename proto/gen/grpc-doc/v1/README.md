@@ -184,7 +184,6 @@
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
-    - [SSHConfig](#bytebase-v1-SSHConfig)
     - [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest)
     - [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest)
     - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
@@ -2858,7 +2857,11 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | authentication_database | [string](#string) |  |  |
 | sid | [string](#string) |  | sid and service_name are used for Oracle. |
 | service_name | [string](#string) |  |  |
-| ssh_config | [SSHConfig](#bytebase-v1-SSHConfig) |  | Connection over SSH. |
+| ssh_host | [string](#string) |  | Connection over SSH. The hostname of the SSH server agent. Required. |
+| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. Required. |
+| ssh_user | [string](#string) |  | The user to login the server. Required. |
+| ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
+| ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 
 
 
@@ -2962,25 +2965,6 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to remove a data source from. Format: environments/{environment}/instances/{instance} |
 | data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be removed. |
-
-
-
-
-
-
-<a name="bytebase-v1-SSHConfig"></a>
-
-### SSHConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| host | [string](#string) |  | The hostname of the SSH server agent. Required. |
-| port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. Required. |
-| user | [string](#string) |  | The user to login the server. Required. |
-| password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
-| private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 
 
 
