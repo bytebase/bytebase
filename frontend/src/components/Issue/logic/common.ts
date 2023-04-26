@@ -196,10 +196,6 @@ export const useCommonLogic = () => {
   };
 
   const updateSheetId = (sheetId: SheetId) => {
-    if (!create.value) {
-      return;
-    }
-
     const task = selectedTask.value as TaskCreate;
     task.statement = "";
     task.sheetId = sheetId;

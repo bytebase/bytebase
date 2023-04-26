@@ -82,10 +82,6 @@ export default defineComponent({
     };
 
     const updateSheetId = (sheetId: SheetId) => {
-      if (!create.value) {
-        return;
-      }
-
       // For tenant deploy mode, we apply the sheetId to all stages and all tasks
       const allTaskList = flattenTaskList<TaskCreate>(issue.value);
       allTaskList.forEach((task) => {
