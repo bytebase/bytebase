@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser"
+	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 )
 
