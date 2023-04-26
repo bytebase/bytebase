@@ -111,16 +111,14 @@ func reportStatementAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, 
 	for _, stmt := range stmts {
 		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, stmt)
 		if err != nil {
-			// nolint:nilerr
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusError,
-					Namespace: api.BBNamespace,
-					Code:      common.Internal.Int(),
-					Title:     "Failed to report statement affected rows",
-					Content:   err.Error(),
-				},
-			}, nil
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.Internal.Int(),
+				Title:     "Failed to report statement affected rows",
+				Content:   err.Error(),
+			})
+			continue
 		}
 		result = append(result, api.TaskCheckResult{
 			Status:    api.TaskCheckStatusSuccess,
@@ -155,7 +153,7 @@ func getInsertAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, node *
 	}
 	rowCount, err := getAffectedRowsCountForPostgres(res)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to get affected rows count for postgres, res %+v", res)
 	}
 	return rowCount, nil
 }
@@ -167,7 +165,7 @@ func getUpdateOrDeleteAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB
 	}
 	rowCount, err := getAffectedRowsCountForPostgres(res)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to get affected rows count for postgres, res %+v", res)
 	}
 	return rowCount, nil
 }
@@ -255,40 +253,35 @@ func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, sta
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
 		if err != nil {
-			// nolint:nilerr
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusError,
-					Namespace: api.AdvisorNamespace,
-					Code:      advisor.StatementSyntaxError.Int(),
-					Title:     "Syntax error",
-					Content:   err.Error(),
-				},
-			}, nil
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.AdvisorNamespace,
+				Code:      advisor.StatementSyntaxError.Int(),
+				Title:     "Syntax error",
+				Content:   err.Error(),
+			})
+			continue
 		}
 		if len(root) != 1 {
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusError,
-					Namespace: api.BBNamespace,
-					Code:      common.Internal.Int(),
-					Title:     "Failed to report statement affected rows",
-					Content:   "Expect to get one node from parser",
-				},
-			}, nil
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.Internal.Int(),
+				Title:     "Failed to report statement affected rows",
+				Content:   "Expect to get one node from parser",
+			})
+			continue
 		}
 		affectedRows, err := getAffectedRowsForMysql(ctx, sqlDB, root[0])
 		if err != nil {
-			// nolint:nilerr
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusError,
-					Namespace: api.BBNamespace,
-					Code:      common.Internal.Int(),
-					Title:     "Failed to report statement affected rows",
-					Content:   err.Error(),
-				},
-			}, nil
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.Internal.Int(),
+				Title:     "Failed to report statement affected rows",
+				Content:   err.Error(),
+			})
+			continue
 		}
 		result = append(result, api.TaskCheckResult{
 			Status:    api.TaskCheckStatusSuccess,
@@ -323,7 +316,7 @@ func getInsertAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, node *tid
 	}
 	rowCount, err := getInsertAffectedRowsCountForMysql(res)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to get insert affected rows count for mysql, res %+v", res)
 	}
 	return rowCount, nil
 }
@@ -335,7 +328,7 @@ func getUpdateOrDeleteAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, n
 	}
 	rowCount, err := getUpdateOrDeleteAffectedRowsCountForMysql(res)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to get update or delete affected rows count for mysql, res %+v", res)
 	}
 	return rowCount, nil
 }
