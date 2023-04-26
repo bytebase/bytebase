@@ -166,7 +166,7 @@
       </div>
       <div class="border-b mt-5"></div>
       <!-- Test Send Email To Someone -->
-      <div class="w-full gap-4 mt-8 flex flex-row">
+      <div class="w-full gap-4 mt-4 flex flex-row">
         <div class="min-w-max w-160">
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.send-test-email-to") }}
