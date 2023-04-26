@@ -1,3 +1,4 @@
+// Package mybatis defines the sql extractor for mybatis mapper xml.
 package mybatis
 
 import (

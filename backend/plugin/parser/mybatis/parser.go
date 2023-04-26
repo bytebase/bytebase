@@ -1,3 +1,4 @@
+// Package mybatis defines the sql extractor for mybatis mapper xml.
 package mybatis
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/ast"
 )
 
+// Parse parses the mybatis mapper xml statement and returns the AST node.
 func Parse(stmt string) (ast.Node, error) {
 	reader := strings.NewReader(stmt)
 	d := xml.NewDecoder(reader)
@@ -23,8 +25,7 @@ func Parse(stmt string) (ast.Node, error) {
 			return nil, errors.Wrapf(err, "failed to get token from xml decoder")
 		}
 		if startEle, ok := token.(xml.StartElement); ok {
-			switch startEle.Name.Local {
-			case "mapper":
+			if startEle.Name.Local == "mapper" {
 				return parseMapper(d, &startEle)
 			}
 		}
@@ -69,7 +70,7 @@ func parseQuery(d *xml.Decoder, mapperStartElement *xml.StartElement) (*ast.Quer
 	queryNode := &ast.QueryNode{}
 	for _, attr := range mapperStartElement.Attr {
 		if attr.Name.Local == "id" {
-			queryNode.Id = attr.Value
+			queryNode.ID = attr.Value
 		}
 	}
 
