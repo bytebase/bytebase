@@ -75,7 +75,7 @@ export const useCommonLogic = () => {
     taskPatch: TaskPatch,
     postUpdated?: (updatedTask: Task) => void
   ) => {
-    taskStore
+    return taskStore
       .patchTask({
         issueId: (issue.value as Issue).id,
         pipelineId: (issue.value as Issue).pipeline.id,
@@ -195,10 +195,15 @@ export const useCommonLogic = () => {
     }
   };
 
-  const updateSheetId = (sheetId: SheetId) => {
-    const task = selectedTask.value as TaskCreate;
-    task.statement = "";
-    task.sheetId = sheetId;
+  const updateSheetId = async (sheetId: SheetId) => {
+    if (create.value) {
+      const task = selectedTask.value as TaskCreate;
+      task.statement = "";
+      task.sheetId = sheetId;
+    } else {
+      const task = selectedTask.value as Task;
+      await patchTask(task.id, { sheetId });
+    }
   };
 
   const doCreate = async () => {

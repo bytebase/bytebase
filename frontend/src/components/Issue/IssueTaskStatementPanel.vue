@@ -383,8 +383,6 @@ watch(
     } else {
       state.taskSheetId = undefined;
     }
-
-    console.log(state.taskSheetId);
   },
   {
     immediate: true,
@@ -484,22 +482,23 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
         },
       }
     );
+    state.isUploadingFile = false;
 
     updateSheetId(sheet.id);
-    state.isUploadingFile = false;
+    await updateStatement(statement);
+    state.editing = false;
     if (selectedTask.value) updateEditorHeight();
   };
 
   return new Promise((resolve) => {
     if (state.editStatement) {
-      // Show a confirm dialog before replacing if the editing statement
-      // is not empty
+      // Show a confirm dialog before replacing if the editing statement is not empty.
       overrideSQLDialog.create({
         positiveText: t("common.confirm"),
         negativeText: t("common.cancel"),
         title: t("issue.override-current-statement"),
         onNegativeClick: () => {
-          // nothing to do
+          state.isUploadingFile = false;
         },
         onPositiveClick: () => {
           resolve(uploadStatementAsSheet(statement));
