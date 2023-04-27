@@ -3,6 +3,8 @@ package server
 import (
 	"testing"
 
+	api "github.com/bytebase/bytebase/backend/legacyapi"
+
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -16,9 +18,11 @@ func TestEnforceWorkspaceDeveloperDatabaseRouteACL(t *testing.T) {
 		method      string
 		principalID int
 		errMsg      string
+		plan        api.PlanType
 	}
 
 	tests := []test{
+		// Retrieve the database which is unassigned to any project.
 		{
 			desc:        "Retrieve the database which is unassigned to any project",
 			path:        "/database/301",
@@ -26,6 +30,7 @@ func TestEnforceWorkspaceDeveloperDatabaseRouteACL(t *testing.T) {
 			body:        "",
 			principalID: 201,
 			errMsg:      "user is not a member of project owns this database",
+			plan:        api.ENTERPRISE,
 		},
 		{
 			desc:        "Retrieve the database which is assigned to a project, but the user is not a member of the project",
@@ -34,6 +39,7 @@ func TestEnforceWorkspaceDeveloperDatabaseRouteACL(t *testing.T) {
 			body:        "",
 			principalID: 201,
 			errMsg:      "user is not a member of project owns this database",
+			plan:        api.ENTERPRISE,
 		},
 		{
 			desc:        "Retrieve the database which is assigned to a project, and the user is a member of the project",
@@ -42,6 +48,45 @@ func TestEnforceWorkspaceDeveloperDatabaseRouteACL(t *testing.T) {
 			body:        "",
 			principalID: 201,
 			errMsg:      "",
+			plan:        api.ENTERPRISE,
+		},
+
+		// Transfer the database.
+		{
+			desc:        "Enterprise Plan, workspace developer of project developer cannot transfer the database out",
+			path:        "/database/304",
+			body:        `{"data":{"type":"databasePatch","attributes":{"projectId":104}}}`,
+			method:      "PATCH",
+			principalID: 201,
+			errMsg:      "user is not project owner of project owns the database 304",
+			plan:        api.ENTERPRISE,
+		},
+		{
+			desc:        "Free & Pro Plan, workspace developer of project developer can transfer the database out",
+			path:        "/database/304",
+			body:        `{"data":{"type":"databasePatch","attributes":{"projectId":104}}}`,
+			method:      "PATCH",
+			principalID: 201,
+			errMsg:      "",
+			plan:        api.FREE,
+		},
+		{
+			desc:        "Enterprise Plan, workspace developer of project owner cannot transfer the database out to the project if he is not the owner",
+			path:        "/database/303",
+			body:        `{"data":{"type":"databasePatch","attributes":{"projectId":103}}}`,
+			method:      "PATCH",
+			principalID: 201,
+			errMsg:      "user is not project owner of project want owns the database 303",
+			plan:        api.ENTERPRISE,
+		},
+		{
+			desc:        "Free & Pro Plan, workspace developer of project owner can transfer the database out to the project if he is not the owner",
+			path:        "/database/303",
+			body:        `{"data":{"type":"databasePatch","attributes":{"projectId":103}}}`,
+			method:      "PATCH",
+			principalID: 201,
+			errMsg:      "",
+			plan:        api.TEAM,
 		},
 		{
 			desc:        "Transfer the database to the project which the user is not a member of",
@@ -49,7 +94,8 @@ func TestEnforceWorkspaceDeveloperDatabaseRouteACL(t *testing.T) {
 			body:        `{"data":{"type":"databasePatch","attributes":{"projectId":101}}}`,
 			method:      "PATCH",
 			principalID: 201,
-			errMsg:      "user is not a member of project 101",
+			errMsg:      "user is not a project member of project want to owns the database 303",
+			plan:        api.FREE,
 		},
 		{
 			desc:        "Transfer out the database under the project which the user is not a member of",
@@ -57,21 +103,14 @@ func TestEnforceWorkspaceDeveloperDatabaseRouteACL(t *testing.T) {
 			body:        `{"data":{"type":"databasePatch","attributes":{"projectId":102}}}`,
 			method:      "PATCH",
 			principalID: 201,
-			errMsg:      "user is not a member of project owns the database 302",
-		},
-		{
-			desc:        "Transfer out the database under the project which the user is not a member of",
-			path:        "/database/304",
-			body:        `{"data":{"type":"databasePatch","attributes":{"projectId":103}}}`,
-			method:      "PATCH",
-			principalID: 201,
-			errMsg:      "",
+			errMsg:      "user is not a project member of project owns the database 302",
+			plan:        api.FREE,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceWorkspaceDeveloperDatabaseRouteACL(tc.path, tc.method, tc.body, tc.principalID, testWorkspaceDeveloperDatabaseRouteMockGetDatabaseProjectID, getProjectRolesFinderForTest(testWorkspaceDeveloperDatabaseRouteHelper.projectMembers))
+			err := enforceWorkspaceDeveloperDatabaseRouteACL(tc.plan, tc.path, tc.method, tc.body, tc.principalID, testWorkspaceDeveloperDatabaseRouteMockGetDatabaseProjectID, getProjectRolesFinderForTest(testWorkspaceDeveloperDatabaseRouteHelper.projectMembers))
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)
@@ -94,10 +133,13 @@ var testWorkspaceDeveloperDatabaseRouteHelper = struct {
 		1:   {},
 		101: {},
 		102: {
-			common.ProjectDeveloper: {201},
+			common.ProjectOwner: {201},
 		},
 		103: {
 			common.ProjectDeveloper: {201},
+		},
+		104: {
+			common.ProjectOwner: {201},
 		},
 	},
 	projectOwnsDatabase: map[int]map[int]bool{
@@ -117,6 +159,7 @@ var testWorkspaceDeveloperDatabaseRouteHelper = struct {
 		103: {
 			304: true,
 		},
+		104: {},
 	},
 }
 
