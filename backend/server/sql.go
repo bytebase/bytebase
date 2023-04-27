@@ -65,7 +65,15 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				}
 			}
 		}
-		// TODO(d): fill in ssh config.
+
+		var sshConfig db.SSHConfig
+		if connectionInfo.UseSSHConfig {
+			sshConfig.Host = connectionInfo.SSHHost
+			sshConfig.Port = connectionInfo.SSHPort
+			sshConfig.User = connectionInfo.SSHUser
+			sshConfig.Password = connectionInfo.SSHPassword
+			sshConfig.PrivateKey = connectionInfo.SSHPrivateKey
+		}
 
 		var tlsConfig db.TLSConfig
 		supportTLS := connectionInfo.Engine == db.ClickHouse || connectionInfo.Engine == db.MySQL || connectionInfo.Engine == db.TiDB || connectionInfo.Engine == db.MariaDB || connectionInfo.Engine == db.OceanBase
@@ -129,6 +137,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				AuthenticationDatabase: connectionInfo.AuthenticationDatabase,
 				SID:                    connectionInfo.SID,
 				ServiceName:            connectionInfo.ServiceName,
+				SSHConfig:              sshConfig,
 			},
 			db.ConnectionContext{},
 		)
