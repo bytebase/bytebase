@@ -474,6 +474,9 @@ type slowLog struct {
 // SyncSlowQuery syncs slow query from mysql.slow_log.
 func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	var timeZone string
+	// The MySQL function convert_tz requires loading the time zone table into MySQL.
+	// So we convert time zone in backend instead of MySQL server
+	// https://stackoverflow.com/questions/14454304/convert-tz-returns-null
 	timeZoneQuery := `SELECT @@log_timestamps, @@system_time_zone;`
 	timeZoneRows, err := driver.db.QueryContext(ctx, timeZoneQuery)
 	if err != nil {
