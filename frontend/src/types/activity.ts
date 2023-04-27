@@ -7,6 +7,7 @@ import {
   InstanceId,
   IssueId,
   PrincipalId,
+  SheetId,
   StageId,
   TaskId,
 } from "./id";
@@ -161,6 +162,8 @@ export type ActivityTaskStatementUpdatePayload = {
   taskId: TaskId;
   oldStatement: string;
   newStatement: string;
+  oldSheetId: SheetId;
+  newSheetId: SheetId;
   issueName: string;
   taskName: string;
 };
