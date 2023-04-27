@@ -17,6 +17,7 @@ import {
   ActivityTaskStatusUpdatePayload,
   Issue,
   SYSTEM_BOT_ID,
+  UNKNOWN_ID,
 } from "@/types";
 import {
   findStageById,
@@ -26,6 +27,8 @@ import {
 import TaskName from "./TaskName.vue";
 import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
 import StageName from "./StageName.vue";
+import { useSheetStore } from "@/store";
+import { watch } from "vue";
 
 type RenderedContent = string | ReturnType<typeof h>;
 
@@ -41,6 +44,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const sheetStore = useSheetStore();
 
 const renderActionSentence = () => {
   const renderSpan = (content: string, props?: object) => {
@@ -180,7 +184,18 @@ const renderActionSentence = () => {
     }
     case "bb.pipeline.task.statement.update": {
       const payload = activity.payload as ActivityTaskStatementUpdatePayload;
-
+      console.log(
+        "sheetStore.getSheetById(payload.oldSheetId || UNKNOWN_ID)",
+        sheetStore.getSheetById(payload.oldSheetId || UNKNOWN_ID),
+        payload.newSheetId,
+        sheetStore.getSheetById(payload.newSheetId || UNKNOWN_ID)
+      );
+      const oldStatement =
+        sheetStore.getSheetById(payload.oldSheetId || UNKNOWN_ID).statement ||
+        payload.oldStatement;
+      const newStatement =
+        sheetStore.getSheetById(payload.newSheetId || UNKNOWN_ID).statement ||
+        payload.newStatement;
       return h(
         "span",
         {},
@@ -191,8 +206,8 @@ const renderActionSentence = () => {
           },
           {
             name: () => "SQL",
-            oldValue: () => renderStatement(payload.oldStatement),
-            newValue: () => renderStatement(payload.newStatement),
+            oldValue: () => renderStatement(oldStatement),
+            newValue: () => renderStatement(newStatement),
           }
         )
       );
@@ -227,6 +242,7 @@ type VerbTypeTarget = {
   type: RenderedContent;
   target?: RenderedContent;
 };
+
 const renderVerbTypeTarget = (params: VerbTypeTarget, props: object = {}) => {
   const keypath =
     params.activity.creator.id === SYSTEM_BOT_ID
@@ -259,4 +275,23 @@ const renderStatement = (statement: string) => {
     statementClass: "text-main",
   });
 };
+
+watch(
+  () => props.activity,
+  async () => {
+    const activity = props.activity;
+    // Prepare sheet data for renderering.
+    if (activity.type === "bb.pipeline.task.statement.update") {
+      sheetStore.getOrFetchSheetById(
+        (activity.payload as ActivityTaskStatementUpdatePayload).newSheetId
+      );
+      sheetStore.getOrFetchSheetById(
+        (activity.payload as ActivityTaskStatementUpdatePayload).oldSheetId
+      );
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 </script>
