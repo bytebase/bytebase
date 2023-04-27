@@ -299,28 +299,6 @@ func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheet
 	return list, nil
 }
 
-// getSheetRaw retrieves a single sheet based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	list, err := findSheetImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d sheet with filter %+v, expect 1. ", len(list), find)}
-	}
-	return list[0], nil
-}
-
 // createSheetImpl creates a new sheet.
 func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*sheetRaw, error) {
 	if create.Payload == "" {
