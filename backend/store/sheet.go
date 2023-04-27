@@ -677,7 +677,7 @@ func (s *Store) GetSheetUsedByIssues(ctx context.Context, sheetID int) ([]int, e
 		SELECT ARRAY_AGG(issue.id)
 		FROM sheet
 		LEFT JOIN issue ON issue.id IN (
-			SELECT DISTINCT(issue.id) FROM task  WHERE (task.payload->>'sheetId')::INT = sheet.id AND task.pipeline_id = issue.pipeline_id
+			SELECT DISTINCT(issue.id) FROM task WHERE (task.payload->>'sheetId')::INT = sheet.id AND task.pipeline_id = issue.pipeline_id
 		)
 		WHERE sheet.id = $1
 		GROUP BY sheet.id
