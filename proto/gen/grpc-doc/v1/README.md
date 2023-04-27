@@ -61,6 +61,8 @@
     - [BookmarkService](#bytebase-v1-BookmarkService)
   
 - [v1/database_service.proto](#v1_database_service-proto)
+    - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
+    - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
     - [Backup](#bytebase-v1-Backup)
     - [BackupSetting](#bytebase-v1-BackupSetting)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
@@ -1106,6 +1108,39 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 
 
 
+<a name="bytebase-v1-AdviseIndexRequest"></a>
+
+### AdviseIndexRequest
+AdviseIndexRequest is the request of advising index.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: environments/{environment}/instances/{instance}/databases/{database} |
+| statement | [string](#string) |  | The statement to be advised. |
+
+
+
+
+
+
+<a name="bytebase-v1-AdviseIndexResponse"></a>
+
+### AdviseIndexResponse
+AdviseIndexResponse is the response of advising index.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| current_index | [string](#string) |  | The current index of the statement used. |
+| suggestion | [string](#string) |  | The suggested index of the statement. |
+| create_index_statement | [string](#string) |  | The create index statement of the suggested index. |
+
+
+
+
+
+
 <a name="bytebase-v1-Backup"></a>
 
 ### Backup
@@ -1843,6 +1878,7 @@ The type of the backup.
 | ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) |  |
 | UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
 | DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
 
  
 
