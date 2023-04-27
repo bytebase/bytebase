@@ -22,6 +22,8 @@ type SheetSource string
 const (
 	// SheetFromBytebase is the sheet created by Bytebase. e.g. SQL Editor.
 	SheetFromBytebase SheetSource = "BYTEBASE"
+	// SheetFromBytebaseArtifact is the artifact sheet.
+	SheetFromBytebaseArtifact SheetSource = "BYTEBASE_ARTIFACT"
 	// SheetFromGitLab is the sheet synced from GitLab (for both GitLab.com and self-hosted GitLab).
 	SheetFromGitLab SheetSource = "GITLAB"
 	// SheetFromGitHub is the sheet synced from GitHub (for both GitHub.com and GitHub Enterprise).
