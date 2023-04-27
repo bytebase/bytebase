@@ -223,10 +223,26 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("sheetID"))).SetInternal(err)
 		}
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
+
+		sheet, err := s.store.GetSheet(ctx, &api.SheetFind{ID: &id}, c.Get(getPrincipalIDContextKey()).(int))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch sheet by ID %v", id)).SetInternal(err)
+		}
+		if sheet == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find sheet by ID %d", id))
+		}
+		usedByIssues, err := s.store.GetSheetUsedByIssues(ctx, id)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find the issues that are using the sheet, sheet ID: %v", id)).SetInternal(err)
+		}
+		if len(usedByIssues) > 0 {
+			return echo.NewHTTPError(http.StatusPreconditionFailed, fmt.Sprintf("Cannot delete the sheet because it is used by issues %v, sheet ID: %v", usedByIssues, id))
+		}
 
 		sheetDelete := &api.SheetDelete{
 			ID:        id,
-			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
+			DeleterID: principalID,
 		}
 		err = s.store.DeleteSheet(ctx, sheetDelete)
 		if err != nil {

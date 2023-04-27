@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -87,20 +88,20 @@ func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.
 	return sheet, nil
 }
 
-// GetSheet gets an instance of Sheet.
+// GetSheet returns a sheet.
 func (s *Store) GetSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) (*api.Sheet, error) {
-	sheetRaw, err := s.getSheetRaw(ctx, find)
+	sheet, err := s.GetSheetV2(ctx, find, currentPrincipalID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Sheet with SheetFind[%+v]", find)
 	}
-	if sheetRaw == nil {
+	if sheet == nil {
 		return nil, nil
 	}
-	sheet, err := s.composeSheet(ctx, sheetRaw, currentPrincipalID)
+	composedSheet, err := s.composeSheetMessage(ctx, sheet)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Sheet with sheetRaw[%+v]", sheetRaw)
+		return nil, errors.Wrapf(err, "failed to compose Sheet with sheetMessage[%+v]", sheet)
 	}
-	return sheet, nil
+	return composedSheet, nil
 }
 
 // FindSheet finds a list of Sheet instances.
@@ -296,28 +297,6 @@ func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheet
 	}
 
 	return list, nil
-}
-
-// getSheetRaw retrieves a single sheet based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	list, err := findSheetImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d sheet with filter %+v, expect 1. ", len(list), find)}
-	}
-	return list[0], nil
 }
 
 // createSheetImpl creates a new sheet.
@@ -568,7 +547,7 @@ func deleteSheet(ctx context.Context, tx *Tx, delete *api.SheetDelete) error {
 
 // SheetMessage is the message for a sheet.
 type SheetMessage struct {
-	ProjectID int
+	Project *ProjectMessage
 	// The DatabaseID is optional.
 	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
 	// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
@@ -592,11 +571,12 @@ type SheetMessage struct {
 	Pinned      bool
 
 	// Internal fields
-	rowStatus api.RowStatus
-	creatorID int
-	createdTs int64
-	updaterID int
-	updatedTs int64
+	rowStatus  api.RowStatus
+	creatorID  int
+	createdTs  int64
+	updaterID  int
+	updatedTs  int64
+	projectUID int
 }
 
 // GetSheetStatementByID gets the statement of a sheet by ID.
@@ -618,6 +598,110 @@ func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, erro
 	statement := sheets[0].Statement
 	s.sheetStatementCache.Set(id, statement, 10*time.Minute)
 	return statement, nil
+}
+
+func (s *Store) composeSheetMessage(ctx context.Context, sheetMessage *SheetMessage) (*api.Sheet, error) {
+	creator, err := s.GetPrincipalByID(ctx, sheetMessage.creatorID)
+	if err != nil {
+		return nil, err
+	}
+	updater, err := s.GetPrincipalByID(ctx, sheetMessage.updaterID)
+	if err != nil {
+		return nil, err
+	}
+	project, err := s.GetProjectByID(ctx, sheetMessage.projectUID)
+	if err != nil {
+		return nil, err
+	}
+
+	sheet := &api.Sheet{
+		ID: sheetMessage.UID,
+
+		RowStatus: sheetMessage.rowStatus,
+		CreatorID: sheetMessage.creatorID,
+		Creator:   creator,
+		CreatedTs: sheetMessage.createdTs,
+		UpdaterID: sheetMessage.updaterID,
+		Updater:   updater,
+		UpdatedTs: sheetMessage.updatedTs,
+
+		ProjectID: sheetMessage.projectUID,
+		Project:   project,
+
+		DatabaseID: sheetMessage.DatabaseID,
+		Database:   nil,
+
+		Name:       sheetMessage.Name,
+		Statement:  sheetMessage.Statement,
+		Visibility: sheetMessage.Visibility,
+		Source:     sheetMessage.Source,
+		Type:       sheetMessage.Type,
+		Payload:    sheetMessage.Payload,
+		Starred:    sheetMessage.Starred,
+		Pinned:     sheetMessage.Pinned,
+
+		Size: sheetMessage.Size,
+	}
+
+	if sheetMessage.DatabaseID != nil {
+		database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: sheetMessage.DatabaseID})
+		if err != nil {
+			return nil, err
+		}
+		sheet.Database = database
+	}
+
+	return sheet, nil
+}
+
+// GetSheetV2 gets a sheet.
+func (s *Store) GetSheetV2(ctx context.Context, find *api.SheetFind, currentPrincipalID int) (*SheetMessage, error) {
+	sheets, err := s.ListSheetsV2(ctx, find, currentPrincipalID)
+	if err != nil {
+		return nil, err
+	}
+	if len(sheets) == 0 {
+		return nil, nil
+	}
+	if len(sheets) > 1 {
+		return nil, errors.Errorf("expected 1 sheet, got %d", len(sheets))
+	}
+	sheet := sheets[0]
+
+	return sheet, nil
+}
+
+// GetSheetUsedByIssues returns a list of issues that have tasks that are using the sheet.
+func (s *Store) GetSheetUsedByIssues(ctx context.Context, sheetID int) ([]int, error) {
+	query := `
+		SELECT ARRAY_AGG(issue.id)
+		FROM issue
+		JOIN task ON task.pipeline_id = issue.pipeline_id
+		WHERE task.payload ? 'sheetId' AND (task.payload->>'sheetId')::INT = $1
+	`
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var issueIDs []sql.NullInt32
+	if err := tx.QueryRowContext(ctx, query, sheetID).Scan(pq.Array(&issueIDs)); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	var ids []int
+	for _, id := range issueIDs {
+		if id.Valid {
+			ids = append(ids, int(id.Int32))
+		}
+	}
+
+	return ids, nil
 }
 
 // ListSheetsV2 returns a list of sheets.
@@ -711,7 +795,7 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *api.SheetFind, currentPr
 			&sheet.createdTs,
 			&sheet.updaterID,
 			&sheet.updatedTs,
-			&sheet.ProjectID,
+			&sheet.projectUID,
 			&sheet.DatabaseID,
 			&sheet.Name,
 			&sheet.Statement,
@@ -736,6 +820,12 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *api.SheetFind, currentPr
 	}
 
 	for _, sheet := range sheets {
+		project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: &sheet.projectUID})
+		if err != nil {
+			return nil, err
+		}
+		sheet.Project = project
+
 		creator, err := s.GetUserByID(ctx, sheet.creatorID)
 		if err != nil {
 			return nil, err
