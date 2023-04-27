@@ -120,6 +120,7 @@
 </template>
 
 <script lang="ts" setup>
+import { v4 as uuidv4 } from "uuid";
 import { isNumber } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { onMounted, reactive, watch, computed, ref, nextTick } from "vue";
@@ -409,18 +410,22 @@ const beginEdit = () => {
 };
 
 const saveEdit = async () => {
-  if (!state.taskSheetId || state.taskSheetId === UNKNOWN_ID) {
+  if (!selectedDatabase.value) {
     return;
   }
 
   if (allowFormatOnSave.value && formatOnSave.value) {
     editorRef.value?.formatEditorContent();
   }
-  await sheetStore.patchSheetById({
-    id: state.taskSheetId,
+  // Create a new sheet instead of reusing the old one.
+  const sheet = await sheetStore.createSheet({
+    projectId: selectedDatabase.value.projectId,
+    name: uuidv4(),
     statement: state.editStatement,
+    visibility: "PROJECT",
+    payload: {},
   });
-  await updateStatement(state.editStatement);
+  updateSheetId(sheet.id);
   state.editing = false;
 };
 
@@ -490,7 +495,7 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
     if (selectedTask.value) updateEditorHeight();
   };
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (state.editStatement) {
       // Show a confirm dialog before replacing if the editing statement is not empty.
       overrideSQLDialog.create({
@@ -499,6 +504,7 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
         title: t("issue.override-current-statement"),
         onNegativeClick: () => {
           state.isUploadingFile = false;
+          reject();
         },
         onPositiveClick: () => {
           resolve(uploadStatementAsSheet(statement));

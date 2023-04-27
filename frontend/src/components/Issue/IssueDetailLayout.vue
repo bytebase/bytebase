@@ -284,6 +284,7 @@ const instance = computed((): Instance => {
 });
 
 const sqlHint = (): string | undefined => {
+  console.log("isTenantMode.value", isTenantMode.value);
   if (selectedMigrateType.value == "BASELINE") {
     return t("issue.sql-hint.dont-apply-to-database-in-baseline-migration");
   }

@@ -19,11 +19,13 @@ import {
   useCommonLogic,
 } from "./common";
 import { provideIssueLogic, useIssueLogic } from "./index";
+import { sheetIdOfTask } from "@/utils";
 
 export default defineComponent({
   name: "TenantModeProvider",
   setup() {
-    const { create, issue, createIssue, onStatusChanged } = useIssueLogic();
+    const { create, issue, selectedTask, createIssue, onStatusChanged } =
+      useIssueLogic();
     const databaseStore = useDatabaseStore();
     const taskStore = useTaskStore();
 
@@ -67,13 +69,17 @@ export default defineComponent({
           (detail) => (detail.statement = newStatement)
         );
       } else {
-        // Call patchAllTasksInIssue for tenant mode
+        // Call patchAllTasksInIssue for tenant mode.
         const issueEntity = issue.value as Issue;
+        const task = selectedTask.value as Task;
+        const sheetId = sheetIdOfTask(task);
         taskStore
           .patchAllTasksInIssue({
             issueId: issueEntity.id,
             pipelineId: issueEntity.pipeline.id,
-            taskPatch: {},
+            taskPatch: {
+              sheetId,
+            },
           })
           .then(() => {
             onStatusChanged(true);
@@ -82,20 +88,37 @@ export default defineComponent({
     };
 
     const updateSheetId = (sheetId: SheetId) => {
-      // For tenant deploy mode, we apply the sheetId to all stages and all tasks
-      const allTaskList = flattenTaskList<TaskCreate>(issue.value);
-      allTaskList.forEach((task) => {
-        task.statement = "";
-        task.sheetId = sheetId;
-      });
+      if (create.value) {
+        // For tenant deploy mode, we apply the sheetId to all stages and all tasks.
+        const allTaskList = flattenTaskList<TaskCreate>(issue.value);
+        allTaskList.forEach((task) => {
+          task.statement = "";
+          task.sheetId = sheetId;
+        });
 
-      const issueCreate = issue.value as IssueCreate;
-      const context = issueCreate.createContext as MigrationContext;
-      // We also apply it back to the CreateContext
-      context.detailList.forEach((detail) => {
-        detail.statement = "";
-        detail.sheetId = sheetId;
-      });
+        const issueCreate = issue.value as IssueCreate;
+        const context = issueCreate.createContext as MigrationContext;
+        // We also apply it back to the CreateContext
+        context.detailList.forEach((detail) => {
+          detail.statement = "";
+          detail.sheetId = sheetId;
+        });
+      } else {
+        console.log("here");
+        // Call patchAllTasksInIssue for tenant mode.
+        const issueEntity = issue.value as Issue;
+        taskStore
+          .patchAllTasksInIssue({
+            issueId: issueEntity.id,
+            pipelineId: issueEntity.pipeline.id,
+            taskPatch: {
+              sheetId,
+            },
+          })
+          .then(() => {
+            onStatusChanged(true);
+          });
+      }
     };
 
     // We are never allowed to "apply task state to other stages" in tenant mode.
