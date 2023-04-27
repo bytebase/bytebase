@@ -506,8 +506,36 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 	}
 
-	// TODO(p0ny): sheet, create update sheet activity
-	// if taskPatch.SheetID != nil {}
+	if taskPatch.SheetID != nil {
+		oldSheetID, err := utils.GetTaskSheetID(task.Payload)
+		if err != nil {
+			return errors.Wrap(err, "failed to get old sheet ID")
+		}
+		newSheetID := *taskPatch.SheetID
+
+		// create a task sheet update activity
+		payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
+			TaskID:     taskPatched.ID,
+			OldSheetID: oldSheetID,
+			NewSheetID: newSheetID,
+			TaskName:   task.Name,
+			IssueName:  issue.Title,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task sheet: %v", taskPatched.Name).SetInternal(err)
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
+			CreatorID:   taskPatch.UpdaterID,
+			ContainerID: taskPatched.PipelineID,
+			Type:        api.ActivityPipelineTaskStatementUpdate,
+			Payload:     string(payload),
+			Level:       api.ActivityInfo,
+		}, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
+		}
+	}
 
 	// Update statement activity.
 	if taskPatch.Statement != nil {

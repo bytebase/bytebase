@@ -47,9 +47,18 @@ export default defineComponent({
         const issueEntity = issue.value as Issue;
         const task = issueEntity.pipeline.stageList[0].taskList[0];
         const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
+<<<<<<< HEAD
         return (
           useSheetStore().getSheetById(payload.sheetId || UNKNOWN_ID)
             ?.statement || ""
+=======
+        // Return the statement from the selected task, or the statement from the first task.
+        return (
+          (
+            (selectedTask.value as Task)
+              .payload as TaskDatabaseSchemaUpdatePayload
+          ).statement || payload.statement
+>>>>>>> main
         );
       }
     });

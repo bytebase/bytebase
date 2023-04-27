@@ -176,7 +176,8 @@ export const useBaseIssueLogic = (params: {
   });
 
   const isTenantMode = computed((): boolean => {
-    if (route.query.mode !== "tenant") return false;
+    // To sync databases schema in tenant mode, we use normal project logic to create issue.
+    if (create.value && route.query.mode !== "tenant") return false;
     if (project.value.tenantMode !== "TENANT") return false;
 
     // We support single database migration in tenant mode projects.
