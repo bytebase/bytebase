@@ -172,7 +172,7 @@ export const useBaseIssueLogic = (params: {
   });
 
   const isTenantMode = computed((): boolean => {
-    if (route.query.mode !== "tenant") return false;
+    if (create.value && route.query.mode !== "tenant") return false;
     if (project.value.tenantMode !== "TENANT") return false;
 
     // We support single database migration in tenant mode projects.
