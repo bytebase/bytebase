@@ -111,7 +111,7 @@ export default defineComponent({
           });
         } else {
           const sheetId = sheetIdOfTask(selectedTask.value as Task);
-          if (sheetId) {
+          if (sheetId || sheetId !== UNKNOWN_ID) {
             // Call patchAllTasksInIssue for tenant mode
             const issueEntity = issue.value as Issue;
             taskStore
