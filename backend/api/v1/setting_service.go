@@ -182,7 +182,6 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			apiValue.Password = &oldValue.Password
 		}
 		if request.ValidateOnly {
-			s.stateCfg.TestSlowQueryWeeklyEmailChan <- true
 			if err := s.sendTestEmail(ctx, apiValue); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to validate smtp setting: %v", err)
 			}
