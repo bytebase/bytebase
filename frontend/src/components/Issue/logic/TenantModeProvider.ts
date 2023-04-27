@@ -22,7 +22,8 @@ import { provideIssueLogic, useIssueLogic } from "./index";
 export default defineComponent({
   name: "TenantModeProvider",
   setup() {
-    const { create, issue, createIssue, onStatusChanged } = useIssueLogic();
+    const { create, issue, selectedTask, createIssue, onStatusChanged } =
+      useIssueLogic();
     const databaseStore = useDatabaseStore();
     const taskStore = useTaskStore();
 
@@ -44,7 +45,13 @@ export default defineComponent({
         const issueEntity = issue.value as Issue;
         const task = issueEntity.pipeline.stageList[0].taskList[0];
         const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
-        return payload.statement;
+        // Return the statement from the selected task, or the statement from the first task.
+        return (
+          (
+            (selectedTask.value as Task)
+              .payload as TaskDatabaseSchemaUpdatePayload
+          ).statement || payload.statement
+        );
       }
     });
 
