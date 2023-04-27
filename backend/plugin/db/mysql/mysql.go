@@ -145,7 +145,6 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	}
 
 	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
-	fmt.Println("Barny1", dsn)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
