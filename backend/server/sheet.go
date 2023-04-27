@@ -31,6 +31,9 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		if sheetCreate.Name == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sheet request, missing name")
 		}
+		if sheetCreate.Source == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sheet request, missing source")
+		}
 
 		// If sheetCreate.DatabaseID is not nil, use its associated ProjectID as the new sheet's ProjectID.
 		if sheetCreate.DatabaseID != nil {
