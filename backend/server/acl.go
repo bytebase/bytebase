@@ -275,9 +275,10 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body 
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", oldProjectID)).SetInternal(err)
 			}
-			if len(oldProjectRoles) == 0 {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a member of project owns the database %d", databaseIDInt))
+			if _, ok := oldProjectRoles[common.ProjectOwner]; !ok {
+				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not project owner of project owns the database %d", databaseIDInt))
 			}
+
 			// Workspace developer can only modify the database belongs to the project which he is a member of.
 			var databasePatch api.DatabasePatch
 			if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &databasePatch); err != nil {
@@ -289,8 +290,8 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body 
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", *databasePatch.ProjectID)).SetInternal(err)
 				}
-				if len(newProjectRoles) == 0 {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a member of project %d", *databasePatch.ProjectID))
+				if _, ok := newProjectRoles[common.ProjectOwner]; !ok {
+					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not project owner of project want owns the database %d", databaseIDInt))
 				}
 			}
 		}
