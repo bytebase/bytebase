@@ -100,7 +100,7 @@ type SheetCreate struct {
 	Name       string          `jsonapi:"attr,name"`
 	Statement  string          `jsonapi:"attr,statement"`
 	Visibility SheetVisibility `jsonapi:"attr,visibility"`
-	Source     SheetSource
+	Source     SheetSource     `jsonapi:"attr,source"`
 	Type       SheetType
 	Payload    string `jsonapi:"attr,payload"`
 }
