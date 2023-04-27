@@ -172,7 +172,9 @@ func (driver *Driver) Close(context.Context) error {
 	var err error
 	err = multierr.Append(err, driver.db.Close())
 	err = multierr.Append(err, driver.migrationConn.Close())
-	err = multierr.Append(err, driver.sshConn.Close())
+	if driver.sshConn != nil {
+		err = multierr.Append(err, driver.sshConn.Close())
+	}
 	return err
 }
 
