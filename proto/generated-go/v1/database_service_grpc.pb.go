@@ -34,6 +34,7 @@ const (
 	DatabaseService_ListSecrets_FullMethodName          = "/bytebase.v1.DatabaseService/ListSecrets"
 	DatabaseService_UpdateSecret_FullMethodName         = "/bytebase.v1.DatabaseService/UpdateSecret"
 	DatabaseService_DeleteSecret_FullMethodName         = "/bytebase.v1.DatabaseService/DeleteSecret"
+	DatabaseService_AdviseIndex_FullMethodName          = "/bytebase.v1.DatabaseService/AdviseIndex"
 )
 
 // DatabaseServiceClient is the client API for DatabaseService service.
@@ -54,6 +55,7 @@ type DatabaseServiceClient interface {
 	ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error)
 	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error)
 	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	AdviseIndex(ctx context.Context, in *AdviseIndexRequest, opts ...grpc.CallOption) (*AdviseIndexResponse, error)
 }
 
 type databaseServiceClient struct {
@@ -190,6 +192,15 @@ func (c *databaseServiceClient) DeleteSecret(ctx context.Context, in *DeleteSecr
 	return out, nil
 }
 
+func (c *databaseServiceClient) AdviseIndex(ctx context.Context, in *AdviseIndexRequest, opts ...grpc.CallOption) (*AdviseIndexResponse, error) {
+	out := new(AdviseIndexResponse)
+	err := c.cc.Invoke(ctx, DatabaseService_AdviseIndex_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DatabaseServiceServer is the server API for DatabaseService service.
 // All implementations must embed UnimplementedDatabaseServiceServer
 // for forward compatibility
@@ -208,6 +219,7 @@ type DatabaseServiceServer interface {
 	ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error)
 	UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error)
 	DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error)
+	AdviseIndex(context.Context, *AdviseIndexRequest) (*AdviseIndexResponse, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
 
@@ -256,6 +268,9 @@ func (UnimplementedDatabaseServiceServer) UpdateSecret(context.Context, *UpdateS
 }
 func (UnimplementedDatabaseServiceServer) DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteSecret not implemented")
+}
+func (UnimplementedDatabaseServiceServer) AdviseIndex(context.Context, *AdviseIndexRequest) (*AdviseIndexResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdviseIndex not implemented")
 }
 func (UnimplementedDatabaseServiceServer) mustEmbedUnimplementedDatabaseServiceServer() {}
 
@@ -522,6 +537,24 @@ func _DatabaseService_DeleteSecret_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DatabaseService_AdviseIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdviseIndexRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).AdviseIndex(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_AdviseIndex_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).AdviseIndex(ctx, req.(*AdviseIndexRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DatabaseService_ServiceDesc is the grpc.ServiceDesc for DatabaseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -584,6 +617,10 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteSecret",
 			Handler:    _DatabaseService_DeleteSecret_Handler,
+		},
+		{
+			MethodName: "AdviseIndex",
+			Handler:    _DatabaseService_AdviseIndex_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
