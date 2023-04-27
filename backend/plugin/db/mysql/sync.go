@@ -538,6 +538,9 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (m
 		}
 
 		location, err := time.LoadLocation(timeZone)
+		if err != nil {
+			return nil, err
+		}
 		startTimeTs, err := time.ParseInLocation("2006-01-02 15:04:05.999999", startTime, location)
 		if err != nil {
 			return nil, err
