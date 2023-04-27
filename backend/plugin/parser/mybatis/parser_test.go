@@ -2,61 +2,67 @@
 package mybatis
 
 import (
+	"io"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSimpleMapper(t *testing.T) {
-	testCases := []struct {
-		name            string
-		stmt            string
-		wantRestoredSQL string
-	}{
-		{
-			name: "simple mapper with one select",
-			stmt: `
-<mapper namespace="com.bytebase.test">
-  <select id="selectUser" resultType="hashmap">
-    SELECT * FROM user WHERE id = #{id}
-  </select>
-</mapper>`,
-			wantRestoredSQL: "SELECT * FROM user WHERE id = #{id};\n",
-		},
-		{
-			name: "simple mapper with select, update, insert, delete",
-			stmt: `
-<mapper namespace="com.bytebase.test">
-  <select id="selectUser" resultType="hashmap">
-    SELECT * FROM user WHERE id = #{id}
-  </select>
-  <update id="updateUser">
-    UPDATE user SET name = #{name} WHERE id = #{id}
-  </update>
-  <insert id="insertUser">
-    INSERT INTO user (name) VALUES (#{name})
-  </insert>
-  <delete id="deleteUser">
-    DELETE FROM user WHERE id = #{id}
-  </delete>
-</mapper>`,
-			wantRestoredSQL: `SELECT * FROM user WHERE id = #{id};
-UPDATE user SET name = #{name} WHERE id = #{id};
-INSERT INTO user (name) VALUES (#{name});
-DELETE FROM user WHERE id = #{id};
-`,
-		},
-	}
+// TestData is the test data for mybatis parser. It contains the xml and the expected sql.
+// And the sql is expected to be restored from the xml.
+type TestData struct {
+	XML string `yaml:"xml"`
+	SQL string `yaml:"sql"`
+}
 
-	for _, testCase := range testCases {
-		node, err := Parse(testCase.stmt)
+// runTest is a helper function to run the test.
+// It will parse the xml given by `filepath` and compare the restored sql with `sql`.
+func runTest(t *testing.T, filepath string, record bool) {
+	var testCases []TestData
+	yamlFile, err := os.Open(filepath)
+	assert.NoError(t, err)
+	defer yamlFile.Close()
+
+	byteValue, err := io.ReadAll(yamlFile)
+	assert.NoError(t, err)
+	err = yaml.Unmarshal(byteValue, &testCases)
+	assert.NoError(t, err)
+
+	for i, testCase := range testCases {
+		node, err := Parse(testCase.XML)
 		assert.NoError(t, err)
 		assert.NotNil(t, node)
 
 		var stringsBuilder strings.Builder
 		err = node.RestoreSQL(&stringsBuilder)
 		assert.NoError(t, err)
-		assert.Equal(t, testCase.wantRestoredSQL, stringsBuilder.String())
+		if record {
+			testCases[i].SQL = stringsBuilder.String()
+		} else {
+			assert.Equal(t, testCase.SQL, stringsBuilder.String())
+		}
+	}
+
+	if record {
+		err := yamlFile.Close()
+		require.NoError(t, err)
+		byteValue, err = yaml.Marshal(testCases)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		require.NoError(t, err)
+	}
+}
+
+func TestParser(t *testing.T) {
+	testFileList := []string{
+		"test-data/test_simple_mapper.yaml",
+	}
+	for _, filepath := range testFileList {
+		runTest(t, filepath, true)
 	}
 }
