@@ -426,6 +426,7 @@ const saveEdit = async () => {
     payload: {},
   });
   updateSheetId(sheet.id);
+  await updateStatement(state.editStatement);
   state.editing = false;
 };
 

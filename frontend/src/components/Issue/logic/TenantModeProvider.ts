@@ -71,21 +71,8 @@ export default defineComponent({
           (detail) => (detail.statement = newStatement)
         );
       } else {
-        // Call patchAllTasksInIssue for tenant mode.
-        const issueEntity = issue.value as Issue;
-        const task = selectedTask.value as Task;
-        const sheetId = sheetIdOfTask(task);
-        taskStore
-          .patchAllTasksInIssue({
-            issueId: issueEntity.id,
-            pipelineId: issueEntity.pipeline.id,
-            taskPatch: {
-              sheetId,
-            },
-          })
-          .then(() => {
-            onStatusChanged(true);
-          });
+        // Do nothing.
+        // For those created task, we should update its sheet.
       }
     };
 
