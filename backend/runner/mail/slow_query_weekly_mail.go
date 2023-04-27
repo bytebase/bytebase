@@ -76,9 +76,6 @@ func (s *SlowQueryWeeklyMailSender) Run(ctx context.Context, wg *sync.WaitGroup)
 			if now.Weekday() == time.Saturday && now.Hour() == 0 {
 				s.sendEmail(ctx, now)
 			}
-		case <-s.stateCfg.TestSlowQueryWeeklyEmailChan:
-			log.Debug("Slow query weekly mail sender received test email")
-			s.sendEmail(ctx, time.Now())
 		}
 	}
 }
@@ -668,7 +665,7 @@ func (*SlowQueryWeeklyMailSender) sendNeedConfigSlowQueryPolicyEmail(mailSetting
 	}
 
 	body := strings.ReplaceAll(string(needConfigureTemplate), "{{VISIT_URL}}", visitURL)
-	// TODO(rebelice): replace {{DOC_LINK}}
+	body = strings.ReplaceAll(body, "{{DOC_LINK}}", `https://www.bytebase.com/docs/slow-query/overview`)
 
 	email.SetFrom(fmt.Sprintf("Bytebase <%s>", mailSetting.SMTPFrom)).
 		AddTo(mailSetting.SMTPTo).
