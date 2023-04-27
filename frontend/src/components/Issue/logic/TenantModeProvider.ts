@@ -106,7 +106,6 @@ export default defineComponent({
           detail.sheetId = sheetId;
         });
       } else {
-        console.log("here");
         // Call patchAllTasksInIssue for tenant mode.
         const issueEntity = issue.value as Issue;
         taskStore
