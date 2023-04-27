@@ -93,7 +93,7 @@ service DatabaseService {
   }
   
   rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
-    option (google.api.http) = {post: "/v1/{parent=environments/*/instances/*/databases/*}/adviseIndex"};
+    option (google.api.http) = {post: "/v1/{parent=environments/*/instances/*/databases/*}:adviseIndex"};
     option (google.api.method_signature) = "parent";
   }
 }
