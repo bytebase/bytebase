@@ -25,8 +25,9 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
-	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -63,6 +64,15 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					break
 				}
 			}
+		}
+
+		var sshConfig db.SSHConfig
+		if connectionInfo.UseSSHConfig {
+			sshConfig.Host = connectionInfo.SSHHost
+			sshConfig.Port = connectionInfo.SSHPort
+			sshConfig.User = connectionInfo.SSHUser
+			sshConfig.Password = connectionInfo.SSHPassword
+			sshConfig.PrivateKey = connectionInfo.SSHPrivateKey
 		}
 
 		var tlsConfig db.TLSConfig
@@ -127,6 +137,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				AuthenticationDatabase: connectionInfo.AuthenticationDatabase,
 				SID:                    connectionInfo.SID,
 				ServiceName:            connectionInfo.ServiceName,
+				SSHConfig:              sshConfig,
 			},
 			db.ConnectionContext{},
 		)

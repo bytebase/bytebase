@@ -6,18 +6,22 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net"
+	"os"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	bbparser "github.com/bytebase/bytebase/backend/plugin/parser"
+	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
 var (
@@ -47,6 +51,7 @@ type Driver struct {
 	// Use a single connection for executing migrations in the lifetime of the driver can keep the thread ID unchanged.
 	// So that it's easy to get the thread ID for rollback SQL.
 	migrationConn *sql.Conn
+	sshConn       *ssh.Client
 
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
@@ -80,12 +85,55 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 		}
 	}
 
-	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
+	if connCfg.SSHConfig.Host != "" {
+		sshConfig := &ssh.ClientConfig{
+			User:            connCfg.SSHConfig.User,
+			Auth:            []ssh.AuthMethod{},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		}
+		if connCfg.SSHConfig.PrivateKey != "" {
+			signer, err := ssh.ParsePrivateKey([]byte(connCfg.SSHConfig.PrivateKey))
+			if err != nil {
+				return nil, err
+			}
+			sshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeys(signer))
+		} else {
+			// Establish a connection to the local ssh-agent
+			conn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
+			if err != nil {
+				return nil, err
+			}
+			defer conn.Close()
+			// Create a new instance of the ssh agent
+			agentClient := agent.NewClient(conn)
+			// When the agentClient connection succeeded, add them as AuthMethod
+			if agentClient != nil {
+				sshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeysCallback(agentClient.Signers))
+			}
+		}
+		// When there's a non empty password add the password AuthMethod.
+		if connCfg.SSHConfig.Password != "" {
+			sshConfig.Auth = append(sshConfig.Auth, ssh.PasswordCallback(func() (string, error) {
+				return connCfg.SSHConfig.Password, nil
+			}))
+		}
+		// Connect to the SSH Server
+		sshConn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", connCfg.SSHConfig.Host, connCfg.SSHConfig.Port), sshConfig)
+		if err != nil {
+			return nil, err
+		}
+		driver.sshConn = sshConn
+		// Now we register the dialer with the ssh connection as a parameter.
+		mysql.RegisterDialContext("mysql+tcp", func(ctx context.Context, addr string) (net.Conn, error) {
+			return sshConn.Dial("tcp", addr)
+		})
+		protocol = "mysql+tcp"
+	}
 
+	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
-
 	tlsKey := "db.mysql.tls"
 	if tlsConfig != nil {
 		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
@@ -95,10 +143,8 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 		defer mysql.DeregisterTLSConfig(tlsKey)
 		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
 	}
-	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
-	if connCfg.Password != "" {
-		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
-	}
+
+	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
@@ -125,6 +171,9 @@ func (driver *Driver) Close(context.Context) error {
 	var err error
 	err = multierr.Append(err, driver.db.Close())
 	err = multierr.Append(err, driver.migrationConn.Close())
+	if driver.sshConn != nil {
+		err = multierr.Append(err, driver.sshConn.Close())
+	}
 	return err
 }
 

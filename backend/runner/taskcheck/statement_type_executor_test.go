@@ -11,7 +11,7 @@ import (
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	// Register postgres parser driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/engine/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
 
 type testData struct {

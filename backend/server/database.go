@@ -17,9 +17,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
-	"github.com/bytebase/bytebase/backend/plugin/parser/edit"
-	"github.com/bytebase/bytebase/backend/plugin/parser/transform"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -532,20 +533,25 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			title = api.ReadOnlyDataSourceName
 		}
 		dataSourceMessage := &store.DataSourceMessage{
-			Title:                  title,
-			Type:                   dataSourceCreate.Type,
-			Username:               dataSourceCreate.Username,
-			ObfuscatedPassword:     common.Obfuscate(dataSourceCreate.Password, s.secret),
-			ObfuscatedSslCa:        common.Obfuscate(dataSourceCreate.SslCa, s.secret),
-			ObfuscatedSslCert:      common.Obfuscate(dataSourceCreate.SslCert, s.secret),
-			ObfuscatedSslKey:       common.Obfuscate(dataSourceCreate.SslKey, s.secret),
-			Host:                   dataSourceCreate.Host,
-			Port:                   dataSourceCreate.Port,
-			Database:               dataSourceCreate.Database,
-			SRV:                    dataSourceCreate.Options.SRV,
-			AuthenticationDatabase: dataSourceCreate.Options.AuthenticationDatabase,
-			SID:                    dataSourceCreate.Options.SID,
-			ServiceName:            dataSourceCreate.Options.ServiceName,
+			Title:                   title,
+			Type:                    dataSourceCreate.Type,
+			Username:                dataSourceCreate.Username,
+			ObfuscatedPassword:      common.Obfuscate(dataSourceCreate.Password, s.secret),
+			ObfuscatedSslCa:         common.Obfuscate(dataSourceCreate.SslCa, s.secret),
+			ObfuscatedSslCert:       common.Obfuscate(dataSourceCreate.SslCert, s.secret),
+			ObfuscatedSslKey:        common.Obfuscate(dataSourceCreate.SslKey, s.secret),
+			Host:                    dataSourceCreate.Host,
+			Port:                    dataSourceCreate.Port,
+			Database:                dataSourceCreate.Database,
+			SRV:                     dataSourceCreate.Options.SRV,
+			AuthenticationDatabase:  dataSourceCreate.Options.AuthenticationDatabase,
+			SID:                     dataSourceCreate.Options.SID,
+			ServiceName:             dataSourceCreate.Options.ServiceName,
+			SSHHost:                 dataSourceCreate.Options.SSHHost,
+			SSHPort:                 dataSourceCreate.Options.SSHPort,
+			SSHUser:                 dataSourceCreate.Options.SSHUser,
+			SSHObfuscatedPassword:   common.Obfuscate(dataSourceCreate.Options.SSHPassword, s.secret),
+			SSHObfuscatedPrivateKey: common.Obfuscate(dataSourceCreate.Options.SSHPrivateKey, s.secret),
 		}
 		if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, creatorID, instance.EnvironmentID, instance.ResourceID, dataSourceMessage); err != nil {
 			return err

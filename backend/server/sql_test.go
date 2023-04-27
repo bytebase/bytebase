@@ -3,7 +3,7 @@ package server
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
 func TestValidateSQLSelectStatement(t *testing.T) {

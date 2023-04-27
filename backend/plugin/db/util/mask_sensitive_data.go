@@ -8,9 +8,9 @@ import (
 	pgquery "github.com/pganalyze/pg_query_go/v2"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
-	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
-	"github.com/bytebase/bytebase/backend/plugin/parser/engine/pg"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 
 	"github.com/pkg/errors"
 

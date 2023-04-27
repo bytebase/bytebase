@@ -8,7 +8,7 @@ import (
 	"github.com/pingcap/tidb/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
 // Wrapper for parser.New().
