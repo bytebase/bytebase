@@ -314,7 +314,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
 		InstanceSlowQuerySyncChan:      make(chan *api.Instance, 100),
 		InstanceOutstandingConnections: make(map[int]int),
-		TestSlowQueryWeeklyEmailChan:   make(chan bool, 100),
 	}
 	s.store = storeInstance
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
