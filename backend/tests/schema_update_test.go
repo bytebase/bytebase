@@ -253,6 +253,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		Name:       "my-sheet",
 		Statement:  "SELECT * FROM demo",
 		Visibility: api.PrivateSheet,
+		Source:     api.SheetFromBytebase,
 	})
 	a.NoError(err)
 
