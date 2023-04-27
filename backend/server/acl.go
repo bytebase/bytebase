@@ -152,7 +152,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				}
 				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(path, method, string(bodyBytes), principalID, getRetrieveDatabaseProjectID(ctx, s.store), projectRolesFinder)
+				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(s.licenseService.GetEffectivePlan(), path, method, string(bodyBytes), principalID, getRetrieveDatabaseProjectID(ctx, s.store), projectRolesFinder)
 			} else if strings.HasPrefix(path, "/issue") {
 				// We need to copy the body because it will be consumed by the next middleware.
 				// And TeeReader require us the write must complete before the read completes.
@@ -235,7 +235,7 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 
 var databaseGeneralRouteRegex = regexp.MustCompile(`^/database/(?P<databaseID>\d+)$`)
 
-func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body string, principalID int, projectIDOfDatabase func(databaseID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
+func enforceWorkspaceDeveloperDatabaseRouteACL(plan api.PlanType, path string, method string, body string, principalID int, projectIDOfDatabase func(databaseID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
 	switch method {
 	case http.MethodGet:
 		// For /database route, server should list the databases that the user has access to.
@@ -275,9 +275,16 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body 
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", oldProjectID)).SetInternal(err)
 			}
-			if len(oldProjectRoles) == 0 {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a member of project owns the database %d", databaseIDInt))
+			if plan == api.ENTERPRISE {
+				if _, ok := oldProjectRoles[common.ProjectOwner]; !ok {
+					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not project owner of project owns the database %d", databaseIDInt))
+				}
+			} else {
+				if len(oldProjectRoles) == 0 {
+					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a project member of project owns the database %d", databaseIDInt))
+				}
 			}
+
 			// Workspace developer can only modify the database belongs to the project which he is a member of.
 			var databasePatch api.DatabasePatch
 			if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &databasePatch); err != nil {
@@ -289,8 +296,14 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(path string, method string, body 
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", *databasePatch.ProjectID)).SetInternal(err)
 				}
-				if len(newProjectRoles) == 0 {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a member of project %d", *databasePatch.ProjectID))
+				if plan == api.ENTERPRISE {
+					if _, ok := newProjectRoles[common.ProjectOwner]; !ok {
+						return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not project owner of project want owns the database %d", databaseIDInt))
+					}
+				} else {
+					if len(newProjectRoles) == 0 {
+						return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a project member of project want to owns the database %d", databaseIDInt))
+					}
 				}
 			}
 		}
