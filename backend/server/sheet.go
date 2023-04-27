@@ -26,9 +26,13 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create sheet request").SetInternal(err)
 		}
+		sheetCreate.Type = api.SheetForSQL
 
 		if sheetCreate.Name == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sheet request, missing name")
+		}
+		if sheetCreate.Source == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sheet request, missing source")
 		}
 
 		// If sheetCreate.DatabaseID is not nil, use its associated ProjectID as the new sheet's ProjectID.
@@ -67,8 +71,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			}
 		}
 
-		sheetCreate.Source = api.SheetFromBytebase
-		sheetCreate.Type = api.SheetForSQL
 		sheet, err := s.store.CreateSheet(ctx, sheetCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet").SetInternal(err)
