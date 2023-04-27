@@ -675,12 +675,9 @@ func (s *Store) GetSheetV2(ctx context.Context, find *api.SheetFind, currentPrin
 func (s *Store) GetSheetUsedByIssues(ctx context.Context, sheetID int) ([]int, error) {
 	query := `
 		SELECT ARRAY_AGG(issue.id)
-		FROM sheet
-		LEFT JOIN issue ON issue.id IN (
-			SELECT DISTINCT(issue.id) FROM task WHERE (task.payload->>'sheetId')::INT = sheet.id AND task.pipeline_id = issue.pipeline_id
-		)
-		WHERE sheet.id = $1
-		GROUP BY sheet.id
+		FROM issue
+		JOIN task ON task.pipeline_id = issue.pipeline_id
+		WHERE task.payload ? 'sheetId' AND (task.payload->>'sheetId')::INT = $1
 	`
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
