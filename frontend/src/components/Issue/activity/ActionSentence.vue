@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineComponent, h, PropType } from "vue";
+import { defineComponent, h, PropType, watch } from "vue";
 import dayjs from "dayjs";
 import { Translation, useI18n } from "vue-i18n";
 
@@ -24,11 +24,10 @@ import {
   findTaskById,
   issueActivityActionSentence,
 } from "@/utils";
+import { useSheetStore } from "@/store";
 import TaskName from "./TaskName.vue";
 import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
 import StageName from "./StageName.vue";
-import { useSheetStore } from "@/store";
-import { watch } from "vue";
 
 type RenderedContent = string | ReturnType<typeof h>;
 
@@ -184,12 +183,6 @@ const renderActionSentence = () => {
     }
     case "bb.pipeline.task.statement.update": {
       const payload = activity.payload as ActivityTaskStatementUpdatePayload;
-      console.log(
-        "sheetStore.getSheetById(payload.oldSheetId || UNKNOWN_ID)",
-        sheetStore.getSheetById(payload.oldSheetId || UNKNOWN_ID),
-        payload.newSheetId,
-        sheetStore.getSheetById(payload.newSheetId || UNKNOWN_ID)
-      );
       const oldStatement =
         sheetStore.getSheetById(payload.oldSheetId || UNKNOWN_ID).statement ||
         payload.oldStatement;
