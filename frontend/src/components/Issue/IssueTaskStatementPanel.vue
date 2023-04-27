@@ -423,6 +423,7 @@ const saveEdit = async () => {
     name: uuidv4(),
     statement: state.editStatement,
     visibility: "PROJECT",
+    source: "BYTEBASE_ARTIFACT",
     payload: {},
   });
   updateSheetId(sheet.id);
@@ -473,6 +474,7 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
         name: filename,
         statement,
         visibility: "PROJECT",
+        source: "BYTEBASE_ARTIFACT",
         payload: {},
       },
       {

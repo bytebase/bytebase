@@ -174,6 +174,7 @@ export default defineComponent({
               name: issueCreate.name + " - " + db.name,
               statement: statement,
               visibility: "PROJECT",
+              source: "BYTEBASE_ARTIFACT",
               payload: {},
             });
             detail.statement = "";
@@ -205,6 +206,7 @@ export default defineComponent({
                 name: issueCreate.name + " - " + db.name,
                 statement: statement,
                 visibility: "PROJECT",
+                source: "BYTEBASE_ARTIFACT",
                 payload: {},
               });
               detail.statement = "";

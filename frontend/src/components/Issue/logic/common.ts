@@ -230,6 +230,7 @@ export const useCommonLogic = () => {
           name: issueCreate.name + " - " + db.name,
           statement: statement,
           visibility: "PROJECT",
+          source: "BYTEBASE_ARTIFACT",
           payload: {},
         });
         migrationDetail.sheetId = sheet.id;

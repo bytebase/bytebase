@@ -286,6 +286,7 @@ export const useBaseIssueLogic = (params: {
               name: uuidv4(),
               statement,
               visibility: "PROJECT",
+              source: "BYTEBASE_ARTIFACT",
               payload: {},
             });
             taskItem.sheetId = newSheet.id;
