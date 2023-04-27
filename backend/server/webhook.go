@@ -1230,7 +1230,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		Name:       file,
 		Statement:  sdl,
 		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebase,
+		Source:     api.SheetFromBytebaseArtifact,
 		Type:       api.SheetForSQL,
 	})
 	if err != nil {
@@ -1292,7 +1292,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 				Name:       fileInfo.item.FileName,
 				Statement:  content,
 				Visibility: api.ProjectSheet,
-				Source:     api.SheetFromBytebase,
+				Source:     api.SheetFromBytebaseArtifact,
 				Type:       api.SheetForSQL,
 			})
 			if err != nil {
@@ -1328,7 +1328,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 			Name:       fileInfo.item.FileName,
 			Statement:  migrationFile.Statement,
 			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebase,
+			Source:     api.SheetFromBytebaseArtifact,
 			Type:       api.SheetForSQL,
 		})
 		if err != nil {
@@ -1378,7 +1378,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 			Name:       fileInfo.item.FileName,
 			Statement:  content,
 			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebase,
+			Source:     api.SheetFromBytebaseArtifact,
 			Type:       api.SheetForSQL,
 		})
 		if err != nil {
@@ -1451,7 +1451,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			Name:       fileName,
 			Statement:  statement,
 			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebase,
+			Source:     api.SheetFromBytebaseArtifact,
 			Type:       api.SheetForSQL,
 		})
 		if err != nil {
