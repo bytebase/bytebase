@@ -319,8 +319,9 @@ watch(
   ([create, issue, sqlList, sql, provider]) => {
     if (create && issue && provider) {
       if (sqlList) {
-        // If 'sqlList' in URL query, update the tasks's statement in issueCreate.
-        provider.initialTaskListStatement();
+        // If 'sqlList' in URL query, initial the tasks's statement in issueCreate from current route.
+        // TODO: Maybe we should save database id list and sql list into session state to prevent url too long.
+        provider.initialTaskListStatementFromRoute();
       } else if (sql) {
         // If 'sql' in URL query, update the issueCreate's statement
         // Only works for the first time.

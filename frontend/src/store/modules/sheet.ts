@@ -168,6 +168,7 @@ export const useSheetStore = defineStore("sheet", {
         payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
         ...sheetUpsert,
         visibility: "PRIVATE",
+        source: "BYTEBASE",
       });
     },
     async createSheet(

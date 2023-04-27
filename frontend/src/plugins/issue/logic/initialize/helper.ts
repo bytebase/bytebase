@@ -116,6 +116,7 @@ export class IssueCreateHelper {
             databaseId: task.database?.id,
             databaseName: task.database?.name,
             statement,
+            sheetId: UNKNOWN_ID,
             earliestAllowedTs: task.earliestAllowedTs,
           };
         }),
