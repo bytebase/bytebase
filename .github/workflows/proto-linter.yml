@@ -21,4 +21,10 @@ jobs:
       - name: buf lint
         uses: bufbuild/buf-lint-action@v1
         with:
-          input: 'proto'
+          input: "proto"
+      - name: buf format
+        run: |
+          if [[ $(buf format -d) ]]; then
+            echo "Run 'buf format -w'"
+            exit 1
+          fi
