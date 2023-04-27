@@ -1,11 +1,12 @@
 import { computed } from "vue";
-import { cloneDeep, isUndefined } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { useRoute } from "vue-router";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import {
   useCurrentUser,
   useDatabaseStore,
   useIssueStore,
+  useSheetStore,
   useTaskStore,
   useUIStateStore,
 } from "@/store";
@@ -17,28 +18,24 @@ import {
   IssueType,
   Task,
   TaskCreate,
-  TaskDatabaseCreatePayload,
-  TaskDatabaseDataUpdatePayload,
-  TaskDatabaseSchemaUpdatePayload,
-  TaskDatabaseSchemaUpdateSDLPayload,
-  TaskGeneralPayload,
   TaskId,
   TaskPatch,
   TaskType,
   MigrationDetail,
   MigrationType,
-  TaskDatabaseSchemaBaselinePayload,
   DatabaseId,
   SheetId,
   MigrationContext,
   dialectOfEngine,
   languageOfEngine,
+  UNKNOWN_ID,
 } from "@/types";
 import { IssueLogic, useIssueLogic } from "./index";
 import {
   defer,
   isDev,
   isTaskTriggeredByVCS,
+  sheetIdOfTask,
   taskCheckRunSummary,
 } from "@/utils";
 import { maybeApplyRollbackParams } from "@/plugins/issue/logic/initialize/standard";
@@ -52,6 +49,7 @@ export const useCommonLogic = () => {
   const databaseStore = useDatabaseStore();
   const issueStore = useIssueStore();
   const taskStore = useTaskStore();
+  const sheetStore = useSheetStore();
 
   const patchIssue = (
     issuePatch: IssuePatch,
@@ -77,7 +75,7 @@ export const useCommonLogic = () => {
     taskPatch: TaskPatch,
     postUpdated?: (updatedTask: Task) => void
   ) => {
-    taskStore
+    return taskStore
       .patchTask({
         issueId: (issue.value as Issue).id,
         pipelineId: (issue.value as Issue).pipeline.id,
@@ -94,34 +92,36 @@ export const useCommonLogic = () => {
       });
   };
 
-  const initialTaskListStatement = () => {
-    if (create.value) {
-      const taskList = flattenTaskList<TaskCreate>(issue.value).filter((task) =>
-        TaskTypeWithStatement.includes(task.type)
-      );
-      const databaseStatementMap = new Map<DatabaseId, string>();
-      // route.query.databaseList is comma-splitted databaseId list
-      // e.g. databaseList=7002,7006,7014
-      const idListString = route.query.databaseList as string;
-      // route.query.sqlList is JSON string of a string array.
-      const sqlListString = route.query.sqlList as string;
-      if (idListString && sqlListString) {
-        const databaseIdList = idListString.split(",");
-        const statementList = JSON.parse(sqlListString) as string[];
-        for (
-          let i = 0;
-          i < Math.min(databaseIdList.length, statementList.length);
-          i++
-        ) {
-          databaseStatementMap.set(Number(databaseIdList[i]), statementList[i]);
-        }
-      }
+  const initialTaskListStatementFromRoute = () => {
+    if (!create.value) {
+      return;
+    }
 
-      for (const [databaseId, statement] of databaseStatementMap) {
-        const task = taskList.find((task) => task.databaseId === databaseId);
-        if (task) {
-          task.statement = statement;
-        }
+    const taskList = flattenTaskList<TaskCreate>(issue.value).filter((task) =>
+      TaskTypeWithStatement.includes(task.type)
+    );
+    const databaseStatementMap = new Map<DatabaseId, string>();
+    // route.query.databaseList is comma-splitted databaseId list
+    // e.g. databaseList=7002,7006,7014
+    const idListString = route.query.databaseList as string;
+    // route.query.sqlList is JSON string of a string array.
+    const sqlListString = route.query.sqlList as string;
+    if (idListString && sqlListString) {
+      const databaseIdList = idListString.split(",");
+      const statementList = JSON.parse(sqlListString) as string[];
+      for (
+        let i = 0;
+        i < Math.min(databaseIdList.length, statementList.length);
+        i++
+      ) {
+        databaseStatementMap.set(Number(databaseIdList[i]), statementList[i]);
+      }
+    }
+
+    for (const [databaseId, statement] of databaseStatementMap) {
+      const task = taskList.find((task) => task.databaseId === databaseId);
+      if (task) {
+        task.statement = statement;
       }
     }
   };
@@ -169,77 +169,90 @@ export const useCommonLogic = () => {
     return isTaskEditable(selectedTask.value as Task);
   });
 
-  const updateStatement = (
-    newStatement: string,
-    postUpdated?: (updatedTask: Task) => void
-  ) => {
+  const updateStatement = async (newStatement: string) => {
     if (create.value) {
       const task = selectedTask.value as TaskCreate;
       task.statement = newStatement;
     } else {
       // Ask whether to apply the change to all pending tasks if possible.
       const task = selectedTask.value as Task;
-      getPatchingTaskList(issue.value as Issue, task, dialog).then(
-        (patchingTaskList) => {
-          if (patchingTaskList.length === 0) return;
-          const patchRequestList = patchingTaskList.map((task) => {
-            patchTask(
-              task.id,
-              {
-                statement: maybeFormatStatementOnSave(
-                  newStatement,
-                  task.database
-                ),
-                updatedTs: task.updatedTs,
-              },
-              postUpdated
-            );
-          });
-          return Promise.allSettled(patchRequestList);
-        }
+      const patchingTaskList = await getPatchingTaskList(
+        issue.value as Issue,
+        task,
+        dialog
       );
+      if (patchingTaskList.length === 0) return;
+      const patchRequestList = patchingTaskList.map((task) => {
+        const sheetId = sheetIdOfTask(task);
+        if (sheetId && sheetId !== UNKNOWN_ID) {
+          sheetStore.patchSheetById({
+            id: sheetId,
+            statement: newStatement,
+          });
+        }
+      });
+      return Promise.allSettled(patchRequestList);
     }
   };
 
-  const updateSheetId = (sheetId: SheetId | undefined) => {
-    if (!create.value) {
-      console.log("sheet id");
-      return;
+  const updateSheetId = async (sheetId: SheetId) => {
+    if (create.value) {
+      const task = selectedTask.value as TaskCreate;
+      task.statement = "";
+      task.sheetId = sheetId;
+    } else {
+      const task = selectedTask.value as Task;
+      await patchTask(task.id, { sheetId });
     }
-
-    const task = selectedTask.value as TaskCreate;
-    task.sheetId = sheetId;
   };
 
-  const doCreate = () => {
+  const doCreate = async () => {
     const issueCreate = cloneDeep(issue.value as IssueCreate);
     // for standard issue pipeline (1 * 1 or M * 1)
     // copy user edited tasks back to issue.createContext
     const taskCreateList = flattenTaskList<TaskCreate>(issueCreate);
-    const detailList: MigrationDetail[] = taskCreateList.map((taskCreate) => {
+    const detailList: MigrationDetail[] = [];
+    for (const taskCreate of taskCreateList) {
       const db = databaseStore.getDatabaseById(taskCreate.databaseId!);
+      const statement = maybeFormatStatementOnSave(taskCreate.statement, db);
       const migrationDetail: MigrationDetail = {
         migrationType: getMigrationTypeFromTask(taskCreate),
         databaseId: taskCreate.databaseId,
-        statement: maybeFormatStatementOnSave(taskCreate.statement, db),
+        statement: statement,
         sheetId: taskCreate.sheetId,
         earliestAllowedTs: taskCreate.earliestAllowedTs,
         rollbackEnabled: taskCreate.rollbackEnabled,
       };
-      // If task already has sheet id, we do not need to save statement.
-      if (!isUndefined(taskCreate.sheetId)) {
-        migrationDetail.statement = "";
+      // Create a new sheet to save statement.
+      if (!taskCreate.sheetId || taskCreate.sheetId === UNKNOWN_ID) {
+        const sheet = await useSheetStore().createSheet({
+          projectId: issueCreate.projectId,
+          name: issueCreate.name + " - " + db.name,
+          statement: statement,
+          visibility: "PROJECT",
+          source: "BYTEBASE_ARTIFACT",
+          payload: {},
+        });
+        migrationDetail.sheetId = sheet.id;
+      } else {
+        const sheetId = taskCreate.sheetId;
+        const sheet = sheetStore.getSheetById(sheetId);
+        if (sheet.statement.length === sheet.size) {
+          await sheetStore.patchSheetById({
+            id: sheetId,
+            statement: statement,
+          });
+        }
       }
-      return migrationDetail;
-    });
+      migrationDetail.statement = "";
+      detailList.push(migrationDetail);
+    }
 
     const createContext: MigrationContext = {
       detailList,
     };
     maybeApplyRollbackParams(createContext, route);
-
     issueCreate.createContext = createContext;
-
     createIssue(issueCreate);
   };
 
@@ -247,7 +260,7 @@ export const useCommonLogic = () => {
     patchIssue,
     patchTask,
     allowEditStatement,
-    initialTaskListStatement,
+    initialTaskListStatementFromRoute,
     updateStatement,
     updateSheetId,
     doCreate,
@@ -271,14 +284,6 @@ export const TaskTypeWithStatement: TaskType[] = [
   "bb.task.database.create",
   "bb.task.database.data.update",
   "bb.task.database.schema.baseline",
-  "bb.task.database.schema.update",
-  "bb.task.database.schema.update-sdl",
-  "bb.task.database.schema.update.ghost.sync",
-];
-
-// TaskTypeWithSheetId should be a subset of TaskTypeWithStatement.
-export const TaskTypeWithSheetId: TaskType[] = [
-  "bb.task.database.data.update",
   "bb.task.database.schema.update",
   "bb.task.database.schema.update-sdl",
   "bb.task.database.schema.update.ghost.sync",
@@ -329,42 +334,6 @@ export const maybeFormatStatementOnSave = (
 export const errorAssertion = () => {
   if (isDev()) {
     throw new Error("should never reach here");
-  }
-};
-
-export const statementOfTask = (task: Task) => {
-  switch (task.type) {
-    case "bb.task.general":
-      return ((task as Task).payload as TaskGeneralPayload).statement || "";
-    case "bb.task.database.create":
-      return (
-        ((task as Task).payload as TaskDatabaseCreatePayload).statement || ""
-      );
-    case "bb.task.database.schema.baseline":
-      return (
-        ((task as Task).payload as TaskDatabaseSchemaBaselinePayload)
-          .statement || ""
-      );
-    case "bb.task.database.schema.update":
-      return (
-        ((task as Task).payload as TaskDatabaseSchemaUpdatePayload).statement ||
-        ""
-      );
-    case "bb.task.database.schema.update-sdl":
-      return (
-        ((task as Task).payload as TaskDatabaseSchemaUpdateSDLPayload)
-          .statement || ""
-      );
-    case "bb.task.database.data.update":
-      return (
-        ((task as Task).payload as TaskDatabaseDataUpdatePayload).statement ||
-        ""
-      );
-    case "bb.task.database.restore":
-      return "";
-    case "bb.task.database.schema.update.ghost.sync":
-    case "bb.task.database.schema.update.ghost.cutover":
-      return ""; // should never reach here
   }
 };
 
