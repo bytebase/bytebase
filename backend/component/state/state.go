@@ -41,8 +41,5 @@ type State struct {
 	// InstanceOutstandingConnections is the maximum number of connections per instance.
 	InstanceOutstandingConnections map[int]int
 
-	// TestSlowQueryWeeklyEmailChan is the channel for testing slow query weekly email.
-	TestSlowQueryWeeklyEmailChan chan bool
-
 	sync.Mutex
 }
