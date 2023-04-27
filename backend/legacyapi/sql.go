@@ -26,6 +26,13 @@ type ConnectionInfo struct {
 	AuthenticationDatabase string `json:"authenticationDatabase" jsonapi:"attr,authenticationDatabase"`
 	SID                    string `json:"sid" jsonapi:"attr,sid"`
 	ServiceName            string `json:"serviceName" jsonapi:"attr,serviceName"`
+	// SSH configuration.
+	UseSSHConfig  bool   `jsonapi:"attr,useSSHConfig"`
+	SSHHost       string `json:"sshHost" jsonapi:"attr,sshHost"`
+	SSHPort       string `json:"sshPort" jsonapi:"attr,sshPort"`
+	SSHUser       string `json:"sshUser" jsonapi:"attr,sshUser"`
+	SSHPassword   string `json:"sshPassword" jsonapi:"attr,sshPassword"`
+	SSHPrivateKey string `json:"sshPrivateKey" jsonapi:"attr,sshPrivateKey"`
 }
 
 // SQLSyncSchema is the API message for sync schemas.
