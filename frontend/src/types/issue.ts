@@ -50,7 +50,7 @@ export type CreateDatabaseContext = {
 export type MigrationDetail = {
   migrationType: MigrationType;
   statement: string;
-  sheetId?: SheetId;
+  sheetId: SheetId;
   earliestAllowedTs: number;
   databaseId?: DatabaseId;
   rollbackEnabled?: boolean;

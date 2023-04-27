@@ -1,11 +1,9 @@
 import { computed, defineComponent } from "vue";
-import { cloneDeep, isUndefined } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { provideIssueLogic, useIssueLogic } from "./index";
 import {
   flattenTaskList,
-  getPatchingTaskList,
   maybeFormatStatementOnSave,
-  TaskTypeWithSheetId,
   TaskTypeWithStatement,
   useCommonLogic,
 } from "./common";
@@ -17,11 +15,11 @@ import {
   TaskDatabaseSchemaUpdateGhostSyncPayload,
   TaskStatus,
   MigrationContext,
-  TaskId,
-  TaskPatch,
   SheetId,
+  UNKNOWN_ID,
 } from "@/types";
-import { useDatabaseStore, useTaskStore } from "@/store";
+import { useDatabaseStore, useSheetStore, useTaskStore } from "@/store";
+import { sheetIdOfTask } from "@/utils";
 
 export default defineComponent({
   name: "GhostModeProvider",
@@ -36,32 +34,10 @@ export default defineComponent({
       allowApplyTaskStateToOthers: baseAllowApplyTaskStateToOthers,
       applyTaskStateToOthers: baseApplyTaskStateToOthers,
       onStatusChanged,
-      dialog,
     } = useIssueLogic();
     const databaseStore = useDatabaseStore();
     const taskStore = useTaskStore();
-
-    const patchTask = (
-      taskId: TaskId,
-      taskPatch: TaskPatch,
-      postUpdated?: (updatedTask: Task) => void
-    ) => {
-      taskStore
-        .patchTask({
-          issueId: (issue.value as Issue).id,
-          pipelineId: (issue.value as Issue).pipeline.id,
-          taskId,
-          taskPatch,
-        })
-        .then((updatedTask) => {
-          // For now, the only task/patchTask is to change statement, which will trigger async task check.
-          // Thus we use the short poll interval
-          onStatusChanged(true);
-          if (postUpdated) {
-            postUpdated(updatedTask);
-          }
-        });
-    };
+    const sheetStore = useSheetStore();
 
     const selectedStatement = computed(() => {
       if (isTenantMode.value) {
@@ -69,13 +45,16 @@ export default defineComponent({
         if (create.value) {
           const issueCreate = issue.value as IssueCreate;
           const context = issueCreate.createContext as MigrationContext;
-          return context.detailList[0].statement;
+          return (
+            sheetStore.getSheetById(context.detailList[0].sheetId)?.statement ||
+            ""
+          );
         } else {
           const issueEntity = issue.value as Issue;
           const task = issueEntity.pipeline.stageList[0].taskList[0];
           const payload =
             task.payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
-          return payload.statement;
+          return sheetStore.getSheetById(payload.sheetId)?.statement || "";
         }
       } else {
         // In standard pipeline, each ghost-sync task can hold its own
@@ -83,11 +62,18 @@ export default defineComponent({
         const task = selectedTask.value;
         if (task.type === "bb.task.database.schema.update.ghost.sync") {
           if (create.value) {
-            return (task as TaskCreate).statement;
+            let statement = (task as TaskCreate).statement;
+            if ((task as TaskCreate).sheetId !== UNKNOWN_ID) {
+              statement =
+                sheetStore.getSheetById((task as TaskCreate).sheetId)
+                  ?.statement || "";
+            }
+            return statement;
           } else {
-            const payload = (task as Task)
-              .payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
-            return payload.statement;
+            return (
+              sheetStore.getSheetById(sheetIdOfTask(task as Task) || UNKNOWN_ID)
+                ?.statement || ""
+            );
           }
         } else {
           return "";
@@ -95,99 +81,83 @@ export default defineComponent({
       }
     });
 
-    const updateStatement = (
-      newStatement: string,
-      postUpdated?: (updatedTask: Task) => void
-    ) => {
+    const updateStatement = async (newStatement: string) => {
       if (isTenantMode.value) {
         if (create.value) {
+          const task = selectedTask.value as TaskCreate;
           // For tenant deploy mode, we apply the statement to all stages and all tasks
           const allTaskList = flattenTaskList<TaskCreate>(issue.value);
-          allTaskList.forEach((task) => {
-            if (TaskTypeWithStatement.includes(task.type)) {
-              task.statement = newStatement;
+          allTaskList.forEach((taskItem) => {
+            if (TaskTypeWithStatement.includes(taskItem.type)) {
+              if (task.sheetId) {
+                taskItem.statement = "";
+                taskItem.sheetId = task.sheetId;
+              } else {
+                taskItem.statement = newStatement;
+              }
             }
           });
 
           const issueCreate = issue.value as IssueCreate;
           const context = issueCreate.createContext as MigrationContext;
           // We also apply it back to the CreateContext
-          context.detailList.forEach(
-            (detail) => (detail.statement = newStatement)
-          );
+          context.detailList.forEach((detail) => {
+            if (task.sheetId) {
+              detail.statement = "";
+              detail.sheetId = task.sheetId;
+            } else {
+              detail.statement = newStatement;
+            }
+          });
         } else {
-          // Call patchAllTasksInIssue for tenant mode
-          const issueEntity = issue.value as Issue;
-          taskStore
-            .patchAllTasksInIssue({
-              issueId: issueEntity.id,
-              pipelineId: issueEntity.pipeline.id,
-              taskPatch: {
-                statement: newStatement,
-              },
-            })
-            .then(() => {
-              onStatusChanged(true);
-              if (postUpdated) {
-                postUpdated(issueEntity.pipeline.stageList[0].taskList[0]);
-              }
-            });
+          const sheetId = sheetIdOfTask(selectedTask.value as Task);
+          if (sheetId || sheetId !== UNKNOWN_ID) {
+            // Call patchAllTasksInIssue for tenant mode
+            const issueEntity = issue.value as Issue;
+            taskStore
+              .patchAllTasksInIssue({
+                issueId: issueEntity.id,
+                pipelineId: issueEntity.pipeline.id,
+                taskPatch: {
+                  sheetId,
+                },
+              })
+              .then(() => {
+                onStatusChanged(true);
+              });
+          }
         }
       } else {
         if (create.value) {
           const task = selectedTask.value as TaskCreate;
           task.statement = newStatement;
-        } else {
-          // Ask whether to apply the change to all pending tasks if possible.
-          const task = selectedTask.value as Task;
-          getPatchingTaskList(issue.value as Issue, task, dialog).then(
-            (patchingTaskList) => {
-              if (patchingTaskList.length === 0) return;
-              const patchRequestList = patchingTaskList.map((task) => {
-                patchTask(
-                  task.id,
-                  {
-                    statement: maybeFormatStatementOnSave(
-                      newStatement,
-                      task.database
-                    ),
-                    updatedTs: task.updatedTs,
-                  },
-                  postUpdated
-                );
-              });
-              return Promise.allSettled(patchRequestList);
-            }
-          );
         }
       }
     };
 
-    const updateSheetId = (sheetId: SheetId | undefined) => {
-      if (!create.value) {
-        return;
-      }
-
+    const updateSheetId = (sheetId: SheetId) => {
       if (isTenantMode.value) {
         // For tenant deploy mode, we apply the sheetId to all stages and all tasks
         const allTaskList = flattenTaskList<TaskCreate>(issue.value);
         allTaskList.forEach((task) => {
-          if (TaskTypeWithSheetId.includes(task.type)) {
-            task.sheetId = sheetId;
-          }
+          task.statement = "";
+          task.sheetId = sheetId;
         });
 
         const issueCreate = issue.value as IssueCreate;
         const context = issueCreate.createContext as MigrationContext;
-        // We also apply it back to the CreateContext
-        context.detailList.forEach((detail) => (detail.sheetId = sheetId));
+        context.detailList.forEach((detail) => {
+          detail.statement = "";
+          detail.sheetId = sheetId;
+        });
       } else {
         const task = selectedTask.value as TaskCreate;
+        task.statement = "";
         task.sheetId = sheetId;
       }
     };
 
-    const doCreate = () => {
+    const doCreate = async () => {
       const issueCreate = cloneDeep(issue.value as IssueCreate);
 
       if (isTenantMode.value) {
@@ -195,15 +165,22 @@ export default defineComponent({
         // createContext is up-to-date already
         // so we just format the statement if needed
         const context = issueCreate.createContext as MigrationContext;
-        context.detailList.forEach((detail) => {
+        for (const detail of context.detailList) {
           const db = databaseStore.getDatabaseById(detail.databaseId!);
-          if (!isUndefined(detail.sheetId)) {
-            // If task already has sheet id, we do not need to save statement.
+          if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
+            const statement = maybeFormatStatementOnSave(detail.statement, db);
+            const sheet = await useSheetStore().createSheet({
+              projectId: issueCreate.projectId,
+              name: issueCreate.name + " - " + db.name,
+              statement: statement,
+              visibility: "PROJECT",
+              source: "BYTEBASE_ARTIFACT",
+              payload: {},
+            });
             detail.statement = "";
-          } else {
-            detail.statement = maybeFormatStatementOnSave(detail.statement, db);
+            detail.sheetId = sheet.id;
           }
-        });
+        }
       } else {
         // for standard pipeline, we copy user edited tasks back to
         // issue.createContext
@@ -214,7 +191,7 @@ export default defineComponent({
           (task) => task.type === "bb.task.database.schema.update.ghost.sync"
         );
         const detailList = createContext.detailList;
-        syncTaskList.forEach((task) => {
+        for (const task of syncTaskList) {
           const { databaseId } = task;
           if (!databaseId) return;
           const detail = detailList.find(
@@ -222,15 +199,22 @@ export default defineComponent({
           );
           if (detail) {
             const db = databaseStore.getDatabaseById(databaseId);
-            if (!isUndefined(detail.sheetId)) {
-              // If task already has sheet id, we do not need to save statement.
+            if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
+              const statement = maybeFormatStatementOnSave(task.statement, db);
+              const sheet = await useSheetStore().createSheet({
+                projectId: issueCreate.projectId,
+                name: issueCreate.name + " - " + db.name,
+                statement: statement,
+                visibility: "PROJECT",
+                source: "BYTEBASE_ARTIFACT",
+                payload: {},
+              });
               detail.statement = "";
-            } else {
-              detail.statement = maybeFormatStatementOnSave(task.statement, db);
+              detail.sheetId = sheet.id;
             }
             detail.earliestAllowedTs = task.earliestAllowedTs;
           }
-        });
+        }
       }
 
       createIssue(issueCreate);
