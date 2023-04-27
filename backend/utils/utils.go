@@ -345,6 +345,17 @@ func GetTaskStatement(taskPayload string) (string, error) {
 	return taskStatement.Statement, nil
 }
 
+// GetTaskSheetID gets the sheetID of a task.
+func GetTaskSheetID(taskPayload string) (int, error) {
+	var taskSheetID struct {
+		SheetID int `json:"sheetId"`
+	}
+	if err := json.Unmarshal([]byte(taskPayload), &taskSheetID); err != nil {
+		return 0, err
+	}
+	return taskSheetID.SheetID, nil
+}
+
 // GetTaskSkippedAndReason gets skipped and skippedReason from a task.
 func GetTaskSkippedAndReason(task *api.Task) (bool, string, error) {
 	var payload struct {

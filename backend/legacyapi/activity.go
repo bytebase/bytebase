@@ -167,6 +167,8 @@ type ActivityPipelineTaskStatementUpdatePayload struct {
 	TaskID       int    `json:"taskId"`
 	OldStatement string `json:"oldStatement,omitempty"`
 	NewStatement string `json:"newStatement,omitempty"`
+	OldSheetID   int    `json:"oldSheetId,omitempty"`
+	NewSheetID   int    `json:"newSheetId,omitempty"`
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 	TaskName  string `json:"taskName"`
