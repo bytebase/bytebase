@@ -1,9 +1,9 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
-import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { Expr } from "../google/type/expr";
 import { State, stateFromJSON, stateToJSON } from "./common";
 import { ProjectGitOpsInfo } from "./externalvs_service";
 
@@ -421,7 +421,7 @@ export interface Binding {
    * If the condition evaluates to true, then this binding applies to the current request.
    * If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
    */
-  condition?: ParsedExpr;
+  condition?: Expr;
 }
 
 export interface AddWebhookRequest {
@@ -1928,7 +1928,7 @@ export const Binding = {
       writer.uint32(18).string(v!);
     }
     if (message.condition !== undefined) {
-      ParsedExpr.encode(message.condition, writer.uint32(26).fork()).ldelim();
+      Expr.encode(message.condition, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1959,7 +1959,7 @@ export const Binding = {
             break;
           }
 
-          message.condition = ParsedExpr.decode(reader, reader.uint32());
+          message.condition = Expr.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -1974,7 +1974,7 @@ export const Binding = {
     return {
       role: isSet(object.role) ? String(object.role) : "",
       members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
-      condition: isSet(object.condition) ? ParsedExpr.fromJSON(object.condition) : undefined,
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
   },
 
@@ -1986,8 +1986,7 @@ export const Binding = {
     } else {
       obj.members = [];
     }
-    message.condition !== undefined &&
-      (obj.condition = message.condition ? ParsedExpr.toJSON(message.condition) : undefined);
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
     return obj;
   },
 
@@ -2000,7 +1999,7 @@ export const Binding = {
     message.role = object.role ?? "";
     message.members = object.members?.map((e) => e) || [];
     message.condition = (object.condition !== undefined && object.condition !== null)
-      ? ParsedExpr.fromPartial(object.condition)
+      ? Expr.fromPartial(object.condition)
       : undefined;
     return message;
   },
