@@ -216,6 +216,7 @@ type PrivilegeRequest struct {
 	// If we need multiple privileges for a database, add multiple entries.
 	Scopes []ResourceScope `json:"scopes"`
 	// Requested Role.
+	// Example "roles/Developer"
 	Role string `json:"role"`
 	// Expiration timestamp in second.
 	ExpirationTs int `json:"expirationTs"`
@@ -223,8 +224,10 @@ type PrivilegeRequest struct {
 
 // ResourceScope is the scope of resources.
 type ResourceScope struct {
-	DatabaseID int    `json:"databaseID"`
-	TableName  string `json:"tableName"`
+	DatabaseID int `json:"databaseID"`
+	// Schema can be empty for database types such as MySQL.
+	Schema string `json:"schema"`
+	Table  string `json:"table"`
 }
 
 // IssuePatch is the API message for patching an issue.
