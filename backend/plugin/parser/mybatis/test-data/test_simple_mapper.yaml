@@ -5,7 +5,8 @@
         </select>
     </mapper>
   sql: |
-    select * from user where id = #{id};
+    select * from user where id = ?;
+
 - xml: |-
     <mapper namespace="com.bytebase.test">
         <select id="selectUser" parameterType="int" resultType="hashmap">
@@ -22,7 +23,7 @@
         </delete>
     </mapper>
   sql: |
-    select * from user where id = #{id};
-    insert into user (id, name) values (#{id}, #{name});
-    update user set name = #{name} where id = #{id};
-    delete from user where id = #{id};
+    select * from user where id = ?;
+    insert into user (id, name) values (?, ?);
+    update user set name = ? where id = ?;
+    delete from user where id = ?;
