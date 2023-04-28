@@ -57,16 +57,18 @@
           />
         </div>
 
-        <div class="sm:col-span-3 sm:col-start-1 -mt-6">
+        <div
+          :key="basicInformation.environmentId"
+          class="sm:col-span-3 sm:col-start-1 -mt-4"
+        >
           <ResourceIdField
             ref="resourceIdField"
             class="max-w-full flex-nowrap"
-            resource="instance"
+            resource-type="instance"
             :readonly="!isCreating"
             :value="basicInformation.resourceId"
             :resource-title="basicInformation.name"
-            :random-string="true"
-            :validator="validateResourceId"
+            :validate="validateResourceId"
           />
         </div>
 
@@ -581,6 +583,7 @@ import {
   RowStatus,
   InstanceCreate,
   unknown,
+  ValidatedMessage,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
@@ -605,7 +608,6 @@ import {
   SslCertificateForm,
   OracleSIDAndServiceNameInput,
 } from "./InstanceForm";
-import ResourceIdField from "./ResourceIdField.vue";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import {
   environmentNamePrefix,
@@ -613,6 +615,7 @@ import {
 } from "@/store/modules/v1/common";
 import { getErrorCode } from "@/utils/grpcweb";
 import { Status } from "nice-grpc-common";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 
 const props = defineProps({
   instance: {
@@ -1135,14 +1138,19 @@ const handleDeleteRODataSource = async () => {
   state.currentDataSourceType = "ADMIN";
 };
 
-const validateResourceId = async (resourceId: ResourceId) => {
+const validateResourceId = async (
+  resourceId: ResourceId
+): Promise<ValidatedMessage[]> => {
   if (!resourceId) {
-    return;
+    return [];
   }
 
   const environment = environmentStore.getEnvironmentById(
     basicInformation.value.environmentId
   );
+  if (environment.id === UNKNOWN_ID) {
+    return [];
+  }
   try {
     const instance = await instanceV1Store.getOrFetchInstanceByName(
       environmentNamePrefix +
@@ -1152,15 +1160,21 @@ const validateResourceId = async (resourceId: ResourceId) => {
         resourceId
     );
     if (instance) {
-      return t("resource-id.validation.duplicated", {
-        resource: t("resource.instance"),
-      });
+      return [
+        {
+          type: "error",
+          message: t("resource-id.validation.duplicated", {
+            resource: t("resource.instance"),
+          }),
+        },
+      ];
     }
   } catch (error) {
     if (getErrorCode(error) !== Status.NOT_FOUND) {
       throw error;
     }
   }
+  return [];
 };
 
 const updateInstanceState = async () => {

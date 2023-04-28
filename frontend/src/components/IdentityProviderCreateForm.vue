@@ -83,12 +83,11 @@
         />
         <ResourceIdField
           ref="resourceIdField"
-          resource="idp"
+          resource-type="idp"
           :readonly="!isCreating"
           :value="resourceId"
-          :random-string="true"
           :resource-title="identityProvider.title"
-          :validator="validateResourceId"
+          :validate="validateResourceId"
         />
       </div>
       <div class="w-full flex flex-col justify-start items-start">
@@ -566,7 +565,7 @@ import {
   identityProviderTypeToString,
   openWindowForSSO,
 } from "@/utils";
-import { OAuthWindowEventPayload, ResourceId } from "@/types";
+import { OAuthWindowEventPayload, ResourceId, ValidatedMessage } from "@/types";
 import { identityProviderClient } from "@/grpcweb";
 import { State } from "@/types/proto/v1/common";
 import { useRouter } from "vue-router";
@@ -574,7 +573,7 @@ import {
   getIdentityProviderResourceId,
   idpNamePrefix,
 } from "@/store/modules/v1/common";
-import ResourceIdField from "./ResourceIdField.vue";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { getErrorCode } from "@/utils/grpcweb";
 
 interface LocalState {
@@ -821,9 +820,11 @@ const copyRedirectUrl = () => {
   });
 };
 
-const validateResourceId = async (resourceId: ResourceId) => {
+const validateResourceId = async (
+  resourceId: ResourceId
+): Promise<ValidatedMessage[]> => {
   if (!resourceId) {
-    return;
+    return [];
   }
 
   try {
@@ -831,15 +832,21 @@ const validateResourceId = async (resourceId: ResourceId) => {
       idpNamePrefix + resourceId
     );
     if (idp) {
-      return t("resource-id.validation.duplicated", {
-        resource: t("resource.idp"),
-      });
+      return [
+        {
+          type: "error",
+          message: t("resource-id.validation.duplicated", {
+            resource: t("resource.idp"),
+          }),
+        },
+      ];
     }
   } catch (error) {
     if (getErrorCode(error) !== Status.NOT_FOUND) {
       throw error;
     }
   }
+  return [];
 };
 
 const testConnection = () => {
