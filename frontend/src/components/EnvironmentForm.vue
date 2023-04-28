@@ -18,14 +18,16 @@
         />
       </div>
 
-      <ResourceIdField
-        ref="resourceIdField"
-        resource="environment"
-        :readonly="!create"
-        :value="state.environment.resourceId"
-        :resource-title="state.environment.name"
-        :validator="validateResourceId"
-      />
+      <div class="mt-2">
+        <ResourceIdField
+          ref="resourceIdField"
+          resource-type="environment"
+          :readonly="!create"
+          :value="state.environment.resourceId"
+          :resource-title="state.environment.name"
+          :validate="validateResourceId"
+        />
+      </div>
 
       <div class="col-span-1 mt-6">
         <label class="textlabel flex items-center">
@@ -327,6 +329,7 @@ import type {
   Policy,
   ResourceId,
   SQLReviewPolicy,
+  ValidatedMessage,
 } from "../types";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
@@ -340,7 +343,7 @@ import {
   useSQLReviewStore,
 } from "@/store";
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
-import ResourceIdField from "./ResourceIdField.vue";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
@@ -479,9 +482,11 @@ const hasPermission = computed(() => {
   );
 });
 
-const validateResourceId = async (resourceId: ResourceId) => {
+const validateResourceId = async (
+  resourceId: ResourceId
+): Promise<ValidatedMessage[]> => {
   if (!resourceId) {
-    return;
+    return [];
   }
 
   try {
@@ -489,15 +494,21 @@ const validateResourceId = async (resourceId: ResourceId) => {
       environmentNamePrefix + resourceId
     );
     if (env) {
-      return t("resource-id.validation.duplicated", {
-        resource: t("resource.environment"),
-      });
+      return [
+        {
+          type: "error",
+          message: t("resource-id.validation.duplicated", {
+            resource: t("resource.environment"),
+          }),
+        },
+      ];
     }
   } catch (error) {
     if (getErrorCode(error) !== Status.NOT_FOUND) {
       throw error;
     }
   }
+  return [];
 };
 
 const allowArchive = computed(() => {

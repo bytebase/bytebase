@@ -22,7 +22,7 @@
         {{ $t("resource-id.self", { resource: resourceName }) }}
         <span class="ml-0.5 text-error">*</span>
       </label>
-      <div class="textinfolabel">
+      <div class="textinfolabel my-2">
         {{ $t("resource-id.description", { resource: resourceName }) }}
       </div>
       <NInput
@@ -111,6 +111,7 @@ const state = reactive<LocalState>({
   manualEdit: false,
   validatedMessages: [],
 });
+let initialized = false;
 // Won't change after the component instance initialized.
 const randomSuffix = randomString(4).toLowerCase();
 
@@ -123,20 +124,6 @@ const visible = computed(() => {
     return !!state.resourceId;
   }
   return true;
-});
-
-const prefix = computed(() => {
-  const { resourceType: resource } = props;
-  switch (resource) {
-    case "environment":
-      return "env";
-    case "instance":
-      return "ins";
-    case "project":
-      return "proj";
-    default:
-      return resource;
-  }
 });
 
 const inputStatus = computed(() => {
@@ -219,7 +206,7 @@ const escape = (str: string) => {
 
 watch(
   () => props.resourceTitle,
-  (resourceTitle) => {
+  async (resourceTitle) => {
     if (props.readonly) {
       return;
     }
@@ -233,7 +220,7 @@ watch(
     if (resourceTitle) {
       const escapedTitle = escape(resourceTitle);
       if (props.suffix) {
-        parts.push(prefix.value, escapedTitle, randomSuffix);
+        parts.push(escapedTitle, randomSuffix);
       } else if (escapedTitle) {
         parts.push(escapedTitle);
       } else {
@@ -241,7 +228,19 @@ watch(
       }
     }
     const name = parts.join("-");
-    handleResourceIdChange(name);
+    await handleResourceIdChange(name);
+
+    // We should keep the first auto-generated resource id is valid.
+    if (!initialized) {
+      const messages = state.validatedMessages;
+      if (messages.length > 0) {
+        await handleResourceIdChange(
+          name + "-" + randomString(4).toLowerCase()
+        );
+        return;
+      }
+    }
+    initialized = true;
   },
   {
     immediate: true,
