@@ -53,7 +53,14 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	}
 	statement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
 	if err != nil {
-		return true, nil, err
+		return true, nil, errors.Wrapf(err, "failed to get sheet statement of sheet: %d", payload.SheetID)
+	}
+	sheet, err := exec.store.GetSheetV2(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	if err != nil {
+		return true, nil, errors.Wrapf(err, "failed to get sheet: %d", payload.SheetID)
+	}
+	if sheet == nil {
+		return true, nil, errors.Errorf("sheet not found: %d", payload.SheetID)
 	}
 
 	statement = strings.TrimSpace(statement)
@@ -160,6 +167,11 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 		UpdaterID:  api.SystemBotID,
 		DatabaseID: &database.UID,
 	}
+	sheetPatch := &api.SheetPatch{
+		ID:        sheet.UID,
+		UpdaterID: api.SystemBotID,
+	}
+
 	if peerSchema != "" {
 		// Better displaying schema in the task.
 		connectionStmt, err := getConnectionStatement(instance.Engine, payload.DatabaseName)
@@ -167,10 +179,14 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 			return true, nil, err
 		}
 		fullSchema := fmt.Sprintf("%s\n%s\n%s", statement, connectionStmt, peerSchema)
-		taskDatabaseIDPatch.Statement = &fullSchema
+
+		sheetPatch.Statement = &fullSchema
 	}
 	if _, err := exec.store.UpdateTaskV2(ctx, taskDatabaseIDPatch); err != nil {
 		return true, nil, err
+	}
+	if _, err := exec.store.PatchSheet(ctx, sheetPatch); err != nil {
+		return true, nil, errors.Wrapf(err, "failed to update sheet %d after executing the task", sheet.UID)
 	}
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
