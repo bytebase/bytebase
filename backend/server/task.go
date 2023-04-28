@@ -64,7 +64,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		// dismiss stale review, re-find the approval template
-		if taskPatch.Statement != nil {
+		if taskPatch.SheetID != nil {
 			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
 				Approval: &storepb.IssuePayloadApproval{
 					ApprovalFindingDone: false,
@@ -131,7 +131,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		// dismiss stale review, re-find the approval template
-		if taskPatch.Statement != nil && task.Status == api.TaskPendingApproval {
+		if taskPatch.SheetID != nil && task.Status == api.TaskPendingApproval {
 			payloadBytes, err := protojson.Marshal(&storepb.IssuePayload{
 				Approval: &storepb.IssuePayloadApproval{
 					ApprovalFindingDone: false,

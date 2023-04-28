@@ -145,12 +145,22 @@ func TestTenant(t *testing.T) {
 	a.Equal(testTenantNumber, len(testDatabases))
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
+	sheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "migration statement sheet",
+		Statement:  migrationStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				Statement:     migrationStatement,
+				SheetID:       sheet.ID,
 			},
 		},
 	})
@@ -604,12 +614,22 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.Equal(len(testDatabases), testTenantNumber)
 	a.Equal(len(prodDatabases), prodTenantNumber)
 
+	sheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "migration statement sheet",
+		Statement:  migrationStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				Statement:     migrationStatement,
+				SheetID:       sheet.ID,
 			},
 		},
 	})
