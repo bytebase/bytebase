@@ -87,6 +87,9 @@ watch(
   () => props.slowQueryLog,
   async () => {
     // TODO(junyi): Do data fetching with database and sqlFingerprint.
+    // Prevent eslint error.
+    console.log(sqlFingerprint);
+
     state.currentIndex = "test index";
     state.suggestion = "Your suggestion";
     state.createIndexStatement = "CREATE INDEX balabala;";
