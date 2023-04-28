@@ -120,7 +120,6 @@
 </template>
 
 <script lang="ts" setup>
-import { v4 as uuidv4 } from "uuid";
 import { isNumber } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { onMounted, reactive, watch, computed, ref, nextTick } from "vue";
