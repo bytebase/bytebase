@@ -120,7 +120,6 @@
 </template>
 
 <script lang="ts" setup>
-import { v4 as uuidv4 } from "uuid";
 import { isNumber } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { onMounted, reactive, watch, computed, ref, nextTick } from "vue";
@@ -413,20 +412,9 @@ const saveEdit = async () => {
   if (!selectedDatabase.value) {
     return;
   }
-
   if (allowFormatOnSave.value && formatOnSave.value) {
     editorRef.value?.formatEditorContent();
   }
-  // Create a new sheet instead of reusing the old one.
-  const sheet = await sheetStore.createSheet({
-    projectId: selectedDatabase.value.projectId,
-    name: uuidv4(),
-    statement: state.editStatement,
-    visibility: "PROJECT",
-    source: "BYTEBASE_ARTIFACT",
-    payload: {},
-  });
-  updateSheetId(sheet.id);
   await updateStatement(state.editStatement);
   state.editing = false;
 };
