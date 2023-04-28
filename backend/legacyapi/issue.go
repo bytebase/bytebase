@@ -217,8 +217,8 @@ type PrivilegeRequest struct {
 	ResourceScopes []ResourceScope
 	// Requested Role.
 	Role string
-	// Expiration time in second.
-	ExpirationTimeTs int
+	// Expiration timestamp in second.
+	ExpirationTs int
 }
 
 // ResourceScope is the scope of resources.
