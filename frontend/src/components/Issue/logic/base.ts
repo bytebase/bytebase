@@ -228,6 +228,10 @@ export const useBaseIssueLogic = (params: {
   const selectedStatement = computed((): string => {
     const task = selectedTask.value;
     if (create.value) {
+      const taskCreate = task as TaskCreate;
+      if (taskCreate.sheetId && taskCreate.sheetId !== UNKNOWN_ID) {
+        return sheetStore.getSheetById(taskCreate.sheetId)?.statement || "";
+      }
       return (task as TaskCreate).statement;
     }
     return (
