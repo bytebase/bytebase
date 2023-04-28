@@ -332,7 +332,7 @@ CREATE TABLE instance (
     resource_id TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
+CREATE UNIQUE INDEX idx_instance_unique_environment_id_resource_id ON instance(environment_id, resource_id);
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;
 
