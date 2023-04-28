@@ -418,12 +418,22 @@ func TestSQLReviewForMySQL(t *testing.T) {
 }
 
 func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, statement string, wait bool) []api.TaskCheckResult {
+	sheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  projectID,
+		Name:       "statement",
+		Statement:  statement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    databaseID,
-				Statement:     statement,
+				SheetID:       sheet.ID,
 			},
 		},
 	})

@@ -42,11 +42,25 @@ func (s *Server) createIssueByOpenAPI(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list database").SetInternal(err)
 	}
 
+	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		CreatorID: api.SystemBotID,
+		ProjectID: project.UID,
+
+		Name:       fmt.Sprintf("Sheet for issue %s", create.Name),
+		Statement:  create.Statement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet").SetInternal(err)
+	}
+
 	for _, database := range dbList {
 		migrationList = append(migrationList, &api.MigrationDetail{
 			DatabaseID:    database.UID,
 			MigrationType: create.MigrationType,
-			Statement:     create.Statement,
+			SheetID:       sheet.ID,
 			SchemaVersion: create.SchemaVersion,
 		})
 	}

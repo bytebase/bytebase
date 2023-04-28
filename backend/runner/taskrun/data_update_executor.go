@@ -45,13 +45,9 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, task *store.TaskMes
 		return true, nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
-	statement := payload.Statement
-	if payload.SheetID > 0 {
-		sheetStatement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
-		if err != nil {
-			return true, nil, err
-		}
-		statement = sheetStatement
+	statement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
+	if err != nil {
+		return true, nil, err
 	}
 	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Data, statement, payload.SchemaVersion, payload.VCSPushEvent)
 }

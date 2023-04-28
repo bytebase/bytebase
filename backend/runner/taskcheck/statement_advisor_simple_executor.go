@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -43,16 +45,28 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, err
 	}
-	if payload.SheetID > 0 {
+
+	sheet, err := e.store.GetSheet(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
+	}
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %d not found", payload.SheetID)
+	}
+	if sheet.Size > common.MaxSheetSizeForTaskCheck {
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusSuccess,
 				Namespace: api.AdvisorNamespace,
 				Code:      common.Ok.Int(),
-				Title:     "Large SQL statement check is disabled",
+				Title:     "Large SQL review policy is disabled",
 				Content:   "",
 			},
 		}, nil
+	}
+	statement, err := e.store.GetSheetStatementByID(ctx, payload.SheetID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet statement %d", payload.SheetID)
 	}
 
 	var advisorType advisor.Type
@@ -77,7 +91,7 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := utils.RenderStatement(payload.Statement, materials)
+	renderedStatement := utils.RenderStatement(statement, materials)
 
 	adviceList, err := advisor.Check(
 		dbType,

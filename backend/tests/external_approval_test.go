@@ -122,13 +122,23 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	database := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
+	sheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "migration statement sheet",
+		Statement:  migrationStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    database.ID,
-				Statement:     migrationStatement,
+				SheetID:       sheet.ID,
 			},
 		},
 	})
@@ -287,13 +297,23 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	database := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
+	sheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "migration statement sheet",
+		Statement:  migrationStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    database.ID,
-				Statement:     migrationStatement,
+				SheetID:       sheet.ID,
 			},
 		},
 	})
