@@ -166,7 +166,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 	t.Log("Schema initialized.")
 
-	DMLSheet, err := ctl.createSheet(api.SheetCreate{
+	dmlSheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID: project.ID,
 		Name:      "migration statement sheet",
 		Statement: `
@@ -185,7 +185,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 			{
 				MigrationType:   db.Data,
 				DatabaseID:      database.ID,
-				SheetID:         DMLSheet.ID,
+				SheetID:         dmlSheet.ID,
 				RollbackEnabled: true,
 			},
 		},
@@ -391,7 +391,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 	t.Log("Schema initialized.")
 
-	DMLSheet, err := ctl.createSheet(api.SheetCreate{
+	dmlSheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID: project.ID,
 		Name:      "migration statement sheet",
 		Statement: `
@@ -410,7 +410,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 			{
 				MigrationType: db.Data,
 				DatabaseID:    database.ID,
-				SheetID:       DMLSheet.ID,
+				SheetID:       dmlSheet.ID,
 				// RollbackEnabled: true,
 			},
 		},

@@ -2187,7 +2187,7 @@ CREATE TABLE public.book (
 			}
 			a.NotNil(database)
 
-			DDLSheet, err := ctl.createSheet(api.SheetCreate{
+			ddlSheet, err := ctl.createSheet(api.SheetCreate{
 				ProjectID:  project.ID,
 				Name:       "test ddl",
 				Statement:  test.ddl,
@@ -2203,7 +2203,7 @@ CREATE TABLE public.book (
 					{
 						MigrationType: db.Migrate,
 						DatabaseID:    database.ID,
-						SheetID:       DDLSheet.ID,
+						SheetID:       ddlSheet.ID,
 					},
 				},
 			})
