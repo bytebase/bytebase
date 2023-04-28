@@ -214,11 +214,11 @@ type PITRContext struct {
 type PrivilegeRequest struct {
 	// Request scopes for resources.
 	// If we need multiple privileges for a database, add multiple entries.
-	ResourceScopes []ResourceScope
+	Scopes []ResourceScope `json:"scopes"`
 	// Requested Role.
-	Role string
+	Role string `json:"role"`
 	// Expiration timestamp in second.
-	ExpirationTs int
+	ExpirationTs int `json:"expirationTs"`
 }
 
 // ResourceScope is the scope of resources.
