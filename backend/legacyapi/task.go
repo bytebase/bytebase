@@ -102,7 +102,6 @@ type TaskDatabaseCreatePayload struct {
 	ProjectID    int    `json:"projectId,omitempty"`
 	DatabaseName string `json:"databaseName,omitempty"`
 	TableName    string `json:"tableName,omitempty"`
-	Statement    string `json:"statement,omitempty"`
 	SheetID      int    `json:"sheetId,omitempty"`
 	CharacterSet string `json:"character,omitempty"`
 	Collation    string `json:"collation,omitempty"`
@@ -124,7 +123,6 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
 
-	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
@@ -136,7 +134,6 @@ type TaskDatabaseSchemaUpdateSDLPayload struct {
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
 
-	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
@@ -148,7 +145,6 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
 
-	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
@@ -183,7 +179,6 @@ type TaskDatabaseDataUpdatePayload struct {
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
 
-	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
@@ -299,7 +294,6 @@ type TaskCreate struct {
 	// Payload is derived from fields below it
 	Payload           string
 	EarliestAllowedTs int64  `jsonapi:"attr,earliestAllowedTs"`
-	Statement         string `jsonapi:"attr,statement"`
 	DatabaseName      string `jsonapi:"attr,databaseName"`
 	CharacterSet      string `jsonapi:"attr,characterSet"`
 	Collation         string `jsonapi:"attr,collation"`
@@ -352,8 +346,7 @@ type TaskPatch struct {
 	// Payload and others cannot be set at the same time.
 	Payload *string
 
-	Statement         *string `jsonapi:"attr,statement"`
-	SheetID           *int    `jsonapi:"attr,sheetId"`
+	SheetID           *int `jsonapi:"attr,sheetId"`
 	SchemaVersion     *string
 	RollbackEnabled   *bool `jsonapi:"attr,rollbackEnabled"`
 	RollbackSQLStatus *RollbackSQLStatus

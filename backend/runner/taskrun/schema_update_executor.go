@@ -59,13 +59,9 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, task *store.TaskM
 		return true, nil, err
 	}
 
-	statement := payload.Statement
-	if payload.SheetID > 0 {
-		sheetStatement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
-		if err != nil {
-			return true, nil, err
-		}
-		statement = sheetStatement
+	statement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
+	if err != nil {
+		return true, nil, err
 	}
 
 	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Migrate, statement, payload.SchemaVersion, payload.VCSPushEvent)

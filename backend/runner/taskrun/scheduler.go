@@ -364,11 +364,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // PatchTask patches the statement, earliest allowed time and rollbackEnabled for a task.
 func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
-	if taskPatch.Statement != nil && taskPatch.SheetID != nil {
-		return errors.New("cannot update both statement and sheet_id")
-	}
-
-	if taskPatch.Statement != nil || taskPatch.SheetID != nil {
+	if taskPatch.SheetID != nil {
 		if err := canUpdateTaskStatement(task); err != nil {
 			return err
 		}
@@ -420,7 +416,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	}
 
 	// Trigger task checks.
-	if taskPatch.Statement != nil || taskPatch.SheetID != nil {
+	if taskPatch.SheetID != nil {
 		dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
 		if err != nil {
 			return err
@@ -537,37 +533,6 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 	}
 
-	// Update statement activity.
-	if taskPatch.Statement != nil {
-		oldStatement, err := utils.GetTaskStatement(task.Payload)
-		if err != nil {
-			return err
-		}
-		newStatement := *taskPatch.Statement
-
-		// create a task statement update activity
-		payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
-			TaskID:       taskPatched.ID,
-			OldStatement: oldStatement,
-			NewStatement: newStatement,
-			TaskName:     task.Name,
-			IssueName:    issue.Title,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
-		}
-		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
-			CreatorID:   taskPatch.UpdaterID,
-			ContainerID: taskPatched.PipelineID,
-			Type:        api.ActivityPipelineTaskStatementUpdate,
-			Payload:     string(payload),
-			Level:       api.ActivityInfo,
-		}, &activity.Metadata{
-			Issue: issue,
-		}); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
-		}
-	}
 	// Earliest allowed time update activity.
 	if taskPatch.EarliestAllowedTs != nil {
 		// create an activity
