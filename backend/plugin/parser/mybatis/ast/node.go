@@ -11,17 +11,6 @@ type Node interface {
 	RestoreSQL(w io.Writer) error
 }
 
-// TextNode represents a text node.
-type TextNode struct {
-	Text string
-}
-
-// RestoreSQL implements Node interface.
-func (n *TextNode) RestoreSQL(w io.Writer) error {
-	_, err := w.Write([]byte(n.Text))
-	return err
-}
-
 // MapperNode represents a mapper node in mybatis mapper xml begin with <mapper>.
 type MapperNode struct {
 	Namespace  string
@@ -38,23 +27,14 @@ func (n *MapperNode) RestoreSQL(w io.Writer) error {
 	return nil
 }
 
-// QueryNode represents a query node.
-type QueryNode struct {
-	// ID is the id of the query node.
-	ID string
-	// Children is the children of the query node.
-	Children []Node
+// NewMapperNode creates a new mapper node.
+func NewMapperNode(namespace string) *MapperNode {
+	return &MapperNode{
+		Namespace: namespace,
+	}
 }
 
-// RestoreSQL implements Node interface.
-func (n *QueryNode) RestoreSQL(w io.Writer) error {
-	for _, node := range n.Children {
-		if err := node.RestoreSQL(w); err != nil {
-			return err
-		}
-	}
-	if _, err := w.Write([]byte(";\n")); err != nil {
-		return err
-	}
-	return nil
+// AddChild adds a child to the mapper node.
+func (n *MapperNode) AddChild(child *QueryNode) {
+	n.QueryNodes = append(n.QueryNodes, child)
 }

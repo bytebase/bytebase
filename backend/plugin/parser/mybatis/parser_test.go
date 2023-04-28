@@ -9,8 +9,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
-
-	"github.com/stretchr/testify/assert"
 )
 
 // TestData is the test data for mybatis parser. It contains the xml and the expected sql.
@@ -25,26 +23,30 @@ type TestData struct {
 func runTest(t *testing.T, filepath string, record bool) {
 	var testCases []TestData
 	yamlFile, err := os.Open(filepath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer yamlFile.Close()
 
 	byteValue, err := io.ReadAll(yamlFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = yaml.Unmarshal(byteValue, &testCases)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	for i, testCase := range testCases {
-		node, err := Parse(testCase.XML)
-		assert.NoError(t, err)
-		assert.NotNil(t, node)
+		parser := NewParser(testCase.XML)
+		nodes, err := parser.Parse()
+		require.NoError(t, err)
+		require.NotEmpty(t, nodes)
 
 		var stringsBuilder strings.Builder
-		err = node.RestoreSQL(&stringsBuilder)
-		assert.NoError(t, err)
+		for _, node := range nodes {
+			err = node.RestoreSQL(&stringsBuilder)
+			require.NoError(t, err)
+		}
+		require.NoError(t, err)
 		if record {
 			testCases[i].SQL = stringsBuilder.String()
 		} else {
-			assert.Equal(t, testCase.SQL, stringsBuilder.String())
+			require.Equal(t, testCase.SQL, stringsBuilder.String())
 		}
 	}
 
@@ -63,6 +65,6 @@ func TestParser(t *testing.T) {
 		"test-data/test_simple_mapper.yaml",
 	}
 	for _, filepath := range testFileList {
-		runTest(t, filepath, true)
+		runTest(t, filepath, false)
 	}
 }
