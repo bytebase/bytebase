@@ -36,7 +36,6 @@ import {
   defer,
   isDev,
   isTaskTriggeredByVCS,
-  sheetIdOfTask,
   taskCheckRunSummary,
 } from "@/utils";
 import { maybeApplyRollbackParams } from "@/plugins/issue/logic/initialize/standard";
