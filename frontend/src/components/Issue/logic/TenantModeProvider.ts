@@ -27,6 +27,7 @@ export default defineComponent({
     const { create, issue, selectedTask, createIssue, onStatusChanged } =
       useIssueLogic();
     const databaseStore = useDatabaseStore();
+    const sheetStore = useSheetStore();
     const taskStore = useTaskStore();
 
     const allowEditStatement = computed(() => {
@@ -56,7 +57,7 @@ export default defineComponent({
       }
     });
 
-    const updateStatement = (newStatement: string) => {
+    const updateStatement = async (newStatement: string) => {
       if (create.value) {
         // For tenant deploy mode, we apply the statement to all stages and all tasks
         const allTaskList = flattenTaskList<TaskCreate>(issue.value);
@@ -71,8 +72,16 @@ export default defineComponent({
           (detail) => (detail.statement = newStatement)
         );
       } else {
-        // Do nothing.
-        // For those created task, we should update its sheet.
+        const issueEntity = issue.value as Issue;
+        const sheet = await sheetStore.createSheet({
+          projectId: issueEntity.project.id,
+          name: `Sheet for issue #${issueEntity.id}`,
+          statement: newStatement,
+          visibility: "PROJECT",
+          source: "BYTEBASE_ARTIFACT",
+          payload: {},
+        });
+        updateSheetId(sheet.id);
       }
     };
 
