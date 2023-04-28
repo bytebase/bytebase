@@ -10,16 +10,25 @@
 - xml: |-
     <mapper namespace="com.bytebase.test">
         <select id="selectUser" parameterType="int" resultType="hashmap">
+            select * from user where id = ${id}
+        </select>
+    </mapper>
+  sql: |
+    select * from user where id = ?;
+
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <select id="selectUser" parameterType="int" resultType="hashmap">
             select * from user where id = #{id}
         </select>
         <insert id="insertUser" parameterType="com.bytebase.test.User">
-            insert into user (id, name) values (#{id}, #{name})
+            insert into user (id, name) values (${id}, #{name})
         </insert>
         <update id="updateUser" parameterType="com.bytebase.test.User">
-            update user set name = #{name} where id = #{id}
+            update user set name = #{name} where id = ${id}
         </update>
         <delete id="deleteUser" parameterType="int">
-            delete from user where id = #{id}
+            delete from user where id = ${id}
         </delete>
     </mapper>
   sql: |

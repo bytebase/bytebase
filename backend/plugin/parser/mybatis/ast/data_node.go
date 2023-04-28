@@ -178,7 +178,8 @@ func (d *DataNode) scanParameter() error {
 			return errors.Wrapf(err, "failed to read rune")
 		}
 		if r == '}' {
-			partBuf := string(d.buf[ /*Skip '#{'*/ 2 : len(d.buf)-1 /*Skip '}'*/])
+			// Skip the prefix '#{' and suffix '}'.
+			partBuf := string(d.buf[2 : len(d.buf)-1])
 			d.Nodes = append(d.Nodes, &ParameterNode{
 				Name: string(partBuf),
 			})
@@ -207,11 +208,13 @@ func (d *DataNode) scanVariable() error {
 			return errors.Wrapf(err, "failed to read rune")
 		}
 		if r == '}' {
-			partBuf := string(d.buf[2: /*Skip '${'*/])
+			// Skip the prefix '${' and suffix '}'.
+			partBuf := string(d.buf[2 : len(d.buf)-1])
 			d.Nodes = append(d.Nodes, &VariableNode{
 				Name: string(partBuf),
 			})
 			d.buf = d.buf[:0]
+			return nil
 		}
 	}
 }
