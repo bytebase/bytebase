@@ -413,20 +413,9 @@ const saveEdit = async () => {
   if (!selectedDatabase.value) {
     return;
   }
-
   if (allowFormatOnSave.value && formatOnSave.value) {
     editorRef.value?.formatEditorContent();
   }
-  // Create a new sheet instead of reusing the old one.
-  const sheet = await sheetStore.createSheet({
-    projectId: selectedDatabase.value.projectId,
-    name: uuidv4(),
-    statement: state.editStatement,
-    visibility: "PROJECT",
-    source: "BYTEBASE_ARTIFACT",
-    payload: {},
-  });
-  updateSheetId(sheet.id);
   await updateStatement(state.editStatement);
   state.editing = false;
 };
