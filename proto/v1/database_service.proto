@@ -91,7 +91,7 @@ service DatabaseService {
   rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=environments/*/instances/*/databases/*/secrets/*}"};
   }
-  
+
   rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
     option (google.api.http) = {post: "/v1/{parent=environments/*/instances/*/databases/*}:adviseIndex"};
     option (google.api.method_signature) = "parent";
@@ -715,7 +715,7 @@ message Secret {
 message AdviseIndexRequest {
   // Format: environments/{environment}/instances/{instance}/databases/{database}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
-  
+
   // The statement to be advised.
   string statement = 2;
 }
@@ -724,10 +724,10 @@ message AdviseIndexRequest {
 message AdviseIndexResponse {
   // The current index of the statement used.
   string current_index = 1;
-  
+
   // The suggested index of the statement.
   string suggestion = 2;
-  
+
   // The create index statement of the suggested index.
   string create_index_statement = 3;
 }
