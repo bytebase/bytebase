@@ -1,6 +1,7 @@
 import { computed } from "vue";
 import { cloneDeep } from "lodash-es";
 import { useRoute } from "vue-router";
+import { v4 as uuidv4 } from "uuid";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import {
   useCurrentUser,
@@ -35,7 +36,6 @@ import {
   defer,
   isDev,
   isTaskTriggeredByVCS,
-  sheetIdOfTask,
   taskCheckRunSummary,
 } from "@/utils";
 import { maybeApplyRollbackParams } from "@/plugins/issue/logic/initialize/standard";
@@ -176,20 +176,26 @@ export const useCommonLogic = () => {
     } else {
       // Ask whether to apply the change to all pending tasks if possible.
       const task = selectedTask.value as Task;
+      const issueEntity = issue.value as Issue;
       const patchingTaskList = await getPatchingTaskList(
-        issue.value as Issue,
+        issueEntity,
         task,
         dialog
       );
       if (patchingTaskList.length === 0) return;
+
+      // Create a new sheet instead of reusing the old one.
+      const sheet = await sheetStore.createSheet({
+        projectId: issueEntity.project.id,
+        name: uuidv4(),
+        statement: newStatement,
+        visibility: "PROJECT",
+        source: "BYTEBASE_ARTIFACT",
+        payload: {},
+      });
+
       const patchRequestList = patchingTaskList.map((task) => {
-        const sheetId = sheetIdOfTask(task);
-        if (sheetId && sheetId !== UNKNOWN_ID) {
-          sheetStore.patchSheetById({
-            id: sheetId,
-            statement: newStatement,
-          });
-        }
+        patchTask(task.id, { sheetId: sheet.id });
       });
       return Promise.allSettled(patchRequestList);
     }
