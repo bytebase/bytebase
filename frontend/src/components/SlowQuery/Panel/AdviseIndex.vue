@@ -17,7 +17,7 @@
           {{ $t("slow-query.advise-index.create-index") }}
         </button>
       </div>
-      <span class="w-full font-mono">{{ state.currentIndex }}</span>
+      <span class="w-full font-mono">{{ state.suggestion }}</span>
     </div>
   </div>
 </template>
