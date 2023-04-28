@@ -3,6 +3,7 @@
     :is="link ? 'router-link' : tag"
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
+    :class="link && 'normal-link'"
   >
     <span v-if="prefix" class="ml-1 text-gray-400">{{ prefix }}</span>
     <span>{{ database.name }}</span>
