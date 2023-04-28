@@ -156,8 +156,6 @@ type MigrationDetail struct {
 	// DatabaseID is the ID of a database.
 	// This should be unset when a project is in tenant mode. The ProjectID is derived from IssueCreate.
 	DatabaseID int `json:"databaseId"`
-	// Statement is the statement to update database schema.
-	Statement string `json:"statement"`
 	// SheetID is the ID of a sheet. Statement and sheet ID is mutually exclusive.
 	SheetID int `json:"sheetId"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.

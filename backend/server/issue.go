@@ -790,11 +790,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		if detail.MigrationType != db.Baseline && detail.MigrationType != db.Migrate && detail.MigrationType != db.MigrateSDL && detail.MigrationType != db.Data {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "support migrate, migrateSDL and data type migration only")
 		}
-		if detail.MigrationType != db.Baseline && (detail.Statement == "" && detail.SheetID == 0) {
+		if detail.MigrationType != db.Baseline && detail.SheetID == 0 {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "require sql statement or sheet ID to create an issue")
-		}
-		if detail.Statement != "" && detail.SheetID > 0 {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot set both statement and sheet ID to create an issue")
 		}
 		// TODO(d): validate sheet ID.
 		if detail.DatabaseID > 0 {
@@ -1020,7 +1017,6 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		taskName = fmt.Sprintf("DDL(schema) for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseSchemaUpdate
 		payload := api.TaskDatabaseSchemaUpdatePayload{
-			Statement:     d.Statement,
 			SheetID:       d.SheetID,
 			SchemaVersion: schemaVersion,
 			VCSPushEvent:  vcsPushEvent,
@@ -1034,7 +1030,6 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		taskName = fmt.Sprintf("SDL for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseSchemaUpdateSDL
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
-			Statement:     d.Statement,
 			SheetID:       d.SheetID,
 			SchemaVersion: schemaVersion,
 			VCSPushEvent:  vcsPushEvent,
@@ -1048,7 +1043,6 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		taskName = fmt.Sprintf("DML(data) for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseDataUpdate
 		payload := api.TaskDatabaseDataUpdatePayload{
-			Statement:         d.Statement,
 			SheetID:           d.SheetID,
 			SchemaVersion:     schemaVersion,
 			VCSPushEvent:      vcsPushEvent,
@@ -1074,7 +1068,6 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		DatabaseID:        &database.UID,
 		Status:            api.TaskPendingApproval,
 		Type:              taskType,
-		Statement:         d.Statement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
 		Payload:           payloadString,
 	}, nil
@@ -1143,6 +1136,20 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	if err != nil {
 		return nil, err
 	}
+	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		CreatorID:  api.SystemBotID,
+		ProjectID:  project.UID,
+		Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
+		Statement:  statement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+		Payload:    "{}",
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create database creation sheet")
+	}
+
 	payload := api.TaskDatabaseCreatePayload{
 		ProjectID:    project.UID,
 		CharacterSet: c.CharacterSet,
@@ -1150,7 +1157,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Collation:    c.Collation,
 		Labels:       c.Labels,
 		DatabaseName: databaseName,
-		Statement:    statement,
+		SheetID:      sheet.ID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
@@ -1322,7 +1329,7 @@ func createGhostTaskList(database *store.DatabaseMessage, instance *store.Instan
 	var taskCreateList []api.TaskCreate
 	// task "sync"
 	payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
-		Statement:     detail.Statement,
+		SheetID:       detail.SheetID,
 		SchemaVersion: schemaVersion,
 		VCSPushEvent:  vcsPushEvent,
 	}
@@ -1336,7 +1343,6 @@ func createGhostTaskList(database *store.DatabaseMessage, instance *store.Instan
 		DatabaseID:        &database.UID,
 		Status:            api.TaskPendingApproval,
 		Type:              api.TaskDatabaseSchemaUpdateGhostSync,
-		Statement:         detail.Statement,
 		EarliestAllowedTs: detail.EarliestAllowedTs,
 		Payload:           string(bytesSync),
 	})

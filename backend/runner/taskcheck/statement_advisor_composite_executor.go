@@ -67,7 +67,15 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, err
 	}
-	if payload.SheetID > 0 {
+
+	sheet, err := e.store.GetSheet(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
+	}
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %d not found", payload.SheetID)
+	}
+	if sheet.Size > common.MaxSheetSizeForTaskCheck {
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusSuccess,
@@ -77,6 +85,10 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 				Content:   "",
 			},
 		}, nil
+	}
+	statement, err := e.store.GetSheetStatementByID(ctx, payload.SheetID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet statement %d", payload.SheetID)
 	}
 
 	policy, err := e.store.GetSQLReviewPolicy(ctx, environment.UID)
@@ -114,7 +126,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := utils.RenderStatement(payload.Statement, materials)
+	renderedStatement := utils.RenderStatement(statement, materials)
 	adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   dbSchema.Metadata.CharacterSet,
 		Collation: dbSchema.Metadata.Collation,

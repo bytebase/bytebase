@@ -51,13 +51,9 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")
 	}
-	statement := payload.Statement
-	if payload.SheetID > 0 {
-		sheetStatement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
-		if err != nil {
-			return true, nil, err
-		}
-		statement = sheetStatement
+	statement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
+	if err != nil {
+		return true, nil, err
 	}
 
 	statement = strings.TrimSpace(statement)

@@ -435,16 +435,13 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	if v := patch.DatabaseID; v != nil {
 		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if (patch.Statement != nil || patch.SchemaVersion != nil || patch.SheetID != nil) && patch.Payload != nil {
-		return nil, errors.Errorf("cannot set both statement/sheetID/schemaVersion and payload for TaskPatch")
+	if (patch.SchemaVersion != nil || patch.SheetID != nil) && patch.Payload != nil {
+		return nil, errors.Errorf("cannot set both sheetID/schemaVersion and payload for TaskPatch")
 	}
 	if (patch.RollbackEnabled != nil || patch.RollbackSQLStatus != nil || patch.RollbackStatement != nil || patch.RollbackError != nil) && patch.Payload != nil {
 		return nil, errors.Errorf("cannot set both rollbackEnabled/rollbackSQLStatus/rollbackStatement/rollbackError payload for TaskPatch")
 	}
 	var payloadSet []string
-	if v := patch.Statement; v != nil {
-		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('statement', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
-	}
 	if v := patch.SheetID; v != nil {
 		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('sheetId', to_jsonb($%d::INT))`, len(args)+1)), append(args, *v)
 	}
