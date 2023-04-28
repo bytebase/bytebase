@@ -1,2 +1,0 @@
-DROP INDEX idx_instance_unique_resource_id;
-CREATE UNIQUE INDEX idx_instance_unique_environment_id_resource_id ON instance(environment_id, resource_id);
