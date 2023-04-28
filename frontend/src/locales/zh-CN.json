@@ -2383,6 +2383,11 @@
     "filter": {
       "from-date": "开始日期",
       "to-date": "结束日期"
+    },
+    "advise-index": {
+      "current-index": "当前索引",
+      "suggestion": "建议",
+      "create-index": "创建索引"
     }
   },
   "principal": {
