@@ -31,6 +31,7 @@ export default defineComponent({
       // the principal list as well.
       // We also need this to render the proper inbox and activity entry.
       usePrincipalStore().fetchPrincipalList(),
+      useUserStore().fetchUserList(),
       useEnvironmentStore().fetchEnvironmentList(),
       // The default project hosts databases not explicitly assigned to other users project.
       useProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),
