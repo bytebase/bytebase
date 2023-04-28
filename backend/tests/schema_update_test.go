@@ -105,13 +105,23 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	database := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
+	migrationStatementSheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "migration statement sheet",
+		Statement:  migrationStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    database.ID,
-				Statement:     migrationStatement,
+				SheetID:       migrationStatementSheet.ID,
 			},
 		},
 	})
@@ -134,13 +144,23 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	a.Equal(bookSchemaSQLResult, result)
 
+	dataUpdateStatementSheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "dataUpdateStatement",
+		Statement:  dataUpdateStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Create an issue that updates database data.
 	createContext, err = json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Data,
 				DatabaseID:    database.ID,
-				Statement:     dataUpdateStatement,
+				SheetID:       dataUpdateStatementSheet.ID,
 			},
 		},
 	})
@@ -626,6 +646,16 @@ func TestVCS(t *testing.T) {
 			)
 			a.NoError(err)
 
+			sheet, err := ctl.createSheet(api.SheetCreate{
+				ProjectID:  project.ID,
+				Name:       "migration statement 4 sheet",
+				Statement:  migrationStatement4,
+				Visibility: api.ProjectSheet,
+				Source:     api.SheetFromBytebaseArtifact,
+				Type:       api.SheetForSQL,
+			})
+			a.NoError(err)
+
 			// Schema change from UI.
 			// Create an issue that updates database schema.
 			createContext, err := json.Marshal(&api.MigrationContext{
@@ -633,7 +663,7 @@ func TestVCS(t *testing.T) {
 					{
 						MigrationType: db.Migrate,
 						DatabaseID:    database.ID,
-						Statement:     migrationStatement4,
+						SheetID:       sheet.ID,
 					},
 				},
 			})
@@ -2156,13 +2186,24 @@ CREATE TABLE public.book (
 				}
 			}
 			a.NotNil(database)
+
+			DDLSheet, err := ctl.createSheet(api.SheetCreate{
+				ProjectID:  project.ID,
+				Name:       "test ddl",
+				Statement:  test.ddl,
+				Visibility: api.ProjectSheet,
+				Source:     api.SheetFromBytebaseArtifact,
+				Type:       api.SheetForSQL,
+			})
+			a.NoError(err)
+
 			// Create an issue that updates database schema.
 			createContext, err := json.Marshal(&api.MigrationContext{
 				DetailList: []*api.MigrationDetail{
 					{
 						MigrationType: db.Migrate,
 						DatabaseID:    database.ID,
-						Statement:     test.ddl,
+						SheetID:       DDLSheet.ID,
 					},
 				},
 			})
@@ -2267,13 +2308,23 @@ func TestMarkTaskAsDone(t *testing.T) {
 	database := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
+	sheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "migration statement sheet",
+		Statement:  migrationStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    database.ID,
-				Statement:     migrationStatement,
+				SheetID:       sheet.ID,
 			},
 		},
 	})
