@@ -3,6 +3,7 @@ import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { Expr } from "../google/type/expr";
 import { State, stateFromJSON, stateToJSON } from "./common";
 import { ProjectGitOpsInfo } from "./externalvs_service";
 
@@ -415,6 +416,12 @@ export interface Binding {
    *    account. For example, `alice@example.com` .
    */
   members: string[];
+  /**
+   * The condition that is associated with this binding.
+   * If the condition evaluates to true, then this binding applies to the current request.
+   * If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
+   */
+  condition?: Expr;
 }
 
 export interface AddWebhookRequest {
@@ -1909,7 +1916,7 @@ export const IamPolicy = {
 };
 
 function createBaseBinding(): Binding {
-  return { role: "", members: [] };
+  return { role: "", members: [], condition: undefined };
 }
 
 export const Binding = {
@@ -1919,6 +1926,9 @@ export const Binding = {
     }
     for (const v of message.members) {
       writer.uint32(18).string(v!);
+    }
+    if (message.condition !== undefined) {
+      Expr.encode(message.condition, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1944,6 +1954,13 @@ export const Binding = {
 
           message.members.push(reader.string());
           continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -1957,6 +1974,7 @@ export const Binding = {
     return {
       role: isSet(object.role) ? String(object.role) : "",
       members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
   },
 
@@ -1968,6 +1986,7 @@ export const Binding = {
     } else {
       obj.members = [];
     }
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
     return obj;
   },
 
@@ -1979,6 +1998,9 @@ export const Binding = {
     const message = createBaseBinding();
     message.role = object.role ?? "";
     message.members = object.members?.map((e) => e) || [];
+    message.condition = (object.condition !== undefined && object.condition !== null)
+      ? Expr.fromPartial(object.condition)
+      : undefined;
     return message;
   },
 };
