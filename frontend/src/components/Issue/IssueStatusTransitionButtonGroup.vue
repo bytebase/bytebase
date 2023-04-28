@@ -541,7 +541,11 @@ const allowCreate = computed(() => {
     const allTaskList = flattenTaskList<TaskCreate>(newIssue);
     for (const task of allTaskList) {
       if (TaskTypeWithStatement.includes(task.type)) {
-        if (isEmpty(task.statement)) {
+        if (
+          isEmpty(task.statement) &&
+          ((task as TaskCreate).sheetId === undefined ||
+            (task as TaskCreate).sheetId === UNKNOWN_ID)
+        ) {
           return false;
         }
       }

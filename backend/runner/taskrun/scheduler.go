@@ -364,7 +364,11 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // PatchTask patches the statement, earliest allowed time and rollbackEnabled for a task.
 func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
-	if taskPatch.Statement != nil {
+	if taskPatch.Statement != nil && taskPatch.SheetID != nil {
+		return errors.New("cannot update both statement and sheet_id")
+	}
+
+	if taskPatch.Statement != nil || taskPatch.SheetID != nil {
 		if err := canUpdateTaskStatement(task); err != nil {
 			return err
 		}
@@ -416,7 +420,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	}
 
 	// Trigger task checks.
-	if taskPatch.Statement != nil {
+	if taskPatch.Statement != nil || taskPatch.SheetID != nil {
 		dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
 		if err != nil {
 			return err
@@ -499,6 +503,37 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 				// It's OK if we failed to trigger a check, just emit an error log
 				log.Error("Failed to trigger task report check after changing the task statement", zap.Int("task_id", task.ID), zap.String("task_name", task.Name), zap.Error(err))
 			}
+		}
+	}
+
+	if taskPatch.SheetID != nil {
+		oldSheetID, err := utils.GetTaskSheetID(task.Payload)
+		if err != nil {
+			return errors.Wrap(err, "failed to get old sheet ID")
+		}
+		newSheetID := *taskPatch.SheetID
+
+		// create a task sheet update activity
+		payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
+			TaskID:     taskPatched.ID,
+			OldSheetID: oldSheetID,
+			NewSheetID: newSheetID,
+			TaskName:   task.Name,
+			IssueName:  issue.Title,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task sheet: %v", taskPatched.Name).SetInternal(err)
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
+			CreatorID:   taskPatch.UpdaterID,
+			ContainerID: taskPatched.PipelineID,
+			Type:        api.ActivityPipelineTaskStatementUpdate,
+			Payload:     string(payload),
+			Level:       api.ActivityInfo,
+		}, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 		}
 	}
 

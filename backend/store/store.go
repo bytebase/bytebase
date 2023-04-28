@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sync"
 
+	cache "github.com/go-pkgz/expirable-cache/v2"
+
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
@@ -33,12 +35,15 @@ type Store struct {
 	idpCache                       sync.Map // map[string]*IdentityProvider
 	projectIDDeploymentConfigCache sync.Map // map[int]*DeploymentConfigMessage
 	risksCache                     sync.Map // []*RiskMessage, use 0 as the key
+	// sheetStatementCache caches the statement of a sheet.
+	sheetStatementCache cache.Cache[int, string]
 }
 
 // New creates a new instance of Store.
 func New(db *DB) *Store {
 	return &Store{
-		db: db,
+		db:                  db,
+		sheetStatementCache: cache.NewCache[int, string](),
 	}
 }
 

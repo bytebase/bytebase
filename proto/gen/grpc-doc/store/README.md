@@ -67,6 +67,11 @@
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
   
+- [store/sheet.proto](#store_sheet-proto)
+    - [SheetPayload](#bytebase-store-SheetPayload)
+    - [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue)
+    - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
+  
 - [store/slow_query.proto](#store_slow_query-proto)
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
     - [SlowQueryStatistics](#bytebase-store-SlowQueryStatistics)
@@ -419,6 +424,11 @@ ANY means approving any node will proceed.
 | authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
 | sid | [string](#string) |  | sid and service_name are used for Oracle. |
 | service_name | [string](#string) |  |  |
+| ssh_host | [string](#string) |  | SSH related The hostname of the SSH server agent. |
+| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. |
+| ssh_user | [string](#string) |  | The user to login the server. |
+| ssh_obfuscated_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
+| ssh_obfuscated_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 
 
 
@@ -979,6 +989,74 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ENCRYPTION_STARTTLS | 2 |  |
 | ENCRYPTION_SSL_TLS | 3 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_sheet-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/sheet.proto
+
+
+
+<a name="bytebase-store-SheetPayload"></a>
+
+### SheetPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_payload | [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload) |  |  |
+| used_by_issues | [SheetPayload.UsedByIssue](#bytebase-store-SheetPayload-UsedByIssue) | repeated | used_by_issues link to the issues where the sheet is used. |
+
+
+
+
+
+
+<a name="bytebase-store-SheetPayload-UsedByIssue"></a>
+
+### SheetPayload.UsedByIssue
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_id | [int64](#int64) |  |  |
+| issue_title | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SheetPayload-VCSPayload"></a>
+
+### SheetPayload.VCSPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| file_name | [string](#string) |  |  |
+| file_path | [string](#string) |  |  |
+| size | [int64](#int64) |  |  |
+| author | [string](#string) |  |  |
+| last_commit_id | [string](#string) |  |  |
+| last_sync_ts | [int64](#int64) |  |  |
+
+
+
+
+
+ 
 
  
 

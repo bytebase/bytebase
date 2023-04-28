@@ -332,7 +332,7 @@ CREATE TABLE instance (
     resource_id TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
+CREATE UNIQUE INDEX idx_instance_unique_environment_id_resource_id ON instance(environment_id, resource_id);
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;
 
@@ -1070,7 +1070,7 @@ CREATE TABLE sheet (
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
     visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE',
-    source TEXT NOT NULL CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET')) DEFAULT 'BYTEBASE',
+    source TEXT NOT NULL CONSTRAINT sheet_source_check CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET', 'BYTEBASE_ARTIFACT')) DEFAULT 'BYTEBASE',
     type TEXT NOT NULL CHECK (type IN ('SQL')) DEFAULT 'SQL',
     payload JSONB NOT NULL DEFAULT '{}'
 );

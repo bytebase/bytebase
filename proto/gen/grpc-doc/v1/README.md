@@ -61,6 +61,8 @@
     - [BookmarkService](#bytebase-v1-BookmarkService)
   
 - [v1/database_service.proto](#v1_database_service-proto)
+    - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
+    - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
     - [Backup](#bytebase-v1-Backup)
     - [BackupSetting](#bytebase-v1-BackupSetting)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
@@ -1106,6 +1108,39 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 
 
 
+<a name="bytebase-v1-AdviseIndexRequest"></a>
+
+### AdviseIndexRequest
+AdviseIndexRequest is the request of advising index.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: environments/{environment}/instances/{instance}/databases/{database} |
+| statement | [string](#string) |  | The statement to be advised. |
+
+
+
+
+
+
+<a name="bytebase-v1-AdviseIndexResponse"></a>
+
+### AdviseIndexResponse
+AdviseIndexResponse is the response of advising index.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| current_index | [string](#string) |  | The current index of the statement used. |
+| suggestion | [string](#string) |  | The suggested index of the statement. |
+| create_index_statement | [string](#string) |  | The create index statement of the suggested index. |
+
+
+
+
+
+
 <a name="bytebase-v1-Backup"></a>
 
 ### Backup
@@ -1843,6 +1878,7 @@ The type of the backup.
 | ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) |  |
 | UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
 | DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
 
  
 
@@ -2857,6 +2893,11 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | authentication_database | [string](#string) |  |  |
 | sid | [string](#string) |  | sid and service_name are used for Oracle. |
 | service_name | [string](#string) |  |  |
+| ssh_host | [string](#string) |  | Connection over SSH. The hostname of the SSH server agent. Required. |
+| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. Required. |
+| ssh_user | [string](#string) |  | The user to login the server. Required. |
+| ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
+| ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 
 
 
@@ -3633,6 +3674,7 @@ TODO(zp): move to activity later.
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. `members` can have the following values:
 
 * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com` . |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
 
 
 

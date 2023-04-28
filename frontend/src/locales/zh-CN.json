@@ -334,7 +334,9 @@
       "self": "应用到所有未执行任务",
       "current-only": "只应用到当前任务"
     },
-    "execution-time": "执行时间"
+    "execution-time": "执行时间",
+    "run-checks": "运行检查",
+    "run-checks-in-current-stage": "运行当前阶段的所有检查"
   },
   "banner": {
     "update-license": "更新证书",
@@ -386,7 +388,7 @@
       "access-control": "数据访问控制",
       "audit-log": "审计日志",
       "custom-roles": "自定义角色",
-      "mail-delivery": "邮件传输"
+      "mail-delivery": "邮件发送"
     },
     "profile": {
       "email": "邮箱",
@@ -548,7 +550,7 @@
       "not-show-till-next-release": "在下次更新前不要提醒我"
     },
     "mail-delivery": {
-      "description": "通过配置 SMTP 服务器信息以接收相关问题的电子邮件通知。",
+      "description": "配置邮件信息可以让用户接收到数据库相关报告的电子邮件，如慢查询周报。",
       "field": {
         "smtp-server-host": "SMTP 服务器主机",
         "from": "发送自",
@@ -2381,6 +2383,11 @@
     "filter": {
       "from-date": "开始日期",
       "to-date": "结束日期"
+    },
+    "advise-index": {
+      "current-index": "当前索引",
+      "suggestion": "建议",
+      "create-index": "创建索引"
     }
   },
   "principal": {

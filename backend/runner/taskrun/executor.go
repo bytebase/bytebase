@@ -23,8 +23,9 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
-	"github.com/bytebase/bytebase/backend/plugin/parser/transform"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"

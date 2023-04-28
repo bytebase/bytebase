@@ -54,16 +54,13 @@ type IssueLogic = {
   createIssue: (issueCreate: IssueCreate) => any;
 
   // state logic
-  initialTaskListStatement: () => any;
+  initialTaskListStatementFromRoute: () => any;
 
   // edit logic
   allowEditStatement: Ref<boolean>;
   selectedStatement: Ref<string>;
-  updateStatement: (
-    newStatement: string,
-    postUpdated?: (updatedTask: Task) => void
-  ) => any;
-  updateSheetId: (sheetId: SheetId | undefined) => void;
+  updateStatement: (newStatement: string) => any;
+  updateSheetId: (sheetId: SheetId) => void;
   allowApplyTaskStateToOthers: Ref<boolean>;
   applyTaskStateToOthers: (task: TaskCreate) => any;
   doCreate(): any;

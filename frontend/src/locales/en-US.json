@@ -336,7 +336,9 @@
       "self": "Apply change to all pending tasks",
       "current-only": "Only apply change to current task"
     },
-    "execution-time": "Execution time"
+    "execution-time": "Execution time",
+    "run-checks": "Run checks",
+    "run-checks-in-current-stage": "Run checks in current stage"
   },
   "banner": {
     "update-license": "Update license",
@@ -550,7 +552,7 @@
       "not-show-till-next-release": "Don't show this till next version"
     },
     "mail-delivery": {
-      "description": "Enable mail delivery to receive email notification by configuring SMTP server information.",
+      "description": "Configuring SMTP information will enable users to receive database reports via email, such as slow query weekly reports.",
       "field": {
         "smtp-server-host": "SMTP Server Host",
         "smtp-server-port": "SMTP Server Port",
@@ -2386,6 +2388,11 @@
     "filter": {
       "from-date": "From date",
       "to-date": "To date"
+    },
+    "advise-index": {
+      "current-index": "Current Index",
+      "suggestion": "Suggestion",
+      "create-index": "Create Index"
     }
   },
   "principal": {

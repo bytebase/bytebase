@@ -18,8 +18,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
-	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 

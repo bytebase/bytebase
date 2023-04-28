@@ -18,8 +18,9 @@ import (
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
-	"github.com/bytebase/bytebase/backend/plugin/parser/transform"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -69,20 +70,25 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			ExternalLink: instanceCreate.ExternalLink,
 			DataSources: []*store.DataSourceMessage{
 				{
-					Title:                  api.AdminDataSourceName,
-					Type:                   api.Admin,
-					Username:               instanceCreate.Username,
-					ObfuscatedPassword:     common.Obfuscate(instanceCreate.Password, s.secret),
-					ObfuscatedSslCa:        common.Obfuscate(instanceCreate.SslCa, s.secret),
-					ObfuscatedSslCert:      common.Obfuscate(instanceCreate.SslCert, s.secret),
-					ObfuscatedSslKey:       common.Obfuscate(instanceCreate.SslKey, s.secret),
-					Host:                   instanceCreate.Host,
-					Port:                   instanceCreate.Port,
-					Database:               instanceCreate.Database,
-					SRV:                    instanceCreate.SRV,
-					AuthenticationDatabase: instanceCreate.AuthenticationDatabase,
-					SID:                    instanceCreate.SID,
-					ServiceName:            instanceCreate.ServiceName,
+					Title:                   api.AdminDataSourceName,
+					Type:                    api.Admin,
+					Username:                instanceCreate.Username,
+					ObfuscatedPassword:      common.Obfuscate(instanceCreate.Password, s.secret),
+					ObfuscatedSslCa:         common.Obfuscate(instanceCreate.SslCa, s.secret),
+					ObfuscatedSslCert:       common.Obfuscate(instanceCreate.SslCert, s.secret),
+					ObfuscatedSslKey:        common.Obfuscate(instanceCreate.SslKey, s.secret),
+					Host:                    instanceCreate.Host,
+					Port:                    instanceCreate.Port,
+					Database:                instanceCreate.Database,
+					SRV:                     instanceCreate.SRV,
+					AuthenticationDatabase:  instanceCreate.AuthenticationDatabase,
+					SID:                     instanceCreate.SID,
+					ServiceName:             instanceCreate.ServiceName,
+					SSHHost:                 instanceCreate.SSHHost,
+					SSHPort:                 instanceCreate.SSHHost,
+					SSHUser:                 instanceCreate.SSHHost,
+					SSHObfuscatedPassword:   common.Obfuscate(instanceCreate.SSHPassword, s.secret),
+					SSHObfuscatedPrivateKey: common.Obfuscate(instanceCreate.SSHPrivateKey, s.secret),
 				},
 			},
 		}, creator)

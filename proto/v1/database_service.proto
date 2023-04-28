@@ -6,11 +6,11 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "v1/common.proto";
-import "google/protobuf/empty.proto";
 
 option go_package = "generated-go/v1";
 
@@ -77,9 +77,7 @@ service DatabaseService {
   }
 
   rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
-    option (google.api.http) = {
-      get: "/v1/{parent=environments/*/instances/*/databases/*}/secrets"
-    };
+    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/secrets"};
     option (google.api.method_signature) = "parent";
   }
 
@@ -91,9 +89,12 @@ service DatabaseService {
   }
 
   rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/{name=environments/*/instances/*/databases/*/secrets/*}"
-    };
+    option (google.api.http) = {delete: "/v1/{name=environments/*/instances/*/databases/*/secrets/*}"};
+  }
+
+  rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
+    option (google.api.http) = {post: "/v1/{parent=environments/*/instances/*/databases/*}:adviseIndex"};
+    option (google.api.method_signature) = "parent";
   }
 }
 
@@ -612,10 +613,10 @@ message SlowQueryStatistics {
 
   // The maximum rows examined of the slow query log.
   int64 maximum_rows_examined = 9;
-  
+
   // The percentage of the query time.
   double query_time_percent = 10;
-  
+
   // The percentage of the count.
   double count_percent = 11;
 
@@ -708,4 +709,25 @@ message Secret {
 
   // The decsription of the secret.
   string description = 5;
+}
+
+// AdviseIndexRequest is the request of advising index.
+message AdviseIndexRequest {
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The statement to be advised.
+  string statement = 2;
+}
+
+// AdviseIndexResponse is the response of advising index.
+message AdviseIndexResponse {
+  // The current index of the statement used.
+  string current_index = 1;
+
+  // The suggested index of the statement.
+  string suggestion = 2;
+
+  // The create index statement of the suggested index.
+  string create_index_statement = 3;
 }

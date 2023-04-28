@@ -15,6 +15,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/github/gh-ost v1.1.5
+	github.com/go-pkgz/expirable-cache/v2 v2.0.0
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
@@ -43,7 +44,7 @@ require (
 	github.com/redis/go-redis/v9 v9.0.3
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/shopspring/decimal v1.3.1
-	github.com/sijms/go-ora/v2 v2.6.12
+	github.com/sijms/go-ora/v2 v2.7.1
 	github.com/snowflakedb/gosnowflake v1.6.19
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.2

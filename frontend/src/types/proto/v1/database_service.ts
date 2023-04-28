@@ -675,6 +675,24 @@ export interface Secret {
   description: string;
 }
 
+/** AdviseIndexRequest is the request of advising index. */
+export interface AdviseIndexRequest {
+  /** Format: environments/{environment}/instances/{instance}/databases/{database} */
+  parent: string;
+  /** The statement to be advised. */
+  statement: string;
+}
+
+/** AdviseIndexResponse is the response of advising index. */
+export interface AdviseIndexResponse {
+  /** The current index of the statement used. */
+  currentIndex: string;
+  /** The suggested index of the statement. */
+  suggestion: string;
+  /** The create index statement of the suggested index. */
+  createIndexStatement: string;
+}
+
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
   return { name: "" };
 }
@@ -4354,6 +4372,161 @@ export const Secret = {
   },
 };
 
+function createBaseAdviseIndexRequest(): AdviseIndexRequest {
+  return { parent: "", statement: "" };
+}
+
+export const AdviseIndexRequest = {
+  encode(message: AdviseIndexRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.statement !== "") {
+      writer.uint32(18).string(message.statement);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AdviseIndexRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAdviseIndexRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AdviseIndexRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      statement: isSet(object.statement) ? String(object.statement) : "",
+    };
+  },
+
+  toJSON(message: AdviseIndexRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.statement !== undefined && (obj.statement = message.statement);
+    return obj;
+  },
+
+  create(base?: DeepPartial<AdviseIndexRequest>): AdviseIndexRequest {
+    return AdviseIndexRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<AdviseIndexRequest>): AdviseIndexRequest {
+    const message = createBaseAdviseIndexRequest();
+    message.parent = object.parent ?? "";
+    message.statement = object.statement ?? "";
+    return message;
+  },
+};
+
+function createBaseAdviseIndexResponse(): AdviseIndexResponse {
+  return { currentIndex: "", suggestion: "", createIndexStatement: "" };
+}
+
+export const AdviseIndexResponse = {
+  encode(message: AdviseIndexResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.currentIndex !== "") {
+      writer.uint32(10).string(message.currentIndex);
+    }
+    if (message.suggestion !== "") {
+      writer.uint32(18).string(message.suggestion);
+    }
+    if (message.createIndexStatement !== "") {
+      writer.uint32(26).string(message.createIndexStatement);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AdviseIndexResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAdviseIndexResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.currentIndex = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.suggestion = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.createIndexStatement = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AdviseIndexResponse {
+    return {
+      currentIndex: isSet(object.currentIndex) ? String(object.currentIndex) : "",
+      suggestion: isSet(object.suggestion) ? String(object.suggestion) : "",
+      createIndexStatement: isSet(object.createIndexStatement) ? String(object.createIndexStatement) : "",
+    };
+  },
+
+  toJSON(message: AdviseIndexResponse): unknown {
+    const obj: any = {};
+    message.currentIndex !== undefined && (obj.currentIndex = message.currentIndex);
+    message.suggestion !== undefined && (obj.suggestion = message.suggestion);
+    message.createIndexStatement !== undefined && (obj.createIndexStatement = message.createIndexStatement);
+    return obj;
+  },
+
+  create(base?: DeepPartial<AdviseIndexResponse>): AdviseIndexResponse {
+    return AdviseIndexResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<AdviseIndexResponse>): AdviseIndexResponse {
+    const message = createBaseAdviseIndexResponse();
+    message.currentIndex = object.currentIndex ?? "";
+    message.suggestion = object.suggestion ?? "";
+    message.createIndexStatement = object.createIndexStatement ?? "";
+    return message;
+  },
+};
+
 export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
 export const DatabaseServiceDefinition = {
   name: "DatabaseService",
@@ -5509,6 +5682,88 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    adviseIndex: {
+      name: "AdviseIndex",
+      requestType: AdviseIndexRequest,
+      requestStream: false,
+      responseType: AdviseIndexResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              65,
+              34,
+              63,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              97,
+              100,
+              118,
+              105,
+              115,
+              101,
+              73,
+              110,
+              100,
+              101,
+              120,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -5554,6 +5809,10 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
   ): Promise<DeepPartial<ListSecretsResponse>>;
   updateSecret(request: UpdateSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Secret>>;
   deleteSecret(request: DeleteSecretRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
+  adviseIndex(
+    request: AdviseIndexRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<AdviseIndexResponse>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -5601,6 +5860,10 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
   ): Promise<ListSecretsResponse>;
   updateSecret(request: DeepPartial<UpdateSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Secret>;
   deleteSecret(request: DeepPartial<DeleteSecretRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
+  adviseIndex(
+    request: DeepPartial<AdviseIndexRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<AdviseIndexResponse>;
 }
 
 declare var self: any | undefined;

@@ -1,16 +1,16 @@
 <template>
-  <div class="w-full mt-4 space-y-4">
-    <div class="pt-4 border-b textinfolabel p-2">
-      {{ $t("settings.mail-delivery.description") }}
-      <a
-        class="normal-link inline-flex items-center"
-        href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
-        target="__BLANK"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4 ml-1" />
-      </a>
-    </div>
+  <div class="border-b textinfolabel p-2">
+    {{ $t("settings.mail-delivery.description") }}
+    <a
+      class="normal-link inline-flex items-center"
+      href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
+      target="__BLANK"
+    >
+      {{ $t("common.learn-more") }}
+      <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+    </a>
+  </div>
+  <div class="w-full space-y-4">
     <div class="w-full flex flex-col">
       <!-- Host and Port -->
       <div class="w-full flex flex-row gap-4 mt-8">
@@ -147,42 +147,51 @@
           >
         </div>
       </div>
-      <!-- Test Send Email To Someone -->
-      <div class="w-full gap-4 mt-8">
-        <div class="min-w-max w-80">
-          <div class="textlabel pl-1">
-            {{ $t("settings.mail-delivery.field.send-test-email-to") }}
-          </div>
-          <BBTextField
-            class="text-main w-full h-max mt-2"
-            :placeholder="'someone@gmail.com'"
-            :value="state.testMailTo"
-            @input="(e: any) => state.testMailTo = e.target.value"
-          />
-        </div>
-      </div>
       <div class="flex flex-row w-full">
-        <div class="w-auto gap-4 mt-8">
+        <div class="w-auto gap-4 mt-8 flex flex-row">
           <button
             type="button"
             class="btn-primary inline-flex justify-center py-2 px-4"
-            :disabled="state.testMailTo === '' || state.isLoading"
-            @click.prevent="testMailDeliverySetting"
-          >
-            {{ $t("settings.mail-delivery.field.send") }}
-          </button>
-          <BBSpin v-if="state.isLoading" class="ml-1" />
-        </div>
-        <div class="w-auto gap-4 mt-8 ml-10">
-          <button
-            type="button"
-            class="btn-primary inline-flex justify-center py-2 px-4"
-            :disabled="!allowMailDeliveryActionButton || state.isLoading"
+            :disabled="
+              !allowMailDeliveryActionButton ||
+              state.isSendLoading ||
+              state.isCreateOrUpdateLoading
+            "
             @click.prevent="updateMailDeliverySetting"
           >
             {{ mailDeliverySettingButtonText }}
           </button>
-          <BBSpin v-if="state.isLoading" class="ml-1" />
+          <BBSpin v-if="state.isCreateOrUpdateLoading" class="ml-1" />
+        </div>
+      </div>
+      <div class="border-b mt-5"></div>
+      <!-- Test Send Email To Someone -->
+      <div class="w-full gap-4 mt-4 flex flex-row">
+        <div class="min-w-max w-160">
+          <div class="textlabel pl-1">
+            {{ $t("settings.mail-delivery.field.send-test-email-to") }}
+          </div>
+          <div class="flex flex-row justify-start items-center mt-2">
+            <BBTextField
+              class="text-main h-max w-80"
+              :placeholder="'someone@gmail.com'"
+              :value="state.testMailTo"
+              @input="(e: any) => state.testMailTo = e.target.value"
+            />
+            <button
+              type="button"
+              class="btn-primary ml-5"
+              :disabled="
+                state.testMailTo === '' ||
+                state.isSendLoading ||
+                state.isCreateOrUpdateLoading
+              "
+              @click.prevent="testMailDeliverySetting"
+            >
+              {{ $t("settings.mail-delivery.field.send") }}
+            </button>
+            <BBSpin v-if="state.isSendLoading" class="ml-2" />
+          </div>
         </div>
       </div>
     </div>
@@ -206,7 +215,8 @@ interface LocalState {
   originMailDeliverySetting?: SMTPMailDeliverySettingValue;
   mailDeliverySetting: SMTPMailDeliverySettingValue;
   testMailTo: string;
-  isLoading: boolean;
+  isSendLoading: boolean;
+  isCreateOrUpdateLoading: boolean;
   useEmptyPassword: boolean;
 }
 const { t } = useI18n();
@@ -228,7 +238,8 @@ const defaultMailDeliverySetting = function (): SMTPMailDeliverySettingValue {
 const state = reactive<LocalState>({
   mailDeliverySetting: defaultMailDeliverySetting(),
   testMailTo: "",
-  isLoading: false,
+  isSendLoading: false,
+  isCreateOrUpdateLoading: false,
   useEmptyPassword: false,
 });
 
@@ -255,13 +266,13 @@ onMounted(async () => {
 });
 
 const updateMailDeliverySetting = async () => {
-  state.isLoading = true;
+  state.isCreateOrUpdateLoading = true;
   const mailDelivery = cloneDeep(state.mailDeliverySetting);
   try {
     const value = cloneDeep(mailDelivery);
     await store.updateMailDeliverySetting(value);
   } catch (error) {
-    state.isLoading = false;
+    state.isCreateOrUpdateLoading = false;
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -277,7 +288,7 @@ const updateMailDeliverySetting = async () => {
   if (state.originMailDeliverySetting) {
     state.mailDeliverySetting = cloneDeep(state.originMailDeliverySetting!);
   }
-  state.isLoading = false;
+  state.isCreateOrUpdateLoading = false;
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -286,13 +297,13 @@ const updateMailDeliverySetting = async () => {
 };
 
 const testMailDeliverySetting = async () => {
-  state.isLoading = true;
+  state.isSendLoading = true;
   const mailDelivery = cloneDeep(state.mailDeliverySetting);
   mailDelivery.to = state.testMailTo;
   try {
     await store.validateMailDeliverySetting(mailDelivery);
   } catch (error) {
-    state.isLoading = false;
+    state.isSendLoading = false;
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -301,7 +312,7 @@ const testMailDeliverySetting = async () => {
     });
     return;
   }
-  state.isLoading = false;
+  state.isSendLoading = false;
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

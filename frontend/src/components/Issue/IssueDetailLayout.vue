@@ -83,7 +83,7 @@
                 aria-labelledby="activity-title"
                 class="mt-4"
               >
-                <IssueActivityPanel @run-checks="runTaskChecks" />
+                <IssueActivityPanel />
               </section>
             </div>
           </div>
@@ -206,16 +206,17 @@ const issueTemplate = computed(
   () => templateForType(props.issue.type) || defaultTemplate()
 );
 
-const runTaskChecks = (task: Task) => {
-  taskStore
-    .runChecks({
+const runTaskChecks = (taskList: Task[]) => {
+  const requests = taskList.map((task) => {
+    return taskStore.runChecks({
       issueId: (props.issue as Issue).id,
       pipelineId: (props.issue as Issue).pipeline.id,
       taskId: task.id,
-    })
-    .then(() => {
-      emit("status-changed", true);
     });
+  });
+  Promise.allSettled(requests).then(() => {
+    emit("status-changed", true);
+  });
 };
 
 const currentPipelineType = computed((): PipelineType => {
@@ -318,8 +319,9 @@ watch(
   ([create, issue, sqlList, sql, provider]) => {
     if (create && issue && provider) {
       if (sqlList) {
-        // If 'sqlList' in URL query, update the tasks's statement in issueCreate.
-        provider.initialTaskListStatement();
+        // If 'sqlList' in URL query, initial the tasks's statement in issueCreate from current route.
+        // TODO: Maybe we should save database id list and sql list into session state to prevent url too long.
+        provider.initialTaskListStatementFromRoute();
       } else if (sql) {
         // If 'sql' in URL query, update the issueCreate's statement
         // Only works for the first time.
