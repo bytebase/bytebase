@@ -91,6 +91,7 @@ import {
   useCurrentUser,
   useProjectIamPolicyStore,
   useRoleStore,
+  useUserStore,
 } from "@/store";
 import {
   hasPermissionInProject,
@@ -101,6 +102,8 @@ import {
   removeUserFromProjectIamPolicy,
 } from "@/utils";
 import { ComposedPrincipal } from "../common";
+import { State } from "@/types/proto/v1/common";
+import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 
 export type ComposedPrincipalRow = BBGridRow<ComposedPrincipal>;
 
@@ -115,6 +118,7 @@ const ROLE_OWNER = "roles/OWNER";
 const { t } = useI18n();
 const hasRBACFeature = featureToRef("bb.feature.rbac");
 const currentUser = useCurrentUser();
+const userStore = useUserStore();
 const roleStore = useRoleStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const dialog = useDialog();
@@ -181,7 +185,13 @@ const allowRemoveRole = (role: ProjectRoleType) => {
     const binding = props.iamPolicy.bindings.find(
       (binding) => binding.role === ROLE_OWNER
     );
-    if (!binding || binding.members.length === 1) {
+    const members = (binding?.members || [])
+      .map((userIdentifier) => {
+        const email = getUserEmailFromIdentifier(userIdentifier);
+        return userStore.getUserByEmail(email);
+      })
+      .filter((user) => user?.state === State.ACTIVE);
+    if (!binding || members.length === 1) {
       return false;
     }
   }
@@ -252,7 +262,13 @@ const allowRemovePrincipal = (item: ComposedPrincipal) => {
     const binding = props.iamPolicy.bindings.find(
       (binding) => binding.role === ROLE_OWNER
     );
-    if (!binding || binding.members.length === 1) {
+    const members = (binding?.members || [])
+      .map((userIdentifier) => {
+        const email = getUserEmailFromIdentifier(userIdentifier);
+        return userStore.getUserByEmail(email);
+      })
+      .filter((user) => user?.state === State.ACTIVE);
+    if (!binding || members.length === 1) {
       return false;
     }
   }
