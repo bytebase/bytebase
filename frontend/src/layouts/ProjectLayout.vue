@@ -110,8 +110,12 @@ export default defineComponent({
         { name: startCase(t("slow-query.slow-queries")), hash: "slow-query" },
 
         { name: t("common.activities"), hash: "activity" },
-        { name: t("common.gitops"), hash: "gitops" },
-        { name: t("common.webhooks"), hash: "webhook" },
+        isDefaultProject.value
+          ? null
+          : { name: t("common.gitops"), hash: "gitops" },
+        isDefaultProject.value
+          ? null
+          : { name: t("common.webhooks"), hash: "webhook" },
         isDefaultProject.value
           ? null
           : { name: t("common.settings"), hash: "setting" },

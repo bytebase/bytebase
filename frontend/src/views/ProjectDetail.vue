@@ -33,14 +33,14 @@
   <template v-if="hash === 'activity'">
     <ProjectActivityPanel id="activity" :project="project" />
   </template>
-  <template v-if="hash === 'gitops'">
+  <template v-if="project.id !== DEFAULT_PROJECT_ID && hash === 'gitops'">
     <ProjectVersionControlPanel
       id="gitops"
       :project="project"
       :allow-edit="allowEdit"
     />
   </template>
-  <template v-if="hash === 'webhook'">
+  <template v-if="project.id !== DEFAULT_PROJECT_ID && hash === 'webhook'">
     <ProjectWebhookPanel
       id="webhook"
       :project="project"
