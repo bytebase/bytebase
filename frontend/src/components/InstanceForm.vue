@@ -593,7 +593,6 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useDataSourceStore,
-  useEnvironmentStore,
   useInstanceStore,
   useSettingStore,
   useActuatorStore,
@@ -658,7 +657,6 @@ const { t } = useI18n();
 const router = useRouter();
 const instanceStore = useInstanceStore();
 const instanceV1Store = useInstanceV1Store();
-const environmentStore = useEnvironmentStore();
 const dataSourceStore = useDataSourceStore();
 const currentUser = useCurrentUser();
 const sqlStore = useSQLStore();
@@ -1145,19 +1143,9 @@ const validateResourceId = async (
     return [];
   }
 
-  const environment = environmentStore.getEnvironmentById(
-    basicInformation.value.environmentId
-  );
-  if (environment.id === UNKNOWN_ID) {
-    return [];
-  }
   try {
     const instance = await instanceV1Store.getOrFetchInstanceByName(
-      environmentNamePrefix +
-        environment.resourceId +
-        "/" +
-        instanceNamePrefix +
-        resourceId
+      environmentNamePrefix + "-/" + instanceNamePrefix + resourceId
     );
     if (instance) {
       return [

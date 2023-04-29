@@ -485,10 +485,13 @@ func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
-	})
+	find := &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	}
+	if environmentID != "-" {
+		find.EnvironmentID = &environmentID
+	}
+	instance, err := s.store.GetInstanceV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
