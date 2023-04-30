@@ -2388,6 +2388,11 @@
     "filter": {
       "from-date": "From date",
       "to-date": "To date"
+    },
+    "advise-index": {
+      "current-index": "Current Index",
+      "suggestion": "Suggestion",
+      "create-index": "Create Index"
     }
   },
   "principal": {

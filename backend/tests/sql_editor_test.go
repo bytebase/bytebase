@@ -143,13 +143,23 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 
 		a.Equal(instance.ID, database.Instance.ID)
 
+		sheet, err := ctl.createSheet(api.SheetCreate{
+			ProjectID:  project.ID,
+			Name:       "prepareStatements",
+			Statement:  tt.prepareStatements,
+			Visibility: api.ProjectSheet,
+			Source:     api.SheetFromBytebaseArtifact,
+			Type:       api.SheetForSQL,
+		})
+		a.NoError(err)
+
 		// Create an issue that updates database schema.
 		createContext, err := json.Marshal(&api.MigrationContext{
 			DetailList: []*api.MigrationDetail{
 				{
 					MigrationType: db.Migrate,
 					DatabaseID:    database.ID,
-					Statement:     tt.prepareStatements,
+					SheetID:       sheet.ID,
 				},
 			},
 		})

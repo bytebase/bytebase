@@ -1064,6 +1064,23 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		return errors.Wrapf(err, "failed to create onboarding SQL Review policy")
 	}
 
+	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		CreatorID: api.SystemBotID,
+
+		ProjectID:  project.UID,
+		DatabaseID: &database.UID,
+
+		Name:       "Sheet for Sample Project",
+		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+		Payload:    "{}",
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create sheet for sample project")
+	}
+
 	// Create a schema update issue.
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
@@ -1073,7 +1090,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 					DatabaseID:    database.UID,
 					// This will violate the NOT NULL SQL Review policy configured above and emit a
 					// warning. Thus to demonstrate the SQL Review capability.
-					Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
+					SheetID: sheet.ID,
 				},
 			},
 		})

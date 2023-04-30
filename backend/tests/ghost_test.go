@@ -145,12 +145,22 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	database := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
+	sheet1, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "mysql migration statement sheet 1",
+		Statement:  mysqlMigrationStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    database.ID,
-				Statement:     mysqlMigrationStatement,
+				SheetID:       sheet1.ID,
 			},
 		},
 	})
@@ -173,12 +183,22 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 	a.Equal(mysqlBookSchema1, result)
 
+	sheet2, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "migration statement sheet 2",
+		Statement:  mysqlGhostMigrationStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	createContext, err = json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    database.ID,
-				Statement:     mysqlGhostMigrationStatement,
+				SheetID:       sheet2.ID,
 			},
 		},
 	})
@@ -319,12 +339,22 @@ func TestGhostTenant(t *testing.T) {
 	a.Equal(testTenantNumber, len(testDatabases))
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
+	sheet1, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "migration statement sheet 1",
+		Statement:  mysqlMigrationStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				Statement:     mysqlMigrationStatement,
+				SheetID:       sheet1.ID,
 			},
 		},
 	})
@@ -354,13 +384,23 @@ func TestGhostTenant(t *testing.T) {
 		a.Equal(mysqlBookSchema1, result)
 	}
 
+	sheet2, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "migration statement sheet 2",
+		Statement:  mysqlGhostMigrationStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Create an issue that updates database schema using gh-ost.
 	createContext, err = json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    0,
-				Statement:     mysqlGhostMigrationStatement,
+				SheetID:       sheet2.ID,
 			},
 		},
 	})

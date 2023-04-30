@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -219,7 +220,14 @@ func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.
 		return "", ctx.Err()
 	}
 	// We cannot support rollback SQL generation for sheets because it can take lots of resources.
-	if payload.SheetID > 0 {
+	sheet, err := r.store.GetSheetV2(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
+	}
+	if sheet == nil {
+		return "", errors.Errorf("sheet %d not found", payload.SheetID)
+	}
+	if sheet.Size > common.MaxSheetSizeForRollback {
 		return "", errors.Errorf("rollback SQL isn't supported for large sheet")
 	}
 	basename, seqStart, err := mysql.ParseBinlogName(payload.BinlogFileStart)
