@@ -1158,6 +1158,20 @@
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "select-project": "Seleccione el proyecto",
+      "source-database": "Base de datos de origen",
+      "source-schema": "Esquema de origen",
+      "schema-version": {
+        "self": "Versión de esquema",
+        "description": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase"
+      },
+      "target-databases": "Bases de datos de destino",
+      "with-diff": "Con diff",
+      "no-diff": "Sin diff",
+      "message": {
+        "select-a-target-database-first": "Primero seleccione una base de datos de destino.",
+        "no-target-databases": "No hay bases de datos de destino.",
+        "no-diff-found": "No se encontraron diferencias."
+      },
       "to-database": "Aplicar a base de datos",
       "from-database": "Desde base de datos",
       "schema-change-preview": "Vista previa de cambio de esquema para '{database}'",
@@ -1182,12 +1196,24 @@
     "doesnt-match-tenant-value": "No coincide con el valor de la etiqueta",
     "should-follow-database-name-template": "Debe seguir la plantilla de nombre de base de datos de inquilino",
     "all": "Todas las bases de datos",
+    "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Alter Schema no se aplica a las bases de datos sin esquema).",
     "secret": {
+      "self": "Secreto",
+      "new": "Nuevo secreto",
+      "edit": "Editar secreto",
+      "name-placeholder": "Ingrese nombre del secreto",
       "validation": {
+        "cannot-be-changed-later": "No se puede cambiar más tarde",
+        "duplicated-name": "Nombre secreto duplicado",
+        "name-is-required": "Se requiere nombre secreto",
+        "name-pattern-mismatch": "El nombre secreto debe contener solo letras mayúsculas, dígitos o _ (guion bajo)",
         "name-cannot-prefix-with-bytebase": "El nombre secreto no puede tener el prefijo 'BYTEBASE_'",
-        "name-cannot-start-with-number": "El nombre secreto no puede comenzar con un número",
-        "name-pattern-mismatch": "El nombre secreto debe contener solo letras mayúsculas, dígitos o _ (guion bajo)"
-      }
+        "name-cannot-start-with-number": "El nombre secreto no puede comenzar con un número"
+      },
+      "description-placeholder": "Ingrese descripción",
+      "value": "Valor",
+      "value-placeholder": "Valor de entrada (solo escritura)",
+      "delete-tips": "Eliminar secreto"
     }
   },
   "repository": {
@@ -1767,6 +1793,7 @@
     "successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
     "successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
     "require-subscription": "Esta función requiere {requiredPlan}, por favor compra la licencia Bytebase para desbloquear esta función.",
+    "feature-require-subscription": "{feature} requiere {requiredPlan}.",
     "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}.",
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
@@ -1794,7 +1821,7 @@
         "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
       },
       "bb-feature-multi-tenancy": {
-        "title": "Multi-tenancy",
+        "title": "Multi-tenencia",
         "desc": "Gestión inteligente de la base de datos para inquilinos que utilizan esquemas idénticos."
       },
       "bb-feature-approval-policy": {
@@ -1848,6 +1875,10 @@
       "bb-feature-rbac": {
         "title": "Gestión de roles",
         "desc": "Permite asignar un rol particular (por ejemplo, DBA) a un miembro."
+      },
+      "bb-feature-custom-role": {
+        "title": "Roles personalizados",
+        "desc": "Definición de roles personalizados, y puede aplicarlos a los miembros del proyecto."
       },
       "bb-feature-watermark": {
         "title": "Marca de agua",
@@ -2357,6 +2388,11 @@
     "filter": {
       "from-date": "Desde fecha",
       "to-date": "Hasta fecha"
+    },
+    "advise-index": {
+      "current-index": "Índice actual",
+      "suggestion": "Sugerencia",
+      "create-index": "Crear índice"
     }
   },
   "principal": {
