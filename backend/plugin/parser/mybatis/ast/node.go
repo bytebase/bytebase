@@ -9,17 +9,23 @@ import (
 type Node interface {
 	// RestoreSQL restores the node to the original SQL statement.
 	RestoreSQL(w io.Writer) error
+	// AddChild adds a child to the node.
+	AddChild(child Node)
 }
 
-// MapperNode represents a mapper node in mybatis mapper xml begin with <mapper>.
-type MapperNode struct {
-	Namespace  string
-	QueryNodes []*QueryNode
+var (
+	_ Node = (*RootNode)(nil)
+	_ Node = (*EmptyNode)(nil)
+)
+
+// RootNode represents the root node of the AST.
+type RootNode struct {
+	Children []Node
 }
 
 // RestoreSQL implements Node interface.
-func (n *MapperNode) RestoreSQL(w io.Writer) error {
-	for _, node := range n.QueryNodes {
+func (n *RootNode) RestoreSQL(w io.Writer) error {
+	for _, node := range n.Children {
 		if err := node.RestoreSQL(w); err != nil {
 			return err
 		}
@@ -27,14 +33,24 @@ func (n *MapperNode) RestoreSQL(w io.Writer) error {
 	return nil
 }
 
-// NewMapperNode creates a new mapper node.
-func NewMapperNode(namespace string) *MapperNode {
-	return &MapperNode{
-		Namespace: namespace,
-	}
+// AddChild adds a child to the root node.
+func (n *RootNode) AddChild(child Node) {
+	n.Children = append(n.Children, child)
 }
 
-// AddChild adds a child to the mapper node.
-func (n *MapperNode) AddChild(child *QueryNode) {
-	n.QueryNodes = append(n.QueryNodes, child)
+// EmptyNode represents an unacceptable nodes in mybatis mapper xml.
+type EmptyNode struct{}
+
+// NewEmptyNode returns a new empty node.
+func NewEmptyNode() *EmptyNode {
+	return &EmptyNode{}
+}
+
+// RestoreSQL implements Node interface.
+func (*EmptyNode) RestoreSQL(io.Writer) error {
+	return nil
+}
+
+// AddChild implements Node interface.
+func (*EmptyNode) AddChild(Node) {
 }
