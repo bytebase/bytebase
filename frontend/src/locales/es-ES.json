@@ -240,7 +240,9 @@
     "revoke": "Revocar",
     "cannot-undo-this-action": "No se puede deshacer esta acción.",
     "expand": "Expandir",
-    "collapse": "Colapsar"
+    "collapse": "Colapsar",
+    "select": "Seleccionar",
+    "optional": "Opcional"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -329,6 +331,12 @@
       "sql-rollback-tips": "Cuando se habilita, Bytebase mantendrá los registros de reversión para el cambio de datos\ny le permitirá crear una nueva incidencia para revertir este cambio. {link}"
     },
     "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual",
+    "apply-change-to-all-pending-tasks": {
+      "title": "¿Aplicar cambio a todas las tareas pendientes?",
+      "self": "Aplicar cambio a todas las tareas pendientes",
+      "current-only": "Aplicar cambio solo a la tarea actual"    
+    },
+    "execution-time": "Tiempo de ejecución",
     "run-checks": "Ejecutar comprobaciones",
     "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual"
   },
