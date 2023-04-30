@@ -58,17 +58,9 @@
           </div>
         </div>
         <div v-if="state.selectedIndex == DATABASE_TAB">
-          <div class="mb-2 pl-4">
-            <BBCheckbox
-              :title="$t('database.show-missing-databases')"
-              :value="state.showMissingDatabases"
-              @toggle="state.showMissingDatabases = $event"
-            />
-          </div>
           <DatabaseTable
             mode="INSTANCE"
             :scroll-on-page-change="false"
-            :show-missing-databases="state.showMissingDatabases"
             :database-list="databaseList"
           />
         </div>
@@ -196,7 +188,6 @@ interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
   showFeatureModal: boolean;
-  showMissingDatabases: boolean;
 }
 
 const props = defineProps({
@@ -221,7 +212,6 @@ const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
   showFeatureModal: false,
-  showMissingDatabases: false,
 });
 
 const instance = computed((): Instance => {
