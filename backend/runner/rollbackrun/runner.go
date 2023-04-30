@@ -187,13 +187,13 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 	const binlogSizeLimit = 8 * 1024 * 1024
 	rollbackSQL, err := r.generateMySQLRollbackSQLImpl(ctx, payload, binlogSizeLimit, instance)
 	if err != nil {
-		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
 		rollbackSQLStatus = api.RollbackSQLStatusFailed
 		if mysql.IsErrExceedSizeLimit(err) {
 			rollbackError = fmt.Sprintf("Failed to generate rollback SQL statement. The size of the generated statements must be less that %vKB.", binlogSizeLimit/1024)
 		} else if mysql.IsErrParseBinlogName(err) {
 			rollbackError = "Failed to generate rollback SQL statement. Please check if binlog is enabled."
 		} else {
+			log.Error("Failed to generate rollback SQL statement", zap.Error(err))
 			rollbackError = err.Error()
 		}
 	} else {
