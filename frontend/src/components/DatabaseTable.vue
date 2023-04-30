@@ -313,10 +313,6 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
-  showMissingDatabases: {
-    type: Boolean,
-    default: false,
-  },
   schemaless: {
     type: Boolean,
     default: false,
@@ -335,23 +331,11 @@ const state = reactive<State>({
 const wrapper = ref<HTMLElement>();
 
 const sortedDatabaseList = computed(() => {
-  let list = [...props.databaseList];
-  if (!props.showMissingDatabases) {
-    list = list.filter((db) => db.syncStatus === "OK");
-  } else {
-    list.sort((a, b) => {
-      // Put NOT_FOUND databases to the top
-      if (a.syncStatus === "NOT_FOUND" && b.syncStatus === "OK") {
-        return -1;
-      }
-      if (a.syncStatus === "OK" && b.syncStatus === "NOT_FOUND") {
-        return 1;
-      }
-      // Fallback to `id` DESC
-      return -(+a.id - +b.id);
-    });
-  }
-
+  const list = [...props.databaseList];
+  list.sort((a, b) => {
+    // Fallback to `id` DESC
+    return -(+a.id - +b.id);
+  });
   return list;
 });
 
@@ -501,10 +485,6 @@ watch(
     table.setPageSize(ps);
   },
   { immediate: true }
-);
-watch(
-  () => props.showMissingDatabases,
-  () => handleChangePage(1)
 );
 
 const showReservedDatabaseList = () => {
