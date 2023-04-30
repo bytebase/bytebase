@@ -42,7 +42,6 @@ const props = withDefaults(
     instance?: InstanceId;
     project?: ProjectId;
     allowedEngineTypeList?: readonly EngineType[];
-    allowedSyncStatusList?: DatabaseSyncStatus[];
     includeAll?: boolean;
     autoReset?: boolean;
     filter?: (database: Database, index: number) => boolean;
@@ -52,7 +51,6 @@ const props = withDefaults(
     instance: undefined,
     project: undefined,
     allowedEngineTypeList: () => EngineTypeList,
-    allowedSyncStatusList: () => ["OK", "NOT_FOUND"],
     includeAll: false,
     autoReset: true,
     filter: undefined,
@@ -86,7 +84,6 @@ const rawDatabaseList = computed(() => {
       if (db.project.id !== props.project) return false;
     }
     if (!props.allowedEngineTypeList.includes(db.instance.engine)) return false;
-    if (!props.allowedSyncStatusList.includes(db.syncStatus)) return false;
 
     return true;
   });
