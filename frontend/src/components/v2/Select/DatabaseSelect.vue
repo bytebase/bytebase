@@ -20,7 +20,6 @@ import { useCurrentUser, useDatabaseStore } from "@/store";
 import {
   Database,
   DatabaseId,
-  DatabaseSyncStatus,
   EngineType,
   EngineTypeList,
   EnvironmentId,
