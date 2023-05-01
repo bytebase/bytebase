@@ -171,6 +171,16 @@
               destination: $t("common.wecom"),
             })
           }}
+          <a
+            href="https://open.work.weixin.qq.com/help2/pc/14931"
+            target="__blank"
+            class="normal-link"
+            >{{
+              $t("project.webhook.creation.view-doc", {
+                destination: $t("common.wecom"),
+              })
+            }}</a
+          >.
         </template>
         <template v-else-if="state.webhook.type == 'bb.plugin.webhook.custom'">
           {{
