@@ -264,6 +264,11 @@ const makeUnknown = (type: ResourceType) => {
       authenticationDatabase: "",
       sid: "",
       serviceName: "",
+      sshHost: "",
+      sshPort: "",
+      sshUser: "",
+      sshPassword: "",
+      sshPrivateKey: "",
     },
     // UI-only fields
     updateSsl: false,
@@ -382,6 +387,7 @@ const makeUnknown = (type: ResourceType) => {
     id: UNKNOWN_ID,
     name: "",
     type: "GITLAB",
+    uiType: "GITLAB_SELF_HOST",
     instanceUrl: "",
     apiUrl: "",
     applicationId: "",
@@ -618,11 +624,19 @@ const makeEmpty = (type: ResourceType) => {
     host: "",
     port: "",
     database: "",
-    options: { srv: false, authenticationDatabase: "" },
+    options: {
+      srv: false,
+      authenticationDatabase: "",
+      sid: "",
+      serviceName: "",
+      sshHost: "",
+      sshPort: "",
+      sshUser: "",
+      sshPassword: "",
+      sshPrivateKey: "",
+    },
     // UI-only fields
     updateSsl: false,
-    sid: "",
-    serviceName: "",
   };
 
   const EMPTY_BACKUP_SETTING: BackupSetting = {
@@ -738,6 +752,7 @@ const makeEmpty = (type: ResourceType) => {
     id: EMPTY_ID,
     name: "",
     type: "GITLAB",
+    uiType: "GITLAB_SELF_HOST",
     instanceUrl: "",
     apiUrl: "",
     applicationId: "",
