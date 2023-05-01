@@ -1581,6 +1581,7 @@
       "client-cert": "Client Certificate"
     },
     "ssl-connection": "SSL Connection",
+    "ssh-connection": "SSH Connection",
     "read-replica-host": "Read-replica Host",
     "read-replica-port": "Read-replica Port",
     "delete-read-only-data-source": "Delete read-only data source",

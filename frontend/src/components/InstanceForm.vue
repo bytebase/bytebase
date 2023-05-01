@@ -562,6 +562,7 @@ import { computed, reactive, PropType, ref, watch, onMounted } from "vue";
 import {
   hasWorkspacePermission,
   instanceHasSSL,
+  instanceHasSSH,
   instanceSlug,
   isDev,
   isValidSpannerHost,
@@ -925,6 +926,10 @@ const showSSL = computed((): boolean => {
   return instanceHasSSL(basicInformation.value.engine);
 });
 
+const showSSH = computed((): boolean => {
+  return instanceHasSSH(basicInformation.value.engine);
+});
+
 const showAuthenticationDatabase = computed((): boolean => {
   return basicInformation.value.engine === "MONGODB";
 });
@@ -1258,6 +1263,11 @@ const doCreate = async () => {
       adminDataSource.value.options.authenticationDatabase,
     sid: "",
     serviceName: "",
+    sshHost: "",
+    sshPort: "",
+    sshUser: "",
+    sshPassword: "",
+    sshPrivateKey: "",
   };
 
   if (
@@ -1450,6 +1460,11 @@ const getTestConnectionContext = () => {
     authenticationDatabase: dataSource.options.authenticationDatabase,
     sid: "",
     serviceName: "",
+    sshHost: "",
+    sshPort: "",
+    sshUser: "",
+    sshPassword: "",
+    sshPrivateKey: "",
   };
 
   if (!isCreating.value) {
@@ -1478,6 +1493,32 @@ const getTestConnectionContext = () => {
     }
   }
 
+  if (showSSH.value) {
+    // Default to "NONE"
+    connectionInfo.sshHost = adminDataSource.value.options.sshHost ?? "";
+    connectionInfo.sshPort = adminDataSource.value.options.sshPort ?? "";
+    connectionInfo.sshUser = adminDataSource.value.options.sshUser ?? "";
+    connectionInfo.sshPassword =
+      adminDataSource.value.options.sshPassword ?? "";
+    connectionInfo.sshPrivateKey =
+      adminDataSource.value.options.sshPrivateKey ?? "";
+
+    if (typeof dataSource.options.sshHost !== "undefined") {
+      connectionInfo.sshHost = dataSource.options.sshHost;
+    }
+    if (typeof dataSource.options.sshPort !== "undefined") {
+      connectionInfo.sshPort = dataSource.options.sshPort;
+    }
+    if (typeof dataSource.options.sshUser !== "undefined") {
+      connectionInfo.sshUser = dataSource.options.sshUser;
+    }
+    if (typeof dataSource.options.sshPassword !== "undefined") {
+      connectionInfo.sshPassword = dataSource.options.sshPassword;
+    }
+    if (typeof dataSource.options.sshPrivateKey !== "undefined") {
+      connectionInfo.sshPrivateKey = dataSource.options.sshPrivateKey;
+    }
+  }
   return connectionInfo;
 };
 

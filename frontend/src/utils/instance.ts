@@ -136,6 +136,13 @@ export const instanceHasSSL = (
   ].includes(engine);
 };
 
+export const instanceHasSSH = (
+  instanceOrEngine: Instance | EngineType
+): boolean => {
+  const engine = engineOfInstance(instanceOrEngine);
+  return ["MYSQL", "TIDB", "MARIADB", "OCEANBASE"].includes(engine);
+};
+
 export const instanceHasCollationAndCharacterSet = (
   instanceOrEngine: Instance | EngineType
 ) => {

@@ -193,6 +193,12 @@ export type InstanceCreate = {
   // sid and serviceName are used for Oracle database. Required one of them.
   sid: string;
   serviceName: string;
+  // Connection over SSH.
+  sshHost: string;
+  sshPort: string;
+  sshUser: string;
+  sshPassword: string;
+  sshPrivateKey: string;
 };
 
 export type InstancePatch = {

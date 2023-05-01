@@ -1578,6 +1578,7 @@
       "client-cert": "客户端证书"
     },
     "ssl-connection": "SSL 连接",
+    "ssh-connection": "SSH 连接",
     "read-replica-host": "只读副本 Host",
     "read-replica-port": "只读副本端口",
     "delete-read-only-data-source": "删除只读数据源",

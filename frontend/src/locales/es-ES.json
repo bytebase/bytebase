@@ -1581,6 +1581,7 @@
       "client-cert": "Certificado del cliente"
     },
     "ssl-connection": "Conexión SSL",
+    "ssh-connection": "Conexión SSH",
     "read-replica-host": "Anfitrión de réplica de lectura",
     "read-replica-port": "Puerto de réplica de lectura",
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
