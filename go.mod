@@ -3,7 +3,7 @@ module github.com/bytebase/bytebase
 go 1.20
 
 require (
-	cloud.google.com/go/spanner v1.44.0
+	cloud.google.com/go/spanner v1.45.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.8.3
 	github.com/aws/aws-sdk-go-v2 v1.17.7
 	github.com/aws/aws-sdk-go-v2/config v1.18.19
@@ -61,7 +61,7 @@ require (
 	golang.org/x/sys v0.7.0
 	golang.org/x/text v0.9.0
 	google.golang.org/api v0.115.0
-	google.golang.org/genproto v0.0.0-20230403163135-c38d8f061ccd
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
 	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v3 v3.0.1
