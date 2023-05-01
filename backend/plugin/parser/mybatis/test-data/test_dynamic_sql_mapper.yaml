@@ -1,0 +1,65 @@
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <select id="testIf">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            WHERE
+            1=1
+            <if test="category != null and category !=''">
+                AND category = #{category}
+            </if>
+            <if test="price != null and price !=''">
+                AND price = ${price}
+                <if test="price >= 400">
+                    AND name = 'Fuji'
+                </if>
+            </if>
+        </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            WHERE
+            1=1 AND category = ? AND price = ? AND name = 'Fuji';
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+      <select id="testChoose">
+          SELECT
+          name,
+          category,
+          price
+          FROM
+          fruits
+          WHERE category = 'apple'
+          <choose>
+              <when test="name != null">
+                  AND name = #{name}
+              </when>
+              <when test="category == 'banana'">
+                  AND category = #{category}
+                  <if test="price != null and price !=''">
+                      AND price = ${price}
+                  </if>
+              </when>
+              <otherwise>
+                  AND category = 'apple'
+              </otherwise>
+          </choose>
+      </select>
+    </mapper>
+  sql: |
+    SELECT
+          name,
+          category,
+          price
+          FROM
+          fruits
+          WHERE category = 'apple' AND name = ? AND category = ? AND price = ? AND category = 'apple';

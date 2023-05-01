@@ -36,7 +36,7 @@
     delete from user where id = ?;
 - xml: |-
     <mapper namespace="com.bytebase.test">
-        <!--Queyr user by id-->
+        <!--Query user by id-->
         <select id="selectUser" parameterType="int" resultType="hashmap">
             select * from user where id = #{id}
         </select>
