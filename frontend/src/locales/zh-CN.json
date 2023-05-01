@@ -1577,6 +1577,13 @@
       "client-key": "客户端密钥",
       "client-cert": "客户端证书"
     },
+    "ssh": {
+      "host": "服务器",
+      "port": "端口",
+      "user": "用户名",
+      "password": "密码",
+      "ssh-key": "SSH 密钥"
+    },
     "ssl-connection": "SSL 连接",
     "ssh-connection": "SSH 连接",
     "read-replica-host": "只读副本 Host",

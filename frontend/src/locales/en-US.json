@@ -1580,6 +1580,13 @@
       "client-key": "Client Key",
       "client-cert": "Client Certificate"
     },
+    "ssh": {
+      "host": "Server",
+      "port": "Port",
+      "user": "User",
+      "password": "Password",
+      "ssh-key": "SSH Key"
+    },
     "ssl-connection": "SSL Connection",
     "ssh-connection": "SSH Connection",
     "read-replica-host": "Read-replica Host",
