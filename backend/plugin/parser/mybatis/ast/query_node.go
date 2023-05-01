@@ -7,6 +7,7 @@ import (
 )
 
 var (
+	_ Node = (*QueryNode)(nil)
 	_ Node = (*TextNode)(nil)
 )
 
@@ -47,8 +48,14 @@ func (n *QueryNode) RestoreSQL(w io.Writer) error {
 	return nil
 }
 
-// New creates a new query node.
-func (n *QueryNode) New(startEle *xml.StartElement) {
+// AddChild adds a child to the query node.
+func (n *QueryNode) AddChild(child Node) {
+	n.Children = append(n.Children, child)
+}
+
+// NewQueryNode creates a new query node.
+func NewQueryNode(startEle *xml.StartElement) *QueryNode {
+	n := &QueryNode{}
 	switch startEle.Name.Local {
 	case "select":
 		n.Type = QueryNodeTypeSelect
@@ -65,4 +72,5 @@ func (n *QueryNode) New(startEle *xml.StartElement) {
 			n.ID = attr.Value
 		}
 	}
+	return n
 }
