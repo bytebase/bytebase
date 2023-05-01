@@ -33,15 +33,13 @@ func runTest(t *testing.T, filepath string, record bool) {
 
 	for i, testCase := range testCases {
 		parser := NewParser(testCase.XML)
-		nodes, err := parser.Parse()
+		node, err := parser.Parse()
 		require.NoError(t, err)
-		require.NotEmpty(t, nodes)
+		require.NotNil(t, node)
 
 		var stringsBuilder strings.Builder
-		for _, node := range nodes {
-			err = node.RestoreSQL(&stringsBuilder)
-			require.NoError(t, err)
-		}
+		err = node.RestoreSQL(&stringsBuilder)
+		require.NoError(t, err)
 		require.NoError(t, err)
 		if record {
 			testCases[i].SQL = stringsBuilder.String()
