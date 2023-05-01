@@ -17,7 +17,6 @@ type Parser struct {
 	buf         []rune
 	cursor      uint
 	currentLine uint
-	mapperNodes []ast.Node
 }
 
 // NewParser creates a new mybatis mapper xml parser.
@@ -31,104 +30,46 @@ func NewParser(stmt string) *Parser {
 	}
 }
 
-// Parse parses the mybatis mapper xml statement and returns the AST node.
-func (p *Parser) Parse() ([]ast.Node, error) {
-	for {
-		token, err := p.d.Token()
-		if err != nil {
-			if err == io.EOF {
-				return p.mapperNodes, nil
-			}
-			return nil, errors.Wrapf(err, "failed to get token from xml decoder")
-		}
-
-		switch ele := token.(type) {
-		case xml.StartElement:
-			if ele.Name.Local == "mapper" {
-				mapperNode, err := p.parseMapper(&ele)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse mapper node")
-				}
-				p.mapperNodes = append(p.mapperNodes, mapperNode)
-			}
-		case xml.CharData:
-			for _, b := range ele {
-				if b == '\n' {
-					p.currentLine++
-				}
-			}
-		}
-	}
-}
-
-// parseMapper assumes that <mapper> start element has been consumed, and will consume all tokens until </mapper> end element.
-func (p *Parser) parseMapper(mapperStartEle *xml.StartElement) (*ast.MapperNode, error) {
-	mapperNode := &ast.MapperNode{}
-	for _, attr := range mapperStartEle.Attr {
-		if attr.Name.Local == "namespace" {
-			mapperNode.Namespace = attr.Value
-		}
-	}
+// Parse parses the mybatis mapper xml statements, building AST without recursion, returns the root node of the AST.
+func (p *Parser) Parse() (ast.Node, error) {
+	root := &ast.RootNode{}
+	// To avoid recursion, we use stack to store the start element and node, and consume the token one by one.
+	// The length of start element stack is always equal to the length of node stack - 1, because the root nod
+	// is not in the start element stack.
+	var startElementStack []*xml.StartElement
+	nodeStack := []ast.Node{root}
 
 	for {
 		token, err := p.d.Token()
 		if err != nil {
 			if err == io.EOF {
-				return nil, errors.New("expected read </mapper> end element, but got EOF")
+				if len(startElementStack) == 0 {
+					return root, nil
+				}
+				return nil, errors.Errorf("expected to read the end element of %q, but got EOF", startElementStack[len(startElementStack)-1].Name.Local)
 			}
 			return nil, errors.Wrapf(err, "failed to get token from xml decoder")
 		}
 		switch ele := token.(type) {
 		case xml.StartElement:
-			switch ele.Name.Local {
-			case "select", "update", "insert", "delete":
-				queryNode, err := p.parseQuery(&ele)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse query node in mapper node %v", mapperNode)
-				}
-				mapperNode.QueryNodes = append(mapperNode.QueryNodes, queryNode)
-			}
-		case xml.CharData:
-			for _, b := range ele {
-				if b == '\n' {
-					p.currentLine++
-				}
-			}
+			newNode := p.newNodeByStartElement(&ele)
+			startElementStack = append(startElementStack, &ele)
+			nodeStack = append(nodeStack, newNode)
 		case xml.EndElement:
-			if ele.Name.Local == mapperStartEle.Name.Local {
-				return mapperNode, nil
+			if len(startElementStack) == 0 {
+				return nil, errors.Errorf("unexpected end element %q", ele.Name.Local)
 			}
-		}
-	}
-}
-
-// parseQuery assumes that <select>, <update>, <insert>, <delete> start element has been consumed, and will consume all tokens until </select>, </update>, </insert>, </delete> end element.
-func (p *Parser) parseQuery(mapperStartElement *xml.StartElement) (*ast.QueryNode, error) {
-	queryNode := &ast.QueryNode{}
-	for _, attr := range mapperStartElement.Attr {
-		if attr.Name.Local == "id" {
-			queryNode.ID = attr.Value
-		}
-	}
-
-	var buf []byte
-	for {
-		token, err := p.d.Token()
-		if err != nil {
-			if err == io.EOF {
-				return nil, errors.New("expected read </select>, </update>, </insert>, </delete> end element, but got EOF")
+			if ele.Name.Local != startElementStack[len(startElementStack)-1].Name.Local {
+				return nil, errors.Errorf("expected to read the name of end element is %q, but got %q", startElementStack[len(startElementStack)-1].Name.Local, ele.Name.Local)
 			}
-			return nil, errors.Wrapf(err, "failed to get token from xml decoder")
-		}
-
-		switch ele := token.(type) {
-		case xml.EndElement:
-			dataNode := ast.NewDataNode(buf)
-			if err := dataNode.Scan(); err != nil {
-				return nil, errors.Wrapf(err, "failed to parse data node %v", dataNode)
+			// We will pop the start element stack and node stack at the same time.
+			startElementStack = startElementStack[:len(startElementStack)-1]
+			popNode := nodeStack[len(nodeStack)-1]
+			// To avoid keeping many empty node in AST, we only add the node which is not an empty node to the parent node.
+			if _, ok := popNode.(*ast.EmptyNode); !ok {
+				nodeStack[len(nodeStack)-2].AddChild(popNode)
 			}
-			queryNode.Children = append(queryNode.Children, dataNode)
-			return queryNode, nil
+			nodeStack = nodeStack[:len(nodeStack)-1]
 		case xml.CharData:
 			for _, b := range ele {
 				if b == '\n' {
@@ -136,9 +77,36 @@ func (p *Parser) parseQuery(mapperStartElement *xml.StartElement) (*ast.QueryNod
 				}
 			}
 			trimmed := strings.TrimSpace(string(ele))
-			if len(trimmed) > 0 {
-				buf = append(buf, trimmed...)
+			if len(trimmed) == 0 {
+				continue
+			}
+			dataNode := ast.NewDataNode([]byte(trimmed))
+			if err := dataNode.Scan(); err != nil {
+				return nil, errors.Wrapf(err, "cannot parse data node")
+			}
+			if len(nodeStack) == 0 {
+				return nil, errors.Errorf("try to append data node to parent node, but node stack is empty")
+			}
+			nodeStack[len(nodeStack)-1].AddChild(dataNode)
+		case xml.Comment:
+			for _, b := range ele {
+				if b == '\n' {
+					p.currentLine++
+				}
 			}
 		}
 	}
+}
+
+// newNodeByStartElement returns the node related to the startElement, for example, returns QueryNode for
+// start element which name is "select", "update", "insert", "delete". If the startElement is unacceptable,
+// returns an emptyNode instead.
+func (*Parser) newNodeByStartElement(startElement *xml.StartElement) ast.Node {
+	switch startElement.Name.Local {
+	case "mapper":
+		return ast.NewMapperNode(startElement)
+	case "select", "update", "insert", "delete":
+		return ast.NewQueryNode(startElement)
+	}
+	return ast.NewEmptyNode()
 }
