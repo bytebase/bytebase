@@ -107,6 +107,14 @@ func (*Parser) newNodeByStartElement(startElement *xml.StartElement) ast.Node {
 		return ast.NewMapperNode(startElement)
 	case "select", "update", "insert", "delete":
 		return ast.NewQueryNode(startElement)
+	case "if":
+		return ast.NewIfNode(startElement)
+	case "choose":
+		return ast.NewChooseNode(startElement)
+	case "when":
+		return ast.NewWhenNode(startElement)
+	case "otherwise":
+		return ast.NewOtherwiseNode(startElement)
 	}
 	return ast.NewEmptyNode()
 }

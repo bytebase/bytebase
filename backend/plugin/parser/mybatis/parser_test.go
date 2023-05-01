@@ -61,6 +61,7 @@ func runTest(t *testing.T, filepath string, record bool) {
 func TestParser(t *testing.T) {
 	testFileList := []string{
 		"test-data/test_simple_mapper.yaml",
+		"test-data/test_dynamic_sql_mapper.yaml",
 	}
 	for _, filepath := range testFileList {
 		runTest(t, filepath, false)
