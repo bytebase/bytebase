@@ -442,7 +442,7 @@
 
         <div v-if="showSSL" class="mt-2 sm:col-span-3 sm:col-start-1">
           <div class="flex flex-row items-center">
-            <label for="password" class="textlabel block">
+            <label for="ssl" class="textlabel block">
               {{ $t("data-source.ssl-connection") }}
             </label>
           </div>
@@ -465,6 +465,78 @@
               </button>
             </template>
           </template>
+        </div>
+
+        <div v-if="showSSH" class="mt-2 sm:col-span-3 sm:col-start-1">
+          <div class="flex flex-row items-center">
+            <label for="ssh" class="textlabel block">
+              {{ $t("data-source.ssh-connection") }}
+            </label>
+          </div>
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="sshHost" class="textlabel block"> SSH Hostname </label>
+            <input
+              id="sshHost"
+              name="sshHost"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="''"
+              :value="currentDataSource.options.sshHost"
+              @input="handleCurrentDataSourceSshHostInput"
+            />
+          </div>
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="sshPort" class="textlabel block"> SSH Port </label>
+            <input
+              id="sshPort"
+              name="sshPort"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="''"
+              :value="currentDataSource.options.sshPort"
+              @input="handleCurrentDataSourceSshPortInput"
+            />
+          </div>
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="sshUser" class="textlabel block"> SSH User </label>
+            <input
+              id="sshUser"
+              name="sshUser"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="''"
+              :value="currentDataSource.options.sshUser"
+              @input="handleCurrentDataSourceSshUserInput"
+            />
+          </div>
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="sshPassword" class="textlabel block">
+              SSH Password
+            </label>
+            <input
+              id="sshPassword"
+              name="sshPassword"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="''"
+              :value="currentDataSource.options.sshPassword"
+              @input="handleCurrentDataSourceSshPasswordInput"
+            />
+          </div>
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="sshPrivateKey" class="textlabel block">
+              SSH Private Key
+            </label>
+            <input
+              id="sshPrivateKey"
+              name="sshPrivateKey"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="''"
+              :value="currentDataSource.options.sshPrivateKey"
+              @input="handleCurrentDataSourceSshPrivateKeyInput"
+            />
+          </div>
         </div>
       </div>
 
@@ -1093,6 +1165,31 @@ const handleCurrentDataSourceSslChange = (
   currentDataSource.value.updateSsl = true;
 };
 
+const handleCurrentDataSourceSshHostInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.options.sshHost = str;
+};
+
+const handleCurrentDataSourceSshPortInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.options.sshPort = str;
+};
+
+const handleCurrentDataSourceSshUserInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.options.sshUser = str;
+};
+
+const handleCurrentDataSourceSshPasswordInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value;
+  currentDataSource.value.options.sshPassword = str;
+};
+
+const handleCurrentDataSourceSshPrivateKeyInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.options.sshPrivateKey = str;
+};
+
 const handleCreateRODataSource = () => {
   if (isCreating.value) {
     return;
@@ -1282,6 +1379,17 @@ const doCreate = async () => {
   if (instanceCreate.engine === "ORACLE") {
     instanceCreate.sid = adminDataSource.value.options.sid;
     instanceCreate.serviceName = adminDataSource.value.options.serviceName;
+  }
+
+  if (showSSH.value) {
+    // Default to "NONE"
+    instanceCreate.sshHost = adminDataSource.value.options.sshHost ?? "";
+    instanceCreate.sshPort = adminDataSource.value.options.sshPort ?? "";
+    instanceCreate.sshUser = adminDataSource.value.options.sshUser ?? "";
+    instanceCreate.sshPassword =
+      adminDataSource.value.options.sshPassword ?? "";
+    instanceCreate.sshPrivateKey =
+      adminDataSource.value.options.sshPrivateKey ?? "";
   }
 
   state.isRequesting = true;
