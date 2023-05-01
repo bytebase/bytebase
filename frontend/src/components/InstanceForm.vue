@@ -474,7 +474,9 @@
             </label>
           </div>
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="sshHost" class="textlabel block"> SSH Hostname </label>
+            <label for="sshHost" class="textlabel block">
+              {{ $t("data-source.ssh.host") }}
+            </label>
             <input
               id="sshHost"
               name="sshHost"
@@ -486,7 +488,9 @@
             />
           </div>
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="sshPort" class="textlabel block"> SSH Port </label>
+            <label for="sshPort" class="textlabel block">
+              {{ $t("data-source.ssh.port") }}
+            </label>
             <input
               id="sshPort"
               name="sshPort"
@@ -498,7 +502,9 @@
             />
           </div>
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="sshUser" class="textlabel block"> SSH User </label>
+            <label for="sshUser" class="textlabel block">
+              {{ $t("data-source.ssh.user") }}
+            </label>
             <input
               id="sshUser"
               name="sshUser"
@@ -511,7 +517,7 @@
           </div>
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
             <label for="sshPassword" class="textlabel block">
-              SSH Password
+              {{ $t("data-source.ssh.password") }}
             </label>
             <input
               id="sshPassword"
@@ -525,7 +531,7 @@
           </div>
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
             <label for="sshPrivateKey" class="textlabel block">
-              SSH Private Key
+              {{ $t("data-source.ssh.ssh-key") }}
             </label>
             <input
               id="sshPrivateKey"
