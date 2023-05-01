@@ -67,7 +67,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		var sshConfig db.SSHConfig
-		if connectionInfo.UseSSHConfig {
+		if connectionInfo.SSHHost != "" {
 			sshConfig.Host = connectionInfo.SSHHost
 			sshConfig.Port = connectionInfo.SSHPort
 			sshConfig.User = connectionInfo.SSHUser
