@@ -185,7 +185,7 @@ type TaskDatabaseDataUpdatePayload struct {
 
 	// MySQL rollback SQL related.
 
-	// Build the RollbackStatement if RollbackEnabled.
+	// Build the RollbackSheetID if RollbackEnabled.
 	RollbackEnabled bool `json:"rollbackEnabled,omitempty"`
 	// RollbackSQLStatus is the status of the rollback generation.
 	RollbackSQLStatus RollbackSQLStatus `json:"rollbackSqlStatus,omitempty"`
@@ -205,8 +205,8 @@ type TaskDatabaseDataUpdatePayload struct {
 	BinlogPosStart  int64  `json:"binlogPosStart,omitempty"`
 	BinlogPosEnd    int64  `json:"binlogPosEnd,omitempty"`
 	RollbackError   string `json:"rollbackError,omitempty"`
-	// RollbackStatement is the generated rollback SQL statement for the DML task.
-	RollbackStatement string `json:"rollbackStatement,omitempty"`
+	// RollbackSheetID is the generated rollback SQL statement for the DML task.
+	RollbackSheetID int `json:"rollbackSheetId,omitempty"`
 	// RollbackFromIssueID is the issue ID containing the original task from which the rollback SQL statement is generated for this task.
 	RollbackFromIssueID int `json:"rollbackFromIssueId,omitempty"`
 	// RollbackFromTaskID is the task ID from which the rollback SQL statement is generated for this task.
@@ -350,8 +350,10 @@ type TaskPatch struct {
 	SchemaVersion     *string
 	RollbackEnabled   *bool `jsonapi:"attr,rollbackEnabled"`
 	RollbackSQLStatus *RollbackSQLStatus
-	RollbackStatement *string
-	RollbackError     *string
+	// RollbackSheetID sets the rollback sheet ID.
+	// When RollbackEnabled is enabled, RollbackSheetID is kept till it's set to the new sheet ID by the runner.
+	RollbackSheetID *int
+	RollbackError   *string
 }
 
 // TaskStatusPatch is the API message for patching a task status.

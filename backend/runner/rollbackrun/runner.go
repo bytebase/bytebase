@@ -105,16 +105,27 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		log.Error("Failed to find instance", zap.Error(err))
 		return
 	}
+	database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		log.Error("Failed to find database", zap.Error(err))
+		return
+	}
+	project, err := r.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	if err != nil {
+		log.Error("Failed to find project", zap.Error(err))
+		return
+	}
+
 	switch instance.Engine {
 	case db.MySQL:
 		// TODO(d): support MariaDB.
-		r.generateMySQLRollbackSQL(ctx, task, payload, instance)
+		r.generateMySQLRollbackSQL(ctx, task, payload, instance, project)
 	case db.Oracle:
-		r.generateOracleRollbackSQL(ctx, task, payload, instance)
+		r.generateOracleRollbackSQL(ctx, task, payload, instance, project)
 	}
 }
 
-func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) {
+func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage, project *store.ProjectMessage) {
 	var rollbackSQLStatus api.RollbackSQLStatus
 	var rollbackStatement, rollbackError string
 
@@ -128,11 +139,26 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 		rollbackStatement = statementsBuffer.String()
 	}
 
+	sheet, err := r.store.CreateSheet(ctx, &api.SheetCreate{
+		CreatorID:  api.SystemBotID,
+		ProjectID:  project.UID,
+		Name:       fmt.Sprintf("Sheet for rolling back task %v", task.ID),
+		Statement:  rollbackStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+		Payload:    "{}",
+	})
+	if err != nil {
+		log.Error("failed to create database creation sheet", zap.Error(err))
+		return
+	}
+
 	patch := &api.TaskPatch{
 		ID:                task.ID,
 		UpdaterID:         api.SystemBotID,
 		RollbackSQLStatus: &rollbackSQLStatus,
-		RollbackStatement: &rollbackStatement,
+		RollbackSheetID:   &sheet.ID,
 		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
@@ -180,7 +206,7 @@ func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api
 	return &statements, nil
 }
 
-func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) {
+func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage, project *store.ProjectMessage) {
 	var rollbackSQLStatus api.RollbackSQLStatus
 	var rollbackStatement, rollbackError string
 
@@ -201,11 +227,25 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		rollbackStatement = rollbackSQL
 	}
 
+	sheet, err := r.store.CreateSheet(ctx, &api.SheetCreate{
+		CreatorID:  api.SystemBotID,
+		ProjectID:  project.UID,
+		Name:       fmt.Sprintf("Sheet for rolling back task %d", task.ID),
+		Statement:  rollbackStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+		Payload:    "{}",
+	})
+	if err != nil {
+		log.Error("failed to create database creation sheet", zap.Error(err))
+		return
+	}
 	patch := &api.TaskPatch{
 		ID:                task.ID,
 		UpdaterID:         api.SystemBotID,
 		RollbackSQLStatus: &rollbackSQLStatus,
-		RollbackStatement: &rollbackStatement,
+		RollbackSheetID:   &sheet.ID,
 		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {

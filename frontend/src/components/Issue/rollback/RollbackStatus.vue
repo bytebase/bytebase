@@ -37,7 +37,7 @@
           >
             {{ $t("task.rollback.preview-rollback-issue") }}
           </button>
-          <NTooltip v-else :disabled="!!payload?.rollbackStatement">
+          <NTooltip v-else :disabled="!!payload?.rollbackSheetId">
             <template #trigger>
               <div
                 class="select-none inline-flex border border-control-border rounded-md bg-control-bg opacity-50 cursor-not-allowed px-3 py-1 text-sm leading-5 font-medium"
@@ -46,10 +46,10 @@
               </div>
             </template>
 
-            <div v-if="!payload?.rollbackStatement" class="whitespace-pre-line">
+            <div v-if="!payload?.rollbackSheetId" class="whitespace-pre-line">
               {{ $t("task.rollback.empty-rollback-statement") }}
               <LearnMoreLink
-                url="https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console#why-i-get-the-rollback-statement-is-empty"
+                url="https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console#why-i-get-the-rollback-sheet-is-empty"
                 color="light"
                 class="ml-1"
               />
@@ -109,7 +109,7 @@ const allowPreviewRollback = computed(() => {
   if (!allowRollback.value) {
     return false;
   }
-  if (!payload.value?.rollbackStatement) {
+  if (!payload.value?.rollbackSheetId) {
     return false;
   }
   return true;
@@ -157,6 +157,7 @@ const tryRollbackTask = async () => {
       `${issue.value.name}`,
     ].join(" ");
 
+    // TODO(boojack): use sheetID. Or can we display partial sheet or link the sheet here.
     const description = [
       "The original SQL statement:",
       `${payload.value!.statement}`,
@@ -174,7 +175,8 @@ const tryRollbackTask = async () => {
         databaseList: [task.value.database!.id].join(","),
         rollbackIssueId: issue.value.id,
         rollbackTaskIdList: [task.value.id].join(","),
-        sql: payload.value!.rollbackStatement!,
+        // TODO(boojack): use the rollbackSheetId.
+        sql: "",
         description,
       },
     });
