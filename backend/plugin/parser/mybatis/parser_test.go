@@ -7,8 +7,11 @@ import (
 	"strings"
 	"testing"
 
+	pg_query "github.com/pganalyze/pg_query_go/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
 
 // TestData is the test data for mybatis parser. It contains the xml and the expected sql.
@@ -46,6 +49,9 @@ func runTest(t *testing.T, filepath string, record bool) {
 		} else {
 			require.Equal(t, testCase.SQL, stringsBuilder.String())
 		}
+		// The result should be parsed correctly by MySQL parser.
+		_, err = pg_query.Parse(testCases[i].SQL)
+		require.NoError(t, err, "failed to parse restored sql: %s", testCases[i].SQL)
 	}
 
 	if record {

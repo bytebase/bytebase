@@ -4,6 +4,7 @@ package ast
 import (
 	"encoding/xml"
 	"io"
+	"strings"
 )
 
 var (
@@ -37,10 +38,20 @@ type QueryNode struct {
 
 // RestoreSQL implements Node interface.
 func (n *QueryNode) RestoreSQL(w io.Writer) error {
+	var sb strings.Builder
+
 	for _, node := range n.Children {
-		if err := node.RestoreSQL(w); err != nil {
+		if err := node.RestoreSQL(&sb); err != nil {
 			return err
 		}
+	}
+	stmt := sb.String()
+	trimmed := strings.TrimSpace(stmt)
+	if len(trimmed) == 0 {
+		return nil
+	}
+	if _, err := w.Write([]byte(trimmed)); err != nil {
+		return err
 	}
 	if _, err := w.Write([]byte(";\n")); err != nil {
 		return err
