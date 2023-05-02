@@ -20,6 +20,12 @@ export enum ClientLibraryOrganization {
   PHOTOS = 3,
   /** STREET_VIEW - Street View Org. */
   STREET_VIEW = 4,
+  /** SHOPPING - Shopping Org. */
+  SHOPPING = 5,
+  /** GEO - Geo Org. */
+  GEO = 6,
+  /** GENERATIVE_AI - Generative AI - https://developers.generativeai.google */
+  GENERATIVE_AI = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -40,6 +46,15 @@ export function clientLibraryOrganizationFromJSON(object: any): ClientLibraryOrg
     case 4:
     case "STREET_VIEW":
       return ClientLibraryOrganization.STREET_VIEW;
+    case 5:
+    case "SHOPPING":
+      return ClientLibraryOrganization.SHOPPING;
+    case 6:
+    case "GEO":
+      return ClientLibraryOrganization.GEO;
+    case 7:
+    case "GENERATIVE_AI":
+      return ClientLibraryOrganization.GENERATIVE_AI;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -59,6 +74,12 @@ export function clientLibraryOrganizationToJSON(object: ClientLibraryOrganizatio
       return "PHOTOS";
     case ClientLibraryOrganization.STREET_VIEW:
       return "STREET_VIEW";
+    case ClientLibraryOrganization.SHOPPING:
+      return "SHOPPING";
+    case ClientLibraryOrganization.GEO:
+      return "GEO";
+    case ClientLibraryOrganization.GENERATIVE_AI:
+      return "GENERATIVE_AI";
     case ClientLibraryOrganization.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -129,7 +150,11 @@ export interface CommonLanguageSettings {
 
 /** Details about how and where to publish client libraries. */
 export interface ClientLibrarySettings {
-  /** Version of the API to apply these settings to. */
+  /**
+   * Version of the API to apply these settings to. This is the full protobuf
+   * package for the API, ending in the version element.
+   * Examples: "google.cloud.speech.v1" and "google.spanner.admin.database.v1".
+   */
   version: string;
   /** Launch stage of this version of the API. */
   launchStage: LaunchStage;
@@ -168,7 +193,7 @@ export interface Publishing {
    */
   methodSettings: MethodSettings[];
   /**
-   * Link to a place that API users can report issues.  Example:
+   * Link to a *public* URI where users can report issues.  Example:
    * https://issuetracker.google.com/issues/new?component=190865&template=1161103
    */
   newIssueUri: string;
@@ -203,6 +228,11 @@ export interface Publishing {
    * settings with the same version string are discarded.
    */
   librarySettings: ClientLibrarySettings[];
+  /**
+   * Optional link to proto reference documentation.  Example:
+   * https://cloud.google.com/pubsub/lite/docs/reference/rpc
+   */
+  protoReferenceDocumentationUri: string;
 }
 
 /** Settings for Java client libraries. */
@@ -275,6 +305,51 @@ export interface NodeSettings {
 export interface DotnetSettings {
   /** Some settings. */
   common?: CommonLanguageSettings;
+  /**
+   * Map from original service names to renamed versions.
+   * This is used when the default generated types
+   * would cause a naming conflict. (Neither name is
+   * fully-qualified.)
+   * Example: Subscriber to SubscriberServiceApi.
+   */
+  renamedServices: { [key: string]: string };
+  /**
+   * Map from full resource types to the effective short name
+   * for the resource. This is used when otherwise resource
+   * named from different services would cause naming collisions.
+   * Example entry:
+   * "datalabeling.googleapis.com/Dataset": "DataLabelingDataset"
+   */
+  renamedResources: { [key: string]: string };
+  /**
+   * List of full resource types to ignore during generation.
+   * This is typically used for API-specific Location resources,
+   * which should be handled by the generator as if they were actually
+   * the common Location resources.
+   * Example entry: "documentai.googleapis.com/Location"
+   */
+  ignoredResources: string[];
+  /**
+   * Namespaces which must be aliased in snippets due to
+   * a known (but non-generator-predictable) naming collision
+   */
+  forcedNamespaceAliases: string[];
+  /**
+   * Method signatures (in the form "service.method(signature)")
+   * which are provided separately, so shouldn't be generated.
+   * Snippets *calling* these methods are still generated, however.
+   */
+  handwrittenSignatures: string[];
+}
+
+export interface DotnetSettings_RenamedServicesEntry {
+  key: string;
+  value: string;
+}
+
+export interface DotnetSettings_RenamedResourcesEntry {
+  key: string;
+  value: string;
 }
 
 /** Settings for Ruby client libraries. */
@@ -304,8 +379,8 @@ export interface MethodSettings {
    * Example of a YAML configuration::
    *
    *  publishing:
-   *    method_behavior:
-   *      - selector: CreateAdDomain
+   *    method_settings:
+   *      - selector: google.cloud.speech.v2.Speech.BatchRecognize
    *        long_running:
    *          initial_poll_delay:
    *            seconds: 60 # 1 minute
@@ -374,19 +449,20 @@ export const CommonLanguageSettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.referenceDocsUri = reader.string();
           continue;
         case 2:
-          if (tag == 16) {
+          if (tag === 16) {
             message.destinations.push(reader.int32() as any);
+
             continue;
           }
 
-          if (tag == 18) {
+          if (tag === 18) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.destinations.push(reader.int32() as any);
@@ -397,7 +473,7 @@ export const CommonLanguageSettings = {
 
           break;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -499,84 +575,84 @@ export const ClientLibrarySettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.version = reader.string();
           continue;
         case 2:
-          if (tag != 16) {
+          if (tag !== 16) {
             break;
           }
 
           message.launchStage = reader.int32() as any;
           continue;
         case 3:
-          if (tag != 24) {
+          if (tag !== 24) {
             break;
           }
 
           message.restNumericEnums = reader.bool();
           continue;
         case 21:
-          if (tag != 170) {
+          if (tag !== 170) {
             break;
           }
 
           message.javaSettings = JavaSettings.decode(reader, reader.uint32());
           continue;
         case 22:
-          if (tag != 178) {
+          if (tag !== 178) {
             break;
           }
 
           message.cppSettings = CppSettings.decode(reader, reader.uint32());
           continue;
         case 23:
-          if (tag != 186) {
+          if (tag !== 186) {
             break;
           }
 
           message.phpSettings = PhpSettings.decode(reader, reader.uint32());
           continue;
         case 24:
-          if (tag != 194) {
+          if (tag !== 194) {
             break;
           }
 
           message.pythonSettings = PythonSettings.decode(reader, reader.uint32());
           continue;
         case 25:
-          if (tag != 202) {
+          if (tag !== 202) {
             break;
           }
 
           message.nodeSettings = NodeSettings.decode(reader, reader.uint32());
           continue;
         case 26:
-          if (tag != 210) {
+          if (tag !== 210) {
             break;
           }
 
           message.dotnetSettings = DotnetSettings.decode(reader, reader.uint32());
           continue;
         case 27:
-          if (tag != 218) {
+          if (tag !== 218) {
             break;
           }
 
           message.rubySettings = RubySettings.decode(reader, reader.uint32());
           continue;
         case 28:
-          if (tag != 226) {
+          if (tag !== 226) {
             break;
           }
 
           message.goSettings = GoSettings.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -672,6 +748,7 @@ function createBasePublishing(): Publishing {
     docTagPrefix: "",
     organization: 0,
     librarySettings: [],
+    protoReferenceDocumentationUri: "",
   };
 }
 
@@ -704,6 +781,9 @@ export const Publishing = {
     for (const v of message.librarySettings) {
       ClientLibrarySettings.encode(v!, writer.uint32(874).fork()).ldelim();
     }
+    if (message.protoReferenceDocumentationUri !== "") {
+      writer.uint32(882).string(message.protoReferenceDocumentationUri);
+    }
     return writer;
   },
 
@@ -715,70 +795,77 @@ export const Publishing = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.methodSettings.push(MethodSettings.decode(reader, reader.uint32()));
           continue;
         case 101:
-          if (tag != 810) {
+          if (tag !== 810) {
             break;
           }
 
           message.newIssueUri = reader.string();
           continue;
         case 102:
-          if (tag != 818) {
+          if (tag !== 818) {
             break;
           }
 
           message.documentationUri = reader.string();
           continue;
         case 103:
-          if (tag != 826) {
+          if (tag !== 826) {
             break;
           }
 
           message.apiShortName = reader.string();
           continue;
         case 104:
-          if (tag != 834) {
+          if (tag !== 834) {
             break;
           }
 
           message.githubLabel = reader.string();
           continue;
         case 105:
-          if (tag != 842) {
+          if (tag !== 842) {
             break;
           }
 
           message.codeownerGithubTeams.push(reader.string());
           continue;
         case 106:
-          if (tag != 850) {
+          if (tag !== 850) {
             break;
           }
 
           message.docTagPrefix = reader.string();
           continue;
         case 107:
-          if (tag != 856) {
+          if (tag !== 856) {
             break;
           }
 
           message.organization = reader.int32() as any;
           continue;
         case 109:
-          if (tag != 874) {
+          if (tag !== 874) {
             break;
           }
 
           message.librarySettings.push(ClientLibrarySettings.decode(reader, reader.uint32()));
           continue;
+        case 110:
+          if (tag !== 882) {
+            break;
+          }
+
+          message.protoReferenceDocumentationUri = reader.string();
+          continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -803,6 +890,9 @@ export const Publishing = {
       librarySettings: Array.isArray(object?.librarySettings)
         ? object.librarySettings.map((e: any) => ClientLibrarySettings.fromJSON(e))
         : [],
+      protoReferenceDocumentationUri: isSet(object.protoReferenceDocumentationUri)
+        ? String(object.protoReferenceDocumentationUri)
+        : "",
     };
   },
 
@@ -829,6 +919,8 @@ export const Publishing = {
     } else {
       obj.librarySettings = [];
     }
+    message.protoReferenceDocumentationUri !== undefined &&
+      (obj.protoReferenceDocumentationUri = message.protoReferenceDocumentationUri);
     return obj;
   },
 
@@ -847,6 +939,7 @@ export const Publishing = {
     message.docTagPrefix = object.docTagPrefix ?? "";
     message.organization = object.organization ?? 0;
     message.librarySettings = object.librarySettings?.map((e) => ClientLibrarySettings.fromPartial(e)) || [];
+    message.protoReferenceDocumentationUri = object.protoReferenceDocumentationUri ?? "";
     return message;
   },
 };
@@ -877,14 +970,14 @@ export const JavaSettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.libraryPackage = reader.string();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
@@ -894,14 +987,14 @@ export const JavaSettings = {
           }
           continue;
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break;
           }
 
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -982,21 +1075,21 @@ export const JavaSettings_ServiceClassNamesEntry = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.key = reader.string();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.value = reader.string();
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1047,14 +1140,14 @@ export const CppSettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1106,14 +1199,14 @@ export const PhpSettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1165,14 +1258,14 @@ export const PythonSettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1224,14 +1317,14 @@ export const NodeSettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1264,13 +1357,35 @@ export const NodeSettings = {
 };
 
 function createBaseDotnetSettings(): DotnetSettings {
-  return { common: undefined };
+  return {
+    common: undefined,
+    renamedServices: {},
+    renamedResources: {},
+    ignoredResources: [],
+    forcedNamespaceAliases: [],
+    handwrittenSignatures: [],
+  };
 }
 
 export const DotnetSettings = {
   encode(message: DotnetSettings, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.common !== undefined) {
       CommonLanguageSettings.encode(message.common, writer.uint32(10).fork()).ldelim();
+    }
+    Object.entries(message.renamedServices).forEach(([key, value]) => {
+      DotnetSettings_RenamedServicesEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).ldelim();
+    });
+    Object.entries(message.renamedResources).forEach(([key, value]) => {
+      DotnetSettings_RenamedResourcesEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).ldelim();
+    });
+    for (const v of message.ignoredResources) {
+      writer.uint32(34).string(v!);
+    }
+    for (const v of message.forcedNamespaceAliases) {
+      writer.uint32(42).string(v!);
+    }
+    for (const v of message.handwrittenSignatures) {
+      writer.uint32(50).string(v!);
     }
     return writer;
   },
@@ -1283,14 +1398,55 @@ export const DotnetSettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = DotnetSettings_RenamedServicesEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.renamedServices[entry2.key] = entry2.value;
+          }
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          const entry3 = DotnetSettings_RenamedResourcesEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.renamedResources[entry3.key] = entry3.value;
+          }
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.ignoredResources.push(reader.string());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.forcedNamespaceAliases.push(reader.string());
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.handwrittenSignatures.push(reader.string());
+          continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1299,13 +1455,63 @@ export const DotnetSettings = {
   },
 
   fromJSON(object: any): DotnetSettings {
-    return { common: isSet(object.common) ? CommonLanguageSettings.fromJSON(object.common) : undefined };
+    return {
+      common: isSet(object.common) ? CommonLanguageSettings.fromJSON(object.common) : undefined,
+      renamedServices: isObject(object.renamedServices)
+        ? Object.entries(object.renamedServices).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      renamedResources: isObject(object.renamedResources)
+        ? Object.entries(object.renamedResources).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      ignoredResources: Array.isArray(object?.ignoredResources)
+        ? object.ignoredResources.map((e: any) => String(e))
+        : [],
+      forcedNamespaceAliases: Array.isArray(object?.forcedNamespaceAliases)
+        ? object.forcedNamespaceAliases.map((e: any) => String(e))
+        : [],
+      handwrittenSignatures: Array.isArray(object?.handwrittenSignatures)
+        ? object.handwrittenSignatures.map((e: any) => String(e))
+        : [],
+    };
   },
 
   toJSON(message: DotnetSettings): unknown {
     const obj: any = {};
     message.common !== undefined &&
       (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
+    obj.renamedServices = {};
+    if (message.renamedServices) {
+      Object.entries(message.renamedServices).forEach(([k, v]) => {
+        obj.renamedServices[k] = v;
+      });
+    }
+    obj.renamedResources = {};
+    if (message.renamedResources) {
+      Object.entries(message.renamedResources).forEach(([k, v]) => {
+        obj.renamedResources[k] = v;
+      });
+    }
+    if (message.ignoredResources) {
+      obj.ignoredResources = message.ignoredResources.map((e) => e);
+    } else {
+      obj.ignoredResources = [];
+    }
+    if (message.forcedNamespaceAliases) {
+      obj.forcedNamespaceAliases = message.forcedNamespaceAliases.map((e) => e);
+    } else {
+      obj.forcedNamespaceAliases = [];
+    }
+    if (message.handwrittenSignatures) {
+      obj.handwrittenSignatures = message.handwrittenSignatures.map((e) => e);
+    } else {
+      obj.handwrittenSignatures = [];
+    }
     return obj;
   },
 
@@ -1318,6 +1524,163 @@ export const DotnetSettings = {
     message.common = (object.common !== undefined && object.common !== null)
       ? CommonLanguageSettings.fromPartial(object.common)
       : undefined;
+    message.renamedServices = Object.entries(object.renamedServices ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    message.renamedResources = Object.entries(object.renamedResources ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    message.ignoredResources = object.ignoredResources?.map((e) => e) || [];
+    message.forcedNamespaceAliases = object.forcedNamespaceAliases?.map((e) => e) || [];
+    message.handwrittenSignatures = object.handwrittenSignatures?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseDotnetSettings_RenamedServicesEntry(): DotnetSettings_RenamedServicesEntry {
+  return { key: "", value: "" };
+}
+
+export const DotnetSettings_RenamedServicesEntry = {
+  encode(message: DotnetSettings_RenamedServicesEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DotnetSettings_RenamedServicesEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDotnetSettings_RenamedServicesEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DotnetSettings_RenamedServicesEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: DotnetSettings_RenamedServicesEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DotnetSettings_RenamedServicesEntry>): DotnetSettings_RenamedServicesEntry {
+    return DotnetSettings_RenamedServicesEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DotnetSettings_RenamedServicesEntry>): DotnetSettings_RenamedServicesEntry {
+    const message = createBaseDotnetSettings_RenamedServicesEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseDotnetSettings_RenamedResourcesEntry(): DotnetSettings_RenamedResourcesEntry {
+  return { key: "", value: "" };
+}
+
+export const DotnetSettings_RenamedResourcesEntry = {
+  encode(message: DotnetSettings_RenamedResourcesEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DotnetSettings_RenamedResourcesEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDotnetSettings_RenamedResourcesEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DotnetSettings_RenamedResourcesEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: DotnetSettings_RenamedResourcesEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DotnetSettings_RenamedResourcesEntry>): DotnetSettings_RenamedResourcesEntry {
+    return DotnetSettings_RenamedResourcesEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DotnetSettings_RenamedResourcesEntry>): DotnetSettings_RenamedResourcesEntry {
+    const message = createBaseDotnetSettings_RenamedResourcesEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -1342,14 +1705,14 @@ export const RubySettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1401,14 +1764,14 @@ export const GoSettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.common = CommonLanguageSettings.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1463,21 +1826,21 @@ export const MethodSettings = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.selector = reader.string();
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break;
           }
 
           message.longRunning = MethodSettings_LongRunning.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1543,35 +1906,35 @@ export const MethodSettings_LongRunning = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break;
           }
 
           message.initialPollDelay = Duration.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag != 21) {
+          if (tag !== 21) {
             break;
           }
 
           message.pollDelayMultiplier = reader.float();
           continue;
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break;
           }
 
           message.maxPollDelay = Duration.decode(reader, reader.uint32());
           continue;
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break;
           }
 
           message.totalPollTimeout = Duration.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break;
       }
       reader.skipType(tag & 7);
