@@ -68,6 +68,11 @@ func NewChooseNode(_ *xml.StartElement) *ChooseNode {
 
 // RestoreSQL implements Node interface.
 func (n *ChooseNode) RestoreSQL(w io.Writer) error {
+	if len(n.Children) > 0 {
+		if _, err := w.Write([]byte(" ")); err != nil {
+			return err
+		}
+	}
 	for _, node := range n.Children {
 		if err := node.RestoreSQL(w); err != nil {
 			return err
@@ -100,6 +105,11 @@ func NewWhenNode(startElement *xml.StartElement) *WhenNode {
 
 // RestoreSQL implements Node interface, the when condition will be ignored.
 func (n *WhenNode) RestoreSQL(w io.Writer) error {
+	if len(n.Children) > 0 {
+		if _, err := w.Write([]byte(" ")); err != nil {
+			return err
+		}
+	}
 	if len(n.Children) > 0 {
 		if _, err := w.Write([]byte(" ")); err != nil {
 			return err

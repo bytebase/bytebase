@@ -14,7 +14,7 @@
             </if>
             <if test="price != null and price !=''">
                 AND price = ${price}
-                <if test="price >= 400">
+                <if test="price >= 00">
                     AND name = 'Fuji'
                 </if>
             </if>
@@ -28,7 +28,7 @@
             FROM
             fruits
             WHERE
-            1=1 AND category = ? AND price = ? AND name = 'Fuji';
+            1=1  AND category = ?  AND price = ?  AND name = 'Fuji';
 - xml: |-
     <mapper namespace="com.bytebase.test">
       <select id="testChoose">
@@ -62,7 +62,7 @@
           price
           FROM
           fruits
-          WHERE category = 'apple' AND name = ? AND category = ? AND price = ? AND category = 'apple';
+          WHERE category = 'apple'    AND name = ?   AND category = ?  AND price = ?  AND category = 'apple';
 - xml: |-
     <mapper namespace="com.bytebase.test">
       <select id="testWhere">
@@ -132,7 +132,7 @@
             category,
             price
             FROM
-            fruits WHERE category = 'apple' AND price = ?;
+            fruits WHERE category = 'apple'  AND price = ?;
 - xml: |-
     <mapper namespace="com.bytebase.test">
         <update id="testSet">
@@ -152,26 +152,26 @@
     </mapper>
   sql: |
     UPDATE
-            fruits SET category = ?, price = ?WHERE
+            fruits SET category = ? ,  price = ?  WHERE
             name = ?;
 - xml: |-
     <mapper namespace="com.bytebase.test">
         <select id="testTrimAndChoose" resultMap="RESULT_MAP">
-          select `user_id`, `name`, `age`, `sex` from `user`
-          <trim prefix="where" suffixOverrides="and" suffix=" group by `user_id` desc">
+          select users_id, name, age, sex from users
+          <trim prefix="where" suffixOverrides="and" suffix=" group by users_id">
               <choose>
-                <when test="username != null and username != ''">
-                    `name` like #{username} and
+                <when test="usersname != null and usersname != ''">
+                    name like #{usersname} and
                 </when>
                 <when test="age != null">
-                    `age` >= #{age} and
+                    age >= #{age} and
                 </when>
                 <otherwise>
-                    `user_id` is not null and
+                    users_id is not null and
                 </otherwise>
               </choose>
           </trim>
         </select>
     </mapper>
   sql: |
-    select `user_id`, `name`, `age`, `sex` from `user` where `name` like ? and `age` >= ? and `user_id` is not null   group by `user_id` desc;
+    select users_id, name, age, sex from users where name like ?  and   age >= ?  and  users_id is not null   group by users_id;
