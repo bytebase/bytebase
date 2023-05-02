@@ -375,12 +375,12 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	}
 
 	// Reset because we are trying to build
-	// the rollbackStatement again and there could be previous runs.
+	// the RollbackSheetID again and there could be previous runs.
 	if taskPatch.RollbackEnabled != nil && *taskPatch.RollbackEnabled {
 		empty := ""
 		pending := api.RollbackSQLStatusPending
 		taskPatch.RollbackSQLStatus = &pending
-		taskPatch.RollbackStatement = &empty
+		taskPatch.RollbackSheetID = nil
 		taskPatch.RollbackError = &empty
 	}
 	// if *taskPatch.RollbackEnabled == false, we don't reset

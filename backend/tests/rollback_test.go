@@ -251,16 +251,6 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(api.RollbackSQLStatusDone, payload.RollbackSQLStatus)
 
-	rollbackSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
-		Name:       "rollback statement sheet",
-		Statement:  payload.RollbackStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
-	})
-	a.NoError(err)
-
 	// Run a rollback issue.
 	var rollbackIssue *api.Issue
 	rollbackCreateContext, err := json.Marshal(&api.MigrationContext{
@@ -268,7 +258,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 			{
 				MigrationType: db.Data,
 				DatabaseID:    database.ID,
-				SheetID:       rollbackSheet.ID,
+				SheetID:       payload.RollbackSheetID,
 				RollbackDetail: &api.RollbackDetail{
 					IssueID: issue.ID,
 					TaskID:  task.ID,
@@ -484,16 +474,6 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 	a.Equal(api.RollbackSQLStatusDone, payload.RollbackSQLStatus)
 
-	rollbackSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
-		Name:       "rollback statement sheet",
-		Statement:  payload.RollbackStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
-	})
-	a.NoError(err)
-
 	// Run a rollback issue.
 	var rollbackIssue *api.Issue
 	rollbackCreateContext, err := json.Marshal(&api.MigrationContext{
@@ -501,7 +481,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 			{
 				MigrationType: db.Data,
 				DatabaseID:    database.ID,
-				SheetID:       rollbackSheet.ID,
+				SheetID:       payload.RollbackSheetID,
 				RollbackDetail: &api.RollbackDetail{
 					IssueID: issue.ID,
 					TaskID:  task.ID,
