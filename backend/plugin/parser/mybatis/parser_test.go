@@ -64,6 +64,6 @@ func TestParser(t *testing.T) {
 		"test-data/test_dynamic_sql_mapper.yaml",
 	}
 	for _, filepath := range testFileList {
-		runTest(t, filepath, false)
+		runTest(t, filepath, true)
 	}
 }

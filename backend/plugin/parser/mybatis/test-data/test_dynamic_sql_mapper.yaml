@@ -63,3 +63,115 @@
           FROM
           fruits
           WHERE category = 'apple' AND name = ? AND category = ? AND price = ? AND category = 'apple';
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+      <select id="testWhere">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            <where>
+                AND category = 'apple'
+                OR price = 200
+            </where>
+      </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple'
+                OR price = 200;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+    <select id="testTrim">
+          SELECT
+          name,
+          category,
+          price
+          FROM
+          fruits
+          <where>
+              OR category = 'apple'
+              OR price = 200
+          </where>
+      </select>
+    </mapper>
+  sql: |
+    SELECT
+          name,
+          category,
+          price
+          FROM
+          fruits WHERE category = 'apple'
+              OR price = 200;
+- xml: |-
+    <mapper namespace="Test">
+        <select id="testWhereIf">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            <where>
+                AND category = 'apple'
+                <if test="price != null and price !=''">
+                    AND price = ${price}
+                </if>
+            </where>
+        </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple' AND price = ?;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <update id="testSet">
+            UPDATE
+            fruits
+            <set>
+                <if test="category != null and category !=''">
+                    category = #{category},
+                </if>
+                <if test="price != null and price !=''">
+                    price = ${price},
+                </if>
+            </set>
+            WHERE
+            name = #{name}
+        </update>
+    </mapper>
+  sql: |
+    UPDATE
+            fruits SET category = ?, price = ?WHERE
+            name = ?;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <select id="testTrimAndChoose" resultMap="RESULT_MAP">
+          select `user_id`, `name`, `age`, `sex` from `user`
+          <trim prefix="where" suffixOverrides="and" suffix=" group by `user_id` desc">
+              <choose>
+                <when test="username != null and username != ''">
+                    `name` like #{username} and
+                </when>
+                <when test="age != null">
+                    `age` >= #{age} and
+                </when>
+                <otherwise>
+                    `user_id` is not null and
+                </otherwise>
+              </choose>
+          </trim>
+        </select>
+    </mapper>
+  sql: |
+    select `user_id`, `name`, `age`, `sex` from `user` where `name` like ? and `age` >= ? and `user_id` is not null   group by `user_id` desc;
