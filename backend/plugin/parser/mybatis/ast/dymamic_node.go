@@ -14,6 +14,8 @@ var (
 	_ Node = (*WhenNode)(nil)
 	_ Node = (*OtherwiseNode)(nil)
 
+	_ Node = (*WhereNode)(nil)
+	_ Node = (*SetNode)(nil)
 	_ Node = (*TrimNode)(nil)
 )
 
