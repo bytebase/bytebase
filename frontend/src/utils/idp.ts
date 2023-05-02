@@ -87,6 +87,25 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
     },
   },
   {
+    title: "Casdoor",
+    name: "",
+    domain: "casdoor.org",
+    type: IdentityProviderType.OAUTH2,
+    config: {
+      clientId: "",
+      clientSecret: "",
+      authUrl: "http://CASDOOR_HOSTNAME/login/oauth/authorize",
+      tokenUrl: "http://CASDOOR_HOSTNAME/api/login/oauth/access_token",
+      userInfoUrl: "http://CASDOOR_HOSTNAME/api/get-account",
+      scopes: ["phone", "profile", "email"],
+      fieldMapping: {
+        identifier: "name",
+        displayName: "name",
+        email: "email",
+      },
+    },
+  },
+  {
     title: "Custom",
     name: "",
     domain: "",
