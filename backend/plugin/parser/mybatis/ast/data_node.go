@@ -22,8 +22,17 @@ type TextNode struct {
 
 // RestoreSQL implements Node interface.
 func (n *TextNode) RestoreSQL(w io.Writer) error {
-	_, err := w.Write([]byte(n.Text))
-	return err
+	if len(n.Text) == 0 {
+		return nil
+	}
+
+	if _, err := w.Write([]byte(" ")); err != nil {
+		return err
+	}
+	if _, err := w.Write([]byte(n.Text)); err != nil {
+		return err
+	}
+	return nil
 }
 
 // AddChild implements Node interface, text node does not have child.
@@ -37,8 +46,10 @@ type ParameterNode struct {
 
 // RestoreSQL implements Node interface, parameter node will always be restored to "?".
 func (*ParameterNode) RestoreSQL(w io.Writer) error {
-	_, err := w.Write([]byte("?"))
-	return err
+	if _, err := w.Write([]byte("?")); err != nil {
+		return err
+	}
+	return nil
 }
 
 // AddChild implements Node interface, parameter node does not have child.
@@ -52,8 +63,10 @@ type VariableNode struct {
 
 // RestoreSQL implements Node interface, variable node will always be restored to "?".
 func (*VariableNode) RestoreSQL(w io.Writer) error {
-	_, err := w.Write([]byte("?"))
-	return err
+	if _, err := w.Write([]byte("?")); err != nil {
+		return err
+	}
+	return nil
 }
 
 // AddChild implements Node interface.
