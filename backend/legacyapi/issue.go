@@ -163,7 +163,7 @@ type MigrationDetail struct {
 	// SchemaVersion is parsed from VCS file name.
 	// It is automatically generated in the UI workflow.
 	SchemaVersion string `json:"schemaVersion"`
-	// If RollbackEnabled, build the rollbackStatement of the task.
+	// If RollbackEnabled, build the RollbackSheetID of the task.
 	RollbackEnabled bool `json:"rollbackEnabled"`
 	// if RollbackDetail is not nil, then this task is for rolling back another task.
 	RollbackDetail *RollbackDetail `json:"rollbackDetail"`
