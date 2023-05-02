@@ -115,6 +115,12 @@ func (*Parser) newNodeByStartElement(startElement *xml.StartElement) ast.Node {
 		return ast.NewWhenNode(startElement)
 	case "otherwise":
 		return ast.NewOtherwiseNode(startElement)
+	case "where":
+		return ast.NewWhereNode(startElement)
+	case "set":
+		return ast.NewSetNode(startElement)
+	case "trim":
+		return ast.NewTrimNode(startElement)
 	}
 	return ast.NewEmptyNode()
 }
