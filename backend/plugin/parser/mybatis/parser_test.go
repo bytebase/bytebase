@@ -10,8 +10,6 @@ import (
 	pg_query "github.com/pganalyze/pg_query_go/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
-
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 )
 
 // TestData is the test data for mybatis parser. It contains the xml and the expected sql.
