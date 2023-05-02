@@ -124,7 +124,7 @@ export type TaskDatabaseDataUpdatePayload = {
   pushEvent?: VCSPushEvent;
   rollbackEnabled: boolean;
   rollbackSqlStatus?: RollbackSQLStatus;
-  rollbackStatement?: string;
+  rollbackSheetId?: SheetId;
   rollbackError?: string;
   rollbackFromIssueId?: IssueId;
   rollbackFromTaskId?: TaskId;
