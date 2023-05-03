@@ -278,7 +278,7 @@ CREATE TABLE project_member (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id_role ON project_member(project_id, principal_id, role);
+CREATE INDEX idx_project_member_project_id ON project_member(project_id);
 
 ALTER SEQUENCE project_member_id_seq RESTART WITH 101;
 
