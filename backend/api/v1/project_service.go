@@ -161,19 +161,29 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 	}
 
 	// Resources prevent project deletion.
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
-	if len(databases) > 0 {
-		return nil, status.Errorf(codes.FailedPrecondition, "transfer all databases under the project before deleting the project")
-	}
-	openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectUID: &project.UID, StatusList: []api.IssueStatus{api.IssueOpen}})
-	if err != nil {
-		return nil, err
-	}
-	if len(openIssues) > 0 {
-		return nil, status.Errorf(codes.FailedPrecondition, "resolve all open issues before deleting the project")
+	// We don't move the sheet to default project because BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
+	if request.Force {
+		defaultProject := api.DefaultProjectID
+		if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, defaultProject, api.SystemBotID); err != nil {
+			return nil, err
+		}
+		// We don't close the issues because they might be open still.
+	} else {
+		// Return the open issue error first because that's more important than transferring out databases.
+		openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectUID: &project.UID, StatusList: []api.IssueStatus{api.IssueOpen}})
+		if err != nil {
+			return nil, err
+		}
+		if len(openIssues) > 0 {
+			return nil, status.Errorf(codes.FailedPrecondition, "resolve all open issues before deleting the project")
+		}
+		if len(databases) > 0 {
+			return nil, status.Errorf(codes.FailedPrecondition, "transfer all databases to the default project before deleting the project")
+		}
 	}
 
 	if _, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
