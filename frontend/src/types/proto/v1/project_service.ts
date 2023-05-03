@@ -315,6 +315,8 @@ export interface DeleteProjectRequest {
    * Format: projects/{project}
    */
   name: string;
+  /** If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. */
+  force: boolean;
 }
 
 export interface UndeleteProjectRequest {
@@ -1150,13 +1152,16 @@ export const UpdateProjectRequest = {
 };
 
 function createBaseDeleteProjectRequest(): DeleteProjectRequest {
-  return { name: "" };
+  return { name: "", force: false };
 }
 
 export const DeleteProjectRequest = {
   encode(message: DeleteProjectRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.force === true) {
+      writer.uint32(16).bool(message.force);
     }
     return writer;
   },
@@ -1175,6 +1180,13 @@ export const DeleteProjectRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.force = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1185,12 +1197,16 @@ export const DeleteProjectRequest = {
   },
 
   fromJSON(object: any): DeleteProjectRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      force: isSet(object.force) ? Boolean(object.force) : false,
+    };
   },
 
   toJSON(message: DeleteProjectRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.force !== undefined && (obj.force = message.force);
     return obj;
   },
 
@@ -1201,6 +1217,7 @@ export const DeleteProjectRequest = {
   fromPartial(object: DeepPartial<DeleteProjectRequest>): DeleteProjectRequest {
     const message = createBaseDeleteProjectRequest();
     message.name = object.name ?? "";
+    message.force = object.force ?? false;
     return message;
   },
 };
