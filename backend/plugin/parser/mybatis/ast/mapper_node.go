@@ -17,9 +17,9 @@ type MapperNode struct {
 }
 
 // RestoreSQL implements Node interface.
-func (n *MapperNode) RestoreSQL(w io.Writer) error {
+func (n *MapperNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	for _, node := range n.Children {
-		if err := node.RestoreSQL(w); err != nil {
+		if err := node.RestoreSQL(ctx, w); err != nil {
 			return err
 		}
 	}

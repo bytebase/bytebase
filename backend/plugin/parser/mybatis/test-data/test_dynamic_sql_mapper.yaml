@@ -199,3 +199,28 @@
             price
             FROM
             fruits WHERE category = 'apple' AND (name = ? OR name = ?);
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <sql id="someTable">
+            fruits
+            <where>
+                category = 'apple'
+                AND price = 200
+            </where>
+        </sql>
+        <select id="testInclude">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            <include refid="someTable" />
+        </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM fruits WHERE category = 'apple'
+                AND price = 200;
