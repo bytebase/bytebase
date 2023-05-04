@@ -37,11 +37,11 @@ type QueryNode struct {
 }
 
 // RestoreSQL implements Node interface.
-func (n *QueryNode) RestoreSQL(w io.Writer) error {
+func (n *QueryNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	var sb strings.Builder
 
 	for _, node := range n.Children {
-		if err := node.RestoreSQL(&sb); err != nil {
+		if err := node.RestoreSQL(ctx, &sb); err != nil {
 			return err
 		}
 	}

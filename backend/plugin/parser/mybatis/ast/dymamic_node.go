@@ -5,6 +5,8 @@ import (
 	"encoding/xml"
 	"io"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 var (
@@ -38,14 +40,14 @@ func NewIfNode(startElement *xml.StartElement) *IfNode {
 }
 
 // RestoreSQL implements Node interface, the if condition will be ignored.
-func (n *IfNode) RestoreSQL(w io.Writer) error {
+func (n *IfNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	if len(n.Children) > 0 {
 		if _, err := w.Write([]byte(" ")); err != nil {
 			return err
 		}
 	}
 	for _, node := range n.Children {
-		if err := node.RestoreSQL(w); err != nil {
+		if err := node.RestoreSQL(ctx, w); err != nil {
 			return err
 		}
 	}
@@ -68,14 +70,14 @@ func NewChooseNode(_ *xml.StartElement) *ChooseNode {
 }
 
 // RestoreSQL implements Node interface.
-func (n *ChooseNode) RestoreSQL(w io.Writer) error {
+func (n *ChooseNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	if len(n.Children) > 0 {
 		if _, err := w.Write([]byte(" ")); err != nil {
 			return err
 		}
 	}
 	for _, node := range n.Children {
-		if err := node.RestoreSQL(w); err != nil {
+		if err := node.RestoreSQL(ctx, w); err != nil {
 			return err
 		}
 	}
@@ -105,7 +107,7 @@ func NewWhenNode(startElement *xml.StartElement) *WhenNode {
 }
 
 // RestoreSQL implements Node interface, the when condition will be ignored.
-func (n *WhenNode) RestoreSQL(w io.Writer) error {
+func (n *WhenNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	if len(n.Children) > 0 {
 		if _, err := w.Write([]byte(" ")); err != nil {
 			return err
@@ -117,7 +119,7 @@ func (n *WhenNode) RestoreSQL(w io.Writer) error {
 		}
 	}
 	for _, node := range n.Children {
-		if err := node.RestoreSQL(w); err != nil {
+		if err := node.RestoreSQL(ctx, w); err != nil {
 			return err
 		}
 	}
@@ -140,14 +142,14 @@ func NewOtherwiseNode(_ *xml.StartElement) *OtherwiseNode {
 }
 
 // RestoreSQL implements Node interface.
-func (n *OtherwiseNode) RestoreSQL(w io.Writer) error {
+func (n *OtherwiseNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	if len(n.Children) > 0 {
 		if _, err := w.Write([]byte(" ")); err != nil {
 			return err
 		}
 	}
 	for _, node := range n.Children {
-		if err := node.RestoreSQL(w); err != nil {
+		if err := node.RestoreSQL(ctx, w); err != nil {
 			return err
 		}
 	}
@@ -199,10 +201,10 @@ func newTrimNodeWithAttrs(prefix, suffix, prefixOverrides, suffixOverrides strin
 }
 
 // RestoreSQL implements Node interface.
-func (n *TrimNode) RestoreSQL(w io.Writer) error {
+func (n *TrimNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	var stringsBuilder strings.Builder
 	for _, node := range n.Children {
-		if err := node.RestoreSQL(&stringsBuilder); err != nil {
+		if err := node.RestoreSQL(ctx, &stringsBuilder); err != nil {
 			return err
 		}
 	}
@@ -268,8 +270,8 @@ func NewWhereNode(_ *xml.StartElement) *WhereNode {
 }
 
 // RestoreSQL implements Node interface.
-func (n *WhereNode) RestoreSQL(w io.Writer) error {
-	return n.trimNode.RestoreSQL(w)
+func (n *WhereNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
+	return n.trimNode.RestoreSQL(ctx, w)
 }
 
 // AddChild adds a child to the where node.
@@ -290,8 +292,8 @@ func NewSetNode(_ *xml.StartElement) *SetNode {
 }
 
 // RestoreSQL implements Node interface.
-func (n *SetNode) RestoreSQL(w io.Writer) error {
-	return n.trimNode.RestoreSQL(w)
+func (n *SetNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
+	return n.trimNode.RestoreSQL(ctx, w)
 }
 
 // AddChild adds a child to the set node.
@@ -338,10 +340,10 @@ func (n *ForEachNode) AddChild(child Node) {
 }
 
 // RestoreSQL implements Node interface.
-func (n *ForEachNode) RestoreSQL(w io.Writer) error {
+func (n *ForEachNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	var partBuilder strings.Builder
 	for _, node := range n.Children {
-		if err := node.RestoreSQL(&partBuilder); err != nil {
+		if err := node.RestoreSQL(ctx, &partBuilder); err != nil {
 			return err
 		}
 	}
@@ -379,6 +381,98 @@ func (n *ForEachNode) RestoreSQL(w io.Writer) error {
 		if _, err := w.Write([]byte(n.Close)); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// SQLNode represents a sql node in mybatis mapper xml likes <sql id="sqlId">...</sql>.
+type SQLNode struct {
+	ID       string
+	Children []Node
+}
+
+// NewSQLNode creates a new sql node.
+func NewSQLNode(startElement *xml.StartElement) *SQLNode {
+	var id string
+	for _, attr := range startElement.Attr {
+		if attr.Name.Local == "id" {
+			id = attr.Value
+			break
+		}
+	}
+	return &SQLNode{
+		ID: id,
+	}
+}
+
+// AddChild adds a child to the sql node.
+func (n *SQLNode) AddChild(child Node) {
+	n.Children = append(n.Children, child)
+}
+
+// RestoreSQL implements Node interface.
+// SQLNode is a placeholder node, it will be replaced by the sql node with the same id.
+// So we don't need to restore the sql node.
+func (*SQLNode) RestoreSQL(*RestoreContext, io.Writer) error {
+	return nil
+}
+
+func (n *SQLNode) String(ctx *RestoreContext) (string, error) {
+	var builder strings.Builder
+	for _, node := range n.Children {
+		if err := node.RestoreSQL(ctx, &builder); err != nil {
+			return "", err
+		}
+	}
+	return builder.String(), nil
+}
+
+// IncludeNode represents a include node in mybatis mapper xml likes <include refid="refId">...</include>.
+type IncludeNode struct {
+	RefID string
+	// IncludeNode can only contains property node.
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L244
+	Children []Node
+}
+
+// NewIncludeNode creates a new include node.
+func NewIncludeNode(startElement *xml.StartElement) *IncludeNode {
+	var refID string
+	for _, attr := range startElement.Attr {
+		if attr.Name.Local == "refid" {
+			refID = attr.Value
+			break
+		}
+	}
+	return &IncludeNode{
+		RefID: refID,
+	}
+}
+
+// AddChild adds a child to the include node.
+func (n *IncludeNode) AddChild(child Node) {
+	n.Children = append(n.Children, child)
+}
+
+// RestoreSQL implements Node interface.
+func (n *IncludeNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
+	sqlNode, ok := ctx.SQLMap[n.RefID]
+	if !ok {
+		return errors.Errorf("refID %s not found", n.RefID)
+	}
+	sqlString, err := sqlNode.String(ctx)
+	if err != nil {
+		return err
+	}
+	trimmed := strings.TrimSpace(sqlString)
+	if len(trimmed) == 0 {
+		return nil
+	}
+	if _, err := w.Write([]byte(" ")); err != nil {
+		return err
+	}
+	if _, err := w.Write([]byte(trimmed)); err != nil {
+		return err
 	}
 	return nil
 }
