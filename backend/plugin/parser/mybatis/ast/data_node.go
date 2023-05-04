@@ -21,7 +21,7 @@ type TextNode struct {
 }
 
 // RestoreSQL implements Node interface.
-func (n *TextNode) RestoreSQL(w io.Writer) error {
+func (n *TextNode) RestoreSQL(_ *RestoreContext, w io.Writer) error {
 	if len(n.Text) == 0 {
 		return nil
 	}
@@ -45,7 +45,7 @@ type ParameterNode struct {
 }
 
 // RestoreSQL implements Node interface, parameter node will always be restored to "?".
-func (*ParameterNode) RestoreSQL(w io.Writer) error {
+func (*ParameterNode) RestoreSQL(_ *RestoreContext, w io.Writer) error {
 	if _, err := w.Write([]byte("?")); err != nil {
 		return err
 	}
@@ -62,9 +62,15 @@ type VariableNode struct {
 }
 
 // RestoreSQL implements Node interface, variable node will always be restored to "?".
-func (*VariableNode) RestoreSQL(w io.Writer) error {
-	if _, err := w.Write([]byte("?")); err != nil {
-		return err
+func (v *VariableNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
+	if value, ok := ctx.Variable[v.Name]; ok {
+		if _, err := w.Write([]byte(value)); err != nil {
+			return err
+		}
+	} else {
+		if _, err := w.Write([]byte("?")); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -80,9 +86,9 @@ type DataNode struct {
 }
 
 // RestoreSQL implements Node interface.
-func (d *DataNode) RestoreSQL(w io.Writer) error {
+func (d *DataNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	for _, node := range d.Children {
-		if err := node.RestoreSQL(w); err != nil {
+		if err := node.RestoreSQL(ctx, w); err != nil {
 			return err
 		}
 	}
@@ -147,7 +153,7 @@ func (d *DataNode) Scan() error {
 				}
 				d.clearBufToTextNode()
 				if err := d.scanVariable(); err != nil {
-					return errors.Wrapf(err, "failed to scan parameter")
+					return errors.Wrapf(err, "failed to scan variable")
 				}
 			}
 		default:
