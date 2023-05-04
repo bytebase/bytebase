@@ -175,3 +175,27 @@
     </mapper>
   sql: |
     select users_id, name, age, sex from users where name like ?  and   age >= ?  and  users_id is not null   group by users_id;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <select id="testForeach">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            <where>
+                category = 'apple' AND
+                <foreach collection="apples" item="name" open="(" close=")" separator="OR">
+                    name = #{name}
+                </foreach>
+            </where>
+        </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple' AND (name = ? OR name = ?);
