@@ -17,7 +17,7 @@ type Node interface {
 type RestoreContext struct {
 	// SQLMap is the map of SQL statement, key is the id of the sql element, value is the node of the sql element.
 	// It will be used to restore the <include> element.
-	SQLMap map[string]Node
+	SQLMap map[string]*SQLNode
 	// Variable is the map of variable, key is the name of the variable, value is the value of the variable.
 	// It will be used to restore the ${} element.
 	Variable map[string]string

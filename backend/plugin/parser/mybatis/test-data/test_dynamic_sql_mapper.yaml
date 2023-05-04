@@ -177,26 +177,50 @@
     select users_id, name, age, sex from users where name like ?  and   age >= ?  and  users_id is not null   group by users_id;
 - xml: |-
     <mapper namespace="com.bytebase.test">
-        <sql id="sometable">
+        <select id="testForeach">
+            SELECT
+            name,
+            category,
+            price
+            FROM
             fruits
             <where>
-                AND category = 'apple'
-                OR price = 200
-        <sql>
+                category = 'apple' AND
+                <foreach collection="apples" item="name" open="(" close=")" separator="OR">
+                    name = #{name}
+                </foreach>
+            </where>
+        </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple' AND (name = ? OR name = ?);
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <sql id="someTable">
+            fruits
+            <where>
+                category = 'apple'
+                AND price = 200
+            </where>
+        </sql>
         <select id="testInclude">
             SELECT
             name,
             category,
             price
             FROM
-            <include refid="sometable"/>
+            <include refid="someTable" />
         </select>
-    <mapper>
-    sql: |
+    </mapper>
+  sql: |
     SELECT
             name,
             category,
             price
-            FROM
-            fruits WHERE category = 'apple'
-                OR price = 200;
+            FROM fruits WHERE category = 'apple'
+                AND price = 200;

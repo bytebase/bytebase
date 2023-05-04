@@ -39,7 +39,7 @@ func runTest(t *testing.T, filepath string, record bool) {
 		require.NotNil(t, node)
 
 		var stringsBuilder strings.Builder
-		err = node.RestoreSQL(&stringsBuilder)
+		err = node.RestoreSQL(parser.GetRestoreContext(), &stringsBuilder)
 		require.NoError(t, err)
 		require.NoError(t, err)
 		if record {
@@ -68,6 +68,6 @@ func TestParser(t *testing.T) {
 		"test-data/test_dynamic_sql_mapper.yaml",
 	}
 	for _, filepath := range testFileList {
-		runTest(t, filepath, false)
+		runTest(t, filepath, true)
 	}
 }

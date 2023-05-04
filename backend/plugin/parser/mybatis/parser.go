@@ -17,7 +17,7 @@ type Parser struct {
 	buf         []rune
 	cursor      uint
 	currentLine uint
-	sqlMap      map[string]ast.Node
+	sqlMap      map[string]*ast.SQLNode
 }
 
 // NewParser creates a new mybatis mapper xml parser.
@@ -28,6 +28,15 @@ func NewParser(stmt string) *Parser {
 		d:      d,
 		cursor: 0,
 		buf:    nil,
+		sqlMap: make(map[string]*ast.SQLNode),
+	}
+}
+
+// GetRestoreContext returns the restore context.
+func (p *Parser) GetRestoreContext() *ast.RestoreContext {
+	return &ast.RestoreContext{
+		SQLMap:   p.sqlMap,
+		Variable: make(map[string]string),
 	}
 }
 
@@ -55,7 +64,7 @@ func (p *Parser) Parse() (ast.Node, error) {
 		case xml.StartElement:
 			newNode := p.newNodeByStartElement(&ele)
 			if ele.Name.Local == "sql" {
-				nodeStack = append(nodeStack, newNode)
+				p.sqlMap[newNode.(*ast.SQLNode).ID] = newNode.(*ast.SQLNode)
 			}
 			startElementStack = append(startElementStack, &ele)
 			nodeStack = append(nodeStack, newNode)
@@ -126,6 +135,12 @@ func (*Parser) newNodeByStartElement(startElement *xml.StartElement) ast.Node {
 		return ast.NewSetNode(startElement)
 	case "trim":
 		return ast.NewTrimNode(startElement)
+	case "foreach":
+		return ast.NewForeachNode(startElement)
+	case "sql":
+		return ast.NewSQLNode(startElement)
+	case "include":
+		return ast.NewIncludeNode(startElement)
 	}
 	return ast.NewEmptyNode()
 }

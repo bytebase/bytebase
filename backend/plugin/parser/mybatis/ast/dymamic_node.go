@@ -19,6 +19,7 @@ var (
 	_ Node = (*WhereNode)(nil)
 	_ Node = (*SetNode)(nil)
 	_ Node = (*TrimNode)(nil)
+	_ Node = (*ForEachNode)(nil)
 )
 
 // IfNode represents a if node in mybatis mapper xml likes <if test="condition">...</if>.
@@ -300,6 +301,90 @@ func (n *SetNode) AddChild(child Node) {
 	n.trimNode.AddChild(child)
 }
 
+// ForEachNode represents a foreach node in mybatis mapper xml likes <foreach collection="collection" item="item" index="index" open="open" close="close" separator="separator">...</foreach>.
+type ForEachNode struct {
+	Collection string
+	Item       string
+	Separator  string
+	Open       string
+	Close      string
+	Index      string
+	Children   []Node
+}
+
+// NewForeachNode creates a new foreach node.
+func NewForeachNode(startElement *xml.StartElement) *ForEachNode {
+	var eachNode ForEachNode
+	for _, attr := range startElement.Attr {
+		switch attr.Name.Local {
+		case "collection":
+			eachNode.Collection = attr.Value
+		case "item":
+			eachNode.Item = attr.Value
+		case "index":
+			eachNode.Index = attr.Value
+		case "open":
+			eachNode.Open = attr.Value
+		case "close":
+			eachNode.Close = attr.Value
+		case "separator":
+			eachNode.Separator = attr.Value
+		}
+	}
+	return &eachNode
+}
+
+// AddChild adds a child to the foreach node.
+func (n *ForEachNode) AddChild(child Node) {
+	n.Children = append(n.Children, child)
+}
+
+// RestoreSQL implements Node interface.
+func (n *ForEachNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
+	var partBuilder strings.Builder
+	for _, node := range n.Children {
+		if err := node.RestoreSQL(ctx, &partBuilder); err != nil {
+			return err
+		}
+	}
+	part := strings.TrimSpace(partBuilder.String())
+	if len(part) == 0 {
+		return nil
+	}
+	if _, err := w.Write([]byte(" ")); err != nil {
+		return err
+	}
+	if len(n.Open) > 0 {
+		if _, err := w.Write([]byte(n.Open)); err != nil {
+			return err
+		}
+	}
+	// We write the part twice.
+	if _, err := w.Write([]byte(part)); err != nil {
+		return err
+	}
+	if len(n.Separator) > 0 {
+		if _, err := w.Write([]byte(" ")); err != nil {
+			return err
+		}
+		if _, err := w.Write([]byte(n.Separator)); err != nil {
+			return err
+		}
+		if _, err := w.Write([]byte(" ")); err != nil {
+			return err
+		}
+		if _, err := w.Write([]byte(part)); err != nil {
+			return err
+		}
+	}
+	if len(n.Close) > 0 {
+		if _, err := w.Write([]byte(n.Close)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SQLNode represents a sql node in mybatis mapper xml likes <sql id="sqlId">...</sql>.
 type SQLNode struct {
 	ID       string
@@ -320,19 +405,26 @@ func NewSQLNode(startElement *xml.StartElement) *SQLNode {
 	}
 }
 
-// RestoreSQL implements Node interface.
-func (n *SQLNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
-	for _, node := range n.Children {
-		if err := node.RestoreSQL(ctx, w); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // AddChild adds a child to the sql node.
 func (n *SQLNode) AddChild(child Node) {
 	n.Children = append(n.Children, child)
+}
+
+// RestoreSQL implements Node interface.
+// SQLNode is a placeholder node, it will be replaced by the sql node with the same id.
+// So we don't need to restore the sql node.
+func (*SQLNode) RestoreSQL(*RestoreContext, io.Writer) error {
+	return nil
+}
+
+func (n *SQLNode) String(ctx *RestoreContext) (string, error) {
+	var builder strings.Builder
+	for _, node := range n.Children {
+		if err := node.RestoreSQL(ctx, &builder); err != nil {
+			return "", err
+		}
+	}
+	return builder.String(), nil
 }
 
 // IncludeNode represents a include node in mybatis mapper xml likes <include refid="refId">...</include>.
@@ -368,5 +460,19 @@ func (n *IncludeNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	if !ok {
 		return errors.Errorf("refID %s not found", n.RefID)
 	}
-	return sqlNode.RestoreSQL(ctx, w)
+	sqlString, err := sqlNode.String(ctx)
+	if err != nil {
+		return err
+	}
+	trimmed := strings.TrimSpace(sqlString)
+	if len(trimmed) == 0 {
+		return nil
+	}
+	if _, err := w.Write([]byte(" ")); err != nil {
+		return err
+	}
+	if _, err := w.Write([]byte(trimmed)); err != nil {
+		return err
+	}
+	return nil
 }
