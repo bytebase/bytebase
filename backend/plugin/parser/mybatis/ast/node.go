@@ -8,9 +8,19 @@ import (
 // Node is the interface implemented by all AST node types.
 type Node interface {
 	// RestoreSQL restores the node to the original SQL statement.
-	RestoreSQL(w io.Writer) error
+	RestoreSQL(ctx *RestoreContext, w io.Writer) error
 	// AddChild adds a child to the node.
 	AddChild(child Node)
+}
+
+// RestoreContext is the context for restoring SQL statement.
+type RestoreContext struct {
+	// SQLMap is the map of SQL statement, key is the id of the sql element, value is the node of the sql element.
+	// It will be used to restore the <include> element.
+	SQLMap map[string]Node
+	// Variable is the map of variable, key is the name of the variable, value is the value of the variable.
+	// It will be used to restore the ${} element.
+	Variable map[string]string
 }
 
 var (
@@ -24,9 +34,9 @@ type RootNode struct {
 }
 
 // RestoreSQL implements Node interface.
-func (n *RootNode) RestoreSQL(w io.Writer) error {
+func (n *RootNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	for _, node := range n.Children {
-		if err := node.RestoreSQL(w); err != nil {
+		if err := node.RestoreSQL(ctx, w); err != nil {
 			return err
 		}
 	}
@@ -47,7 +57,7 @@ func NewEmptyNode() *EmptyNode {
 }
 
 // RestoreSQL implements Node interface.
-func (*EmptyNode) RestoreSQL(io.Writer) error {
+func (*EmptyNode) RestoreSQL(*RestoreContext, io.Writer) error {
 	return nil
 }
 

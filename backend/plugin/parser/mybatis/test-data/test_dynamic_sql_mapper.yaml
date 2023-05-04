@@ -175,3 +175,28 @@
     </mapper>
   sql: |
     select users_id, name, age, sex from users where name like ?  and   age >= ?  and  users_id is not null   group by users_id;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <sql id="sometable">
+            fruits
+            <where>
+                AND category = 'apple'
+                OR price = 200
+        <sql>
+        <select id="testInclude">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            <include refid="sometable"/>
+        </select>
+    <mapper>
+    sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple'
+                OR price = 200;

@@ -17,6 +17,7 @@ type Parser struct {
 	buf         []rune
 	cursor      uint
 	currentLine uint
+	sqlMap      map[string]ast.Node
 }
 
 // NewParser creates a new mybatis mapper xml parser.
@@ -53,8 +54,12 @@ func (p *Parser) Parse() (ast.Node, error) {
 		switch ele := token.(type) {
 		case xml.StartElement:
 			newNode := p.newNodeByStartElement(&ele)
+			if ele.Name.Local == "sql" {
+				nodeStack = append(nodeStack, newNode)
+			}
 			startElementStack = append(startElementStack, &ele)
 			nodeStack = append(nodeStack, newNode)
+
 		case xml.EndElement:
 			if len(startElementStack) == 0 {
 				return nil, errors.Errorf("unexpected end element %q", ele.Name.Local)
