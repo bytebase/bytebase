@@ -121,6 +121,8 @@ func (*Parser) newNodeByStartElement(startElement *xml.StartElement) ast.Node {
 		return ast.NewSetNode(startElement)
 	case "trim":
 		return ast.NewTrimNode(startElement)
+	case "foreach":
+		return ast.NewForeachNode(startElement)
 	}
 	return ast.NewEmptyNode()
 }
