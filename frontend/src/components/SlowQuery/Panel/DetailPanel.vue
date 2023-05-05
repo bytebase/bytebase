@@ -61,11 +61,7 @@
             </div>
           </div>
         </div>
-        <!-- TODO(junyi): remove the isDev guard before releasing -->
-        <AdviseIndex
-          v-if="isDev() && slowQueryLog"
-          :slow-query-log="slowQueryLog"
-        />
+        <AdviseIndex v-if="slowQueryLog" :slow-query-log="slowQueryLog" />
         <div
           v-if="instanceHasSlowQueryDetail(database.instance)"
           class="flex-1 overflow-auto border"
@@ -132,7 +128,7 @@ import { NButton, NDrawer, NDrawerContent } from "naive-ui";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import type { ComposedSlowQueryLog } from "@/types";
 import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
-import { instanceHasSlowQueryDetail, isDev } from "@/utils";
+import { instanceHasSlowQueryDetail } from "@/utils";
 import {
   DatabaseName,
   InstanceName,

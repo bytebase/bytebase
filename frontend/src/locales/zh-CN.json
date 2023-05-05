@@ -1927,7 +1927,7 @@
       },
       "bb-feature-plugin-openai": {
         "title": "AI 增强",
-        "desc": "AI 增强的 SQL 编辑器功能，基于 OpenAI 技术驱动。"
+        "desc": "AI 增强的 SQL 编辑器和索引建议功能，基于 OpenAI 技术驱动。"
       },
       "bb-feature-shared-sql-script": {
         "title": "共享 SQL 脚本",
