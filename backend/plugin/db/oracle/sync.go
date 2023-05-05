@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,11 +18,31 @@ import (
 
 const systemSchema = "'ANONYMOUS','APPQOSSYS','AUDSYS','CTXSYS','DBSFWUSER','DBSNMP','DGPDB_INT','DIP','DVF','DVSYS','GGSYS','GSMADMIN_INTERNAL','GSMCATUSER','GSMROOTUSER','GSMUSER','HELLO','LBACSYS','MDDATA','MDSYS','OPS$ORACLE','ORACLE_OCM','OUTLN','REMOTE_SCHEDULER_AGENT','SYS','SYS$UMF','SYSBACKUP','SYSDG','SYSKM','SYSRAC','SYSTEM','XDB','XS$NULL','XS$$NULL','FLOWS_FILES','HR','MDSYS'"
 
+var (
+	semVersionRegex       = regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
+	canonicalVersionRegex = regexp.MustCompile(`[0-9][0-9][a-z]`)
+)
+
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var version string
-	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'Oracle%'").Scan(&version); err != nil {
+	var fullVersion string
+	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'Oracle%'").Scan(&fullVersion); err != nil {
 		return nil, err
+	}
+	tokens := strings.Fields(fullVersion)
+	var version, canonicalVersion string
+	for _, token := range tokens {
+		if semVersionRegex.MatchString(token) {
+			version = token
+			continue
+		}
+		if canonicalVersionRegex.MatchString(token) {
+			canonicalVersion = token
+			continue
+		}
+	}
+	if canonicalVersion != "" {
+		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
 	}
 
 	var databases []*storepb.DatabaseMetadata
