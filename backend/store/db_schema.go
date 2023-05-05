@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -15,6 +16,66 @@ import (
 type DBSchema struct {
 	Metadata *storepb.DatabaseMetadata
 	Schema   []byte
+}
+
+// CompactText returns the compact text representation of the database schema.
+func (s *DBSchema) CompactText() (string, error) {
+	if s.Metadata == nil {
+		return "", nil
+	}
+
+	var buf bytes.Buffer
+	for _, schema := range s.Metadata.Schemas {
+		for _, table := range schema.Tables {
+			// Table with columns.
+			if _, err := buf.WriteString(fmt.Sprintf("# Table %s.%s(", schema.Name, table.Name)); err != nil {
+				return "", err
+			}
+			for i, column := range table.Columns {
+				if i == 0 {
+					if _, err := buf.WriteString(column.Name); err != nil {
+						return "", err
+					}
+				} else {
+					if _, err := buf.WriteString(fmt.Sprintf(", %s", column.Name)); err != nil {
+						return "", err
+					}
+				}
+			}
+			if _, err := buf.WriteString(") #\n"); err != nil {
+				return "", err
+			}
+
+			// Indexes.
+			for _, index := range table.Indexes {
+				if _, err := buf.WriteString(fmt.Sprintf("# Index %s(%s) ON table %s.%s #\n", index.Name, strings.Join(index.Expressions, ", "), schema.Name, table.Name)); err != nil {
+					return "", err
+				}
+			}
+		}
+	}
+
+	return buf.String(), nil
+}
+
+// FindIndex finds the index by name.
+func (s *DBSchema) FindIndex(schemaName string, tableName string, indexName string) *storepb.IndexMetadata {
+	for _, schema := range s.Metadata.Schemas {
+		if schema.Name != schemaName {
+			continue
+		}
+		for _, table := range schema.Tables {
+			if table.Name != tableName {
+				continue
+			}
+			for _, index := range table.Indexes {
+				if index.Name == indexName {
+					return index
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // GetDBSchema gets the schema for a database.
