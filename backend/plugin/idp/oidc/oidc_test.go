@@ -78,7 +78,7 @@ func TestNewIdentityProvider(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewIdentityProvider(ctx, test.config)
+			_, err := NewIdentityProvider(ctx, http.DefaultClient, test.config)
 			assert.ErrorContains(t, err, test.containsErr)
 		})
 	}
@@ -194,6 +194,7 @@ func TestIdentityProvider(t *testing.T) {
 	s := newMockServer(t, testClientID, testCode, testAccessToken, testNonce, userinfo)
 	oidc, err := NewIdentityProvider(
 		ctx,
+		http.DefaultClient,
 		IdentityProviderConfig{
 			Issuer:       s.URL,
 			ClientID:     testClientID,

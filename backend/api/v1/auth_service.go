@@ -2,9 +2,11 @@ package v1
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/mail"
 	"strings"
 
@@ -671,6 +673,13 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 
 		oidcIDP, err := oidc.NewIdentityProvider(
 			ctx,
+			&http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true, // TODO: Read from config
+					},
+				},
+			},
 			oidc.IdentityProviderConfig{
 				Issuer:       idp.Config.GetOidcConfig().Issuer,
 				ClientID:     idp.Config.GetOidcConfig().ClientId,

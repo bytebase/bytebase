@@ -3,6 +3,7 @@ package oidc
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/coreos/go-oidc"
 	"github.com/pkg/errors"
@@ -15,6 +16,7 @@ import (
 
 // IdentityProvider represents an OIDC Identity Provider.
 type IdentityProvider struct {
+	client   *http.Client
 	provider *oidc.Provider
 	config   IdentityProviderConfig
 }
@@ -30,7 +32,11 @@ type IdentityProviderConfig struct {
 
 // NewIdentityProvider initializes a new OIDC Identity Provider with the given
 // configuration.
-func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*IdentityProvider, error) {
+func NewIdentityProvider(ctx context.Context, client *http.Client, config IdentityProviderConfig) (*IdentityProvider, error) {
+	if client == nil {
+		return nil, errors.New("client is required")
+	}
+
 	for v, field := range map[string]string{
 		config.Issuer:                  "issuer",
 		config.ClientID:                "clientId",
@@ -42,11 +48,13 @@ func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*I
 		}
 	}
 
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
 	p, err := oidc.NewProvider(ctx, config.Issuer)
 	if err != nil {
 		return nil, errors.Wrap(err, "create new provider")
 	}
 	return &IdentityProvider{
+		client:   client,
 		provider: p,
 		config:   config,
 	}, nil
@@ -68,6 +76,8 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 		Endpoint: p.provider.Endpoint(),
 		Scopes:   DefaultScopes,
 	}
+
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
 	token, err := oauth2Config.Exchange(ctx, code)
 	if err != nil {
 		return nil, errors.Wrap(err, "exchange token")
@@ -86,6 +96,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, errors.New(`missing "id_token" from the issuer's authorization response`)
 	}
 
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
 	verifier := p.provider.Verifier(&oidc.Config{ClientID: p.config.ClientID})
 	idToken, err := verifier.Verify(ctx, rawIDToken)
 	if err != nil {
