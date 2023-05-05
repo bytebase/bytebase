@@ -18,6 +18,26 @@ const (
 	IndexMethodTypeBrin
 )
 
+// String implements fmt.Stringer interface.
+func (tp IndexMethodType) String() string {
+	switch tp {
+	case IndexMethodTypeBTree:
+		return "btree"
+	case IndexMethodTypeHash:
+		return "hash"
+	case IndexMethodTypeGiST:
+		return "gist"
+	case IndexMethodTypeSpGiST:
+		return "spgist"
+	case IndexMethodTypeGin:
+		return "gin"
+	case IndexMethodTypeBrin:
+		return "brin"
+	default:
+		return ""
+	}
+}
+
 // IndexDef is the struct for index definition.
 type IndexDef struct {
 	node
