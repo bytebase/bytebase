@@ -49,6 +49,11 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 			continue
 		}
 
+		rowStatus := api.Normal
+		if environment.Deleted {
+			rowStatus = api.Archived
+		}
+
 		switch policy.Type {
 		case api.PolicyTypePipelineApproval:
 			payload, err := api.UnmarshalPipelineApprovalPolicy(policy.Payload)
@@ -56,16 +61,16 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 				continue
 			}
 			value = string(payload.Value)
-			key = fmt.Sprintf("%s_%s_%s", policy.Type, environment.Title, value)
+			key = fmt.Sprintf("%s_%s_%s_%s", policy.Type, environment.Title, value, rowStatus)
 		case api.PolicyTypeBackupPlan:
 			payload, err := api.UnmarshalBackupPlanPolicy(policy.Payload)
 			if err != nil {
 				continue
 			}
 			value = string(payload.Schedule)
-			key = fmt.Sprintf("%s_%s_%s", policy.Type, environment.Title, value)
+			key = fmt.Sprintf("%s_%s_%s_%s", policy.Type, environment.Title, value, rowStatus)
 		case api.PolicyTypeSQLReview:
-			key = fmt.Sprintf("%s_%s", policy.Type, environment.Title)
+			key = fmt.Sprintf("%s_%s_%s", policy.Type, environment.Title, rowStatus)
 			// SQL review policy don't need to set the value.
 			value = ""
 		}
@@ -80,6 +85,7 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 				Value:           value,
 				EnvironmentName: environment.Title,
 				Count:           0,
+				RowStatus:       rowStatus,
 			}
 		}
 		policyCountMap[key].Count++
@@ -93,6 +99,7 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 				"type":        string(policyCountMetric.Type),
 				"environment": policyCountMetric.EnvironmentName,
 				"value":       policyCountMetric.Value,
+				"status":      string(policyCountMetric.RowStatus),
 			},
 		})
 	}
