@@ -64,7 +64,7 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 			// Uses single quote instead of backtick to escape because this is a string
 			// instead of table (which should use backtick instead). MySQL actually works
 			// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
-			grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", user)
+			grantQuery := fmt.Sprintf("SHOW GRANTS FOR `%s`", user)
 			grantRows, err := driver.db.QueryContext(ctx,
 				grantQuery,
 			)
