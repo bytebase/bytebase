@@ -1020,9 +1020,9 @@ func (s *Scheduler) getAnyProjectOwner(ctx context.Context, projectID int) (*sto
 		if binding.Role != api.Owner || len(binding.Members) == 0 {
 			continue
 		}
-		for _, projectMember := range binding.Members {
-			if projectMember.Role != api.Owner && projectMember.Role != api.DBA {
-				return projectMember, nil
+		for _, user := range binding.Members {
+			if user.Role != api.Owner && user.Role != api.DBA {
+				return user, nil
 			}
 		}
 	}
