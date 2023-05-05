@@ -47,14 +47,36 @@ export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
   }
 };
 
+// Since we are assigning a project owner, we try to find a more didicated project owner wearing a
+// developer hat to offload DBA workload, thus the searching order is:
+// 1. Project owner who is a workspace Developer.
+// 2. Project owner who is not a workspace Developer.
 const assignToProjectOwner = (issueCreate: IssueCreate) => {
   const project = useProjectStore().getProjectById(issueCreate.projectId);
-  // Find the owner of the project, the first owner we found is okay.
-  const projectOwner = project.memberList.find(
+  const projectOwnerList = project.memberList.filter(
     (member) => member.role === ProjectRoleTypeOwner
   );
-  if (projectOwner) {
-    issueCreate.assigneeId = projectOwner.principal.id;
+
+  const workspaceMemberList = useMemberStore().memberList;
+
+  for (const po of projectOwnerList) {
+    const principalId = po.id.split("/").pop();
+    for (const wm of workspaceMemberList) {
+      if (wm.id == principalId && wm.role == "DEVELOPER") {
+        issueCreate.assigneeId = wm.id;
+        return;
+      }
+    }
+  }
+
+  for (const po of projectOwnerList) {
+    const principalId = po.id.split("/").pop();
+    for (const wm of workspaceMemberList) {
+      if (wm.id == principalId) {
+        issueCreate.assigneeId = wm.id;
+        return;
+      }
+    }
   }
 };
 const assignToWorkspaceOwnerOrDBA = (issueCreate: IssueCreate) => {
