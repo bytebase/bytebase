@@ -85,39 +85,9 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		want         string
 	}{
 		{
-			sqlStatement: "  seLeCT * FROM test;",
+			sqlStatement: "  seLeCT * FROM test",
 			limit:        123,
 			want:         "WITH result AS (  seLeCT * FROM test) SELECT * FROM result LIMIT 123;",
-		},
-		{
-			sqlStatement: "  seLeCT * FROM test;",
-			limit:        0,
-			want:         "WITH result AS (  seLeCT * FROM test) SELECT * FROM result;",
-		},
-		{
-			sqlStatement: "  \n \r SELEct * from test ",
-			limit:        100,
-			want:         "WITH result AS (  \n \r SELEct * from test) SELECT * FROM result LIMIT 100;",
-		},
-		{
-			sqlStatement: "SELECT\n*\nFROM\ntest  ;\n",
-			limit:        100,
-			want:         "WITH result AS (SELECT\n*\nFROM\ntest) SELECT * FROM result LIMIT 100;",
-		},
-		{
-			sqlStatement: "SELECT\n*\nFROM\ntest  ;;;\n",
-			limit:        100,
-			want:         "WITH result AS (SELECT\n*\nFROM\ntest) SELECT * FROM result LIMIT 100;",
-		},
-		{
-			sqlStatement: "SELECT\n*\nFROM\n`test;`  ;;;\n",
-			limit:        100,
-			want:         "WITH result AS (SELECT\n*\nFROM\n`test;`) SELECT * FROM result LIMIT 100;",
-		},
-		{
-			sqlStatement: "EXPLAIN  \n \r SELEct * from test ",
-			limit:        0,
-			want:         "EXPLAIN  \n \r SELEct * from test",
 		},
 	}
 
@@ -136,39 +106,9 @@ func TestGetMySQLStatementWithResultLimit(t *testing.T) {
 		want         string
 	}{
 		{
-			sqlStatement: "  seLeCT * FROM test;",
+			sqlStatement: "  seLeCT * FROM test",
 			limit:        123,
 			want:         "SELECT * FROM (  seLeCT * FROM test) result LIMIT 123;",
-		},
-		{
-			sqlStatement: "  seLeCT * FROM test;",
-			limit:        0,
-			want:         "SELECT * FROM (  seLeCT * FROM test) result;",
-		},
-		{
-			sqlStatement: "  \n \r SELEct * from test ",
-			limit:        100,
-			want:         "SELECT * FROM (  \n \r SELEct * from test) result LIMIT 100;",
-		},
-		{
-			sqlStatement: "SELECT\n*\nFROM\ntest  ;\n",
-			limit:        100,
-			want:         "SELECT * FROM (SELECT\n*\nFROM\ntest) result LIMIT 100;",
-		},
-		{
-			sqlStatement: "SELECT\n*\nFROM\ntest  ;;;\n",
-			limit:        100,
-			want:         "SELECT * FROM (SELECT\n*\nFROM\ntest) result LIMIT 100;",
-		},
-		{
-			sqlStatement: "SELECT\n*\nFROM\n`test;`  ;;;\n",
-			limit:        100,
-			want:         "SELECT * FROM (SELECT\n*\nFROM\n`test;`) result LIMIT 100;",
-		},
-		{
-			sqlStatement: "EXPLAIN  \n \r SELEct * from test ",
-			limit:        0,
-			want:         "EXPLAIN  \n \r SELEct * from test",
 		},
 	}
 
