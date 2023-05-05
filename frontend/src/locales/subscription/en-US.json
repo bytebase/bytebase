@@ -134,7 +134,8 @@
         "anomaly-detection-basic-tooltip": "Connection failure, missing backup",
         "anomaly-detection-advanced": "Advanced",
         "anomaly-detection-advanced-tooltip": "Basic + Schema drift detection",
-        "archiving": "Archiving"
+        "archiving": "Archiving",
+        "disallow-signup": "Disallow signup"
       }
     },
     "bespoke": {

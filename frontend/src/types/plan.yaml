@@ -45,6 +45,7 @@ categoryList:
       - watermark
       - audit-log
       - anomaly-detection
+      - disallow-signup
   - type: bespoke
     featureList:
       - support
@@ -260,6 +261,7 @@ planList:
       - type: database-access-control
       - type: watermark
       - type: audit-log
+      - type: disallow-signup
       # Bespoke
       - type: support
         content: support-sla

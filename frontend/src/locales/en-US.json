@@ -1939,6 +1939,10 @@
       "bb-feature-encrypted-secrets": {
         "title": "Encrypted Secrets",
         "desc": "Store your secrets of database and use them in your issue SQL scripts."
+      },
+      "bb-feature-disallow-signup": {
+        "title": "Disable self-service signup",
+        "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
       }
     }
   },
