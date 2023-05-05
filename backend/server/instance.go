@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -196,19 +195,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				f := false
 				deletes = &f
 			} else if *patch.RowStatus == string(api.Archived) {
-				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
+				// Transfer databases to the default project automatically.
+				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID})
 				if err != nil {
 					return err
 				}
-				var databaseNameList []string
-				for _, database := range databases {
-					if database.ProjectID != api.DefaultProjectID {
-						databaseNameList = append(databaseNameList, database.DatabaseName)
-					}
-				}
-				if len(databaseNameList) > 0 {
-					return echo.NewHTTPError(http.StatusBadRequest,
-						fmt.Sprintf("You should transfer these databases to the unassigned project before archiving the instance: %s.", strings.Join(databaseNameList, ", ")))
+				if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, api.DefaultProjectID, api.SystemBotID); err != nil {
+					return err
 				}
 				f := true
 				deletes = &f
