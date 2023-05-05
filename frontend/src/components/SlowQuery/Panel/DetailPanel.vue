@@ -61,11 +61,7 @@
             </div>
           </div>
         </div>
-        <!-- TODO(junyi): remove the isDev guard before releasing -->
-        <AdviseIndex
-          v-if="isDev() && slowQueryLog"
-          :slow-query-log="slowQueryLog"
-        />
+        <AdviseIndex v-if="slowQueryLog" :slow-query-log="slowQueryLog" />
         <div class="flex-1 overflow-auto border">
           <BBGrid
             :column-list="columns"
@@ -129,7 +125,6 @@ import { NButton, NDrawer, NDrawerContent } from "naive-ui";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import type { ComposedSlowQueryLog } from "@/types";
 import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
-import { isDev } from "@/utils";
 import {
   DatabaseName,
   InstanceName,

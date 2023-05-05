@@ -1930,7 +1930,7 @@
       },
       "bb-feature-plugin-openai": {
         "title": "Aumento de AI",
-        "desc": "Características del editor de SQL mejoradas por AI proporcionado por OpenAI."
+        "desc": "Editor de SQL aumentado con IA y características de asesoramiento de índice impulsadas por OpenAI."
       },
       "bb-feature-shared-sql-script": {
         "title": "Script SQL compartido",

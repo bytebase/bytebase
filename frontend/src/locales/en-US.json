@@ -1930,7 +1930,7 @@
       },
       "bb-feature-plugin-openai": {
         "title": "AI Augmentation",
-        "desc": "AI augmented SQL Editor features powered by OpenAI."
+        "desc": "AI augmented SQL Editor and index advisor features powered by OpenAI."
       },
       "bb-feature-shared-sql-script": {
         "title": "Shared SQL script",

@@ -16,6 +16,7 @@
         <button class="ml-2 normal-link underline" @click="handleCreateIndex">
           {{ $t("slow-query.advise-index.create-index") }}
         </button>
+        <!--TODO(boojack): add a FeatureBadge for bb.feature.plugin.openai here-->
       </div>
       <span class="w-full font-mono">{{ state.suggestion }}</span>
     </div>
@@ -32,6 +33,7 @@ import { useRouter } from "vue-router";
 import { databaseServiceClient } from "@/grpcweb";
 import { getErrorCode } from "@/utils/grpcweb";
 import { Status } from "nice-grpc-common";
+import { hasFeature } from "@/store";
 
 const props = defineProps<{
   slowQueryLog: ComposedSlowQueryLog;
@@ -89,19 +91,25 @@ const generateIssueName = () => {
 watch(
   () => props.slowQueryLog,
   async () => {
-    try {
-      const response = await databaseServiceClient.adviseIndex({
-        parent: log.value.resource,
-        statement: sqlFingerprint.value,
-      });
+    if (hasFeature("bb.feature.plugin.openai")) {
+      try {
+        const response = await databaseServiceClient.adviseIndex({
+          parent: log.value.resource,
+          statement: sqlFingerprint.value,
+        });
 
-      state.currentIndex = response.currentIndex;
-      state.suggestion = response.suggestion;
-      state.createIndexStatement = response.createIndexStatement;
-    } catch (error) {
-      if (getErrorCode(error) !== Status.NOT_FOUND) {
-        throw error;
+        state.currentIndex = response.currentIndex;
+        state.suggestion = response.suggestion;
+        state.createIndexStatement = response.createIndexStatement;
+      } catch (error) {
+        if (getErrorCode(error) !== Status.NOT_FOUND) {
+          throw error;
+        }
       }
+    } else {
+      state.currentIndex = "";
+      state.suggestion = "";
+      state.createIndexStatement = "";
     }
   },
   {
