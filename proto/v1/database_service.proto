@@ -715,6 +715,7 @@ message Secret {
 message AdviseIndexRequest {
   // Format: environments/{environment}/instances/{instance}/databases/{database}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
   // The statement to be advised.
   string statement = 2;
 }
