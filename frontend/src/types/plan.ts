@@ -37,6 +37,7 @@ export type FeatureType =
   | "bb.feature.pitr"
   | "bb.feature.read-replica-connection"
   | "bb.feature.sync-schema-all-versions"
+  | "bb.feature.index-advisor"
   // Policy Control
   | "bb.feature.approval-policy"
   | "bb.feature.backup-policy"
