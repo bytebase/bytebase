@@ -26,9 +26,14 @@ func (s *DBSchema) CompactText() (string, error) {
 
 	var buf bytes.Buffer
 	for _, schema := range s.Metadata.Schemas {
+		schemaName := schema.Name
+		// If the schema name is empty, use the database name instead, such as MySQL.
+		if schemaName == "" {
+			schemaName = s.Metadata.Name
+		}
 		for _, table := range schema.Tables {
 			// Table with columns.
-			if _, err := buf.WriteString(fmt.Sprintf("# Table %s.%s(", schema.Name, table.Name)); err != nil {
+			if _, err := buf.WriteString(fmt.Sprintf("# Table %s.%s(", schemaName, table.Name)); err != nil {
 				return "", err
 			}
 			for i, column := range table.Columns {
@@ -48,7 +53,7 @@ func (s *DBSchema) CompactText() (string, error) {
 
 			// Indexes.
 			for _, index := range table.Indexes {
-				if _, err := buf.WriteString(fmt.Sprintf("# Index %s(%s) ON table %s.%s #\n", index.Name, strings.Join(index.Expressions, ", "), schema.Name, table.Name)); err != nil {
+				if _, err := buf.WriteString(fmt.Sprintf("# Index %s(%s) ON table %s.%s #\n", index.Name, strings.Join(index.Expressions, ", "), schemaName, table.Name)); err != nil {
 					return "", err
 				}
 			}
