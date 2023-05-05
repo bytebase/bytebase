@@ -77,6 +77,7 @@ type PolicyCountMetric struct {
 	Value           string
 	EnvironmentName string
 	Count           int
+	RowStatus       api.RowStatus
 }
 
 // TaskCountMetric is the API message for task count metric.
