@@ -50,6 +50,11 @@
             $t("settings.general.workspace.disallow-signup.enable")
           }}</span>
 
+          <FeatureBadge
+            feature="bb.feature.disallow-signup"
+            class="text-accent"
+          />
+
           <span
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
@@ -129,6 +134,7 @@ const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const watermarkSetting = useSettingByName("bb.workspace.watermark");
 const has2FAFeature = featureToRef("bb.feature.2fa");
+const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
 
 const allowEdit = computed((): boolean => {
   return hasWorkspacePermission(
@@ -147,6 +153,10 @@ const require2FAEnabled = computed((): boolean => {
 });
 
 const handleDisallowSignupToggle = async (on: boolean) => {
+  if (!hasDisallowSignupFeature.value) {
+    state.featureNameForModal = "bb.feature.disallow-signup";
+    return;
+  }
   await settingStore.updateWorkspaceProfile({
     disallowSignup: on,
   });

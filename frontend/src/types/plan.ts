@@ -13,6 +13,7 @@ export type FeatureType =
   | "bb.feature.sso"
   | "bb.feature.2fa"
   | "bb.feature.rbac"
+  | "bb.feature.disallow-signup"
   | "bb.feature.watermark"
   | "bb.feature.audit-log"
   // Branding

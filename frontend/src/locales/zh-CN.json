@@ -1936,6 +1936,10 @@
       "bb-feature-encrypted-secrets": {
         "title": "保密信息",
         "desc": "存储数据库的保密信息，并在工单的 SQL 中使用它们。"
+      },
+      "bb-feature-disallow-signup": {
+        "title": "禁用自助注册",
+        "desc": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
       }
     },
     "feature-require-subscription": "{feature} 需要 {requiredPlan}。"

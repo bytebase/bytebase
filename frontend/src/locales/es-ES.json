@@ -1939,6 +1939,10 @@
       "bb-feature-encrypted-secrets": {
         "title": "Secretos Encriptados",
         "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
+      },
+      "bb-feature-disallow-signup": {
+        "title": "Deshabilitar el registro de autoservicio",
+        "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el propietario del espacio de trabajo."
       }
     }
   },
