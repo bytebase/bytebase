@@ -66,7 +66,10 @@
           v-if="isDev() && slowQueryLog"
           :slow-query-log="slowQueryLog"
         />
-        <div class="flex-1 overflow-auto border">
+        <div
+          v-if="instanceHasSlowQueryDetail(database.instance)"
+          class="flex-1 overflow-auto border"
+        >
           <BBGrid
             :column-list="columns"
             :data-source="log.statistics?.samples"
@@ -129,7 +132,7 @@ import { NButton, NDrawer, NDrawerContent } from "naive-ui";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import type { ComposedSlowQueryLog } from "@/types";
 import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
-import { isDev } from "@/utils";
+import { instanceHasSlowQueryDetail, isDev } from "@/utils";
 import {
   DatabaseName,
   InstanceName,
