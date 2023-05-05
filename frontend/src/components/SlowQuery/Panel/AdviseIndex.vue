@@ -29,6 +29,9 @@ import { reactive } from "vue";
 import { watch } from "vue";
 import dayjs from "dayjs";
 import { useRouter } from "vue-router";
+import { databaseServiceClient } from "@/grpcweb";
+import { getErrorCode } from "@/utils/grpcweb";
+import { Status } from "nice-grpc-common";
 
 const props = defineProps<{
   slowQueryLog: ComposedSlowQueryLog;
@@ -86,13 +89,20 @@ const generateIssueName = () => {
 watch(
   () => props.slowQueryLog,
   async () => {
-    // TODO(junyi): Do data fetching with database and sqlFingerprint.
-    // Prevent eslint error.
-    console.log(sqlFingerprint);
+    try {
+      const response = await databaseServiceClient.adviseIndex({
+        parent: log.value.resource,
+        statement: sqlFingerprint.value,
+      });
 
-    state.currentIndex = "test index";
-    state.suggestion = "Your suggestion";
-    state.createIndexStatement = "CREATE INDEX balabala;";
+      state.currentIndex = response.currentIndex;
+      state.suggestion = response.suggestion;
+      state.createIndexStatement = response.createIndexStatement;
+    } catch (error) {
+      if (getErrorCode(error) !== Status.NOT_FOUND) {
+        throw error;
+      }
+    }
   },
   {
     immediate: true,
