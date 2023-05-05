@@ -106,11 +106,7 @@ const fetchSlowQueryLogList = async () => {
 };
 
 const selectSlowQueryLog = (log: ComposedSlowQueryLog) => {
-  if (instanceHasSlowQueryDetail(log.database.instance)) {
-    selectedSlowQueryLog.value = log;
-  } else {
-    selectedSlowQueryLog.value = undefined;
-  }
+  selectedSlowQueryLog.value = log;
 };
 
 const syncNow = async () => {
