@@ -134,7 +134,8 @@
         "anomaly-detection-basic-tooltip": "数据库连接异常、备份缺失",
         "anomaly-detection-advanced": "高级",
         "anomaly-detection-advanced-tooltip": "基础版功能 + Schema 偏差检测",
-        "archiving": "归档"
+        "archiving": "归档",
+        "disallow-signup": "禁用自助注册"
       }
     },
     "bespoke": {
