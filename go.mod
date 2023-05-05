@@ -42,6 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/qiangmzsx/string-adapter/v2 v2.2.0
 	github.com/redis/go-redis/v9 v9.0.3
+	github.com/sashabaranov/go-openai v1.9.0
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/shopspring/decimal v1.3.1
 	github.com/sijms/go-ora/v2 v2.7.1
