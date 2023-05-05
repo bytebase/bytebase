@@ -1015,6 +1015,17 @@ func (s *Scheduler) getAnyProjectOwner(ctx context.Context, projectID int) (*sto
 	if err != nil {
 		return nil, err
 	}
+	// Find the project member that is not workspace owner or DBA first.
+	for _, binding := range policy.Bindings {
+		if binding.Role != api.Owner || len(binding.Members) == 0 {
+			continue
+		}
+		for _, user := range binding.Members {
+			if user.Role != api.Owner && user.Role != api.DBA {
+				return user, nil
+			}
+		}
+	}
 	for _, binding := range policy.Bindings {
 		if binding.Role == api.Owner && len(binding.Members) > 0 {
 			return binding.Members[0], nil
