@@ -3,9 +3,7 @@
     :column-list="columns"
     :data-source="slowQueryLogList"
     :show-placeholder="showPlaceholder"
-    :is-row-clickable="
-      (row) => instanceHasSlowQueryDetail(row.database.instance)
-    "
+    :is-row-clickable="(row) => true"
     :is-row-expanded="isSelectedRow"
     class="border w-auto overflow-x-auto"
     header-class="capitalize"

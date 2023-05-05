@@ -60,7 +60,6 @@ import {
 import LogFilter from "./LogFilter.vue";
 import LogTable from "./LogTable.vue";
 import DetailPanel from "./DetailPanel.vue";
-import { instanceHasSlowQueryDetail } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -106,11 +105,7 @@ const fetchSlowQueryLogList = async () => {
 };
 
 const selectSlowQueryLog = (log: ComposedSlowQueryLog) => {
-  if (instanceHasSlowQueryDetail(log.database.instance)) {
-    selectedSlowQueryLog.value = log;
-  } else {
-    selectedSlowQueryLog.value = undefined;
-  }
+  selectedSlowQueryLog.value = log;
 };
 
 const syncNow = async () => {
