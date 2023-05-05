@@ -54,6 +54,8 @@ const (
 	FeatureSSO FeatureType = "bb.feature.sso"
 	// Feature2FA allows user to manage 2FA provider and authenticate (login) with 2FA.
 	Feature2FA FeatureType = "bb.feature.2fa"
+	// FeatureDisallowSignup allows user to change the disallow signup flag.
+	FeatureDisallowSignup FeatureType = "bb.feature.disallow-signup"
 	// FeatureRBAC enables RBAC.
 	//
 	// - Workspace level RBAC
@@ -181,6 +183,8 @@ func (e FeatureType) Name() string {
 		return "SSO"
 	case Feature2FA:
 		return "2FA"
+	case FeatureDisallowSignup:
+		return "Disallow singup"
 	case FeatureRBAC:
 		return "RBAC"
 	case FeatureWatermark:
@@ -269,12 +273,13 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 // plan in [FREE, TEAM, Enterprise].
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
-	FeatureSSO:        {false, false, true},
-	Feature2FA:        {false, false, true},
-	FeatureRBAC:       {true, true, true},
-	FeatureWatermark:  {false, false, true},
-	FeatureAuditLog:   {false, false, true},
-	FeatureCustomRole: {false, false, true},
+	FeatureSSO:            {false, false, true},
+	Feature2FA:            {false, false, true},
+	FeatureDisallowSignup: {false, false, true},
+	FeatureRBAC:           {true, true, true},
+	FeatureWatermark:      {false, false, true},
+	FeatureAuditLog:       {false, false, true},
+	FeatureCustomRole:     {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow

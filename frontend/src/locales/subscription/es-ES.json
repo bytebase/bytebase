@@ -134,7 +134,8 @@
         "anomaly-detection-basic-tooltip": "Fallo de conexión, falta copia de seguridad",
         "anomaly-detection-advanced": "Avanzado",
         "anomaly-detection-advanced-tooltip": "Básico + Detección de desviación de esquema",
-        "archiving": "Archivado"
+        "archiving": "Archivado",
+        "disallow-signup": "Deshabilitar el registro de autoservicio"
       }
     },
     "bespoke": {
