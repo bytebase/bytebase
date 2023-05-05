@@ -148,6 +148,9 @@ message DeleteInstanceRequest {
   // The name of the instance to delete.
   // Format: environments/{environment}/instances/{instance}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+  bool force = 2;
 }
 
 message UndeleteInstanceRequest {
