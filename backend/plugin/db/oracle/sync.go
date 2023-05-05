@@ -3,6 +3,7 @@ package oracle
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -12,6 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+const systemSchema = "'ANONYMOUS','APPQOSSYS','AUDSYS','CTXSYS','DBSFWUSER','DBSNMP','DGPDB_INT','DIP','DVF','DVSYS','GGSYS','GSMADMIN_INTERNAL','GSMCATUSER','GSMROOTUSER','GSMUSER','HELLO','LBACSYS','MDDATA','MDSYS','OPS$ORACLE','ORACLE_OCM','OUTLN','REMOTE_SCHEDULER_AGENT','SYS','SYS$UMF','SYSBACKUP','SYSDG','SYSKM','SYSRAC','SYSTEM','XDB','XS$NULL','XS$$NULL','FLOWS_FILES','HR','MDSYS'"
 
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
@@ -83,7 +86,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseMetada
 }
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
-	query := `SELECT username FROM all_users WHERE ORACLE_MAINTAINED = 'N' AND USERNAME != 'OPS$ORACLE' ORDER BY username`
+	query := fmt.Sprintf(`
+		SELECT username FROM all_users
+		WHERE username NOT IN (%s) AND username NOT LIKE 'APEX_%%' ORDER BY username`,
+		systemSchema)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -117,13 +123,11 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	}
 	// TODO(d): foreign keys.
 	tableMap := make(map[string][]*storepb.TableMetadata)
-	query := `
+	query := fmt.Sprintf(`
 		SELECT OWNER, TABLE_NAME, NUM_ROWS
 		FROM all_tables
-		WHERE OWNER IN (
-			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
-		) AND OWNER != 'OPS$ORACLE'
-		ORDER BY OWNER, TABLE_NAME`
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
+		ORDER BY OWNER, TABLE_NAME`, systemSchema)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -155,7 +159,7 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT
 			OWNER,
 			TABLE_NAME,
@@ -163,13 +167,10 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			DATA_TYPE,
 			COLUMN_ID,
 			DATA_DEFAULT,
-			NULLABLE,
-			COLLATION
+			NULLABLE
 		FROM sys.all_tab_columns
-		WHERE OWNER IN (
-			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
-		) AND OWNER != 'OPS$ORACLE'
-		ORDER BY OWNER, TABLE_NAME, COLUMN_ID`
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
+		ORDER BY OWNER, TABLE_NAME, COLUMN_ID`, systemSchema)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -178,8 +179,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	for rows.Next() {
 		column := &storepb.ColumnMetadata{}
 		var schemaName, tableName, nullable string
-		var defaultStr, collation sql.NullString
-		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &column.Position, &defaultStr, &nullable, &collation); err != nil {
+		var defaultStr sql.NullString
+		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &column.Position, &defaultStr, &nullable); err != nil {
 			return nil, err
 		}
 		if defaultStr.Valid {
@@ -190,7 +191,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			return nil, err
 		}
 		column.Nullable = isNullBool
-		column.Collation = collation.String
+		// TODO(d): add collation.
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		columnsMap[key] = append(columnsMap[key], column)
@@ -207,13 +208,11 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
 	expressionsMap := make(map[db.IndexKey][]string)
-	queryColumn := `
+	queryColumn := fmt.Sprintf(`
 		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_NAME
 		FROM sys.all_ind_columns
-		WHERE TABLE_OWNER IN (
-			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
-		) AND TABLE_OWNER != 'OPS$ORACLE'
-		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`
+		WHERE TABLE_OWNER NOT IN (%s) AND TABLE_OWNER NOT LIKE 'APEX_%%'
+		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, systemSchema)
 	colRows, err := txn.Query(queryColumn)
 	if err != nil {
 		return nil, err
@@ -230,13 +229,11 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	if err := colRows.Err(); err != nil {
 		return nil, err
 	}
-	queryExpression := `
+	queryExpression := fmt.Sprintf(`
 		SELECT TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_EXPRESSION, COLUMN_POSITION
 		FROM sys.all_ind_expressions
-		WHERE TABLE_OWNER IN (
-			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
-		) AND TABLE_OWNER != 'OPS$ORACLE'
-		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`
+		WHERE TABLE_OWNER NOT IN (%s) AND TABLE_OWNER NOT LIKE 'APEX_%%'
+		ORDER BY TABLE_OWNER, TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, systemSchema)
 	expRows, err := txn.Query(queryExpression)
 	if err != nil {
 		return nil, err
@@ -259,13 +256,11 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	if err := expRows.Err(); err != nil {
 		return nil, err
 	}
-	query := `
+	query := fmt.Sprintf(`
 		SELECT OWNER, TABLE_NAME, INDEX_NAME, UNIQUENESS, INDEX_TYPE
 		FROM sys.all_indexes
-		WHERE OWNER IN (
-			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
-		) AND OWNER != 'OPS$ORACLE'
-		ORDER BY OWNER, TABLE_NAME, INDEX_NAME`
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
+		ORDER BY OWNER, TABLE_NAME, INDEX_NAME`, systemSchema)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -300,14 +295,12 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT OWNER, VIEW_NAME, TEXT
 		FROM sys.all_views
-		WHERE OWNER IN (
-			SELECT USERNAME FROM DBA_USERS WHERE ORACLE_MAINTAINED = 'N'
-		) AND OWNER != 'OPS$ORACLE'
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
 		ORDER BY owner, view_name
-	`
+	`, systemSchema)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
