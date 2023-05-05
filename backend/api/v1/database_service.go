@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,6 +15,9 @@ import (
 	"github.com/pkg/errors"
 	openai "github.com/sashabaranov/go-openai"
 
+	tidbparser "github.com/pingcap/tidb/parser"
+	tidbast "github.com/pingcap/tidb/parser/ast"
+	"github.com/pingcap/tidb/parser/format"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -1425,9 +1429,174 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	switch instance.Engine {
 	case db.Postgres:
 		return s.pgAdviseIndex(ctx, request, database)
+	case db.MySQL:
+		return s.mysqlAdviseIndex(ctx, request, database)
 	default:
-		return nil, status.Errorf(codes.Unimplemented, "AdviseIndex is not implemented for engine: %v", instance.Engine)
+		return nil, status.Errorf(codes.InvalidArgument, "AdviseIndex is not implemented for engine: %v", instance.Engine)
 	}
+}
+
+func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest, database *store.DatabaseMessage) (*v1pb.AdviseIndexResponse, error) {
+	openaiKeyName := api.SettingPluginOpenAIKey
+	key, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &openaiKeyName})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to get setting: %v", err)
+	}
+	if key.Value == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "OpenAI key is not set")
+	}
+
+	var schemas []*store.DBSchema
+
+	// Deal with the cross database query
+	dbList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract database list: %v", err)
+	}
+	for _, db := range dbList {
+		if db != "" && db != database.DatabaseName {
+			findDatabase := &store.FindDatabaseMessage{
+				EnvironmentID: &database.EnvironmentID,
+				InstanceID:    &database.InstanceID,
+				DatabaseName:  &db,
+			}
+			database, err := s.store.GetDatabaseV2(ctx, findDatabase)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "Failed to get database: %v", err)
+			}
+			schema, err := s.store.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
+			}
+			schemas = append(schemas, schema)
+		}
+	}
+
+	schema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
+	}
+	schemas = append(schemas, schema)
+
+	var compactBuf bytes.Buffer
+	for _, schema := range schemas {
+		compactSchema, err := schema.CompactText()
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to compact database schema: %v", err)
+		}
+		if _, err := compactBuf.WriteString(compactSchema); err != nil {
+			return nil, status.Errorf(codes.Internal, "Failed to write compact database schema: %v", err)
+		}
+	}
+
+	messages := []openai.ChatCompletionMessage{
+		{
+			Role:    openai.ChatMessageRoleSystem,
+			Content: `You are a MySQL index advisor. You answer the question about the index of tables and SQLs. DO NOT EXPLAIN THE ANSWER.`,
+		},
+		{
+			Role: openai.ChatMessageRoleUser,
+			Content: `You are an assistant who works as a Magic: The strict MySQL index advisor. Analyze the SQL with schema and existing indexes, then give the advice in the JSON format.
+			If the SQL will use the existing index, the current_index field is the index name with database name and table name. Otherwise, the current_index field is "N/A".
+			If it is possible to create a new index to speed up the query, the create_index_statement field is the SQL statement to create the index. Otherwise, the create_index_statement field is empty string.
+			YOUR ADVICE MUST FOLLOW JSON FORMAT. DO NOT EXPLAIN THE ADVICE.
+			Here two examples:
+			{"current_index": "index_schema_table_age ON db1.schema_table", "create_index_statement":""}
+			{"current_index": "N/A", "create_index_statement":"CREATE INDEX ON db1.schema_table(collected_at, schema_index_id)"}
+			` + fmt.Sprintf(`### MySQL schema:\n### %s\n###The SQL is:\n### %s###`, compactBuf.String(), request.Statement),
+		},
+	}
+
+	generateFunc := func(resp *v1pb.AdviseIndexResponse) error {
+		// Generate current index.
+		if resp.CurrentIndex != "N/A" {
+			// Use regex to extract the index name, database name and table name from "index_schema_table_age ON public.schema_table".
+			reg := regexp.MustCompile(`(?i)(.*) ON (.*)\.(.*)`)
+			matches := reg.FindStringSubmatch(resp.CurrentIndex)
+			if len(matches) != 4 {
+				return errors.Errorf("failed to extract index name, database name and table name from %s", resp.CurrentIndex)
+			}
+			var dbSchema *store.DBSchema
+			for _, schema := range schemas {
+				if schema.Metadata.Name == matches[2] {
+					dbSchema = schema
+					break
+				}
+			}
+			if dbSchema == nil {
+				return errors.Errorf("database %s doesn't exist", matches[2])
+			}
+			indexMetadata := dbSchema.FindIndex("", matches[3], matches[1])
+			if indexMetadata == nil {
+				return errors.Errorf("index %s doesn't exist", resp.CurrentIndex)
+			}
+			resp.CurrentIndex = fmt.Sprintf("USING %s (%s)", indexMetadata.Type, strings.Join(indexMetadata.Expressions, ", "))
+		} else {
+			resp.CurrentIndex = "No usable index"
+		}
+
+		// Generate suggestion and create index statement.
+		if resp.CreateIndexStatement != "" {
+			p := tidbparser.New()
+			node, err := p.ParseOneStmt(resp.CreateIndexStatement, "", "")
+			if err != nil {
+				return errors.Errorf("failed to parse create index statement: %v", err)
+			}
+			switch createIndex := node.(type) {
+			case *tidbast.CreateIndexStmt:
+				defineString, err := mysqlIndexExpressionList(createIndex)
+				if err != nil {
+					return errors.Errorf("failed to generate create index statement: %v", err)
+				}
+				indexType := createIndex.IndexOption.Tp.String()
+				if indexType == "" {
+					indexType = "BTREE"
+				}
+				resp.Suggestion = fmt.Sprintf("USING %s (%s)", indexType, defineString)
+			default:
+				return errors.Errorf("expect create index statement, but got %T", node)
+			}
+		} else {
+			resp.Suggestion = "N/A"
+		}
+
+		return nil
+	}
+
+	result, err := getOpenAIResponse(ctx, messages, key.Value, generateFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func mysqlIndexExpressionList(node *tidbast.CreateIndexStmt) (string, error) {
+	var buf bytes.Buffer
+	for i, item := range node.IndexPartSpecifications {
+		text, err := restoreNode(item)
+		if err != nil {
+			return "", err
+		}
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return "", err
+			}
+		}
+		if _, err := buf.WriteString(text); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
+}
+
+func restoreNode(node tidbast.Node) (string, error) {
+	var buffer strings.Builder
+	ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
+	if err := node.Restore(ctx); err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
 }
 
 func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest, database *store.DatabaseMessage) (*v1pb.AdviseIndexResponse, error) {
@@ -1462,7 +1631,7 @@ func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.Advis
 			YOUR ADVICE MUST FOLLOW JSON FORMAT. DO NOT EXPLAIN THE ADVICE.
 			Here two examples:
 			{"current_index": "index_schema_table_age ON public.schema_table", "create_index_statement":""}
-			{"current_index": "N/A", "create_index_statement":"CREATE INDEX ON schema_table(collected_at, schema_index_id)"}
+			{"current_index": "N/A", "create_index_statement":"CREATE INDEX ON public.schema_table(collected_at, schema_index_id)"}
 			` + fmt.Sprintf(`### Postgres schema:\n### %s\n###The SQL is:\n### %s###`, compactSchema, request.Statement),
 		},
 	}
