@@ -272,6 +272,26 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Name)
 	}
 
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID})
+	if err != nil {
+		return nil, err
+	}
+	if request.Force {
+		if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, api.DefaultProjectID, api.SystemBotID); err != nil {
+			return nil, err
+		}
+	} else {
+		var databaseNames []string
+		for _, database := range databases {
+			if database.ProjectID != api.DefaultProjectID {
+				databaseNames = append(databaseNames, database.DatabaseName)
+			}
+		}
+		if len(databaseNames) > 0 {
+			return nil, status.Errorf(codes.FailedPrecondition, "all databases should be transferred to the unassigned project before deleting the instance")
+		}
+	}
+
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
 		EnvironmentID: instance.EnvironmentID,
