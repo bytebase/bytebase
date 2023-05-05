@@ -325,7 +325,7 @@ func getMySQLStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func getOracleStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d;", stmt, limit)
+	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit)
 }
 
 func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
