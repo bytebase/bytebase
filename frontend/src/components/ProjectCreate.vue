@@ -16,14 +16,13 @@
           "
         />
       </div>
-      <div class="-mt-6">
+      <div class="-mt-2">
         <ResourceIdField
           ref="resourceIdField"
-          resource="project"
+          resource-type="project"
           :value="state.project.resourceId"
-          :random-string="true"
           :resource-title="state.project.name"
-          :validator="validateResourceId"
+          :validate="validateResourceId"
         />
       </div>
       <div class="col-span-1">
@@ -116,18 +115,18 @@ import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
 import { projectSlug, randomString } from "@/utils";
-import { Project, ProjectCreate, ResourceId } from "@/types";
+import { Project, ProjectCreate, ResourceId, ValidatedMessage } from "@/types";
 import {
   hasFeature,
   pushNotification,
   useUIStateStore,
   useProjectStore,
 } from "@/store";
-import ResourceIdField from "./ResourceIdField.vue";
 import { useProjectV1Store } from "@/store/modules/v1/project";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getErrorCode } from "@/utils/grpcweb";
 import { Status } from "nice-grpc-common";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 
 interface LocalState {
   project: ProjectCreate;
@@ -164,9 +163,11 @@ export default defineComponent({
       }
     });
 
-    const validateResourceId = async (resourceId: ResourceId) => {
+    const validateResourceId = async (
+      resourceId: ResourceId
+    ): Promise<ValidatedMessage[]> => {
       if (!resourceId) {
-        return;
+        return [];
       }
 
       try {
@@ -174,15 +175,22 @@ export default defineComponent({
           projectNamePrefix + resourceId
         );
         if (project) {
-          return t("resource-id.validation.duplicated", {
-            resource: t("resource.project"),
-          });
+          return [
+            {
+              type: "error",
+              message: t("resource-id.validation.duplicated", {
+                resource: t("resource.project"),
+              }),
+            },
+          ];
         }
       } catch (error) {
         if (getErrorCode(error) !== Status.NOT_FOUND) {
           throw error;
         }
       }
+
+      return [];
     };
 
     const allowCreate = computed(() => {

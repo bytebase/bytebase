@@ -117,6 +117,7 @@ const handleAction = async (key: string) => {
           statement: sheet.statement,
           visibility: "PRIVATE",
           payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
+          source: "BYTEBASE",
         };
         if (sheet.databaseId) {
           sheetCreate.databaseId = sheet.databaseId;

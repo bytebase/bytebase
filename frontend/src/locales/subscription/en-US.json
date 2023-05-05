@@ -15,7 +15,7 @@
   "billed-annually": "Billed annually",
   "billed-monthly": "Billed monthly",
   "per-instance": "Per instance",
-  "free-price-intro": "Unlimited users, environments and instances",
+  "free-price-intro": "Unlimited users and environments",
   "team-price-intro": "Up to 20 instances",
   "enterprise-price-intro": "Customized, billed annually",
   "deploy": "Deploy",
@@ -134,7 +134,8 @@
         "anomaly-detection-basic-tooltip": "Connection failure, missing backup",
         "anomaly-detection-advanced": "Advanced",
         "anomaly-detection-advanced-tooltip": "Basic + Schema drift detection",
-        "archiving": "Archiving"
+        "archiving": "Archiving",
+        "disallow-signup": "Disallow signup"
       }
     },
     "bespoke": {

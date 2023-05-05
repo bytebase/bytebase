@@ -20,7 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -473,10 +473,35 @@ type slowLog struct {
 
 // SyncSlowQuery syncs slow query from mysql.slow_log.
 func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
+	var timeZone string
+	// The MySQL function convert_tz requires loading the time zone table into MySQL.
+	// So we convert time zone in backend instead of MySQL server
+	// https://stackoverflow.com/questions/14454304/convert-tz-returns-null
+	timeZoneQuery := `SELECT @@log_timestamps, @@system_time_zone;`
+	timeZoneRows, err := driver.db.QueryContext(ctx, timeZoneQuery)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, timeZoneQuery)
+	}
+	defer timeZoneRows.Close()
+	for timeZoneRows.Next() {
+		var logTimeZone, systemTimeZone string
+		if err := timeZoneRows.Scan(&logTimeZone, &systemTimeZone); err != nil {
+			return nil, err
+		}
+
+		timeZone = logTimeZone
+		if strings.ToLower(logTimeZone) == "system" {
+			timeZone = systemTimeZone
+		}
+	}
+	if err := timeZoneRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, timeZoneQuery)
+	}
+
 	logs := make([]*slowLog, 0, db.SlowQueryMaxSamplePerDay)
 	query := `
 		SELECT
-			convert_tz(start_time, @@log_timestamps, 'UTC'),
+			start_time,
 			query_time,
 			lock_time,
 			rows_sent,
@@ -512,7 +537,11 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (m
 			return nil, err
 		}
 
-		startTimeTs, err := time.Parse("2006-01-02 15:04:05.999999", startTime)
+		location, err := time.LoadLocation(timeZone)
+		if err != nil {
+			return nil, err
+		}
+		startTimeTs, err := time.ParseInLocation("2006-01-02 15:04:05.999999", startTime, location)
 		if err != nil {
 			return nil, err
 		}

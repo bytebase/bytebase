@@ -12,8 +12,9 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
-	"github.com/bytebase/bytebase/backend/plugin/parser/ast"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -46,16 +47,27 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, _ *store.TaskChec
 	if !api.IsTaskCheckReportSupported(instance.Engine) {
 		return nil, nil
 	}
-	if payload.SheetID > 0 {
+	sheet, err := s.store.GetSheet(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
+	}
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %d not found", payload.SheetID)
+	}
+	if sheet.Size > common.MaxSheetSizeForTaskCheck {
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusSuccess,
-				Namespace: api.BBNamespace,
+				Namespace: api.AdvisorNamespace,
 				Code:      common.Ok.Int(),
-				Title:     "Large SQL affected rows report is disabled",
+				Title:     "Large SQL review policy is disabled",
 				Content:   "",
 			},
 		}, nil
+	}
+	statement, err := s.store.GetSheetStatementByID(ctx, payload.SheetID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet statement %d", payload.SheetID)
 	}
 	var charset, collation string
 	if task.DatabaseID != nil {
@@ -73,7 +85,7 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, _ *store.TaskChec
 	}
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := utils.RenderStatement(payload.Statement, materials)
+	renderedStatement := utils.RenderStatement(statement, materials)
 
 	switch instance.Engine {
 	case db.Postgres:

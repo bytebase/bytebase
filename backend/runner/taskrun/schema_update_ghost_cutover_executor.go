@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -51,23 +52,23 @@ type SchemaUpdateGhostCutoverExecutor struct {
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
-func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
+func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
 	if len(task.BlockedBy) != 1 {
 		return true, nil, errors.Errorf("failed to find task dag for ToTask %v", task.ID)
 	}
 	syncTaskID := task.BlockedBy[0]
-	defer exec.stateCfg.GhostTaskState.Delete(syncTaskID)
+	defer e.stateCfg.GhostTaskState.Delete(syncTaskID)
 
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
 	}
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return true, nil, err
 	}
 
-	syncTask, err := exec.store.GetTaskV2ByID(ctx, syncTaskID)
+	syncTask, err := e.store.GetTaskV2ByID(ctx, syncTaskID)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to get schema update gh-ost sync task for cutover task")
 	}
@@ -75,22 +76,30 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 	if err := json.Unmarshal([]byte(syncTask.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
-
-	tableName, err := utils.GetTableNameFromStatement(payload.Statement)
+	statement, err := e.store.GetSheetStatementByID(ctx, payload.SheetID)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "failed to parse table name from statement")
+		return true, nil, errors.Wrapf(err, "failed to get sheet statement by id: %d", payload.SheetID)
+	}
+	materials := utils.GetSecretMapFromDatabaseMessage(database)
+	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
+	renderedStatement := utils.RenderStatement(statement, materials)
+
+	tableName, err := utils.GetTableNameFromStatement(renderedStatement)
+	if err != nil {
+		return true, nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", statement)
 	}
 
 	postponeFilename := utils.GetPostponeFlagFilename(syncTaskID, database.UID, database.DatabaseName, tableName)
 
-	value, ok := exec.stateCfg.GhostTaskState.Load(syncTaskID)
+	value, ok := e.stateCfg.GhostTaskState.Load(syncTaskID)
 	if !ok {
 		return true, nil, errors.Errorf("failed to get gh-ost state from sync task")
 	}
 	sharedGhost := value.(sharedGhostState)
 
-	terminated, result, err := cutover(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.profile, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+	// not using the rendered statement here because we want to avoid leaking the rendered statement
+	terminated, result, err := cutover(ctx, e.store, e.dbFactory, e.activityManager, e.license, e.profile, task, statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	if err := e.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", instance.ResourceID),
 			zap.String("databaseName", database.DatabaseName),

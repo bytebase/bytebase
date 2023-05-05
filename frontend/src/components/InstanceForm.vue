@@ -57,16 +57,18 @@
           />
         </div>
 
-        <div class="sm:col-span-3 sm:col-start-1 -mt-6">
+        <div
+          :key="basicInformation.environmentId"
+          class="sm:col-span-3 sm:col-start-1 -mt-4"
+        >
           <ResourceIdField
             ref="resourceIdField"
             class="max-w-full flex-nowrap"
-            resource="instance"
+            resource-type="instance"
             :readonly="!isCreating"
             :value="basicInformation.resourceId"
             :resource-title="basicInformation.name"
-            :random-string="true"
-            :validator="validateResourceId"
+            :validate="validateResourceId"
           />
         </div>
 
@@ -440,7 +442,7 @@
 
         <div v-if="showSSL" class="mt-2 sm:col-span-3 sm:col-start-1">
           <div class="flex flex-row items-center">
-            <label for="password" class="textlabel block">
+            <label for="ssl" class="textlabel block">
               {{ $t("data-source.ssl-connection") }}
             </label>
           </div>
@@ -463,6 +465,84 @@
               </button>
             </template>
           </template>
+        </div>
+
+        <div v-if="showSSH" class="mt-2 sm:col-span-3 sm:col-start-1">
+          <div class="flex flex-row items-center">
+            <label for="ssh" class="textlabel block">
+              {{ $t("data-source.ssh-connection") }}
+            </label>
+          </div>
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="sshHost" class="textlabel block">
+              {{ $t("data-source.ssh.host") }}
+            </label>
+            <input
+              id="sshHost"
+              name="sshHost"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="''"
+              :value="currentDataSource.options.sshHost"
+              @input="handleCurrentDataSourceSshHostInput"
+            />
+          </div>
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="sshPort" class="textlabel block">
+              {{ $t("data-source.ssh.port") }}
+            </label>
+            <input
+              id="sshPort"
+              name="sshPort"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="''"
+              :value="currentDataSource.options.sshPort"
+              @input="handleCurrentDataSourceSshPortInput"
+            />
+          </div>
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="sshUser" class="textlabel block">
+              {{ $t("data-source.ssh.user") }}
+            </label>
+            <input
+              id="sshUser"
+              name="sshUser"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="''"
+              :value="currentDataSource.options.sshUser"
+              @input="handleCurrentDataSourceSshUserInput"
+            />
+          </div>
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="sshPassword" class="textlabel block">
+              {{ $t("data-source.ssh.password") }}
+            </label>
+            <input
+              id="sshPassword"
+              name="sshPassword"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="''"
+              :value="currentDataSource.options.sshPassword"
+              @input="handleCurrentDataSourceSshPasswordInput"
+            />
+          </div>
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="sshPrivateKey" class="textlabel block">
+              {{ $t("data-source.ssh.ssh-key") }}
+            </label>
+            <input
+              id="sshPrivateKey"
+              name="sshPrivateKey"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="''"
+              :value="currentDataSource.options.sshPrivateKey"
+              @input="handleCurrentDataSourceSshPrivateKeyInput"
+            />
+          </div>
         </div>
       </div>
 
@@ -560,6 +640,7 @@ import { computed, reactive, PropType, ref, watch, onMounted } from "vue";
 import {
   hasWorkspacePermission,
   instanceHasSSL,
+  instanceHasSSH,
   instanceSlug,
   isDev,
   isValidSpannerHost,
@@ -581,6 +662,7 @@ import {
   RowStatus,
   InstanceCreate,
   unknown,
+  ValidatedMessage,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
@@ -590,7 +672,6 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useDataSourceStore,
-  useEnvironmentStore,
   useInstanceStore,
   useSettingStore,
   useActuatorStore,
@@ -605,7 +686,6 @@ import {
   SslCertificateForm,
   OracleSIDAndServiceNameInput,
 } from "./InstanceForm";
-import ResourceIdField from "./ResourceIdField.vue";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import {
   environmentNamePrefix,
@@ -613,6 +693,7 @@ import {
 } from "@/store/modules/v1/common";
 import { getErrorCode } from "@/utils/grpcweb";
 import { Status } from "nice-grpc-common";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 
 const props = defineProps({
   instance: {
@@ -655,7 +736,6 @@ const { t } = useI18n();
 const router = useRouter();
 const instanceStore = useInstanceStore();
 const instanceV1Store = useInstanceV1Store();
-const environmentStore = useEnvironmentStore();
 const dataSourceStore = useDataSourceStore();
 const currentUser = useCurrentUser();
 const sqlStore = useSQLStore();
@@ -924,6 +1004,10 @@ const showSSL = computed((): boolean => {
   return instanceHasSSL(basicInformation.value.engine);
 });
 
+const showSSH = computed((): boolean => {
+  return instanceHasSSH(basicInformation.value.engine);
+});
+
 const showAuthenticationDatabase = computed((): boolean => {
   return basicInformation.value.engine === "MONGODB";
 });
@@ -1087,6 +1171,31 @@ const handleCurrentDataSourceSslChange = (
   currentDataSource.value.updateSsl = true;
 };
 
+const handleCurrentDataSourceSshHostInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.options.sshHost = str;
+};
+
+const handleCurrentDataSourceSshPortInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.options.sshPort = str;
+};
+
+const handleCurrentDataSourceSshUserInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.options.sshUser = str;
+};
+
+const handleCurrentDataSourceSshPasswordInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value;
+  currentDataSource.value.options.sshPassword = str;
+};
+
+const handleCurrentDataSourceSshPrivateKeyInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.options.sshPrivateKey = str;
+};
+
 const handleCreateRODataSource = () => {
   if (isCreating.value) {
     return;
@@ -1135,32 +1244,33 @@ const handleDeleteRODataSource = async () => {
   state.currentDataSourceType = "ADMIN";
 };
 
-const validateResourceId = async (resourceId: ResourceId) => {
+const validateResourceId = async (
+  resourceId: ResourceId
+): Promise<ValidatedMessage[]> => {
   if (!resourceId) {
-    return;
+    return [];
   }
 
-  const environment = environmentStore.getEnvironmentById(
-    basicInformation.value.environmentId
-  );
   try {
     const instance = await instanceV1Store.getOrFetchInstanceByName(
-      environmentNamePrefix +
-        environment.resourceId +
-        "/" +
-        instanceNamePrefix +
-        resourceId
+      environmentNamePrefix + "-/" + instanceNamePrefix + resourceId
     );
     if (instance) {
-      return t("resource-id.validation.duplicated", {
-        resource: t("resource.instance"),
-      });
+      return [
+        {
+          type: "error",
+          message: t("resource-id.validation.duplicated", {
+            resource: t("resource.instance"),
+          }),
+        },
+      ];
     }
   } catch (error) {
     if (getErrorCode(error) !== Status.NOT_FOUND) {
       throw error;
     }
   }
+  return [];
 };
 
 const updateInstanceState = async () => {
@@ -1256,6 +1366,11 @@ const doCreate = async () => {
       adminDataSource.value.options.authenticationDatabase,
     sid: "",
     serviceName: "",
+    sshHost: "",
+    sshPort: "",
+    sshUser: "",
+    sshPassword: "",
+    sshPrivateKey: "",
   };
 
   if (
@@ -1270,6 +1385,17 @@ const doCreate = async () => {
   if (instanceCreate.engine === "ORACLE") {
     instanceCreate.sid = adminDataSource.value.options.sid;
     instanceCreate.serviceName = adminDataSource.value.options.serviceName;
+  }
+
+  if (showSSH.value) {
+    // Default to "NONE"
+    instanceCreate.sshHost = adminDataSource.value.options.sshHost ?? "";
+    instanceCreate.sshPort = adminDataSource.value.options.sshPort ?? "";
+    instanceCreate.sshUser = adminDataSource.value.options.sshUser ?? "";
+    instanceCreate.sshPassword =
+      adminDataSource.value.options.sshPassword ?? "";
+    instanceCreate.sshPrivateKey =
+      adminDataSource.value.options.sshPrivateKey ?? "";
   }
 
   state.isRequesting = true;
@@ -1448,6 +1574,11 @@ const getTestConnectionContext = () => {
     authenticationDatabase: dataSource.options.authenticationDatabase,
     sid: "",
     serviceName: "",
+    sshHost: "",
+    sshPort: "",
+    sshUser: "",
+    sshPassword: "",
+    sshPrivateKey: "",
   };
 
   if (!isCreating.value) {
@@ -1476,6 +1607,32 @@ const getTestConnectionContext = () => {
     }
   }
 
+  if (showSSH.value) {
+    // Default to "NONE"
+    connectionInfo.sshHost = adminDataSource.value.options.sshHost ?? "";
+    connectionInfo.sshPort = adminDataSource.value.options.sshPort ?? "";
+    connectionInfo.sshUser = adminDataSource.value.options.sshUser ?? "";
+    connectionInfo.sshPassword =
+      adminDataSource.value.options.sshPassword ?? "";
+    connectionInfo.sshPrivateKey =
+      adminDataSource.value.options.sshPrivateKey ?? "";
+
+    if (typeof dataSource.options.sshHost !== "undefined") {
+      connectionInfo.sshHost = dataSource.options.sshHost;
+    }
+    if (typeof dataSource.options.sshPort !== "undefined") {
+      connectionInfo.sshPort = dataSource.options.sshPort;
+    }
+    if (typeof dataSource.options.sshUser !== "undefined") {
+      connectionInfo.sshUser = dataSource.options.sshUser;
+    }
+    if (typeof dataSource.options.sshPassword !== "undefined") {
+      connectionInfo.sshPassword = dataSource.options.sshPassword;
+    }
+    if (typeof dataSource.options.sshPrivateKey !== "undefined") {
+      connectionInfo.sshPrivateKey = dataSource.options.sshPrivateKey;
+    }
+  }
   return connectionInfo;
 };
 

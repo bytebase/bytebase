@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -104,16 +105,27 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *store.TaskMessag
 		log.Error("Failed to find instance", zap.Error(err))
 		return
 	}
+	database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		log.Error("Failed to find database", zap.Error(err))
+		return
+	}
+	project, err := r.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	if err != nil {
+		log.Error("Failed to find project", zap.Error(err))
+		return
+	}
+
 	switch instance.Engine {
 	case db.MySQL:
 		// TODO(d): support MariaDB.
-		r.generateMySQLRollbackSQL(ctx, task, payload, instance)
+		r.generateMySQLRollbackSQL(ctx, task, payload, instance, project)
 	case db.Oracle:
-		r.generateOracleRollbackSQL(ctx, task, payload, instance)
+		r.generateOracleRollbackSQL(ctx, task, payload, instance, project)
 	}
 }
 
-func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) {
+func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage, project *store.ProjectMessage) {
 	var rollbackSQLStatus api.RollbackSQLStatus
 	var rollbackStatement, rollbackError string
 
@@ -127,11 +139,26 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 		rollbackStatement = statementsBuffer.String()
 	}
 
+	sheet, err := r.store.CreateSheet(ctx, &api.SheetCreate{
+		CreatorID:  api.SystemBotID,
+		ProjectID:  project.UID,
+		Name:       fmt.Sprintf("Sheet for rolling back task %v", task.ID),
+		Statement:  rollbackStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+		Payload:    "{}",
+	})
+	if err != nil {
+		log.Error("failed to create database creation sheet", zap.Error(err))
+		return
+	}
+
 	patch := &api.TaskPatch{
 		ID:                task.ID,
 		UpdaterID:         api.SystemBotID,
 		RollbackSQLStatus: &rollbackSQLStatus,
-		RollbackStatement: &rollbackStatement,
+		RollbackSheetID:   &sheet.ID,
 		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
@@ -179,20 +206,20 @@ func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api
 	return &statements, nil
 }
 
-func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) {
+func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskMessage, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage, project *store.ProjectMessage) {
 	var rollbackSQLStatus api.RollbackSQLStatus
 	var rollbackStatement, rollbackError string
 
 	const binlogSizeLimit = 8 * 1024 * 1024
 	rollbackSQL, err := r.generateMySQLRollbackSQLImpl(ctx, payload, binlogSizeLimit, instance)
 	if err != nil {
-		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
 		rollbackSQLStatus = api.RollbackSQLStatusFailed
 		if mysql.IsErrExceedSizeLimit(err) {
 			rollbackError = fmt.Sprintf("Failed to generate rollback SQL statement. The size of the generated statements must be less that %vKB.", binlogSizeLimit/1024)
 		} else if mysql.IsErrParseBinlogName(err) {
 			rollbackError = "Failed to generate rollback SQL statement. Please check if binlog is enabled."
 		} else {
+			log.Error("Failed to generate rollback SQL statement", zap.Error(err))
 			rollbackError = err.Error()
 		}
 	} else {
@@ -200,11 +227,25 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		rollbackStatement = rollbackSQL
 	}
 
+	sheet, err := r.store.CreateSheet(ctx, &api.SheetCreate{
+		CreatorID:  api.SystemBotID,
+		ProjectID:  project.UID,
+		Name:       fmt.Sprintf("Sheet for rolling back task %d", task.ID),
+		Statement:  rollbackStatement,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+		Payload:    "{}",
+	})
+	if err != nil {
+		log.Error("failed to create database creation sheet", zap.Error(err))
+		return
+	}
 	patch := &api.TaskPatch{
 		ID:                task.ID,
 		UpdaterID:         api.SystemBotID,
 		RollbackSQLStatus: &rollbackSQLStatus,
-		RollbackStatement: &rollbackStatement,
+		RollbackSheetID:   &sheet.ID,
 		RollbackError:     &rollbackError,
 	}
 	if _, err := r.store.UpdateTaskV2(ctx, patch); err != nil {
@@ -219,7 +260,14 @@ func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.
 		return "", ctx.Err()
 	}
 	// We cannot support rollback SQL generation for sheets because it can take lots of resources.
-	if payload.SheetID > 0 {
+	sheet, err := r.store.GetSheetV2(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
+	}
+	if sheet == nil {
+		return "", errors.Errorf("sheet %d not found", payload.SheetID)
+	}
+	if sheet.Size > common.MaxSheetSizeForRollback {
 		return "", errors.Errorf("rollback SQL isn't supported for large sheet")
 	}
 	basename, seqStart, err := mysql.ParseBinlogName(payload.BinlogFileStart)

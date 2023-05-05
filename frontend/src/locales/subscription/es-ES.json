@@ -15,7 +15,7 @@
   "billed-annually": "Facturado anualmente",
   "billed-monthly": "Facturado mensualmente",
   "per-instance": "Por instancia",
-  "free-price-intro": "Usuarios, entornos e instancias ilimitados",
+  "free-price-intro": "Usuarios y entornos ilimitados",
   "team-price-intro": "Hasta 20 instancias",
   "enterprise-price-intro": "Personalizado, facturado anualmente",
   "deploy": "Desplegar",
@@ -134,7 +134,8 @@
         "anomaly-detection-basic-tooltip": "Fallo de conexión, falta copia de seguridad",
         "anomaly-detection-advanced": "Avanzado",
         "anomaly-detection-advanced-tooltip": "Básico + Detección de desviación de esquema",
-        "archiving": "Archivado"
+        "archiving": "Archivado",
+        "disallow-signup": "Deshabilitar el registro de autoservicio"
       }
     },
     "bespoke": {

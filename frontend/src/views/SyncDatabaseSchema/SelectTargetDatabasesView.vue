@@ -238,7 +238,7 @@
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import axios from "axios";
-import { isEqual } from "lodash-es";
+import { head, isEqual } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { PropType, computed, onMounted, reactive, ref, watch } from "vue";
 import { CodeDiff } from "v-code-diff";
@@ -470,6 +470,10 @@ watch(
       !state.selectedDatabaseIdList.includes(state.selectedDatabaseId)
     ) {
       state.selectedDatabaseId = undefined;
+    }
+
+    if (state.selectedDatabaseId === undefined) {
+      state.selectedDatabaseId = head(databaseListWithDiff.value)?.id;
     }
   }
 );

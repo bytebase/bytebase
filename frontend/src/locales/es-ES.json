@@ -240,7 +240,9 @@
     "revoke": "Revocar",
     "cannot-undo-this-action": "No se puede deshacer esta acción.",
     "expand": "Expandir",
-    "collapse": "Colapsar"
+    "collapse": "Colapsar",
+    "select": "Seleccionar",
+    "optional": "Opcional"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -329,6 +331,12 @@
       "sql-rollback-tips": "Cuando se habilita, Bytebase mantendrá los registros de reversión para el cambio de datos\ny le permitirá crear una nueva incidencia para revertir este cambio. {link}"
     },
     "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual",
+    "apply-change-to-all-pending-tasks": {
+      "title": "¿Aplicar cambio a todas las tareas pendientes?",
+      "self": "Aplicar cambio a todas las tareas pendientes",
+      "current-only": "Aplicar cambio solo a la tarea actual"
+    },
+    "execution-time": "Tiempo de ejecución",
     "run-checks": "Ejecutar comprobaciones",
     "run-checks-in-current-stage": "Ejecutar comprobaciones en la etapa actual"
   },
@@ -381,6 +389,7 @@
       "sensitive-data": "Anonimización de Datos",
       "access-control": "Control de Acceso a Datos",
       "audit-log": "Registro de auditoría",
+      "custom-roles": "Roles personalizados",
       "mail-delivery": "Entrega de Correo"
     },
     "profile": {
@@ -628,6 +637,7 @@
   },
   "issue": {
     "waiting-approval": "Esperando Aprobación",
+    "waiting-rollout": "Esperando Implementación",
     "opened-by-at": "abierta por {creator} a las {time}",
     "commit-by-at": "commit {id} {title} por {author} a las {time}",
     "status-transition": {
@@ -737,8 +747,7 @@
     },
     "waiting-to-rollout": "Esperando para implementar",
     "waiting-for-review": "Esperando revisión",
-    "issue-name": "Nombre de la incidencia",
-    "waiting-for-my-approval": "Esperando mi aprobación"
+    "issue-name": "Nombre de la incidencia"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -760,7 +769,6 @@
     "create-project": "@:common.create @:common.project",
     "edit-data": "Editar datos",
     "troubleshoot": "Solucionar problemas",
-    "sync-schema": "Sincronizar Esquema",
     "transfer-in-db": "Transferir BD",
     "request-db": "Solicitar BD",
     "from-unassigned-databases": "De bases de datos no asignadas",
@@ -1146,7 +1154,24 @@
     "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
     "sync-schema": {
       "title": "Sincronizar esquema",
-      "select-project": "Seleccionar proyecto",
+      "description": "Bytebase admite la sincronización de una versión de esquema específica de una base de datos con otras.",
+      "select-source-schema": "Seleccione el esquema de origen",
+      "select-target-databases": "Seleccione las bases de datos de destino",
+      "select-project": "Seleccione el proyecto",
+      "source-database": "Base de datos de origen",
+      "source-schema": "Esquema de origen",
+      "schema-version": {
+        "self": "Versión de esquema",
+        "description": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase"
+      },
+      "target-databases": "Bases de datos de destino",
+      "with-diff": "Con diff",
+      "no-diff": "Sin diff",
+      "message": {
+        "select-a-target-database-first": "Primero seleccione una base de datos de destino.",
+        "no-target-databases": "No hay bases de datos de destino.",
+        "no-diff-found": "No se encontraron diferencias."
+      },
       "to-database": "Aplicar a base de datos",
       "from-database": "Desde base de datos",
       "schema-change-preview": "Vista previa de cambio de esquema para '{database}'",
@@ -1171,12 +1196,24 @@
     "doesnt-match-tenant-value": "No coincide con el valor de la etiqueta",
     "should-follow-database-name-template": "Debe seguir la plantilla de nombre de base de datos de inquilino",
     "all": "Todas las bases de datos",
+    "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Alter Schema no se aplica a las bases de datos sin esquema).",
     "secret": {
+      "self": "Secreto",
+      "new": "Nuevo secreto",
+      "edit": "Editar secreto",
+      "name-placeholder": "Ingrese nombre del secreto",
       "validation": {
+        "cannot-be-changed-later": "No se puede cambiar más tarde",
+        "duplicated-name": "Nombre secreto duplicado",
+        "name-is-required": "Se requiere nombre secreto",
+        "name-pattern-mismatch": "El nombre secreto debe contener solo letras mayúsculas, dígitos o _ (guion bajo)",
         "name-cannot-prefix-with-bytebase": "El nombre secreto no puede tener el prefijo 'BYTEBASE_'",
-        "name-cannot-start-with-number": "El nombre secreto no puede comenzar con un número",
-        "name-pattern-mismatch": "El nombre secreto debe contener solo letras mayúsculas, dígitos o _ (guion bajo)"
-      }
+        "name-cannot-start-with-number": "El nombre secreto no puede comenzar con un número"
+      },
+      "description-placeholder": "Ingrese descripción",
+      "value": "Valor",
+      "value-placeholder": "Valor de entrada (solo escritura)",
+      "delete-tips": "Eliminar secreto"
     }
   },
   "repository": {
@@ -1495,8 +1532,8 @@
       "at-least-one-stage": "Al menos 1 etapa",
       "stage-name-required": "Se requiere el nombre de la etapa",
       "at-least-one-selector": "Al menos 1 selector en cada etapa",
-      "env-in-selector-required": "Se requiere \"Entorno en\" en cada etapa",
-      "env-selector-must-has-one-value": "\"Entorno en\" debe tener exactamente un valor",
+      "env-in-selector-required": "Se requiere \"Entorno ID\" en cada etapa",
+      "env-selector-must-has-one-value": "\"Entorno ID\" debe tener exactamente un valor",
       "key-required": "Se requiere una clave",
       "values-required": "Se requieren valores"
     },
@@ -1543,7 +1580,15 @@
       "client-key": "Clave del cliente",
       "client-cert": "Certificado del cliente"
     },
+    "ssh": {
+      "host": "Anfitrión",
+      "port": "Puerto",
+      "user": "Nombre de usuario",
+      "password": "Contraseña",
+      "ssh-key": "Clave del SSH"
+    },
     "ssl-connection": "Conexión SSL",
+    "ssh-connection": "Conexión SSH",
     "read-replica-host": "Anfitrión de réplica de lectura",
     "read-replica-port": "Puerto de réplica de lectura",
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
@@ -1756,6 +1801,7 @@
     "successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
     "successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
     "require-subscription": "Esta función requiere {requiredPlan}, por favor compra la licencia Bytebase para desbloquear esta función.",
+    "feature-require-subscription": "{feature} requiere {requiredPlan}.",
     "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}.",
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
@@ -1783,7 +1829,7 @@
         "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
       },
       "bb-feature-multi-tenancy": {
-        "title": "Multi-tenancy",
+        "title": "Multi-tenencia",
         "desc": "Gestión inteligente de la base de datos para inquilinos que utilizan esquemas idénticos."
       },
       "bb-feature-approval-policy": {
@@ -1838,6 +1884,10 @@
         "title": "Gestión de roles",
         "desc": "Permite asignar un rol particular (por ejemplo, DBA) a un miembro."
       },
+      "bb-feature-custom-role": {
+        "title": "Roles personalizados",
+        "desc": "Definición de roles personalizados, y puede aplicarlos a los miembros del proyecto."
+      },
       "bb-feature-watermark": {
         "title": "Marca de agua",
         "desc": "Muestra marcas de agua visibles en las páginas, incluyendo el nombre de usuario, ID y correo electrónico."
@@ -1889,6 +1939,10 @@
       "bb-feature-encrypted-secrets": {
         "title": "Secretos Encriptados",
         "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
+      },
+      "bb-feature-disallow-signup": {
+        "title": "Deshabilitar el registro de autoservicio",
+        "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el propietario del espacio de trabajo."
       }
     }
   },
@@ -2346,6 +2400,11 @@
     "filter": {
       "from-date": "Desde fecha",
       "to-date": "Hasta fecha"
+    },
+    "advise-index": {
+      "current-index": "Índice actual",
+      "suggestion": "Sugerencia",
+      "create-index": "Crear índice"
     }
   },
   "principal": {

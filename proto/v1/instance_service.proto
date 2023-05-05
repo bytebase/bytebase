@@ -148,6 +148,9 @@ message DeleteInstanceRequest {
   // The name of the instance to delete.
   // Format: environments/{environment}/instances/{instance}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+  bool force = 2;
 }
 
 message UndeleteInstanceRequest {
@@ -230,6 +233,20 @@ message DataSource {
   // sid and service_name are used for Oracle.
   string sid = 13;
   string service_name = 14;
+  // Connection over SSH.
+  // The hostname of the SSH server agent.
+  // Required.
+  string ssh_host = 15;
+  // The port of the SSH server agent. It's 22 typically.
+  // Required.
+  string ssh_port = 16;
+  // The user to login the server.
+  // Required.
+  string ssh_user = 17;
+  // The password to login the server. If it's empty string, no password is required.
+  string ssh_password = 18 [(google.api.field_behavior) = INPUT_ONLY];
+  // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
+  string ssh_private_key = 19 [(google.api.field_behavior) = INPUT_ONLY];
 }
 
 enum DataSourceType {

@@ -33,6 +33,8 @@ const (
 	IssueDatabaseDataUpdate IssueType = "bb.issue.database.data.update"
 	// IssueDatabaseRestorePITR is the issue type for performing a Point-in-time Recovery.
 	IssueDatabaseRestorePITR IssueType = "bb.issue.database.restore.pitr"
+	// IssueRequestPrivilege is the issue type for requesting privileges.
+	IssueRequestPrivilege IssueType = "bb.issue.request.privilege"
 )
 
 // IssueFieldID is the field ID for an issue.
@@ -73,6 +75,8 @@ type Issue struct {
 	Project    *Project `jsonapi:"relation,project"`
 	PipelineID int
 	Pipeline   *Pipeline `jsonapi:"relation,pipeline"`
+	// The requested privilege in PrivilegeRequest format.
+	PrivilegeRequest string `jsonapi:"attr,privilegeRequest"`
 
 	// Domain specific fields
 	Name                  string       `jsonapi:"attr,name"`
@@ -108,6 +112,8 @@ type IssueCreate struct {
 	CreateContext string `jsonapi:"attr,createContext"`
 	// ValidateOnly validates the request and previews the review, but does not actually post it.
 	ValidateOnly bool `jsonapi:"attr,validateOnly"`
+	// The requested privilege in PrivilegeRequest format.
+	PrivilegeRequest string `jsonapi:"attr,privilegeRequest"`
 }
 
 // CreateDatabaseContext is the issue create context for creating a database.
@@ -150,8 +156,6 @@ type MigrationDetail struct {
 	// DatabaseID is the ID of a database.
 	// This should be unset when a project is in tenant mode. The ProjectID is derived from IssueCreate.
 	DatabaseID int `json:"databaseId"`
-	// Statement is the statement to update database schema.
-	Statement string `json:"statement"`
 	// SheetID is the ID of a sheet. Statement and sheet ID is mutually exclusive.
 	SheetID int `json:"sheetId"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
@@ -159,7 +163,7 @@ type MigrationDetail struct {
 	// SchemaVersion is parsed from VCS file name.
 	// It is automatically generated in the UI workflow.
 	SchemaVersion string `json:"schemaVersion"`
-	// If RollbackEnabled, build the rollbackStatement of the task.
+	// If RollbackEnabled, build the RollbackSheetID of the task.
 	RollbackEnabled bool `json:"rollbackEnabled"`
 	// if RollbackDetail is not nil, then this task is for rolling back another task.
 	RollbackDetail *RollbackDetail `json:"rollbackDetail"`
@@ -202,6 +206,26 @@ type PITRContext struct {
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
 	PointInTimeTs *int64 `json:"pointInTimeTs"`
+}
+
+// PrivilegeRequest is the create context to request privileges.
+type PrivilegeRequest struct {
+	// Request scopes for resources.
+	// If we need multiple privileges for a database, add multiple entries.
+	Scopes []ResourceScope `json:"scopes"`
+	// Requested Role.
+	// Example "roles/Developer"
+	Role string `json:"role"`
+	// Expiration timestamp in second.
+	ExpirationTs int `json:"expirationTs"`
+}
+
+// ResourceScope is the scope of resources.
+type ResourceScope struct {
+	DatabaseID int `json:"databaseID"`
+	// Schema can be empty for database types such as MySQL.
+	Schema string `json:"schema"`
+	Table  string `json:"table"`
 }
 
 // IssuePatch is the API message for patching an issue.

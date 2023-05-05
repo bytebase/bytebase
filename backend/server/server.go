@@ -112,17 +112,17 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 
 	// Register mysql differ driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/differ/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/mysql"
 	// Register postgres differ driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/differ/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/pg"
 	// Register mysql edit driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/edit/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/edit/mysql"
 	// Register postgres edit driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/edit/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/edit/pg"
 	// Register postgres parser driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/engine/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	// Register mysql transform driver.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/transform/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/transform/mysql"
 )
 
 const (
@@ -314,7 +314,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
 		InstanceSlowQuerySyncChan:      make(chan *api.Instance, 100),
 		InstanceOutstandingConnections: make(map[int]int),
-		TestSlowQueryWeeklyEmailChan:   make(chan bool, 100),
 	}
 	s.store = storeInstance
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
@@ -1065,6 +1064,23 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		return errors.Wrapf(err, "failed to create onboarding SQL Review policy")
 	}
 
+	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		CreatorID: api.SystemBotID,
+
+		ProjectID:  project.UID,
+		DatabaseID: &database.UID,
+
+		Name:       "Sheet for Sample Project",
+		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+		Payload:    "{}",
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create sheet for sample project")
+	}
+
 	// Create a schema update issue.
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
@@ -1074,7 +1090,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 					DatabaseID:    database.UID,
 					// This will violate the NOT NULL SQL Review policy configured above and emit a
 					// warning. Thus to demonstrate the SQL Review capability.
-					Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
+					SheetID: sheet.ID,
 				},
 			},
 		})

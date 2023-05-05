@@ -552,7 +552,7 @@
       "not-show-till-next-release": "Don't show this till next version"
     },
     "mail-delivery": {
-      "description": "Enable mail delivery to receive email notification by configuring SMTP server information.",
+      "description": "Configuring SMTP information will enable users to receive database reports via email, such as slow query weekly reports.",
       "field": {
         "smtp-server-host": "SMTP Server Host",
         "smtp-server-port": "SMTP Server Port",
@@ -1532,8 +1532,8 @@
       "at-least-one-stage": "At least 1 stage",
       "stage-name-required": "Stage name is required",
       "at-least-one-selector": "At least 1 selector in each stage",
-      "env-in-selector-required": "\"Environment in\" is required in each stage",
-      "env-selector-must-has-one-value": "\"Environment in\" must has exactly one value",
+      "env-in-selector-required": "\"Environment ID\" is required in each stage",
+      "env-selector-must-has-one-value": "\"Environment ID\" must has exactly one value",
       "key-required": "Key is required",
       "values-required": "Values are required"
     },
@@ -1580,7 +1580,15 @@
       "client-key": "Client Key",
       "client-cert": "Client Certificate"
     },
+    "ssh": {
+      "host": "Server",
+      "port": "Port",
+      "user": "User",
+      "password": "Password",
+      "ssh-key": "SSH Key"
+    },
     "ssl-connection": "SSL Connection",
+    "ssh-connection": "SSH Connection",
     "read-replica-host": "Read-replica Host",
     "read-replica-port": "Read-replica Port",
     "delete-read-only-data-source": "Delete read-only data source",
@@ -1931,6 +1939,10 @@
       "bb-feature-encrypted-secrets": {
         "title": "Encrypted Secrets",
         "desc": "Store your secrets of database and use them in your issue SQL scripts."
+      },
+      "bb-feature-disallow-signup": {
+        "title": "Disable self-service signup",
+        "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
       }
     }
   },
@@ -2388,6 +2400,11 @@
     "filter": {
       "from-date": "From date",
       "to-date": "To date"
+    },
+    "advise-index": {
+      "current-index": "Current Index",
+      "suggestion": "Suggestion",
+      "create-index": "Create Index"
     }
   },
   "principal": {

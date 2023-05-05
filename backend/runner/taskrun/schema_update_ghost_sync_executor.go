@@ -42,14 +42,9 @@ func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, task *st
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
-	statement := payload.Statement
-	if payload.SheetID > 0 {
-		sheetStatement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
-		if err != nil {
-			return true, nil, err
-		}
-
-		statement = sheetStatement
+	statement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
+	if err != nil {
+		return true, nil, err
 	}
 
 	return exec.runGhostMigration(ctx, exec.store, task, statement)

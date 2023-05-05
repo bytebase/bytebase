@@ -364,11 +364,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // PatchTask patches the statement, earliest allowed time and rollbackEnabled for a task.
 func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, taskPatch *api.TaskPatch, issue *store.IssueMessage) error {
-	if taskPatch.Statement != nil && taskPatch.SheetID != nil {
-		return errors.New("cannot update both statement and sheet_id")
-	}
-
-	if taskPatch.Statement != nil || taskPatch.SheetID != nil {
+	if taskPatch.SheetID != nil {
 		if err := canUpdateTaskStatement(task); err != nil {
 			return err
 		}
@@ -379,12 +375,12 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	}
 
 	// Reset because we are trying to build
-	// the rollbackStatement again and there could be previous runs.
+	// the RollbackSheetID again and there could be previous runs.
 	if taskPatch.RollbackEnabled != nil && *taskPatch.RollbackEnabled {
 		empty := ""
 		pending := api.RollbackSQLStatusPending
 		taskPatch.RollbackSQLStatus = &pending
-		taskPatch.RollbackStatement = &empty
+		taskPatch.RollbackSheetID = nil
 		taskPatch.RollbackError = &empty
 	}
 	// if *taskPatch.RollbackEnabled == false, we don't reset
@@ -420,7 +416,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 	}
 
 	// Trigger task checks.
-	if taskPatch.Statement != nil || taskPatch.SheetID != nil {
+	if taskPatch.SheetID != nil {
 		dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
 		if err != nil {
 			return err
@@ -506,27 +502,23 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 		}
 	}
 
-	// TODO(p0ny): sheet, create update sheet activity
-	// if taskPatch.SheetID != nil {}
-
-	// Update statement activity.
-	if taskPatch.Statement != nil {
-		oldStatement, err := utils.GetTaskStatement(task.Payload)
+	if taskPatch.SheetID != nil {
+		oldSheetID, err := utils.GetTaskSheetID(task.Payload)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to get old sheet ID")
 		}
-		newStatement := *taskPatch.Statement
+		newSheetID := *taskPatch.SheetID
 
-		// create a task statement update activity
+		// create a task sheet update activity
 		payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
-			TaskID:       taskPatched.ID,
-			OldStatement: oldStatement,
-			NewStatement: newStatement,
-			TaskName:     task.Name,
-			IssueName:    issue.Title,
+			TaskID:     taskPatched.ID,
+			OldSheetID: oldSheetID,
+			NewSheetID: newSheetID,
+			TaskName:   task.Name,
+			IssueName:  issue.Title,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task sheet: %v", taskPatched.Name).SetInternal(err)
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
 			CreatorID:   taskPatch.UpdaterID,
@@ -540,6 +532,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 		}
 	}
+
 	// Earliest allowed time update activity.
 	if taskPatch.EarliestAllowedTs != nil {
 		// create an activity
@@ -1021,6 +1014,17 @@ func (s *Scheduler) getAnyProjectOwner(ctx context.Context, projectID int) (*sto
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
 	if err != nil {
 		return nil, err
+	}
+	// Find the project member that is not workspace owner or DBA first.
+	for _, binding := range policy.Bindings {
+		if binding.Role != api.Owner || len(binding.Members) == 0 {
+			continue
+		}
+		for _, user := range binding.Members {
+			if user.Role != api.Owner && user.Role != api.DBA {
+				return user, nil
+			}
+		}
 	}
 	for _, binding := range policy.Bindings {
 		if binding.Role == api.Owner && len(binding.Members) > 0 {

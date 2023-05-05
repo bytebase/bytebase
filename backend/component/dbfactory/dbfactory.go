@@ -69,6 +69,21 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 	if err != nil {
 		return nil, err
 	}
+	sshPassword, err := common.Unobfuscate(adminDataSource.SSHObfuscatedPassword, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sshPrivateKey, err := common.Unobfuscate(adminDataSource.SSHObfuscatedPrivateKey, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sshConfig := db.SSHConfig{
+		Host:       adminDataSource.SSHHost,
+		Port:       adminDataSource.SSHPort,
+		User:       adminDataSource.SSHUser,
+		Password:   sshPassword,
+		PrivateKey: sshPrivateKey,
+	}
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
@@ -91,6 +106,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 			AuthenticationDatabase: adminDataSource.AuthenticationDatabase,
 			SID:                    adminDataSource.SID,
 			ServiceName:            adminDataSource.ServiceName,
+			SSHConfig:              sshConfig,
 		},
 		db.ConnectionContext{
 			EnvironmentID: instance.EnvironmentID,
@@ -151,6 +167,21 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 	if err != nil {
 		return nil, err
 	}
+	sshPassword, err := common.Unobfuscate(dataSource.SSHObfuscatedPassword, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sshPrivateKey, err := common.Unobfuscate(dataSource.SSHObfuscatedPrivateKey, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sshConfig := db.SSHConfig{
+		Host:       dataSource.SSHHost,
+		Port:       dataSource.SSHPort,
+		User:       dataSource.SSHUser,
+		Password:   sshPassword,
+		PrivateKey: sshPrivateKey,
+	}
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
@@ -173,6 +204,7 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 			AuthenticationDatabase: dataSource.AuthenticationDatabase,
 			SID:                    dataSource.SID,
 			ServiceName:            dataSource.ServiceName,
+			SSHConfig:              sshConfig,
 			ReadOnly:               true,
 		},
 		db.ConnectionContext{

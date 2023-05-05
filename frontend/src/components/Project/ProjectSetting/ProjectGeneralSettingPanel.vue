@@ -20,10 +20,9 @@
           />
         </dd>
         <ResourceIdField
-          ref="resourceIdField"
-          resource="project"
-          :readonly="true"
+          resource-type="project"
           :value="project.resourceId"
+          :readonly="true"
         />
       </dl>
 
@@ -110,9 +109,9 @@ import {
   ProjectTenantMode,
   FeatureType,
 } from "../../../types";
-import FeatureModal from "@/components/FeatureModal.vue";
 import { hasFeature, pushNotification, useProjectStore } from "@/store";
-import ResourceIdField from "../../ResourceIdField.vue";
+import FeatureModal from "@/components/FeatureModal.vue";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 
 interface LocalState {
   name: string;

@@ -15,6 +15,5 @@ type Executor interface {
 
 // TaskPayload is the task payload.
 type TaskPayload struct {
-	Statement string `json:"statement,omitempty"`
-	SheetID   int    `json:"sheetId,omitempty"`
+	SheetID int `json:"sheetId,omitempty"`
 }

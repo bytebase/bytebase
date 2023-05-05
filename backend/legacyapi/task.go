@@ -102,7 +102,6 @@ type TaskDatabaseCreatePayload struct {
 	ProjectID    int    `json:"projectId,omitempty"`
 	DatabaseName string `json:"databaseName,omitempty"`
 	TableName    string `json:"tableName,omitempty"`
-	Statement    string `json:"statement,omitempty"`
 	SheetID      int    `json:"sheetId,omitempty"`
 	CharacterSet string `json:"character,omitempty"`
 	Collation    string `json:"collation,omitempty"`
@@ -124,7 +123,6 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
 
-	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
@@ -136,7 +134,6 @@ type TaskDatabaseSchemaUpdateSDLPayload struct {
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
 
-	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
@@ -148,7 +145,6 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
 
-	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
@@ -183,14 +179,13 @@ type TaskDatabaseDataUpdatePayload struct {
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
 
-	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
 
 	// MySQL rollback SQL related.
 
-	// Build the RollbackStatement if RollbackEnabled.
+	// Build the RollbackSheetID if RollbackEnabled.
 	RollbackEnabled bool `json:"rollbackEnabled,omitempty"`
 	// RollbackSQLStatus is the status of the rollback generation.
 	RollbackSQLStatus RollbackSQLStatus `json:"rollbackSqlStatus,omitempty"`
@@ -210,8 +205,8 @@ type TaskDatabaseDataUpdatePayload struct {
 	BinlogPosStart  int64  `json:"binlogPosStart,omitempty"`
 	BinlogPosEnd    int64  `json:"binlogPosEnd,omitempty"`
 	RollbackError   string `json:"rollbackError,omitempty"`
-	// RollbackStatement is the generated rollback SQL statement for the DML task.
-	RollbackStatement string `json:"rollbackStatement,omitempty"`
+	// RollbackSheetID is the generated rollback SQL statement for the DML task.
+	RollbackSheetID int `json:"rollbackSheetId,omitempty"`
 	// RollbackFromIssueID is the issue ID containing the original task from which the rollback SQL statement is generated for this task.
 	RollbackFromIssueID int `json:"rollbackFromIssueId,omitempty"`
 	// RollbackFromTaskID is the task ID from which the rollback SQL statement is generated for this task.
@@ -299,7 +294,6 @@ type TaskCreate struct {
 	// Payload is derived from fields below it
 	Payload           string
 	EarliestAllowedTs int64  `jsonapi:"attr,earliestAllowedTs"`
-	Statement         string `jsonapi:"attr,statement"`
 	DatabaseName      string `jsonapi:"attr,databaseName"`
 	CharacterSet      string `jsonapi:"attr,characterSet"`
 	Collation         string `jsonapi:"attr,collation"`
@@ -352,13 +346,14 @@ type TaskPatch struct {
 	// Payload and others cannot be set at the same time.
 	Payload *string
 
-	Statement         *string `jsonapi:"attr,statement"`
-	SheetID           *int    `jsonapi:"attr,sheetId"`
+	SheetID           *int `jsonapi:"attr,sheetId"`
 	SchemaVersion     *string
 	RollbackEnabled   *bool `jsonapi:"attr,rollbackEnabled"`
 	RollbackSQLStatus *RollbackSQLStatus
-	RollbackStatement *string
-	RollbackError     *string
+	// RollbackSheetID sets the rollback sheet ID.
+	// When RollbackEnabled is enabled, RollbackSheetID is kept till it's set to the new sheet ID by the runner.
+	RollbackSheetID *int
+	RollbackError   *string
 }
 
 // TaskStatusPatch is the API message for patching a task status.

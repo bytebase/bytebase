@@ -39,6 +39,7 @@ export type TaskStatus =
 
 export type TaskGeneralPayload = {
   statement: string;
+  sheetId: SheetId;
 };
 
 export type TaskEarliestAllowedTimePayload = {
@@ -60,6 +61,7 @@ export type TaskDatabaseSchemaBaselinePayload = {
   skipped: boolean;
   skippedReason: string;
   statement: string;
+  sheetId: SheetId;
   schemaVersion: string;
   pushEvent?: VCSPushEvent;
 };
@@ -122,7 +124,7 @@ export type TaskDatabaseDataUpdatePayload = {
   pushEvent?: VCSPushEvent;
   rollbackEnabled: boolean;
   rollbackSqlStatus?: RollbackSQLStatus;
-  rollbackStatement?: string;
+  rollbackSheetId?: SheetId;
   rollbackError?: string;
   rollbackFromIssueId?: IssueId;
   rollbackFromTaskId?: TaskId;
@@ -198,9 +200,9 @@ export type TaskCreate = {
   type: TaskType;
   instanceId: InstanceId;
   databaseId?: DatabaseId;
+  sheetId: SheetId;
+  // statement is only using in UI to show the SQL statement when creating issue.
   statement: string;
-  // statement and sheet ID should be mutually exclusive.
-  sheetId?: SheetId;
   databaseName?: string;
   characterSet?: string;
   collation?: string;
@@ -210,12 +212,12 @@ export type TaskCreate = {
 };
 
 export type TaskPatch = {
-  statement?: string;
+  sheetId?: SheetId;
   earliestAllowedTs?: number;
   rollbackEnabled?: boolean;
-
   updatedTs?: number;
 };
+
 export type TaskStatusPatch = {
   // Domain specific fields
   status: TaskStatus;
@@ -266,27 +268,6 @@ export type TaskCheckType =
   | "bb.task-check.pitr.mysql"
   | "bb.task-check.database.statement.type.report"
   | "bb.task-check.database.statement.affected-rows.report";
-
-export type TaskCheckDatabaseStatementAdvisePayload = {
-  statement: string;
-};
-
-export type TaskCheckDatabaseSchemaUpdateGhostPayload = {
-  statement: string;
-  instanceId: InstanceId;
-  databaseName: string;
-  tableName: string;
-};
-
-export type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload = {
-  // empty by now
-  // more to come
-};
-
-export type TaskCheckDatabaseStatementTypePayload = {
-  statement: string;
-  dbType: string;
-};
 
 export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";
 

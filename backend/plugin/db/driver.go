@@ -405,6 +405,16 @@ type ConnectionConfig struct {
 	// SID and ServiceName are Oracle only.
 	SID         string
 	ServiceName string
+	SSHConfig   SSHConfig
+}
+
+// SSHConfig is the configuration for connection over SSH.
+type SSHConfig struct {
+	Host       string
+	Port       string
+	User       string
+	Password   string
+	PrivateKey string
 }
 
 // ConnectionContext is the context for connection.

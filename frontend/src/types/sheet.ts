@@ -12,7 +12,12 @@ import {
 
 export type SheetVisibility = "PRIVATE" | "PROJECT" | "PUBLIC";
 
-export type SheetSource = "BYTEBASE" | "GITLAB" | "GITHUB" | "BITBUCKET";
+export type SheetSource =
+  | "BYTEBASE"
+  | "GITLAB"
+  | "GITHUB"
+  | "BITBUCKET"
+  | "BYTEBASE_ARTIFACT";
 
 export type SheetType = "SQL";
 
@@ -91,6 +96,7 @@ export interface SheetCreate {
   statement: string;
   visibility: SheetVisibility;
   payload: SheetPayload;
+  source: SheetSource;
 }
 
 export interface SheetPatch {

@@ -166,16 +166,26 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 	t.Log("Schema initialized.")
 
+	dmlSheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID: project.ID,
+		Name:      "migration statement sheet",
+		Statement: `
+		DELETE FROM t WHERE id = 1;
+		UPDATE t SET name = 'unknown\nunknown';
+	`,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Run a DML issue.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
-				MigrationType: db.Data,
-				DatabaseID:    database.ID,
-				Statement: `
-					DELETE FROM t WHERE id = 1;
-					UPDATE t SET name = 'unknown\nunknown';
-				`,
+				MigrationType:   db.Data,
+				DatabaseID:      database.ID,
+				SheetID:         dmlSheet.ID,
 				RollbackEnabled: true,
 			},
 		},
@@ -248,7 +258,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 			{
 				MigrationType: db.Data,
 				DatabaseID:    database.ID,
-				Statement:     payload.RollbackStatement,
+				SheetID:       payload.RollbackSheetID,
 				RollbackDetail: &api.RollbackDetail{
 					IssueID: issue.ID,
 					TaskID:  task.ID,
@@ -371,16 +381,26 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 	t.Log("Schema initialized.")
 
+	dmlSheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID: project.ID,
+		Name:      "migration statement sheet",
+		Statement: `
+		DELETE FROM t WHERE id = 1;
+		UPDATE t SET name = 'unknown\nunknown';
+	`,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Run a DML issue with rollbackEnabled set to false.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Data,
 				DatabaseID:    database.ID,
-				Statement: `
-					DELETE FROM t WHERE id = 1;
-					UPDATE t SET name = 'unknown\nunknown';
-				`,
+				SheetID:       dmlSheet.ID,
 				// RollbackEnabled: true,
 			},
 		},
@@ -461,7 +481,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 			{
 				MigrationType: db.Data,
 				DatabaseID:    database.ID,
-				Statement:     payload.RollbackStatement,
+				SheetID:       payload.RollbackSheetID,
 				RollbackDetail: &api.RollbackDetail{
 					IssueID: issue.ID,
 					TaskID:  task.ID,
@@ -584,16 +604,26 @@ func TestRollbackCanceled(t *testing.T) {
 	a.NoError(err)
 	t.Log("Schema initialized.")
 
+	sheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID: project.ID,
+		Name:      "delete statement sheet",
+		Statement: `
+		DELETE FROM t WHERE id = 1;
+		UPDATE t SET name = 'unknown\nunknown';
+	`,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Run a DML issue.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
-				MigrationType: db.Data,
-				DatabaseID:    database.ID,
-				Statement: `
-					DELETE FROM t WHERE id = 1;
-					UPDATE t SET name = 'unknown\nunknown';
-				`,
+				MigrationType:   db.Data,
+				DatabaseID:      database.ID,
+				SheetID:         sheet.ID,
 				RollbackEnabled: true,
 			},
 		},

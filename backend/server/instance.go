@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -18,8 +17,9 @@ import (
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
-	"github.com/bytebase/bytebase/backend/plugin/parser/transform"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -69,20 +69,25 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			ExternalLink: instanceCreate.ExternalLink,
 			DataSources: []*store.DataSourceMessage{
 				{
-					Title:                  api.AdminDataSourceName,
-					Type:                   api.Admin,
-					Username:               instanceCreate.Username,
-					ObfuscatedPassword:     common.Obfuscate(instanceCreate.Password, s.secret),
-					ObfuscatedSslCa:        common.Obfuscate(instanceCreate.SslCa, s.secret),
-					ObfuscatedSslCert:      common.Obfuscate(instanceCreate.SslCert, s.secret),
-					ObfuscatedSslKey:       common.Obfuscate(instanceCreate.SslKey, s.secret),
-					Host:                   instanceCreate.Host,
-					Port:                   instanceCreate.Port,
-					Database:               instanceCreate.Database,
-					SRV:                    instanceCreate.SRV,
-					AuthenticationDatabase: instanceCreate.AuthenticationDatabase,
-					SID:                    instanceCreate.SID,
-					ServiceName:            instanceCreate.ServiceName,
+					Title:                   api.AdminDataSourceName,
+					Type:                    api.Admin,
+					Username:                instanceCreate.Username,
+					ObfuscatedPassword:      common.Obfuscate(instanceCreate.Password, s.secret),
+					ObfuscatedSslCa:         common.Obfuscate(instanceCreate.SslCa, s.secret),
+					ObfuscatedSslCert:       common.Obfuscate(instanceCreate.SslCert, s.secret),
+					ObfuscatedSslKey:        common.Obfuscate(instanceCreate.SslKey, s.secret),
+					Host:                    instanceCreate.Host,
+					Port:                    instanceCreate.Port,
+					Database:                instanceCreate.Database,
+					SRV:                     instanceCreate.SRV,
+					AuthenticationDatabase:  instanceCreate.AuthenticationDatabase,
+					SID:                     instanceCreate.SID,
+					ServiceName:             instanceCreate.ServiceName,
+					SSHHost:                 instanceCreate.SSHHost,
+					SSHPort:                 instanceCreate.SSHPort,
+					SSHUser:                 instanceCreate.SSHUser,
+					SSHObfuscatedPassword:   common.Obfuscate(instanceCreate.SSHPassword, s.secret),
+					SSHObfuscatedPrivateKey: common.Obfuscate(instanceCreate.SSHPrivateKey, s.secret),
 				},
 			},
 		}, creator)
@@ -190,19 +195,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				f := false
 				deletes = &f
 			} else if *patch.RowStatus == string(api.Archived) {
-				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
+				// Transfer databases to the default project automatically.
+				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID})
 				if err != nil {
 					return err
 				}
-				var databaseNameList []string
-				for _, database := range databases {
-					if database.ProjectID != api.DefaultProjectID {
-						databaseNameList = append(databaseNameList, database.DatabaseName)
-					}
-				}
-				if len(databaseNameList) > 0 {
-					return echo.NewHTTPError(http.StatusBadRequest,
-						fmt.Sprintf("You should transfer these databases to the unassigned project before archiving the instance: %s.", strings.Join(databaseNameList, ", ")))
+				if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, api.DefaultProjectID, api.SystemBotID); err != nil {
+					return err
 				}
 				f := true
 				deletes = &f

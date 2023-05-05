@@ -45,6 +45,7 @@ categoryList:
       - watermark
       - audit-log
       - anomaly-detection
+      - disallow-signup
   - type: bespoke
     featureList:
       - support
@@ -58,8 +59,8 @@ planList:
     unitPrice: 0
     trialPrice: 0
     freeSeatCount: -1
-    freeInstanceCount: -1
-    maximumInstanceCount: -1
+    freeInstanceCount: 20
+    maximumInstanceCount: 20
     maximumSeatCount: -1
     pricePerSeatPerMonth: 0
     pricePerInstancePerMonth: 0
@@ -68,7 +69,7 @@ planList:
       - type: user-count
         content: user-unlimited
       - type: instance-count
-        content: instance-unlimited
+        content: instance-maximum-20
       - type: environment-count
         content: environment-unlimited
       - type: state-based-change
@@ -260,6 +261,7 @@ planList:
       - type: database-access-control
       - type: watermark
       - type: audit-log
+      - type: disallow-signup
       # Bespoke
       - type: support
         content: support-sla

@@ -278,7 +278,7 @@ CREATE TABLE project_member (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id_role ON project_member(project_id, principal_id, role);
+CREATE INDEX idx_project_member_project_id ON project_member(project_id);
 
 ALTER SEQUENCE project_member_id_seq RESTART WITH 101;
 
@@ -1069,7 +1069,7 @@ CREATE TABLE sheet (
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
     visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE',
-    source TEXT NOT NULL CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET')) DEFAULT 'BYTEBASE',
+    source TEXT NOT NULL CONSTRAINT sheet_source_check CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET', 'BYTEBASE_ARTIFACT')) DEFAULT 'BYTEBASE',
     type TEXT NOT NULL CHECK (type IN ('SQL')) DEFAULT 'SQL',
     payload JSONB NOT NULL DEFAULT '{}'
 );

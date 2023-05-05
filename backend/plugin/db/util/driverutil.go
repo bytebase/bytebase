@@ -126,16 +126,20 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 	if !readOnly {
 		return queryAdmin(ctx, dbType, conn, statement, limit)
 	}
+
+	statement = strings.TrimRight(statement, " \n\t;")
 	// Limit SQL query result size.
-	if dbType == db.MySQL || dbType == db.MariaDB {
-		// MySQL 5.7 doesn't support WITH clause.
-		statement = getMySQLStatementWithResultLimit(statement, limit)
-	} else if dbType == db.Oracle {
-		statement = getOracleStatementWithResultLimit(statement, limit)
-	} else if dbType == db.MSSQL {
-		statement = getMSSQLStatementWithResultLimit(statement, limit)
-	} else {
-		statement = getStatementWithResultLimit(statement, limit)
+	if !strings.HasPrefix(statement, "EXPLAIN") && limit > 0 {
+		if dbType == db.MySQL || dbType == db.MariaDB {
+			// MySQL 5.7 doesn't support WITH clause.
+			statement = getMySQLStatementWithResultLimit(statement, limit)
+		} else if dbType == db.Oracle {
+			statement = getOracleStatementWithResultLimit(statement, limit)
+		} else if dbType == db.MSSQL {
+			statement = getMSSQLStatementWithResultLimit(statement, limit)
+		} else {
+			statement = getStatementWithResultLimit(statement, limit)
+		}
 	}
 
 	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
@@ -313,52 +317,20 @@ func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, col
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {
-	stmt = strings.TrimRight(stmt, " \n\t;")
-	if !strings.HasPrefix(stmt, "EXPLAIN") {
-		limitPart := ""
-		if limit > 0 {
-			limitPart = fmt.Sprintf(" LIMIT %d", limit)
-		}
-		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", stmt, limitPart)
-	}
-	return stmt
+	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
 
 func getMySQLStatementWithResultLimit(stmt string, limit int) string {
-	stmt = strings.TrimRight(stmt, " \n\t;")
-	if !strings.HasPrefix(stmt, "EXPLAIN") {
-		limitPart := ""
-		if limit > 0 {
-			limitPart = fmt.Sprintf(" LIMIT %d", limit)
-		}
-		return fmt.Sprintf("SELECT * FROM (%s) result%s;", stmt, limitPart)
-	}
-	return stmt
+	return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
 }
 
 func getOracleStatementWithResultLimit(stmt string, limit int) string {
-	stmt = strings.TrimRight(stmt, " \n\t;")
-	if !strings.HasPrefix(stmt, "EXPLAIN") {
-		limitPart := ""
-		if limit > 0 {
-			limitPart = fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", limit)
-		}
-		return fmt.Sprintf("%s%s", stmt, limitPart)
-	}
-	return stmt
+	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit)
 }
 
 func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
 	// TODO(d): support SELECT 1 (mssql: No column name was specified for column 1 of 'result').
-	stmt = strings.TrimRight(stmt, " \n\t;")
-	if !strings.HasPrefix(stmt, "EXPLAIN") {
-		limitPart := ""
-		if limit > 0 {
-			limitPart = fmt.Sprintf(" TOP %d", limit)
-		}
-		return fmt.Sprintf("WITH result AS (%s) SELECT%s * FROM result;", stmt, limitPart)
-	}
-	return stmt
+	return fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, limit)
 }
 
 // FindMigrationHistoryList will find the list of migration history.

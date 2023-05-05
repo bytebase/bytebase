@@ -12,7 +12,8 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 )
@@ -119,13 +120,23 @@ DROP SCHEMA "schema_a";
 	database := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
+	sheet, err := ctl.createSheet(api.SheetCreate{
+		ProjectID:  project.ID,
+		Name:       "create schema",
+		Statement:  createSchema,
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebaseArtifact,
+		Type:       api.SheetForSQL,
+	})
+	a.NoError(err)
+
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    database.ID,
-				Statement:     createSchema,
+				SheetID:       sheet.ID,
 			},
 		},
 	})

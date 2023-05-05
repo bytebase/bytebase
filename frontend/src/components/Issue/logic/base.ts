@@ -1,5 +1,6 @@
 import { computed, Ref } from "vue";
-import { isEmpty, isUndefined } from "lodash-es";
+import { v4 as uuidv4 } from "uuid";
+import { isEmpty } from "lodash-es";
 import {
   Issue,
   IssueCreate,
@@ -10,6 +11,7 @@ import {
   Task,
   TaskCreate,
   TaskStatus,
+  UNKNOWN_ID,
 } from "@/types";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -19,16 +21,17 @@ import {
   indexFromSlug,
   issueSlug,
   maybeSetSheetBacktracePayloadByIssue,
+  sheetIdOfTask,
   stageSlug,
   taskSlug,
 } from "@/utils";
-import { useDatabaseStore, useIssueStore, useProjectStore } from "@/store";
 import {
-  flattenTaskList,
-  statementOfTask,
-  TaskTypeWithSheetId,
-  TaskTypeWithStatement,
-} from "./common";
+  useDatabaseStore,
+  useIssueStore,
+  useProjectStore,
+  useSheetStore,
+} from "@/store";
+import { flattenTaskList, TaskTypeWithStatement } from "./common";
 import { maybeCreateBackTraceComments } from "../rollback/common";
 
 export const useBaseIssueLogic = (params: {
@@ -41,6 +44,7 @@ export const useBaseIssueLogic = (params: {
   const issueStore = useIssueStore();
   const projectStore = useProjectStore();
   const databaseStore = useDatabaseStore();
+  const sheetStore = useSheetStore();
 
   const project = computed((): Project => {
     if (create.value) {
@@ -172,6 +176,8 @@ export const useBaseIssueLogic = (params: {
   });
 
   const isTenantMode = computed((): boolean => {
+    // To sync databases schema in tenant mode, we use normal project logic to create issue.
+    if (create.value && route.query.mode !== "tenant") return false;
     if (project.value.tenantMode !== "TENANT") return false;
 
     // We support single database migration in tenant mode projects.
@@ -207,7 +213,11 @@ export const useBaseIssueLogic = (params: {
 
     for (const task of stage.taskList) {
       if (TaskTypeWithStatement.includes(task.type)) {
-        if (isEmpty((task as TaskCreate).statement)) {
+        if (
+          isEmpty((task as TaskCreate).statement) &&
+          ((task as TaskCreate).sheetId === undefined ||
+            (task as TaskCreate).sheetId === UNKNOWN_ID)
+        ) {
           return false;
         }
       }
@@ -218,11 +228,16 @@ export const useBaseIssueLogic = (params: {
   const selectedStatement = computed((): string => {
     const task = selectedTask.value;
     if (create.value) {
+      const taskCreate = task as TaskCreate;
+      if (taskCreate.sheetId && taskCreate.sheetId !== UNKNOWN_ID) {
+        return sheetStore.getSheetById(taskCreate.sheetId)?.statement || "";
+      }
       return (task as TaskCreate).statement;
     }
-
-    // Extract statement from different types of payloads
-    return statementOfTask(task as Task) || "";
+    return (
+      sheetStore.getSheetById(sheetIdOfTask(task as Task) || UNKNOWN_ID)
+        ?.statement || ""
+    );
   });
 
   const allowApplyTaskStateToOthers = computed(() => {
@@ -231,10 +246,8 @@ export const useBaseIssueLogic = (params: {
     }
     const taskList = flattenTaskList<TaskCreate>(issue.value);
     // Allowed when more than one tasks need SQL statement or sheet.
-    const count = taskList.filter(
-      (task) =>
-        TaskTypeWithStatement.includes(task.type) ||
-        TaskTypeWithSheetId.includes(task.type)
+    const count = taskList.filter((task) =>
+      TaskTypeWithStatement.includes(task.type)
     ).length;
 
     return count > 1;
@@ -256,19 +269,35 @@ export const useBaseIssueLogic = (params: {
     return true;
   };
 
-  const applyTaskStateToOthers = (task: TaskCreate) => {
+  const applyTaskStateToOthers = async (task: TaskCreate) => {
     const taskList = flattenTaskList<TaskCreate>(issue.value);
     const sheetId = task.sheetId;
     const statement = task.statement;
+    let sheet = undefined;
+    if (sheetId && sheetId !== UNKNOWN_ID) {
+      sheet = await sheetStore.getOrFetchSheetById(sheetId);
+    }
 
     for (const taskItem of taskList) {
       if (TaskTypeWithStatement.includes(taskItem.type)) {
-        if (!isUndefined(sheetId)) {
-          taskItem.sheetId = sheetId;
+        if (sheet) {
+          if (sheet.statement.length < sheet.size) {
+            taskItem.sheetId = sheetId;
+          } else {
+            const newSheet = await sheetStore.createSheet({
+              projectId: project.value.id,
+              databaseId: taskItem.databaseId,
+              name: uuidv4(),
+              statement,
+              visibility: "PROJECT",
+              source: "BYTEBASE_ARTIFACT",
+              payload: {},
+            });
+            taskItem.sheetId = newSheet.id;
+          }
           taskItem.statement = "";
         } else {
-          taskItem.sheetId = undefined;
-          taskItem.statement = statement ?? "";
+          taskItem.statement = statement;
         }
       }
     }
