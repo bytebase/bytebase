@@ -3,6 +3,7 @@ package oauth2
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,6 +19,7 @@ import (
 
 // IdentityProvider represents an OAuth2 Identity Provider.
 type IdentityProvider struct {
+	client *http.Client
 	config *storepb.OAuth2IdentityProviderConfig
 }
 
@@ -36,6 +38,13 @@ func NewIdentityProvider(config *storepb.OAuth2IdentityProviderConfig) (*Identit
 	}
 
 	return &IdentityProvider{
+		client: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: config.SkipTlsVerify,
+				},
+			},
+		},
 		config: config,
 	}, nil
 }
@@ -54,6 +63,7 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 		},
 	}
 
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
 	token, err := conf.Exchange(ctx, code)
 	if err != nil {
 		log.Error("Failed to exchange access token", zap.String("code", code), zap.Error(err))
@@ -71,14 +81,13 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 
 // UserInfo returns the parsed user information using the given OAuth2 token.
 func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUserInfo, error) {
-	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, p.config.UserInfoUrl, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to new http request")
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	resp, err := client.Do(req)
+	resp, err := p.client.Do(req)
 	if err != nil {
 		log.Error("Failed to get user information", zap.String("token", token), zap.Error(err))
 		return nil, errors.Wrap(err, "failed to get user information")

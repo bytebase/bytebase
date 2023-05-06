@@ -785,6 +785,7 @@ OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider confi
 | client_secret | [string](#string) |  |  |
 | scopes | [string](#string) | repeated |  |
 | field_mapping | [FieldMapping](#bytebase-store-FieldMapping) |  |  |
+| skip_tls_verify | [bool](#bool) |  |  |
 
 
 
@@ -803,6 +804,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
 | field_mapping | [FieldMapping](#bytebase-store-FieldMapping) |  |  |
+| skip_tls_verify | [bool](#bool) |  |  |
 
 
 

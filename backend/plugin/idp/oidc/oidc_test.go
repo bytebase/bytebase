@@ -84,7 +84,7 @@ func TestNewIdentityProvider(t *testing.T) {
 	}
 }
 
-func newMockServer(t *testing.T, clientID, code, accessToken, nonce string, userinfo []byte) *httptest.Server {
+func newMockServer(t *testing.T, tls bool, clientID, code, accessToken, nonce string, userinfo []byte) *httptest.Server {
 	mux := http.NewServeMux()
 
 	var openidConfig map[string]any
@@ -143,7 +143,12 @@ func newMockServer(t *testing.T, clientID, code, accessToken, nonce string, user
 		require.NoError(t, err)
 	})
 
-	s := httptest.NewServer(mux)
+	var s *httptest.Server
+	if tls {
+		s = httptest.NewTLSServer(mux)
+	} else {
+		s = httptest.NewServer(mux)
+	}
 
 	openidConfig = map[string]any{
 		"issuer":                                s.URL,
@@ -191,7 +196,7 @@ func TestIdentityProvider(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	s := newMockServer(t, testClientID, testCode, testAccessToken, testNonce, userinfo)
+	s := newMockServer(t, false, testClientID, testCode, testAccessToken, testNonce, userinfo)
 	oidc, err := NewIdentityProvider(
 		ctx,
 		IdentityProviderConfig{
@@ -220,4 +225,77 @@ func TestIdentityProvider(t *testing.T) {
 		Email:       testEmail,
 	}
 	assert.Equal(t, wantUserInfo, userInfo)
+}
+
+func TestIdentityProvider_SelfSigned(t *testing.T) {
+	ctx := context.Background()
+
+	const (
+		testClientID    = "test-client-id"
+		testNonce       = "test-nonce"
+		testCode        = "test-code"
+		testAccessToken = "test-access-token"
+		testSubject     = "123456789"
+		testName        = "John Doe"
+		testEmail       = "john.doe@example.com"
+	)
+	userinfo, err := json.Marshal(
+		map[string]any{
+			"sub":   testSubject,
+			"name":  testName,
+			"email": testEmail,
+		},
+	)
+	require.NoError(t, err)
+
+	t.Run("verify TLS", func(t *testing.T) {
+		s := newMockServer(t, true, testClientID, testCode, testAccessToken, testNonce, userinfo)
+		_, err := NewIdentityProvider(
+			ctx,
+			IdentityProviderConfig{
+				Issuer:       s.URL,
+				ClientID:     testClientID,
+				ClientSecret: "test-client-secret",
+				FieldMapping: &storepb.FieldMapping{
+					Identifier:  "sub",
+					DisplayName: "name",
+					Email:       "email",
+				},
+			},
+		)
+		assert.ErrorContains(t, err, "x509: certificate signed by unknown authority")
+	})
+
+	t.Run("skip TLS verify", func(t *testing.T) {
+		s := newMockServer(t, true, testClientID, testCode, testAccessToken, testNonce, userinfo)
+		oidc, err := NewIdentityProvider(
+			ctx,
+			IdentityProviderConfig{
+				Issuer:       s.URL,
+				ClientID:     testClientID,
+				ClientSecret: "test-client-secret",
+				FieldMapping: &storepb.FieldMapping{
+					Identifier:  "sub",
+					DisplayName: "name",
+					Email:       "email",
+				},
+				SkipTLSVerify: true,
+			},
+		)
+		require.NoError(t, err)
+
+		oauthToken, err := oidc.ExchangeToken(ctx, "https://example.com/oidc/callback", testCode)
+		require.NoError(t, err)
+		require.Equal(t, testAccessToken, oauthToken.AccessToken)
+
+		userInfo, err := oidc.UserInfo(ctx, oauthToken, testNonce)
+		require.NoError(t, err)
+
+		wantUserInfo := &storepb.IdentityProviderUserInfo{
+			Identifier:  testSubject,
+			DisplayName: testName,
+			Email:       testEmail,
+		}
+		assert.Equal(t, wantUserInfo, userInfo)
+	})
 }

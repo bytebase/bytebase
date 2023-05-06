@@ -252,12 +252,15 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
 		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config)
-		oidcIdentityProvider, err := oidc.NewIdentityProvider(ctx, oidc.IdentityProviderConfig{
-			Issuer:       identityProviderConfig.GetOidcConfig().Issuer,
-			ClientID:     identityProviderConfig.GetOidcConfig().ClientId,
-			ClientSecret: identityProviderConfig.GetOidcConfig().ClientSecret,
-			FieldMapping: identityProviderConfig.GetOidcConfig().FieldMapping,
-		})
+		oidcIdentityProvider, err := oidc.NewIdentityProvider(
+			ctx,
+			oidc.IdentityProviderConfig{
+				Issuer:        identityProviderConfig.GetOidcConfig().Issuer,
+				ClientID:      identityProviderConfig.GetOidcConfig().ClientId,
+				ClientSecret:  identityProviderConfig.GetOidcConfig().ClientSecret,
+				FieldMapping:  identityProviderConfig.GetOidcConfig().FieldMapping,
+				SkipTLSVerify: identityProviderConfig.GetOidcConfig().SkipTlsVerify,
+			})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
 		}
@@ -319,13 +322,14 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 		return &v1pb.IdentityProviderConfig{
 			Config: &v1pb.IdentityProviderConfig_Oauth2Config{
 				Oauth2Config: &v1pb.OAuth2IdentityProviderConfig{
-					AuthUrl:      v.AuthUrl,
-					TokenUrl:     v.TokenUrl,
-					UserInfoUrl:  v.UserInfoUrl,
-					ClientId:     v.ClientId,
-					ClientSecret: "", // SECURITY: We do not expose the client secret
-					Scopes:       v.Scopes,
-					FieldMapping: &fieldMapping,
+					AuthUrl:       v.AuthUrl,
+					TokenUrl:      v.TokenUrl,
+					UserInfoUrl:   v.UserInfoUrl,
+					ClientId:      v.ClientId,
+					ClientSecret:  "", // SECURITY: We do not expose the client secret
+					Scopes:        v.Scopes,
+					FieldMapping:  &fieldMapping,
+					SkipTlsVerify: v.SkipTlsVerify,
 				},
 			},
 		}
@@ -338,11 +342,12 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 		return &v1pb.IdentityProviderConfig{
 			Config: &v1pb.IdentityProviderConfig_OidcConfig{
 				OidcConfig: &v1pb.OIDCIdentityProviderConfig{
-					Issuer:       v.Issuer,
-					ClientId:     v.ClientId,
-					ClientSecret: "", // SECURITY: We do not expose the client secret
-					Scopes:       oidc.DefaultScopes,
-					FieldMapping: &fieldMapping,
+					Issuer:        v.Issuer,
+					ClientId:      v.ClientId,
+					ClientSecret:  "", // SECURITY: We do not expose the client secret
+					Scopes:        oidc.DefaultScopes,
+					FieldMapping:  &fieldMapping,
+					SkipTlsVerify: v.SkipTlsVerify,
 				},
 			},
 		}
@@ -360,13 +365,14 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_Oauth2Config{
 				Oauth2Config: &storepb.OAuth2IdentityProviderConfig{
-					AuthUrl:      v.AuthUrl,
-					TokenUrl:     v.TokenUrl,
-					UserInfoUrl:  v.UserInfoUrl,
-					ClientId:     v.ClientId,
-					ClientSecret: v.ClientSecret,
-					Scopes:       v.Scopes,
-					FieldMapping: &fieldMapping,
+					AuthUrl:       v.AuthUrl,
+					TokenUrl:      v.TokenUrl,
+					UserInfoUrl:   v.UserInfoUrl,
+					ClientId:      v.ClientId,
+					ClientSecret:  v.ClientSecret,
+					Scopes:        v.Scopes,
+					FieldMapping:  &fieldMapping,
+					SkipTlsVerify: v.SkipTlsVerify,
 				},
 			},
 		}
@@ -379,10 +385,11 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_OidcConfig{
 				OidcConfig: &storepb.OIDCIdentityProviderConfig{
-					Issuer:       v.Issuer,
-					ClientId:     v.ClientId,
-					ClientSecret: v.ClientSecret,
-					FieldMapping: &fieldMapping,
+					Issuer:        v.Issuer,
+					ClientId:      v.ClientId,
+					ClientSecret:  v.ClientSecret,
+					FieldMapping:  &fieldMapping,
+					SkipTlsVerify: v.SkipTlsVerify,
 				},
 			},
 		}
