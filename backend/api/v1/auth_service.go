@@ -2,11 +2,9 @@ package v1
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/mail"
 	"strings"
 
@@ -651,16 +649,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if oauth2Context == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
-		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(
-			&http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: true, // TODO: Read from config
-					},
-				},
-			},
-			idp.Config.GetOauth2Config(),
-		)
+		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(idp.Config.GetOauth2Config())
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OAuth2 identity provider: %v", err)
 		}
@@ -682,18 +671,12 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 
 		oidcIDP, err := oidc.NewIdentityProvider(
 			ctx,
-			&http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: true, // TODO: Read from config
-					},
-				},
-			},
 			oidc.IdentityProviderConfig{
-				Issuer:       idp.Config.GetOidcConfig().Issuer,
-				ClientID:     idp.Config.GetOidcConfig().ClientId,
-				ClientSecret: idp.Config.GetOidcConfig().ClientSecret,
-				FieldMapping: idp.Config.GetOidcConfig().FieldMapping,
+				Issuer:        idp.Config.GetOidcConfig().Issuer,
+				ClientID:      idp.Config.GetOidcConfig().ClientId,
+				ClientSecret:  idp.Config.GetOidcConfig().ClientSecret,
+				FieldMapping:  idp.Config.GetOidcConfig().FieldMapping,
+				SkipTLSVerify: idp.Config.GetOidcConfig().SkipTlsVerify,
 			},
 		)
 		if err != nil {

@@ -3,6 +3,7 @@ package oauth2
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,11 +24,7 @@ type IdentityProvider struct {
 }
 
 // NewIdentityProvider initializes a new OAuth2 Identity Provider with the given configuration.
-func NewIdentityProvider(client *http.Client, config *storepb.OAuth2IdentityProviderConfig) (*IdentityProvider, error) {
-	if client == nil {
-		return nil, errors.New("client is required")
-	}
-
+func NewIdentityProvider(config *storepb.OAuth2IdentityProviderConfig) (*IdentityProvider, error) {
 	for v, field := range map[string]string{
 		config.ClientId:                "clientId",
 		config.ClientSecret:            "clientSecret",
@@ -41,7 +38,13 @@ func NewIdentityProvider(client *http.Client, config *storepb.OAuth2IdentityProv
 	}
 
 	return &IdentityProvider{
-		client: client,
+		client: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: config.SkipTlsVerify,
+				},
+			},
+		},
 		config: config,
 	}, nil
 }

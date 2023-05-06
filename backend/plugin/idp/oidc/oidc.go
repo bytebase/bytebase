@@ -3,6 +3,7 @@ package oidc
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 
 	"github.com/coreos/go-oidc"
@@ -24,19 +25,16 @@ type IdentityProvider struct {
 // IdentityProviderConfig is the configuration to be consumed by the OIDC
 // Identity Provider.
 type IdentityProviderConfig struct {
-	Issuer       string                `json:"issuer"`
-	ClientID     string                `json:"clientId"`
-	ClientSecret string                `json:"clientSecret"`
-	FieldMapping *storepb.FieldMapping `json:"fieldMapping"`
+	Issuer        string                `json:"issuer"`
+	ClientID      string                `json:"clientId"`
+	ClientSecret  string                `json:"clientSecret"`
+	FieldMapping  *storepb.FieldMapping `json:"fieldMapping"`
+	SkipTLSVerify bool                  `json:"skipTlsVerify"`
 }
 
 // NewIdentityProvider initializes a new OIDC Identity Provider with the given
 // configuration.
-func NewIdentityProvider(ctx context.Context, client *http.Client, config IdentityProviderConfig) (*IdentityProvider, error) {
-	if client == nil {
-		return nil, errors.New("client is required")
-	}
-
+func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*IdentityProvider, error) {
 	for v, field := range map[string]string{
 		config.Issuer:                  "issuer",
 		config.ClientID:                "clientId",
@@ -48,6 +46,13 @@ func NewIdentityProvider(ctx context.Context, client *http.Client, config Identi
 		}
 	}
 
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: config.SkipTLSVerify,
+			},
+		},
+	}
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
 	p, err := oidc.NewProvider(ctx, config.Issuer)
 	if err != nil {

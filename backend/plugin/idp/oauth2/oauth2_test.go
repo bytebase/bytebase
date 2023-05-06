@@ -2,7 +2,6 @@ package oauth2
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -68,7 +67,7 @@ func TestNewIdentityProvider(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewIdentityProvider(http.DefaultClient, test.config)
+			_, err := NewIdentityProvider(test.config)
 			assert.ErrorContains(t, err, test.containsErr)
 		})
 	}
@@ -138,7 +137,6 @@ func TestIdentityProvider(t *testing.T) {
 	s := newMockServer(t, false, testCode, testAccessToken, userInfo)
 
 	oauth2, err := NewIdentityProvider(
-		http.DefaultClient,
 		&storepb.OAuth2IdentityProviderConfig{
 			ClientId:     testClientID,
 			ClientSecret: "test-client-secret",
@@ -192,7 +190,6 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 	t.Run("verify TLS", func(t *testing.T) {
 		s := newMockServer(t, true, testCode, testAccessToken, userInfo)
 		oauth2, err := NewIdentityProvider(
-			http.DefaultClient,
 			&storepb.OAuth2IdentityProviderConfig{
 				ClientId:     testClientID,
 				ClientSecret: "test-client-secret",
@@ -215,13 +212,6 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 	t.Run("skip TLS verify", func(t *testing.T) {
 		s := newMockServer(t, true, testCode, testAccessToken, userInfo)
 		oauth2, err := NewIdentityProvider(
-			&http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: true,
-					},
-				},
-			},
 			&storepb.OAuth2IdentityProviderConfig{
 				ClientId:     testClientID,
 				ClientSecret: "test-client-secret",
@@ -232,6 +222,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 					DisplayName: "name",
 					Email:       "email",
 				},
+				SkipTlsVerify: true,
 			},
 		)
 		require.NoError(t, err)

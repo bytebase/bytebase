@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/tls"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -79,7 +78,7 @@ func TestNewIdentityProvider(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewIdentityProvider(ctx, http.DefaultClient, test.config)
+			_, err := NewIdentityProvider(ctx, test.config)
 			assert.ErrorContains(t, err, test.containsErr)
 		})
 	}
@@ -200,7 +199,6 @@ func TestIdentityProvider(t *testing.T) {
 	s := newMockServer(t, false, testClientID, testCode, testAccessToken, testNonce, userinfo)
 	oidc, err := NewIdentityProvider(
 		ctx,
-		http.DefaultClient,
 		IdentityProviderConfig{
 			Issuer:       s.URL,
 			ClientID:     testClientID,
@@ -254,7 +252,6 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 		s := newMockServer(t, true, testClientID, testCode, testAccessToken, testNonce, userinfo)
 		_, err := NewIdentityProvider(
 			ctx,
-			http.DefaultClient,
 			IdentityProviderConfig{
 				Issuer:       s.URL,
 				ClientID:     testClientID,
@@ -273,13 +270,6 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 		s := newMockServer(t, true, testClientID, testCode, testAccessToken, testNonce, userinfo)
 		oidc, err := NewIdentityProvider(
 			ctx,
-			&http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: true,
-					},
-				},
-			},
 			IdentityProviderConfig{
 				Issuer:       s.URL,
 				ClientID:     testClientID,
@@ -289,6 +279,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 					DisplayName: "name",
 					Email:       "email",
 				},
+				SkipTLSVerify: true,
 			},
 		)
 		require.NoError(t, err)

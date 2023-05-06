@@ -2,9 +2,7 @@ package v1
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -224,16 +222,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
 		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config)
-		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(
-			&http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: true, // TODO: Read from config
-					},
-				},
-			},
-			identityProviderConfig.GetOauth2Config(),
-		)
+		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(identityProviderConfig.GetOauth2Config())
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to new oauth2 identity provider")
 		}
@@ -265,18 +254,12 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config)
 		oidcIdentityProvider, err := oidc.NewIdentityProvider(
 			ctx,
-			&http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: true, // TODO: Read from config
-					},
-				},
-			},
 			oidc.IdentityProviderConfig{
-				Issuer:       identityProviderConfig.GetOidcConfig().Issuer,
-				ClientID:     identityProviderConfig.GetOidcConfig().ClientId,
-				ClientSecret: identityProviderConfig.GetOidcConfig().ClientSecret,
-				FieldMapping: identityProviderConfig.GetOidcConfig().FieldMapping,
+				Issuer:        identityProviderConfig.GetOidcConfig().Issuer,
+				ClientID:      identityProviderConfig.GetOidcConfig().ClientId,
+				ClientSecret:  identityProviderConfig.GetOidcConfig().ClientSecret,
+				FieldMapping:  identityProviderConfig.GetOidcConfig().FieldMapping,
+				SkipTLSVerify: identityProviderConfig.GetOidcConfig().SkipTlsVerify,
 			})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create new OIDC identity provider: %v", err)
