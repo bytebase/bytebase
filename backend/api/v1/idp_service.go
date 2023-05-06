@@ -322,13 +322,14 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 		return &v1pb.IdentityProviderConfig{
 			Config: &v1pb.IdentityProviderConfig_Oauth2Config{
 				Oauth2Config: &v1pb.OAuth2IdentityProviderConfig{
-					AuthUrl:      v.AuthUrl,
-					TokenUrl:     v.TokenUrl,
-					UserInfoUrl:  v.UserInfoUrl,
-					ClientId:     v.ClientId,
-					ClientSecret: "", // SECURITY: We do not expose the client secret
-					Scopes:       v.Scopes,
-					FieldMapping: &fieldMapping,
+					AuthUrl:       v.AuthUrl,
+					TokenUrl:      v.TokenUrl,
+					UserInfoUrl:   v.UserInfoUrl,
+					ClientId:      v.ClientId,
+					ClientSecret:  "", // SECURITY: We do not expose the client secret
+					Scopes:        v.Scopes,
+					FieldMapping:  &fieldMapping,
+					SkipTlsVerify: v.SkipTlsVerify,
 				},
 			},
 		}
@@ -341,11 +342,12 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 		return &v1pb.IdentityProviderConfig{
 			Config: &v1pb.IdentityProviderConfig_OidcConfig{
 				OidcConfig: &v1pb.OIDCIdentityProviderConfig{
-					Issuer:       v.Issuer,
-					ClientId:     v.ClientId,
-					ClientSecret: "", // SECURITY: We do not expose the client secret
-					Scopes:       oidc.DefaultScopes,
-					FieldMapping: &fieldMapping,
+					Issuer:        v.Issuer,
+					ClientId:      v.ClientId,
+					ClientSecret:  "", // SECURITY: We do not expose the client secret
+					Scopes:        oidc.DefaultScopes,
+					FieldMapping:  &fieldMapping,
+					SkipTlsVerify: v.SkipTlsVerify,
 				},
 			},
 		}
@@ -363,13 +365,14 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_Oauth2Config{
 				Oauth2Config: &storepb.OAuth2IdentityProviderConfig{
-					AuthUrl:      v.AuthUrl,
-					TokenUrl:     v.TokenUrl,
-					UserInfoUrl:  v.UserInfoUrl,
-					ClientId:     v.ClientId,
-					ClientSecret: v.ClientSecret,
-					Scopes:       v.Scopes,
-					FieldMapping: &fieldMapping,
+					AuthUrl:       v.AuthUrl,
+					TokenUrl:      v.TokenUrl,
+					UserInfoUrl:   v.UserInfoUrl,
+					ClientId:      v.ClientId,
+					ClientSecret:  v.ClientSecret,
+					Scopes:        v.Scopes,
+					FieldMapping:  &fieldMapping,
+					SkipTlsVerify: v.SkipTlsVerify,
 				},
 			},
 		}
@@ -382,10 +385,11 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_OidcConfig{
 				OidcConfig: &storepb.OIDCIdentityProviderConfig{
-					Issuer:       v.Issuer,
-					ClientId:     v.ClientId,
-					ClientSecret: v.ClientSecret,
-					FieldMapping: &fieldMapping,
+					Issuer:        v.Issuer,
+					ClientId:      v.ClientId,
+					ClientSecret:  v.ClientSecret,
+					FieldMapping:  &fieldMapping,
+					SkipTlsVerify: v.SkipTlsVerify,
 				},
 			},
 		}

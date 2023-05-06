@@ -245,11 +245,15 @@
           {{ $t("settings.sso.form.connection-security") }}
         </p>
         <p class="textinfolabel mt-1">
-          <SpinnerSwitch
-            :value="configForOAuth2.skipTlsVerify"
+          <BBCheckbox
+            :title="$t('settings.sso.form.connection-security-skip-tls-verify')"
+            :v-model="configForOAuth2.skipTlsVerify"
             :disabled="!allowEdit"
+            @toggle="
+              () =>
+                (configForOAuth2.skipTlsVerify = !configForOAuth2.skipTlsVerify)
+            "
           />
-          {{ $t("settings.sso.form.connection-security-skip-tls-verify") }}
         </p>
       </div>
 
@@ -413,11 +417,14 @@
           {{ $t("settings.sso.form.connection-security") }}
         </p>
         <p class="textinfolabel mt-1">
-          <SpinnerSwitch
+          <BBCheckbox
+            :title="$t('settings.sso.form.connection-security-skip-tls-verify')"
             :value="configForOIDC.skipTlsVerify"
             :disabled="!allowEdit"
+            @toggle="
+              () => (configForOIDC.skipTlsVerify = !configForOIDC.skipTlsVerify)
+            "
           />
-          {{ $t("settings.sso.form.connection-security-skip-tls-verify") }}
         </p>
       </div>
 
