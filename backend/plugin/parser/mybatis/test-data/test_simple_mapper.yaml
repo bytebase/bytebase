@@ -31,8 +31,8 @@
     </mapper>
   sql: |
     select * from users where id = ?;
-    insert into users (id, name) values (? , ? );
-    update users set name = ?  where id = ?;
+    insert into users (id, name) values (?, ?);
+    update users set name = ? where id = ?;
     delete from users where id = ?;
 - xml: |-
     <mapper namespace="com.bytebase.test">

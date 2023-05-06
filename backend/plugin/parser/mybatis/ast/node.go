@@ -11,6 +11,8 @@ type Node interface {
 	RestoreSQL(ctx *RestoreContext, w io.Writer) error
 	// AddChild adds a child to the node.
 	AddChild(child Node)
+	// isChildAcceptable checks whether the child is acceptable.
+	isChildAcceptable(child Node) bool
 }
 
 // RestoreContext is the context for restoring SQL statement.
@@ -48,8 +50,14 @@ func (n *RootNode) AddChild(child Node) {
 	n.Children = append(n.Children, child)
 }
 
+// isChildAcceptable implements Node interface.
+func (*RootNode) isChildAcceptable(Node) bool {
+	return true
+}
+
 // EmptyNode represents an unacceptable nodes in mybatis mapper xml.
-type EmptyNode struct{}
+type EmptyNode struct {
+}
 
 // NewEmptyNode returns a new empty node.
 func NewEmptyNode() *EmptyNode {
@@ -63,4 +71,9 @@ func (*EmptyNode) RestoreSQL(*RestoreContext, io.Writer) error {
 
 // AddChild implements Node interface.
 func (*EmptyNode) AddChild(Node) {
+}
+
+// isChildAcceptable implements Node interface.
+func (*EmptyNode) isChildAcceptable(Node) bool {
+	return false
 }
