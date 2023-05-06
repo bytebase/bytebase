@@ -71,6 +71,11 @@ func TestColumnType(t *testing.T) {
 
 func TestColumnOption(t *testing.T) {
 	tests := []testCase{
+		{
+			old:  `CREATE TABLE book(id INT COLUMN_FORMAT FIXED, PRIMARY KEY(id));`,
+			new:  `CREATE TABLE book(id INT COLUMN_FORMAT DYNAMIC, PRIMARY KEY(id));`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `id` INT COLUMN_FORMAT DYNAMIC;\n\n",
+		},
 		// NULL option not match.
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL);`,
