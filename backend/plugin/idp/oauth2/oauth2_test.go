@@ -73,7 +73,7 @@ func TestNewIdentityProvider(t *testing.T) {
 	}
 }
 
-func newMockServer(t *testing.T, code, accessToken string, userinfo []byte) *httptest.Server {
+func newMockServer(t *testing.T, tls bool, code, accessToken string, userinfo []byte) *httptest.Server {
 	mux := http.NewServeMux()
 
 	var rawIDToken string
@@ -104,7 +104,12 @@ func newMockServer(t *testing.T, code, accessToken string, userinfo []byte) *htt
 		require.NoError(t, err)
 	})
 
-	s := httptest.NewServer(mux)
+	var s *httptest.Server
+	if tls {
+		s = httptest.NewTLSServer(mux)
+	} else {
+		s = httptest.NewServer(mux)
+	}
 
 	return s
 }
@@ -129,7 +134,7 @@ func TestIdentityProvider(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	s := newMockServer(t, testCode, testAccessToken, userInfo)
+	s := newMockServer(t, false, testCode, testAccessToken, userInfo)
 
 	oauth2, err := NewIdentityProvider(
 		&storepb.OAuth2IdentityProviderConfig{
@@ -160,4 +165,81 @@ func TestIdentityProvider(t *testing.T) {
 		Email:       testEmail,
 	}
 	assert.Equal(t, wantUserInfo, userInfoResult)
+}
+
+func TestIdentityProvider_SelfSigned(t *testing.T) {
+	ctx := context.Background()
+
+	const (
+		testClientID    = "test-client-id"
+		testCode        = "test-code"
+		testAccessToken = "test-access-token"
+		testSubject     = "123456789"
+		testName        = "John Doe"
+		testEmail       = "john.doe@example.com"
+	)
+	userInfo, err := json.Marshal(
+		map[string]any{
+			"sub":   testSubject,
+			"name":  testName,
+			"email": testEmail,
+		},
+	)
+	require.NoError(t, err)
+
+	t.Run("verify TLS", func(t *testing.T) {
+		s := newMockServer(t, true, testCode, testAccessToken, userInfo)
+		oauth2, err := NewIdentityProvider(
+			&storepb.OAuth2IdentityProviderConfig{
+				ClientId:     testClientID,
+				ClientSecret: "test-client-secret",
+				TokenUrl:     fmt.Sprintf("%s/oauth2/token", s.URL),
+				UserInfoUrl:  fmt.Sprintf("%s/oauth2/userinfo", s.URL),
+				FieldMapping: &storepb.FieldMapping{
+					Identifier:  "sub",
+					DisplayName: "name",
+					Email:       "email",
+				},
+			},
+		)
+		require.NoError(t, err)
+
+		redirectURL := "https://example.com/oauth/callback"
+		_, err = oauth2.ExchangeToken(ctx, redirectURL, testCode)
+		assert.ErrorContains(t, err, "x509: certificate signed by unknown authority")
+	})
+
+	t.Run("skip TLS verify", func(t *testing.T) {
+		s := newMockServer(t, true, testCode, testAccessToken, userInfo)
+		oauth2, err := NewIdentityProvider(
+			&storepb.OAuth2IdentityProviderConfig{
+				ClientId:     testClientID,
+				ClientSecret: "test-client-secret",
+				TokenUrl:     fmt.Sprintf("%s/oauth2/token", s.URL),
+				UserInfoUrl:  fmt.Sprintf("%s/oauth2/userinfo", s.URL),
+				FieldMapping: &storepb.FieldMapping{
+					Identifier:  "sub",
+					DisplayName: "name",
+					Email:       "email",
+				},
+				SkipTlsVerify: true,
+			},
+		)
+		require.NoError(t, err)
+
+		redirectURL := "https://example.com/oauth/callback"
+		oauthToken, err := oauth2.ExchangeToken(ctx, redirectURL, testCode)
+		require.NoError(t, err)
+		require.Equal(t, testAccessToken, oauthToken)
+
+		userInfoResult, err := oauth2.UserInfo(oauthToken)
+		require.NoError(t, err)
+
+		wantUserInfo := &storepb.IdentityProviderUserInfo{
+			Identifier:  testSubject,
+			DisplayName: testName,
+			Email:       testEmail,
+		}
+		assert.Equal(t, wantUserInfo, userInfoResult)
+	})
 }

@@ -3,6 +3,8 @@ package oidc
 
 import (
 	"context"
+	"crypto/tls"
+	"net/http"
 
 	"github.com/coreos/go-oidc"
 	"github.com/pkg/errors"
@@ -15,6 +17,7 @@ import (
 
 // IdentityProvider represents an OIDC Identity Provider.
 type IdentityProvider struct {
+	client   *http.Client
 	provider *oidc.Provider
 	config   IdentityProviderConfig
 }
@@ -22,10 +25,11 @@ type IdentityProvider struct {
 // IdentityProviderConfig is the configuration to be consumed by the OIDC
 // Identity Provider.
 type IdentityProviderConfig struct {
-	Issuer       string                `json:"issuer"`
-	ClientID     string                `json:"clientId"`
-	ClientSecret string                `json:"clientSecret"`
-	FieldMapping *storepb.FieldMapping `json:"fieldMapping"`
+	Issuer        string                `json:"issuer"`
+	ClientID      string                `json:"clientId"`
+	ClientSecret  string                `json:"clientSecret"`
+	FieldMapping  *storepb.FieldMapping `json:"fieldMapping"`
+	SkipTLSVerify bool                  `json:"skipTlsVerify"`
 }
 
 // NewIdentityProvider initializes a new OIDC Identity Provider with the given
@@ -42,11 +46,20 @@ func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*I
 		}
 	}
 
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: config.SkipTLSVerify,
+			},
+		},
+	}
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
 	p, err := oidc.NewProvider(ctx, config.Issuer)
 	if err != nil {
 		return nil, errors.Wrap(err, "create new provider")
 	}
 	return &IdentityProvider{
+		client:   client,
 		provider: p,
 		config:   config,
 	}, nil
@@ -68,6 +81,8 @@ func (p *IdentityProvider) ExchangeToken(ctx context.Context, redirectURL, code 
 		Endpoint: p.provider.Endpoint(),
 		Scopes:   DefaultScopes,
 	}
+
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
 	token, err := oauth2Config.Exchange(ctx, code)
 	if err != nil {
 		return nil, errors.Wrap(err, "exchange token")
@@ -86,6 +101,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, errors.New(`missing "id_token" from the issuer's authorization response`)
 	}
 
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
 	verifier := p.provider.Verifier(&oidc.Config{ClientID: p.config.ClientID})
 	idToken, err := verifier.Verify(ctx, rawIDToken)
 	if err != nil {
