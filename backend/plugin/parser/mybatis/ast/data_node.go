@@ -35,8 +35,12 @@ func (n *TextNode) RestoreSQL(_ *RestoreContext, w io.Writer) error {
 	return nil
 }
 
+func (*TextNode) isChildAcceptable(Node) bool {
+	return false
+}
+
 // AddChild implements Node interface, text node does not have child.
-func (*TextNode) AddChild(_ Node) {}
+func (*TextNode) AddChild(Node) {}
 
 // ParameterNode represents a parameter node in mybatis mapper xml likes #{param}.
 type ParameterNode struct {
@@ -52,8 +56,13 @@ func (*ParameterNode) RestoreSQL(_ *RestoreContext, w io.Writer) error {
 	return nil
 }
 
+// isChildAcceptable implements Node interface, parameter node does not accept child.
+func (*ParameterNode) isChildAcceptable(Node) bool {
+	return false
+}
+
 // AddChild implements Node interface, parameter node does not have child.
-func (*ParameterNode) AddChild(_ Node) {}
+func (*ParameterNode) AddChild(Node) {}
 
 // VariableNode represents a variable node in mybatis mapper xml likes ${variable}.
 type VariableNode struct {
@@ -75,8 +84,13 @@ func (v *VariableNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	return nil
 }
 
+// isChildAcceptable implements Node interface, variable node does not accept child.
+func (*VariableNode) isChildAcceptable(Node) bool {
+	return false
+}
+
 // AddChild implements Node interface.
-func (*VariableNode) AddChild(_ Node) {}
+func (*VariableNode) AddChild(Node) {}
 
 // DataNode represents a data node which contains plain text, parameter or variable.
 type DataNode struct {
@@ -102,8 +116,22 @@ func NewDataNode(data []byte) *DataNode {
 	}
 }
 
+func (*DataNode) isChildAcceptable(node Node) bool {
+	switch node.(type) {
+	case *ParameterNode, *VariableNode, *TextNode:
+		return true
+	default:
+		return false
+	}
+}
+
 // AddChild implements Node interface.
-func (*DataNode) AddChild(_ Node) {}
+func (d *DataNode) AddChild(n Node) {
+	if !d.isChildAcceptable(n) {
+		return
+	}
+	d.Children = append(d.Children, n)
+}
 
 // Scan scans the data node from the bytes given in NewDataNode.
 func (d *DataNode) Scan() error {
@@ -166,7 +194,7 @@ func (d *DataNode) clearBufToTextNode() {
 	if len(d.buf) == 0 {
 		return
 	}
-	d.Children = append(d.Children, &TextNode{
+	d.AddChild(&TextNode{
 		Text: string(d.buf),
 	})
 	d.buf = d.buf[:0]
@@ -211,7 +239,7 @@ func (d *DataNode) scanParameter() error {
 		if r == '}' {
 			// Skip the prefix '#{' and suffix '}'.
 			partBuf := string(d.buf[2 : len(d.buf)-1])
-			d.Children = append(d.Children, &ParameterNode{
+			d.AddChild(&ParameterNode{
 				Name: string(partBuf),
 			})
 			d.buf = d.buf[:0]
@@ -241,7 +269,7 @@ func (d *DataNode) scanVariable() error {
 		if r == '}' {
 			// Skip the prefix '${' and suffix '}'.
 			partBuf := string(d.buf[2 : len(d.buf)-1])
-			d.Children = append(d.Children, &VariableNode{
+			d.AddChild(&VariableNode{
 				Name: string(partBuf),
 			})
 			d.buf = d.buf[:0]
