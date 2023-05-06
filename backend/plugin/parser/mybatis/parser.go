@@ -141,6 +141,8 @@ func (*Parser) newNodeByStartElement(startElement *xml.StartElement) ast.Node {
 		return ast.NewSQLNode(startElement)
 	case "include":
 		return ast.NewIncludeNode(startElement)
+	case "property":
+		return ast.NewPropertyNode(startElement)
 	}
 	return ast.NewEmptyNode()
 }
