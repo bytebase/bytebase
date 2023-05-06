@@ -25,10 +25,6 @@ func (n *TextNode) RestoreSQL(_ *RestoreContext, w io.Writer) error {
 	if len(n.Text) == 0 {
 		return nil
 	}
-
-	if _, err := w.Write([]byte(" ")); err != nil {
-		return err
-	}
 	if _, err := w.Write([]byte(n.Text)); err != nil {
 		return err
 	}
@@ -101,6 +97,12 @@ type DataNode struct {
 
 // RestoreSQL implements Node interface.
 func (d *DataNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
+	if len(d.Children) == 0 {
+		return nil
+	}
+	if _, err := w.Write([]byte(" ")); err != nil {
+		return err
+	}
 	for _, node := range d.Children {
 		if err := node.RestoreSQL(ctx, w); err != nil {
 			return err
