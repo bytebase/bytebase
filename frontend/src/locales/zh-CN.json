@@ -477,6 +477,8 @@
         "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
         "user-information-mapping": "用户信息映射",
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
+        "connection-security": "安全性选项",
+        "connection-security-skip-tls-verify": "跳过自签名证书验证",
         "identifier": "Bytebase 用户的唯一标识符",
         "display-name": "Bytebase 用户的昵称",
         "email": "Bytebase 用户的 Email"
