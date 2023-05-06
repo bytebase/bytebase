@@ -224,7 +224,16 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 			return nil, status.Errorf(codes.InvalidArgument, "missing OAuth2 context")
 		}
 		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config)
-		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(identityProviderConfig.GetOauth2Config())
+		oauth2IdentityProvider, err := oauth2.NewIdentityProvider(
+			&http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true, // TODO: Read from config
+					},
+				},
+			},
+			identityProviderConfig.GetOauth2Config(),
+		)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to new oauth2 identity provider")
 		}
