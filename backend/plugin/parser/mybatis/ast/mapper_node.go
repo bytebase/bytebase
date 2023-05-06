@@ -39,5 +39,18 @@ func NewMapperNode(startElement *xml.StartElement) *MapperNode {
 
 // AddChild adds a child to the mapper node.
 func (n *MapperNode) AddChild(child Node) {
+	if !n.isChildAcceptable(child) {
+		return
+	}
 	n.Children = append(n.Children, child)
+}
+
+func (*MapperNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L19
+	switch child.(type) {
+	case *SQLNode, *QueryNode:
+		return true
+	default:
+		return false
+	}
 }

@@ -9,7 +9,6 @@ import (
 
 var (
 	_ Node = (*QueryNode)(nil)
-	_ Node = (*TextNode)(nil)
 )
 
 // QueryNodeType is the type of the query node.
@@ -61,7 +60,20 @@ func (n *QueryNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 
 // AddChild adds a child to the query node.
 func (n *QueryNode) AddChild(child Node) {
+	if !n.isChildAcceptable(child) {
+		return
+	}
 	n.Children = append(n.Children, child)
+}
+
+func (*QueryNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L19
+	switch child.(type) {
+	case *DataNode, *IncludeNode, *TrimNode, *WhereNode, *SetNode, *ForEachNode, *ChooseNode, *SQLNode, *IfNode:
+	default:
+		return false
+	}
+	return true
 }
 
 // NewQueryNode creates a new query node.

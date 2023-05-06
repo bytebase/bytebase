@@ -152,7 +152,7 @@
     </mapper>
   sql: |
     UPDATE
-            fruits SET category = ? ,  price = ?  WHERE
+            fruits SET category = ?,  price = ? WHERE
             name = ?;
 - xml: |-
     <mapper namespace="com.bytebase.test">
@@ -174,7 +174,7 @@
         </select>
     </mapper>
   sql: |
-    select users_id, name, age, sex from users where name like ?  and   age >= ?  and  users_id is not null   group by users_id;
+    select users_id, name, age, sex from users where name like ? and   age >= ? and  users_id is not null   group by users_id;
 - xml: |-
     <mapper namespace="com.bytebase.test">
         <select id="testForeach">
@@ -224,3 +224,24 @@
             price
             FROM fruits WHERE category = 'apple'
                 AND price = 200;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <sql id="sometable">
+            ${prefix}Table
+        </sql>
+        <sql id="someinclude">
+            from
+            <include refid="${include_target}"/>
+        </sql>
+        <select id="select" resultType="map">
+            select
+            field1, field2, field3
+            <include refid="someinclude">
+                <property name="prefix" value="Some"/>
+                <property name="include_target" value="sometable"/>
+            </include>
+        </select>
+    </mapper>
+  sql: |
+    select
+            field1, field2, field3 from SomeTable;
