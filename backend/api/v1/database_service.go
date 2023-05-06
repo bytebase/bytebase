@@ -1690,6 +1690,7 @@ func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.Advis
 func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMessage, key string, generateResponse func(*v1pb.AdviseIndexResponse) error) (*v1pb.AdviseIndexResponse, error) {
 	var result v1pb.AdviseIndexResponse
 	successful := false
+	var retErr error
 	// Retry 5 times if failed.
 	for i := 0; i < 5; i++ {
 		client := openai.NewClient(key)
@@ -1706,12 +1707,15 @@ func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMess
 			},
 		)
 		if err != nil {
+			retErr = err
 			continue
 		}
 		if err := protojson.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
+			retErr = err
 			continue
 		}
 		if err = generateResponse(&result); err != nil {
+			retErr = err
 			continue
 		}
 		successful = true
@@ -1719,7 +1723,7 @@ func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMess
 	}
 
 	if !successful {
-		return nil, status.Errorf(codes.Internal, "Failed to get index advice")
+		return nil, status.Errorf(codes.Internal, "Failed to get index advice, error %v", retErr)
 	}
 	return &result, nil
 }
