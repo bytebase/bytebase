@@ -248,6 +248,8 @@ GRANT ALL PRIVILEGES ON DATABASE {{YOUR_DB_NAME}} TO ROLE BYTEBASE;
         return "";
       case "REDIS":
         return "ACL SETUSER bytebase on >YOUR_DB_PWD +@all &*";
+      case "MSSQL":
+        return "-- If you use Cloud RDS, you need to checkout their documentation for setting up a semi-super privileged user.\n\nCREATE LOGIN bytebase WITH PASSWORD = 'YOUR_DB_PWD';\nALTER SERVER ROLE sysadmin ADD MEMBER bytebase;";
     }
   } else {
     switch (engineType) {
