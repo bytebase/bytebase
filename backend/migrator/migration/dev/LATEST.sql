@@ -276,7 +276,7 @@ CREATE TABLE project_member (
     project_id INTEGER NOT NULL REFERENCES project (id),
     role TEXT NOT NULL,
     principal_id INTEGER NOT NULL REFERENCES principal (id),
-    payload JSONB NOT NULL DEFAULT '{}'
+    condition JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_project_member_project_id ON project_member(project_id);
