@@ -1002,7 +1002,16 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 	sort.Slice(ret, func(i, j int) bool {
 		mi := ret[i].migrationInfo
 		mj := ret[j].migrationInfo
-		return mi.Database < mj.Database || (mi.Database == mj.Database && mi.Version < mj.Version)
+		if mi.Database < mj.Database {
+			return true
+		}
+		if mi.Database == mj.Database && mi.Version < mj.Version {
+			return true
+		}
+		if mi.Database == mj.Database && mi.Version == mj.Version && mi.Type.GetVersionTypeSuffix() < mj.Type.GetVersionTypeSuffix() {
+			return true
+		}
+		return false
 	})
 	return ret
 }
@@ -1304,7 +1313,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 				{
 					MigrationType: fileInfo.migrationInfo.Type,
 					SheetID:       sheet.ID,
-					SchemaVersion: fileInfo.migrationInfo.Version,
+					SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 				},
 			}, nil
 		}
@@ -1356,7 +1365,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 						MigrationType: fileInfo.migrationInfo.Type,
 						DatabaseID:    db.UID,
 						SheetID:       sheet.ID,
-						SchemaVersion: fileInfo.migrationInfo.Version,
+						SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 					},
 				)
 			}
@@ -1393,14 +1402,15 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 					MigrationType: fileInfo.migrationInfo.Type,
 					DatabaseID:    database.UID,
 					SheetID:       sheet.ID,
-					SchemaVersion: fileInfo.migrationInfo.Version,
+					SchemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
 				},
 			)
 		}
 		return migrationDetailList, nil
 	}
 
-	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, fileInfo.migrationInfo.Version, content); err != nil {
+	migrationVersion := fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())
+	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, migrationVersion, content); err != nil {
 		return nil, []*api.ActivityCreate{
 			getIgnoredFileActivityCreate(
 				repo.ProjectID,
