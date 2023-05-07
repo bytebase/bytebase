@@ -21,7 +21,7 @@ func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error
 	if project == nil {
 		return nil, nil
 	}
-	composedProject, err := s.composeProject(ctx, project)
+	composedProject, err := composeProject(project)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
 	}
@@ -37,7 +37,7 @@ func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.
 	}
 	var composedProjects []*api.Project
 	for _, project := range projects {
-		composedProject, err := s.composeProject(ctx, project)
+		composedProject, err := composeProject(project)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
 		}
@@ -83,14 +83,14 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Project with ProjectPatch %#v", patch)
 	}
-	composedProject, err := s.composeProject(ctx, project)
+	composedProject, err := composeProject(project)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
 	}
 	return composedProject, nil
 }
 
-func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*api.Project, error) {
+func composeProject(project *ProjectMessage) (*api.Project, error) {
 	composedProject := &api.Project{
 		ID:               project.UID,
 		ResourceID:       project.ResourceID,
@@ -105,26 +105,6 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 	}
 	if project.Deleted {
 		composedProject.RowStatus = api.Archived
-	}
-
-	policy, err := s.GetProjectPolicy(ctx, &GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, err
-	}
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			principal, err := s.GetPrincipalByID(ctx, member.ID)
-			if err != nil {
-				return nil, err
-			}
-
-			composedProject.ProjectMemberList = append(composedProject.ProjectMemberList, &api.ProjectMember{
-				ID:        fmt.Sprintf("projects/%s/roles/%s/principals/%d", project.ResourceID, binding.Role, principal.ID),
-				ProjectID: project.UID,
-				Role:      string(binding.Role),
-				Principal: principal,
-			})
-		}
 	}
 	return composedProject, nil
 }
