@@ -497,7 +497,7 @@ func TestTenantVCS(t *testing.T) {
 				)
 				a.NoError(err)
 				a.Len(histories, 1)
-				a.Equal(histories[0].Version, "ver1")
+				a.Equal("ver1-ddl", histories[0].Version)
 				hm1[histories[0].Version] = true
 			}
 			a.Len(hm1, 1)
@@ -961,7 +961,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				)
 				a.NoError(err)
 				a.Len(histories, 1)
-				a.Equal(histories[0].Version, "ver1")
+				a.Equal("ver1-ddl", histories[0].Version)
 				hm1[histories[0].Version] = true
 			}
 			for i, instance := range prodInstances {
@@ -975,7 +975,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				)
 				a.NoError(err)
 				a.Len(histories, 1)
-				a.Equal("ver1", histories[0].Version)
+				a.Equal("ver1-ddl", histories[0].Version)
 				hm2[histories[0].Version] = true
 			}
 
@@ -1267,7 +1267,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				)
 				a.NoError(err)
 				a.Len(histories, 1)
-				a.Equal(histories[0].Version, "ver1")
+				a.Equal("ver1-ddl", histories[0].Version)
 				hm[histories[0].Version] = true
 			}
 
@@ -1573,7 +1573,7 @@ statement: |
 			)
 			require.NoError(t, err)
 			require.Len(t, histories, 2)
-			require.Equal(t, histories[0].Version, "ver2")
+			require.Equal(t, "ver2-dml", histories[0].Version)
 
 			histories, err = ctl.getInstanceMigrationHistory(
 				testInstances[1].ID,
@@ -1583,7 +1583,7 @@ statement: |
 			)
 			require.NoError(t, err)
 			require.Len(t, histories, 1)
-			require.Equal(t, histories[0].Version, "ver1")
+			require.Equal(t, "ver1-ddl", histories[0].Version)
 		})
 	}
 }
