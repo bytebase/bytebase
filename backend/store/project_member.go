@@ -142,8 +142,8 @@ func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *IAMPolicyMessage, 
 }
 
 type roleConditionKey struct {
-	Role      api.Role
-	Condition string
+	role         api.Role
+	rawCondition string
 }
 
 func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
@@ -194,19 +194,19 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProje
 		keys = append(keys, role)
 	}
 	sort.Slice(keys, func(i, j int) bool {
-		if string(keys[i].Role) < string(keys[j].Role) {
+		if string(keys[i].role) < string(keys[j].role) {
 			return true
 		}
-		return keys[i].Condition < keys[j].Condition
+		return keys[i].rawCondition < keys[j].rawCondition
 	})
 	projectPolicy := &IAMPolicyMessage{}
 	for _, key := range keys {
 		var condition expr.Expr
-		if err := protojson.Unmarshal([]byte(key.Condition), &condition); err != nil {
+		if err := protojson.Unmarshal([]byte(key.rawCondition), &condition); err != nil {
 			return nil, err
 		}
 
-		binding := &PolicyBinding{Role: key.Role, Condition: &condition, rawCondition: key.Condition}
+		binding := &PolicyBinding{Role: key.role, Condition: &condition, rawCondition: key.rawCondition}
 		for _, member := range roleMap[key] {
 			user, err := s.GetUserByID(ctx, member.ID)
 			if err != nil {
@@ -308,7 +308,7 @@ func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 	newUserIDToUserMap := make(map[int]*UserMessage)
 
 	for _, binding := range oldPolicy.Bindings {
-		key := roleConditionKey{Role: binding.Role, Condition: binding.rawCondition}
+		key := roleConditionKey{role: binding.Role, rawCondition: binding.rawCondition}
 		for _, member := range binding.Members {
 			oldUserIDToUserMap[member.ID] = member
 			if _, ok := oldUserIDToProjectRoleMap[member.ID]; !ok {
@@ -318,7 +318,7 @@ func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 		}
 	}
 	for _, binding := range newPolicy.Bindings {
-		key := roleConditionKey{Role: binding.Role, Condition: binding.rawCondition}
+		key := roleConditionKey{role: binding.Role, rawCondition: binding.rawCondition}
 		for _, member := range binding.Members {
 			newUserIDToUserMap[member.ID] = member
 			if _, ok := newUserIDToProjectRoleMap[member.ID]; !ok {
@@ -351,20 +351,20 @@ func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 	var deleteBindings []*PolicyBinding
 	for rc, users := range deletes {
 		deleteBindings = append(deleteBindings, &PolicyBinding{
-			Role:    rc.Role,
+			Role:    rc.role,
 			Members: users,
 			// We escape the condition because it's not useful for updates.
-			rawCondition: rc.Condition,
+			rawCondition: rc.rawCondition,
 		})
 	}
 
 	var upsertBindings []*PolicyBinding
 	for rc, users := range inserts {
 		upsertBindings = append(upsertBindings, &PolicyBinding{
-			Role:    rc.Role,
+			Role:    rc.role,
 			Members: users,
 			// We escape the condition because it's not useful for updates.
-			rawCondition: rc.Condition,
+			rawCondition: rc.rawCondition,
 		})
 	}
 
