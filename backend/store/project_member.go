@@ -227,14 +227,13 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 	for _, binding := range set.Bindings {
 		if binding.rawCondition == "" {
 			if binding.Condition == nil {
-				binding.rawCondition = "{}"
-			} else {
-				bytes, err := protojson.Marshal(binding.Condition)
-				if err != nil {
-					return err
-				}
-				binding.rawCondition = string(bytes)
+				binding.Condition = &expr.Expr{}
 			}
+			bytes, err := protojson.Marshal(binding.Condition)
+			if err != nil {
+				return err
+			}
+			binding.rawCondition = string(bytes)
 		}
 	}
 
