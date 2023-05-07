@@ -74,9 +74,6 @@ type Project struct {
 	ResourceID string    `jsonapi:"attr,resourceId"`
 	RowStatus  RowStatus `jsonapi:"attr,rowStatus"`
 
-	// Related fields
-	ProjectMemberList []*ProjectMember `jsonapi:"relation,projectMember"`
-
 	// Domain specific fields
 	Name         string              `jsonapi:"attr,name"`
 	Key          string              `jsonapi:"attr,key"`
