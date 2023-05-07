@@ -197,7 +197,10 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProje
 		if string(keys[i].role) < string(keys[j].role) {
 			return true
 		}
-		return keys[i].rawCondition < keys[j].rawCondition
+		if string(keys[i].role) == string(keys[j].role) && keys[i].rawCondition < keys[j].rawCondition {
+			return true
+		}
+		return false
 	})
 	projectPolicy := &IAMPolicyMessage{}
 	for _, key := range keys {
