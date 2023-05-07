@@ -194,6 +194,7 @@ func hasInstanceChangeTable(ctx context.Context, metadataDriver dbdriver.Driver)
 	return exists, nil
 }
 
+// migrates the old Bytebase schema up to where we create the instance_change_history table.
 func migrateOld(ctx context.Context, metadataDriver dbdriver.Driver, bytebasePgDriver *pg.Driver, databaseName, serverVersion string) error {
 	has, err := hasInstanceChangeTable(ctx, metadataDriver)
 	if err != nil {
@@ -285,6 +286,7 @@ func migrateOld(ctx context.Context, metadataDriver dbdriver.Driver, bytebasePgD
 				return err
 			}
 
+			// Stops the migration after we've reached to the point where we create the instance_change_history table.
 			has, err := hasInstanceChangeTable(ctx, metadataDriver)
 			if err != nil {
 				return err
