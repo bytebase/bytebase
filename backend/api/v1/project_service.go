@@ -717,8 +717,9 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) *v1pb.IamPolicy {
 			members = append(members, getUserIdentifier(member.Email))
 		}
 		bindings = append(bindings, &v1pb.Binding{
-			Role:    convertToProjectRole(binding.Role),
-			Members: members,
+			Role:      convertToProjectRole(binding.Role),
+			Members:   members,
+			Condition: binding.Condition,
 		})
 	}
 	return &v1pb.IamPolicy{
@@ -751,8 +752,9 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 		}
 
 		bindings = append(bindings, &store.PolicyBinding{
-			Role:    role,
-			Members: users,
+			Role:      role,
+			Members:   users,
+			Condition: binding.Condition,
 		})
 	}
 	return &store.IAMPolicyMessage{
