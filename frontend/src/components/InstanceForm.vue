@@ -473,76 +473,10 @@
               {{ $t("data-source.ssh-connection") }}
             </label>
           </div>
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="sshHost" class="textlabel block">
-              {{ $t("data-source.ssh.host") }}
-            </label>
-            <input
-              id="sshHost"
-              name="sshHost"
-              type="text"
-              class="textfield mt-1 w-full"
-              :placeholder="''"
-              :value="currentDataSource.options.sshHost"
-              @input="handleCurrentDataSourceSshHostInput"
-            />
-          </div>
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="sshPort" class="textlabel block">
-              {{ $t("data-source.ssh.port") }}
-            </label>
-            <input
-              id="sshPort"
-              name="sshPort"
-              type="text"
-              class="textfield mt-1 w-full"
-              :placeholder="''"
-              :value="currentDataSource.options.sshPort"
-              @input="handleCurrentDataSourceSshPortInput"
-            />
-          </div>
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="sshUser" class="textlabel block">
-              {{ $t("data-source.ssh.user") }}
-            </label>
-            <input
-              id="sshUser"
-              name="sshUser"
-              type="text"
-              class="textfield mt-1 w-full"
-              :placeholder="''"
-              :value="currentDataSource.options.sshUser"
-              @input="handleCurrentDataSourceSshUserInput"
-            />
-          </div>
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="sshPassword" class="textlabel block">
-              {{ $t("data-source.ssh.password") }}
-            </label>
-            <input
-              id="sshPassword"
-              name="sshPassword"
-              type="text"
-              class="textfield mt-1 w-full"
-              :placeholder="''"
-              :value="currentDataSource.options.sshPassword"
-              @input="handleCurrentDataSourceSshPasswordInput"
-            />
-          </div>
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="sshPrivateKey" class="textlabel block">
-              {{ $t("data-source.ssh.ssh-key") }}
-            </label>
-            <input
-              id="sshPrivateKey"
-              name="sshPrivateKey"
-              type="text"
-              class="textfield mt-1 w-full"
-              :placeholder="''"
-              :value="currentDataSource.options.sshPrivateKey"
-              @input="handleCurrentDataSourceSshPrivateKeyInput"
-            />
-          </div>
+          <SshConnectionForm
+            :value="currentDataSource.options"
+            @change="handleCurrentDataSourceSshChange"
+          />
         </div>
       </div>
 
@@ -663,6 +597,7 @@ import {
   InstanceCreate,
   unknown,
   ValidatedMessage,
+  DataSourceOptions,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
@@ -684,6 +619,7 @@ import {
   SpannerHostInput,
   SpannerCredentialInput,
   SslCertificateForm,
+  SshConnectionForm,
   OracleSIDAndServiceNameInput,
 } from "./InstanceForm";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
@@ -1171,29 +1107,16 @@ const handleCurrentDataSourceSslChange = (
   currentDataSource.value.updateSsl = true;
 };
 
-const handleCurrentDataSourceSshHostInput = (event: Event) => {
-  const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.options.sshHost = str;
-};
-
-const handleCurrentDataSourceSshPortInput = (event: Event) => {
-  const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.options.sshPort = str;
-};
-
-const handleCurrentDataSourceSshUserInput = (event: Event) => {
-  const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.options.sshUser = str;
-};
-
-const handleCurrentDataSourceSshPasswordInput = (event: Event) => {
-  const str = (event.target as HTMLInputElement).value;
-  currentDataSource.value.options.sshPassword = str;
-};
-
-const handleCurrentDataSourceSshPrivateKeyInput = (event: Event) => {
-  const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.options.sshPrivateKey = str;
+const handleCurrentDataSourceSshChange = (
+  value: Partial<
+    Pick<
+      DataSourceOptions,
+      "sshHost" | "sshPort" | "sshUser" | "sshPassword" | "sshPrivateKey"
+    >
+  >
+) => {
+  Object.assign(currentDataSource.value.options, value);
+  currentDataSource.value.updateSsh = true;
 };
 
 const handleCreateRODataSource = () => {

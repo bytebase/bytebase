@@ -1579,12 +1579,19 @@
       "client-key": "客户端密钥",
       "client-cert": "客户端证书"
     },
+    "ssh-type": {
+      "tunnel": "@:{'data-source.ssh.tunnel'}",
+      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
+      "none": "不使用"
+    },
     "ssh": {
       "host": "服务器",
       "port": "端口",
       "user": "用户名",
       "password": "密码",
-      "ssh-key": "SSH 密钥"
+      "ssh-key": "SSH 密钥",
+      "tunnel": "隧道",
+      "private-key": "私钥"
     },
     "ssl-connection": "SSL 连接",
     "ssh-connection": "SSH 连接",
@@ -1918,6 +1925,10 @@
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
         "desc": "使用只读副本连接到只读数据源。"
+      },
+      "bb-feature-index-advisor": {
+        "title": "索引建议",
+        "desc": "索引建议可以找到导致慢查询的索引，并提供相关的优化建议。"
       },
       "bb-feature-sso": {
         "title": "Single Sign-On (SSO)",
@@ -2401,7 +2412,8 @@
     "advise-index": {
       "current-index": "当前索引",
       "suggestion": "建议",
-      "create-index": "创建索引"
+      "create-index": "创建索引",
+      "setup-openai-key-to-enable": "设置 OpenAI API Key 以开启索引建议功能。"
     }
   },
   "principal": {

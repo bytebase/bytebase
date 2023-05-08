@@ -1,6 +1,6 @@
 <template>
   <div
-    class="fixed inset-0 px-4 py-6 pointer-events-none sm:p-6 z-50"
+    class="fixed inset-0 px-4 py-6 pointer-events-none sm:p-6 z-[9999]"
     :class="placementClass"
   >
     <template

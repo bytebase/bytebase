@@ -1,5 +1,5 @@
-// Package mybatis defines the sql extractor for mybatis mapper xml.
-package mybatis
+// Package mapper defines the sql extractor for mybatis mapper xml.
+package mapper
 
 import (
 	"encoding/xml"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast"
 )
 
 // Parser is the mybatis mapper xml parser.

@@ -664,6 +664,17 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			updateMessage.AuthenticationDatabase = &dataSourcePatch.Options.AuthenticationDatabase
 			updateMessage.SID = &dataSourcePatch.Options.SID
 			updateMessage.ServiceName = &dataSourcePatch.Options.ServiceName
+			updateMessage.SSHHost = &dataSourcePatch.Options.SSHHost
+			updateMessage.SSHPort = &dataSourcePatch.Options.SSHPort
+			updateMessage.SSHUser = &dataSourcePatch.Options.SSHUser
+			if dataSourcePatch.Options.SSHPassword != "" {
+				obfuscatedSSHPassword := common.Obfuscate(dataSourcePatch.Options.SSHPassword, s.secret)
+				updateMessage.SSHObfuscatedPassword = &obfuscatedSSHPassword
+			}
+			if dataSourcePatch.Options.SSHPrivateKey != "" {
+				obfuscatedSSHPrivateKey := common.Obfuscate(dataSourcePatch.Options.SSHPrivateKey, s.secret)
+				updateMessage.SSHObfuscatedPrivateKey = &obfuscatedSSHPrivateKey
+			}
 		}
 		if err := s.store.UpdateDataSourceV2(ctx, updateMessage); err != nil {
 			return err
