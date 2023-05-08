@@ -372,8 +372,8 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if issueCreate.ProjectID == api.DefaultProjectUID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot create a new issue in the default project")
 	}
-	if issueCreate.Type == api.IssueRequestPrivilege {
-		return s.createRequestPrivilegeIssue(ctx, issueCreate, creatorID)
+	if issueCreate.Type == api.IssueGrantRequest {
+		return s.createGrantRequestIssue(ctx, issueCreate, creatorID)
 	}
 
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
@@ -525,7 +525,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return composedIssue, nil
 }
 
-func (s *Server) createRequestPrivilegeIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
+func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
 	if err != nil {
 		return nil, err
@@ -555,12 +555,15 @@ func (s *Server) createRequestPrivilegeIssue(ctx context.Context, issueCreate *a
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project owner %d not found", issueCreate.ProjectID))
 	}
 
-	var request storepb.GrantRequest
-	if err := protojson.Unmarshal([]byte(issueCreate.PrivilegeRequest), &request); err != nil {
+	var issuePayload storepb.IssuePayload
+	if err := protojson.Unmarshal([]byte(issueCreate.Payload), &issuePayload); err != nil {
 		return nil, err
 	}
 	issueCreatePayload := &storepb.IssuePayload{
-		GrantRequest: &request,
+		GrantRequest: issuePayload.GrantRequest,
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: false,
+		},
 	}
 	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
 	if err != nil {

@@ -33,8 +33,8 @@ const (
 	IssueDatabaseDataUpdate IssueType = "bb.issue.database.data.update"
 	// IssueDatabaseRestorePITR is the issue type for performing a Point-in-time Recovery.
 	IssueDatabaseRestorePITR IssueType = "bb.issue.database.restore.pitr"
-	// IssueRequestPrivilege is the issue type for requesting privileges.
-	IssueRequestPrivilege IssueType = "bb.issue.request.privilege"
+	// IssueGrantRequest is the issue type for requesting grant.
+	IssueGrantRequest IssueType = "bb.issue.grant.request"
 )
 
 // IssueFieldID is the field ID for an issue.
@@ -75,8 +75,8 @@ type Issue struct {
 	Project    *Project `jsonapi:"relation,project"`
 	PipelineID int
 	Pipeline   *Pipeline `jsonapi:"relation,pipeline"`
-	// The requested privilege in PrivilegeRequest format.
-	PrivilegeRequest string `jsonapi:"attr,privilegeRequest"`
+	// The requested grant in GrantRequest format.
+	GrantRequest string `jsonapi:"attr,grantRequest"`
 
 	// Domain specific fields
 	Name                  string       `jsonapi:"attr,name"`
@@ -112,8 +112,6 @@ type IssueCreate struct {
 	CreateContext string `jsonapi:"attr,createContext"`
 	// ValidateOnly validates the request and previews the review, but does not actually post it.
 	ValidateOnly bool `jsonapi:"attr,validateOnly"`
-	// The requested privilege in PrivilegeRequest format.
-	PrivilegeRequest string `jsonapi:"attr,privilegeRequest"`
 }
 
 // CreateDatabaseContext is the issue create context for creating a database.
