@@ -1215,7 +1215,8 @@
       "description-placeholder": "Input description",
       "value": "Value",
       "value-placeholder": "Input value (write only)",
-      "delete-tips": "Delete secret"
+      "delete-tips": "Delete secret",
+      "description": "You can use secret in the change script to hide sensitive information, please refer to {guide}"
     }
   },
   "repository": {
