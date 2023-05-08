@@ -3,6 +3,7 @@
     :show="slowQueryLog !== undefined"
     :auto-focus="false"
     width="auto"
+    :z-index="30"
     @update:show="(show) => !show && $emit('close')"
   >
     <NDrawerContent
@@ -61,7 +62,7 @@
             </div>
           </div>
         </div>
-        <AdviseIndex v-if="slowQueryLog" :slow-query-log="slowQueryLog" />
+        <IndexAdvisor v-if="slowQueryLog" :slow-query-log="slowQueryLog" />
         <div
           v-if="instanceHasSlowQueryDetail(database.instance)"
           class="flex-1 overflow-auto border"
@@ -136,7 +137,7 @@ import {
   ProjectName,
 } from "@/components/v2";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
-import AdviseIndex from "./AdviseIndex.vue";
+import IndexAdvisor from "./IndexAdvisor.vue";
 
 export type SlowQueryDetailsRow = BBGridRow<SlowQueryDetails>;
 
