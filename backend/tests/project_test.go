@@ -94,7 +94,7 @@ func TestArchiveProject(t *testing.T) {
 			Name:          fmt.Sprintf("create database %q", databaseName),
 			Type:          api.IssueDatabaseCreate,
 			Description:   fmt.Sprintf("This creates a database %q.", databaseName),
-			AssigneeID:    ownerID,
+			AssigneeID:    api.SystemBotID,
 			CreateContext: string(c),
 		})
 		a.NoError(err)
