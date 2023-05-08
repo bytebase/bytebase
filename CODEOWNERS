@@ -2,13 +2,8 @@
 *                            @d-bytebase @ecmadao
 
 # Backend and API.
-/backend/                    @d-bytebase @ecmadao
+/backend/                    @d-bytebase @ecmadao @rebelice
 /proto/                      @d-bytebase @ecmadao
-
-# Backend SQL kernel.
-/backend/plugin/advisor      @d-bytebase @ecmadao @rebelice
-/backend/plugin/db           @d-bytebase @ecmadao @rebelice
-/backend/plugin/parser       @d-bytebase @ecmadao @rebelice
 
 # Frontend.
 /frontend/                   @LiuJi-Jim @boojack
