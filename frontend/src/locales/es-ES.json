@@ -1920,6 +1920,10 @@
         "title": "Conexión a réplica de lectura",
         "desc": "Conéctate a una réplica de lectura para obtener una fuente de datos de solo lectura."
       },
+      "bb-feature-index-advisor": {
+        "title": "Asesor de índice",
+        "desc": "El asesor de índices puede ayudarle a encontrar los índices que faltan en las consultas lentas."
+      },
       "bb-feature-sso": {
         "title": "Inicio de sesión único (SSO)",
         "desc": "Permite a los usuarios autenticarse de manera segura en varias aplicaciones y sitios web mediante un único conjunto de credenciales."
@@ -2404,7 +2408,8 @@
     "advise-index": {
       "current-index": "Índice actual",
       "suggestion": "Sugerencia",
-      "create-index": "Crear índice"
+      "create-index": "Crear índice",
+      "setup-openai-key-to-enable": "Configure la clave de OpenAI para habilitar el asesor de índices"
     }
   },
   "principal": {
