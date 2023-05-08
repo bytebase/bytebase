@@ -210,22 +210,13 @@ type PITRContext struct {
 
 // PrivilegeRequest is the create context to request privileges.
 type PrivilegeRequest struct {
-	// Request scopes for resources.
-	// If we need multiple privileges for a database, add multiple entries.
-	Scopes []ResourceScope `json:"scopes"`
 	// Requested Role.
 	// Example "roles/Developer"
 	Role string `json:"role"`
-	// Expiration timestamp in second.
-	ExpirationTs int `json:"expirationTs"`
-}
-
-// ResourceScope is the scope of resources.
-type ResourceScope struct {
-	DatabaseID int `json:"databaseID"`
-	// Schema can be empty for database types such as MySQL.
-	Schema string `json:"schema"`
-	Table  string `json:"table"`
+	// Requested user, e.g. "users/hello@bytebase.com".
+	User string `json:"user"`
+	// IAM binding condition in expr. Exp proto format
+	Condition string `json:"condition"`
 }
 
 // IssuePatch is the API message for patching an issue.

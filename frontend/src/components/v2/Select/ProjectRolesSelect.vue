@@ -26,7 +26,11 @@ defineEmits<{
 }>();
 
 const roleOptions = computed(() => {
-  return useRoleStore().roleList.map<SelectOption>((role) => {
+  // TODO(steven): We don't allow to add EXPORTER and QUERIER roles directly for now.
+  const roleList = useRoleStore().roleList.filter((role) => {
+    return role.name !== "roles/EXPORTER" && role.name !== "roles/QUERIER";
+  });
+  return roleList.map<SelectOption>((role) => {
     return {
       label: displayRoleTitle(role.name),
       value: role.name,
