@@ -338,3 +338,30 @@ func TestGetFileInfo(t *testing.T) {
 		require.EqualError(t, err, "file change should be associated with exactly one project but found project-1, project-2")
 	})
 }
+
+func TestExtractDBTypeFromJDBCConnectionString(t *testing.T) {
+	testCases := []struct {
+		jdbcConnectionString string
+		want                 db.Type
+		wantErr              bool
+	}{
+		{
+			jdbcConnectionString: "jdbc:mysql://localhost:3306/bytebase?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC",
+			want:                 db.MySQL,
+		},
+		{
+			jdbcConnectionString: "jdbc:mysql+srv+loadbalance://localhost:3306/bytebase?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC",
+			want:                 db.MySQL,
+		},
+		{
+			jdbcConnectionString: "jdbc:postgresql://localhost:5432/bytebase?currentSchema=public&sslmode=disable",
+			want:                 db.Postgres,
+		},
+	}
+
+	for _, tc := range testCases {
+		dbType, err := extractDBTypeFromJDBCConnectionString(tc.jdbcConnectionString)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, dbType)
+	}
+}
