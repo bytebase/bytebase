@@ -17,6 +17,10 @@ import {
   TaskStatusTransition,
   TASK_STATUS_TRANSITION_LIST,
 } from "@/utils";
+import {
+  allowUserToBeAssignee,
+  useCurrentRollOutPolicyForActiveEnvironment,
+} from "./";
 import { useIssueLogic } from ".";
 
 export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
@@ -24,14 +28,21 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     useIssueLogic();
 
   const currentUser = useCurrentUser();
+  const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
 
   const isAllowedToApplyTaskTransition = computed(() => {
     if (create.value) {
       return false;
     }
 
-    // Project owners are allowed to apply task status transitions
-    if (isOwnerOfProject(issue.value.project, currentUser.value)) {
+    if (
+      allowUserToBeAssignee(
+        currentUser.value,
+        issue.value.project,
+        rollOutPolicy.value.policy,
+        rollOutPolicy.value.assigneeGroup
+      )
+    ) {
       return true;
     }
 
