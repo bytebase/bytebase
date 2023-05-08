@@ -81,7 +81,7 @@ import { useRollbackLogic } from "./common";
 import IssueStatusIcon from "../IssueStatusIcon.vue";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
-import { useActivityStore, useIssueById } from "@/store";
+import { useActivityStore, useIssueById, useSheetStore } from "@/store";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 
 type LocalState = {
@@ -90,6 +90,7 @@ type LocalState = {
 };
 
 const router = useRouter();
+const sheetStore = useSheetStore();
 
 const context = useIssueLogic();
 const { allowRollback } = useRollbackLogic();
@@ -157,10 +158,12 @@ const tryRollbackTask = async () => {
       `${issue.value.name}`,
     ].join(" ");
 
-    // TODO(boojack): use sheetID. Or can we display partial sheet or link the sheet here.
+    const rollbackSheet = await sheetStore.getOrFetchSheetById(
+      payload.value!.rollbackSheetId!
+    );
     const description = [
       "The original SQL statement:",
-      `${payload.value!.statement}`,
+      `${rollbackSheet.statement}`,
     ].join("\n");
 
     router.push({
@@ -175,8 +178,7 @@ const tryRollbackTask = async () => {
         databaseList: [task.value.database!.id].join(","),
         rollbackIssueId: issue.value.id,
         rollbackTaskIdList: [task.value.id].join(","),
-        // TODO(boojack): use the rollbackSheetId.
-        sql: "",
+        sheetId: rollbackSheet.id,
         description,
       },
     });
