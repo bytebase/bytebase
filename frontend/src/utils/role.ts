@@ -188,6 +188,8 @@ export const displayRoleTitle = (role: string): string => {
   // Use i18n-defined readable titles for system roles
   if (role === "roles/OWNER") return t("common.role.owner");
   if (role === "roles/DEVELOPER") return t("common.role.developer");
+  if (role === "roles/EXPORTER") return t("common.role.exporter");
+  if (role === "roles/QUERIER") return t("common.role.querier");
   // Use role.title if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
   // Fallback to extracted resource name otherwise

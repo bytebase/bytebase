@@ -8,4 +8,8 @@ const (
 	ProjectOwner ProjectRole = "OWNER"
 	// ProjectDeveloper is the developer of a project.
 	ProjectDeveloper ProjectRole = "DEVELOPER"
+	// ProjectExporter is the exporter of a project.
+	ProjectExporter ProjectRole = "EXPORTER"
+	// ProjectQuerier is the querier of a project.
+	ProjectQuerier ProjectRole = "QUERIER"
 )
