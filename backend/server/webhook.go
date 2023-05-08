@@ -449,7 +449,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			commitID = prFile.LastCommitID
 		}
 		if len(mybatisMapperXMLFiles) > 0 {
-			mapperAdvices, err := s.sqlAdviceForMybatisMapperFiles(ctx, mybatisMapperXMLFiles, request.BaseBranch, commitID, repo)
+			mapperAdvices, err := s.sqlAdviceForMybatisMapperFiles(ctx, mybatisMapperXMLFiles, commitID, repo)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get sql advice for mybatis mapper files").SetInternal(err)
 			}
@@ -478,19 +478,16 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapperContent map[string]string, baseBranch string, commitID string, repo *api.Repository) (map[string][]advisor.Advice, error) {
+func (s *Server) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapperContent map[string]string, commitID string, repo *api.Repository) (map[string][]advisor.Advice, error) {
 	if len(mybatisMapperContent) == 0 {
 		return map[string][]advisor.Advice{}, nil
-	}
-	if baseBranch == "" {
-		return nil, errors.Errorf("Unexpected empty base branch")
 	}
 	if commitID == "" {
 		return nil, errors.Errorf("Unexpected empty commit id")
 	}
 
 	sqlCheckAdvices := make(map[string][]advisor.Advice)
-	mybatisMapperXMLFileData, err := s.buildMybatisMapperXMLFileData(ctx, repo, baseBranch, commitID, mybatisMapperContent)
+	mybatisMapperXMLFileData, err := s.buildMybatisMapperXMLFileData(ctx, repo, commitID, mybatisMapperContent)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to build mybatis mapper xml file data")
 	}
@@ -1918,10 +1915,9 @@ type mybatisMapperXMLFileDatum struct {
 //
 //	ctx: the context.
 //	repo: the repository will be list file tree and get file content from.
-//	branch: the branch name of the repository.
 //	commitID: the commitID is the snapshot of the file tree and file content.
 //	mapperFiles: the map of the mybatis mapper XML file path and content.
-func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repo *api.Repository, branch, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
+func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repo *api.Repository, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
 	if len(mapperFiles) == 0 {
 		return []*mybatisMapperXMLFileDatum{}, nil
 	}
@@ -1967,11 +1963,11 @@ func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repo *api.Re
 				},
 				repo.VCS.InstanceURL,
 				repo.ExternalID,
-				branch,
+				commitID,
 				currentDir,
 			)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to fetch repository file list for repository %q branch %q directory %q", repo.WebURL, branch, currentDir)
+				return nil, errors.Wrapf(err, "failed to fetch repository file list for repository %q commitID %q directory %q", repo.WebURL, commitID, currentDir)
 			}
 
 			for _, file := range filesInDir {
@@ -1993,7 +1989,7 @@ func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repo *api.Re
 					commitID,
 				)
 				if err != nil {
-					return nil, errors.Wrapf(err, "failed to read file content for repository %q branch %q file %q", repo.WebURL, branch, file.Path)
+					return nil, errors.Wrapf(err, "failed to read file content for repository %q commitID %q file %q", repo.WebURL, commitID, file.Path)
 				}
 				if !isMybatisConfigXMLRegex.MatchString(fileContent) {
 					continue
@@ -2002,6 +1998,9 @@ func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repo *api.Re
 				configCache[file.Path] = fileContent
 				datum.configPath = file.Path
 				datum.configContent = fileContent
+			}
+			if currentDir == "" {
+				break
 			}
 		}
 		mybatisMapperXMLFileData = append(mybatisMapperXMLFileData, datum)

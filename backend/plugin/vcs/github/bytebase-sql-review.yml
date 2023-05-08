@@ -12,12 +12,10 @@ jobs:
 
           pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           repository=`echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]'`
-          base_branch=`echo "${{ github.base_ref }}"`
           request_body=$(jq -n \
             --arg repositoryId "$repository" \
             --arg pullRequestId $pull_number \
             --arg webURL "$GITHUB_SERVER_URL" \
-            --arg baseBranch "$base_branch" \
             '$ARGS.named')
 
           response=$(curl -s -w "%%{http_code}" -X POST $API \
