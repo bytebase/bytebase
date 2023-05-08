@@ -523,11 +523,15 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 		wheres = append(wheres, fmt.Sprintf("(environment.resource_id = $%d AND instance.resource_id = $%d AND db.name = $%d)", 3*i+3, 3*i+4, 3*i+5))
 		args = append(args, database.EnvironmentID, database.InstanceID, database.DatabaseName)
 	}
+	databaseClause := ""
+	if len(wheres) > 0 {
+		databaseClause = fmt.Sprintf(" AND (%s)", strings.Join(wheres, " OR "))
+	}
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			UPDATE db
 			SET project_id = $1, updater_id = $2
 			FROM instance JOIN environment ON instance.environment_id = environment.id
-			WHERE db.instance_id = instance.id AND (%s);`, strings.Join(wheres, " OR ")),
+			WHERE db.instance_id = instance.id %s;`, databaseClause),
 		args...,
 	); err != nil {
 		return nil, err
