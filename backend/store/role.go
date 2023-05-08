@@ -87,6 +87,18 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 			Name:        "Project developer",
 			Description: "",
 		},
+		&RoleMessage{
+			CreatorID:   api.SystemBotID,
+			ResourceID:  "EXPORTER",
+			Name:        "Project exporter",
+			Description: "",
+		},
+		&RoleMessage{
+			CreatorID:   api.SystemBotID,
+			ResourceID:  "QUERIER",
+			Name:        "Project querier",
+			Description: "",
+		},
 	)
 
 	for rows.Next() {

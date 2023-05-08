@@ -1,5 +1,3 @@
-<!-- eslint-disable vue/no-mutating-props -->
-
 <template>
   <div
     class="bb-risk-expr-editor-group w-full overflow-hidden space-y-2 py-0.5"
