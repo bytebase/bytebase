@@ -79,7 +79,9 @@
       "dba": "DBA",
       "owner": "Owner",
       "developer": "Developer",
-      "member": "Member"
+      "member": "Member",
+      "exporter": "Exporter",
+      "querier": "Querier"
     },
     "assignee": "Assignee",
     "revert": "Revert",
@@ -2453,6 +2455,12 @@
     },
     "developer": {
       "description": "System defined project developer role"
+    },
+    "exporter": {
+      "description": "System defined project exporter role"
+    },
+    "querier": {
+      "description": "System defined project querier role"
     }
   }
 }

@@ -79,7 +79,9 @@
       "dba": "DBA",
       "owner": "所有者",
       "developer": "开发者",
-      "member": "成员"
+      "member": "成员",
+      "exporter": "数据导出者",
+      "querier": "数据查询者"
     },
     "assignee": "发布人",
     "revert": "恢复",
@@ -2448,6 +2450,12 @@
     },
     "developer": {
       "description": "系统定义的项目开发者角色"
+    },
+    "exporter": {
+      "description": "系统定义的项目数据导出者角色"
+    },
+    "querier": {
+      "description": "系统定义的项目数据查询者角色"
     }
   }
 }
