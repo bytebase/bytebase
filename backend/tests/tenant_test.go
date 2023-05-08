@@ -160,7 +160,7 @@ func TestTenant(t *testing.T) {
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -451,10 +451,6 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			issue, err = ctl.patchIssue(issue.ID, api.IssuePatch{
-				AssigneeID: &ownerID,
-			})
-			a.NoError(err)
 
 			// Test pipeline stage patch status.
 			status, err := ctl.waitIssuePipelineWithStageApproval(issue.ID)
@@ -619,7 +615,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		Name:          "update schema for tenants",
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   "This updates the schema of tenant databases.",
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -903,10 +899,6 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			issue, err = ctl.patchIssue(issue.ID, api.IssuePatch{
-				AssigneeID: &ownerID,
-			})
-			a.NoError(err)
 			status, err := ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
@@ -1217,10 +1209,6 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			issue, err = ctl.patchIssue(issue.ID, api.IssuePatch{
-				AssigneeID: &ownerID,
-			})
-			a.NoError(err)
 			status, err := ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
@@ -1499,10 +1487,6 @@ func TestTenantVCS_YAML(t *testing.T) {
 			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
 			require.NoError(t, err)
 			require.Len(t, issues, 1)
-			_, err = ctl.patchIssue(issues[0].ID, api.IssuePatch{
-				AssigneeID: &ownerID,
-			})
-			require.NoError(t, err)
 			status, err := ctl.waitIssuePipeline(issues[0].ID)
 			require.NoError(t, err)
 			require.Equal(t, api.TaskDone, status)
@@ -1534,11 +1518,6 @@ statement: |
 
 			// Get data update issues.
 			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
-			require.NoError(t, err)
-			require.Len(t, issues, 2)
-			_, err = ctl.patchIssue(issues[0].ID, api.IssuePatch{
-				AssigneeID: &ownerID,
-			})
 			require.NoError(t, err)
 			status, err = ctl.waitIssuePipeline(issues[0].ID)
 			require.NoError(t, err)
