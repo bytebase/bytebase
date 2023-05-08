@@ -221,6 +221,10 @@ func TestGetMySQLFingerprint(t *testing.T) {
 		stmt string
 		want string
 	}{
+		{
+			stmt: "-- this is comment\nSELECT * FROM `mytable`",
+			want: "select * from `mytable`",
+		},
 		// Test mysqldump query.
 		{
 			stmt: "SELECT /*!40001 SQL_NO_CACHE */ * FROM `mytable`",
