@@ -213,7 +213,7 @@ type PrivilegeRequest struct {
 	// Requested Role.
 	// Example "roles/Developer"
 	Role string `json:"role"`
-	// Requested user.
+	// Requested user, e.g. "users/hello@bytebase.com".
 	User string `json:"user"`
 	// IAM binding condition in expr. Exp proto format
 	Condition string `json:"condition"`
