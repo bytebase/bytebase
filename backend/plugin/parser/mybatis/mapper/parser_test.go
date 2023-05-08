@@ -10,6 +10,8 @@ import (
 	pg_query "github.com/pganalyze/pg_query_go/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast"
 )
 
 // TestData is the test data for mybatis parser. It contains the xml and the expected sql.
@@ -68,6 +70,57 @@ func TestParser(t *testing.T) {
 		"test-data/test_dynamic_sql_mapper.yaml",
 	}
 	for _, filepath := range testFileList {
-		runTest(t, filepath, false)
+		runTest(t, filepath, true)
+	}
+}
+
+func TestRestoreWithLineMapping(t *testing.T) {
+	testCases := []struct {
+		xml         string
+		sql         string
+		lineMapping []*ast.MybatisSQLLineMapping
+	}{
+		{
+			xml: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bytebase.test">
+	<sql id="sometable">
+		${prefix}Table
+	</sql>
+	<sql id="someinclude">
+		from
+		<include refid="${include_target}"/>
+	</sql>
+	<select id="select" resultType="map">
+		select
+		field1, field2, field3
+		<include refid="someinclude">
+			<property name="prefix" value="Some"/>
+			<property name="include_target" value="sometable"/>
+		</include>
+	</select>
+</mapper>
+			`,
+			sql: `select
+		field1, field2, field3 from SomeTable;
+`,
+			lineMapping: []*ast.MybatisSQLLineMapping{
+				{
+					SQLLastLine:     2,
+					OriginalEleLine: 11,
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		parser := NewParser(tc.xml)
+		node, err := parser.Parse()
+		require.NoError(t, err)
+		require.NotNil(t, node)
+		var sb strings.Builder
+		lineMapping, err := node.RestoreSQLWithLineMapping(parser.GetRestoreContext(), &sb)
+		require.NoError(t, err)
+		require.Equal(t, tc.sql, sb.String())
+		require.Equal(t, tc.lineMapping, lineMapping)
 	}
 }

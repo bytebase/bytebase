@@ -16,7 +16,7 @@ type Parser struct {
 	d           *xml.Decoder
 	buf         []rune
 	cursor      uint
-	currentLine uint
+	currentLine int
 	sqlMap      map[string]*ast.SQLNode
 }
 
@@ -25,23 +25,26 @@ func NewParser(stmt string) *Parser {
 	reader := strings.NewReader(stmt)
 	d := xml.NewDecoder(reader)
 	return &Parser{
-		d:      d,
-		cursor: 0,
-		buf:    nil,
-		sqlMap: make(map[string]*ast.SQLNode),
+		d:           d,
+		cursor:      0,
+		buf:         nil,
+		sqlMap:      make(map[string]*ast.SQLNode),
+		currentLine: 1,
 	}
 }
 
 // GetRestoreContext returns the restore context.
 func (p *Parser) GetRestoreContext() *ast.RestoreContext {
 	return &ast.RestoreContext{
-		SQLMap:   p.sqlMap,
-		Variable: make(map[string]string),
+		SQLMap:                           p.sqlMap,
+		Variable:                         make(map[string]string),
+		SQLLastLineToOriginalLineMapping: make(map[int]int),
+		CurrentLastLine:                  1,
 	}
 }
 
 // Parse parses the mybatis mapper xml statements, building AST without recursion, returns the root node of the AST.
-func (p *Parser) Parse() (ast.Node, error) {
+func (p *Parser) Parse() (*ast.RootNode, error) {
 	root := &ast.RootNode{}
 	// To avoid recursion, we use stack to store the start element and node, and consume the token one by one.
 	// The length of start element stack is always equal to the length of node stack - 1, because the root nod
@@ -108,6 +111,18 @@ func (p *Parser) Parse() (ast.Node, error) {
 					p.currentLine++
 				}
 			}
+		case xml.Directive:
+			for _, b := range ele {
+				if b == '\n' {
+					p.currentLine++
+				}
+			}
+		case xml.ProcInst:
+			for _, b := range ele.Inst {
+				if b == '\n' {
+					p.currentLine++
+				}
+			}
 		}
 	}
 }
@@ -115,12 +130,12 @@ func (p *Parser) Parse() (ast.Node, error) {
 // newNodeByStartElement returns the node related to the startElement, for example, returns QueryNode for
 // start element which name is "select", "update", "insert", "delete". If the startElement is unacceptable,
 // returns an emptyNode instead.
-func (*Parser) newNodeByStartElement(startElement *xml.StartElement) ast.Node {
+func (p *Parser) newNodeByStartElement(startElement *xml.StartElement) ast.Node {
 	switch startElement.Name.Local {
 	case "mapper":
 		return ast.NewMapperNode(startElement)
 	case "select", "update", "insert", "delete":
-		return ast.NewQueryNode(startElement)
+		return ast.NewQueryNode(startElement, p.currentLine)
 	case "if":
 		return ast.NewIfNode(startElement)
 	case "choose":

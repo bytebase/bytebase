@@ -245,3 +245,44 @@
   sql: |
     select
             field1, field2, field3 from SomeTable;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <sql id="sometable">
+            ${prefix}Table
+        </sql>
+        <sql id="someinclude">
+            FROM
+            <include refid="${include_target}"/>
+        </sql>
+        <select id="selectUsers" parameterType="int" resultType="hashmap">
+            SELECT * FROM users;
+        </select>
+        <select id="selectSuccess" resultType="map">
+            SELECT * FROM users
+            <where>
+                <if test="id != null">
+                    AND id = #{id}
+                </if>
+                <if test="name != null">
+                    AND name = #{name}
+                </if>
+            </where>
+        </select>
+        <insert id="insert">
+            INSERT INTO users (id, name) VALUES (#{id}, #{name})
+        </insert>
+            <select id="select" resultType="map">
+            SELECT
+            *
+            <include refid="someinclude">
+                <property name="prefix" value="Some"/>
+                <property name="include_target" value="sometable"/>
+            </include>
+        </select>
+    </mapper>
+  sql: |
+    SELECT * FROM users WHERE id = 1;
+    SELECT * FROM users WHERE id = ?  AND name = ?;
+    INSERT INTO users (id, name) VALUES (?, ?);
+    SELECT
+            * FROM SomeTable;
