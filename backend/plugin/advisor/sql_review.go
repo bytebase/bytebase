@@ -492,7 +492,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 	if len(result) > 0 && result[0].Title == SyntaxErrorTitle {
 		return result[:1], nil
 	}
-	sort.Slice(result, func(i, j int) bool {
+	sort.SliceStable(result, func(i, j int) bool {
 		// Error is 2, warning is 1. So the error (value 2) should come first.
 		return result[i].Status.GetPriority() > result[j].Status.GetPriority()
 	})
