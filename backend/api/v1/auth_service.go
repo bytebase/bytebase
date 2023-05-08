@@ -672,10 +672,11 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		oidcIDP, err := oidc.NewIdentityProvider(
 			ctx,
 			oidc.IdentityProviderConfig{
-				Issuer:       idp.Config.GetOidcConfig().Issuer,
-				ClientID:     idp.Config.GetOidcConfig().ClientId,
-				ClientSecret: idp.Config.GetOidcConfig().ClientSecret,
-				FieldMapping: idp.Config.GetOidcConfig().FieldMapping,
+				Issuer:        idp.Config.GetOidcConfig().Issuer,
+				ClientID:      idp.Config.GetOidcConfig().ClientId,
+				ClientSecret:  idp.Config.GetOidcConfig().ClientSecret,
+				FieldMapping:  idp.Config.GetOidcConfig().FieldMapping,
+				SkipTLSVerify: idp.Config.GetOidcConfig().SkipTlsVerify,
 			},
 		)
 		if err != nil {

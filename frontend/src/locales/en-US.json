@@ -477,6 +477,8 @@
         "scopes-description": "A space-separated list of scopes to be carried when accessing the Auth URL",
         "token-url-description": "The API address for obtaining accessToken",
         "user-info-url-description": "The API address for obtaining user information by accessToken",
+        "connection-security": "Connection security",
+        "connection-security-skip-tls-verify": "Skip TLS verify for self-signed certificates",
         "user-information-mapping": "User information mapping",
         "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
         "identifier": "Bytebase user identifier",

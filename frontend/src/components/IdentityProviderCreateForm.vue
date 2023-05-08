@@ -240,6 +240,22 @@
           placeholder="e.g. https://api.github.com/user"
         />
       </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          {{ $t("settings.sso.form.connection-security") }}
+        </p>
+        <p class="textinfolabel mt-1">
+          <BBCheckbox
+            :title="$t('settings.sso.form.connection-security-skip-tls-verify')"
+            :v-model="configForOAuth2.skipTlsVerify"
+            :disabled="!allowEdit"
+            @toggle="
+              () =>
+                (configForOAuth2.skipTlsVerify = !configForOAuth2.skipTlsVerify)
+            "
+          />
+        </p>
+      </div>
 
       <div class="w-full flex flex-col justify-start items-start">
         <p class="text-lg font-medium mt-2">
@@ -395,6 +411,21 @@
               : $t('common.sensitive-placeholder')
           "
         />
+      </div>
+      <div class="w-full flex flex-col justify-start items-start">
+        <p class="textlabel">
+          {{ $t("settings.sso.form.connection-security") }}
+        </p>
+        <p class="textinfolabel mt-1">
+          <BBCheckbox
+            :title="$t('settings.sso.form.connection-security-skip-tls-verify')"
+            :value="configForOIDC.skipTlsVerify"
+            :disabled="!allowEdit"
+            @toggle="
+              () => (configForOIDC.skipTlsVerify = !configForOIDC.skipTlsVerify)
+            "
+          />
+        </p>
       </div>
 
       <div class="w-full flex flex-col justify-start items-start">

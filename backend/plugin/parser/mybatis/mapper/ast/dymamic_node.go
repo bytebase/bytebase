@@ -4,6 +4,7 @@ package ast
 import (
 	"encoding/xml"
 	"io"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -20,6 +21,10 @@ var (
 	_ Node = (*SetNode)(nil)
 	_ Node = (*TrimNode)(nil)
 	_ Node = (*ForEachNode)(nil)
+
+	_ Node = (*SQLNode)(nil)
+	_ Node = (*IncludeNode)(nil)
+	_ Node = (*PropertyNode)(nil)
 )
 
 // IfNode represents a if node in mybatis mapper xml likes <if test="condition">...</if>.
@@ -54,8 +59,21 @@ func (n *IfNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	return nil
 }
 
+func (*IfNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L290
+	switch child.(type) {
+	case *DataNode, *IncludeNode, *TrimNode, *WhereNode, *SetNode, *ForEachNode, *ChooseNode, *IfNode:
+		return true
+	default:
+		return false
+	}
+}
+
 // AddChild adds a child to the if node.
 func (n *IfNode) AddChild(child Node) {
+	if !n.isChildAcceptable(child) {
+		return
+	}
 	n.Children = append(n.Children, child)
 }
 
@@ -84,8 +102,20 @@ func (n *ChooseNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	return nil
 }
 
+func (*ChooseNode) isChildAcceptable(child Node) bool {
+	switch child.(type) {
+	case *WhenNode, *OtherwiseNode:
+		return true
+	default:
+		return false
+	}
+}
+
 // AddChild implements Node interface.
 func (n *ChooseNode) AddChild(child Node) {
+	if !n.isChildAcceptable(child) {
+		return
+	}
 	n.Children = append(n.Children, child)
 }
 
@@ -126,8 +156,21 @@ func (n *WhenNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	return nil
 }
 
+func (*WhenNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#LL284C1-L284C1
+	switch child.(type) {
+	case *DataNode, *IncludeNode, *TrimNode, *WhereNode, *SetNode, *ForEachNode, *ChooseNode, *IfNode:
+		return true
+	default:
+		return false
+	}
+}
+
 // AddChild adds a child to the when node.
 func (n *WhenNode) AddChild(child Node) {
+	if !n.isChildAcceptable(child) {
+		return
+	}
 	n.Children = append(n.Children, child)
 }
 
@@ -156,8 +199,21 @@ func (n *OtherwiseNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	return nil
 }
 
+func (*OtherwiseNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L288
+	switch child.(type) {
+	case *DataNode, *IncludeNode, *TrimNode, *WhereNode, *SetNode, *ForEachNode, *ChooseNode, *IfNode:
+		return true
+	default:
+		return false
+	}
+}
+
 // AddChild adds a child to the otherwise node.
 func (n *OtherwiseNode) AddChild(child Node) {
+	if !n.isChildAcceptable(child) {
+		return
+	}
 	n.Children = append(n.Children, child)
 }
 
@@ -252,8 +308,21 @@ func (n *TrimNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	return nil
 }
 
+func (*TrimNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L262
+	switch child.(type) {
+	case *DataNode, *IncludeNode, *TrimNode, *WhereNode, *SetNode, *ForEachNode, *ChooseNode, *IfNode:
+		return true
+	default:
+		return false
+	}
+}
+
 // AddChild adds a child to the trim node.
 func (n *TrimNode) AddChild(child Node) {
+	if !n.isChildAcceptable(child) {
+		return
+	}
 	n.Children = append(n.Children, child)
 }
 
@@ -272,6 +341,11 @@ func NewWhereNode(_ *xml.StartElement) *WhereNode {
 // RestoreSQL implements Node interface.
 func (n *WhereNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	return n.trimNode.RestoreSQL(ctx, w)
+}
+
+func (n *WhereNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L269
+	return n.trimNode.isChildAcceptable(child)
 }
 
 // AddChild adds a child to the where node.
@@ -294,6 +368,11 @@ func NewSetNode(_ *xml.StartElement) *SetNode {
 // RestoreSQL implements Node interface.
 func (n *SetNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	return n.trimNode.RestoreSQL(ctx, w)
+}
+
+func (n *SetNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L270
+	return n.trimNode.isChildAcceptable(child)
 }
 
 // AddChild adds a child to the set node.
@@ -334,8 +413,21 @@ func NewForeachNode(startElement *xml.StartElement) *ForEachNode {
 	return &eachNode
 }
 
+func (*ForEachNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L272
+	switch child.(type) {
+	case *DataNode, *IncludeNode, *TrimNode, *WhereNode, *SetNode, *ForEachNode, *ChooseNode, *IfNode:
+		return true
+	default:
+		return false
+	}
+}
+
 // AddChild adds a child to the foreach node.
 func (n *ForEachNode) AddChild(child Node) {
+	if !n.isChildAcceptable(child) {
+		return
+	}
 	n.Children = append(n.Children, child)
 }
 
@@ -405,8 +497,21 @@ func NewSQLNode(startElement *xml.StartElement) *SQLNode {
 	}
 }
 
+func (*SQLNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L255
+	switch child.(type) {
+	case *DataNode, *IncludeNode, *TrimNode, *WhereNode, *SetNode, *ForEachNode, *IfNode, *ChooseNode:
+		return true
+	default:
+		return false
+	}
+}
+
 // AddChild adds a child to the sql node.
 func (n *SQLNode) AddChild(child Node) {
+	if !n.isChildAcceptable(child) {
+		return
+	}
 	n.Children = append(n.Children, child)
 }
 
@@ -432,7 +537,7 @@ type IncludeNode struct {
 	RefID string
 	// IncludeNode can only contains property node.
 	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L244
-	Children []Node
+	PropertyChildren []*PropertyNode
 }
 
 // NewIncludeNode creates a new include node.
@@ -451,15 +556,46 @@ func NewIncludeNode(startElement *xml.StartElement) *IncludeNode {
 
 // AddChild adds a child to the include node.
 func (n *IncludeNode) AddChild(child Node) {
-	n.Children = append(n.Children, child)
+	if !n.isChildAcceptable(child) {
+		return
+	}
+	n.PropertyChildren = append(n.PropertyChildren, child.(*PropertyNode))
+}
+
+func (*IncludeNode) isChildAcceptable(child Node) bool {
+	// https://github.com/mybatis/mybatis-3/blob/master/src/main/resources/org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd#L244
+	if _, ok := child.(*PropertyNode); ok {
+		return true
+	}
+	return false
 }
 
 // RestoreSQL implements Node interface.
 func (n *IncludeNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
-	sqlNode, ok := ctx.SQLMap[n.RefID]
+	variableCatcher := regexp.MustCompile(`\${([a-zA-Z0-9_]+)}`)
+	// We need to replace the variable in the refID.
+	refID := variableCatcher.ReplaceAllStringFunc(n.RefID, func(s string) string {
+		matches := variableCatcher.FindStringSubmatch(s)
+		if len(matches) != 2 {
+			return s
+		}
+		name := matches[1]
+		return ctx.Variable[name]
+	})
+
+	sqlNode, ok := ctx.SQLMap[refID]
 	if !ok {
 		return errors.Errorf("refID %s not found", n.RefID)
 	}
+
+	// Set all the properties.
+	// It is safe we don't check whether the variable exists, because property element can only be child of include element,
+	// and include element can only refers one sql element. The property element was covered by another property element
+	// is not a problem, because the outer include element will not use the outer property element any more.
+	for _, propertyNode := range n.PropertyChildren {
+		ctx.Variable[propertyNode.Name] = propertyNode.Value
+	}
+
 	sqlString, err := sqlNode.String(ctx)
 	if err != nil {
 		return err
@@ -474,5 +610,46 @@ func (n *IncludeNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	if _, err := w.Write([]byte(trimmed)); err != nil {
 		return err
 	}
+
+	// Unset all the properties.
+	for _, propertyNode := range n.PropertyChildren {
+		delete(ctx.Variable, propertyNode.Name)
+	}
+
+	return nil
+}
+
+// PropertyNode represents a property node in mybatis mapper xml likes <property name="name" value="value" />.
+type PropertyNode struct {
+	Name  string
+	Value string
+}
+
+// NewPropertyNode creates a new property node.
+func NewPropertyNode(startElement *xml.StartElement) *PropertyNode {
+	var name, value string
+	for _, attr := range startElement.Attr {
+		if attr.Name.Local == "name" {
+			name = attr.Value
+		} else if attr.Name.Local == "value" {
+			value = attr.Value
+		}
+	}
+	return &PropertyNode{
+		Name:  name,
+		Value: value,
+	}
+}
+
+func (*PropertyNode) isChildAcceptable(Node) bool {
+	return false
+}
+
+// AddChild adds a child to the property node.
+func (*PropertyNode) AddChild(Node) {
+}
+
+// RestoreSQL implements Node interface.
+func (*PropertyNode) RestoreSQL(*RestoreContext, io.Writer) error {
 	return nil
 }

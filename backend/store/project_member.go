@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
@@ -19,8 +21,11 @@ type IAMPolicyMessage struct {
 
 // PolicyBinding is the IAM policy binding of a project.
 type PolicyBinding struct {
-	Role    api.Role
-	Members []*UserMessage
+	Role      api.Role
+	Members   []*UserMessage
+	Condition *expr.Expr
+	// We keep the raw condition to be compatible with the json format string in the store.
+	rawCondition string
 }
 
 // GetProjectPolicyMessage is the message to get project policy.
@@ -136,6 +141,11 @@ func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *IAMPolicyMessage, 
 	return s.GetProjectPolicy(ctx, &GetProjectPolicyMessage{UID: &projectUID})
 }
 
+type roleConditionKey struct {
+	role         api.Role
+	rawCondition string
+}
+
 func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("project_member.row_status = $%d", len(args)+1)), append(args, api.Normal)
@@ -146,11 +156,12 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProje
 		where, args = append(where, fmt.Sprintf("project.id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	roleMap := make(map[api.Role][]*UserMessage)
+	roleMap := make(map[roleConditionKey][]*UserMessage)
 	rows, err := tx.QueryContext(ctx, `
 			SELECT
 				project_member.principal_id,
-				project_member.role
+				project_member.role,
+				project_member.condition
 			FROM project_member
 			LEFT JOIN project ON project_member.project_id = project.id
 			WHERE `+strings.Join(where, " AND "),
@@ -162,30 +173,44 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProje
 	defer rows.Close()
 	for rows.Next() {
 		var role api.Role
+		var condition string
 		member := &UserMessage{}
 		if err := rows.Scan(
 			&member.ID,
 			&role,
+			&condition,
 		); err != nil {
 			return nil, err
 		}
-		roleMap[role] = append(roleMap[role], member)
+		key := roleConditionKey{role, condition}
+		roleMap[key] = append(roleMap[key], member)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	var roles []api.Role
+	var keys []roleConditionKey
 	for role := range roleMap {
-		roles = append(roles, role)
+		keys = append(keys, role)
 	}
-	sort.Slice(roles, func(i, j int) bool {
-		return string(roles[i]) < string(roles[j])
+	sort.Slice(keys, func(i, j int) bool {
+		if string(keys[i].role) < string(keys[j].role) {
+			return true
+		}
+		if string(keys[i].role) == string(keys[j].role) && keys[i].rawCondition < keys[j].rawCondition {
+			return true
+		}
+		return false
 	})
 	projectPolicy := &IAMPolicyMessage{}
-	for _, role := range roles {
-		binding := &PolicyBinding{Role: role}
-		for _, member := range roleMap[role] {
+	for _, key := range keys {
+		var condition expr.Expr
+		if err := protojson.Unmarshal([]byte(key.rawCondition), &condition); err != nil {
+			return nil, err
+		}
+
+		binding := &PolicyBinding{Role: key.role, Condition: &condition, rawCondition: key.rawCondition}
+		for _, member := range roleMap[key] {
 			user, err := s.GetUserByID(ctx, member.ID)
 			if err != nil {
 				return nil, err
@@ -201,14 +226,28 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 	if set == nil {
 		return errors.Errorf("SetProjectPolicy must set IAMPolicyMessage")
 	}
+	// Convert condition to json string format.
+	for _, binding := range set.Bindings {
+		if binding.rawCondition == "" {
+			if binding.Condition == nil {
+				binding.Condition = &expr.Expr{}
+			}
+			bytes, err := protojson.Marshal(binding.Condition)
+			if err != nil {
+				return err
+			}
+			binding.rawCondition = string(bytes)
+		}
+	}
+
 	oldPolicy, err := s.getProjectPolicyImpl(ctx, tx, &GetProjectPolicyMessage{
 		UID: &projectUID,
 	})
 	if err != nil {
 		return err
 	}
+	// Deletes and inserts don't have condition in *expr.Expr because we use rawCondition string for updates.
 	deletes, inserts := getIAMPolicyDiff(oldPolicy, set)
-
 	if len(deletes.Bindings) > 0 {
 		if err := s.deleteProjectIAMPolicyImpl(ctx, tx, projectUID, deletes); err != nil {
 			return err
@@ -220,13 +259,14 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 		var placeholders []string
 		for _, binding := range inserts.Bindings {
 			for _, member := range binding.Members {
-				placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", len(args)+1, len(args)+2, len(args)+3, len(args)+4, len(args)+5))
+				placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", len(args)+1, len(args)+2, len(args)+3, len(args)+4, len(args)+5, len(args)+6))
 				args = append(args,
 					creatorUID,   // creator_id
 					creatorUID,   // updater_id
 					projectUID,   // project_id
 					binding.Role, // role
 					member.ID,    // principal_id
+					binding.rawCondition,
 				)
 			}
 		}
@@ -235,7 +275,8 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 			updater_id,
 			project_id,
 			role,
-			principal_id
+			principal_id,
+			condition
 		) VALUES %s`, strings.Join(placeholders, ", "))
 		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return err
@@ -252,8 +293,8 @@ func (*Store) deleteProjectIAMPolicyImpl(ctx context.Context, tx *Tx, projectUID
 	args = append(args, projectUID)
 	for _, binding := range deletes.Bindings {
 		for _, member := range binding.Members {
-			where = append(where, fmt.Sprintf("(project_member.principal_id = $%d AND project_member.role = $%d)", len(args)+1, len(args)+2))
-			args = append(args, member.ID, binding.Role)
+			where = append(where, fmt.Sprintf("(project_member.principal_id = $%d AND project_member.role = $%d AND project_member.condition = $%d)", len(args)+1, len(args)+2, len(args)+3))
+			args = append(args, member.ID, binding.Role, binding.rawCondition)
 		}
 	}
 	query := fmt.Sprintf(`DELETE FROM project_member WHERE project_member.project_id = $1 AND (%s)`, strings.Join(where, " OR "))
@@ -264,34 +305,34 @@ func (*Store) deleteProjectIAMPolicyImpl(ctx context.Context, tx *Tx, projectUID
 }
 
 func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) (*IAMPolicyMessage, *IAMPolicyMessage) {
-	oldUserIDToProjectRoleMap := make(map[int]map[api.Role]bool)
+	oldUserIDToProjectRoleMap := make(map[int]map[roleConditionKey]bool)
 	oldUserIDToUserMap := make(map[int]*UserMessage)
-	newUserIDToProjectRoleMap := make(map[int]map[api.Role]bool)
+	newUserIDToProjectRoleMap := make(map[int]map[roleConditionKey]bool)
 	newUserIDToUserMap := make(map[int]*UserMessage)
 
 	for _, binding := range oldPolicy.Bindings {
+		key := roleConditionKey{role: binding.Role, rawCondition: binding.rawCondition}
 		for _, member := range binding.Members {
 			oldUserIDToUserMap[member.ID] = member
-
 			if _, ok := oldUserIDToProjectRoleMap[member.ID]; !ok {
-				oldUserIDToProjectRoleMap[member.ID] = make(map[api.Role]bool)
+				oldUserIDToProjectRoleMap[member.ID] = make(map[roleConditionKey]bool)
 			}
-			oldUserIDToProjectRoleMap[member.ID][binding.Role] = true
+			oldUserIDToProjectRoleMap[member.ID][key] = true
 		}
 	}
 	for _, binding := range newPolicy.Bindings {
+		key := roleConditionKey{role: binding.Role, rawCondition: binding.rawCondition}
 		for _, member := range binding.Members {
 			newUserIDToUserMap[member.ID] = member
-
 			if _, ok := newUserIDToProjectRoleMap[member.ID]; !ok {
-				newUserIDToProjectRoleMap[member.ID] = make(map[api.Role]bool)
+				newUserIDToProjectRoleMap[member.ID] = make(map[roleConditionKey]bool)
 			}
-			newUserIDToProjectRoleMap[member.ID][binding.Role] = true
+			newUserIDToProjectRoleMap[member.ID][key] = true
 		}
 	}
 
-	deletes := make(map[api.Role][]*UserMessage)
-	inserts := make(map[api.Role][]*UserMessage)
+	deletes := make(map[roleConditionKey][]*UserMessage)
+	inserts := make(map[roleConditionKey][]*UserMessage)
 	// Delete member that no longer exists.
 	for oldUserID, oldRoleMap := range oldUserIDToProjectRoleMap {
 		for oldRole := range oldRoleMap {
@@ -311,18 +352,22 @@ func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 	}
 
 	var deleteBindings []*PolicyBinding
-	for role, users := range deletes {
+	for rc, users := range deletes {
 		deleteBindings = append(deleteBindings, &PolicyBinding{
-			Role:    role,
+			Role:    rc.role,
 			Members: users,
+			// We escape the condition because it's not useful for updates.
+			rawCondition: rc.rawCondition,
 		})
 	}
 
 	var upsertBindings []*PolicyBinding
-	for role, users := range inserts {
+	for rc, users := range inserts {
 		upsertBindings = append(upsertBindings, &PolicyBinding{
-			Role:    role,
+			Role:    rc.role,
 			Members: users,
+			// We escape the condition because it's not useful for updates.
+			rawCondition: rc.rawCondition,
 		})
 	}
 

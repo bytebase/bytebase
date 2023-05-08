@@ -32,6 +32,8 @@ message OAuth2IdentityProviderConfig {
   repeated string scopes = 6;
 
   FieldMapping field_mapping = 7;
+
+  bool skip_tls_verify = 8;
 }
 
 // OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
@@ -43,6 +45,8 @@ message OIDCIdentityProviderConfig {
   string client_secret = 3;
 
   FieldMapping field_mapping = 4;
+
+  bool skip_tls_verify = 5;
 }
 
 // FieldMapping saves the field names from user info API of identity provider.

@@ -164,6 +164,7 @@ export interface OAuth2IdentityProviderConfig {
   clientSecret: string;
   scopes: string[];
   fieldMapping?: FieldMapping;
+  skipTlsVerify: boolean;
 }
 
 /** OIDCIdentityProviderConfig is the structure for OIDC identity provider config. */
@@ -173,6 +174,7 @@ export interface OIDCIdentityProviderConfig {
   clientSecret: string;
   scopes: string[];
   fieldMapping?: FieldMapping;
+  skipTlsVerify: boolean;
 }
 
 /**
@@ -1076,6 +1078,7 @@ function createBaseOAuth2IdentityProviderConfig(): OAuth2IdentityProviderConfig 
     clientSecret: "",
     scopes: [],
     fieldMapping: undefined,
+    skipTlsVerify: false,
   };
 }
 
@@ -1101,6 +1104,9 @@ export const OAuth2IdentityProviderConfig = {
     }
     if (message.fieldMapping !== undefined) {
       FieldMapping.encode(message.fieldMapping, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.skipTlsVerify === true) {
+      writer.uint32(64).bool(message.skipTlsVerify);
     }
     return writer;
   },
@@ -1161,6 +1167,13 @@ export const OAuth2IdentityProviderConfig = {
 
           message.fieldMapping = FieldMapping.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.skipTlsVerify = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1179,6 +1192,7 @@ export const OAuth2IdentityProviderConfig = {
       clientSecret: isSet(object.clientSecret) ? String(object.clientSecret) : "",
       scopes: Array.isArray(object?.scopes) ? object.scopes.map((e: any) => String(e)) : [],
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
+      skipTlsVerify: isSet(object.skipTlsVerify) ? Boolean(object.skipTlsVerify) : false,
     };
   },
 
@@ -1196,6 +1210,7 @@ export const OAuth2IdentityProviderConfig = {
     }
     message.fieldMapping !== undefined &&
       (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
+    message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
     return obj;
   },
 
@@ -1214,12 +1229,13 @@ export const OAuth2IdentityProviderConfig = {
     message.fieldMapping = (object.fieldMapping !== undefined && object.fieldMapping !== null)
       ? FieldMapping.fromPartial(object.fieldMapping)
       : undefined;
+    message.skipTlsVerify = object.skipTlsVerify ?? false;
     return message;
   },
 };
 
 function createBaseOIDCIdentityProviderConfig(): OIDCIdentityProviderConfig {
-  return { issuer: "", clientId: "", clientSecret: "", scopes: [], fieldMapping: undefined };
+  return { issuer: "", clientId: "", clientSecret: "", scopes: [], fieldMapping: undefined, skipTlsVerify: false };
 }
 
 export const OIDCIdentityProviderConfig = {
@@ -1238,6 +1254,9 @@ export const OIDCIdentityProviderConfig = {
     }
     if (message.fieldMapping !== undefined) {
       FieldMapping.encode(message.fieldMapping, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.skipTlsVerify === true) {
+      writer.uint32(48).bool(message.skipTlsVerify);
     }
     return writer;
   },
@@ -1284,6 +1303,13 @@ export const OIDCIdentityProviderConfig = {
 
           message.fieldMapping = FieldMapping.decode(reader, reader.uint32());
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.skipTlsVerify = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1300,6 +1326,7 @@ export const OIDCIdentityProviderConfig = {
       clientSecret: isSet(object.clientSecret) ? String(object.clientSecret) : "",
       scopes: Array.isArray(object?.scopes) ? object.scopes.map((e: any) => String(e)) : [],
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
+      skipTlsVerify: isSet(object.skipTlsVerify) ? Boolean(object.skipTlsVerify) : false,
     };
   },
 
@@ -1315,6 +1342,7 @@ export const OIDCIdentityProviderConfig = {
     }
     message.fieldMapping !== undefined &&
       (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
+    message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
     return obj;
   },
 
@@ -1331,6 +1359,7 @@ export const OIDCIdentityProviderConfig = {
     message.fieldMapping = (object.fieldMapping !== undefined && object.fieldMapping !== null)
       ? FieldMapping.fromPartial(object.fieldMapping)
       : undefined;
+    message.skipTlsVerify = object.skipTlsVerify ?? false;
     return message;
   },
 };
