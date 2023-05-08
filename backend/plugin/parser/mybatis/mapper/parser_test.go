@@ -1,5 +1,5 @@
-// Package mybatis defines the sql extractor for mybatis mapper xml.
-package mybatis
+// Package mapper defines the sql extractor for mybatis mapper xml.
+package mapper
 
 import (
 	"io"
