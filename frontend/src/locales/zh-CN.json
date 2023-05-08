@@ -1926,6 +1926,10 @@
         "title": "Read replica connection",
         "desc": "使用只读副本连接到只读数据源。"
       },
+      "bb-feature-index-advisor": {
+        "title": "索引建议",
+        "desc": "索引建议可以找到导致慢查询的索引，并提供相关的优化建议。"
+      },
       "bb-feature-sso": {
         "title": "Single Sign-On (SSO)",
         "desc": "使得用户能够通过 SSO 安全地进行登录 Bytebase。"
@@ -2408,7 +2412,8 @@
     "advise-index": {
       "current-index": "当前索引",
       "suggestion": "建议",
-      "create-index": "创建索引"
+      "create-index": "创建索引",
+      "setup-openai-key-to-enable": "设置 OpenAI API Key 以开启索引建议功能。"
     }
   },
   "principal": {
