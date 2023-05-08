@@ -22,14 +22,13 @@ type Catalog struct {
 func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Type, syntaxMode advisor.SyntaxMode) (catalog.Catalog, error) {
 	c := &Catalog{}
 
+	if syntaxMode == advisor.SyntaxModeSDL {
+		return NewEmptyCatalog(engineType)
+	}
+
 	dbType, err := advisorDB.ConvertToAdvisorDBType(string(engineType))
 	if err != nil {
 		return nil, err
-	}
-
-	if syntaxMode == advisor.SyntaxModeSDL {
-		c.Finder = catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: true, EngineType: dbType})
-		return c, nil
 	}
 
 	databaseMeta, err := s.GetDBSchema(ctx, databaseID)
@@ -47,4 +46,16 @@ func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Ty
 // GetFinder implements the catalog.Catalog interface.
 func (c *Catalog) GetFinder() *catalog.Finder {
 	return c.Finder
+}
+
+// NewEmptyCatalog creates a new empty database catalog.
+func NewEmptyCatalog(engineType db.Type) (catalog.Catalog, error) {
+	dbType, err := advisorDB.ConvertToAdvisorDBType(string(engineType))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Catalog{
+		catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false, EngineType: dbType}),
+	}, nil
 }
