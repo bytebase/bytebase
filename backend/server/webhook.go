@@ -2014,6 +2014,7 @@ func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repo *api.Re
 			if currentDir == "" {
 				break
 			}
+			configPath = currentDir
 		}
 		mybatisMapperXMLFileData = append(mybatisMapperXMLFileData, datum)
 	}
