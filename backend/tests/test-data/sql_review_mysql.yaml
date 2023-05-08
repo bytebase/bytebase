@@ -76,19 +76,19 @@
       code: 401
       status: WARN
       title: column.required
-      content: 'Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id'
+      content: "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id"
       line: 1
     - namespace: bb.advisor
       code: 402
       status: WARN
       title: column.no-null
-      content: '`userTable`.`name` cannot have NULL value'
+      content: "`userTable`.`name` cannot have NULL value"
       line: 1
     - namespace: bb.advisor
       code: 402
       status: WARN
       title: column.no-null
-      content: '`userTable`.`roomId` cannot have NULL value'
+      content: "`userTable`.`roomId` cannot have NULL value"
       line: 1
     - namespace: bb.advisor
       code: 404
@@ -181,7 +181,7 @@
       code: 401
       status: WARN
       title: column.required
-      content: 'Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id'
+      content: "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id"
       line: 1
     - namespace: bb.advisor
       code: 410
@@ -208,7 +208,7 @@
       content: Columns in primary key must be INT/BIGINT but `t_auto`.`auto_id` is varchar(20)
       line: 1
   run: false
-- statement: '        DELETE FROM tech_book'
+- statement: "        DELETE FROM tech_book"
   result:
     - namespace: bb.advisor
       code: 202
@@ -250,7 +250,7 @@
       content: '"DELETE FROM tech_book WHERE name like `%abc`" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
       line: 1
   run: false
-- statement: '        INSERT INTO t_copy SELECT * FROM t'
+- statement: "        INSERT INTO t_copy SELECT * FROM t"
   result:
     - namespace: bb.advisor
       code: 203
@@ -283,7 +283,7 @@
       content: '"INSERT INTO t_copy SELECT * FROM t" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.t_copy'' doesn''t exist'
       line: 1
   run: false
-- statement: '        INSERT INTO t VALUES (1, 1, now(), 1, now())'
+- statement: "        INSERT INTO t VALUES (1, 1, now(), 1, now())"
   result:
     - namespace: bb.advisor
       code: 1107
@@ -405,7 +405,7 @@
       content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1" uses
       line: 1
   run: false
-- statement: '        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;'
+- statement: "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;"
   result:
     - namespace: bb.advisor
       code: 608
@@ -449,7 +449,7 @@
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" may cause incompatibility with the existing data and code'
       line: 1
   run: false
-- statement: '        DROP TABLE user;'
+- statement: "        DROP TABLE user;"
   result:
     - namespace: bb.advisor
       code: 603
