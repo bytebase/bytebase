@@ -79,7 +79,9 @@
       "dba": "DBA",
       "owner": "Propietario",
       "developer": "Desarrollador",
-      "member": "Miembro"
+      "member": "Miembro",
+      "exporter": "exportador",
+      "querier": "querier"
     },
     "assignee": "Asignado",
     "revert": "Revertir",
@@ -2440,6 +2442,12 @@
     },
     "developer": {
       "description": "Rol de desarrollador del proyecto definido por el sistema"
+    },
+    "exporter": {
+      "description": "Rol de exportador del proyecto definido por el sistema"
+    },
+    "querier": {
+      "description": "Rol de querier del proyecto definido por el sistema"
     }
   }
 }

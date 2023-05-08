@@ -60,7 +60,11 @@ const options = computed(() => {
 
   const customRoleNodes = roleList.value
     .filter(
-      (role) => role.name !== "roles/OWNER" && role.name !== "roles/DEVELOPER"
+      (role) =>
+        role.name !== "roles/OWNER" &&
+        role.name !== "roles/DEVELOPER" &&
+        role.name !== "roles/EXPORTER" &&
+        role.name !== "roles/QUERIER"
     )
     .map<ApprovalNodeSelectOption>((role) => ({
       node: {

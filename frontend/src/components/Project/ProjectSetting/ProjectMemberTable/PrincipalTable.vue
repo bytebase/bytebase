@@ -233,14 +233,20 @@ const allowAddRole = (item: ComposedPrincipal) => {
 };
 
 const getRoleOptions = (item: ComposedPrincipal) => {
-  return roleStore.roleList
-    .filter((role) => !item.roleList.includes(role.name))
-    .map<SelectOption>((role) => {
-      return {
-        label: displayRoleTitle(role.name),
-        value: role.name,
-      };
-    });
+  // TODO(steven): We don't allow to add EXPORTER and QUERIER roles directly for now.
+  const roleList = useRoleStore().roleList.filter((role) => {
+    return (
+      role.name !== "roles/EXPORTER" &&
+      role.name !== "roles/QUERIER" &&
+      !item.roleList.includes(role.name)
+    );
+  });
+  return roleList.map<SelectOption>((role) => {
+    return {
+      label: displayRoleTitle(role.name),
+      value: role.name,
+    };
+  });
 };
 
 const addRole = async (item: ComposedPrincipal, role: string) => {
