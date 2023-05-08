@@ -1215,7 +1215,8 @@
       "description-placeholder": "Ingrese descripción",
       "value": "Valor",
       "value-placeholder": "Valor de entrada (solo escritura)",
-      "delete-tips": "Eliminar secreto"
+      "delete-tips": "Eliminar secreto",
+      "description": "Puede usar secreto en su secuencia de comandos de cambio para ocultar información confidencial, consulte nuestra {guide}"
     }
   },
   "repository": {

@@ -1200,21 +1200,22 @@
     "all": "所有数据库",
     "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
     "secret": {
-      "new": "新增保密信息",
-      "edit": "编辑保密信息",
-      "name-placeholder": "输入保密信息名称",
+      "new": "新增保密变量",
+      "edit": "编辑保密变量",
+      "name-placeholder": "输入保密变量名称",
       "description-placeholder": "输入描述",
       "value": "值",
       "value-placeholder": "输入值（仅写入）",
       "validation": {
-        "duplicated-name": "保密信息名称重复",
+        "duplicated-name": "保密变量名称重复",
         "name-pattern-mismatch": "秘密名称应该只由大写字母，数字和 _（下划线）组成",
         "cannot-be-changed-later": "创建之后无法修改",
         "name-cannot-prefix-with-bytebase": "秘密名称不能以 'BYTEBASE_' 为前缀",
         "name-cannot-start-with-number": "秘密名称不能以数字开头"
       },
-      "self": "保密信息",
-      "delete-tips": "删除保密信息"
+      "self": "保密变量",
+      "delete-tips": "删除保密变量",
+      "description": "您可以在变更脚本中使用保密变量，来隐藏敏感信息, 请参考{guide}"
     }
   },
   "repository": {
@@ -1953,8 +1954,8 @@
         "desc": "将 SQL 脚本分享给项目成员，或者公开给所有人。"
       },
       "bb-feature-encrypted-secrets": {
-        "title": "保密信息",
-        "desc": "存储数据库的保密信息，并在工单的 SQL 中使用它们。"
+        "title": "保密变量",
+        "desc": "存储数据库的保密变量，并在工单的 SQL 中使用它们。"
       },
       "bb-feature-disallow-signup": {
         "title": "禁用自助注册",
