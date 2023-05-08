@@ -407,55 +407,57 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		sqlFileName2Advice := s.sqlAdviceForSQLFiles(ctx, repositoryList, prFiles, setting.ExternalUrl)
 
-		// If the commit file list contains the file which extension is xml and the content
-		// contains "https://mybatis.org/dtd/mybatis-3-mapper.dtd", we will try to apply
-		// sql-review to it.
-		// To apply sql-review to it, proceed as follows:
-		// 1. Look in the sibling and parent directories for directories containing similar
-		// <!DOCTYPE configuration
-		//   PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
-		//   "https://mybatis.org/dtd/mybatis-3-config.dtd">
-		// of the xml file
-		// 2. If we can find it, then we will extract the sql from the mapper xml
-		// 3. match the environments in the configuration xml, look for the sql-review policy in the environment and apply it.
-		var isMybatisMapperXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis.org/dtd/mybatis-3-mapper.dtd`)
+		if s.licenseService.IsFeatureEnabled(api.FeatureMybatisSQLReview) {
+			// If the commit file list contains the file which extension is xml and the content
+			// contains "https://mybatis.org/dtd/mybatis-3-mapper.dtd", we will try to apply
+			// sql-review to it.
+			// To apply sql-review to it, proceed as follows:
+			// 1. Look in the sibling and parent directories for directories containing similar
+			// <!DOCTYPE configuration
+			//   PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+			//   "https://mybatis.org/dtd/mybatis-3-config.dtd">
+			// of the xml file
+			// 2. If we can find it, then we will extract the sql from the mapper xml
+			// 3. match the environments in the configuration xml, look for the sql-review policy in the environment and apply it.
+			var isMybatisMapperXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis.org/dtd/mybatis-3-mapper.dtd`)
 
-		mybatisMapperXMLFiles := make(map[string]string)
-		var commitID string
-		for _, prFile := range prFiles {
-			if !strings.HasSuffix(prFile.Path, ".xml") {
-				continue
+			mybatisMapperXMLFiles := make(map[string]string)
+			var commitID string
+			for _, prFile := range prFiles {
+				if !strings.HasSuffix(prFile.Path, ".xml") {
+					continue
+				}
+				fileContent, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+					ctx,
+					common.OauthContext{
+						ClientID:     repo.VCS.ApplicationID,
+						ClientSecret: repo.VCS.Secret,
+						AccessToken:  repo.AccessToken,
+						RefreshToken: repo.RefreshToken,
+						Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+					},
+					repo.VCS.InstanceURL,
+					repo.ExternalID,
+					prFile.Path,
+					prFile.LastCommitID,
+				)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read file content").SetInternal(err)
+				}
+				if !isMybatisMapperXMLRegex.MatchString(fileContent) {
+					continue
+				}
+				mybatisMapperXMLFiles[prFile.Path] = fileContent
+				commitID = prFile.LastCommitID
 			}
-			fileContent, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
-				ctx,
-				common.OauthContext{
-					ClientID:     repo.VCS.ApplicationID,
-					ClientSecret: repo.VCS.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
-				},
-				repo.VCS.InstanceURL,
-				repo.ExternalID,
-				prFile.Path,
-				prFile.LastCommitID,
-			)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read file content").SetInternal(err)
-			}
-			if !isMybatisMapperXMLRegex.MatchString(fileContent) {
-				continue
-			}
-			mybatisMapperXMLFiles[prFile.Path] = fileContent
-			commitID = prFile.LastCommitID
-		}
-		if len(mybatisMapperXMLFiles) > 0 {
-			mapperAdvices, err := s.sqlAdviceForMybatisMapperFiles(ctx, mybatisMapperXMLFiles, commitID, repo)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get sql advice for mybatis mapper files").SetInternal(err)
-			}
-			for filename, mapperAdvice := range mapperAdvices {
-				sqlFileName2Advice[filename] = mapperAdvice
+			if len(mybatisMapperXMLFiles) > 0 {
+				mapperAdvices, err := s.sqlAdviceForMybatisMapperFiles(ctx, mybatisMapperXMLFiles, commitID, repo)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get sql advice for mybatis mapper files").SetInternal(err)
+				}
+				for filename, mapperAdvice := range mapperAdvices {
+					sqlFileName2Advice[filename] = mapperAdvice
+				}
 			}
 		}
 
