@@ -1,7 +1,13 @@
 <template>
   <div class="radio-set-row mt-2">
     <label v-for="type in SshTypes" :key="type" class="radio">
-      <input v-model="state.type" type="radio" class="btn" :value="type" />
+      <input
+        type="radio"
+        class="btn"
+        :value="type"
+        :checked="state.type === type"
+        @input="handleSelectType"
+      />
       <span class="label">
         {{ getSshTypeLabel(type) }}
       </span>
@@ -87,6 +93,12 @@
       </div>
     </div>
   </template>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.instance-ssh-connection"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -95,6 +107,8 @@ import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 
 import DroppableTextarea from "../misc/DroppableTextarea.vue";
+import { hasFeature } from "@/store";
+import FeatureModal from "../FeatureModal.vue";
 
 const SshTypes = ["NONE", "TUNNEL", "TUNNEL+PK"] as const;
 
@@ -112,6 +126,7 @@ type LocalState = {
   type: SshType;
   value: WithSshOptions;
   tab: "TUNNEL" | "TUNNEL+PK";
+  showFeatureModal: boolean;
 };
 
 const props = defineProps({
@@ -137,7 +152,26 @@ const state = reactive<LocalState>({
     sshPrivateKey: props.value.sshPrivateKey,
   },
   tab: "TUNNEL",
+  showFeatureModal: false,
 });
+
+const handleSelectType = (e: Event) => {
+  const radio = e.target as HTMLInputElement;
+  const type = radio.value as SshType;
+
+  if (!hasFeature("bb.feature.instance-ssh-connection")) {
+    if (type !== "NONE") {
+      state.type = "NONE";
+      radio.checked = false;
+      e.preventDefault();
+      e.stopPropagation();
+      state.showFeatureModal = true;
+      return;
+    }
+  }
+
+  state.type = type;
+};
 
 // Sync the latest version to local state when props.value changed.
 watch(

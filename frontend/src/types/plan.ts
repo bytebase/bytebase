@@ -36,6 +36,7 @@ export type FeatureType =
   // Database management
   | "bb.feature.pitr"
   | "bb.feature.read-replica-connection"
+  | "bb.feature.instance-ssh-connection"
   | "bb.feature.sync-schema-all-versions"
   | "bb.feature.index-advisor"
   // Policy Control

@@ -1926,6 +1926,10 @@
         "title": "Read replica connection",
         "desc": "使用只读副本连接到只读数据源。"
       },
+      "bb-feature-instance-ssh-connection": {
+        "title": "SSH 实例连接",
+        "desc": "通过 SSH 连接实例。"
+      },
       "bb-feature-index-advisor": {
         "title": "索引建议",
         "desc": "索引建议可以找到导致慢查询的索引，并提供相关的优化建议。"

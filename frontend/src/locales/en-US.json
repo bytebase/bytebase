@@ -1929,6 +1929,10 @@
         "title": "Read replica connection",
         "desc": "Connect to a read replica for the read-only data source."
       },
+      "bb-feature-instance-ssh-connection": {
+        "title": "Instance SSH connection",
+        "desc": "Connect to a instance over SSH."
+      },
       "bb-feature-index-advisor": {
         "title": "Index advisor",
         "desc": "Index advisor can help you to find the missing indexes in slow queries."
