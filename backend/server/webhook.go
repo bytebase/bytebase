@@ -322,7 +322,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	// id is the webhookEndpointID in repository
 	// This endpoint is generated and injected into GitHub action & GitLab CI during the VCS setup.
 	g.POST("/sql-review/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read SQL review request").SetInternal(err)
