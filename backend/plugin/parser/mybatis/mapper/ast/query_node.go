@@ -33,12 +33,13 @@ type QueryNode struct {
 	Type QueryNodeType
 	// Children is the children of the query node.
 	Children []Node
+	// Line is the line of the <select><update><delete><insert> tag.
+	Line int
 }
 
 // RestoreSQL implements Node interface.
 func (n *QueryNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	var sb strings.Builder
-
 	for _, node := range n.Children {
 		if err := node.RestoreSQL(ctx, &sb); err != nil {
 			return err
@@ -52,9 +53,16 @@ func (n *QueryNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	if _, err := w.Write([]byte(trimmed)); err != nil {
 		return err
 	}
-	if _, err := w.Write([]byte(";\n")); err != nil {
+	if !strings.HasSuffix(trimmed, ";") {
+		if _, err := w.Write([]byte(";")); err != nil {
+			return err
+		}
+	}
+	if _, err := w.Write([]byte("\n")); err != nil {
 		return err
 	}
+	ctx.SQLLastLineToOriginalLineMapping[ctx.CurrentLastLine] = n.Line
+	ctx.CurrentLastLine++
 	return nil
 }
 
@@ -77,7 +85,7 @@ func (*QueryNode) isChildAcceptable(child Node) bool {
 }
 
 // NewQueryNode creates a new query node.
-func NewQueryNode(startEle *xml.StartElement) *QueryNode {
+func NewQueryNode(startEle *xml.StartElement, line int) *QueryNode {
 	n := &QueryNode{}
 	switch startEle.Name.Local {
 	case "select":
@@ -95,5 +103,6 @@ func NewQueryNode(startEle *xml.StartElement) *QueryNode {
 			n.ID = attr.Value
 		}
 	}
+	n.Line = line
 	return n
 }

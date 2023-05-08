@@ -1582,12 +1582,19 @@
       "client-key": "Client Key",
       "client-cert": "Client Certificate"
     },
+    "ssh-type": {
+      "tunnel": "@:{'data-source.ssh.tunnel'}",
+      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
+      "none": "None"
+    },
     "ssh": {
       "host": "Server",
       "port": "Port",
       "user": "User",
       "password": "Password",
-      "ssh-key": "SSH Key"
+      "ssh-key": "SSH Key",
+      "tunnel": "Tunnel",
+      "private-key": "Private Key"
     },
     "ssl-connection": "SSL Connection",
     "ssh-connection": "SSH Connection",
@@ -1921,6 +1928,10 @@
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
         "desc": "Connect to a read replica for the read-only data source."
+      },
+      "bb-feature-index-advisor": {
+        "title": "Index advisor",
+        "desc": "Index advisor can help you to find the missing indexes in slow queries."
       },
       "bb-feature-sso": {
         "title": "Single Sign-On (SSO)",
@@ -2406,7 +2417,8 @@
     "advise-index": {
       "current-index": "Current Index",
       "suggestion": "Suggestion",
-      "create-index": "Create Index"
+      "create-index": "Create Index",
+      "setup-openai-key-to-enable": "Setup OpenAI key to enable index advisor"
     }
   },
   "principal": {
