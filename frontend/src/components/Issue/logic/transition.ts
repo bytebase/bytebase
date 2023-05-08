@@ -12,6 +12,7 @@ import {
   activeTask,
   allTaskList,
   applicableTaskTransition,
+  isOwnerOfProject,
   StageStatusTransition,
   TaskStatusTransition,
   TASK_STATUS_TRANSITION_LIST,
@@ -29,7 +30,12 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
       return false;
     }
 
-    // Only the assignee can apply task status transitions
+    // Project owners are allowed to apply task status transitions
+    if (isOwnerOfProject(issue.value.project, currentUser.value)) {
+      return true;
+    }
+
+    // Otherwise, only the assignee can apply task status transitions
     // including roll out, cancel, retry, etc.
     return issue.value.assignee.id === currentUser.value.id;
   });
