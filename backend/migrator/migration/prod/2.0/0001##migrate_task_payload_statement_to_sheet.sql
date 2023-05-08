@@ -11,7 +11,7 @@ LOOP
 INSERT INTO
     sheet (creator_id, updater_id, project_id, database_id, name, statement, visibility, source, type, payload)
 SELECT
-    task.creator_id, task.creator_id, issue.project_id, task.database_id, CONCAT('A sheet for issue #', issue.id), task_row.statement, 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}'
+    task.creator_id, task.creator_id, COALESCE(issue.project_id, 1), task.database_id, CONCAT('A sheet for issue #', issue.id), task_row.statement, 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}'
 FROM task
 LEFT JOIN issue ON task.pipeline_id = issue.pipeline_id
 WHERE task.id = task_row.id
@@ -38,7 +38,7 @@ LOOP
 INSERT INTO
     sheet (creator_id, updater_id, project_id, database_id, name, statement, visibility, source, type, payload)
 SELECT
-    task.creator_id, task.creator_id, issue.project_id, task.database_id, CONCAT('A rollback sheet for issue #', issue.id), task_row.statement, 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}'
+    task.creator_id, task.creator_id, COALESCE(issue.project_id, 1), task.database_id, CONCAT('A rollback sheet for issue #', issue.id), task_row.statement, 'PROJECT', 'BYTEBASE_ARTIFACT', 'SQL', '{}'
 FROM task
 LEFT JOIN issue ON task.pipeline_id = issue.pipeline_id
 WHERE task.id = task_row.id
