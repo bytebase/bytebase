@@ -1,5 +1,5 @@
 import { computed } from "vue";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isNaN, isNumber } from "lodash-es";
 import { useRoute } from "vue-router";
 import { v4 as uuidv4 } from "uuid";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
@@ -107,17 +107,17 @@ export const useCommonLogic = () => {
       return;
     }
 
-    // route.query.sheetIdString is sheetId. Mainly using in creating rollback issue.
-    const sheetIdString = route.query.sheetId as string;
+    // route.query.sheetId is an id of sheet. Mainly using in creating rollback issue.
+    const sheetId = Number(route.query.sheetId);
     // route.query.sqlList is JSON string of a string array.
     const sqlListString = route.query.sqlList as string;
-    if (sheetIdString) {
+    if (isNumber(sheetId) && !isNaN(sheetId)) {
       for (const databaseId of databaseIdList) {
         const task = taskList.find(
           (task) => task.databaseId === Number(databaseId)
         );
         if (task) {
-          task.sheetId = sheetIdString;
+          task.sheetId = sheetId;
         }
       }
     } else if (idListString && sqlListString) {
