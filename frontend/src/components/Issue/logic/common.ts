@@ -24,7 +24,6 @@ import {
   TaskType,
   MigrationDetail,
   MigrationType,
-  DatabaseId,
   SheetId,
   MigrationContext,
   dialectOfEngine,
@@ -100,28 +99,40 @@ export const useCommonLogic = () => {
     const taskList = flattenTaskList<TaskCreate>(issue.value).filter((task) =>
       TaskTypeWithStatement.includes(task.type)
     );
-    const databaseStatementMap = new Map<DatabaseId, string>();
     // route.query.databaseList is comma-splitted databaseId list
     // e.g. databaseList=7002,7006,7014
     const idListString = route.query.databaseList as string;
+    const databaseIdList = idListString.split(",");
+    if (databaseIdList.length === 0) {
+      return;
+    }
+
+    // route.query.sheetIdString is sheetId. Mainly using in creating rollback issue.
+    const sheetIdString = route.query.sheetId as string;
     // route.query.sqlList is JSON string of a string array.
     const sqlListString = route.query.sqlList as string;
-    if (idListString && sqlListString) {
-      const databaseIdList = idListString.split(",");
+    if (sheetIdString) {
+      for (const databaseId of databaseIdList) {
+        const task = taskList.find(
+          (task) => task.databaseId === Number(databaseId)
+        );
+        if (task) {
+          task.sheetId = sheetIdString;
+        }
+      }
+    } else if (idListString && sqlListString) {
       const statementList = JSON.parse(sqlListString) as string[];
       for (
         let i = 0;
         i < Math.min(databaseIdList.length, statementList.length);
         i++
       ) {
-        databaseStatementMap.set(Number(databaseIdList[i]), statementList[i]);
-      }
-    }
-
-    for (const [databaseId, statement] of databaseStatementMap) {
-      const task = taskList.find((task) => task.databaseId === databaseId);
-      if (task) {
-        task.statement = statement;
+        const task = taskList.find(
+          (task) => task.databaseId === databaseIdList[i]
+        );
+        if (task) {
+          task.statement = statementList[i];
+        }
       }
     }
   };
