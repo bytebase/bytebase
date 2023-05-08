@@ -12,7 +12,6 @@ import {
   activeTask,
   allTaskList,
   applicableTaskTransition,
-  isOwnerOfProject,
   StageStatusTransition,
   TaskStatusTransition,
   TASK_STATUS_TRANSITION_LIST,
