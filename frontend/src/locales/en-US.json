@@ -1922,6 +1922,10 @@
         "title": "Read replica connection",
         "desc": "Connect to a read replica for the read-only data source."
       },
+      "bb-feature-index-advisor": {
+        "title": "Index advisor",
+        "desc": "Index advisor can help you to find the missing indexes in slow queries."
+      },
       "bb-feature-sso": {
         "title": "Single Sign-On (SSO)",
         "desc": "Enables users to securely authenticate with multiple applications and websites via a single set of credentials."
@@ -2406,7 +2410,8 @@
     "advise-index": {
       "current-index": "Current Index",
       "suggestion": "Suggestion",
-      "create-index": "Create Index"
+      "create-index": "Create Index",
+      "setup-openai-key-to-enable": "Setup OpenAI key to enable index advisor"
     }
   },
   "principal": {
