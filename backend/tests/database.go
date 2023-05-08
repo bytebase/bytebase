@@ -44,7 +44,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		Name:          fmt.Sprintf("create database %q", databaseName),
 		Type:          api.IssueDatabaseCreate,
 		Description:   fmt.Sprintf("This creates a database %q.", databaseName),
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	if err != nil {
@@ -93,7 +93,7 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 		Name:          fmt.Sprintf("create database %q from backup %q", databaseName, backup.Name),
 		Type:          api.IssueDatabaseCreate,
 		Description:   fmt.Sprintf("This creates a database %q from backup %q.", databaseName, backup.Name),
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	if err != nil {
