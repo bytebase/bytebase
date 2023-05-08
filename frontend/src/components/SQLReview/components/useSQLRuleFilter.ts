@@ -1,6 +1,7 @@
 import { computed, reactive, unref } from "vue";
 import { useRoute } from "vue-router";
 import {
+  getRuleLocalization,
   MaybeRef,
   RuleLevel,
   RuleTemplate,
@@ -47,27 +48,39 @@ export const useSQLRuleFilter = (ruleList: MaybeRef<RuleTemplate[]>) => {
     },
   };
   const filteredRuleList = computed(() => {
-    return unref(ruleList).filter((rule) => {
-      if (
-        !params.selectedCategory &&
-        !params.searchText &&
-        params.checkedEngine.size === 0 &&
-        params.checkedLevel.size === 0
-      ) {
-        // Select "All"
-        return true;
-      }
+    return unref(ruleList)
+      .filter((rule) => {
+        if (
+          !params.selectedCategory &&
+          params.checkedEngine.size === 0 &&
+          params.checkedLevel.size === 0
+        ) {
+          // Select "All"
+          return true;
+        }
 
-      return (
-        (!params.selectedCategory ||
-          rule.category === params.selectedCategory) &&
-        (!params.searchText ||
-          rule.type.toLowerCase().includes(params.searchText.toLowerCase())) &&
-        (params.checkedEngine.size === 0 ||
-          rule.engineList.some((engine) => params.checkedEngine.has(engine))) &&
-        (params.checkedLevel.size === 0 || params.checkedLevel.has(rule.level))
-      );
-    });
+        return (
+          (!params.selectedCategory ||
+            rule.category === params.selectedCategory) &&
+          (params.checkedEngine.size === 0 ||
+            rule.engineList.some((engine) =>
+              params.checkedEngine.has(engine)
+            )) &&
+          (params.checkedLevel.size === 0 ||
+            params.checkedLevel.has(rule.level))
+        );
+      })
+      .filter((rule) => filterRuleByKeyword(rule, params.searchText));
   });
   return { params, events, filteredRuleList };
+};
+
+const filterRuleByKeyword = (rule: RuleTemplate, keyword: string) => {
+  keyword = keyword.trim().toLowerCase();
+  if (!keyword) return true;
+  if (rule.type.toLowerCase().includes(keyword)) return true;
+  const localization = getRuleLocalization(rule.type);
+  if (localization.title.toLowerCase().includes(keyword)) return true;
+  if (localization.description.toLowerCase().includes(keyword)) return true;
+  return false;
 };
