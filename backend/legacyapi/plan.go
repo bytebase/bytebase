@@ -139,6 +139,8 @@ const (
 	// FeatureReadReplicaConnection allows user to set a read replica connection
 	// including host and port to data source.
 	FeatureReadReplicaConnection FeatureType = "bb.feature.read-replica-connection"
+	// FeatureInstanceSSHConnection provides SSH connection for instances.
+	FeatureInstanceSSHConnection FeatureType = "bb.feature.instance-ssh-connection"
 	// FeatureSyncSchemaAllVersions allows user to sync the base database schema all versions into target database.
 	FeatureSyncSchemaAllVersions FeatureType = "bb.feature.sync-schema-all-versions"
 	// FeatureIndexAdvisor provides the index advisor for databases.
@@ -233,6 +235,8 @@ func (e FeatureType) Name() string {
 		return "Point-in-time Recovery"
 	case FeatureReadReplicaConnection:
 		return "Read replica connection"
+	case FeatureInstanceSSHConnection:
+		return "Instance SSH connection"
 	case FeatureSyncSchemaAllVersions:
 		return "Synchronize schema all versions"
 	case FeatureIndexAdvisor:
@@ -308,6 +312,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Database management
 	FeaturePITR:                  {false, true, true},
 	FeatureReadReplicaConnection: {false, false, true},
+	FeatureInstanceSSHConnection: {false, false, true},
 	FeatureSyncSchemaAllVersions: {false, true, true},
 	FeatureIndexAdvisor:          {false, false, true},
 	// Policy Control

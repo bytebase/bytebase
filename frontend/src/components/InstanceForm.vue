@@ -468,10 +468,14 @@
         </div>
 
         <div v-if="showSSH" class="mt-2 sm:col-span-3 sm:col-start-1">
-          <div class="flex flex-row items-center">
+          <div class="flex flex-row items-center gap-x-1">
             <label for="ssh" class="textlabel block">
               {{ $t("data-source.ssh-connection") }}
             </label>
+            <FeatureBadge
+              feature="bb.feature.instance-ssh-connection"
+              class="text-accent"
+            />
           </div>
           <SshConnectionForm
             :value="currentDataSource.options"
@@ -569,8 +573,12 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual, omit } from "lodash-es";
 import { computed, reactive, PropType, ref, watch, onMounted } from "vue";
+import { cloneDeep, isEqual, isEmpty, omit } from "lodash-es";
+import { useI18n } from "vue-i18n";
+import { Status } from "nice-grpc-common";
+import { useRouter } from "vue-router";
+
 import {
   hasWorkspacePermission,
   instanceHasSSL,
@@ -599,8 +607,6 @@ import {
   ValidatedMessage,
   DataSourceOptions,
 } from "../types";
-import isEmpty from "lodash-es/isEmpty";
-import { useI18n } from "vue-i18n";
 import {
   hasFeature,
   pushNotification,
@@ -612,9 +618,10 @@ import {
   useActuatorStore,
   useSQLStore,
 } from "@/store";
-import { useRouter } from "vue-router";
+import { getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
+import FeatureBadge from "./FeatureBadge.vue";
 import {
   SpannerHostInput,
   SpannerCredentialInput,
@@ -627,8 +634,6 @@ import {
   environmentNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { getErrorCode } from "@/utils/grpcweb";
-import { Status } from "nice-grpc-common";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 
 const props = defineProps({

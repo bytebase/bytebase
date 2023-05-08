@@ -41,6 +41,19 @@ func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
 	return "", errors.Errorf("unexpected rule level type: %s", level)
 }
 
+// GetPriority returns the priority of status.
+func (s Status) GetPriority() int {
+	switch s {
+	case Success:
+		return 0
+	case Warn:
+		return 1
+	case Error:
+		return 2
+	}
+	return 0
+}
+
 // Type is the type of advisor.
 // nolint
 type Type string

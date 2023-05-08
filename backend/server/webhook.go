@@ -1756,7 +1756,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 
 			testcase := fmt.Sprintf(
 				"<testcase name=\"%s\" classname=\"%s\" file=\"%s#L%d\">\n<failure>\n%s\n</failure>\n</testcase>",
-				fmt.Sprintf("%s#L%d: %s", filename, line, advice.Title),
+				fmt.Sprintf("[%s] %s#L%d: %s", advice.Status, filename, line, advice.Title),
 				filePath,
 				filePath,
 				line,

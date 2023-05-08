@@ -51,16 +51,16 @@
     </template>
   </BBTable>
   <BBModal
-    v-if="state.showModal"
-    :title="`'${state.selectedAnomaly?.database?.name}' schema drift - ${state.selectedAnomaly?.payload.version} vs Actual`"
+    v-if="schemaDriftDetail"
+    :title="`'${schemaDriftDetail.database.name}' schema drift - ${schemaDriftDetail.payload.version} vs Actual`"
     @close="dismissModal"
   >
     <div class="space-y-4">
       <code-diff
         class="w-full"
-        :old-string="state.selectedAnomaly?.payload.expect"
-        :new-string="state.selectedAnomaly?.payload.actual"
-        :file-name="`${state.selectedAnomaly?.payload.version} (left) vs Actual (right)`"
+        :old-string="schemaDriftDetail.payload.expect"
+        :new-string="schemaDriftDetail.payload.actual"
+        :file-name="`${schemaDriftDetail.payload.version} (left) vs Actual (right)`"
         output-format="side-by-side"
       />
       <div class="flex justify-end px-4">
@@ -289,11 +289,24 @@ export default defineComponent({
             onClick: () => {
               state.selectedAnomaly = anomaly;
               state.showModal = true;
+              useDatabaseStore().getOrFetchDatabaseById(anomaly.databaseId!);
             },
             title: t("anomaly.action.view-diff"),
           };
       }
     };
+
+    const schemaDriftDetail = computed(() => {
+      if (state.showModal && state.selectedAnomaly) {
+        const anomaly = state.selectedAnomaly;
+        const payload = anomaly.payload as AnomalyDatabaseSchemaDriftPayload;
+        const database = useDatabaseStore().getDatabaseById(
+          anomaly.databaseId!
+        );
+        return { anomaly, payload, database };
+      }
+      return undefined;
+    });
 
     const dismissModal = () => {
       state.showModal = false;
@@ -306,6 +319,7 @@ export default defineComponent({
       typeName,
       detail,
       action,
+      schemaDriftDetail,
       dismissModal,
     };
   },
