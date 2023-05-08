@@ -281,7 +281,7 @@
         </select>
     </mapper>
   sql: |
-    SELECT * FROM users WHERE id = 1;
+    SELECT * FROM users;
     SELECT * FROM users WHERE id = ?  AND name = ?;
     INSERT INTO users (id, name) VALUES (?, ?);
     SELECT
