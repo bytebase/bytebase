@@ -21,7 +21,7 @@ func NewPLSQLErrorListener() *PLSQLErrorListener {
 }
 
 // SyntaxError returns the errors.
-func (l *PLSQLErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol any, line, column int, msg string, e antlr.RecognitionException) {
+func (l *PLSQLErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column int, msg string, _ antlr.RecognitionException) {
 	if len(msg) > 1024 {
 		msg = msg[:1024]
 	}
