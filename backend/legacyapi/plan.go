@@ -116,6 +116,8 @@ const (
 	//
 	// e.g. One can configure rules for database schema or SQL query.
 	FeatureSQLReview FeatureType = "bb.feature.sql-review"
+	// FeatureMybatisSQLReview allows review mybatis sql.
+	FeatureMybatisSQLReview FeatureType = "bb.feature.mybatis-sql-review"
 	// FeatureTaskScheduleTime allows user to run task at a scheduled time.
 	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
 	// FeatureEncryptedSecrets is a feature that allows user to setting the encrypted secrets for the database.
@@ -211,6 +213,8 @@ func (e FeatureType) Name() string {
 		return "Online schema migration"
 	case FeatureSchemaDrift:
 		return "Schema drift"
+	case FeatureMybatisSQLReview:
+		return "Mybatis SQL review"
 	case FeatureSQLReview:
 		return "SQL review"
 	case FeatureTaskScheduleTime:
@@ -293,6 +297,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureMultiTenancy:     {false, false, true},
 	FeatureOnlineMigration:  {false, true, true},
 	FeatureSchemaDrift:      {false, false, true},
+	FeatureMybatisSQLReview: {false, false, true},
 	FeatureSQLReview:        {true, true, true},
 	FeatureTaskScheduleTime: {false, true, true},
 	FeatureEncryptedSecrets: {false, true, true},
