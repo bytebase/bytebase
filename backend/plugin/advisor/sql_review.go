@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -491,6 +492,10 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 	if len(result) > 0 && result[0].Title == SyntaxErrorTitle {
 		return result[:1], nil
 	}
+	sort.SliceStable(result, func(i, j int) bool {
+		// Error is 2, warning is 1. So the error (value 2) should come first.
+		return result[i].Status.GetPriority() > result[j].Status.GetPriority()
+	})
 	if len(result) == 0 {
 		result = append(result, Advice{
 			Status:  Success,
