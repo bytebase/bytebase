@@ -20,7 +20,7 @@ func NewPLSQLErrorListener() *PLSQLErrorListener {
 	return &PLSQLErrorListener{}
 }
 
-// GetErrors returns the errors.
+// SyntaxError returns the errors.
 func (l *PLSQLErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
 	if len(msg) > 1024 {
 		msg = msg[:1024]
@@ -29,17 +29,17 @@ func (l *PLSQLErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingS
 }
 
 // ReportAmbiguity reports an ambiguity.
-func (l *PLSQLErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, exact bool, ambigAlts *antlr.BitSet, configs antlr.ATNConfigSet) {
+func (*PLSQLErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, exact bool, ambigAlts *antlr.BitSet, configs antlr.ATNConfigSet) {
 	antlr.ConsoleErrorListenerINSTANCE.ReportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
 }
 
 // ReportAttemptingFullContext reports an attempting full context.
-func (l *PLSQLErrorListener) ReportAttemptingFullContext(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, conflictingAlts *antlr.BitSet, configs antlr.ATNConfigSet) {
+func (*PLSQLErrorListener) ReportAttemptingFullContext(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, conflictingAlts *antlr.BitSet, configs antlr.ATNConfigSet) {
 	antlr.ConsoleErrorListenerINSTANCE.ReportAttemptingFullContext(recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs)
 }
 
 // ReportContextSensitivity reports a context sensitivity.
-func (l *PLSQLErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex, prediction int, configs antlr.ATNConfigSet) {
+func (*PLSQLErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex, prediction int, configs antlr.ATNConfigSet) {
 	antlr.ConsoleErrorListenerINSTANCE.ReportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs)
 }
 
