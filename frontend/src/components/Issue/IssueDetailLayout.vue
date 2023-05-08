@@ -318,15 +318,14 @@ watch(
   ],
   ([create, issue, sqlList, sql, provider]) => {
     if (create && issue && provider) {
-      if (sqlList) {
-        // If 'sqlList' in URL query, initial the tasks's statement in issueCreate from current route.
-        // TODO: Maybe we should save database id list and sql list into session state to prevent url too long.
-        provider.initialTaskListStatementFromRoute();
-      } else if (sql) {
+      if (sql) {
         // If 'sql' in URL query, update the issueCreate's statement
         // Only works for the first time.
         // E.g. redirected from SQL editor when user wants to execute DML.
         provider.updateStatement(sql);
+      } else {
+        // Initial the tasks's statement/sheetId in issueCreate from current route.
+        provider.initialTaskListStatementFromRoute();
       }
     }
   }
