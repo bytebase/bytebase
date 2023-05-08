@@ -3,6 +3,7 @@ package ast
 
 import (
 	"io"
+	"sort"
 )
 
 // Node is the interface implemented by all AST node types.
@@ -23,6 +24,10 @@ type RestoreContext struct {
 	// Variable is the map of variable, key is the name of the variable, value is the value of the variable.
 	// It will be used to restore the ${} element.
 	Variable map[string]string
+	// SQLLastLineToOriginalLineMapping is the map of the last line number from SQL statement to the line number of the original SQL statement in Mybatis mapper xml.
+	SQLLastLineToOriginalLineMapping map[int]int
+	// CurrentLastLine is used for internal calculation.
+	CurrentLastLine int
 }
 
 var (
@@ -35,6 +40,12 @@ type RootNode struct {
 	Children []Node
 }
 
+// MybatisSQLLineMapping represents the line mapping of the SQL statement in Mybatis mapper xml.
+type MybatisSQLLineMapping struct {
+	SQLLastLine     int
+	OriginalEleLine int
+}
+
 // RestoreSQL implements Node interface.
 func (n *RootNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	for _, node := range n.Children {
@@ -43,6 +54,27 @@ func (n *RootNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 		}
 	}
 	return nil
+}
+
+// RestoreSQLWithLineMapping restores the SQL statement and returns the sorted(SQL last line ascending) line mapping of the SQL statement in Mybatis mapper xml.
+func (n *RootNode) RestoreSQLWithLineMapping(ctx *RestoreContext, w io.Writer) ([]*MybatisSQLLineMapping, error) {
+	for _, node := range n.Children {
+		if err := node.RestoreSQL(ctx, w); err != nil {
+			return nil, err
+		}
+	}
+	// building line mapping
+	var lineMapping []*MybatisSQLLineMapping
+	for sqlLastLine, originalEleLine := range ctx.SQLLastLineToOriginalLineMapping {
+		lineMapping = append(lineMapping, &MybatisSQLLineMapping{
+			SQLLastLine:     sqlLastLine,
+			OriginalEleLine: originalEleLine,
+		})
+	}
+	sort.Slice(lineMapping, func(i, j int) bool {
+		return lineMapping[i].SQLLastLine < lineMapping[j].SQLLastLine
+	})
+	return lineMapping, nil
 }
 
 // AddChild adds a child to the root node.

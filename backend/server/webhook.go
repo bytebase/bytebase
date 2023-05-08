@@ -34,6 +34,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	configparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/configuration"
 	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
+	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
@@ -574,7 +575,7 @@ func (s *Server) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybat
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get empty catalog").SetInternal(err)
 		}
 
-		mybatisSQLs, err := extractMybatisMapperSQL(datum.mapperContent)
+		mybatisSQLs, lineMapping, err := extractMybatisMapperSQL(datum.mapperContent)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract mybatis mapper sql").SetInternal(err)
 		}
@@ -590,7 +591,16 @@ func (s *Server) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybat
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check sql review").SetInternal(err)
 		}
-		result = append(result, adviceList...)
+		// Remap the line number to the original file.
+		for _, advice := range adviceList {
+			for _, line := range lineMapping {
+				if advice.Line <= line.SQLLastLine {
+					advice.Line = line.OriginalEleLine
+					break
+				}
+			}
+			result = append(result, advice)
+		}
 	}
 	if len(result) == 0 {
 		return []advisor.Advice{
@@ -1882,18 +1892,18 @@ func extractDBTypeFromJDBCConnectionString(jdbcURL string) (db.Type, error) {
 }
 
 // extractMybatisMapperSQL will extract the SQL from mybatis mapper XML.
-func extractMybatisMapperSQL(mapperContent string) (string, error) {
+func extractMybatisMapperSQL(mapperContent string) (string, []*ast.MybatisSQLLineMapping, error) {
 	mybatisMapperParser := mapperparser.NewParser(mapperContent)
 	mybatisMapperNode, err := mybatisMapperParser.Parse()
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse mybatis mapper xml")
+		return "", nil, errors.Wrapf(err, "failed to parse mybatis mapper xml")
 	}
 	var sb strings.Builder
-	err = mybatisMapperNode.RestoreSQL(mybatisMapperParser.GetRestoreContext(), &sb)
+	lineMapping, err := mybatisMapperNode.RestoreSQLWithLineMapping(mybatisMapperParser.GetRestoreContext(), &sb)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to restore mybatis mapper xml")
+		return "", nil, errors.Wrapf(err, "failed to restore mybatis mapper xml")
 	}
-	return sb.String(), nil
+	return sb.String(), lineMapping, nil
 }
 
 // mybatisMapperXMLFileDatum is the metadata of mybatis mapper XML file.
