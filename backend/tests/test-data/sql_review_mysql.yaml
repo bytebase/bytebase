@@ -25,6 +25,24 @@
       content: '"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT ''comment'',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT ''comment'',content BLOB NOT NULL COMMENT ''comment'',json_content JSON NOT NULL COMMENT ''comment'',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin" doesn''t use InnoDB engine'
       line: 1
     - namespace: bb.advisor
+      code: 601
+      status: ERROR
+      title: table.require-pk
+      content: Table `userTable` requires PRIMARY KEY
+      line: 1
+    - namespace: bb.advisor
+      code: 602
+      status: ERROR
+      title: table.no-foreign-key
+      content: Foreign key is not allowed in the table `userTable`
+      line: 1
+    - namespace: bb.advisor
+      code: 411
+      status: ERROR
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column `userTable`.`json_content` is
+      line: 1
+    - namespace: bb.advisor
       code: 301
       status: WARN
       title: naming.table
@@ -53,18 +71,6 @@
       status: WARN
       title: naming.index.fk
       content: Foreign key in table `userTable` mismatches the naming convention, expect "^$|^fk_userTable_roomId_room_id$" but found `fk1`
-      line: 1
-    - namespace: bb.advisor
-      code: 601
-      status: ERROR
-      title: table.require-pk
-      content: Table `userTable` requires PRIMARY KEY
-      line: 1
-    - namespace: bb.advisor
-      code: 602
-      status: ERROR
-      title: table.no-foreign-key
-      content: Foreign key is not allowed in the table `userTable`
       line: 1
     - namespace: bb.advisor
       code: 605
@@ -113,12 +119,6 @@
       status: WARN
       title: column.comment
       content: Column `userTable`.`roomId` requires comments
-      line: 1
-    - namespace: bb.advisor
-      code: 411
-      status: ERROR
-      title: column.type-disallow-list
-      content: Disallow column type JSON but column `userTable`.`json_content` is
       line: 1
     - namespace: bb.advisor
       code: 414
@@ -172,6 +172,12 @@
 - statement: CREATE TABLE t_auto(auto_id varchar(20) AUTO_INCREMENT PRIMARY KEY COMMENT 'COMMENT') auto_increment = 2 COMMENT 'comment'
   result:
     - namespace: bb.advisor
+      code: 410
+      status: ERROR
+      title: column.auto-increment-must-integer
+      content: Auto-increment column `t_auto`.`auto_id` requires integer type
+      line: 1
+    - namespace: bb.advisor
       code: 307
       status: WARN
       title: naming.column.auto-increment
@@ -182,12 +188,6 @@
       status: WARN
       title: column.required
       content: "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id"
-      line: 1
-    - namespace: bb.advisor
-      code: 410
-      status: ERROR
-      title: column.auto-increment-must-integer
-      content: Auto-increment column `t_auto`.`auto_id` requires integer type
       line: 1
     - namespace: bb.advisor
       code: 416
@@ -217,15 +217,15 @@
       content: '"DELETE FROM tech_book" requires WHERE clause'
       line: 1
     - namespace: bb.advisor
-      code: 209
-      status: WARN
-      title: statement.affected-row-limit
-      content: '"DELETE FROM tech_book" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
-      line: 1
-    - namespace: bb.advisor
       code: 208
       status: ERROR
       title: statement.dml-dry-run
+      content: '"DELETE FROM tech_book" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
+      line: 1
+    - namespace: bb.advisor
+      code: 209
+      status: WARN
+      title: statement.affected-row-limit
       content: '"DELETE FROM tech_book" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
       line: 1
   run: false
@@ -238,15 +238,15 @@
       content: '"DELETE FROM tech_book WHERE name like `%abc`" uses leading wildcard LIKE'
       line: 1
     - namespace: bb.advisor
-      code: 209
-      status: WARN
-      title: statement.affected-row-limit
-      content: '"DELETE FROM tech_book WHERE name like `%abc`" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
-      line: 1
-    - namespace: bb.advisor
       code: 208
       status: ERROR
       title: statement.dml-dry-run
+      content: '"DELETE FROM tech_book WHERE name like `%abc`" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
+      line: 1
+    - namespace: bb.advisor
+      code: 209
+      status: WARN
+      title: statement.affected-row-limit
       content: '"DELETE FROM tech_book WHERE name like `%abc`" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
       line: 1
   run: false
@@ -265,6 +265,12 @@
       content: '"INSERT INTO t_copy SELECT * FROM t" requires WHERE clause'
       line: 1
     - namespace: bb.advisor
+      code: 208
+      status: ERROR
+      title: statement.dml-dry-run
+      content: '"INSERT INTO t_copy SELECT * FROM t" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.t_copy'' doesn''t exist'
+      line: 1
+    - namespace: bb.advisor
       code: 1101
       status: WARN
       title: statement.insert.row-limit
@@ -276,40 +282,34 @@
       title: statement.insert.must-specify-column
       content: The INSERT statement must specify columns but "INSERT INTO t_copy SELECT * FROM t" does not
       line: 1
-    - namespace: bb.advisor
-      code: 208
-      status: ERROR
-      title: statement.dml-dry-run
-      content: '"INSERT INTO t_copy SELECT * FROM t" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.t_copy'' doesn''t exist'
-      line: 1
   run: false
 - statement: "        INSERT INTO t VALUES (1, 1, now(), 1, now())"
   result:
-    - namespace: bb.advisor
-      code: 1107
-      status: WARN
-      title: statement.insert.must-specify-column
-      content: The INSERT statement must specify columns but "INSERT INTO t VALUES (1, 1, now(), 1, now())" does not
-      line: 1
     - namespace: bb.advisor
       code: 208
       status: ERROR
       title: statement.dml-dry-run
       content: '"INSERT INTO t VALUES (1, 1, now(), 1, now())" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.t'' doesn''t exist'
       line: 1
+    - namespace: bb.advisor
+      code: 1107
+      status: WARN
+      title: statement.insert.must-specify-column
+      content: The INSERT statement must specify columns but "INSERT INTO t VALUES (1, 1, now(), 1, now())" does not
+      line: 1
   run: false
 - statement: DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')
   result:
     - namespace: bb.advisor
-      code: 209
-      status: WARN
-      title: statement.affected-row-limit
-      content: '"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = ''bytebase'')" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
-      line: 1
-    - namespace: bb.advisor
       code: 208
       status: ERROR
       title: statement.dml-dry-run
+      content: '"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = ''bytebase'')" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
+      line: 1
+    - namespace: bb.advisor
+      code: 209
+      status: WARN
+      title: statement.affected-row-limit
       content: '"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = ''bytebase'')" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
       line: 1
   run: false
