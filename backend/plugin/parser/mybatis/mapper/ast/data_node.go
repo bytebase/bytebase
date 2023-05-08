@@ -21,12 +21,17 @@ type TextNode struct {
 }
 
 // RestoreSQL implements Node interface.
-func (n *TextNode) RestoreSQL(_ *RestoreContext, w io.Writer) error {
+func (n *TextNode) RestoreSQL(ctx *RestoreContext, w io.Writer) error {
 	if len(n.Text) == 0 {
 		return nil
 	}
-	if _, err := w.Write([]byte(n.Text)); err != nil {
-		return err
+	for _, b := range []byte(n.Text) {
+		if b == '\n' {
+			ctx.CurrentLastLine++
+		}
+		if _, err := w.Write([]byte{b}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
