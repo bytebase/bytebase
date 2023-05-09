@@ -3,6 +3,7 @@
     :column-list="columnList"
     :data-source="projectList"
     class="border"
+    :show-placeholder="true"
     @click-row="clickProject"
   >
     <template #item="{ item: project }: ProjectGridRow">
