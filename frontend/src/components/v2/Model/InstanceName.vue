@@ -5,7 +5,6 @@
     :to="link && `/instance/${instance.id}`"
     class="inline-flex items-center gap-x-1"
     :class="link && 'normal-link'"
-    @click.stop=""
   >
     <InstanceEngineIcon
       v-if="icon && iconPosition === 'prefix'"
