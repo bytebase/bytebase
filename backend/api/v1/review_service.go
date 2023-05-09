@@ -137,6 +137,10 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
 	}
 
+	// TODO(d): grant the privilege if the issue is approved.
+	// if len(payload.Approval.Approvers) > 0 {
+	// }
+
 	// It's ok to fail to create activity.
 	if err := func() error {
 		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
