@@ -33,6 +33,7 @@ import {
 import { IssueLogic, useIssueLogic } from "./index";
 import {
   defer,
+  getBacktracePayloadWithIssue,
   isDev,
   isTaskTriggeredByVCS,
   taskCheckRunSummary,
@@ -202,13 +203,13 @@ export const useCommonLogic = () => {
         statement: newStatement,
         visibility: "PROJECT",
         source: "BYTEBASE_ARTIFACT",
-        payload: {},
+        payload: getBacktracePayloadWithIssue(issue.value as Issue),
       });
 
       const patchRequestList = patchingTaskList.map((task) => {
         patchTask(task.id, { sheetId: sheet.id });
       });
-      return Promise.allSettled(patchRequestList);
+      await Promise.allSettled(patchRequestList);
     }
   };
 
