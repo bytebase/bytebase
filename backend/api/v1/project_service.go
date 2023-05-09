@@ -693,11 +693,19 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID:  &projectID,
-		ShowDeleted: true,
-	})
+	var project *store.ProjectMessage
+	projectUID, isNumber := isNumber(projectID)
+	if isNumber {
+		project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			UID:         &projectUID,
+			ShowDeleted: true,
+		})
+	} else {
+		project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID:  &projectID,
+			ShowDeleted: true,
+		})
+	}
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
