@@ -57,6 +57,7 @@ import {
 } from "@/store";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import IdentityProviderTable from "@/components/IdentityProviderTable.vue";
+import { State } from "@/types/proto/v1/common";
 
 const PROJECT_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -168,7 +169,9 @@ export default defineComponent({
     });
 
     const filteredProjectList = computed(() => {
-      const list = projectList.value;
+      const list = projectList.value.filter(
+        (project) => project.state === State.DELETED
+      );
       if (!state.searchText) {
         return list;
       }
