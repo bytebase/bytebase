@@ -172,13 +172,15 @@ export default defineComponent({
       const list = projectList.value.filter(
         (project) => project.state === State.DELETED
       );
-      if (!state.searchText) {
+      const keyword = state.searchText.trim().toLowerCase();
+      if (!keyword) {
         return list;
       }
       return list.filter((project) => {
-        return project.name
-          .toLowerCase()
-          .includes(state.searchText.toLowerCase());
+        return (
+          project.title.toLowerCase().includes(keyword) ||
+          project.key.toLowerCase().includes(keyword)
+        );
       });
     });
 
