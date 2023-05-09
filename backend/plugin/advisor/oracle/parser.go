@@ -99,3 +99,8 @@ func normalizeTableName(name string) string {
 	}
 	return strings.Join(result, ".")
 }
+
+func lastIdentifier(name string) string {
+	list := strings.Split(name, ".")
+	return list[len(list)-1]
+}
