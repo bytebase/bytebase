@@ -337,6 +337,9 @@ const (
 
 	// OracleTableRequirePK is an advisor type for Oracle table require primary key.
 	OracleTableRequirePK Type = "bb.plugin.advisor.oracle.table.require-pk"
+
+	// OracleTableNoFK is an advisor type for Oracle table disallow foreign key.
+	OracleTableNoFK Type = "bb.plugin.advisor.oracle.table.no-foreign-key"
 )
 
 // Advice is the result of an advisor.
