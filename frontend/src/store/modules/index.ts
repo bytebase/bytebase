@@ -52,5 +52,5 @@ export * from "./workspaceApprovalSetting";
 export * from "./review";
 export * from "./slowQuery";
 export * from "./role";
-export * from "./v1/projectIamPolicy";
-export * from "./v1/databaseSecret";
+
+export * from "./v1";
