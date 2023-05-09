@@ -340,6 +340,9 @@ const (
 
 	// OracleTableNoFK is an advisor type for Oracle table disallow foreign key.
 	OracleTableNoFK Type = "bb.plugin.advisor.oracle.table.no-foreign-key"
+
+	// OracleNamingTableConvention is an advisor type for Oracle table naming convention.
+	OracleNamingTableConvention Type = "bb.plugin.advisor.oracle.naming.table"
 )
 
 // Advice is the result of an advisor.
