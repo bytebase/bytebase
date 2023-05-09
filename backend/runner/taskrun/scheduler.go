@@ -315,8 +315,8 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							}
 							// The task has finished, and we may move to a new stage.
 							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
-							if issue != nil {
-								stages, err := s.store.ListStageV2(ctx, issue.PipelineUID)
+							if issue != nil && issue.PipelineUID != nil {
+								stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
 								if err != nil {
 									return
 								}
@@ -1165,7 +1165,7 @@ func (s *Scheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int,
 
 // ChangeIssueStatus changes the status of an issue.
 func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) error {
-	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &issue.PipelineUID})
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: issue.PipelineUID})
 	if err != nil {
 		return err
 	}
@@ -1301,7 +1301,7 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   api.SystemBotID,
-			ContainerID: issue.PipelineUID,
+			ContainerID: *issue.PipelineUID,
 			Type:        api.ActivityPipelineStageStatusUpdate,
 			Level:       api.ActivityInfo,
 			Payload:     string(bytes),
@@ -1328,7 +1328,7 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   api.SystemBotID,
-			ContainerID: issue.PipelineUID,
+			ContainerID: *issue.PipelineUID,
 			Type:        api.ActivityPipelineStageStatusUpdate,
 			Level:       api.ActivityInfo,
 			Payload:     string(bytes),

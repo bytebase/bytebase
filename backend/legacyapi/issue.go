@@ -73,7 +73,7 @@ type Issue struct {
 	// Related fields
 	ProjectID  int
 	Project    *Project `jsonapi:"relation,project"`
-	PipelineID int
+	PipelineID *int
 	Pipeline   *Pipeline `jsonapi:"relation,pipeline"`
 	// The requested grant in GrantRequest format.
 	GrantRequest string `jsonapi:"attr,grantRequest"`
