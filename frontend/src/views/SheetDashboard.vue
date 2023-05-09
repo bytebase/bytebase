@@ -99,6 +99,7 @@ import {
   useSheetStore,
 } from "@/store";
 import { Sheet } from "@/types";
+import { getSheetIssueBacktracePayload } from "@/utils";
 import {
   type SheetViewMode,
   SheetTable,
@@ -213,13 +214,19 @@ const currentSheetViewMode = computed((): SheetViewMode => {
 });
 
 const fetchSheetData = async () => {
+  let sheetList: Sheet[] = [];
   if (currentSheetViewMode.value === "my") {
-    state.sheetList = await sheetStore.fetchMySheetList();
+    sheetList = await sheetStore.fetchMySheetList();
   } else if (currentSheetViewMode.value === "starred") {
-    state.sheetList = await sheetStore.fetchStarredSheetList();
+    sheetList = await sheetStore.fetchStarredSheetList();
   } else if (currentSheetViewMode.value === "shared") {
-    state.sheetList = await sheetStore.fetchSharedSheetList();
+    sheetList = await sheetStore.fetchSharedSheetList();
   }
+
+  // Hide those sheets from issue.
+  state.sheetList = sheetList.filter((sheet) => {
+    return !getSheetIssueBacktracePayload(sheet);
+  });
 };
 
 onMounted(async () => {
