@@ -80,7 +80,7 @@
             </i18n-t>
           </p>
         </div>
-        <IssueRollbackFromTips />
+        <slot name="tips"></slot>
       </div>
     </div>
   </div>
@@ -91,7 +91,6 @@ import { reactive, watch, computed, Ref } from "vue";
 import { head } from "lodash-es";
 
 import IssueStatusIcon from "./IssueStatusIcon.vue";
-import IssueRollbackFromTips from "./IssueRollbackFromTips.vue";
 import { activeTask } from "@/utils";
 import {
   TaskDatabaseSchemaUpdatePayload,
