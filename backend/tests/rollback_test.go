@@ -426,7 +426,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	rollbackEnabled := true
 	_, err = ctl.patchTask(api.TaskPatch{
 		RollbackEnabled: &rollbackEnabled,
-	}, issue.PipelineID, task.ID)
+	}, *issue.PipelineID, task.ID)
 	a.NoError(err)
 
 	// Check that the data is changed.
