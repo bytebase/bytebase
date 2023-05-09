@@ -332,6 +332,11 @@ const (
 
 	// PostgreSQLCollationAllowlist is an advisor type for PostgreSQL collation allowlist.
 	PostgreSQLCollationAllowlist Type = "bb.plugin.advisor.postgresql.collation.allowlist"
+
+	// Oracle Advisor.
+
+	// OracleTableRequirePK is an advisor type for Oracle table require primary key.
+	OracleTableRequirePK Type = "bb.plugin.advisor.oracle.table.require-pk"
 )
 
 // Advice is the result of an advisor.

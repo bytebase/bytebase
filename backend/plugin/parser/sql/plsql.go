@@ -1,18 +1,28 @@
 package parser
 
 import (
-	"errors"
-	"strconv"
-	"strings"
+	"fmt"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 
 	parser "github.com/bytebase/plsql-parser"
 )
 
+// SyntaxError is a syntax error.
+type SyntaxError struct {
+	Line    int
+	Column  int
+	Message string
+}
+
+// Error returns the error message.
+func (e *SyntaxError) Error() string {
+	return e.Message
+}
+
 // PLSQLErrorListener is a custom error listener for PLSQL parser.
 type PLSQLErrorListener struct {
-	errors []string
+	err *SyntaxError
 }
 
 // NewPLSQLErrorListener creates a new PLSQLErrorListener.
@@ -25,7 +35,15 @@ func (l *PLSQLErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column
 	if len(msg) > 1024 {
 		msg = msg[:1024]
 	}
-	l.errors = append(l.errors, "line "+strconv.Itoa(line)+":"+strconv.Itoa(column)+" "+msg)
+	if l.err == nil {
+		l.err = &SyntaxError{
+			Line:    line,
+			Column:  column,
+			Message: fmt.Sprintf("line %d:%d %s", line, column, msg),
+		}
+	} else {
+		l.err.Message = fmt.Sprintf("%s \nline %d:%d %s", l.err.Message, line, column, msg)
+	}
 }
 
 // ReportAmbiguity reports an ambiguity.
@@ -61,12 +79,12 @@ func ParsePLSQL(sql string) (antlr.Tree, error) {
 	p.BuildParseTrees = true
 	tree := p.Sql_script()
 
-	if len(lexerErrorListener.errors) > 0 {
-		return nil, errors.New(strings.Join(lexerErrorListener.errors, " \n"))
+	if lexerErrorListener.err != nil {
+		return nil, lexerErrorListener.err
 	}
 
-	if len(parserErrorListener.errors) > 0 {
-		return nil, errors.New(strings.Join(parserErrorListener.errors, " \n"))
+	if parserErrorListener.err != nil {
+		return nil, parserErrorListener.err
 	}
 
 	return tree, nil
