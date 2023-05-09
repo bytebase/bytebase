@@ -12,6 +12,7 @@ func TestOracleRules(t *testing.T) {
 	oracleRules := []advisor.SQLReviewRuleType{
 		advisor.SchemaRuleTableRequirePK,
 		advisor.SchemaRuleTableNoFK,
+		advisor.SchemaRuleTableNaming,
 	}
 
 	for _, rule := range oracleRules {
