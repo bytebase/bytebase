@@ -21,7 +21,7 @@
       v-model:value="selector.values"
       :options="values"
       :disabled="!editable"
-      :multiple="true"
+      :multiple="allowMultipleValues"
       :placeholder="$t('label.placeholder.select-values')"
       class="select values"
     />
@@ -73,6 +73,9 @@ export default defineComponent({
       );
       return uniq(allKeys).filter((key) => availableList.includes(key));
     });
+    const allowMultipleValues = computed(() => {
+      return props.selector.key !== "bb.environment";
+    });
     const values = computed(() => {
       if (!props.selector.key) return [];
       return getLabelValuesFromDatabaseList(
@@ -99,6 +102,7 @@ export default defineComponent({
 
     return {
       OPERATORS,
+      allowMultipleValues,
       labelKeyModifier,
       lowerCase,
       keys,
