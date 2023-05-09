@@ -326,7 +326,7 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 
 func getIssueRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, bool, error) {
 	tasks, err := s.ListTasks(ctx, &api.TaskFind{
-		PipelineID: &issue.PipelineUID,
+		PipelineID: issue.PipelineUID,
 		StatusList: &[]api.TaskStatus{api.TaskPendingApproval},
 	})
 	if err != nil {

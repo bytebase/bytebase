@@ -226,19 +226,21 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return err
 			}
 			updateIssueMessage.Assignee = assignee
-			stages, err := s.store.ListStageV2(ctx, issue.PipelineUID)
-			if err != nil {
-				return err
-			}
-			activeStage := utils.GetActiveStage(stages)
-			// When all stages have finished, assignee can be anyone such as creator.
-			if activeStage != nil {
-				ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
+			if issue.PipelineUID != nil {
+				stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
+					return err
 				}
-				if !ok {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
+				activeStage := utils.GetActiveStage(stages)
+				// When all stages have finished, assignee can be anyone such as creator.
+				if activeStage != nil {
+					ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
+					}
+					if !ok {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
+					}
 				}
 			}
 			// set AssigneeNeedAttention to false on assignee change
@@ -459,7 +461,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if err != nil {
 		return nil, err
 	}
-	issueCreateMessage.PipelineUID = pipeline.ID
+	issueCreateMessage.PipelineUID = &pipeline.ID
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
 	if err != nil {
 		return nil, err
@@ -510,7 +512,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   api.SystemBotID,
-			ContainerID: issue.PipelineUID,
+			ContainerID: *issue.PipelineUID,
 			Type:        api.ActivityPipelineStageStatusUpdate,
 			Level:       api.ActivityInfo,
 			Payload:     string(bytes),

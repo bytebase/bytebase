@@ -627,7 +627,7 @@ func TestVCS(t *testing.T) {
 				ID:        task.ID,
 				UpdaterID: api.SystemBotID,
 				Status:    api.TaskPendingApproval,
-			}, issue.PipelineID, task.ID)
+			}, issue.Pipeline.ID, task.ID)
 			a.NoError(err)
 
 			status, err = ctl.waitIssuePipeline(issue.ID)
@@ -2347,7 +2347,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	task, err = ctl.patchTaskStatus(api.TaskStatusPatch{
 		Status:  api.TaskDone,
 		Comment: &skippedReason,
-	}, issue.PipelineID, task.ID)
+	}, issue.Pipeline.ID, task.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, task.Status)
 
