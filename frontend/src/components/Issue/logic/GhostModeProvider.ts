@@ -111,20 +111,17 @@ export default defineComponent({
           });
         } else {
           const sheetId = sheetIdOfTask(selectedTask.value as Task);
-          if (sheetId || sheetId !== UNKNOWN_ID) {
+          if (sheetId && sheetId !== UNKNOWN_ID) {
             // Call patchAllTasksInIssue for tenant mode
             const issueEntity = issue.value as Issue;
-            taskStore
-              .patchAllTasksInIssue({
-                issueId: issueEntity.id,
-                pipelineId: issueEntity.pipeline.id,
-                taskPatch: {
-                  sheetId,
-                },
-              })
-              .then(() => {
-                onStatusChanged(true);
-              });
+            await taskStore.patchAllTasksInIssue({
+              issueId: issueEntity.id,
+              pipelineId: issueEntity.pipeline.id,
+              taskPatch: {
+                sheetId,
+              },
+            });
+            onStatusChanged(true);
           }
         }
       } else {
