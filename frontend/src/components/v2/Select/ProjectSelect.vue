@@ -42,6 +42,7 @@ const props = withDefaults(
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     includeArchived?: boolean;
+    filter?: (project: Project, index: number) => boolean;
   }>(),
   {
     allowedProjectRoleList: () => ["OWNER", "DEVELOPER"],
@@ -50,6 +51,7 @@ const props = withDefaults(
     includeAll: false,
     includeDefaultProject: false,
     includeArchived: false,
+    filter: () => true,
   }
 );
 
@@ -101,7 +103,7 @@ const isOrphanValue = computed(() => {
 });
 
 const combinedProjectList = computed(() => {
-  const list = rawProjectList.value.filter((project) => {
+  let list = rawProjectList.value.filter((project) => {
     if (props.includeArchived) return true;
     if (project.rowStatus === "NORMAL") return true;
     // ARCHIVED
@@ -112,6 +114,11 @@ const combinedProjectList = computed(() => {
   if (props.includeDefaultProject) {
     list.unshift(projectStore.getProjectById(DEFAULT_PROJECT_ID));
   }
+
+  if (props.filter) {
+    list = list.filter(props.filter);
+  }
+
   if (
     props.project &&
     props.project !== DEFAULT_PROJECT_ID &&
