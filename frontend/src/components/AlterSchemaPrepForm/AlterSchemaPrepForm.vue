@@ -19,6 +19,7 @@
                     @dismiss="cancel"
                   />
                   <SchemalessDatabaseTable
+                    v-if="isAlterSchema"
                     mode="PROJECT"
                     :database-list="schemalessDatabaseList"
                   />
@@ -68,6 +69,7 @@
                     </template>
                   </DatabaseTable>
                   <SchemalessDatabaseTable
+                    v-if="isAlterSchema"
                     mode="PROJECT"
                     :database-list="schemalessDatabaseList"
                   />
@@ -112,6 +114,7 @@
                 </template>
               </ProjectStandardView>
               <SchemalessDatabaseTable
+                v-if="isAlterSchema"
                 mode="PROJECT"
                 class="px-2"
                 :database-list="schemalessDatabaseList"
@@ -138,7 +141,8 @@
             />
 
             <SchemalessDatabaseTable
-              mode="PROJECT"
+              v-if="isAlterSchema"
+              mode="ALL"
               :database-list="schemalessDatabaseList"
             />
           </div>
@@ -350,13 +354,9 @@ const schemaDatabaseList = computed(() => {
 });
 
 const schemalessDatabaseList = computed(() => {
-  if (isAlterSchema.value) {
-    return databaseList.value.filter(
-      (db) => !instanceHasAlterSchema(db.instance)
-    );
-  }
-
-  return databaseList.value;
+  return databaseList.value.filter(
+    (db) => !instanceHasAlterSchema(db.instance)
+  );
 });
 
 const flattenSelectedDatabaseIdList = computed(() => {
