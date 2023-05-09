@@ -55,6 +55,7 @@
     - [IdentityProviderType](#bytebase-store-IdentityProviderType)
   
 - [store/issue.proto](#store_issue-proto)
+    - [GrantRequest](#bytebase-store-GrantRequest)
     - [IssuePayload](#bytebase-store-IssuePayload)
   
 - [store/setting.proto](#store_setting-proto)
@@ -840,6 +841,23 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
+<a name="bytebase-store-GrantRequest"></a>
+
+### GrantRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The requested role, e.g. roles/EXPORTER. |
+| user | [string](#string) |  | The requested user, e.g. users/hello@bytebase.com. |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-IssuePayload"></a>
 
 ### IssuePayload
@@ -849,6 +867,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | approval | [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval) |  |  |
+| grant_request | [GrantRequest](#bytebase-store-GrantRequest) |  |  |
 
 
 
