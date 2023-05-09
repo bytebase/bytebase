@@ -11,12 +11,23 @@ export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
   () => {
     const policyMap = ref(new Map<string, IamPolicy>());
+    const requestCache = new Map<string, Promise<IamPolicy>>();
 
     const fetchProjectIamPolicy = async (project: string) => {
-      const policy = await projectServiceClient.getIamPolicy({
-        project,
-      });
-      policyMap.value.set(project, policy);
+      const cache = requestCache.get(project);
+      if (cache) {
+        return cache;
+      }
+      const request = projectServiceClient
+        .getIamPolicy({
+          project,
+        })
+        .then((policy) => {
+          policyMap.value.set(project, policy);
+          return policy;
+        });
+      requestCache.set(project, request);
+      return request;
     };
 
     const updateProjectIamPolicy = async (
@@ -36,10 +47,21 @@ export const useProjectIamPolicyStore = defineStore(
       );
       await useProjectStore().fetchProjectById(parseInt(projectEntity.uid, 10));
     };
+    const getProjectIamPolicy = (project: string) => {
+      return policyMap.value.get(project) ?? IamPolicy.fromJSON({});
+    };
+    const getOrFetchProjectIamPolicy = async (project: string) => {
+      if (!policyMap.value.has(project)) {
+        await fetchProjectIamPolicy(project);
+      }
+      return getProjectIamPolicy(project);
+    };
 
     return {
       policyMap,
+      getProjectIamPolicy,
       fetchProjectIamPolicy,
+      getOrFetchProjectIamPolicy,
       updateProjectIamPolicy,
     };
   }
