@@ -1185,7 +1185,9 @@
       "no-difference-tip": "No se encontraron diferencias.",
       "more-version": "más...",
       "character-sets-diff-found": "Hay diferencias entre los juegos de caracteres.",
-      "preview-issue": "Vista previa de incidencia"
+      "preview-issue": "Vista previa de incidencia",
+      "schema-change": "cambio de esquema",
+      "generated-ddl-statement": "Declaración DDL generada"
     },
     "sensitive": "Sensible",
     "access-denied": "No tiene permiso para acceder a esta base de datos.",
