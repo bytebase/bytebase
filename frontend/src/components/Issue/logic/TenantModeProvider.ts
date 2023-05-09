@@ -19,7 +19,7 @@ import {
   useCommonLogic,
 } from "./common";
 import { provideIssueLogic, useIssueLogic } from "./index";
-import { sheetIdOfTask } from "@/utils";
+import { getBacktracePayloadWithIssue, sheetIdOfTask } from "@/utils";
 
 export default defineComponent({
   name: "TenantModeProvider",
@@ -79,7 +79,7 @@ export default defineComponent({
           statement: newStatement,
           visibility: "PROJECT",
           source: "BYTEBASE_ARTIFACT",
-          payload: {},
+          payload: getBacktracePayloadWithIssue(issue.value as Issue),
         });
         updateSheetId(sheet.id);
       }
