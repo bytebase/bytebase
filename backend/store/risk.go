@@ -25,6 +25,8 @@ const (
 	RiskSourceDatabaseDataUpdate RiskSource = "bb.risk.database.data.update"
 	// RiskSourceDatabaseCreate is for creating databases.
 	RiskSourceDatabaseCreate RiskSource = "bb.risk.database.create"
+	// RiskGrantRequest is for requesting grant.
+	RiskGrantRequest RiskSource = "bb.risk.request.grant"
 )
 
 // RiskMessage is the message for risks.
