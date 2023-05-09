@@ -796,6 +796,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLNamingTableConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingTableConvention, nil
+		case db.Oracle:
+			return OracleNamingTableConvention, nil
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
