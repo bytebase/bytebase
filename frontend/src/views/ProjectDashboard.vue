@@ -22,6 +22,7 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
+import { filterProjectV1ListByKeyword } from "@/utils";
 
 interface LocalState {
   searchText: string;
@@ -41,17 +42,7 @@ const changeSearchText = (searchText: string) => {
 
 const filteredProjectList = computed(() => {
   const list = projectList.value;
-  const keyword = state.searchText.trim().toLowerCase();
-  if (!keyword) {
-    // Select "All"
-    return list;
-  }
-  return list.filter((project) => {
-    return (
-      project.title.toLowerCase().includes(keyword) ||
-      project.key.toLowerCase().includes(keyword)
-    );
-  });
+  return filterProjectV1ListByKeyword(list, state.searchText);
 });
 
 onMounted(() => {

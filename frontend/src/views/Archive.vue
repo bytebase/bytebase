@@ -43,7 +43,7 @@ import EnvironmentTable from "../components/EnvironmentTable.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import { ProjectV1Table } from "../components/v2";
 import { Environment, Instance } from "../types";
-import { hasWorkspacePermission } from "../utils";
+import { filterProjectV1ListByKeyword, hasWorkspacePermission } from "../utils";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import {
@@ -172,16 +172,7 @@ export default defineComponent({
       const list = projectList.value.filter(
         (project) => project.state === State.DELETED
       );
-      const keyword = state.searchText.trim().toLowerCase();
-      if (!keyword) {
-        return list;
-      }
-      return list.filter((project) => {
-        return (
-          project.title.toLowerCase().includes(keyword) ||
-          project.key.toLowerCase().includes(keyword)
-        );
-      });
+      return filterProjectV1ListByKeyword(list, state.searchText);
     });
 
     const filteredInstanceList = (list: Instance[]) => {

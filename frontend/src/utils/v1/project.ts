@@ -35,3 +35,17 @@ export function projectV1Name(project: Project) {
   }
   return parts.join(" ");
 }
+
+export function filterProjectV1ListByKeyword<T extends Project>(
+  projectList: T[],
+  keyword: string
+) {
+  keyword = keyword.trim().toLowerCase();
+  if (!keyword) return projectList;
+  return projectList.filter((project) => {
+    return (
+      project.title.toLowerCase().includes(keyword) ||
+      project.key.toLowerCase().includes(keyword)
+    );
+  });
+}

@@ -26,7 +26,7 @@
       </NCheckbox>
     </div>
 
-    <ProjectV1Table :project-list="filteredList" />
+    <ProjectV1Table :project-list="filteredProjectList" />
 
     <BBModal
       v-if="state.showCreateModal"
@@ -48,6 +48,7 @@ import { useProjectV1List } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import { ProjectV1Table, SearchBox } from "@/components/v2";
 import { State } from "@/types/proto/v1/common";
+import { filterProjectV1ListByKeyword } from "@/utils";
 
 interface LocalState {
   searchText: string;
@@ -67,16 +68,10 @@ const changeSearchText = (searchText: string) => {
   state.searchText = searchText;
 };
 
-const filteredList = computed(() => {
+const filteredProjectList = computed(() => {
   let list = [...projectList.value];
-  const keyword = state.searchText.trim().toLowerCase();
-  if (keyword) {
-    list = list.filter(
-      (project) =>
-        project.title.toLowerCase().includes(keyword) ||
-        project.key.toLowerCase().includes(keyword)
-    );
-  }
+  list = filterProjectV1ListByKeyword(list, state.searchText);
+
   // Put "Unassigned" to the first;
   const unassignedIndex = list.findIndex(
     (project) => project.name === DEFAULT_PROJECT_V1_NAME
