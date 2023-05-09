@@ -332,6 +332,11 @@ const (
 
 	// PostgreSQLCollationAllowlist is an advisor type for PostgreSQL collation allowlist.
 	PostgreSQLCollationAllowlist Type = "bb.plugin.advisor.postgresql.collation.allowlist"
+
+	// Oracle Advisor.
+
+	// OracleTableRequirePK is an advisor type for Oracle table require primary key.
+	OracleTableRequirePK Type = "bb.plugin.advisor.oracle.table.require-pk"
 )
 
 // Advice is the result of an advisor.
@@ -391,6 +396,9 @@ type Context struct {
 	Catalog *catalog.Finder
 	Driver  *sql.DB
 	Context context.Context
+
+	// CurrentSchema is the current schema. Special for Oracle.
+	CurrentSchema string
 }
 
 // Advisor is the interface for advisor.
