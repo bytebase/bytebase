@@ -824,6 +824,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	return &v1pb.Project{
 		Name:           fmt.Sprintf("%s%s", projectNamePrefix, projectMessage.ResourceID),
 		Uid:            fmt.Sprintf("%d", projectMessage.UID),
+		State:          convertDeletedToState(projectMessage.Deleted),
 		Title:          projectMessage.Title,
 		Key:            projectMessage.Key,
 		Workflow:       workflow,
