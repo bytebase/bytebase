@@ -778,8 +778,8 @@ func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.Use
 }
 
 func validateEmail(email string) error {
-	formatedEmail := strings.ToLower(email)
-	if email != formatedEmail {
+	formattedEmail := strings.ToLower(email)
+	if email != formattedEmail {
 		return errors.New("email should be lowercase")
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
