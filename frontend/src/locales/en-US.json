@@ -1187,7 +1187,9 @@
       "no-difference-tip": "No diff found.",
       "more-version": "more...",
       "character-sets-diff-found": "There are differences between character sets.",
-      "preview-issue": "Preview issue"
+      "preview-issue": "Preview issue",
+      "schema-change": "Schema change",
+      "generated-ddl-statement": "Generated DDL statement"
     },
     "sensitive": "Sensitive",
     "access-denied": "You don't have the permission to access this database.",

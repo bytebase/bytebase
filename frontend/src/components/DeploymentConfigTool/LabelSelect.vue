@@ -183,11 +183,15 @@ export default defineComponent({
 
     const toggleSelection = (item: string) => {
       if (Array.isArray(state.value)) {
-        const index = state.value.indexOf(item);
-        if (index >= 0) {
-          state.value.splice(index, 1);
+        if (props.multiple) {
+          const index = state.value.indexOf(item);
+          if (index >= 0) {
+            state.value.splice(index, 1);
+          } else {
+            state.value.push(item);
+          }
         } else {
-          state.value.push(item);
+          state.value = [item];
         }
       } else {
         state.value = item;
