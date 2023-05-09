@@ -1,3 +1,4 @@
+// Package oracle is the advisor for oracle database.
 package oracle
 
 import (
@@ -97,7 +98,7 @@ func (l *TableRequirePKListener) EnterCreate_table(ctx *parser.Create_tableConte
 }
 
 // ExitCreate_table is called when production create_table is exited.
-func (l *TableRequirePKListener) ExitCreate_table(ctx *parser.Create_tableContext) {
+func (l *TableRequirePKListener) ExitCreate_table(_ *parser.Create_tableContext) {
 	l.tableName = ""
 }
 
@@ -134,16 +135,17 @@ func (l *TableRequirePKListener) EnterAlter_table(ctx *parser.Alter_tableContext
 }
 
 // ExitAlter_table is called when production alter_table is exited.
-func (l *TableRequirePKListener) ExitAlter_table(ctx *parser.Alter_tableContext) {
+func (l *TableRequirePKListener) ExitAlter_table(_ *parser.Alter_tableContext) {
 	l.tableName = ""
 }
 
 // EnterDrop_table is called when production drop_table is entered.
 func (l *TableRequirePKListener) EnterDrop_table(ctx *parser.Drop_tableContext) {
 	tableName := normalizeIdentifier(ctx.Tableview_name(), l.currentSchema)
-	if _, exists := l.tableWitPK[tableName]; exists {
-		delete(l.tableWitPK, tableName)
+	if _, exists := l.tableWitPK[tableName]; !exists {
+		return
 	}
+	delete(l.tableWitPK, tableName)
 }
 
 // EnterDrop_primary_key_or_unique_or_generic_clause is called when production drop_primary_key_or_unique_or_generic_clause is entered.

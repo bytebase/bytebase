@@ -1,3 +1,4 @@
+// Package oracle is the advisor for oracle database.
 package oracle
 
 import (
@@ -15,26 +16,25 @@ import (
 func parseStatement(statement string) (antlr.Tree, []advisor.Advice) {
 	tree, err := parser.ParsePLSQL(statement + ";")
 	if err != nil {
-		if err, ok := err.(*parser.SyntaxError); ok {
+		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
 			return nil, []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    advisor.StatementSyntaxError,
 					Title:   advisor.SyntaxErrorTitle,
-					Content: err.Message,
-					Line:    err.Line,
+					Content: syntaxErr.Message,
+					Line:    syntaxErr.Line,
 				},
 			}
-		} else {
-			return nil, []advisor.Advice{
-				{
-					Status:  advisor.Error,
-					Code:    advisor.Internal,
-					Title:   "Parse error",
-					Content: err.Error(),
-					Line:    1,
-				},
-			}
+		}
+		return nil, []advisor.Advice{
+			{
+				Status:  advisor.Error,
+				Code:    advisor.Internal,
+				Title:   "Parse error",
+				Content: err.Error(),
+				Line:    1,
+			},
 		}
 	}
 
