@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net"
-	"os"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
@@ -15,7 +14,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -51,7 +49,7 @@ type Driver struct {
 	// Use a single connection for executing migrations in the lifetime of the driver can keep the thread ID unchanged.
 	// So that it's easy to get the thread ID for rollback SQL.
 	migrationConn *sql.Conn
-	sshConn       *ssh.Client
+	sshClient     *ssh.Client
 
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
@@ -86,46 +84,14 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	}
 
 	if connCfg.SSHConfig.Host != "" {
-		sshConfig := &ssh.ClientConfig{
-			User:            connCfg.SSHConfig.User,
-			Auth:            []ssh.AuthMethod{},
-			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		}
-		if connCfg.SSHConfig.PrivateKey != "" {
-			signer, err := ssh.ParsePrivateKey([]byte(connCfg.SSHConfig.PrivateKey))
-			if err != nil {
-				return nil, err
-			}
-			sshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeys(signer))
-		} else {
-			// Establish a connection to the local ssh-agent
-			conn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
-			if err != nil {
-				return nil, err
-			}
-			defer conn.Close()
-			// Create a new instance of the ssh agent
-			agentClient := agent.NewClient(conn)
-			// When the agentClient connection succeeded, add them as AuthMethod
-			if agentClient != nil {
-				sshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeysCallback(agentClient.Signers))
-			}
-		}
-		// When there's a non empty password add the password AuthMethod.
-		if connCfg.SSHConfig.Password != "" {
-			sshConfig.Auth = append(sshConfig.Auth, ssh.PasswordCallback(func() (string, error) {
-				return connCfg.SSHConfig.Password, nil
-			}))
-		}
-		// Connect to the SSH Server
-		sshConn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", connCfg.SSHConfig.Host, connCfg.SSHConfig.Port), sshConfig)
+		sshClient, err := util.GetSSHClient(connCfg.SSHConfig)
 		if err != nil {
 			return nil, err
 		}
-		driver.sshConn = sshConn
+		driver.sshClient = sshClient
 		// Now we register the dialer with the ssh connection as a parameter.
 		mysql.RegisterDialContext("mysql+tcp", func(ctx context.Context, addr string) (net.Conn, error) {
-			return sshConn.Dial("tcp", addr)
+			return sshClient.Dial("tcp", addr)
 		})
 		protocol = "mysql+tcp"
 	}
@@ -171,8 +137,8 @@ func (driver *Driver) Close(context.Context) error {
 	var err error
 	err = multierr.Append(err, driver.db.Close())
 	err = multierr.Append(err, driver.migrationConn.Close())
-	if driver.sshConn != nil {
-		err = multierr.Append(err, driver.sshConn.Close())
+	if driver.sshClient != nil {
+		err = multierr.Append(err, driver.sshClient.Close())
 	}
 	return err
 }
