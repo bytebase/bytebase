@@ -1,6 +1,7 @@
 package oracle
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
@@ -12,7 +13,7 @@ import (
 )
 
 func parseStatement(statement string) (antlr.Tree, []advisor.Advice) {
-	tree, err := parser.ParsePLSQL(statement)
+	tree, err := parser.ParsePLSQL(statement + ";")
 	if err != nil {
 		if err, ok := err.(*parser.SyntaxError); ok {
 			return nil, []advisor.Advice{
@@ -40,7 +41,7 @@ func parseStatement(statement string) (antlr.Tree, []advisor.Advice) {
 	return tree, nil
 }
 
-func normalizeIdentifier(ctx antlr.ParserRuleContext) string {
+func normalizeIdentifier(ctx antlr.ParserRuleContext, currentSchema string) string {
 	switch ctx := ctx.(type) {
 	case *plsql.IdentifierContext:
 		return normalizeIdentifierContext(ctx)
@@ -53,6 +54,9 @@ func normalizeIdentifier(ctx antlr.ParserRuleContext) string {
 			result := []string{normalizeIdentifierContext(ctx.Identifier())}
 			if ctx.Id_expression() != nil {
 				result = append(result, normalizeIDExpression(ctx.Id_expression()))
+			}
+			if len(result) == 1 {
+				result = []string{currentSchema, result[0]}
 			}
 			return strings.Join(result, ".")
 		}
@@ -85,4 +89,13 @@ func normalizeIDExpression(idExpression plsql.IId_expressionContext) string {
 	}
 
 	return ""
+}
+
+func normalizeTableName(name string) string {
+	list := strings.Split(name, ".")
+	var result []string
+	for _, item := range list {
+		result = append(result, fmt.Sprintf("\"%s\"", item))
+	}
+	return strings.Join(result, ".")
 }

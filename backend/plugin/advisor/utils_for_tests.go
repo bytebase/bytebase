@@ -174,12 +174,13 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 		}
 
 		ctx := SQLReviewCheckContext{
-			Charset:   "",
-			Collation: "",
-			DbType:    dbType,
-			Catalog:   &testCatalog{finder: finder},
-			Driver:    nil,
-			Context:   context.Background(),
+			Charset:       "",
+			Collation:     "",
+			DbType:        dbType,
+			Catalog:       &testCatalog{finder: finder},
+			Driver:        nil,
+			Context:       context.Background(),
+			CurrentSchema: "SYS",
 		}
 
 		adviceList, err := SQLReviewCheck(tc.Statement, ruleList, ctx)

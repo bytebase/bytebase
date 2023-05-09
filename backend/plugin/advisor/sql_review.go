@@ -438,6 +438,9 @@ type SQLReviewCheckContext struct {
 	Catalog   catalog.Catalog
 	Driver    *sql.DB
 	Context   context.Context
+
+	// Oracle specific fields
+	CurrentSchema string
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
@@ -472,12 +475,13 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 			checkContext.DbType,
 			advisorType,
 			Context{
-				Charset:   checkContext.Charset,
-				Collation: checkContext.Collation,
-				Rule:      rule,
-				Catalog:   finder,
-				Driver:    checkContext.Driver,
-				Context:   checkContext.Context,
+				Charset:       checkContext.Charset,
+				Collation:     checkContext.Collation,
+				Rule:          rule,
+				Catalog:       finder,
+				Driver:        checkContext.Driver,
+				Context:       checkContext.Context,
+				CurrentSchema: checkContext.CurrentSchema,
 			},
 			statements,
 		)

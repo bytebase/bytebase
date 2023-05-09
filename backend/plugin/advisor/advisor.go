@@ -396,6 +396,9 @@ type Context struct {
 	Catalog *catalog.Finder
 	Driver  *sql.DB
 	Context context.Context
+
+	// CurrentSchema is the current schema. Special for Oracle.
+	CurrentSchema string
 }
 
 // Advisor is the interface for advisor.
