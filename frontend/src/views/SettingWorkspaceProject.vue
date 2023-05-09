@@ -26,7 +26,7 @@
       </NCheckbox>
     </div>
 
-    <ProjectTable :project-list="filteredList" />
+    <ProjectV1Table :project-list="filteredProjectList" />
 
     <BBModal
       v-if="state.showCreateModal"
@@ -40,63 +40,49 @@
 </template>
 
 <script setup lang="ts">
-import { watchEffect, reactive, computed } from "vue";
+import { reactive, computed } from "vue";
 import { NCheckbox } from "naive-ui";
 
-import { DEFAULT_PROJECT_ID, Project } from "../types";
-import { useProjectStore } from "@/store";
-import ProjectTable from "../components/ProjectTable.vue";
+import { DEFAULT_PROJECT_V1_NAME } from "../types";
+import { useProjectV1List } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
-import { SearchBox } from "@/components/v2";
+import { ProjectV1Table, SearchBox } from "@/components/v2";
+import { State } from "@/types/proto/v1/common";
+import { filterProjectV1ListByKeyword } from "@/utils";
 
 interface LocalState {
-  projectList: Project[];
   searchText: string;
   showCreateModal: boolean;
   includesArchived: boolean;
 }
 
-const projectStore = useProjectStore();
+const { projectList } = useProjectV1List(true /* showDeleted */);
 
 const state = reactive<LocalState>({
-  projectList: [],
   searchText: "",
   showCreateModal: false,
   includesArchived: false,
 });
 
-const prepareProjectList = async () => {
-  const projectList = [...(await projectStore.fetchAllProjectList())];
-  // Put "Unassigned" to the first;
-  const unassignedIndex = projectList.findIndex(
-    (project) => project.id === DEFAULT_PROJECT_ID
-  );
-  if (unassignedIndex >= 0) {
-    const unassignedProject = projectList[unassignedIndex];
-    projectList.splice(unassignedIndex, 1);
-    projectList.unshift(unassignedProject);
-  }
-  state.projectList = projectList;
-};
-
-watchEffect(prepareProjectList);
-
 const changeSearchText = (searchText: string) => {
   state.searchText = searchText;
 };
 
-const filteredList = computed(() => {
-  let list = state.projectList;
-  const keyword = state.searchText.trim().toLowerCase();
-  if (keyword) {
-    list = list.filter(
-      (project) =>
-        project.name.toLowerCase().includes(keyword) ||
-        project.key.toLowerCase().includes(keyword)
-    );
+const filteredProjectList = computed(() => {
+  let list = [...projectList.value];
+  list = filterProjectV1ListByKeyword(list, state.searchText);
+
+  // Put "Unassigned" to the first;
+  const unassignedIndex = list.findIndex(
+    (project) => project.name === DEFAULT_PROJECT_V1_NAME
+  );
+  if (unassignedIndex >= 0) {
+    const unassignedProject = list[unassignedIndex];
+    list.splice(unassignedIndex, 1);
+    list.unshift(unassignedProject);
   }
   if (!state.includesArchived) {
-    list = list.filter((project) => project.rowStatus === "NORMAL");
+    list = list.filter((project) => project.state !== State.DELETED);
   }
   return list;
 });

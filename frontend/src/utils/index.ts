@@ -29,3 +29,5 @@ export * from "./id";
 export * from "./workspaceApprovalSetting";
 export * from "./projectIamPolicy";
 export * from "./slowQuery";
+
+export * from "./v1";

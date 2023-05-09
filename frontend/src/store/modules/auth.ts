@@ -104,6 +104,11 @@ export const useCurrentUser = () => {
   });
 };
 
+export const useCurrentUserV1 = () => {
+  const authStore = useAuthStore();
+  return computed(() => authStore.currentUser);
+};
+
 export const useIsLoggedIn = () => {
   const store = useAuthStore();
   return computed(() => store.isLoggedIn() && store.currentUser.name !== "");
