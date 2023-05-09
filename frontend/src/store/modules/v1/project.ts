@@ -117,7 +117,12 @@ export const useProjectV1List = (showDeleted: MaybeRef<boolean> = false) => {
     });
   });
   const projectList = computed(() => {
-    return store.projectList;
+    if (unref(showDeleted)) {
+      return store.projectList;
+    }
+    return store.projectList.filter(
+      (project) => project.state === State.ACTIVE
+    );
   });
   return { projectList, ready };
 };
