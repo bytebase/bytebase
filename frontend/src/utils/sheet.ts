@@ -21,6 +21,7 @@ import {
   hasWorkspacePermission,
   isMemberOfProject,
 } from "../utils";
+import { flattenTaskList } from "@/components/Issue/logic";
 
 export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
   // readable to
@@ -149,13 +150,11 @@ export const sheetIdOfTask = (task: Task) => {
 export const maybeSetSheetBacktracePayloadByIssue = async (issue: Issue) => {
   const sheetIdList: SheetId[] = [];
 
-  issue.pipeline.stageList.forEach((stage) => {
-    stage.taskList.forEach((task) => {
-      const sheetId = sheetIdOfTask(task);
-      if (sheetId) {
-        sheetIdList.push(sheetId);
-      }
-    });
+  flattenTaskList(issue).forEach((task) => {
+    const sheetId = sheetIdOfTask(task as Task);
+    if (sheetId) {
+      sheetIdList.push(sheetId);
+    }
   });
 
   const store = useSheetStore();
@@ -176,6 +175,14 @@ export const maybeSetSheetBacktracePayloadByIssue = async (issue: Issue) => {
   } catch {
     // nothing
   }
+};
+
+export const getBacktracePayloadWithIssue = (issue: Issue) => {
+  return {
+    type: "bb.sheet.issue-backtrace",
+    issueId: issue.id,
+    issueName: issue.name,
+  };
 };
 
 export const getSheetIssueBacktracePayload = (sheet: Sheet) => {
