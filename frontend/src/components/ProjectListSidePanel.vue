@@ -8,15 +8,14 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, watchEffect } from "vue";
+import { computed, defineComponent } from "vue";
 
-import { Project, UNKNOWN_ID, RowStatus } from "../types";
-import { projectName, projectSlug } from "../utils";
+import { projectV1Slug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useCurrentUser, useProjectStore } from "@/store";
+import { useCurrentUserV1, useProjectV1ListByUser } from "@/store";
 
 export default defineComponent({
   name: "ProjectListSidePanel",
@@ -24,31 +23,17 @@ export default defineComponent({
     const { t } = useI18n();
     const router = useRouter();
 
-    const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
+    const currentUserV1 = useCurrentUserV1();
 
-    const prepareProjectList = () => {
-      // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
-        projectStore.fetchProjectListByUser({
-          userId: currentUser.value.id,
-        });
-      }
-    };
-
-    watchEffect(prepareProjectList);
+    const { projectList } = useProjectV1ListByUser(currentUserV1);
 
     const outlineItemList = computed((): BBOutlineItem[] => {
-      const projectList = projectStore.getProjectListByUser(
-        currentUser.value.id,
-        ["NORMAL"] as RowStatus[]
-      );
-      return projectList
-        .map((item: Project): BBOutlineItem => {
+      return projectList.value
+        .map((project): BBOutlineItem => {
           return {
-            id: item.id.toString(),
-            name: projectName(item),
-            link: `/project/${projectSlug(item)}#overview`,
+            id: project.uid,
+            name: project.title,
+            link: `/project/${projectV1Slug(project)}#overview`,
           };
         })
         .sort((a: any, b: any) => {
