@@ -99,7 +99,7 @@
   >
     <MonacoEditor
       ref="editorRef"
-      class="w-full h-auto max-h-[360px]"
+      class="w-full max-h-[360px]"
       data-label="bb-issue-sql-editor"
       :value="state.editStatement"
       :readonly="readonly"
@@ -642,7 +642,9 @@ const updateEditorHeight = () => {
 
 const handleMonacoEditorReady = () => {
   handleUpdateEditorAutoCompletionContext();
-  updateEditorHeight();
+  requestAnimationFrame(() => {
+    updateEditorHeight();
+  });
 };
 
 watch([databaseList, tableList], () => {
