@@ -39,6 +39,8 @@ func (*TableNoForeignKeyAdvisor) Check(ctx advisor.Context, statement string) ([
 		level:         level,
 		title:         string(ctx.Rule.Type),
 		currentSchema: ctx.CurrentSchema,
+		tableWithFK:   make(map[string]bool),
+		tableLine:     make(map[string]int),
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -66,7 +68,7 @@ func (l *tableNoForeignKeyListener) generateAdvice() ([]advisor.Advice, error) {
 				Status:  l.level,
 				Code:    advisor.TableHasFK,
 				Title:   l.title,
-				Content: fmt.Sprintf("Foreign key is not allowed in the table %q.", tableName),
+				Content: fmt.Sprintf("Foreign key is not allowed in the table %s.", normalizeTableName(tableName)),
 				Line:    l.tableLine[tableName],
 			})
 		}
