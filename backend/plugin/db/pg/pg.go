@@ -5,15 +5,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net"
 	"regexp"
 	"strings"
+	"time"
 
 	// Import pg driver.
 	// init() in pgx/v5/stdlib will register it's pgx driver.
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -52,15 +56,14 @@ func init() {
 
 // Driver is the Postgres driver.
 type Driver struct {
-	dbBinDir      string
-	connectionCtx db.ConnectionContext
-	config        db.ConnectionConfig
+	dbBinDir string
+	config   db.ConnectionConfig
 
-	db *sql.DB
+	db        *sql.DB
+	sshClient *ssh.Client
 	// connectionString is the connection string registered by pgx.
 	// Unregister connectionString if we don't need it.
 	connectionString string
-	baseDSN          string
 	databaseName     string
 }
 
@@ -71,7 +74,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {
@@ -83,33 +86,51 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	databaseName, dsn, err := guessDSN(
-		config.Username,
-		config.Password,
-		config.Host,
-		config.Port,
-		config.Database,
-		config.TLSConfig.SslCA,
-		config.TLSConfig.SslCert,
-		config.TLSConfig.SslKey,
-	)
+	connConfig, err := pgx.ParseConfig(fmt.Sprintf("host=%s port=%s", config.Host, config.Port))
 	if err != nil {
 		return nil, err
+	}
+	connConfig.Config.User = config.Username
+	connConfig.Config.Password = config.Password
+	connConfig.Config.Database = config.Database
+	if config.TLSConfig.SslCert != "" {
+		cfg, err := config.TLSConfig.GetSslConfig()
+		if err != nil {
+			return nil, err
+		}
+		connConfig.TLSConfig = cfg
+	}
+	if config.SSHConfig.Host != "" {
+		sshClient, err := util.GetSSHClient(config.SSHConfig)
+		if err != nil {
+			return nil, err
+		}
+		driver.sshClient = sshClient
+
+		connConfig.Config.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			conn, err := sshClient.Dial(network, addr)
+			if err != nil {
+				return nil, err
+			}
+			return &noDeadlineConn{Conn: conn}, nil
+		}
 	}
 	if config.ReadOnly {
-		dsn = fmt.Sprintf("%s default_transaction_read_only=true", dsn)
+		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
-	driver.databaseName = databaseName
-	driver.baseDSN = dsn
-	driver.connectionCtx = connCtx
+
+	driver.databaseName = config.Database
+	if config.Database == "" {
+		databaseName, cfg, err := guessDSN(connConfig, config.Username)
+		if err != nil {
+			return nil, err
+		}
+		connConfig = cfg
+		driver.databaseName = databaseName
+	}
 	driver.config = config
 
-	connectionString, err := registerConnectionConfig(dsn, driver.config.TLSConfig)
-	if err != nil {
-		return nil, err
-	}
-	driver.connectionString = connectionString
-
+	driver.connectionString = stdlib.RegisterConnConfig(connConfig)
 	db, err := sql.Open(driverName, driver.connectionString)
 	if err != nil {
 		return nil, err
@@ -118,70 +139,24 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	return driver, nil
 }
 
-func registerConnectionConfig(dsn string, tlsConfig db.TLSConfig) (string, error) {
-	connConfig, err := pgx.ParseConfig(dsn)
-	if err != nil {
-		return "", err
-	}
+type noDeadlineConn struct{ net.Conn }
 
-	if tlsConfig.SslCA != "" {
-		sslConfig, err := tlsConfig.GetSslConfig()
-		if err != nil {
-			return "", err
-		}
-		connConfig.TLSConfig = sslConfig
-	}
-
-	return stdlib.RegisterConnConfig(connConfig), nil
-}
-
-func unregisterConnectionConfig(connectionString string) {
-	stdlib.UnregisterConnConfig(connectionString)
-}
+func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
+func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
+func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
 
 // guessDSN will guess a valid DB connection and its database name.
-func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslKey string) (string, string, error) {
-	// dbname is guessed if not specified.
-	m := map[string]string{
-		"host":     hostname,
-		"port":     port,
-		"user":     username,
-		"password": password,
-	}
-	if database != "" {
-		m["dbname"] = database
-	}
-
-	tlsConfig := db.TLSConfig{
-		SslCA:   sslCA,
-		SslCert: sslCert,
-		SslKey:  sslKey,
-	}
-
-	var tokens []string
-	for k, v := range m {
-		if v != "" {
-			tokens = append(tokens, fmt.Sprintf("%s=%s", k, v))
-		}
-	}
-	dsn := strings.Join(tokens, " ")
-
-	if database != "" {
-		return database, dsn, nil
-	}
-
+func guessDSN(baseConnConfig *pgx.ConnConfig, username string) (string, *pgx.ConnConfig, error) {
 	// Some postgres server default behavior is to use username as the database name if not specified,
 	// while some postgres server explicitly requires the database name to be present (e.g. render.com).
 	guesses := []string{"postgres", username, "template1"}
 	//  dsn+" dbname=bytebase"
 	for _, guessDatabase := range guesses {
-		guessDSN := fmt.Sprintf("%s dbname=%s", dsn, guessDatabase)
+		connConfig := *baseConnConfig
+		connConfig.Database = guessDatabase
 		if err := func() error {
-			connectionString, err := registerConnectionConfig(guessDSN, tlsConfig)
-			if err != nil {
-				return err
-			}
-			defer unregisterConnectionConfig(connectionString)
+			connectionString := stdlib.RegisterConnConfig(&connConfig)
+			defer stdlib.UnregisterConnConfig(connectionString)
 			db, err := sql.Open(driverName, connectionString)
 			if err != nil {
 				return err
@@ -192,15 +167,20 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 			log.Debug("guessDSN attempt failed", zap.Error(err))
 			continue
 		}
-		return guessDatabase, guessDSN, nil
+		return guessDatabase, &connConfig, nil
 	}
-	return "", "", errors.Errorf("cannot connect to the instance, make sure the connection info is correct")
+	return "", nil, errors.Errorf("cannot connect to the instance, make sure the connection info is correct")
 }
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
-	unregisterConnectionConfig(driver.connectionString)
-	return driver.db.Close()
+	stdlib.UnregisterConnConfig(driver.connectionString)
+	var err error
+	err = multierr.Append(err, driver.db.Close())
+	if driver.sshClient != nil {
+		err = multierr.Append(err, driver.sshClient.Close())
+	}
+	return err
 }
 
 // Ping pings the database.
