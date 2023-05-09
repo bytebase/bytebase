@@ -9,7 +9,7 @@ import { useI18n } from "vue-i18n";
 import { escape } from "lodash-es";
 
 import { ConnectionAtom, DEFAULT_PROJECT_ID } from "@/types";
-import { getHighlightHTMLByKeyWords } from "@/utils";
+import { getHighlightHTMLByRegExp } from "@/utils";
 
 const props = defineProps<{
   atom: ConnectionAtom;
@@ -33,6 +33,10 @@ const text = computed(() => {
 });
 
 const html = computed(() => {
-  return getHighlightHTMLByKeyWords(escape(text.value), escape(props.keyword));
+  return getHighlightHTMLByRegExp(
+    escape(text.value),
+    escape(props.keyword.trim()),
+    false /* !caseSensitive */
+  );
 });
 </script>
