@@ -5,20 +5,22 @@
     :class="connectionTreeStore.tree.mode"
   >
     <div class="databases-tree--input">
-      <n-input
-        v-model:value="searchPattern"
+      <NInput
+        :value="searchPattern"
         :placeholder="$t('sql-editor.search-databases')"
+        :clearable="true"
+        @update:value="$emit('update:search-pattern', $event)"
       >
         <template #prefix>
           <heroicons-outline:search class="h-5 w-5 text-gray-300" />
         </template>
-      </n-input>
+      </NInput>
     </div>
     <div class="databases-tree--tree flex-1 overflow-y-auto select-none">
       <NTree
         block-line
         :data="treeData"
-        :pattern="searchPattern"
+        :pattern="mounted ? searchPattern : ''"
         :show-irrelevant-nodes="false"
         :expand-on-click="true"
         :selected-keys="selectedKeys"
@@ -27,7 +29,7 @@
         :render-prefix="renderPrefix"
         :render-suffix="renderSuffix"
         :node-props="nodeProps"
-        :on-update:expanded-keys="updateExpandedKeys"
+        @update:expanded-keys="updateExpandedKeys"
       />
     </div>
 
@@ -49,8 +51,9 @@
 
 <script lang="ts" setup>
 import { ref, computed, h, nextTick, watch } from "vue";
-import { NTree, NDropdown, DropdownOption, TreeOption } from "naive-ui";
+import { NTree, NInput, NDropdown, DropdownOption, TreeOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { useMounted } from "@vueuse/core";
 
 import type {
   ConnectionAtom,
@@ -90,11 +93,16 @@ type DropdownOptionWithConnectionAtom = DropdownOption & {
   item: ConnectionAtom;
 };
 
+const props = defineProps<{
+  searchPattern?: string;
+}>();
+
 const emit = defineEmits<{
   (
     event: "alter-schema",
     params: { databaseId: DatabaseId; schema: string; table: string }
   ): void;
+  (event: "update:search-pattern", keyword: string): void;
 }>();
 
 const { t } = useI18n();
@@ -105,7 +113,7 @@ const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUser = useCurrentUser();
 
-const searchPattern = ref();
+const mounted = useMounted();
 const showDropdown = ref(false);
 const dropdownPosition = ref<Position>({
   x: 0,
@@ -229,7 +237,7 @@ const setConnection = (
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const atom = option as any as ConnectionAtom;
-  return h(Label, { atom, keyword: searchPattern.value ?? "" });
+  return h(Label, { atom, keyword: props.searchPattern ?? "" });
 };
 
 // Render icons before nodes.
@@ -309,7 +317,9 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
 };
 
 const updateExpandedKeys = (keys: string[]) => {
-  connectionTreeStore.expandedTreeNodeKeys = keys;
+  connectionTreeStore.expandedTreeNodeKeys = keys.filter(
+    (key) => !key.startsWith("database-")
+  );
 };
 
 // When switching tabs, scroll the matched node into view if needed.
@@ -356,7 +366,6 @@ watch(
       maybeExpandKey(`instance-${instanceId}`);
     }
     if (databaseId !== UNKNOWN_ID) {
-      maybeExpandKey(`database-${databaseId}`);
       const db = databaseStore.getDatabaseById(databaseId);
       const projectId = db.project.id;
       maybeExpandKey(`project-${projectId}`);
