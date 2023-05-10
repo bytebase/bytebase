@@ -1,5 +1,5 @@
 import { RowStatus } from "./common";
-import { ProjectId, ResourceId } from "./id";
+import { ProjectId } from "./id";
 import { OAuthToken } from "./oauth";
 import { Principal } from "./principal";
 import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
