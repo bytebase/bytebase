@@ -24,7 +24,9 @@
             <div
               v-if="!create"
               class="py-6 lg:pl-4 lg:w-72 xl:w-96 lg:border-l lg:border-block-border overflow-hidden"
-            ></div>
+            >
+              <GrantRequestIssueSidebar />
+            </div>
             <div class="lg:hidden border-t border-block-border" />
             <div class="w-full lg:w-auto lg:flex-1 py-4 pr-4 overflow-x-hidden">
               <GrantRequestExporterForm v-if="requestRole === 'EXPORTER'" />
@@ -68,6 +70,7 @@ import {
   GrantRequestModeProvider,
 } from "../logic";
 import { useGrantRequestIssueLogic } from "../logic/grantRequest";
+import GrantRequestIssueSidebar from "../GrantRequestIssueSidebar.vue";
 import GrantRequestExporterForm from "../form/GrantRequestExporterForm.vue";
 import GrantRequestQuerierForm from "../form/GrantRequestQuerierForm.vue";
 

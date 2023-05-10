@@ -2,13 +2,12 @@
   <div
     class="w-full mx-auto flex flex-col justify-start items-start space-y-4 my-8 gap-4"
   >
-    <div class="w-full flex flex-row justify-start items-center">
+    <div v-if="create" class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center">
         {{ $t("database.sync-schema.select-project") }}
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
-        :disabled="!create"
         :selected-id="projectId"
         @select-project-id="handleSourceProjectSelect"
       />
@@ -36,8 +35,10 @@
       </div>
     </div>
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-start">Expire days</span>
-      <div>
+      <span class="flex w-40 items-start">{{
+        create ? "Expire days" : "Expired at"
+      }}</span>
+      <div v-if="create">
         <NRadioGroup
           v-model:value="state.expireDays"
           class="!grid grid-cols-4 gap-2"
@@ -63,6 +64,9 @@
           </div>
         </NRadioGroup>
       </div>
+      <div v-else>
+        {{ state.expiredAt }}
+      </div>
     </div>
   </div>
 
@@ -78,11 +82,12 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NRadioGroup, NRadio, NInputNumber } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useIssueLogic } from "../logic";
 import {
   DatabaseId,
   GrantRequestContext,
+  GrantRequestPayload,
   Issue,
   IssueCreate,
   ProjectId,
@@ -92,11 +97,14 @@ import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
 
 interface LocalState {
   showSelectDatabasePanel: boolean;
+  // For creating
   projectId?: ProjectId;
   allDatabases: boolean;
   selectedDatabaseIdList: DatabaseId[];
   expireDays: number;
   customDays: number;
+  // For reviewing
+  expiredAt: string;
 }
 
 const expireDaysOptions = [
@@ -134,10 +142,30 @@ const state = reactive<LocalState>({
   selectedDatabaseIdList: [],
   expireDays: 7,
   customDays: 7,
+  expiredAt: "",
 });
 
 const projectId = computed(() => {
   return create.value ? state.projectId : (issue.value as Issue).project.id;
+});
+
+onMounted(() => {
+  if (create.value) {
+    // We have done state intitial in create context.
+  } else {
+    const payload = ((issue.value as Issue).payload as any)
+      .grantRequest as GrantRequestPayload;
+    if (payload.role !== "roles/QUERIER") {
+      throw "Only support QUERIER role";
+    }
+    const expressionList = payload.condition.expression.split(" && ");
+    for (const expression of expressionList) {
+      const fields = expression.split(" ");
+      if (fields[0] === "expired_time") {
+        state.expiredAt = fields[2];
+      }
+    }
+  }
 });
 
 const handleSourceProjectSelect = async (projectId: ProjectId) => {
