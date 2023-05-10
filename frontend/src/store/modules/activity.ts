@@ -18,6 +18,7 @@ import {
   empty,
   ActivityFind,
 } from "@/types";
+import { isDatabaseRelatedIssueType } from "@/utils";
 import { convertEntityList } from "./utils";
 import { useCurrentUser } from "./auth";
 import { getPrincipalFromIncludedList } from "./principal";
@@ -143,11 +144,13 @@ export const useActivityStore = defineStore("activity", {
         container: issue.id,
         order: "ASC",
       });
-      const requestListForPipeline = this.fetchActivityList({
-        typePrefix: "bb.pipeline.",
-        container: issue.pipeline.id,
-        order: "ASC",
-      });
+      const requestListForPipeline = isDatabaseRelatedIssueType(issue.type)
+        ? this.fetchActivityList({
+            typePrefix: "bb.pipeline.",
+            container: issue.pipeline.id,
+            order: "ASC",
+          })
+        : [];
       const [listForIssue, listForPipeline] = await Promise.all([
         requestListForIssue,
         requestListForPipeline,

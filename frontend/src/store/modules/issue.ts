@@ -21,6 +21,7 @@ import {
   unknown,
   UNKNOWN_ID,
 } from "@/types";
+import { isDatabaseRelatedIssueType } from "@/utils";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
@@ -30,46 +31,7 @@ import { useProjectStore } from "./project";
 import { convertEntityList } from "./utils";
 
 function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
-  const projectId = (issue.relationships!.project.data as ResourceIdentifier)
-    .id;
-  let project: Project = unknown("PROJECT") as Project;
-  project.id = parseInt(projectId);
-
-  const pipelineId = (issue.relationships!.pipeline.data as ResourceIdentifier)
-    .id;
-  let pipeline = unknown("PIPELINE") as Pipeline;
-  pipeline.id = parseInt(pipelineId);
-
-  const projectStore = useProjectStore();
-  const pipelineStore = usePipelineStore();
-  for (const item of includedList || []) {
-    if (
-      item.type == "project" &&
-      (issue.relationships!.project.data as ResourceIdentifier).id == item.id
-    ) {
-      project = projectStore.convert(item, includedList || []);
-    }
-
-    if (
-      item.type == "pipeline" &&
-      issue.relationships!.pipeline.data &&
-      (issue.relationships!.pipeline.data as ResourceIdentifier).id == item.id
-    ) {
-      pipeline = pipelineStore.convert(item, includedList);
-    }
-  }
-
-  const subscriberList = [] as Principal[];
-  if (issue.relationships!.subscriberList.data) {
-    for (const subscriberData of issue.relationships!.subscriberList
-      .data as ResourceIdentifier[]) {
-      subscriberList.push(
-        getPrincipalFromIncludedList(subscriberData, includedList)
-      );
-    }
-  }
-
-  const result = {
+  const result: Issue = {
     ...(issue.attributes as Omit<
       Issue,
       "id" | "project" | "creator" | "updater" | "assignee" | "subscriberList"
@@ -87,15 +49,61 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
       issue.relationships!.assignee.data,
       includedList
     ),
-    project,
-    pipeline,
-    subscriberList: subscriberList,
+    project: unknown("PROJECT") as Project,
+    pipeline: undefined,
+    subscriberList: [],
   };
+
   try {
     result.payload = JSON.parse(issue.attributes.payload as string);
   } catch {
     result.payload = {};
   }
+  const projectStore = useProjectStore();
+
+  // Compose issue pipeline.
+  if (isDatabaseRelatedIssueType(result.type)) {
+    const pipelineStore = usePipelineStore();
+    const pipelineId = (
+      issue.relationships!.pipeline.data as ResourceIdentifier
+    ).id;
+    let pipeline = unknown("PIPELINE") as Pipeline;
+    pipeline.id = parseInt(pipelineId);
+
+    for (const item of includedList || []) {
+      if (
+        item.type == "pipeline" &&
+        issue.relationships!.pipeline.data &&
+        (issue.relationships!.pipeline.data as ResourceIdentifier).id == item.id
+      ) {
+        pipeline = pipelineStore.convert(item, includedList);
+      }
+    }
+    result.pipeline = pipeline;
+  }
+
+  // Compose issue project.
+  for (const item of includedList || []) {
+    if (
+      item.type == "project" &&
+      (issue.relationships!.project.data as ResourceIdentifier).id == item.id
+    ) {
+      result.project = projectStore.convert(item, includedList || []);
+    }
+  }
+
+  // Compose issue subscriberList.
+  const subscriberList = [] as Principal[];
+  if (issue.relationships!.subscriberList.data) {
+    for (const subscriberData of issue.relationships!.subscriberList
+      .data as ResourceIdentifier[]) {
+      subscriberList.push(
+        getPrincipalFromIncludedList(subscriberData, includedList)
+      );
+    }
+  }
+
+  result.subscriberList = subscriberList;
 
   return result;
 }
@@ -185,19 +193,21 @@ export const useIssueStore = defineStore("issue", {
       // so that we should also update instance/database store, otherwise, we may get
       // unknown instance/database when navigating to other UI from the issue detail page
       // since other UIs are getting instance/database by id from the store.
-      const instanceStore = useInstanceStore();
-      const databaseStore = useDatabaseStore();
-      for (const stage of issue.pipeline.stageList) {
-        for (const task of stage.taskList) {
-          instanceStore.setInstanceById({
-            instanceId: task.instance.id,
-            instance: task.instance,
-          });
-
-          if (task.database) {
-            databaseStore.upsertDatabaseList({
-              databaseList: [task.database],
+      if (isDatabaseRelatedIssueType(issue.type)) {
+        const instanceStore = useInstanceStore();
+        const databaseStore = useDatabaseStore();
+        for (const stage of issue.pipeline!.stageList) {
+          for (const task of stage.taskList) {
+            instanceStore.setInstanceById({
+              instanceId: task.instance.id,
+              instance: task.instance,
             });
+
+            if (task.database) {
+              databaseStore.upsertDatabaseList({
+                databaseList: [task.database],
+              });
+            }
           }
         }
       }
