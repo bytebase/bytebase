@@ -94,13 +94,17 @@ export type DatabaseQuickActionType =
   | "quickaction.bb.database.data.update"
   | "quickaction.bb.database.troubleshoot"
   | "quickaction.bb.database.schema.sync";
+export type IssueQuickActionType =
+  | "quickaction.bb.issue.grant.request.querier"
+  | "quickaction.bb.issue.grant.request.exporter";
 
 export type QuickActionType =
   | EnvironmentQuickActionType
   | ProjectQuickActionType
   | InstanceQuickActionType
   | UserQuickActionType
-  | DatabaseQuickActionType;
+  | DatabaseQuickActionType
+  | IssueQuickActionType;
 
 export type ResourceType =
   | "PRINCIPAL"
