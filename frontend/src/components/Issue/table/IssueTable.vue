@@ -50,7 +50,7 @@
       <BBTableCell class="table-cell w-12">
         <IssueStatusIcon
           :issue-status="issue.status"
-          :task-status="activeTask(issue.pipeline).status"
+          :task-status="issueTaskStatus(issue)"
         />
       </BBTableCell>
       <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500 w-12">
@@ -82,13 +82,17 @@
         </div>
       </BBTableCell>
       <BBTableCell class="table-cell w-36">
-        <div class="flex items-center">
+        <div
+          v-if="isDatabaseRelatedIssueType(issue.type)"
+          class="flex items-center"
+        >
           {{ activeEnvironmentName(issue) }}
           <ProductionEnvironmentIcon
             class="ml-1"
             :environment="activeEnvironment(issue.pipeline)"
           />
         </div>
+        <div v-else>-</div>
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell w-36">
         <BBStepBar
@@ -149,6 +153,7 @@ import {
   activeTask,
   stageSlug,
   activeTaskInStage,
+  isDatabaseRelatedIssueType,
 } from "@/utils";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
@@ -280,11 +285,30 @@ const selectedIssueList = computed(() => {
   );
 });
 
+const issueTaskStatus = (issue: Issue) => {
+  // For grant request issue, we always show the status as "PENDING_APPROVAL" as task status.
+  if (!isDatabaseRelatedIssueType(issue.type)) {
+    return "PENDING_APPROVAL";
+  }
+
+  return activeTask(issue.pipeline).status;
+};
+
 const activeEnvironmentName = function (issue: Issue) {
   return activeEnvironment(issue.pipeline).name;
 };
 
 const taskStepList = function (issue: Issue): BBStep[] {
+  if (!isDatabaseRelatedIssueType(issue.type)) {
+    return [
+      {
+        status:
+          issue.status === "OPEN" ? "PENDING_APPROVAL_ACTIVE" : issue.status,
+        payload: undefined,
+      },
+    ];
+  }
+
   return issue.pipeline.stageList.map((stage) => {
     const task = activeTaskInStage(stage);
     let status: BBStepStatus = task.status;

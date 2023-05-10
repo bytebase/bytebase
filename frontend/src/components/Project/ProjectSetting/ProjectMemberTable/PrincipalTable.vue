@@ -83,7 +83,7 @@ import {
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
-import { ProjectRoleType } from "@/types";
+import { ComposedPrincipal, ProjectRoleType } from "@/types";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import { IamPolicy, Project } from "@/types/proto/v1/project_service";
 import {
@@ -103,7 +103,6 @@ import {
   removeUserFromProjectIamPolicy,
   hasPermissionInProjectV1,
 } from "@/utils";
-import { ComposedPrincipal } from "../common";
 import { State } from "@/types/proto/v1/common";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 

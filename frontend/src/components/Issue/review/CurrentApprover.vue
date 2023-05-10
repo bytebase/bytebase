@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row items-center">
-    <template v-if="issue.status !== 'OPEN' || done">
+    <template v-if="issue.status !== 'OPEN' || isIssueDone">
       <span>-</span>
     </template>
     <template v-else-if="!ready">
@@ -24,13 +24,23 @@ import {
   extractIssueReviewContext,
   useWrappedReviewSteps,
 } from "@/plugins/issue/logic";
-import { useAuthStore } from "@/store";
+import { useAuthStore, useUserStore } from "@/store";
+import { isGrantRequestIssueType } from "@/utils";
 
 const props = defineProps<{
   issue: Issue;
 }>();
 
+const userStore = useUserStore();
+
 const review = computed(() => {
+  // Grant request issue skip custom approval flow.
+  if (isGrantRequestIssueType(props.issue.type)) {
+    return Review.fromJSON({
+      approvalFindingDone: true,
+    });
+  }
+
   try {
     return Review.fromJSON(props.issue.payload.approval);
   } catch {
@@ -44,11 +54,22 @@ const currentUserName = computed(() => useAuthStore().currentUser.name);
 const issue = computed(() => props.issue);
 const wrappedSteps = useWrappedReviewSteps(issue, context);
 
+const isIssueDone = computed(() => {
+  if (isGrantRequestIssueType(props.issue.type)) {
+    return issue.value.status === "DONE";
+  }
+  return done.value;
+});
+
 const currentStep = computed(() => {
   return wrappedSteps.value?.find((step) => step.status === "CURRENT");
 });
 
 const currentApprover = computed(() => {
+  if (isGrantRequestIssueType(props.issue.type)) {
+    return userStore.getUserById(props.issue.assignee.id as number);
+  }
+
   if (!currentStep.value) return undefined;
   const me = currentStep.value.candidates.find(
     (user) => user.name === currentUserName.value

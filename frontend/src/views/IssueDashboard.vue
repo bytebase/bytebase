@@ -107,6 +107,7 @@ import {
 import {
   activeEnvironment,
   hasWorkspacePermission,
+  isDatabaseRelatedIssueType,
   projectSlug,
 } from "../utils";
 import { useCurrentUser, useEnvironmentStore, useProjectStore } from "@/store";
@@ -176,6 +177,9 @@ const project = computed(() => {
 
 const filter = (issue: Issue) => {
   if (selectedEnvironment.value) {
+    if (!isDatabaseRelatedIssueType(issue.type)) {
+      return false;
+    }
     if (activeEnvironment(issue.pipeline).id !== selectedEnvironment.value.id) {
       return false;
     }

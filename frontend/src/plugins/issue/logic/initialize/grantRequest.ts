@@ -33,6 +33,6 @@ const buildNewGrantRequestIssue = async (
   await helper.prepare();
   const issueCreate = await helper.generate();
   const role = route.query.role as string;
-  (issueCreate.createContext as GrantRequestContext).role = role;
+  (issueCreate.createContext as GrantRequestContext).role = role as any;
   return issueCreate;
 };

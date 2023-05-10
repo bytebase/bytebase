@@ -88,6 +88,7 @@ import { cloneDeep, orderBy, uniq } from "lodash-es";
 
 import { ProjectMemberTable } from "../components/Project/ProjectSetting";
 import {
+  ComposedPrincipal,
   DEFAULT_PROJECT_ID,
   Principal,
   PrincipalId,
@@ -112,7 +113,6 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
-import { ComposedPrincipal } from "./Project/ProjectSetting/common";
 import { Project } from "@/types/proto/v1/project_service";
 import { State } from "@/types/proto/v1/common";
 

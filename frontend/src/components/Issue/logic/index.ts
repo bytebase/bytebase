@@ -3,6 +3,7 @@ import type IssueLogic from "./IssueLogic";
 import TenantModeProvider from "./TenantModeProvider";
 import GhostModeProvider from "./GhostModeProvider";
 import StandardModeProvider from "./StandardModeProvider";
+import GrantRequestModeProvider from "./GrantRequestModeProvider";
 
 export * from "./base";
 export * from "./common";
@@ -15,6 +16,7 @@ export {
   TenantModeProvider,
   GhostModeProvider,
   StandardModeProvider,
+  GrantRequestModeProvider,
 };
 
 export const KEY = Symbol("bb.issue.logic") as InjectionKey<IssueLogic>;
