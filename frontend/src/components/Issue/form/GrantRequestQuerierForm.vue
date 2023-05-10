@@ -12,9 +12,9 @@
         @select-project-id="handleSourceProjectSelect"
       />
     </div>
-    <div class="w-full flex flex-row justify-start items-center">
+    <div class="w-full flex flex-row justify-start items-start">
       <span class="flex w-40 items-center">Databases</span>
-      <div>
+      <div v-if="create">
         <NRadioGroup
           v-model:value="state.allDatabases"
           class="w-full !flex flex-row justify-start items-center gap-4"
@@ -22,16 +22,32 @@
         >
           <NRadio :value="true" label="All" />
           <div>
-            <NRadio :value="false" label="Manually select" />
-            <button
-              class="ml-2 normal-link disabled:cursor-not-allowed"
+            <NRadio
+              :value="false"
               :disabled="!state.projectId"
+              label="Manually select"
+            />
+            <button
+              v-if="state.projectId"
+              class="ml-2 normal-link disabled:cursor-not-allowed"
               @click="state.showSelectDatabasePanel = true"
             >
               Select
             </button>
           </div>
         </NRadioGroup>
+      </div>
+      <div v-else class="flex flex-row justify-start items-start gap-4">
+        <span v-if="state.selectedDatabaseIdList.length === 0">All</span>
+        <div
+          v-for="database in selectedDatabaseList"
+          v-else
+          :key="database.id"
+          class="flex flex-row justify-start items-center"
+        >
+          <InstanceEngineIcon class="mr-1" :instance="database.instance" />
+          {{ database.name }}
+        </div>
       </div>
     </div>
     <div class="w-full flex flex-row justify-start items-center">
@@ -80,7 +96,7 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
+import { head, last } from "lodash-es";
 import { NRadioGroup, NRadio, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useIssueLogic } from "../logic";
@@ -92,8 +108,9 @@ import {
   IssueCreate,
   ProjectId,
 } from "@/types";
-import { getProjectMemberList } from "@/utils";
+import { getProjectMemberList, parseExpiredTimeString } from "@/utils";
 import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
+import { useDatabaseStore } from "@/store";
 
 interface LocalState {
   showSelectDatabasePanel: boolean;
@@ -135,6 +152,7 @@ const expireDaysOptions = [
 ];
 
 const { create, issue } = useIssueLogic();
+const databaseStore = useDatabaseStore();
 const state = reactive<LocalState>({
   showSelectDatabasePanel: false,
   projectId: undefined,
@@ -149,23 +167,14 @@ const projectId = computed(() => {
   return create.value ? state.projectId : (issue.value as Issue).project.id;
 });
 
+const selectedDatabaseList = computed(() => {
+  return state.selectedDatabaseIdList.map((id) => {
+    return databaseStore.getDatabaseById(id);
+  });
+});
+
 onMounted(() => {
-  if (create.value) {
-    // We have done state intitial in create context.
-  } else {
-    const payload = ((issue.value as Issue).payload as any)
-      .grantRequest as GrantRequestPayload;
-    if (payload.role !== "roles/QUERIER") {
-      throw "Only support QUERIER role";
-    }
-    const expressionList = payload.condition.expression.split(" && ");
-    for (const expression of expressionList) {
-      const fields = expression.split(" ");
-      if (fields[0] === "expired_time") {
-        state.expiredAt = fields[2];
-      }
-    }
-  }
+  // do nth
 });
 
 const handleSourceProjectSelect = async (projectId: ProjectId) => {
@@ -209,6 +218,35 @@ watch(
         (issue.value as IssueCreate).createContext as GrantRequestContext
       ).expireDays = state.expireDays;
     }
+  }
+);
+
+watch(
+  create,
+  () => {
+    if (!create.value) {
+      const payload = ((issue.value as Issue).payload as any)
+        .grantRequest as GrantRequestPayload;
+      if (payload.role !== "roles/QUERIER") {
+        throw "Only support QUERIER role";
+      }
+      const expressionList = payload.condition.expression.split(" && ");
+      for (const expression of expressionList) {
+        const fields = expression.split(" ");
+        if (fields[0] === "expired_time") {
+          state.expiredAt = parseExpiredTimeString(fields[2]).toLocaleString();
+        } else if (fields[0] === "databases") {
+          const databaseIdList = [];
+          for (const url of JSON.parse(fields[2])) {
+            databaseIdList.push(Number(last(url.split("/"))));
+          }
+          state.selectedDatabaseIdList = databaseIdList;
+        }
+      }
+    }
+  },
+  {
+    immediate: true,
   }
 );
 </script>
