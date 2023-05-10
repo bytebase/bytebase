@@ -6,7 +6,7 @@
           <template v-if="!empty">
             <slot name="value" :value="state.value">
               <template v-if="Array.isArray(state.value)">
-                <ResponsiveTags :tags="state.value" />
+                <ResponsiveTags :tags="state.value as string[]" />
               </template>
               <span v-else :class="{ capitalize }">
                 {{ modifier(state.value) }}
@@ -88,9 +88,11 @@ import { VBinder, VTarget, VFollower } from "vueuc";
 import { onClickOutside } from "@vueuse/core";
 import ResponsiveTags from "./ResponsiveTags.vue";
 
+export type DataType = string | number;
+
 interface LocalState {
   open: boolean;
-  value: string | string[];
+  value: DataType | DataType[];
 }
 
 export default defineComponent({
@@ -103,11 +105,11 @@ export default defineComponent({
   },
   props: {
     value: {
-      type: [String, Array] as PropType<string | string[]>,
+      type: [String, Number, Array] as PropType<DataType | DataType[]>,
       required: true,
     },
     options: {
-      type: Array as PropType<string[]>,
+      type: Array as PropType<DataType[]>,
       default: () => [],
     },
     placeholder: {
@@ -127,8 +129,8 @@ export default defineComponent({
       default: false,
     },
     modifier: {
-      type: Function as PropType<(str: string) => string>,
-      default: (str: string) => str,
+      type: Function as PropType<(data: DataType) => string>,
+      default: (str: DataType) => str,
     },
     capitalize: {
       type: Boolean,
@@ -173,7 +175,7 @@ export default defineComponent({
       }
     });
 
-    const isSelected = (item: string) => {
+    const isSelected = (item: DataType) => {
       if (Array.isArray(state.value)) {
         return state.value.includes(item);
       } else {
@@ -181,7 +183,7 @@ export default defineComponent({
       }
     };
 
-    const toggleSelection = (item: string) => {
+    const toggleSelection = (item: DataType) => {
       if (Array.isArray(state.value)) {
         if (props.multiple) {
           const index = state.value.indexOf(item);
