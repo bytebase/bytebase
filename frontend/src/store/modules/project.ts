@@ -5,7 +5,6 @@ import {
   EMPTY_ID,
   PrincipalId,
   Project,
-  ProjectCreate,
   ProjectId,
   ProjectMember,
   ProjectPatch,
@@ -186,25 +185,6 @@ export const useProjectStore = defineStore("project", {
         project,
       });
       return project;
-    },
-
-    async createProject(newProject: ProjectCreate) {
-      const data = (
-        await axios.post(`/api/project`, {
-          data: {
-            type: "ProjectCreate",
-            attributes: newProject,
-          },
-        })
-      ).data;
-      const createdProject = convert(data.data, data.included);
-
-      this.setProjectById({
-        projectId: createdProject.id,
-        project: createdProject,
-      });
-
-      return createdProject;
     },
 
     async patchProject({

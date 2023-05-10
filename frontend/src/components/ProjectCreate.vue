@@ -10,9 +10,9 @@
           class="mt-4 w-full"
           :required="true"
           :placeholder="'Project name'"
-          :value="state.project.name"
+          :value="state.project.title"
           @input="
-            state.project.name = ($event.target as HTMLInputElement).value
+            state.project.title = ($event.target as HTMLInputElement).value
           "
         />
       </div>
@@ -20,10 +20,14 @@
         <ResourceIdField
           ref="resourceIdField"
           resource-type="project"
-          :value="state.project.resourceId"
-          :resource-title="state.project.name"
+          :value="state.resourceId"
+          :resource-title="state.project.title"
           :validate="validateResourceId"
+          @update:value="state.resourceId = $event"
         />
+      </div>
+      <div>
+        {{ state.resourceId }}
       </div>
       <div class="col-span-1">
         <label for="name" class="text-base leading-6 font-medium text-control">
@@ -53,7 +57,7 @@
                 tabindex="-1"
                 type="radio"
                 class="btn"
-                value="DISABLED"
+                :value="TenantMode.TENANT_MODE_DISABLED"
               />
               <label class="label">{{ $t("project.mode.standard") }}</label>
             </div>
@@ -63,7 +67,7 @@
                 tabindex="-1"
                 type="radio"
                 class="btn"
-                value="TENANT"
+                :value="TenantMode.TENANT_MODE_ENABLED"
               />
               <label class="label">{{ $t("project.mode.tenant") }}</label>
               <FeatureBadge
@@ -108,148 +112,133 @@
   />
 </template>
 
-<script lang="ts">
-import { computed, reactive, defineComponent, ref } from "vue";
+<script lang="ts" setup>
+import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
-import { projectSlug, randomString } from "@/utils";
-import { Project, ProjectCreate, ResourceId, ValidatedMessage } from "@/types";
-import {
-  hasFeature,
-  pushNotification,
-  useUIStateStore,
-  useProjectStore,
-} from "@/store";
+import { Status } from "nice-grpc-common";
+
+import { projectV1Slug, randomString } from "@/utils";
+import { ResourceId, ValidatedMessage, emptyProject } from "@/types";
+import { hasFeature, pushNotification, useUIStateStore } from "@/store";
 import { useProjectV1Store } from "@/store/modules/v1/project";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getErrorCode } from "@/utils/grpcweb";
-import { Status } from "nice-grpc-common";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { Project, TenantMode } from "@/types/proto/v1/project_service";
 
 interface LocalState {
-  project: ProjectCreate;
+  project: Project;
+  resourceId: string;
   showFeatureModal: boolean;
   isCreating: boolean;
 }
 
-export default defineComponent({
-  name: "ProjectCreate",
-  components: { ResourceIdField },
-  emits: ["dismiss"],
-  setup(props, { emit }) {
-    const router = useRouter();
-    const { t } = useI18n();
-    const projectStore = useProjectStore();
-    const projectV1Store = useProjectV1Store();
+const emit = defineEmits<{
+  (event: "dismiss"): void;
+}>();
 
-    const state = reactive<LocalState>({
-      project: {
-        resourceId: "",
-        name: "New Project",
-        key: randomString(3).toUpperCase(),
-        tenantMode: "DISABLED",
-        dbNameTemplate: "",
-      } as Project,
-      showFeatureModal: false,
-      isCreating: false,
-    });
-    const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
+const router = useRouter();
+const { t } = useI18n();
+const projectV1Store = useProjectV1Store();
 
-    useEventListener("keydown", (e) => {
-      if (e.code == "Escape") {
-        emit("dismiss");
-      }
-    });
-
-    const validateResourceId = async (
-      resourceId: ResourceId
-    ): Promise<ValidatedMessage[]> => {
-      if (!resourceId) {
-        return [];
-      }
-
-      try {
-        const project = await projectV1Store.getOrFetchProjectByName(
-          projectNamePrefix + resourceId
-        );
-        if (project) {
-          return [
-            {
-              type: "error",
-              message: t("resource-id.validation.duplicated", {
-                resource: t("resource.project"),
-              }),
-            },
-          ];
-        }
-      } catch (error) {
-        if (getErrorCode(error) !== Status.NOT_FOUND) {
-          throw error;
-        }
-      }
-
-      return [];
-    };
-
-    const allowCreate = computed(() => {
-      if (isEmpty(state.project.name)) return false;
-      return true;
-    });
-
-    const create = async () => {
-      if (
-        state.project.tenantMode == "TENANT" &&
-        !hasFeature("bb.feature.multi-tenancy")
-      ) {
-        state.showFeatureModal = true;
-        return;
-      }
-      if (!allowCreate.value) {
-        return;
-      }
-
-      try {
-        state.isCreating = true;
-        const createdProject = await projectStore.createProject({
-          ...state.project,
-          resourceId: resourceIdField.value?.resourceId as string,
-        });
-        useUIStateStore().saveIntroStateByKey({
-          key: "project.visit",
-          newState: true,
-        });
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("project.create-modal.success-prompt", {
-            name: createdProject.name,
-          }),
-        });
-        const url = {
-          path: `/project/${projectSlug(createdProject)}`,
-          hash: "",
-        };
-        router.push(url);
-        emit("dismiss");
-      } finally {
-        state.isCreating = false;
-      }
-    };
-
-    const cancel = () => {
-      emit("dismiss");
-    };
-
-    return {
-      state,
-      allowCreate,
-      resourceIdField,
-      validateResourceId,
-      cancel,
-      create,
-    };
+const state = reactive<LocalState>({
+  project: {
+    ...emptyProject(),
+    title: "New Project",
+    key: randomString(3).toUpperCase(),
   },
+  resourceId: "",
+  showFeatureModal: false,
+  isCreating: false,
 });
+const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
+
+useEventListener("keydown", (e) => {
+  if (e.code == "Escape") {
+    emit("dismiss");
+  }
+});
+
+const validateResourceId = async (
+  resourceId: ResourceId
+): Promise<ValidatedMessage[]> => {
+  if (!resourceId) {
+    return [];
+  }
+
+  try {
+    const project = await projectV1Store.getOrFetchProjectByName(
+      projectNamePrefix + resourceId
+    );
+    if (project) {
+      return [
+        {
+          type: "error",
+          message: t("resource-id.validation.duplicated", {
+            resource: t("resource.project"),
+          }),
+        },
+      ];
+    }
+  } catch (error) {
+    if (getErrorCode(error) !== Status.NOT_FOUND) {
+      throw error;
+    }
+  }
+
+  return [];
+};
+
+const allowCreate = computed(() => {
+  if (isEmpty(state.project.title)) return false;
+  if (!resourceIdField.value?.isValidated) return false;
+  return true;
+});
+
+const create = async () => {
+  if (
+    state.project.tenantMode === TenantMode.TENANT_MODE_DISABLED &&
+    !hasFeature("bb.feature.multi-tenancy")
+  ) {
+    state.showFeatureModal = true;
+    return;
+  }
+  if (!allowCreate.value) {
+    return;
+  }
+
+  try {
+    state.isCreating = true;
+    const createdProject = await projectV1Store.createProject(
+      state.project,
+      state.resourceId
+    );
+    useUIStateStore().saveIntroStateByKey({
+      key: "project.visit",
+      newState: true,
+    });
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("project.create-modal.success-prompt", {
+        name: createdProject.name,
+      }),
+    });
+    const url = {
+      path: `/project/${projectV1Slug(createdProject)}`,
+      hash: "",
+    };
+    router.push(url);
+    emit("dismiss");
+  } finally {
+    state.isCreating = false;
+  }
+};
+
+const cancel = () => {
+  emit("dismiss");
+};
 </script>
