@@ -10,8 +10,8 @@
 
 <script lang="ts" setup>
 import type { IamPolicy, Project } from "@/types/proto/v1/project_service";
+import { ComposedPrincipal } from "@/types";
 import PrincipalTable from "./PrincipalTable.vue";
-import { ComposedPrincipal } from "../common";
 
 defineProps<{
   project: Project;

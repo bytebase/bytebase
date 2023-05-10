@@ -1,7 +1,8 @@
 // This is a facet of the underlying identity entity.
 // For now, there is only user type. In the future,
 import { PrincipalId } from "./id";
-import { RoleType } from "./member";
+import { Member, RoleType } from "./member";
+import { ProjectRoleType } from "./project";
 
 // we may support application/bot identity.
 export type PrincipalType = "END_USER" | "SYSTEM_BOT" | "SERVICE_ACCOUNT";
@@ -31,4 +32,11 @@ export type PrincipalPatch = {
   email?: string;
   type: PrincipalType;
   refreshKey?: boolean;
+};
+
+export type ComposedPrincipal = {
+  email: string;
+  member: Member;
+  principal: Principal;
+  roleList: ProjectRoleType[];
 };

@@ -12,6 +12,7 @@ import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { MigrationType } from "./instance";
+import { Expr } from "./proto/google/type/expr";
 
 type IssueTypeGeneral = "bb.issue.general";
 
@@ -88,12 +89,13 @@ export type PITRContext = {
 export type EmptyContext = {};
 
 export interface GrantRequestContext {
-  // The requested role, e.g. roles/EXPORTER
-  role: string;
-  // The requested user, e.g. users/hello@bytebase.com
-  user: string;
-  // IAM binding condition in expr. Exp proto format
-  condition: string;
+  role: "EXPORTER" | "QUERIER";
+  // Conditions in CEL expression.
+  databases: string[];
+  expireDays: number;
+  statement: string;
+  maxRowCount: number;
+  exportFormat: "CSV" | "JSON";
 }
 
 export type IssueCreateContext =
@@ -103,14 +105,28 @@ export type IssueCreateContext =
   | GrantRequestContext
   | EmptyContext;
 
-export type IssuePayload = { [key: string]: any };
+export interface GrantRequestPayload {
+  // The requested role, e.g. roles/EXPORTER
+  role: string;
+  // The requested user, e.g. users/hello@bytebase.com
+  user: string;
+  // IAM binding condition in expr.
+  condition: Expr;
+}
+
+export type IssuePayload =
+  | {
+      approval: any;
+      grantRequest: GrantRequestPayload;
+    }
+  | { [key: string]: any };
 
 export type Issue = {
   id: IssueId;
 
   // Related fields
   project: Project;
-  pipeline: Pipeline;
+  pipeline?: Pipeline;
 
   // Standard fields
   creator: Principal;
