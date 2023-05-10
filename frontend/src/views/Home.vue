@@ -190,7 +190,7 @@
 <script lang="ts" setup>
 import { reactive, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { activeEnvironment } from "../utils";
+import { activeEnvironment, isDatabaseRelatedIssueType } from "../utils";
 import { UNKNOWN_ID, Issue, planTypeToString, EnvironmentId } from "../types";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import {
@@ -254,6 +254,9 @@ const keywordAndEnvironmentFilter = (issue: Issue) => {
     selectedEnvironment.value &&
     selectedEnvironment.value.id !== UNKNOWN_ID
   ) {
+    if (!isDatabaseRelatedIssueType(issue.type)) {
+      return false;
+    }
     if (activeEnvironment(issue.pipeline).id !== selectedEnvironment.value.id) {
       return false;
     }

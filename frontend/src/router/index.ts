@@ -166,6 +166,8 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
@@ -173,6 +175,8 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ];
                 const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
@@ -181,6 +185,8 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
@@ -188,18 +194,24 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ];
                 const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.schema.sync",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ];
                 return new Map([
                   ["OWNER", ownerList],

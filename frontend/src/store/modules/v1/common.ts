@@ -38,12 +38,6 @@ export const getUserEmailFromIdentifier = (identifier: string): string => {
   return identifier.replace(/^user:/, "");
 };
 
-export const getEnvironmentId = (name: string): number => {
-  const tokens = getNameParentTokens(name, [environmentNamePrefix]);
-  const environmentId = Number(tokens[0] || UNKNOWN_ID);
-  return environmentId;
-};
-
 export const getIdentityProviderResourceId = (name: string): ResourceId => {
   const tokens = getNameParentTokens(name, [idpNamePrefix]);
   return tokens[0];
