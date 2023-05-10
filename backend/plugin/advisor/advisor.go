@@ -346,6 +346,9 @@ const (
 
 	// OracleColumnRequirement is an advisor type for Oracle column requirement.
 	OracleColumnRequirement Type = "bb.plugin.advisor.oracle.column.require"
+
+	// OracleColumnTypeDisallowList is an advisor type for Oracle column type disallow list.
+	OracleColumnTypeDisallowList Type = "bb.plugin.advisor.oracle.column.type-disallow-list"
 )
 
 // Advice is the result of an advisor.

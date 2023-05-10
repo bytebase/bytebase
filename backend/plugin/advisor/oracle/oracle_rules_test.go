@@ -14,6 +14,7 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleTableNoFK,
 		advisor.SchemaRuleTableNaming,
 		advisor.SchemaRuleRequiredColumn,
+		advisor.SchemaRuleColumnTypeDisallowList,
 	}
 
 	for _, rule := range oracleRules {
