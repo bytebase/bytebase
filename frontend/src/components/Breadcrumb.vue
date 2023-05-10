@@ -73,7 +73,7 @@ import {
   useRouterStore,
   useBookmarkStore,
   useDatabaseStore,
-  useProjectStore,
+  useProjectV1Store,
 } from "@/store";
 import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
 
@@ -95,7 +95,7 @@ export default defineComponent({
     const bookmarkStore = useBookmarkStore();
 
     const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
+    const projectV1Store = useProjectV1Store();
 
     const documentTitle = useTitle(null, { observe: true });
 
@@ -153,9 +153,11 @@ export default defineComponent({
         });
 
         if (projectWebhookSlug) {
-          const project = projectStore.getProjectById(idFromSlug(projectSlug));
+          const project = projectV1Store.getProjectByUID(
+            idFromSlug(projectSlug)
+          );
           list.push({
-            name: `${project.name}`,
+            name: `${project.title}`,
             path: `/project/${projectSlug}`,
           });
         }
