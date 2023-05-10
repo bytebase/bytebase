@@ -134,13 +134,13 @@ import {
   DatabaseId,
   dialectOfEngine,
   EngineType,
+  unknown,
   UNKNOWN_ID,
 } from "@/types";
 import { allowGhostMigration } from "@/utils";
 import {
   useDatabaseStore,
   useNotificationStore,
-  useProjectStore,
   useSchemaEditorStore,
 } from "@/store";
 import {
@@ -223,9 +223,7 @@ const databaseEngineType = computed((): EngineType | "unknown" => {
   return engineTypes[0];
 });
 
-const project = useProjectStore().getProjectById(
-  head(databaseList)?.projectId || UNKNOWN_ID
-);
+const project = head(databaseList)?.project ?? unknown("PROJECT");
 const isTenantProject = project.tenantMode === "TENANT";
 
 onMounted(() => {
