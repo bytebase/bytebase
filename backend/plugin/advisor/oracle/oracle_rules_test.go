@@ -13,6 +13,7 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleTableRequirePK,
 		advisor.SchemaRuleTableNoFK,
 		advisor.SchemaRuleTableNaming,
+		advisor.SchemaRuleRequiredColumn,
 	}
 
 	for _, rule := range oracleRules {

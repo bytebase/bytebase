@@ -343,6 +343,9 @@ const (
 
 	// OracleNamingTableConvention is an advisor type for Oracle table naming convention.
 	OracleNamingTableConvention Type = "bb.plugin.advisor.oracle.naming.table"
+
+	// OracleColumnRequirement is an advisor type for Oracle column requirement.
+	OracleColumnRequirement Type = "bb.plugin.advisor.oracle.column.require"
 )
 
 // Advice is the result of an advisor.
