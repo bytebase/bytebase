@@ -31,11 +31,6 @@ import { useProjectStore } from "./project";
 import { convertEntityList } from "./utils";
 
 function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
-  const projectId = (issue.relationships!.project.data as ResourceIdentifier)
-    .id;
-  const project: Project = unknown("PROJECT") as Project;
-  project.id = parseInt(projectId);
-
   const result: Issue = {
     ...(issue.attributes as Omit<
       Issue,
@@ -54,7 +49,7 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
       issue.relationships!.assignee.data,
       includedList
     ),
-    project,
+    project: unknown("PROJECT") as Project,
     pipeline: undefined,
     subscriberList: [],
   };
@@ -66,6 +61,7 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
   }
   const projectStore = useProjectStore();
 
+  // Compose issue pipeline.
   if (isDatabaseRelatedIssueType(result.type)) {
     const pipelineStore = usePipelineStore();
     const pipelineId = (
@@ -86,6 +82,7 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
     result.pipeline = pipeline;
   }
 
+  // Compose issue project.
   for (const item of includedList || []) {
     if (
       item.type == "project" &&
@@ -95,6 +92,7 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
     }
   }
 
+  // Compose issue subscriberList.
   const subscriberList = [] as Principal[];
   if (issue.relationships!.subscriberList.data) {
     for (const subscriberData of issue.relationships!.subscriberList
