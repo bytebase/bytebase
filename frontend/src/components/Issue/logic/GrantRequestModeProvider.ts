@@ -31,7 +31,7 @@ export default defineComponent({
           expression.push(`databases in ${JSON.stringify(databaseNames)}`);
         }
         expression.push(
-          `expired_time < timestamp("${new Date(
+          `expiration < timestamp("${new Date(
             Date.now() + context.expireDays * 1000 * 60 * 60 * 24
           ).toISOString()}")`
         );
@@ -49,9 +49,9 @@ export default defineComponent({
           `/v1/environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.id}`
         );
         expression.push(`databases in ${JSON.stringify(databaseNames)}`);
-        expression.push(`statement == '${btoa(context.statement)}'`);
+        expression.push(`statement == "${btoa(context.statement)}"`);
         expression.push(`max_row_count == ${context.maxRowCount}`);
-        expression.push(`export_format == '${context.exportFormat}'`);
+        expression.push(`export_format == "${context.exportFormat}"`);
       } else {
         throw "Invalid role";
       }

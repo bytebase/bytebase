@@ -209,14 +209,16 @@ const handleSelectedDatabaseIdListChanged = (databaseIdList: DatabaseId[]) => {
 watch(
   () => [state.expireDays, state.customDays],
   () => {
-    if (state.expireDays === -1) {
-      (
-        (issue.value as IssueCreate).createContext as GrantRequestContext
-      ).expireDays = state.customDays;
-    } else {
-      (
-        (issue.value as IssueCreate).createContext as GrantRequestContext
-      ).expireDays = state.expireDays;
+    if (create.value) {
+      if (state.expireDays === -1) {
+        (
+          (issue.value as IssueCreate).createContext as GrantRequestContext
+        ).expireDays = state.customDays;
+      } else {
+        (
+          (issue.value as IssueCreate).createContext as GrantRequestContext
+        ).expireDays = state.expireDays;
+      }
     }
   }
 );
@@ -233,7 +235,7 @@ watch(
       const expressionList = payload.condition.expression.split(" && ");
       for (const expression of expressionList) {
         const fields = expression.split(" ");
-        if (fields[0] === "expired_time") {
+        if (fields[0] === "expiration") {
           state.expiredAt = parseExpiredTimeString(fields[2]).toLocaleString();
         } else if (fields[0] === "databases") {
           const databaseIdList = [];

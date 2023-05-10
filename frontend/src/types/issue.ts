@@ -93,8 +93,8 @@ export interface GrantRequestContext {
   // Conditions in CEL expression.
   databases: string[];
   expireDays: number;
-  statement: string;
   maxRowCount: number;
+  statement: string;
   exportFormat: "CSV" | "JSON";
 }
 

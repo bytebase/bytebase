@@ -452,7 +452,7 @@ const createExportDataIssue = () => {
     query: {
       template: "bb.issue.grant.request",
       role: "EXPORTER",
-      name: "New grant querier request",
+      name: "New grant exporter request",
     },
   };
   router.push(routeInfo);
