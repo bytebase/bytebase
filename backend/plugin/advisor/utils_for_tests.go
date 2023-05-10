@@ -433,7 +433,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 		})
 	case SchemaRuleColumnTypeDisallowList:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
-			List: []string{"JSON"},
+			List: []string{"JSON", "BINARY_FLOAT"},
 		})
 	case SchemaRuleColumnMaximumCharacterLength:
 		payload, err = json.Marshal(NumberTypeRulePayload{
