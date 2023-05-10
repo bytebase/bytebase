@@ -24,23 +24,14 @@ import {
   extractIssueReviewContext,
   useWrappedReviewSteps,
 } from "@/plugins/issue/logic";
-import { useAuthStore, useUserStore } from "@/store";
+import { useAuthStore } from "@/store";
 import { isGrantRequestIssueType } from "@/utils";
 
 const props = defineProps<{
   issue: Issue;
 }>();
 
-const userStore = useUserStore();
-
 const review = computed(() => {
-  // Grant request issue skip custom approval flow.
-  if (isGrantRequestIssueType(props.issue.type)) {
-    return Review.fromJSON({
-      approvalFindingDone: true,
-    });
-  }
-
   try {
     return Review.fromJSON(props.issue.payload.approval);
   } catch {
@@ -55,9 +46,11 @@ const issue = computed(() => props.issue);
 const wrappedSteps = useWrappedReviewSteps(issue, context);
 
 const isIssueDone = computed(() => {
+  // Always return true for grant request issue.
   if (isGrantRequestIssueType(props.issue.type)) {
-    return issue.value.status === "DONE";
+    return true;
   }
+
   return done.value;
 });
 
@@ -66,10 +59,6 @@ const currentStep = computed(() => {
 });
 
 const currentApprover = computed(() => {
-  if (isGrantRequestIssueType(props.issue.type)) {
-    return userStore.getUserById(props.issue.assignee.id as number);
-  }
-
   if (!currentStep.value) return undefined;
   const me = currentStep.value.candidates.find(
     (user) => user.name === currentUserName.value
