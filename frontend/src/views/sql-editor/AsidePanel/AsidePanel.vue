@@ -8,7 +8,11 @@
           :dbl-click-splitter="false"
         >
           <Pane>
-            <DatabaseTree @alter-schema="$emit('alter-schema', $event)" />
+            <DatabaseTree
+              key="sql-editor-database-tree"
+              v-model:search-pattern="searchPattern"
+              @alter-schema="$emit('alter-schema', $event)"
+            />
           </Pane>
           <Pane v-if="showSchemaPanel" :size="40">
             <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
@@ -26,7 +30,11 @@
           :dbl-click-splitter="false"
         >
           <Pane>
-            <DatabaseTree @alter-schema="$emit('alter-schema', $event)" />
+            <DatabaseTree
+              key="sql-editor-database-tree"
+              v-model:search-pattern="searchPattern"
+              @alter-schema="$emit('alter-schema', $event)"
+            />
           </Pane>
           <Pane v-if="showSchemaPanel" :size="40">
             <SchemaPanel @alter-schema="$emit('alter-schema', $event)" />
@@ -66,6 +74,7 @@ defineEmits<{
 const currentUser = useCurrentUser();
 const tabStore = useTabStore();
 const connectionTreeStore = useConnectionTreeStore();
+const searchPattern = ref("");
 
 const tab = ref<"projects" | "instances" | "history">(
   connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE
