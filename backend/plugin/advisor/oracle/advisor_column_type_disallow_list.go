@@ -98,6 +98,20 @@ func (l *columnTypeDisallowListListener) EnterColumn_definition(ctx *parser.Colu
 			Line:    ctx.Datatype().GetStart().GetLine(),
 		})
 	}
+	if ctx.Regular_id() != nil {
+		for _, tp := range l.disallowList {
+			if ctx.Regular_id().GetText() == tp {
+				l.adviceList = append(l.adviceList, advisor.Advice{
+					Status:  l.level,
+					Code:    advisor.DisabledColumnType,
+					Title:   l.title,
+					Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Regular_id().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentSchema)),
+					Line:    ctx.Regular_id().GetStart().GetLine(),
+				})
+				break
+			}
+		}
+	}
 }
 
 // EnterModify_col_properties is called when production modify_col_properties is entered.
