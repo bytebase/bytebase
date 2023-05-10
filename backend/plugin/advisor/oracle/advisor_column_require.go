@@ -94,7 +94,7 @@ func (l *columnRequireListener) EnterCreate_table(_ *parser.Create_tableContext)
 func (l *columnRequireListener) ExitCreate_table(ctx *parser.Create_tableContext) {
 	missingColumns := []string{}
 	for column := range l.missingColumns {
-		missingColumns = append(missingColumns, column)
+		missingColumns = append(missingColumns, fmt.Sprintf("%q", column))
 	}
 	l.missingColumns = nil
 
@@ -130,7 +130,7 @@ func (l *columnRequireListener) EnterAlter_table(_ *parser.Alter_tableContext) {
 func (l *columnRequireListener) ExitAlter_table(ctx *parser.Alter_tableContext) {
 	missingColumns := []string{}
 	for column := range l.missingColumns {
-		missingColumns = append(missingColumns, column)
+		missingColumns = append(missingColumns, fmt.Sprintf("%q", column))
 	}
 	l.missingColumns = nil
 
