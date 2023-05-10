@@ -9,7 +9,7 @@ import {
 } from "../role";
 
 export const extractProjectResourceName = (name: string) => {
-  const pattern = /(?:^|\/)project\/([^/]+)(?:$|\/)/;
+  const pattern = /(?:^|\/)projects\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
 };
