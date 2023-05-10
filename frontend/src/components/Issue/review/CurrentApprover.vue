@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row items-center">
-    <template v-if="issue.status !== 'OPEN' || isIssueDone">
+    <template v-if="issue.status !== 'OPEN' || done">
       <span>-</span>
     </template>
     <template v-else-if="!ready">
@@ -25,7 +25,6 @@ import {
   useWrappedReviewSteps,
 } from "@/plugins/issue/logic";
 import { useAuthStore } from "@/store";
-import { isGrantRequestIssueType } from "@/utils";
 
 const props = defineProps<{
   issue: Issue;
@@ -39,20 +38,14 @@ const review = computed(() => {
   }
 });
 
-const context = extractIssueReviewContext(review);
+const context = extractIssueReviewContext(
+  computed(() => props.issue),
+  review
+);
 const { ready, done } = context;
 const currentUserName = computed(() => useAuthStore().currentUser.name);
 const issue = computed(() => props.issue);
 const wrappedSteps = useWrappedReviewSteps(issue, context);
-
-const isIssueDone = computed(() => {
-  // Always return true for grant request issue.
-  if (isGrantRequestIssueType(props.issue.type)) {
-    return true;
-  }
-
-  return done.value;
-});
 
 const currentStep = computed(() => {
   return wrappedSteps.value?.find((step) => step.status === "CURRENT");

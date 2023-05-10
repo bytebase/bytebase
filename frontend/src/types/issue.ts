@@ -114,7 +114,12 @@ export interface GrantRequestPayload {
   condition: Expr;
 }
 
-export type IssuePayload = GrantRequestPayload | { [key: string]: any };
+export type IssuePayload =
+  | {
+      approval: any;
+      grantRequest: GrantRequestPayload;
+    }
+  | { [key: string]: any };
 
 export type Issue = {
   id: IssueId;
