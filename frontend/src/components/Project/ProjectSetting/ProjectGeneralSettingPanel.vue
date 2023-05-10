@@ -150,7 +150,7 @@ const allowSave = computed((): boolean => {
 
 const save = () => {
   const projectPatch = cloneDeep(props.project);
-  const updateMask: Array<keyof Project> = [];
+  const updateMask: string[] = [];
   if (state.title !== props.project.title) {
     projectPatch.title = state.title;
     updateMask.push("title");
@@ -168,7 +168,7 @@ const save = () => {
       }
     }
     projectPatch.tenantMode = state.tenantMode;
-    updateMask.push("tenantMode");
+    updateMask.push("tenant_mode");
   }
   projectV1Store.updateProject(projectPatch, updateMask).then((updated) => {
     pushNotification({
