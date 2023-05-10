@@ -56,7 +56,6 @@ import {
   EnvironmentId,
   Instance,
   InstanceId,
-  Project,
   UNKNOWN_ID,
 } from "../types";
 import { filterDatabaseByKeyword } from "@/utils";
@@ -70,10 +69,6 @@ interface LocalState {
 }
 
 const props = defineProps({
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
   databaseList: {
     required: true,
     type: Object as PropType<Database[]>,

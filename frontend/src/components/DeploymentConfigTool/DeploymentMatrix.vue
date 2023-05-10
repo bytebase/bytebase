@@ -36,19 +36,12 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import {
-  Project,
-  DeploymentConfig,
-  Environment,
-  Database,
-  LabelKeyType,
-} from "@/types";
+import { DeploymentConfig, Environment, Database, LabelKeyType } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import { filterDatabaseByKeyword } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    project: Project;
     deployment: DeploymentConfig;
     environmentList: Environment[];
     databaseList: Database[];

@@ -10,7 +10,7 @@
         <PagedActivityTableVue
           :activity-find="{
             typePrefix: ['bb.project.', 'bb.database.'],
-            container: project.id,
+            container: project.uid,
             order: 'DESC',
           }"
           session-key="project-activity"
@@ -50,7 +50,7 @@
           session-key="project-waiting-approval"
           :issue-find="{
             statusList: ['OPEN'],
-            projectId: project.id,
+            projectId: project.uid,
           }"
         >
           <template #table="{ issueList, loading }">
@@ -67,7 +67,7 @@
           session-key="project-open"
           :issue-find="{
             statusList: ['OPEN'],
-            projectId: project.id,
+            projectId: project.uid,
           }"
           :page-size="10"
         >
@@ -88,7 +88,7 @@
           session-key="project-closed"
           :issue-find="{
             statusList: ['DONE', 'CANCELED'],
-            projectId: project.id,
+            projectId: project.uid,
           }"
           :page-size="5"
           :hide-load-more="true"
@@ -106,7 +106,7 @@
 
         <div class="w-full flex justify-end mt-2 px-4">
           <router-link
-            :to="`/issue?status=closed&project=${project.id}`"
+            :to="`/issue?status=closed&project=${project.uid}`"
             class="normal-link"
           >
             {{ $t("project.overview.view-all-closed") }}
@@ -117,93 +117,33 @@
   </div>
 </template>
 
-<script lang="ts">
-import {
-  reactive,
-  watchEffect,
-  PropType,
-  computed,
-  defineComponent,
-} from "vue";
+<script lang="ts" setup>
+import { reactive, PropType } from "vue";
 import ActivityTable from "../components/ActivityTable.vue";
 import { IssueTable } from "../components/Issue";
-import { Database, Issue, Project, LabelKeyType } from "../types";
-import { findDefaultGroupByLabel } from "../utils";
+import { Issue } from "../types";
 import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
 import PagedActivityTableVue from "./PagedActivityTable.vue";
 import { featureToRef } from "@/store";
-
-// Show at most 5 activity
-const ACTIVITY_LIMIT = 5;
+import { Project } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   isFetchingActivityList: boolean;
   progressIssueList: Issue[];
   closedIssueList: Issue[];
-  databaseNameFilter: string;
-  xAxisLabel: LabelKeyType;
-  yAxisLabel: LabelKeyType | undefined;
 }
 
-export default defineComponent({
-  name: "ProjectOverviewPanel",
-  components: {
-    ActivityTable,
-    IssueTable,
-    PagedIssueTable,
-    PagedActivityTableVue,
-  },
-  props: {
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-    databaseList: {
-      required: true,
-      type: Object as PropType<Database[]>,
-    },
-  },
-  setup(props) {
-    const state = reactive<LocalState>({
-      isFetchingActivityList: false,
-      progressIssueList: [],
-      closedIssueList: [],
-      databaseNameFilter: "",
-      xAxisLabel: "bb.environment",
-      yAxisLabel: undefined,
-    });
-    const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
-
-    const isTenantProject = computed((): boolean => {
-      return props.project.tenantMode === "TENANT";
-    });
-
-    const filteredDatabaseList = computed(() => {
-      const filter = state.databaseNameFilter.toLocaleLowerCase();
-      if (!filter) return props.databaseList;
-
-      return props.databaseList.filter((database) =>
-        database.name.toLowerCase().includes(filter)
-      );
-    });
-
-    const excludedKeyList = computed(() => [state.xAxisLabel]);
-
-    watchEffect(() => {
-      state.yAxisLabel = findDefaultGroupByLabel(
-        filteredDatabaseList.value,
-        excludedKeyList.value
-      );
-    });
-
-    return {
-      state,
-      hasCustomApprovalFeature,
-      isTenantProject,
-      filteredDatabaseList,
-      excludedKeyList,
-      ACTIVITY_LIMIT,
-    };
+defineProps({
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
   },
 });
+
+const state = reactive<LocalState>({
+  isFetchingActivityList: false,
+  progressIssueList: [],
+  closedIssueList: [],
+});
+const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 </script>
