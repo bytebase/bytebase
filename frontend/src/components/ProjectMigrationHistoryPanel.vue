@@ -25,15 +25,10 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, PropType, reactive, ref, watchEffect } from "vue";
+<script lang="ts" setup>
+import { PropType, reactive, watchEffect } from "vue";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
-import {
-  Database,
-  InstanceMigration,
-  MigrationHistory,
-  Project,
-} from "../types";
+import { Database, InstanceMigration, MigrationHistory } from "../types";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { fullDatabasePath } from "../utils";
 import { useInstanceStore } from "@/store";
@@ -46,79 +41,63 @@ interface LocalState {
   migrationHistorySectionList: BBTableSectionDataSource<MigrationHistory>[];
 }
 
-export default defineComponent({
-  name: "ProjectMigrationHistoryPanel",
-  components: { MigrationHistoryTable },
-  props: {
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-    databaseList: {
-      required: true,
-      type: Object as PropType<Database[]>,
-    },
-  },
-  setup(props) {
-    const searchField = ref();
-
-    const instanceStore = useInstanceStore();
-
-    const state = reactive<LocalState>({
-      databaseSectionList: [],
-      migrationHistorySectionList: [],
-    });
-
-    const fetchMigrationHistory = (databaseList: Database[]) => {
-      state.databaseSectionList = [];
-      state.migrationHistorySectionList = [];
-      for (const database of databaseList) {
-        instanceStore
-          .checkMigrationSetup(database.instance.id)
-          .then((migration: InstanceMigration) => {
-            if (migration.status == "OK") {
-              instanceStore
-                .fetchMigrationHistory({
-                  instanceId: database.instance.id,
-                  databaseName: database.name,
-                  limit: MAX_MIGRATION_HISTORY_COUNT,
-                })
-                .then((migrationHistoryList: MigrationHistory[]) => {
-                  if (migrationHistoryList.length > 0) {
-                    state.databaseSectionList.push(database);
-
-                    const title = `${database.name} (${database.instance.environment.name})`;
-                    const index = state.migrationHistorySectionList.findIndex(
-                      (item: BBTableSectionDataSource<MigrationHistory>) => {
-                        return item.title == title;
-                      }
-                    );
-                    const newItem = {
-                      title: title,
-                      link: `${fullDatabasePath(database)}#change-history`,
-                      list: migrationHistoryList,
-                    };
-                    if (index >= 0) {
-                      state.migrationHistorySectionList[index] = newItem;
-                    } else {
-                      state.migrationHistorySectionList.push(newItem);
-                    }
-                  }
-                });
-            }
-          });
-      }
-    };
-
-    const prepareMigrationHistoryList = () => {
-      fetchMigrationHistory(props.databaseList);
-    };
-    watchEffect(prepareMigrationHistoryList);
-
-    return {
-      searchField,
-      state,
-    };
+const props = defineProps({
+  databaseList: {
+    required: true,
+    type: Object as PropType<Database[]>,
   },
 });
+
+const instanceStore = useInstanceStore();
+
+const state = reactive<LocalState>({
+  databaseSectionList: [],
+  migrationHistorySectionList: [],
+});
+
+const fetchMigrationHistory = (databaseList: Database[]) => {
+  state.databaseSectionList = [];
+  state.migrationHistorySectionList = [];
+  for (const database of databaseList) {
+    instanceStore
+      .checkMigrationSetup(database.instance.id)
+      .then((migration: InstanceMigration) => {
+        if (migration.status == "OK") {
+          instanceStore
+            .fetchMigrationHistory({
+              instanceId: database.instance.id,
+              databaseName: database.name,
+              limit: MAX_MIGRATION_HISTORY_COUNT,
+            })
+            .then((migrationHistoryList: MigrationHistory[]) => {
+              if (migrationHistoryList.length > 0) {
+                state.databaseSectionList.push(database);
+
+                const title = `${database.name} (${database.instance.environment.name})`;
+                const index = state.migrationHistorySectionList.findIndex(
+                  (item: BBTableSectionDataSource<MigrationHistory>) => {
+                    return item.title == title;
+                  }
+                );
+                const newItem = {
+                  title: title,
+                  link: `${fullDatabasePath(database)}#change-history`,
+                  list: migrationHistoryList,
+                };
+                if (index >= 0) {
+                  state.migrationHistorySectionList[index] = newItem;
+                } else {
+                  state.migrationHistorySectionList.push(newItem);
+                }
+              }
+            });
+        }
+      });
+  }
+};
+
+const prepareMigrationHistoryList = () => {
+  fetchMigrationHistory(props.databaseList);
+};
+watchEffect(prepareMigrationHistoryList);
 </script>

@@ -144,7 +144,6 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
 import {
-  Project,
   DeploymentConfig,
   EMPTY_ID,
   DeploymentConfigPatch,
@@ -157,8 +156,9 @@ import {
   pushNotification,
   useDeploymentStore,
   useEnvironmentList,
-  useProjectStore,
+  useProjectV1Store,
 } from "@/store";
+import { Project } from "@/types/proto/v1/project_service";
 
 type LocalState = {
   deployment: DeploymentConfig | undefined;
@@ -217,7 +217,7 @@ export default defineComponent({
 
     watchEffect(async () => {
       const dep = await deploymentStore.fetchDeploymentConfigByProjectId(
-        props.project.id
+        props.project.uid
       );
       // We clone the saved deployment-config
       // <DeploymentConfigTool /> will mutate `state.deployment` directly
@@ -281,7 +281,7 @@ export default defineComponent({
         payload: JSON.stringify(state.deployment.schedule),
       };
       await deploymentStore.patchDeploymentConfigByProjectId({
-        projectId: props.project.id,
+        projectId: props.project.uid,
         deploymentConfigPatch,
       });
       pushNotification({
@@ -326,12 +326,11 @@ export default defineComponent({
 
     const confirmEditDBNameTemplate = async () => {
       try {
-        await useProjectStore().patchProject({
-          projectId: props.project.id,
-          projectPatch: {
-            dbNameTemplate: state.dbNameTemplate,
-          },
-        });
+        const projectPatch = cloneDeep(props.project);
+        projectPatch.dbNameTemplate = state.dbNameTemplate;
+        await useProjectV1Store().updateProject(projectPatch, [
+          "db_name_template",
+        ]);
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",

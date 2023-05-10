@@ -2,7 +2,7 @@
   <template v-if="hash === 'overview'">
     <ProjectOverviewPanel
       id="overview"
-      :project="project"
+      :project="projectV1"
       :database-list="databaseList"
     />
   </template>
@@ -10,7 +10,7 @@
     <ProjectDeploymentConfigPanel
       v-if="isTenantProject"
       id="deployment-config"
-      :project="project"
+      :project="projectV1"
       :database-list="databaseList"
       :allow-edit="allowEdit"
     />
@@ -23,7 +23,6 @@
   <template v-if="hash === 'change-history'">
     <ProjectMigrationHistoryPanel
       id="change-history"
-      :project="project"
       :database-list="databaseList"
     />
   </template>
@@ -31,7 +30,7 @@
     <ProjectSlowQueryPanel :project="project" />
   </template>
   <template v-if="hash === 'activity'">
-    <ProjectActivityPanel id="activity" :project="project" />
+    <ProjectActivityPanel id="activity" :project="projectV1" />
   </template>
   <template v-if="project.id !== DEFAULT_PROJECT_ID && hash === 'gitops'">
     <ProjectVersionControlPanel
