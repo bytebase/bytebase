@@ -478,7 +478,7 @@ export interface AccessControlRule {
 }
 
 export interface SQLReviewPolicy {
-  title: string;
+  name: string;
   rules: SQLReviewRule[];
 }
 
@@ -1720,13 +1720,13 @@ export const AccessControlRule = {
 };
 
 function createBaseSQLReviewPolicy(): SQLReviewPolicy {
-  return { title: "", rules: [] };
+  return { name: "", rules: [] };
 }
 
 export const SQLReviewPolicy = {
   encode(message: SQLReviewPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     for (const v of message.rules) {
       SQLReviewRule.encode(v!, writer.uint32(18).fork()).ldelim();
@@ -1746,7 +1746,7 @@ export const SQLReviewPolicy = {
             break;
           }
 
-          message.title = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -1766,14 +1766,14 @@ export const SQLReviewPolicy = {
 
   fromJSON(object: any): SQLReviewPolicy {
     return {
-      title: isSet(object.title) ? String(object.title) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       rules: Array.isArray(object?.rules) ? object.rules.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: SQLReviewPolicy): unknown {
     const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
+    message.name !== undefined && (obj.name = message.name);
     if (message.rules) {
       obj.rules = message.rules.map((e) => e ? SQLReviewRule.toJSON(e) : undefined);
     } else {
@@ -1788,7 +1788,7 @@ export const SQLReviewPolicy = {
 
   fromPartial(object: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
     const message = createBaseSQLReviewPolicy();
-    message.title = object.title ?? "";
+    message.name = object.name ?? "";
     message.rules = object.rules?.map((e) => SQLReviewRule.fromPartial(e)) || [];
     return message;
   },

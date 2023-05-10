@@ -3453,7 +3453,7 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  |  |
+| name | [string](#string) |  |  |
 | rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
 
 

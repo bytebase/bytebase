@@ -293,7 +293,7 @@ message AccessControlRule {
 }
 
 message SQLReviewPolicy {
-  string title = 1;
+  string name = 1;
   repeated SQLReviewRule rules = 2;
 }
 

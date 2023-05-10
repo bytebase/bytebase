@@ -572,7 +572,7 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 
 	return &v1pb.Policy_SqlReviewPolicy{
 		SqlReviewPolicy: &v1pb.SQLReviewPolicy{
-			Title: payload.Name,
+			Name:  payload.Name,
 			Rules: rules,
 		},
 	}, nil
@@ -602,7 +602,7 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 	}
 
 	return &advisor.SQLReviewPolicy{
-		Name:     policy.Title,
+		Name:     policy.Name,
 		RuleList: ruleList,
 	}, nil
 }
