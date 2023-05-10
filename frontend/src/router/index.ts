@@ -57,6 +57,7 @@ import {
   useCurrentUser,
   useSubscriptionStore,
   useUserStore,
+  useProjectV1Store,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -1107,6 +1108,7 @@ router.beforeEach((to, from, next) => {
   const routerStore = useRouterStore();
   const projectWebhookStore = useProjectWebhookStore();
   const projectStore = useProjectStore();
+  const projectV1Store = useProjectV1Store();
 
   const isLoggedIn = authStore.isLoggedIn();
 
@@ -1426,6 +1428,7 @@ router.beforeEach((to, from, next) => {
   if (projectSlug) {
     projectStore
       .fetchProjectById(idFromSlug(projectSlug))
+      .then(() => projectV1Store.fetchProjectByUID(idFromSlug(projectSlug)))
       .then(() => {
         if (!projectWebhookSlug) {
           next();

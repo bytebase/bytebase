@@ -3,6 +3,7 @@ package oracle
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
@@ -102,6 +103,7 @@ func (l *columnRequireListener) ExitCreate_table(ctx *parser.Create_tableContext
 		return
 	}
 
+	sort.Strings(missingColumns)
 	tableName := normalizeIdentifier(ctx.Table_name(), l.currentSchema)
 	l.adviceList = append(l.adviceList, advisor.Advice{
 		Status:  l.level,
@@ -138,6 +140,7 @@ func (l *columnRequireListener) ExitAlter_table(ctx *parser.Alter_tableContext) 
 		return
 	}
 
+	sort.Strings(missingColumns)
 	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentSchema))
 	l.adviceList = append(l.adviceList, advisor.Advice{
 		Status:  l.level,

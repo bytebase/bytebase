@@ -1520,8 +1520,9 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 }
 
 func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
-	if s.TaskScheduler == nil {
+	if s.TaskScheduler == nil || issue.Pipeline == nil {
 		// readonly server doesn't have a TaskScheduler.
+		// Skip issues without pipelines.
 		return
 	}
 	for _, stage := range issue.Pipeline.StageList {

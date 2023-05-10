@@ -3,7 +3,7 @@
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table "BOOK" requires columns: "created_ts", "updated_ts", "creator_id", "updater_id"'
+      content: 'Table "BOOK" requires columns: "created_ts", "creator_id", "updated_ts", "updater_id"'
       line: 1
       details: ""
 - statement: |-

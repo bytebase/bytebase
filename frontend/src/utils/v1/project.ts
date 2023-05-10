@@ -8,6 +8,12 @@ import {
   ProjectPermissionType,
 } from "../role";
 
+export const extractProjectResourceName = (name: string) => {
+  const pattern = /(?:^|\/)projects\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
+
 export const hasPermissionInProjectV1 = (
   policy: IamPolicy,
   user: User,

@@ -1,6 +1,6 @@
 <template>
   <div class="max-w-[60rem] mx-auto">
-    <div v-if="state.deployment" class="mb-6">
+    <div v-if="state.ready && state.deployment" class="mb-6">
       <div class="text-lg font-medium leading-7 text-main">
         {{ $t("deployment-config.preview-deployment-pipeline") }}
       </div>
@@ -72,57 +72,60 @@
       {{ $t("common.deployment-config") }}
     </div>
 
-    <BBAttention
-      v-if="state.deployment?.id === EMPTY_ID"
-      :style="'WARN'"
-      :title="$t('common.deployment-config')"
-      :description="$t('deployment-config.this-is-example-deployment-config')"
-    >
-    </BBAttention>
+    <template v-if="state.ready">
+      <BBAttention
+        v-if="state.deployment === undefined"
+        :style="'WARN'"
+        :title="$t('common.deployment-config')"
+        :description="$t('deployment-config.this-is-example-deployment-config')"
+      >
+      </BBAttention>
 
-    <div v-if="state.deployment">
-      <DeploymentConfigTool
-        :schedule="state.deployment.schedule"
-        :allow-edit="allowEdit"
-        :database-list="databaseList"
-      />
-      <div class="pt-4 border-t flex justify-between items-center">
-        <div class="flex items-center space-x-2">
-          <button v-if="allowEdit" class="btn-normal" @click="addStage">
-            {{ $t("deployment-config.add-stage") }}
-          </button>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button
-            v-if="allowEdit"
-            class="btn-normal"
-            :disabled="!isDeploymentConfigDirty"
-            @click="revertDeploymentConfig"
-          >
-            {{ $t("common.revert") }}
-          </button>
-          <NPopover v-if="allowEdit" :disabled="!state.error" trigger="hover">
-            <template #trigger>
-              <div
-                class="btn-primary"
-                :class="
-                  !allowUpdateDeploymentConfig
-                    ? 'bg-accent opacity-50 cursor-not-allowed'
-                    : ''
-                "
-                @click="updateDeploymentConfig"
-              >
-                {{ $t("common.update") }}
-              </div>
-            </template>
+      <div v-else>
+        <DeploymentConfigTool
+          v-if="state.deployment.schedule"
+          :schedule="state.deployment.schedule"
+          :allow-edit="allowEdit"
+          :database-list="databaseList"
+        />
+        <div class="pt-4 border-t flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <button v-if="allowEdit" class="btn-normal" @click="addStage">
+              {{ $t("deployment-config.add-stage") }}
+            </button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button
+              v-if="allowEdit"
+              class="btn-normal"
+              :disabled="!isDeploymentConfigDirty"
+              @click="revertDeploymentConfig"
+            >
+              {{ $t("common.revert") }}
+            </button>
+            <NPopover v-if="allowEdit" :disabled="!state.error" trigger="hover">
+              <template #trigger>
+                <div
+                  class="btn-primary"
+                  :class="
+                    !allowUpdateDeploymentConfig
+                      ? 'bg-accent opacity-50 cursor-not-allowed'
+                      : ''
+                  "
+                  @click="updateDeploymentConfig"
+                >
+                  {{ $t("common.update") }}
+                </div>
+              </template>
 
-            <span v-if="state.error" class="text-error">
-              {{ $t(state.error) }}
-            </span>
-          </NPopover>
+              <span v-if="state.error" class="text-error">
+                {{ $t(state.error) }}
+              </span>
+            </NPopover>
+          </div>
         </div>
       </div>
-    </div>
+    </template>
 
     <div v-else class="flex justify-center items-center py-10">
       <BBSpin />
@@ -130,10 +133,9 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import {
   computed,
-  defineComponent,
   nextTick,
   PropType,
   reactive,
@@ -143,24 +145,24 @@ import {
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
-import {
-  Project,
-  DeploymentConfig,
-  EMPTY_ID,
-  DeploymentConfigPatch,
-  LabelSelectorRequirement,
-  Database,
-} from "../types";
+import { Database } from "../types";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
-import { validateDeploymentConfig } from "../utils";
+import { validateDeploymentConfigV1 } from "../utils";
 import {
   pushNotification,
-  useDeploymentStore,
+  useDeploymentConfigV1Store,
   useEnvironmentList,
-  useProjectStore,
+  useProjectV1Store,
 } from "@/store";
+import {
+  DeploymentConfig,
+  LabelSelectorRequirement,
+  OperatorType,
+  Project,
+} from "@/types/proto/v1/project_service";
 
 type LocalState = {
+  ready: boolean;
   deployment: DeploymentConfig | undefined;
   originalDeployment: DeploymentConfig | undefined;
   error: string | undefined;
@@ -168,197 +170,171 @@ type LocalState = {
   dbNameTemplate: string;
 };
 
-export default defineComponent({
-  name: "ProjectDeploymentConfigurationPanel",
-  components: { DeploymentConfigTool, DeploymentMatrix, NPopover },
-  props: {
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-    databaseList: {
-      type: Array as PropType<Database[]>,
-      default: () => [],
-    },
-    allowEdit: {
-      default: true,
-      type: Boolean,
-    },
+const props = defineProps({
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
   },
-  setup(props) {
-    const deploymentStore = useDeploymentStore();
-    const { t } = useI18n();
-    const dialog = useDialog();
-
-    const state = reactive<LocalState>({
-      deployment: undefined,
-      originalDeployment: undefined,
-      error: undefined,
-      isEditingDBNameTemplate: false,
-      dbNameTemplate: props.project.dbNameTemplate,
-    });
-
-    const isDeploymentConfigDirty = computed((): boolean => {
-      return !isEqual(state.deployment, state.originalDeployment);
-    });
-
-    const allowUpdateDeploymentConfig = computed((): boolean => {
-      if (state.error) return false;
-      if (!isDeploymentConfigDirty.value) return false;
-      return true;
-    });
-
-    const environmentList = useEnvironmentList();
-
-    const resetStates = async () => {
-      await nextTick(); // Waiting for all watchers done
-      state.error = undefined;
-    };
-
-    watchEffect(async () => {
-      const dep = await deploymentStore.fetchDeploymentConfigByProjectId(
-        props.project.id
-      );
-      // We clone the saved deployment-config
-      // <DeploymentConfigTool /> will mutate `state.deployment` directly
-      // when update button clicked, we save the draft to backend.
-      state.deployment = cloneDeep(dep);
-      // clone the object to the backup
-      state.originalDeployment = cloneDeep(state.deployment);
-      // clean up error and dirty status
-      resetStates();
-    });
-
-    const addStage = () => {
-      if (!state.deployment) return;
-      const rule: LabelSelectorRequirement = {
-        key: "bb.environment",
-        operator: "In",
-        values: [],
-      };
-      if (environmentList.value.length > 0) {
-        rule.values.push(environmentList.value[0].resourceId);
-      }
-
-      state.deployment.schedule.deployments.push({
-        name: "New Stage",
-        spec: {
-          selector: {
-            matchExpressions: [rule],
-          },
-        },
-      });
-    };
-
-    const validate = () => {
-      if (!state.deployment) return;
-      state.error = validateDeploymentConfig(state.deployment);
-    };
-
-    const revertDeploymentConfig = () => {
-      dialog.create({
-        positiveText: t("common.confirm"),
-        negativeText: t("common.cancel"),
-        title: t("deployment-config.confirm-to-revert"),
-        closable: false,
-        maskClosable: false,
-        closeOnEsc: false,
-        onNegativeClick: () => {
-          // nothing to do
-        },
-        onPositiveClick: () => {
-          state.deployment = cloneDeep(state.originalDeployment);
-          resetStates();
-        },
-      });
-    };
-
-    const updateDeploymentConfig = async () => {
-      if (!state.deployment) return;
-      if (!allowUpdateDeploymentConfig.value) return;
-
-      const deploymentConfigPatch: DeploymentConfigPatch = {
-        payload: JSON.stringify(state.deployment.schedule),
-      };
-      await deploymentStore.patchDeploymentConfigByProjectId({
-        projectId: props.project.id,
-        deploymentConfigPatch,
-      });
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("deployment-config.update-success"),
-      });
-
-      // clone the updated version to the backup
-      state.originalDeployment = cloneDeep(state.deployment);
-      // clean up error status
-      resetStates();
-    };
-
-    watch(
-      () => state.deployment,
-      () => {
-        validate();
-      },
-      { deep: true }
-    );
-
-    const dbNameTemplateTips = computed(() =>
-      t("label.db-name-template-tips", {
-        placeholder: "{{DB_NAME}}",
-      })
-    );
-
-    const allowUpdateDBNameTemplate = computed(() => {
-      return state.dbNameTemplate !== props.project.dbNameTemplate;
-    });
-
-    const beginEditDBNameTemplate = () => {
-      state.dbNameTemplate = props.project.dbNameTemplate;
-      state.isEditingDBNameTemplate = true;
-    };
-
-    const cancelEditDBNameTemplate = () => {
-      state.dbNameTemplate = props.project.dbNameTemplate;
-      state.isEditingDBNameTemplate = false;
-    };
-
-    const confirmEditDBNameTemplate = async () => {
-      try {
-        await useProjectStore().patchProject({
-          projectId: props.project.id,
-          projectPatch: {
-            dbNameTemplate: state.dbNameTemplate,
-          },
-        });
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("project.successfully-updated-db-name-template"),
-        });
-      } catch {
-        state.dbNameTemplate = props.project.dbNameTemplate;
-      } finally {
-        state.isEditingDBNameTemplate = false;
-      }
-    };
-
-    return {
-      EMPTY_ID,
-      state,
-      isDeploymentConfigDirty,
-      allowUpdateDeploymentConfig,
-      environmentList,
-      addStage,
-      revertDeploymentConfig,
-      updateDeploymentConfig,
-      dbNameTemplateTips,
-      allowUpdateDBNameTemplate,
-      beginEditDBNameTemplate,
-      cancelEditDBNameTemplate,
-      confirmEditDBNameTemplate,
-    };
+  databaseList: {
+    type: Array as PropType<Database[]>,
+    default: () => [],
+  },
+  allowEdit: {
+    default: true,
+    type: Boolean,
   },
 });
+
+const deploymentConfigV1Store = useDeploymentConfigV1Store();
+const { t } = useI18n();
+const dialog = useDialog();
+
+const state = reactive<LocalState>({
+  ready: false,
+  deployment: undefined,
+  originalDeployment: undefined,
+  error: undefined,
+  isEditingDBNameTemplate: false,
+  dbNameTemplate: props.project.dbNameTemplate,
+});
+
+const isDeploymentConfigDirty = computed((): boolean => {
+  return !isEqual(state.deployment, state.originalDeployment);
+});
+
+const allowUpdateDeploymentConfig = computed((): boolean => {
+  if (state.error) return false;
+  if (!isDeploymentConfigDirty.value) return false;
+  return true;
+});
+
+const environmentList = useEnvironmentList();
+
+const resetStates = async () => {
+  await nextTick(); // Waiting for all watchers done
+  state.error = undefined;
+};
+
+watchEffect(async () => {
+  const deploymentConfig =
+    await deploymentConfigV1Store.fetchDeploymentConfigByProjectName(
+      props.project.name
+    );
+  // We clone the saved deployment-config
+  // <DeploymentConfigTool /> will mutate `state.deployment` directly
+  // when update button clicked, we save the draft to backend.
+  state.deployment = cloneDeep(deploymentConfig);
+  // clone the object to the backup
+  state.originalDeployment = cloneDeep(state.deployment);
+  // clean up error and dirty status
+  resetStates();
+  state.ready = true;
+});
+
+const addStage = () => {
+  if (!state.deployment) return;
+  const rule: LabelSelectorRequirement = {
+    key: "bb.environment",
+    operator: OperatorType.OPERATOR_TYPE_IN,
+    values: [],
+  };
+  if (environmentList.value.length > 0) {
+    rule.values.push(environmentList.value[0].resourceId);
+  }
+
+  state.deployment.schedule?.deployments.push({
+    title: "New Stage",
+    spec: {
+      labelSelector: {
+        matchExpressions: [rule],
+      },
+    },
+  });
+};
+
+const validate = () => {
+  if (!state.deployment) return;
+  state.error = validateDeploymentConfigV1(state.deployment);
+};
+
+const revertDeploymentConfig = () => {
+  dialog.create({
+    positiveText: t("common.confirm"),
+    negativeText: t("common.cancel"),
+    title: t("deployment-config.confirm-to-revert"),
+    closable: false,
+    maskClosable: false,
+    closeOnEsc: false,
+    onNegativeClick: () => {
+      // nothing to do
+    },
+    onPositiveClick: () => {
+      state.deployment = cloneDeep(state.originalDeployment);
+      resetStates();
+    },
+  });
+};
+
+const updateDeploymentConfig = async () => {
+  if (!state.deployment) return;
+  if (!allowUpdateDeploymentConfig.value) return;
+
+  const updated =
+    await deploymentConfigV1Store.updatedDeploymentConfigByProjectName(
+      props.project.name,
+      state.deployment
+    );
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("deployment-config.update-success"),
+  });
+
+  // clone the updated version to the backup
+  state.deployment = cloneDeep(updated);
+  state.originalDeployment = cloneDeep(updated);
+  // clean up error status
+  resetStates();
+};
+
+watch(
+  () => state.deployment,
+  () => {
+    validate();
+  },
+  { deep: true }
+);
+
+const allowUpdateDBNameTemplate = computed(() => {
+  return state.dbNameTemplate !== props.project.dbNameTemplate;
+});
+
+const beginEditDBNameTemplate = () => {
+  state.dbNameTemplate = props.project.dbNameTemplate;
+  state.isEditingDBNameTemplate = true;
+};
+
+const cancelEditDBNameTemplate = () => {
+  state.dbNameTemplate = props.project.dbNameTemplate;
+  state.isEditingDBNameTemplate = false;
+};
+
+const confirmEditDBNameTemplate = async () => {
+  try {
+    const projectPatch = cloneDeep(props.project);
+    projectPatch.dbNameTemplate = state.dbNameTemplate;
+    const updateMask = ["db_name_template"];
+    await useProjectV1Store().updateProject(projectPatch, updateMask);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("project.successfully-updated-db-name-template"),
+    });
+  } catch {
+    state.dbNameTemplate = props.project.dbNameTemplate;
+  } finally {
+    state.isEditingDBNameTemplate = false;
+  }
+};
 </script>

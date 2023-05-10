@@ -923,7 +923,7 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 }
 
 func convertToDeploymentConfig(projectID string, deploymentConfig *store.DeploymentConfigMessage) *v1pb.DeploymentConfig {
-	resourceName := fmt.Sprintf("projects/%s/deploymentConfig)", projectID)
+	resourceName := fmt.Sprintf("projects/%s/deploymentConfig", projectID)
 	return &v1pb.DeploymentConfig{
 		Name:     resourceName,
 		Title:    deploymentConfig.Name,
