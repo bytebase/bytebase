@@ -68,6 +68,10 @@
             @click="handleClickColumn(column, 'name')"
           >
             {{ column.name }}
+            <span
+              v-if="columnStatus(column) !== 'normal'"
+              class="inline-block rounded-full ml-0.5 h-1.5 w-1.5 bg-accent opacity-75 translate-y-[-1px]"
+            ></span>
           </div>
         </td>
         <td class="w-[6rem] text-xs text-gray-400 py-1.5 text-right">
