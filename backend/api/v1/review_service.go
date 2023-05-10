@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -131,10 +132,17 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 			newConditionExpr = payload.GrantRequest.Condition.Expression
 		}
 		updated := false
-		email := strings.TrimPrefix(payload.GrantRequest.User, "users/")
-		newUser, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &email})
+
+		userID, err := strconv.Atoi(strings.TrimPrefix(payload.GrantRequest.User, "users/"))
 		if err != nil {
 			return nil, err
+		}
+		newUser, err := s.store.GetUserByID(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		if newUser == nil {
+			return nil, status.Errorf(codes.Internal, "user %v not found", userID)
 		}
 		for _, binding := range policy.Bindings {
 			if binding.Role != api.Role(payload.GrantRequest.Role) {
@@ -158,6 +166,9 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 				Members:   []*store.UserMessage{newUser},
 				Condition: payload.GrantRequest.Condition,
 			})
+		}
+		if _, err := s.store.SetProjectIAMPolicy(ctx, policy, api.SystemBotID, issue.Project.UID); err != nil {
+			return nil, err
 		}
 	}
 
