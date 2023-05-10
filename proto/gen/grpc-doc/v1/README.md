@@ -3390,6 +3390,7 @@ ACTION_SQL_EDITOR_QUERY is the type for SQL editor query. If user runs SQL in Re
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id}/policies/{policy type} |
+| policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
 | page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
 
@@ -3434,6 +3435,9 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | access_control_policy | [AccessControlPolicy](#bytebase-v1-AccessControlPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
+| resource_type | [string](#string) |  | The resource type for the policy. |
+| resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
+| state | [State](#bytebase-v1-State) |  |  |
 
 
 

@@ -59,10 +59,20 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 		return nil, err
 	}
 
-	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
+	find := &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		ResourceUID:  resourceID,
-	})
+	}
+
+	if v := request.PolicyType; v != nil {
+		policyType, err := convertPolicyType(v.String())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		find.Type = &policyType
+	}
+
+	policies, err := s.store.ListPoliciesV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -135,6 +145,12 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 			patch.Payload = &payloadStr
 		case "enforce":
 			patch.Enforce = &request.Policy.Enforce
+		case "state":
+			if request.Policy.State == v1pb.State_DELETED {
+				patch.Delete = &deletePatch
+			} else if request.Policy.State == v1pb.State_ACTIVE {
+				patch.Delete = &undeletePatch
+			}
 		}
 	}
 
@@ -462,6 +478,9 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 		Uid:               fmt.Sprintf("%d", policyMessage.UID),
 		InheritFromParent: policyMessage.InheritFromParent,
 		Enforce:           policyMessage.Enforce,
+		ResourceType:      string(policyMessage.ResourceType),
+		ResourceUid:       fmt.Sprintf("%d", policyMessage.ResourceUID),
+		State:             convertDeletedToState(policyMessage.Deleted),
 	}
 
 	pType := v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED

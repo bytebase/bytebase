@@ -4,7 +4,7 @@ import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { Engine, engineFromJSON, engineToJSON, State, stateFromJSON, stateToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
 
 export const protobufPackage = "bytebase.v1";
@@ -328,6 +328,9 @@ export interface ListPoliciesRequest {
    * Format: {resource type}/{resource id}/policies/{policy type}
    */
   parent: string;
+  policyType?:
+    | PolicyType
+    | undefined;
   /**
    * The maximum number of policies to return. The service may return fewer than
    * this value.
@@ -375,6 +378,11 @@ export interface Policy {
   accessControlPolicy?: AccessControlPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
   enforce: boolean;
+  /** The resource type for the policy. */
+  resourceType: string;
+  /** The system-assigned, unique identifier for the resource. */
+  resourceUid: string;
+  state: State;
 }
 
 export interface DeploymentApprovalPolicy {
@@ -710,7 +718,7 @@ export const GetPolicyRequest = {
 };
 
 function createBaseListPoliciesRequest(): ListPoliciesRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", policyType: undefined, pageSize: 0, pageToken: "" };
 }
 
 export const ListPoliciesRequest = {
@@ -718,11 +726,14 @@ export const ListPoliciesRequest = {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
+    if (message.policyType !== undefined) {
+      writer.uint32(16).int32(message.policyType);
+    }
     if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
+      writer.uint32(24).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
+      writer.uint32(34).string(message.pageToken);
     }
     return writer;
   },
@@ -746,10 +757,17 @@ export const ListPoliciesRequest = {
             break;
           }
 
-          message.pageSize = reader.int32();
+          message.policyType = reader.int32() as any;
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -767,6 +785,7 @@ export const ListPoliciesRequest = {
   fromJSON(object: any): ListPoliciesRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
+      policyType: isSet(object.policyType) ? policyTypeFromJSON(object.policyType) : undefined,
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
     };
@@ -775,6 +794,8 @@ export const ListPoliciesRequest = {
   toJSON(message: ListPoliciesRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
+    message.policyType !== undefined &&
+      (obj.policyType = message.policyType !== undefined ? policyTypeToJSON(message.policyType) : undefined);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
@@ -787,6 +808,7 @@ export const ListPoliciesRequest = {
   fromPartial(object: DeepPartial<ListPoliciesRequest>): ListPoliciesRequest {
     const message = createBaseListPoliciesRequest();
     message.parent = object.parent ?? "";
+    message.policyType = object.policyType ?? undefined;
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     return message;
@@ -880,6 +902,9 @@ function createBasePolicy(): Policy {
     accessControlPolicy: undefined,
     sqlReviewPolicy: undefined,
     enforce: false,
+    resourceType: "",
+    resourceUid: "",
+    state: 0,
   };
 }
 
@@ -914,6 +939,15 @@ export const Policy = {
     }
     if (message.enforce === true) {
       writer.uint32(88).bool(message.enforce);
+    }
+    if (message.resourceType !== "") {
+      writer.uint32(98).string(message.resourceType);
+    }
+    if (message.resourceUid !== "") {
+      writer.uint32(106).string(message.resourceUid);
+    }
+    if (message.state !== 0) {
+      writer.uint32(112).int32(message.state);
     }
     return writer;
   },
@@ -995,6 +1029,27 @@ export const Policy = {
 
           message.enforce = reader.bool();
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.resourceType = reader.string();
+          continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.resourceUid = reader.string();
+          continue;
+        case 14:
+          if (tag !== 112) {
+            break;
+          }
+
+          message.state = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1022,6 +1077,9 @@ export const Policy = {
         : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
       enforce: isSet(object.enforce) ? Boolean(object.enforce) : false,
+      resourceType: isSet(object.resourceType) ? String(object.resourceType) : "",
+      resourceUid: isSet(object.resourceUid) ? String(object.resourceUid) : "",
+      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
     };
   },
 
@@ -1045,6 +1103,9 @@ export const Policy = {
     message.sqlReviewPolicy !== undefined &&
       (obj.sqlReviewPolicy = message.sqlReviewPolicy ? SQLReviewPolicy.toJSON(message.sqlReviewPolicy) : undefined);
     message.enforce !== undefined && (obj.enforce = message.enforce);
+    message.resourceType !== undefined && (obj.resourceType = message.resourceType);
+    message.resourceUid !== undefined && (obj.resourceUid = message.resourceUid);
+    message.state !== undefined && (obj.state = stateToJSON(message.state));
     return obj;
   },
 
@@ -1075,6 +1136,9 @@ export const Policy = {
       ? SQLReviewPolicy.fromPartial(object.sqlReviewPolicy)
       : undefined;
     message.enforce = object.enforce ?? false;
+    message.resourceType = object.resourceType ?? "";
+    message.resourceUid = object.resourceUid ?? "";
+    message.state = object.state ?? 0;
     return message;
   },
 };
