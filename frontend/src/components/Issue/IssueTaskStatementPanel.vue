@@ -491,7 +491,9 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
     updateSheetId(sheet.id);
     await updateStatement(statement);
     state.editing = false;
-    if (selectedTask.value) updateEditorHeight();
+    if (selectedTask.value) {
+      updateEditorHeight();
+    }
   };
 
   return new Promise((resolve, reject) => {
@@ -631,20 +633,20 @@ const handleUpdateEditorAutoCompletionContext = async () => {
 };
 
 const updateEditorHeight = () => {
-  const contentHeight =
-    editorRef.value?.editorInstance?.getContentHeight() as number;
-  let actualHeight = contentHeight;
-  if (state.editing && actualHeight < EDITOR_MIN_HEIGHT.EDITABLE) {
-    actualHeight = EDITOR_MIN_HEIGHT.EDITABLE;
-  }
-  editorRef.value?.setEditorContentHeight(actualHeight);
+  requestAnimationFrame(() => {
+    const contentHeight =
+      editorRef.value?.editorInstance?.getContentHeight() as number;
+    let actualHeight = contentHeight;
+    if (state.editing && actualHeight < EDITOR_MIN_HEIGHT.EDITABLE) {
+      actualHeight = EDITOR_MIN_HEIGHT.EDITABLE;
+    }
+    editorRef.value?.setEditorContentHeight(actualHeight);
+  });
 };
 
 const handleMonacoEditorReady = () => {
   handleUpdateEditorAutoCompletionContext();
-  requestAnimationFrame(() => {
-    updateEditorHeight();
-  });
+  updateEditorHeight();
 };
 
 watch([databaseList, tableList], () => {
