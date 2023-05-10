@@ -66,6 +66,63 @@ export function policyTypeToJSON(object: PolicyType): string {
   }
 }
 
+export enum PolicyResourceType {
+  RESOURCE_TYPE_UNSPECIFIED = 0,
+  WORKSPACE = 1,
+  ENVIRONMENT = 2,
+  PROJECT = 3,
+  INSTANCE = 4,
+  DATABASE = 5,
+  UNRECOGNIZED = -1,
+}
+
+export function policyResourceTypeFromJSON(object: any): PolicyResourceType {
+  switch (object) {
+    case 0:
+    case "RESOURCE_TYPE_UNSPECIFIED":
+      return PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED;
+    case 1:
+    case "WORKSPACE":
+      return PolicyResourceType.WORKSPACE;
+    case 2:
+    case "ENVIRONMENT":
+      return PolicyResourceType.ENVIRONMENT;
+    case 3:
+    case "PROJECT":
+      return PolicyResourceType.PROJECT;
+    case 4:
+    case "INSTANCE":
+      return PolicyResourceType.INSTANCE;
+    case 5:
+    case "DATABASE":
+      return PolicyResourceType.DATABASE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PolicyResourceType.UNRECOGNIZED;
+  }
+}
+
+export function policyResourceTypeToJSON(object: PolicyResourceType): string {
+  switch (object) {
+    case PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED:
+      return "RESOURCE_TYPE_UNSPECIFIED";
+    case PolicyResourceType.WORKSPACE:
+      return "WORKSPACE";
+    case PolicyResourceType.ENVIRONMENT:
+      return "ENVIRONMENT";
+    case PolicyResourceType.PROJECT:
+      return "PROJECT";
+    case PolicyResourceType.INSTANCE:
+      return "INSTANCE";
+    case PolicyResourceType.DATABASE:
+      return "DATABASE";
+    case PolicyResourceType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum ApprovalGroup {
   ASSIGNEE_GROUP_UNSPECIFIED = 0,
   APPROVAL_GROUP_DBA = 1,
@@ -379,7 +436,7 @@ export interface Policy {
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
   enforce: boolean;
   /** The resource type for the policy. */
-  resourceType: string;
+  resourceType: PolicyResourceType;
   /** The system-assigned, unique identifier for the resource. */
   resourceUid: string;
   state: State;
@@ -902,7 +959,7 @@ function createBasePolicy(): Policy {
     accessControlPolicy: undefined,
     sqlReviewPolicy: undefined,
     enforce: false,
-    resourceType: "",
+    resourceType: 0,
     resourceUid: "",
     state: 0,
   };
@@ -940,8 +997,8 @@ export const Policy = {
     if (message.enforce === true) {
       writer.uint32(88).bool(message.enforce);
     }
-    if (message.resourceType !== "") {
-      writer.uint32(98).string(message.resourceType);
+    if (message.resourceType !== 0) {
+      writer.uint32(96).int32(message.resourceType);
     }
     if (message.resourceUid !== "") {
       writer.uint32(106).string(message.resourceUid);
@@ -1030,11 +1087,11 @@ export const Policy = {
           message.enforce = reader.bool();
           continue;
         case 12:
-          if (tag !== 98) {
+          if (tag !== 96) {
             break;
           }
 
-          message.resourceType = reader.string();
+          message.resourceType = reader.int32() as any;
           continue;
         case 13:
           if (tag !== 106) {
@@ -1077,7 +1134,7 @@ export const Policy = {
         : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
       enforce: isSet(object.enforce) ? Boolean(object.enforce) : false,
-      resourceType: isSet(object.resourceType) ? String(object.resourceType) : "",
+      resourceType: isSet(object.resourceType) ? policyResourceTypeFromJSON(object.resourceType) : 0,
       resourceUid: isSet(object.resourceUid) ? String(object.resourceUid) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : 0,
     };
@@ -1103,7 +1160,7 @@ export const Policy = {
     message.sqlReviewPolicy !== undefined &&
       (obj.sqlReviewPolicy = message.sqlReviewPolicy ? SQLReviewPolicy.toJSON(message.sqlReviewPolicy) : undefined);
     message.enforce !== undefined && (obj.enforce = message.enforce);
-    message.resourceType !== undefined && (obj.resourceType = message.resourceType);
+    message.resourceType !== undefined && (obj.resourceType = policyResourceTypeToJSON(message.resourceType));
     message.resourceUid !== undefined && (obj.resourceUid = message.resourceUid);
     message.state !== undefined && (obj.state = stateToJSON(message.state));
     return obj;
@@ -1136,7 +1193,7 @@ export const Policy = {
       ? SQLReviewPolicy.fromPartial(object.sqlReviewPolicy)
       : undefined;
     message.enforce = object.enforce ?? false;
-    message.resourceType = object.resourceType ?? "";
+    message.resourceType = object.resourceType ?? 0;
     message.resourceUid = object.resourceUid ?? "";
     message.state = object.state ?? 0;
     return message;

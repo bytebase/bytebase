@@ -207,7 +207,7 @@ message Policy {
   bool enforce = 11;
 
   // The resource type for the policy.
-  string resource_type = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  PolicyResourceType resource_type = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The system-assigned, unique identifier for the resource.
   string resource_uid = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -222,6 +222,15 @@ enum PolicyType {
   SQL_REVIEW = 3;
   SENSITIVE_DATA = 4;
   ACCESS_CONTROL = 5;
+}
+
+enum PolicyResourceType {
+  RESOURCE_TYPE_UNSPECIFIED = 0;
+  WORKSPACE = 1;
+  ENVIRONMENT = 2;
+  PROJECT = 3;
+  INSTANCE = 4;
+  DATABASE = 5;
 }
 
 message DeploymentApprovalPolicy {

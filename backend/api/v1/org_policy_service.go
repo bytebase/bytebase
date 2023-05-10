@@ -474,11 +474,24 @@ func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 }
 
 func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
+	resourceType := v1pb.PolicyResourceType_RESOURCE_TYPE_UNSPECIFIED
+	switch policyMessage.ResourceType {
+	case api.PolicyResourceTypeEnvironment:
+		resourceType = v1pb.PolicyResourceType_ENVIRONMENT
+	case api.PolicyResourceTypeWorkspace:
+		resourceType = v1pb.PolicyResourceType_WORKSPACE
+	case api.PolicyResourceTypeProject:
+		resourceType = v1pb.PolicyResourceType_PROJECT
+	case api.PolicyResourceTypeDatabase:
+		resourceType = v1pb.PolicyResourceType_DATABASE
+	case api.PolicyResourceTypeInstance:
+		resourceType = v1pb.PolicyResourceType_INSTANCE
+	}
 	policy := &v1pb.Policy{
 		Uid:               fmt.Sprintf("%d", policyMessage.UID),
 		InheritFromParent: policyMessage.InheritFromParent,
 		Enforce:           policyMessage.Enforce,
-		ResourceType:      string(policyMessage.ResourceType),
+		ResourceType:      resourceType,
 		ResourceUid:       fmt.Sprintf("%d", policyMessage.ResourceUID),
 		State:             convertDeletedToState(policyMessage.Deleted),
 	}

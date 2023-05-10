@@ -226,6 +226,7 @@
     - [ApprovalGroup](#bytebase-v1-ApprovalGroup)
     - [ApprovalStrategy](#bytebase-v1-ApprovalStrategy)
     - [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule)
+    - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
     - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
     - [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType)
@@ -3435,7 +3436,7 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | access_control_policy | [AccessControlPolicy](#bytebase-v1-AccessControlPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
-| resource_type | [string](#string) |  | The resource type for the policy. |
+| resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
 | state | [State](#bytebase-v1-State) |  |  |
 
@@ -3570,6 +3571,22 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | UNSET | 1 |  |
 | DAILY | 2 |  |
 | WEEKLY | 3 |  |
+
+
+
+<a name="bytebase-v1-PolicyResourceType"></a>
+
+### PolicyResourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESOURCE_TYPE_UNSPECIFIED | 0 |  |
+| WORKSPACE | 1 |  |
+| ENVIRONMENT | 2 |  |
+| PROJECT | 3 |  |
+| INSTANCE | 4 |  |
+| DATABASE | 5 |  |
 
 
 
