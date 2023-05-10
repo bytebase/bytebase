@@ -75,10 +75,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     await upsertProjectMap([created]);
     return created;
   };
-  const updateProject = async (
-    project: Project,
-    updateMask: Array<keyof Project>
-  ) => {
+  const updateProject = async (project: Project, updateMask: string[]) => {
     const updated = await projectServiceClient.updateProject({
       project,
       updateMask,
