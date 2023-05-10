@@ -35,7 +35,6 @@ export * from "./sqlAdvice";
 export * from "./store";
 export * from "./vcs";
 export * from "./label";
-export * from "./deployment";
 export * from "./sqlEditor";
 export * from "./connectionTree";
 export * from "./webTerminal";
