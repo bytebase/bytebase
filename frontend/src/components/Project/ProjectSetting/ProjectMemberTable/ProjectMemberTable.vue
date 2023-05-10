@@ -9,8 +9,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { Project } from "@/types";
-import type { IamPolicy } from "@/types/proto/v1/project_service";
+import type { IamPolicy, Project } from "@/types/proto/v1/project_service";
 import PrincipalTable from "./PrincipalTable.vue";
 import { ComposedPrincipal } from "../common";
 

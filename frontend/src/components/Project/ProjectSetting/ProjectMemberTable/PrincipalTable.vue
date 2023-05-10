@@ -83,23 +83,25 @@ import {
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
-import { Project, ProjectRoleType } from "@/types";
+import { ProjectRoleType } from "@/types";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
-import { IamPolicy } from "@/types/proto/v1/project_service";
+import { IamPolicy, Project } from "@/types/proto/v1/project_service";
 import {
   featureToRef,
   useCurrentUser,
+  useCurrentUserV1,
+  useProjectIamPolicy,
   useProjectIamPolicyStore,
   useRoleStore,
   useUserStore,
 } from "@/store";
 import {
-  hasPermissionInProject,
   hasWorkspacePermission,
   displayRoleTitle,
   addRoleToProjectIamPolicy,
   removeRoleFromProjectIamPolicy,
   removeUserFromProjectIamPolicy,
+  hasPermissionInProjectV1,
 } from "@/utils";
 import { ComposedPrincipal } from "../common";
 import { State } from "@/types/proto/v1/common";
@@ -118,14 +120,14 @@ const ROLE_OWNER = "roles/OWNER";
 const { t } = useI18n();
 const hasRBACFeature = featureToRef("bb.feature.rbac");
 const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
 const roleStore = useRoleStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const dialog = useDialog();
 
-const projectResourceName = computed(
-  () => `projects/${props.project.resourceId}`
-);
+const projectResourceName = computed(() => props.project.name);
+const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const columnList = computed(() => {
   const ACCOUNT: BBGridColumn = {
@@ -161,9 +163,9 @@ const allowAdmin = computed(() => {
   }
 
   if (
-    hasPermissionInProject(
-      props.project,
-      currentUser.value,
+    hasPermissionInProjectV1(
+      iamPolicy.value,
+      currentUserV1.value,
       "bb.permission.project.manage-member"
     )
   ) {
@@ -177,7 +179,7 @@ const allowAdmin = computed(() => {
 // 1. Disallow removing the last OWNER.
 // 2. Allow workspace roles who can manage project. This helps when the project OWNER is no longer available.
 const allowRemoveRole = (role: ProjectRoleType) => {
-  if (props.project.rowStatus == "ARCHIVED") {
+  if (props.project.state === State.DELETED) {
     return false;
   }
 
@@ -225,7 +227,7 @@ const removeRole = (item: ComposedPrincipal, role: string) => {
 
 const allowAddRole = (item: ComposedPrincipal) => {
   if (!allowAdmin.value) return false;
-  if (props.project.rowStatus == "ARCHIVED") {
+  if (props.project.state === State.DELETED) {
     return false;
   }
 
@@ -260,7 +262,7 @@ const addRole = async (item: ComposedPrincipal, role: string) => {
 };
 
 const allowRemovePrincipal = (item: ComposedPrincipal) => {
-  if (props.project.rowStatus == "ARCHIVED") {
+  if (props.project.state === State.DELETED) {
     return false;
   }
 
