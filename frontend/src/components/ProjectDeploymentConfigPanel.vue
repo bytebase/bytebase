@@ -328,9 +328,8 @@ export default defineComponent({
       try {
         const projectPatch = cloneDeep(props.project);
         projectPatch.dbNameTemplate = state.dbNameTemplate;
-        await useProjectV1Store().updateProject(projectPatch, [
-          "db_name_template",
-        ]);
+        const updateMask = ["db_name_template"];
+        await useProjectV1Store().updateProject(projectPatch, updateMask);
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
