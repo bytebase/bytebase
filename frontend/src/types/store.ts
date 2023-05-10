@@ -1,6 +1,5 @@
 import { RemovableRef } from "@vueuse/core";
 import {
-  DeploymentConfig,
   EnvironmentId,
   MigrationHistoryId,
   Policy,
@@ -187,10 +186,6 @@ export interface SQLEditorState {
   isFetchingQueryHistory: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
-}
-
-export interface DeploymentState {
-  deploymentConfigByProjectId: Map<ProjectId, DeploymentConfig>;
 }
 
 export interface SheetState {

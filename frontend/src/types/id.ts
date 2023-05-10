@@ -69,5 +69,3 @@ export type SheetId = IdType;
 export type ContainerId = IssueId;
 
 export type LabelId = IdType;
-
-export type DeploymentConfigId = IdType;
