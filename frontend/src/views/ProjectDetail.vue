@@ -14,11 +14,7 @@
       :database-list="databaseList"
       :allow-edit="allowEdit"
     />
-    <ProjectDatabasesPanel
-      v-else
-      :project="project"
-      :database-list="databaseList"
-    />
+    <ProjectDatabasesPanel v-else :database-list="databaseList" />
   </template>
   <template v-if="hash === 'change-history'">
     <ProjectMigrationHistoryPanel
