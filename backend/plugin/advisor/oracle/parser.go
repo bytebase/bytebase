@@ -61,6 +61,12 @@ func normalizeIdentifier(ctx antlr.ParserRuleContext, currentSchema string) stri
 			return strings.Join(result, ".")
 		}
 		return ""
+	case *plsql.Column_nameContext:
+		result := []string{normalizeIdentifierContext(ctx.Identifier())}
+		for _, idExpression := range ctx.AllId_expression() {
+			result = append(result, normalizeIDExpression(idExpression))
+		}
+		return strings.Join(result, ".")
 	}
 	return ""
 }
