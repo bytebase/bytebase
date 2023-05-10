@@ -147,7 +147,7 @@
         "support-sla": "Dedicated Slack channel, CSM and SLA",
         "branding-logo": "Custom logo",
         "roadmap": "Roadmap prioritization",
-        "contract": "Custom MSA and BAA"
+        "contract": "Custom MSA"
       }
     }
   },
@@ -176,7 +176,7 @@
     "sensitive-data": "Sensitive data masking",
     "database-access-control": "Database access control",
     "roadmap": "Roadmap prioritization",
-    "custom-contract": "Custom MSA and BAA",
+    "custom-contract": "Custom MSA",
     "sso": "Single Sign-On (SSO)",
     "2fa": "Two-Factor Authentication (2FA)",
     "custom-approval": "Custom approval"

@@ -17,7 +17,6 @@ import { Project, ProjectMember } from "./project";
 import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
-import { DeploymentConfig } from "./deployment";
 import { Policy, DefaultApprovalPolicy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
@@ -83,7 +82,8 @@ export type EnvironmentQuickActionType =
   | "quickaction.bb.environment.reorder";
 export type ProjectQuickActionType =
   | "quickaction.bb.project.create"
-  | "quickaction.bb.project.database.transfer";
+  | "quickaction.bb.project.database.transfer"
+  | "quickaction.bb.project.database.transfer-out";
 export type InstanceQuickActionType = "quickaction.bb.instance.create";
 export type UserQuickActionType = "quickaction.bb.user.manage";
 export type DatabaseQuickActionType =
@@ -152,7 +152,6 @@ interface ResourceMaker {
   (type: "VCS"): VCS;
   (type: "REPOSITORY"): Repository;
   (type: "ANOMALY"): Anomaly;
-  (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
   (type: "SHEET"): Sheet;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
   (type: "AUDIT_LOG"): AuditLog;
@@ -430,13 +429,6 @@ const makeUnknown = (type: ResourceType) => {
     },
   };
 
-  const UNKNOWN_DEPLOYMENT_CONFIG: DeploymentConfig = {
-    id: UNKNOWN_ID,
-    schedule: {
-      deployments: [],
-    },
-  };
-
   const UNKNOWN_SHEET: Sheet = {
     id: UNKNOWN_ID,
     rowStatus: "NORMAL",
@@ -513,8 +505,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_REPOSITORY;
     case "ANOMALY":
       return UNKNOWN_ANOMALY;
-    case "DEPLOYMENT_CONFIG":
-      return UNKNOWN_DEPLOYMENT_CONFIG;
     case "SHEET":
       return UNKNOWN_SHEET;
     case "SQL_REVIEW":
@@ -795,13 +785,6 @@ const makeEmpty = (type: ResourceType) => {
     },
   };
 
-  const EMPTY_DEPLOYMENT_CONFIG: DeploymentConfig = {
-    id: EMPTY_ID,
-    schedule: {
-      deployments: [],
-    },
-  };
-
   const EMPTY_SHEET: Sheet = {
     id: EMPTY_ID,
     rowStatus: "NORMAL",
@@ -887,8 +870,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_REPOSITORY;
     case "ANOMALY":
       return EMPTY_ANOMALY;
-    case "DEPLOYMENT_CONFIG":
-      return EMPTY_DEPLOYMENT_CONFIG;
     case "SHEET":
       return EMPTY_SHEET;
     case "SQL_REVIEW":

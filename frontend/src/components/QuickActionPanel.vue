@@ -166,6 +166,23 @@
           {{ $t("quick-action.transfer-in-db") }}
         </h3>
       </div>
+
+      <div
+        v-if="quickAction === 'quickaction.bb.project.database.transfer'"
+        class="flex flex-col items-center w-24"
+      >
+        <button
+          class="btn-icon-primary p-3"
+          @click.prevent="transferOutDatabase"
+        >
+          <heroicons-outline:chevron-double-up class="w-5 h-5" />
+        </button>
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
+          {{ $t("quick-action.transfer-out-db") }}
+        </h3>
+      </div>
     </template>
   </div>
   <BBModal
@@ -228,6 +245,17 @@
         @dismiss="state.showModal = false"
       />
     </template>
+    <template
+      v-else-if="
+        state.quickActionType == 'quickaction.bb.project.database.transfer-out'
+      "
+    >
+      <TransferOutDatabaseForm
+        v-if="projectId"
+        :project-id="projectId"
+        @dismiss="state.showModal = false"
+      />
+    </template>
   </BBModal>
   <FeatureModal
     v-if="state.showFeatureModal && state.featureName !== ''"
@@ -255,6 +283,7 @@ import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
+import TransferOutDatabaseForm from "../components/TransferOutDatabaseForm";
 
 interface LocalState {
   showModal: boolean;
@@ -310,6 +339,13 @@ const transferDatabase = () => {
   state.modalTitle = t("quick-action.transfer-in-db-title");
   state.modalSubtitle = "";
   state.quickActionType = "quickaction.bb.project.database.transfer";
+  state.showModal = true;
+};
+
+const transferOutDatabase = () => {
+  state.modalTitle = t("quick-action.transfer-out-db-title");
+  state.modalSubtitle = "";
+  state.quickActionType = "quickaction.bb.project.database.transfer-out";
   state.showModal = true;
 };
 

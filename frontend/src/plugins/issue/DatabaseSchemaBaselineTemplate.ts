@@ -31,6 +31,7 @@ const template: IssueTemplate = {
             instanceId: ctx.databaseList[i].instance.id,
             databaseId: ctx.databaseList[i].id,
             statement: "/* Establish baseline using current schema */",
+            sheetId: UNKNOWN_ID,
             earliestAllowedTs: 0,
           },
         ],

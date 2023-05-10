@@ -53,6 +53,8 @@ type SQLExecute struct {
 	// The maximum row count returned, only applicable to SELECT query.
 	// Not enforced if limit <= 0.
 	Limit int `jsonapi:"attr,limit"`
+	// The export flag indicates whether the query is used for exporting data.
+	Export bool `jsonapi:"attr,export"`
 }
 
 // SingleSQLResult is the API message for single SQL result.

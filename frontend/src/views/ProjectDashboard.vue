@@ -9,37 +9,44 @@
         @update:value="changeSearchText($event)"
       />
     </div>
-    <ProjectTable
-      :project-list="filteredList(state.projectList)"
-      :left-bordered="false"
-      :right-bordered="false"
-    />
+    <ProjectV1Table :project-list="filteredProjectList" class="border-x-0" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { watchEffect, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive } from "vue";
 
-import { useCurrentUser, useUIStateStore, useProjectStore } from "@/store";
-import { SearchBox } from "@/components/v2";
-import ProjectTable from "../components/ProjectTable.vue";
-import { Project, UNKNOWN_ID } from "../types";
+import {
+  useUIStateStore,
+  useProjectV1ListByUser,
+  useCurrentUserV1,
+} from "@/store";
+import { SearchBox, ProjectV1Table } from "@/components/v2";
+import { filterProjectV1ListByKeyword } from "@/utils";
 
 interface LocalState {
-  projectList: Project[];
   searchText: string;
 }
 
-const uiStateStore = useUIStateStore();
-const currentUser = useCurrentUser();
-const projectStore = useProjectStore();
+const currentUserV1 = useCurrentUserV1();
 
 const state = reactive<LocalState>({
-  projectList: [],
   searchText: "",
 });
 
+const { projectList } = useProjectV1ListByUser(currentUserV1);
+
+const changeSearchText = (searchText: string) => {
+  state.searchText = searchText;
+};
+
+const filteredProjectList = computed(() => {
+  const list = projectList.value;
+  return filterProjectV1ListByKeyword(list, state.searchText);
+});
+
 onMounted(() => {
+  const uiStateStore = useUIStateStore();
   if (!uiStateStore.getIntroStateByKey("project.visit")) {
     uiStateStore.saveIntroStateByKey({
       key: "project.visit",
@@ -47,38 +54,4 @@ onMounted(() => {
     });
   }
 });
-
-const prepareProjectList = () => {
-  // It will also be called when user logout
-  if (currentUser.value.id != UNKNOWN_ID) {
-    projectStore
-      .fetchProjectListByUser({
-        userId: currentUser.value.id,
-        rowStatusList: ["NORMAL"],
-      })
-      .then((projectList: Project[]) => {
-        state.projectList = projectList;
-      });
-  }
-};
-
-watchEffect(prepareProjectList);
-
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
-};
-
-const filteredList = (list: Project[]) => {
-  const keyword = state.searchText.trim().toLowerCase();
-  if (!keyword) {
-    // Select "All"
-    return list;
-  }
-  return list.filter((project) => {
-    return (
-      project.name.toLowerCase().includes(keyword) ||
-      project.key.toLowerCase().includes(keyword)
-    );
-  });
-};
 </script>

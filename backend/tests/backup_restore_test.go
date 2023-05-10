@@ -347,7 +347,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          fmt.Sprintf("Restore database %s to the time %d", database.Name, targetTs),
 		Type:          api.IssueDatabaseRestorePITR,
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(pitrIssueCtx),
 	})
 	a.NoError(err)
@@ -401,7 +401,7 @@ func createPITRIssue(ctl *controller, project *api.Project, pitrContext api.PITR
 		ProjectID:     project.ID,
 		Name:          fmt.Sprintf("Restore database %d", pitrContext.DatabaseID),
 		Type:          api.IssueDatabaseRestorePITR,
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(pitrIssueCtx),
 	})
 }

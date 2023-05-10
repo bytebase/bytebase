@@ -780,7 +780,9 @@
     "transfer-in-db-title": "Transfer in database",
     "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in the default project.",
     "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?",
-    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in unassigned databases."
+    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in unassigned databases.",
+    "transfer-out-db": "Transfer out DB",
+    "transfer-out-db-title": "Transfer out database"
   },
   "create-db": {
     "new-database-name": "New database name",
@@ -1187,7 +1189,9 @@
       "no-difference-tip": "No diff found.",
       "more-version": "more...",
       "character-sets-diff-found": "There are differences between character sets.",
-      "preview-issue": "Preview issue"
+      "preview-issue": "Preview issue",
+      "schema-change": "Schema change",
+      "generated-ddl-statement": "Generated DDL statement"
     },
     "sensitive": "Sensitive",
     "access-denied": "You don't have the permission to access this database.",
@@ -1217,7 +1221,12 @@
       "description-placeholder": "Input description",
       "value": "Value",
       "value-placeholder": "Input value (write only)",
-      "delete-tips": "Delete secret"
+      "delete-tips": "Delete secret",
+      "description": "You can use secret in the change script to hide sensitive information, please refer to {guide}"
+    },
+    "transfer": {
+      "source-project": "Source project",
+      "target-project": "Target project"
     }
   },
   "repository": {

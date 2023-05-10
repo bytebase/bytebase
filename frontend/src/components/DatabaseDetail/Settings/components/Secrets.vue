@@ -1,5 +1,18 @@
 <template>
   <div class="space-y-4">
+    <div class="textinfolabel">
+      <i18n-t keypath="database.secret.description">
+        <template #guide>
+          <a
+            href="https://www.bytebase.com/docs/administration/secret?source=console"
+            target="_blank"
+            class="normal-link"
+          >
+            {{ $t("common.detailed-guide") }}</a
+          >
+        </template>
+      </i18n-t>
+    </div>
     <div class="flex items-center">
       <div class="flex-1 flex items-center">
         <p class="text-lg font-medium leading-7 text-main flex">

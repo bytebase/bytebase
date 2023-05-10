@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -118,6 +119,47 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		Status:      storepb.IssuePayloadApproval_Approver_APPROVED,
 		PrincipalId: int32(principalID),
 	})
+
+	// Grant the privilege if the issue is approved.
+	if len(payload.Approval.Approvers) > 0 && issue.Type == api.IssueGrantRequest {
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
+		if err != nil {
+			return nil, err
+		}
+		var newConditionExpr string
+		if payload.GrantRequest.Condition != nil {
+			newConditionExpr = payload.GrantRequest.Condition.Expression
+		}
+		updated := false
+		email := strings.TrimPrefix(payload.GrantRequest.User, "users/")
+		newUser, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &email})
+		if err != nil {
+			return nil, err
+		}
+		for _, binding := range policy.Bindings {
+			if binding.Role != api.Role(payload.GrantRequest.Role) {
+				continue
+			}
+			var oldConditionExpr string
+			if binding.Condition != nil {
+				oldConditionExpr = binding.Condition.Expression
+			}
+			if oldConditionExpr != newConditionExpr {
+				continue
+			}
+			// Append
+			binding.Members = append(binding.Members, newUser)
+			updated = true
+			break
+		}
+		if !updated {
+			policy.Bindings = append(policy.Bindings, &store.PolicyBinding{
+				Role:      api.Role(payload.GrantRequest.Role),
+				Members:   []*store.UserMessage{newUser},
+				Condition: payload.GrantRequest.Condition,
+			})
+		}
+	}
 
 	stepsSkipped, err := utils.SkipApprovalStepIfNeeded(ctx, s.store, issue.Project.UID, payload.Approval)
 	if err != nil {

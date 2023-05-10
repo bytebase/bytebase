@@ -2,7 +2,7 @@
   <template v-if="hash === 'overview'">
     <ProjectOverviewPanel
       id="overview"
-      :project="project"
+      :project="projectV1"
       :database-list="databaseList"
     />
   </template>
@@ -10,20 +10,15 @@
     <ProjectDeploymentConfigPanel
       v-if="isTenantProject"
       id="deployment-config"
-      :project="project"
+      :project="projectV1"
       :database-list="databaseList"
       :allow-edit="allowEdit"
     />
-    <ProjectDatabasesPanel
-      v-else
-      :project="project"
-      :database-list="databaseList"
-    />
+    <ProjectDatabasesPanel v-else :database-list="databaseList" />
   </template>
   <template v-if="hash === 'change-history'">
     <ProjectMigrationHistoryPanel
       id="change-history"
-      :project="project"
       :database-list="databaseList"
     />
   </template>
@@ -31,7 +26,7 @@
     <ProjectSlowQueryPanel :project="project" />
   </template>
   <template v-if="hash === 'activity'">
-    <ProjectActivityPanel id="activity" :project="project" />
+    <ProjectActivityPanel id="activity" :project="projectV1" />
   </template>
   <template v-if="project.id !== DEFAULT_PROJECT_ID && hash === 'gitops'">
     <ProjectVersionControlPanel
@@ -50,7 +45,7 @@
   <template v-if="project.id !== DEFAULT_PROJECT_ID && hash === 'setting'">
     <ProjectSettingPanel
       id="setting"
-      :project="project"
+      :project="projectV1"
       :allow-edit="allowEdit"
     />
   </template>
@@ -72,7 +67,12 @@ import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel
 import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
-import { useDatabaseStore, useEnvironmentList, useProjectStore } from "@/store";
+import {
+  useDatabaseStore,
+  useEnvironmentList,
+  useProjectStore,
+  useProjectV1Store,
+} from "@/store";
 
 export default defineComponent({
   name: "ProjectDetail",
@@ -105,11 +105,15 @@ export default defineComponent({
     const route = useRoute();
     const databaseStore = useDatabaseStore();
     const projectStore = useProjectStore();
+    const projectV1Store = useProjectV1Store();
 
     const hash = computed(() => route.hash.replace(/^#?/, ""));
 
     const project = computed(() => {
       return projectStore.getProjectById(idFromSlug(props.projectSlug));
+    });
+    const projectV1 = computed(() => {
+      return projectV1Store.getProjectByUID(idFromSlug(props.projectSlug));
     });
 
     const environmentList = useEnvironmentList(["NORMAL"]);
@@ -137,6 +141,7 @@ export default defineComponent({
       DEFAULT_PROJECT_ID,
       hash,
       project,
+      projectV1,
       databaseList,
       isTenantProject,
     };

@@ -82,7 +82,13 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "No task to approve in the stage")
 		}
 
-		if !s.TaskScheduler.CanPrincipalChangeTaskStatus(currentPrincipalID, issue) {
+		// pick any task in the stage to validate
+		// because all tasks in the same stage share the issue & environment.
+		ok, err := s.TaskScheduler.CanPrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0], stageAllTaskStatusPatch.Status)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
+		}
+		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
 
@@ -96,7 +102,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 				if err != nil {
 					return err
 				}
-				ok, err := utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
+				ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
 				if err != nil {
 					return err
 				}

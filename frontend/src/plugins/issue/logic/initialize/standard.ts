@@ -42,6 +42,7 @@ export const buildNewStandardIssue = async (
         migrationType: migrationType,
         databaseId: db.id,
         statement,
+        sheetId: UNKNOWN_ID,
         earliestAllowedTs: 0,
       };
       return detail;

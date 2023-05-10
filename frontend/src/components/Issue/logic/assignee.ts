@@ -15,10 +15,22 @@ import {
 } from "@/types";
 import { useIssueLogic } from ".";
 import { usePolicyByEnvironmentAndType } from "@/store";
-import { hasWorkspacePermission, isOwnerOfProject } from "@/utils";
+import {
+  hasWorkspacePermission,
+  isDatabaseRelatedIssueType,
+  isOwnerOfProject,
+} from "@/utils";
 
 export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   const { create, issue, activeStageOfPipeline } = useIssueLogic();
+
+  // TODO(steven): figure out how to handle this for grant request issues.
+  if (!isDatabaseRelatedIssueType(issue.value.type)) {
+    return computed(() => ({
+      policy: "MANUAL_APPROVAL_ALWAYS",
+      assigneeGroup: undefined,
+    }));
+  }
 
   const activeEnvironmentId = computed((): EnvironmentId => {
     if (create.value) {

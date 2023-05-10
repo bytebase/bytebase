@@ -2,10 +2,20 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/type/expr.proto";
 import "store/approval.proto";
 
 option go_package = "generated-go/store";
 
 message IssuePayload {
   IssuePayloadApproval approval = 1;
+  GrantRequest grant_request = 2;
+}
+
+message GrantRequest {
+  // The requested role, e.g. roles/EXPORTER.
+  string role = 1;
+  // The requested user, e.g. users/hello@bytebase.com.
+  string user = 2;
+  google.type.Expr condition = 3;
 }

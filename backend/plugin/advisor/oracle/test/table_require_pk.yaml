@@ -1,0 +1,54 @@
+- statement: CREATE TABLE abc.t(id INT PRIMARY KEY);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE "SYS".t(id INT)
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table "SYS"."T" requires PRIMARY KEY.
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE t(id INT);
+                DROP TABLE t
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t(id INT);
+    ALTER TABLE t ADD CONSTRAINT tpk PRIMARY KEY (id)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t(id INT PRIMARY KEY);
+    ALTER TABLE t DROP PRIMARY KEY
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table "SYS"."T" requires PRIMARY KEY.
+      line: 2
+      details: ""

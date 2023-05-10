@@ -148,60 +148,24 @@
         </div>
       </div>
       <div class="w-3/4 grow h-full">
-        <main ref="diffViewerRef" class="p-4 w-full h-full overflow-y-auto">
+        <main ref="diffViewerRef" class="p-2 w-full h-full overflow-y-auto">
           <div
             v-show="selectedDatabase"
             class="w-full h-auto flex flex-col justify-start items-start"
           >
-            <div class="w-full flex flex-row justify-start items-center mb-2">
-              <span>{{ previewSchemaChangeMessage }}</span>
-            </div>
-            <code-diff
-              v-show="shouldShowDiff"
-              class="code-diff-container w-full h-auto max-h-96 overflow-y-auto border rounded"
-              :old-string="targetDatabaseSchema"
-              :new-string="sourceDatabaseSchema"
-              output-format="side-by-side"
-            />
-            <div
-              v-show="!shouldShowDiff"
-              class="w-full h-auto px-3 py-2 overflow-y-auto border rounded"
-            >
-              <p>
-                {{ $t("database.sync-schema.message.no-diff-found") }}
-              </p>
-            </div>
-            <div class="w-full flex flex-col justify-start mt-4 mb-2 leading-8">
-              <div class="flex flex-row justify-start items-center">
-                <span>{{
-                  $t("database.sync-schema.synchronize-statements")
-                }}</span>
-                <button
-                  type="button"
-                  class="btn-icon ml-2"
-                  @click.prevent="copyStatement"
-                >
-                  <heroicons-outline:clipboard class="h-5 w-5" />
-                </button>
-              </div>
-              <div class="textinfolabel">
-                {{
-                  $t("database.sync-schema.synchronize-statements-description")
-                }}
-              </div>
-            </div>
-            <MonacoEditor
-              ref="editorRef"
-              class="w-full h-auto max-h-96 border rounded"
-              :value="
+            <DiffViewPanel
+              :statement="
                 state.selectedDatabaseId
                   ? databaseDiffCache[state.selectedDatabaseId].edited
                   : ''
               "
-              :auto-focus="false"
-              :dialect="dialectOfEngine(engineType)"
-              @change="onStatementChange"
-              @ready="updateEditorHeight"
+              :source-database="sourceDatabase"
+              :target-database-schema="targetDatabaseSchema"
+              :source-database-schema="sourceDatabaseSchema"
+              :should-show-diff="shouldShowDiff"
+              :preview-schema-change-message="previewSchemaChangeMessage"
+              @statement-change="onStatementChange"
+              @copy-statement="onCopyStatement"
             />
           </div>
           <div
@@ -241,7 +205,6 @@ import axios from "axios";
 import { head, isEqual } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { PropType, computed, onMounted, reactive, ref, watch } from "vue";
-import { CodeDiff } from "v-code-diff";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
@@ -257,12 +220,11 @@ import {
   MigrationHistory,
   ProjectId,
   UNKNOWN_ID,
-  dialectOfEngine,
 } from "@/types";
 import { migrationHistorySlug } from "@/utils";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
-import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
+import DiffViewPanel from "./DiffViewPanel.vue";
 
 interface SourceSchema {
   environmentId: EnvironmentId;
@@ -294,7 +256,6 @@ const projectStore = useProjectStore();
 const environmentStore = useEnvironmentStore();
 const databaseStore = useDatabaseStore();
 const diffViewerRef = ref<HTMLDivElement>();
-const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 const state = reactive<LocalState>({
   isLoading: true,
   showDatabaseWithDiff: true,
@@ -322,9 +283,6 @@ const environment = computed(() => {
 const sourceDatabase = computed(() => {
   return databaseStore.getDatabaseById(props.sourceSchema.databaseId);
 });
-const engineType = computed(() => {
-  return sourceDatabase.value.instance.engine;
-});
 const sourceDatabaseSchema = computed(() => {
   return props.sourceSchema.migrationHistory.schema || "";
 });
@@ -344,7 +302,7 @@ const selectedDatabase = computed(() => {
     : undefined;
 });
 const shouldShowDiff = computed(() => {
-  return (
+  return !!(
     state.selectedDatabaseId &&
     databaseDiffCache[state.selectedDatabaseId]?.raw !== ""
   );
@@ -397,7 +355,7 @@ const handleUnselectDatabase = (database: Database) => {
   }
 };
 
-const copyStatement = () => {
+const onCopyStatement = () => {
   const editStatement = state.selectedDatabaseId
     ? databaseSchemaCache[state.selectedDatabaseId]
     : "";
@@ -414,15 +372,7 @@ const copyStatement = () => {
 const onStatementChange = (value: string) => {
   if (state.selectedDatabaseId) {
     databaseDiffCache[state.selectedDatabaseId].edited = value;
-    updateEditorHeight();
   }
-};
-
-const updateEditorHeight = () => {
-  const contentHeight =
-    editorRef.value?.editorInstance?.getContentHeight() as number;
-  const actualHeight = contentHeight;
-  editorRef.value?.setEditorContentHeight(actualHeight);
 };
 
 watch(

@@ -16,6 +16,10 @@ import {
   TaskStatusTransition,
   TASK_STATUS_TRANSITION_LIST,
 } from "@/utils";
+import {
+  allowUserToBeAssignee,
+  useCurrentRollOutPolicyForActiveEnvironment,
+} from "./";
 import { useIssueLogic } from ".";
 
 export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
@@ -23,13 +27,25 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     useIssueLogic();
 
   const currentUser = useCurrentUser();
+  const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
 
   const isAllowedToApplyTaskTransition = computed(() => {
     if (create.value) {
       return false;
     }
 
-    // Only the assignee can apply task status transitions
+    if (
+      allowUserToBeAssignee(
+        currentUser.value,
+        issue.value.project,
+        rollOutPolicy.value.policy,
+        rollOutPolicy.value.assigneeGroup
+      )
+    ) {
+      return true;
+    }
+
+    // Otherwise, only the assignee can apply task status transitions
     // including roll out, cancel, retry, etc.
     return issue.value.assignee.id === currentUser.value.id;
   });
