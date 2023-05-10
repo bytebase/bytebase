@@ -67,6 +67,14 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     }
     return fetchProjectByName(name);
   };
+  const createProject = async (project: Project, resourceId: string) => {
+    const created = await projectServiceClient.createProject({
+      project,
+      projectId: resourceId,
+    });
+    await upsertProjectMap([created]);
+    return created;
+  };
   const updateProject = async (
     project: Project,
     updateMask: Array<keyof Project>
@@ -101,6 +109,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     fetchProjectByName,
     fetchProjectByUID,
     getOrFetchProjectByName,
+    createProject,
     updateProject,
     archiveProject,
     restoreProject,

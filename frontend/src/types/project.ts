@@ -43,17 +43,6 @@ export type Project = {
   schemaChangeType: SchemaChangeType;
 };
 
-export type ProjectCreate = {
-  resourceId: ResourceId;
-
-  // Domain specific fields
-  name: string;
-  key: string;
-  tenantMode: ProjectTenantMode;
-  dbNameTemplate: string;
-  schemaChangeType: SchemaChangeType;
-};
-
 export type ProjectPatch = {
   // Standard fields
   rowStatus?: RowStatus;
