@@ -205,17 +205,18 @@ message Policy {
     SensitiveDataPolicy sensitive_data_policy = 8;
     AccessControlPolicy access_control_policy = 9;
     SQLReviewPolicy sql_review_policy = 10;
+    SlowQueryPolicy slow_query_policy = 11;
   }
 
-  bool enforce = 11;
+  bool enforce = 12;
 
   // The resource type for the policy.
-  PolicyResourceType resource_type = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  PolicyResourceType resource_type = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The system-assigned, unique identifier for the resource.
-  string resource_uid = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string resource_uid = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  State state = 14;
+  State state = 15;
 }
 
 enum PolicyType {
@@ -225,6 +226,7 @@ enum PolicyType {
   SQL_REVIEW = 3;
   SENSITIVE_DATA = 4;
   ACCESS_CONTROL = 5;
+  SLOW_QUERY = 6;
 }
 
 enum PolicyResourceType {
@@ -262,6 +264,10 @@ enum ApprovalStrategy {
 message BackupPlanPolicy {
   BackupPlanSchedule schedule = 1;
   google.protobuf.Duration retention_duration = 2;
+}
+
+message SlowQueryPolicy {
+  bool active = 1;
 }
 
 enum BackupPlanSchedule {

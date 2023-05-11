@@ -372,6 +372,10 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID in
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	if err := validatePolicyType(policyType, resourceType); err != nil {
+		return nil, err
+	}
+
 	payloadStr, err := convertPolicyPayloadToString(policy)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid policy %v", err.Error())
@@ -437,15 +441,26 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 	}
 }
 
+func validatePolicyType(policyType api.PolicyType, policyResourceType api.PolicyResourceType) error {
+	for _, rt := range api.AllowedResourceTypes[policyType] {
+		if rt == policyResourceType {
+			return nil
+		}
+	}
+	return status.Errorf(codes.InvalidArgument, "policy %v is not allowed in resource %v", policyType, policyResourceType)
+}
+
 func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
 	case v1pb.PolicyType_DEPLOYMENT_APPROVAL:
+		// TODO: validate
 		payload, err := convertToPipelineApprovalPolicyPayload(policy.GetDeploymentApprovalPolicy())
 		if err != nil {
 			return "", err
 		}
 		return payload.String()
 	case v1pb.PolicyType_BACKUP_PLAN:
+		// TODO: validate
 		payload, err := convertToBackupPlanPolicyPayload(policy.GetBackupPlanPolicy())
 		if err != nil {
 			return "", err
@@ -456,15 +471,26 @@ func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		if err := payload.Validate(); err != nil {
+			return "", err
+		}
 		return payload.String()
 	case v1pb.PolicyType_SENSITIVE_DATA:
+		// TODO: validate
 		payload, err := convertToSensitiveDataPolicyPayload(policy.GetSensitiveDataPolicy())
 		if err != nil {
 			return "", err
 		}
 		return payload.String()
 	case v1pb.PolicyType_ACCESS_CONTROL:
+		// TODO: validate
 		payload, err := convertToAccessControlPolicyPayload(policy.GetAccessControlPolicy())
+		if err != nil {
+			return "", err
+		}
+		return payload.String()
+	case v1pb.PolicyType_SLOW_QUERY:
+		payload, err := convertToSlowQueryPolicyPayload(policy.GetSlowQueryPolicy())
 		if err != nil {
 			return "", err
 		}
@@ -534,6 +560,13 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 			return nil, err
 		}
 		policy.Policy = payload
+	case api.PolicyTypeSlowQuery:
+		pType = v1pb.PolicyType_SLOW_QUERY
+		payload, err := convertToV1PBSlowQueryPolicy(policyMessage.Payload)
+		if err != nil {
+			return nil, err
+		}
+		policy.Policy = payload
 	}
 
 	policy.Type = pType
@@ -580,6 +613,7 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 }
 
 func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQLReviewPolicy, error) {
+	// TODO:
 	var ruleList []*advisor.SQLReviewRule
 	for _, rule := range policy.Rules {
 		var level advisor.SQLReviewRuleLevel
@@ -819,6 +853,24 @@ func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolic
 	}, nil
 }
 
+func convertToV1PBSlowQueryPolicy(payloadStr string) (*v1pb.Policy_SlowQueryPolicy, error) {
+	payload, err := api.UnmarshalSlowQueryPolicy(payloadStr)
+	if err != nil {
+		return nil, err
+	}
+	return &v1pb.Policy_SlowQueryPolicy{
+		SlowQueryPolicy: &v1pb.SlowQueryPolicy{
+			Active: payload.Active,
+		},
+	}, nil
+}
+
+func convertToSlowQueryPolicyPayload(policy *v1pb.SlowQueryPolicy) (*api.SlowQueryPolicy, error) {
+	return &api.SlowQueryPolicy{
+		Active: policy.Active,
+	}, nil
+}
+
 func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentType {
 	res := v1pb.DeploymentType_DEPLOYMENT_TYPE_UNSPECIFIED
 	switch issueType {
@@ -850,6 +902,8 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeSensitiveData, nil
 	case v1pb.PolicyType_ACCESS_CONTROL.String():
 		return api.PolicyTypeAccessControl, nil
+	case v1pb.PolicyType_SLOW_QUERY.String():
+		return api.PolicyTypeSlowQuery, nil
 	}
 	return policyType, errors.Errorf("invalid policy type %v", pType)
 }

@@ -82,8 +82,8 @@ const (
 )
 
 var (
-	// allowedResourceTypes includes allowed resource types for each policy type.
-	allowedResourceTypes = map[PolicyType][]PolicyResourceType{
+	// AllowedResourceTypes includes allowed resource types for each policy type.
+	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
 		PolicyTypePipelineApproval: {PolicyResourceTypeEnvironment},
 		PolicyTypeBackupPlan:       {PolicyResourceTypeEnvironment},
 		PolicyTypeSQLReview:        {PolicyResourceTypeEnvironment},
@@ -324,7 +324,7 @@ func UnmarshalEnvironmentTierPolicy(payload string) (*EnvironmentTierPolicy, err
 
 // ValidatePolicyType will validate the policy type.
 func ValidatePolicyType(pType PolicyType) error {
-	if _, ok := allowedResourceTypes[pType]; !ok {
+	if _, ok := AllowedResourceTypes[pType]; !ok {
 		return errors.Errorf("invalid policy type: %s", pType)
 	}
 	return nil
@@ -333,7 +333,7 @@ func ValidatePolicyType(pType PolicyType) error {
 // ValidatePolicy will validate the policy resource type, type and payload values.
 func ValidatePolicy(resourceType PolicyResourceType, pType PolicyType, payload *string) error {
 	hasResourceType := false
-	for _, rt := range allowedResourceTypes[pType] {
+	for _, rt := range AllowedResourceTypes[pType] {
 		if rt == resourceType {
 			hasResourceType = true
 		}
