@@ -259,9 +259,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return err
 		}
 		// Check database access rights.
+		isExport := exec.ExportFormat == "CSV" || exec.ExportFormat == "JSON"
 		if role != api.Owner && role != api.DBA {
+			var project *store.ProjectMessage
+			var databases []*store.DatabaseMessage
 			for _, databaseName := range databaseNames {
-				accessDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 				if err != nil {
 					if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
 						// If database not found, skip.
@@ -269,15 +272,29 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					}
 					return err
 				}
-				project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &accessDatabase.ProjectID})
+				databases = append(databases, database)
+				p, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 				if err != nil {
 					return err
 				}
-				projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-				if err != nil {
-					return err
+				if project == nil {
+					project = p
 				}
-				databaseResourceURL := fmt.Sprintf("environments/%s/instances/%s/databases/%s", environment.ResourceID, instance.ResourceID, databaseName)
+				if project.UID != p.UID {
+					return echo.NewHTTPError(http.StatusBadRequest, "allow querying databases within the same project only")
+				}
+			}
+			if project == nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "project not found")
+			}
+			projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+			if err != nil {
+				return err
+			}
+			// TODO(d): perfect matching condition expression.
+			var usedExpression string
+			for _, database := range databases {
+				databaseResourceURL := fmt.Sprintf("environments/%s/instances/%s/databases/%s", environment.ResourceID, instance.ResourceID, database.DatabaseName)
 				attributes := map[string]any{
 					"request.time":          time.Now(),
 					"resource.database":     databaseResourceURL,
@@ -286,12 +303,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					"request.export_format": exec.ExportFormat,
 				}
 
-				hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, projectPolicy, accessDatabase, environment, attributes, exec.ExportFormat == "CSV" || exec.ExportFormat == "JSON")
+				ok, ue, err := s.hasDatabaseAccessRights(ctx, principalID, projectPolicy, database, environment, attributes, isExport)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.DatabaseName)).SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", database.DatabaseName)).SetInternal(err)
 				}
-				if !hasAccessRights {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.DatabaseName))
+				if !ok {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", database.DatabaseName))
+				}
+				usedExpression = ue
+			}
+			if isExport {
+				newPolicy := removeExportBinding(principalID, usedExpression, projectPolicy)
+				if _, err := s.store.SetProjectIAMPolicy(ctx, newPolicy, api.SystemBotID, project.UID); err != nil {
+					return err
 				}
 			}
 		}
@@ -1022,9 +1046,10 @@ func isMySQLExcludeDatabase(database string) bool {
 	return true
 }
 
-func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, error) {
+func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, string, error) {
 	// Project IAM policy evaluation.
 	pass := false
+	var usedExpression string
 	for _, binding := range projectPolicy.Bindings {
 		if !((isExport && binding.Role == api.Role(common.ProjectExporter)) || (!isExport && binding.Role == api.Role(common.ProjectQuerier))) {
 			continue
@@ -1040,6 +1065,7 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, p
 			}
 			if ok {
 				pass = true
+				usedExpression = binding.Condition.Expression
 				break
 			}
 		}
@@ -1048,23 +1074,22 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, p
 		}
 	}
 	if !pass {
-		return false, nil
+		return false, "", nil
 	}
-
 	// calculate the effective policy.
 	databasePolicy, inheritFromEnvironment, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.UID)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	environmentPolicy, _, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, environment.UID)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	if !inheritFromEnvironment {
 		// Use database policy.
-		return databasePolicy != nil && len(databasePolicy.DisallowRuleList) == 0, nil
+		return databasePolicy != nil && len(databasePolicy.DisallowRuleList) == 0, "", nil
 	}
 	// Use both database policy and environment policy.
 	hasAccessRights := true
@@ -1081,7 +1106,31 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, p
 		// Allow by database access policy.
 		hasAccessRights = true
 	}
-	return hasAccessRights, nil
+	return hasAccessRights, usedExpression, nil
+}
+
+func removeExportBinding(principalID int, usedExpression string, projectPolicy *store.IAMPolicyMessage) *store.IAMPolicyMessage {
+	var newPolicy store.IAMPolicyMessage
+	for _, binding := range projectPolicy.Bindings {
+		if binding.Role != api.Role(common.ProjectExporter) || binding.Condition.Expression != usedExpression {
+			newPolicy.Bindings = append(newPolicy.Bindings, binding)
+			continue
+		}
+
+		var newMembers []*store.UserMessage
+		for _, member := range binding.Members {
+			if member.ID != principalID {
+				newMembers = append(newMembers, member)
+			}
+		}
+		if len(newMembers) == 0 {
+			continue
+		}
+		newBinding := *binding
+		newBinding.Members = newMembers
+		newPolicy.Bindings = append(newPolicy.Bindings, &newBinding)
+	}
+	return &newPolicy
 }
 
 func getDatabasesFromQuery(engine db.Type, databaseName, statement string) ([]string, error) {
