@@ -141,6 +141,7 @@ import { DropdownOption, NDropdown } from "naive-ui";
 import {
   activeStage,
   canSkipTask,
+  isDatabaseRelatedIssueType,
   StageStatusTransition,
   taskCheckRunSummary,
   TaskStatusTransition,
@@ -281,6 +282,9 @@ const skippableTaskList = computed(() => {
 
   const issueEntity = issue.value as Issue;
   if (issueEntity.status !== "OPEN") {
+    return [];
+  }
+  if (!isDatabaseRelatedIssueType(issueEntity.type)) {
     return [];
   }
 
