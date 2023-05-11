@@ -584,6 +584,7 @@ func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.I
 	if err != nil {
 		return nil, err
 	}
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
 	// Composed the issue.
 	composedIssue := &api.Issue{
