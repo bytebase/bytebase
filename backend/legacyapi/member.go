@@ -22,6 +22,10 @@ const (
 	DBA Role = "DBA"
 	// Developer is the DEVELOPER role.
 	Developer Role = "DEVELOPER"
+	// Exporter is the EXPORTER role.
+	Exporter Role = "EXPORTER"
+	// Querier is the QUERIER role.
+	Querier Role = "QUERIER"
 	// UnknownRole is the unknown role.
 	UnknownRole Role = "UNKNOWN"
 )
