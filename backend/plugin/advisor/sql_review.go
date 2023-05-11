@@ -775,6 +775,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLNoLeadingWildcardLike, nil
 		case db.Postgres:
 			return PostgreSQLNoLeadingWildcardLike, nil
+		case db.Oracle:
+			return OracleNoLeadingWildcardLike, nil
 		}
 	case SchemaRuleStatementNoSelectAll:
 		switch engine {

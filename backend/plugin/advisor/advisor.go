@@ -355,6 +355,9 @@ const (
 
 	// OracleNoSelectAll is an advisor type for Oracle no select all.
 	OracleNoSelectAll Type = "bb.plugin.advisor.oracle.select.no-select-all"
+
+	// OracleNoLeadingWildcardLike is an advisor type for Oracle no leading wildcard LIKE.
+	OracleNoLeadingWildcardLike Type = "bb.plugin.advisor.oracle.where.no-leading-wildcard-like"
 )
 
 // Advice is the result of an advisor.
