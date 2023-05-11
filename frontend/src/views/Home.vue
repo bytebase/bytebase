@@ -101,7 +101,6 @@
       session-key="home-closed"
       :issue-find="{
         statusList: ['DONE', 'CANCELED'],
-        principalId: currentUser.id,
       }"
       :page-size="MAX_CLOSED_ISSUE"
       :hide-load-more="true"
