@@ -136,7 +136,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 			}
 
 			if strings.HasPrefix(path, "/project") {
-				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, projectRolesFinder)
+				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, projectRolesFinder)
 			} else if strings.HasPrefix(path, "/sheet") {
 				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, projectRolesFinder, sheetFinder)
 			} else if strings.HasPrefix(path, "/database") {
@@ -184,22 +184,11 @@ var projectGeneralRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)`
 var projectMemberRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/member`)
 var projectSyncSheetRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/sync-sheet`)
 
-func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, method string, quaryParams url.Values, principalID int, projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
+func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, method string, principalID int, projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
 	var projectID int
 	var permission api.ProjectPermissionType
 	var permissionErrMsg string
-	if method == "GET" {
-		if path == "/project" {
-			userIDStr := quaryParams.Get("user")
-			if userIDStr == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch all project list")
-			}
-			if strconv.Itoa(principalID) != userIDStr {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch projects from other user")
-			}
-		}
-		// For /project/xxx subroutes, since all projects are public, we don't enforce ACL.
-	} else {
+	if method != "GET" {
 		if matches := projectMemberRouteRegex.FindStringSubmatch(path); matches != nil {
 			projectID, _ = strconv.Atoi(matches[1])
 			permission = api.ProjectPermissionManageMember
@@ -238,27 +227,6 @@ var databaseGeneralRouteRegex = regexp.MustCompile(`^/database/(?P<databaseID>\d
 func enforceWorkspaceDeveloperDatabaseRouteACL(plan api.PlanType, path string, method string, body string, principalID int, projectIDOfDatabase func(databaseID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
 	switch method {
 	case http.MethodGet:
-		// For /database route, server should list the databases that the user has access to.
-		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
-			// For /database/xxx subroutes, since Developer cannot retrieve the database if it's not a member of the project which owns the database.
-
-			// Get the database ID from the path.
-			dbID, err := strconv.Atoi(matches[1])
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Invalid database id").SetInternal(err)
-			}
-			projectID, err := projectIDOfDatabase(dbID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request").SetInternal(err)
-			}
-			projectRoles, err := projectRolesFinder(projectID, principalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request").SetInternal(err)
-			}
-			if len(projectRoles) == 0 {
-				return echo.NewHTTPError(http.StatusUnauthorized, "user is not a member of project owns this database")
-			}
-		}
 	case http.MethodPatch:
 		// PATCH /database/xxx
 		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
