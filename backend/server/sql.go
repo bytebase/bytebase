@@ -250,70 +250,35 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 		principalID := c.Get(getPrincipalIDContextKey()).(int)
 		role := c.Get(getRoleContextKey()).(api.Role)
+
+		databaseNames, err := getDatabasesFromQuery(instance.Engine, exec.DatabaseName, exec.Statement)
+		if err != nil {
+			return err
+		}
 		var database *store.DatabaseMessage
+		// Check database access rights.
+		for _, databaseName := range databaseNames {
+			accessDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+			if err != nil {
+				if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+					// If database not found, skip.
+					continue
+				}
+				return err
+			}
+
+			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, accessDatabase)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.DatabaseName)).SetInternal(err)
+			}
+			if !hasAccessRights {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.DatabaseName))
+			}
+		}
 		if exec.DatabaseName != "" {
 			database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &exec.DatabaseName})
 			if err != nil {
 				return err
-			}
-			if database == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database %q not found", exec.DatabaseName))
-			}
-			// Database Access Control
-			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, database)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", exec.DatabaseName)).SetInternal(err)
-			}
-			if !hasAccessRights {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", exec.DatabaseName))
-			}
-		}
-
-		// Database Access Control for MySQL dialect.
-		// MySQL dialect can query cross the database.
-		// We need special check.
-		if instance.Engine == db.MySQL || instance.Engine == db.TiDB || instance.Engine == db.MariaDB || instance.Engine == db.OceanBase {
-			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to extract database list: %q", exec.Statement)).SetInternal(err)
-			}
-
-			if exec.DatabaseName != "" {
-				// Disallow cross-database query if specify database.
-				for _, databaseName := range databaseList {
-					upperDatabaseName := strings.ToUpper(databaseName)
-					// We allow querying information schema.
-					if upperDatabaseName == "" || upperDatabaseName == "INFORMATION_SCHEMA" {
-						continue
-					}
-					if databaseName != exec.DatabaseName {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", exec.DatabaseName, databaseName))
-					}
-				}
-			} else {
-				// Check database access rights.
-				for _, databaseName := range databaseList {
-					if databaseName == "" {
-						// We have already checked the current database access rights.
-						continue
-					}
-					accessDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
-					if err != nil {
-						if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
-							// If database not found, skip.
-							continue
-						}
-						return err
-					}
-
-					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, accessDatabase)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.DatabaseName)).SetInternal(err)
-					}
-					if !hasAccessRights {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.DatabaseName))
-					}
-				}
 			}
 		}
 
@@ -1090,4 +1055,32 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, r
 		hasAccessRights = true
 	}
 	return hasAccessRights, nil
+}
+
+func getDatabasesFromQuery(engine db.Type, databaseName, statement string) ([]string, error) {
+	if engine == db.MySQL || engine == db.TiDB || engine == db.MariaDB || engine == db.OceanBase {
+		databases, err := parser.ExtractDatabaseList(parser.MySQL, statement)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to extract database list: %q", statement)).SetInternal(err)
+		}
+
+		if databaseName != "" {
+			// Disallow cross-database query if specify database.
+			for _, name := range databases {
+				upperDatabaseName := strings.ToUpper(name)
+				// We allow querying information schema.
+				if upperDatabaseName == "" || upperDatabaseName == "INFORMATION_SCHEMA" {
+					continue
+				}
+				if databaseName != name {
+					return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", databaseName, name))
+				}
+			}
+		}
+		return databases, nil
+	}
+	if databaseName == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "databaseName is required")
+	}
+	return []string{databaseName}, nil
 }
