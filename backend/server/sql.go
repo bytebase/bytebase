@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
+	"github.com/google/cel-go/cel"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -1083,4 +1085,44 @@ func getDatabasesFromQuery(engine db.Type, databaseName, statement string) ([]st
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "databaseName is required")
 	}
 	return []string{databaseName}, nil
+}
+
+var queryAttributes = []cel.EnvOption{
+	cel.Variable("request.time", cel.TimestampType),
+	cel.Variable("resource.database", cel.StringType),
+	cel.Variable("request.statement", cel.StringType),
+	cel.Variable("request.row_limit", cel.IntType),
+	cel.Variable("request.export_format", cel.StringType),
+}
+
+func evaluateCondition(expression string, attributes map[string]any) (bool, error) {
+	if expression == "" {
+		return true, nil
+	}
+	env, err := cel.NewEnv(queryAttributes...)
+	if err != nil {
+		return false, err
+	}
+	ast, issues := env.Compile(expression)
+	if issues != nil && issues.Err() != nil {
+		return false, issues.Err()
+	}
+	prg, err := env.Program(ast)
+	if err != nil {
+		return false, err
+	}
+
+	out, _, err := prg.Eval(attributes)
+	if err != nil {
+		return false, err
+	}
+	val, err := out.ConvertToNative(reflect.TypeOf(false))
+	if err != nil {
+		return false, errors.Wrap(err, "expect bool result")
+	}
+	boolVal, ok := val.(bool)
+	if !ok {
+		return false, errors.Wrap(err, "failed to convert to bool")
+	}
+	return boolVal, nil
 }
