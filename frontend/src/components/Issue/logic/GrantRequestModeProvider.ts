@@ -33,7 +33,7 @@ export default defineComponent({
               databaseId
             );
             databaseNames.push(
-              `/instances/${database.instance.resourceId}/databases/${database.name}`
+              `instances/${database.instance.resourceId}/databases/${database.name}`
             );
           }
           expression.push(
@@ -56,7 +56,7 @@ export default defineComponent({
         const database = await databaseStore.getOrFetchDatabaseById(databaseId);
         const databaseNames = [];
         databaseNames.push(
-          `/instances/${database.instance.resourceId}/databases/${database.name}`
+          `instances/${database.instance.resourceId}/databases/${database.name}`
         );
         expression.push(
           `resource.database in ${JSON.stringify(databaseNames)}`
