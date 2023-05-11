@@ -53,7 +53,11 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import { Project, DEFAULT_PROJECT_ID } from "../types";
-import { useCurrentUser, useProjectStore } from "@/store";
+import {
+  useCurrentUser,
+  useCurrentUserIamPolicy,
+  useProjectStore,
+} from "@/store";
 
 type ProjectTabItem = {
   name: string;
@@ -89,6 +93,7 @@ export default defineComponent({
     const project = computed((): Project => {
       return projectStore.getProjectById(idFromSlug(props.projectSlug));
     });
+    const currentUserIamPolicy = useCurrentUserIamPolicy();
 
     const isDefaultProject = computed((): boolean => {
       return project.value.id === DEFAULT_PROJECT_ID;
@@ -99,6 +104,14 @@ export default defineComponent({
     });
 
     const projectTabItemList = computed((): ProjectTabItem[] => {
+      if (
+        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+          `projects/${project.value.resourceId}`
+        )
+      ) {
+        return [{ name: t("common.databases"), hash: "databases" }];
+      }
+
       const list: (ProjectTabItem | null)[] = [
         { name: t("common.overview"), hash: "overview" },
         { name: t("common.databases"), hash: "databases" },
