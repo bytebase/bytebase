@@ -141,6 +141,17 @@ export const useProjectStore = defineStore("project", {
       return projectList;
     },
 
+    async fetchProjectList() {
+      const data = (await axios.get(`/api/project`)).data;
+      const projectList: Project[] = data.data.map(
+        (project: ResourceObject) => {
+          return convert(project, data.included);
+        }
+      );
+      this.upsertProjectList(projectList);
+      return projectList;
+    },
+
     async fetchProjectListByUser({
       userId,
       rowStatusList = [],
