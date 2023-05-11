@@ -81,10 +81,7 @@
     </div>
     <div class="w-full flex flex-row justify-start items-start">
       <span class="flex w-40 items-center">SQL</span>
-      <div
-        v-if="create"
-        class="whitespace-pre-wrap mt-2 w-full overflow-hidden border"
-      >
+      <div class="whitespace-pre-wrap mt-2 w-full overflow-hidden border">
         <MonacoEditor
           ref="editorRef"
           class="w-full h-[360px]"
@@ -93,12 +90,10 @@
           :auto-focus="false"
           :language="'sql'"
           :dialect="dialect"
+          :readonly="!create"
           @change="handleStatementChange"
           @ready="handleMonacoEditorReady"
         />
-      </div>
-      <div v-else class="flex flex-row justify-start items-start gap-4">
-        {{ state.statement }}
       </div>
     </div>
   </div>

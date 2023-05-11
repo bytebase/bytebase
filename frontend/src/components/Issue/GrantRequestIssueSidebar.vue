@@ -19,31 +19,9 @@
         </div>
       </template>
 
-      <h2 class="textlabel flex items-center col-span-1 col-start-1 gap-x-1">
-        <span>{{ $t("common.assignee") }}</span>
-        <span>
-          <NTooltip>
-            <template #trigger>
-              <heroicons-outline:question-mark-circle />
-            </template>
-            <div>{{ $t("issue.assignee-tooltip") }}</div>
-          </NTooltip>
-        </span>
-      </h2>
-
-      <div class="col-span-2" data-label="bb-assignee-select-container">
-        <MemberSelect
-          class="w-full"
-          :disabled="true"
-          :selected-id="assigneeId as number"
-          data-label="bb-assignee-select"
-          @select-principal-id="
-            (principalId: number) => {
-              updateAssigneeId(principalId)
-            }
-          "
-        />
-      </div>
+      <template v-if="!create">
+        <IssueReviewSidebarSection />
+      </template>
     </div>
 
     <div
@@ -112,14 +90,14 @@
 import { computed, reactive } from "vue";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import IssueStatusIcon from "./IssueStatusIcon.vue";
-import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
-import PrincipalAvatar from "../PrincipalAvatar.vue";
-import MemberSelect from "../MemberSelect.vue";
-import FeatureModal from "../FeatureModal.vue";
 import { Project, Issue, IssueCreate } from "@/types";
 import { useProjectStore } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
+import { IssueReviewSidebarSection } from "./review";
+import IssueStatusIcon from "./IssueStatusIcon.vue";
+import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
+import PrincipalAvatar from "../PrincipalAvatar.vue";
+import FeatureModal from "../FeatureModal.vue";
 
 dayjs.extend(isSameOrAfter);
 
@@ -130,8 +108,7 @@ interface LocalState {
 const projectStore = useProjectStore();
 
 const { create, issue } = useIssueLogic();
-const { updateAssigneeId, addSubscriberId, removeSubscriberId } =
-  useExtraIssueLogic();
+const { addSubscriberId, removeSubscriberId } = useExtraIssueLogic();
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
@@ -142,12 +119,5 @@ const project = computed((): Project => {
     return projectStore.getProjectById((issue.value as IssueCreate).projectId);
   }
   return (issue.value as Issue).project;
-});
-
-const assigneeId = computed(() => {
-  if (create.value) {
-    return (issue.value as IssueCreate).assigneeId;
-  }
-  return (issue.value as Issue).assignee.id;
 });
 </script>
