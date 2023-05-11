@@ -58,17 +58,14 @@ import {
   Environment,
   EnvironmentId,
   Instance,
-  SlowQueryPolicyPayload,
   UNKNOWN_ID,
 } from "@/types";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import { SlowQueryPolicyTable } from "./components";
-import {
-  extractSlowQueryPolicyPayload,
-  instanceSupportSlowQuery,
-} from "@/utils";
+import { instanceSupportSlowQuery } from "@/utils";
 import { useGracefulRequest } from "@/store/modules/utils";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { getInstancePathByLegacyInstance } from "@/store/modules/v1/common";
 
 type LocalState = {
   ready: boolean;
@@ -89,25 +86,21 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const policyStore = useSlowQueryPolicyStore();
+const slowQueryPolicyStore = useSlowQueryPolicyStore();
 const slowQueryStore = useSlowQueryStore();
 const instanceStore = useInstanceStore();
 const environmentList = useEnvironmentList(["NORMAL"]);
 
 const policyList = computed(() => {
-  return policyStore.getPolicyListByResourceTypeAndPolicyType(
-    "instance",
-    "bb.policy.slow-query"
-  );
+  return slowQueryPolicyStore.getPolicyList();
 });
 
 const composedSlowQueryPolicyList = computed(() => {
   const list = state.instanceList.map<ComposedSlowQueryPolicy>((instance) => {
-    const policy = policyList.value.find((p) => p.resourceId === instance.id);
-    const payload = extractSlowQueryPolicyPayload(policy);
+    const policy = policyList.value.find((p) => p.resourceUid == instance.id);
     return {
       instance,
-      active: payload.active,
+      active: policy?.slowQueryPolicy?.active ?? false,
     };
   });
 
@@ -147,10 +140,7 @@ const prepare = async () => {
       state.instanceList = list.filter(instanceSupportSlowQuery);
     };
     const preparePolicyList = async () => {
-      await policyStore.fetchPolicyListByResourceTypeAndPolicyType(
-        "instance",
-        "bb.policy.slow-query"
-      );
+      await slowQueryPolicyStore.fetchPolicyList();
     };
     await Promise.all([prepareInstanceList(), preparePolicyList()]);
   } finally {
@@ -162,18 +152,14 @@ const changeEnvironment = (id: EnvironmentId | undefined) => {
   state.filter.environment = environmentList.value.find((env) => env.id === id);
 };
 
-const patchInstanceSlowQueryPolicy = (instance: Instance, active: boolean) => {
-  const payload: SlowQueryPolicyPayload = {
+const patchInstanceSlowQueryPolicy = async (
+  instance: Instance,
+  active: boolean
+) => {
+  return slowQueryPolicyStore.upsertPolicy({
+    parentPath: getInstancePathByLegacyInstance(instance),
     active,
-  };
-  return policyStore.upsertPolicyByResourceTypeAndPolicyType(
-    "instance",
-    instance.id,
-    "bb.policy.slow-query",
-    {
-      payload,
-    }
-  );
+  });
 };
 
 const toggleActive = async (instance: Instance, active: boolean) => {

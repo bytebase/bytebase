@@ -1,4 +1,4 @@
-import { ResourceId, UNKNOWN_ID } from "@/types";
+import { ResourceId, UNKNOWN_ID, Instance } from "@/types";
 
 export const userNamePrefix = "users/";
 export const environmentNamePrefix = "environments/";
@@ -42,4 +42,8 @@ export const getUserEmailFromIdentifier = (identifier: string): string => {
 export const getIdentityProviderResourceId = (name: string): ResourceId => {
   const tokens = getNameParentTokens(name, [idpNamePrefix]);
   return tokens[0];
+};
+
+export const getInstancePathByLegacyInstance = (instance: Instance): string => {
+  return `${environmentNamePrefix}${instance.environment.resourceId}/${instanceNamePrefix}${instance.resourceId}`;
 };
