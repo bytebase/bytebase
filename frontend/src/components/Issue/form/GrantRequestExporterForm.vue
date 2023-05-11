@@ -100,7 +100,7 @@
 </template>
 
 <script lang="ts" setup>
-import { head, last } from "lodash-es";
+import { head } from "lodash-es";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useIssueLogic } from "../logic";
 import {
@@ -120,6 +120,11 @@ import { getProjectMemberList } from "@/utils";
 import { useDBSchemaStore, useDatabaseStore } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
 import { TableMetadata } from "@/types/proto/store/database";
+import { useInstanceV1Store } from "@/store/modules/v1/instance";
+import {
+  environmentNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
 
 interface LocalState {
   // For creating
@@ -132,6 +137,7 @@ interface LocalState {
 }
 
 const { create, issue } = useIssueLogic();
+const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseStore();
 const dbSchemaStore = useDBSchemaStore();
 const state = reactive<LocalState>({
@@ -249,7 +255,7 @@ const handleMonacoEditorReady = () => {
 
 watch(
   create,
-  () => {
+  async () => {
     if (!create.value) {
       const payload = ((issue.value as Issue).payload as any)
         .grantRequest as GrantRequestPayload;
@@ -259,17 +265,32 @@ watch(
       const expressionList = payload.condition.expression.split(" && ");
       for (const expression of expressionList) {
         const fields = expression.split(" ");
-        if (fields[0] === "statement") {
+        if (fields[0] === "request.statement") {
           state.statement = atob(JSON.parse(fields[2]));
-        } else if (fields[0] === "databases") {
+        } else if (fields[0] === "resource.database") {
           const databaseIdList = [];
           for (const url of JSON.parse(fields[2])) {
-            databaseIdList.push(Number(last(url.split("/"))));
+            const value = url.split("/");
+            const instanceName = value[5] || "";
+            const databaseName = value[7] || "";
+            const instance = await instanceV1Store.getOrFetchInstanceByName(
+              environmentNamePrefix + "-/" + instanceNamePrefix + instanceName
+            );
+            const databaseList =
+              await databaseStore.getOrFetchDatabaseListByInstanceId(
+                instance.uid
+              );
+            const database = databaseList.find(
+              (db) => db.name === databaseName
+            );
+            if (database) {
+              databaseIdList.push(database.id);
+            }
           }
           state.databaseId = head(databaseIdList);
-        } else if (fields[0] === "max_row_count") {
+        } else if (fields[0] === "request.row_limit") {
           state.maxRowCount = Number(fields[2]);
-        } else if (fields[0] === "export_format") {
+        } else if (fields[0] === "request.export_format") {
           state.exportFormat = JSON.parse(fields[2]) as "CSV" | "JSON";
         }
       }

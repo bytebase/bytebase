@@ -48,7 +48,7 @@
     </div>
     <template v-else>
       <div
-        if="applicableIssueStatusTransitionList.length > 0"
+        v-if="applicableIssueStatusTransitionList.length > 0"
         class="flex space-x-2"
       >
         <template

@@ -96,7 +96,7 @@
 </template>
 
 <script lang="ts" setup>
-import { head, last } from "lodash-es";
+import { head } from "lodash-es";
 import { NRadioGroup, NRadio, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useIssueLogic } from "../logic";
@@ -111,6 +111,11 @@ import {
 import { getProjectMemberList, parseExpiredTimeString } from "@/utils";
 import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
 import { useDatabaseStore } from "@/store";
+import { useInstanceV1Store } from "@/store/modules/v1/instance";
+import {
+  environmentNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
 
 interface LocalState {
   showSelectDatabasePanel: boolean;
@@ -153,6 +158,7 @@ const expireDaysOptions = [
 
 const { create, issue } = useIssueLogic();
 const databaseStore = useDatabaseStore();
+const instanceV1Store = useInstanceV1Store();
 const state = reactive<LocalState>({
   showSelectDatabasePanel: false,
   projectId: undefined,
@@ -225,7 +231,7 @@ watch(
 
 watch(
   create,
-  () => {
+  async () => {
     if (!create.value) {
       const payload = ((issue.value as Issue).payload as any)
         .grantRequest as GrantRequestPayload;
@@ -235,12 +241,27 @@ watch(
       const expressionList = payload.condition.expression.split(" && ");
       for (const expression of expressionList) {
         const fields = expression.split(" ");
-        if (fields[0] === "expiration") {
+        if (fields[0] === "request.time") {
           state.expiredAt = parseExpiredTimeString(fields[2]).toLocaleString();
-        } else if (fields[0] === "databases") {
+        } else if (fields[0] === "resource.database") {
           const databaseIdList = [];
           for (const url of JSON.parse(fields[2])) {
-            databaseIdList.push(Number(last(url.split("/"))));
+            const value = url.split("/");
+            const instanceName = value[5] || "";
+            const databaseName = value[7] || "";
+            const instance = await instanceV1Store.getOrFetchInstanceByName(
+              environmentNamePrefix + "-/" + instanceNamePrefix + instanceName
+            );
+            const databaseList =
+              await databaseStore.getOrFetchDatabaseListByInstanceId(
+                instance.uid
+              );
+            const database = databaseList.find(
+              (db) => db.name === databaseName
+            );
+            if (database) {
+              databaseIdList.push(database.id);
+            }
           }
           state.selectedDatabaseIdList = databaseIdList;
         }
