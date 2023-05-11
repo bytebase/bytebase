@@ -161,8 +161,9 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 			break
 		}
 		if !updated {
+			role := api.Role(strings.TrimPrefix(payload.GrantRequest.Role, "roles/"))
 			policy.Bindings = append(policy.Bindings, &store.PolicyBinding{
-				Role:      api.Role(payload.GrantRequest.Role),
+				Role:      role,
 				Members:   []*store.UserMessage{newUser},
 				Condition: payload.GrantRequest.Condition,
 			})
