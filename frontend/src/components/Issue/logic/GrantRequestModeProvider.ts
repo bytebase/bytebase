@@ -25,13 +25,15 @@ export default defineComponent({
               databaseId
             );
             databaseNames.push(
-              `/v1/environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.id}`
+              `/v1/environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.name}`
             );
           }
-          expression.push(`databases in ${JSON.stringify(databaseNames)}`);
+          expression.push(
+            `resource.database in ${JSON.stringify(databaseNames)}`
+          );
         }
         expression.push(
-          `expired_time < timestamp("${new Date(
+          `request.time < timestamp("${new Date(
             Date.now() + context.expireDays * 1000 * 60 * 60 * 24
           ).toISOString()}")`
         );
@@ -46,12 +48,14 @@ export default defineComponent({
         const database = await databaseStore.getOrFetchDatabaseById(databaseId);
         const databaseNames = [];
         databaseNames.push(
-          `/v1/environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.id}`
+          `/v1/environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.name}`
         );
-        expression.push(`databases in ${JSON.stringify(databaseNames)}`);
-        expression.push(`statement == '${btoa(context.statement)}'`);
-        expression.push(`max_row_count == ${context.maxRowCount}`);
-        expression.push(`export_format == '${context.exportFormat}'`);
+        expression.push(
+          `resource.database in ${JSON.stringify(databaseNames)}`
+        );
+        expression.push(`request.statement == "${btoa(context.statement)}"`);
+        expression.push(`request.row_limit == ${context.maxRowCount}`);
+        expression.push(`request.export_format == "${context.exportFormat}"`);
       } else {
         throw "Invalid role";
       }
