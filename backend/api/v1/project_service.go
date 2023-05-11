@@ -1140,17 +1140,6 @@ func convertToStoreLabelSelectorOperator(operator v1pb.OperatorType) (store.Oper
 	return store.OperatorType(""), errors.Errorf("invalid operator type: %v", operator)
 }
 
-func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID == userID {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func validateIAMPolicy(policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
 	if policy == nil {
 		return errors.Errorf("IAM Policy is required")

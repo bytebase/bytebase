@@ -1,7 +1,6 @@
 package server
 
 import (
-	"net/url"
 	"testing"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -14,7 +13,6 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 		plan        api.PlanType
 		path        string
 		method      string
-		queryParams url.Values
 		principalID int
 		errMsg      string
 	}
@@ -33,7 +31,6 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project",
 			method:      "GET",
-			queryParams: url.Values{},
 			principalID: 200,
 			errMsg:      "not allowed to fetch all project list",
 		},
@@ -42,7 +39,6 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project",
 			method:      "GET",
-			queryParams: url.Values{"user": []string{"200"}},
 			principalID: 200,
 			errMsg:      "",
 		},
@@ -266,7 +262,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := enforceWorkspaceDeveloperProjectRouteACL(tc.plan, tc.path, tc.method, tc.queryParams, tc.principalID, projectRolesFinderForTest)
+			err := enforceWorkspaceDeveloperProjectRouteACL(tc.plan, tc.path, tc.method, tc.principalID, projectRolesFinderForTest)
 			if err != nil {
 				if tc.errMsg == "" {
 					t.Errorf("expect no error, got %s", err.Message)
