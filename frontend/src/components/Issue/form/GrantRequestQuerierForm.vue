@@ -247,8 +247,8 @@ watch(
           const databaseIdList = [];
           for (const url of JSON.parse(fields[2])) {
             const value = url.split("/");
-            const instanceName = value[5] || "";
-            const databaseName = value[7] || "";
+            const instanceName = value[2] || "";
+            const databaseName = value[4] || "";
             const instance = await instanceV1Store.getOrFetchInstanceByName(
               environmentNamePrefix + "-/" + instanceNamePrefix + instanceName
             );
