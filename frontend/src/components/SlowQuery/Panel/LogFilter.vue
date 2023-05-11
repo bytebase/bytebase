@@ -102,7 +102,6 @@ import {
   type ProjectId,
   UNKNOWN_ID,
   Instance,
-  SlowQueryPolicyPayload,
 } from "@/types";
 import {
   useCurrentUser,
@@ -209,13 +208,12 @@ const instanceFilter = (instance: Instance) => {
     return false;
   }
   const policy = policyList.value.find(
-    (policy) => policy.resourceId === instance.id
+    (policy) => policy.resourceUid == instance.id
   );
   if (!policy) {
     return false;
   }
-  const payload = policy.payload as SlowQueryPolicyPayload;
-  return payload.active;
+  return policy.slowQueryPolicy?.active;
 };
 
 const isDateDisabled = (date: number) => {

@@ -44,7 +44,7 @@ import { computed, shallowRef, watch } from "vue";
 import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import type { ComposedSlowQueryLog, SlowQueryPolicyPayload } from "@/types";
+import type { ComposedSlowQueryLog } from "@/types";
 import {
   pushNotification,
   useInstanceStore,
@@ -113,18 +113,13 @@ const syncNow = async () => {
   try {
     const instanceStore = useInstanceStore();
     await instanceStore.fetchInstanceList(["NORMAL"]);
-    const policyList =
-      await useSlowQueryPolicyStore().fetchPolicyListByResourceTypeAndPolicyType(
-        "instance",
-        "bb.policy.slow-query"
-      );
+    const policyList = await useSlowQueryPolicyStore().fetchPolicyList();
     const requestList = policyList
       .filter((policy) => {
-        const payload = policy.payload as SlowQueryPolicyPayload;
-        return payload.active;
+        return policy.slowQueryPolicy?.active;
       })
       .map((policy) => {
-        const instanceId = policy.resourceId;
+        const instanceId = policy.resourceUid;
         const instance = instanceStore.getInstanceById(instanceId);
         return slowQueryStore.syncSlowQueriesByInstance(instance);
       });
