@@ -54,9 +54,10 @@
           <label class="radio">
             <input
               v-model="state.tenantMode"
+              :disabled="!allowEdit"
               tabindex="-1"
               type="radio"
-              class="btn"
+              class="btn disabled:opacity-50 disabled:cursor-not-allowed"
               :value="TenantMode.TENANT_MODE_DISABLED"
             />
             <span class="label">{{ $t("project.mode.standard") }}</span>
@@ -64,9 +65,10 @@
           <label class="radio">
             <input
               v-model="state.tenantMode"
+              :disabled="!allowEdit"
               tabindex="-1"
               type="radio"
-              class="btn"
+              class="btn disabled:opacity-50 disabled:cursor-not-allowed"
               :value="TenantMode.TENANT_MODE_ENABLED"
             />
             <span class="label">{{ $t("project.mode.tenant") }}</span>
