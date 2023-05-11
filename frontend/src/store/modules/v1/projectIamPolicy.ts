@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 
 import { IamPolicy } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
-import { MaybeRef } from "@/types";
+import { Database, MaybeRef } from "@/types";
 import { useProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
@@ -119,7 +119,57 @@ export const useCurrentUserIamPolicy = () => {
     return false;
   };
 
+  const allowToQueryDatabase = async (database: Database) => {
+    const policy = await iamPolicyStore.getOrFetchProjectIamPolicy(
+      `projects/${database.project.resourceId}`
+    );
+    console.log("!", policy, database.project.resourceId);
+    if (!policy) {
+      return false;
+    }
+    for (const binding of policy.bindings) {
+      if (
+        binding.role === "roles/OWNER" &&
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        return true;
+      }
+      if (
+        binding.role === "roles/QUERIER" &&
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        const expressionList = binding.condition?.expression.split(" && ");
+        if (expressionList && expressionList.length > 0) {
+          for (const expression of expressionList) {
+            const fields = expression.split(" ");
+            if (fields[0] === "resource.database") {
+              for (const url of JSON.parse(fields[2])) {
+                const value = url.split("/");
+                const instanceName = value[1] || "";
+                const databaseName = value[3] || "";
+                if (
+                  database.instance.resourceId === instanceName &&
+                  database.name === databaseName
+                ) {
+                  return true;
+                }
+              }
+            }
+          }
+        } else {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   return {
     allowToChangeDatabaseOfProject,
+    allowToQueryDatabase,
   };
 };
