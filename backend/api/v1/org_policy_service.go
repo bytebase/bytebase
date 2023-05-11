@@ -59,10 +59,21 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 		return nil, err
 	}
 
-	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
+	find := &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		ResourceUID:  resourceID,
-	})
+		ShowDeleted:  request.ShowDeleted,
+	}
+
+	if v := request.PolicyType; v != nil {
+		policyType, err := convertPolicyType(v.String())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		find.Type = &policyType
+	}
+
+	policies, err := s.store.ListPoliciesV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -135,6 +146,12 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 			patch.Payload = &payloadStr
 		case "enforce":
 			patch.Enforce = &request.Policy.Enforce
+		case "state":
+			if request.Policy.State == v1pb.State_DELETED {
+				patch.Delete = &deletePatch
+			} else if request.Policy.State == v1pb.State_ACTIVE {
+				patch.Delete = &undeletePatch
+			}
 		}
 	}
 
@@ -355,6 +372,10 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID in
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	if err := validatePolicyType(policyType, resourceType); err != nil {
+		return nil, err
+	}
+
 	payloadStr, err := convertPolicyPayloadToString(policy)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid policy %v", err.Error())
@@ -420,15 +441,26 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 	}
 }
 
+func validatePolicyType(policyType api.PolicyType, policyResourceType api.PolicyResourceType) error {
+	for _, rt := range api.AllowedResourceTypes[policyType] {
+		if rt == policyResourceType {
+			return nil
+		}
+	}
+	return status.Errorf(codes.InvalidArgument, "policy %v is not allowed in resource %v", policyType, policyResourceType)
+}
+
 func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
 	case v1pb.PolicyType_DEPLOYMENT_APPROVAL:
+		// TODO: validate
 		payload, err := convertToPipelineApprovalPolicyPayload(policy.GetDeploymentApprovalPolicy())
 		if err != nil {
 			return "", err
 		}
 		return payload.String()
 	case v1pb.PolicyType_BACKUP_PLAN:
+		// TODO: validate
 		payload, err := convertToBackupPlanPolicyPayload(policy.GetBackupPlanPolicy())
 		if err != nil {
 			return "", err
@@ -439,15 +471,26 @@ func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		if err := payload.Validate(); err != nil {
+			return "", err
+		}
 		return payload.String()
 	case v1pb.PolicyType_SENSITIVE_DATA:
+		// TODO: validate
 		payload, err := convertToSensitiveDataPolicyPayload(policy.GetSensitiveDataPolicy())
 		if err != nil {
 			return "", err
 		}
 		return payload.String()
 	case v1pb.PolicyType_ACCESS_CONTROL:
+		// TODO: validate
 		payload, err := convertToAccessControlPolicyPayload(policy.GetAccessControlPolicy())
+		if err != nil {
+			return "", err
+		}
+		return payload.String()
+	case v1pb.PolicyType_SLOW_QUERY:
+		payload, err := convertToSlowQueryPolicyPayload(policy.GetSlowQueryPolicy())
 		if err != nil {
 			return "", err
 		}
@@ -458,10 +501,26 @@ func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 }
 
 func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
+	resourceType := v1pb.PolicyResourceType_RESOURCE_TYPE_UNSPECIFIED
+	switch policyMessage.ResourceType {
+	case api.PolicyResourceTypeEnvironment:
+		resourceType = v1pb.PolicyResourceType_ENVIRONMENT
+	case api.PolicyResourceTypeWorkspace:
+		resourceType = v1pb.PolicyResourceType_WORKSPACE
+	case api.PolicyResourceTypeProject:
+		resourceType = v1pb.PolicyResourceType_PROJECT
+	case api.PolicyResourceTypeDatabase:
+		resourceType = v1pb.PolicyResourceType_DATABASE
+	case api.PolicyResourceTypeInstance:
+		resourceType = v1pb.PolicyResourceType_INSTANCE
+	}
 	policy := &v1pb.Policy{
 		Uid:               fmt.Sprintf("%d", policyMessage.UID),
 		InheritFromParent: policyMessage.InheritFromParent,
 		Enforce:           policyMessage.Enforce,
+		ResourceType:      resourceType,
+		ResourceUid:       fmt.Sprintf("%d", policyMessage.ResourceUID),
+		State:             convertDeletedToState(policyMessage.Deleted),
 	}
 
 	pType := v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED
@@ -501,6 +560,13 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 			return nil, err
 		}
 		policy.Policy = payload
+	case api.PolicyTypeSlowQuery:
+		pType = v1pb.PolicyType_SLOW_QUERY
+		payload, err := convertToV1PBSlowQueryPolicy(policyMessage.Payload)
+		if err != nil {
+			return nil, err
+		}
+		policy.Policy = payload
 	}
 
 	policy.Type = pType
@@ -513,7 +579,9 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 }
 
 func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, error) {
-	payload, err := api.UnmarshalSQLReviewPolicy(payloadStr)
+	payload, err := api.UnmarshalSQLReviewPolicy(
+		api.MergeSQLReviewRulesWithoutEngine(payloadStr),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -540,7 +608,7 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 
 	return &v1pb.Policy_SqlReviewPolicy{
 		SqlReviewPolicy: &v1pb.SQLReviewPolicy{
-			Title: payload.Name,
+			Name:  payload.Name,
 			Rules: rules,
 		},
 	}, nil
@@ -569,10 +637,10 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 		})
 	}
 
-	return &advisor.SQLReviewPolicy{
-		Name:     policy.Title,
+	return api.FlattenSQLReviewRulesWithEngine(&advisor.SQLReviewPolicy{
+		Name:     policy.Name,
 		RuleList: ruleList,
-	}, nil
+	}), nil
 }
 
 func convertToV1PBAccessControlPolicy(payloadStr string) (*v1pb.Policy_AccessControlPolicy, error) {
@@ -786,6 +854,24 @@ func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolic
 	}, nil
 }
 
+func convertToV1PBSlowQueryPolicy(payloadStr string) (*v1pb.Policy_SlowQueryPolicy, error) {
+	payload, err := api.UnmarshalSlowQueryPolicy(payloadStr)
+	if err != nil {
+		return nil, err
+	}
+	return &v1pb.Policy_SlowQueryPolicy{
+		SlowQueryPolicy: &v1pb.SlowQueryPolicy{
+			Active: payload.Active,
+		},
+	}, nil
+}
+
+func convertToSlowQueryPolicyPayload(policy *v1pb.SlowQueryPolicy) (*api.SlowQueryPolicy, error) {
+	return &api.SlowQueryPolicy{
+		Active: policy.Active,
+	}, nil
+}
+
 func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentType {
 	res := v1pb.DeploymentType_DEPLOYMENT_TYPE_UNSPECIFIED
 	switch issueType {
@@ -817,6 +903,8 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeSensitiveData, nil
 	case v1pb.PolicyType_ACCESS_CONTROL.String():
 		return api.PolicyTypeAccessControl, nil
+	case v1pb.PolicyType_SLOW_QUERY.String():
+		return api.PolicyTypeSlowQuery, nil
 	}
 	return policyType, errors.Errorf("invalid policy type %v", pType)
 }

@@ -186,9 +186,15 @@ func (s *EnvironmentService) getEnvironmentMessage(ctx context.Context, name str
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
+	environmentUID, isNumber := isNumber(environmentID)
+	find := &store.FindEnvironmentMessage{}
+	if isNumber {
+		find.UID = &environmentUID
+	} else {
+		find.ResourceID = &environmentID
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
