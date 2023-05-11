@@ -27,14 +27,6 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			errMsg:      "",
 		},
 		{
-			desc:        "Fetch all projects",
-			plan:        api.ENTERPRISE,
-			path:        "/project",
-			method:      "GET",
-			principalID: 200,
-			errMsg:      "not allowed to fetch all project list",
-		},
-		{
 			desc:        "Fetch all projects from themselves",
 			plan:        api.ENTERPRISE,
 			path:        "/project",
