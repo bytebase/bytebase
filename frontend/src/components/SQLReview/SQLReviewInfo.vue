@@ -19,7 +19,7 @@
       />
       <BBTextField
         class="mt-2 w-full"
-        :value="environmentName(selectedEnvironment)"
+        :value="environmentTitleV1(selectedEnvironment)"
         :disabled="true"
       />
     </div>
@@ -53,10 +53,11 @@
 
 <script lang="ts" setup>
 import { PropType } from "vue";
-import { Environment, SQLReviewPolicyTemplate } from "@/types";
-import { environmentName } from "@/utils";
+import { SQLReviewPolicyTemplate } from "@/types";
+import { environmentTitleV1 } from "@/utils";
 import { BBTextField } from "@/bbkit";
 import { SQLReviewTemplateSelector } from "./components";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 const props = defineProps({
   name: {
@@ -64,8 +65,7 @@ const props = defineProps({
     type: String,
   },
   selectedEnvironment: {
-    required: false,
-    default: undefined,
+    required: true,
     type: Object as PropType<Environment>,
   },
   availableEnvironmentList: {
@@ -84,7 +84,6 @@ const props = defineProps({
 
 const emit = defineEmits<{
   (event: "name-change", name: string): void;
-  (event: "env-change", env: Environment): void;
   (event: "select-template", template: SQLReviewPolicyTemplate): void;
 }>();
 

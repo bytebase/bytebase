@@ -15,30 +15,24 @@
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
-import { useEnvironmentStore, featureToRef, useSQLReviewStore } from "@/store";
-import { EMPTY_ID } from "@/types";
+import { featureToRef, useSQLReviewStore } from "@/store";
+import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 
 const url = new URL(window.location.href);
 const params = new URLSearchParams(url.search);
 const environmentId = params.get("environmentId") ?? "";
-const store = useSQLReviewStore();
+const envStore = useEnvironmentV1Store();
 
 const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 watchEffect(() => {
-  store.fetchReviewPolicyList();
+  Promise.all([
+    useSQLReviewStore().fetchReviewPolicyList(),
+    envStore.getOrFetchEnvironmentByUID(environmentId),
+  ]);
 });
 
 const environment = computed(() => {
-  if (!environmentId || Number.isNaN(environmentId)) {
-    return;
-  }
-  const env = useEnvironmentStore().getEnvironmentById(
-    parseInt(environmentId, 10)
-  );
-  if (env.id === EMPTY_ID) {
-    return;
-  }
-  return env;
+  return envStore.getEnvironmentByUID(environmentId) ?? {};
 });
 </script>

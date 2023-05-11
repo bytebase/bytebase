@@ -13,7 +13,7 @@
       <template #0>
         <SQLReviewInfo
           :name="state.name"
-          :selected-environment="state.selectedEnvironment"
+          :selected-environment="props.selectedEnvironment"
           :available-environment-list="availableEnvironmentList"
           :selected-template="
             state.pendingApplyTemplate || state.selectedTemplate
@@ -21,7 +21,6 @@
           :is-edit="!!policy"
           @select-template="tryApplyTemplate"
           @name-change="(val: string) => (state.name = val)"
-          @env-change="(env: Environment) => onEnvChange(env)"
         />
       </template>
       <template #1>
@@ -53,7 +52,6 @@ import { useRouter } from "vue-router";
 import { BBStepTabItem } from "@/bbkit/types";
 import {
   RuleLevel,
-  Environment,
   RuleTemplate,
   convertToCategoryList,
   convertRuleTemplateToPolicyRule,
@@ -68,17 +66,17 @@ import SQLReviewConfig from "./SQLReviewConfig.vue";
 import {
   useCurrentUser,
   pushNotification,
-  useEnvironmentList,
   useSQLReviewStore,
   useSubscriptionStore,
 } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
 import { rulesToTemplate } from "./components";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { useEnvironmentList } from "@/store/modules/v1/environment";
 
 interface LocalState {
   currentStep: number;
   name: string;
-  selectedEnvironment: Environment;
   selectedRuleList: RuleTemplate[];
   selectedTemplate: SQLReviewPolicyTemplate | undefined;
   ruleUpdated: boolean;
@@ -90,13 +88,12 @@ const props = withDefaults(
   defineProps<{
     policy?: SQLReviewPolicy;
     name?: string;
-    selectedEnvironment?: Environment;
+    selectedEnvironment: Environment;
     selectedRuleList?: RuleTemplate[];
   }>(),
   {
     policy: undefined,
     name: "",
-    selectedEnvironment: undefined,
     selectedRuleList: () => [],
   }
 );
@@ -123,7 +120,6 @@ const STEP_LIST: BBStepTabItem[] = [
 const state = reactive<LocalState>({
   currentStep: BASIC_INFO_STEP,
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
-  selectedEnvironment: props.selectedEnvironment,
   selectedRuleList: [...props.selectedRuleList],
   selectedTemplate: props.policy
     ? rulesToTemplate(props.policy, false /* withDisabled=false */)
@@ -161,8 +157,7 @@ const onTemplateApply = (template: SQLReviewPolicyTemplate | undefined) => {
 };
 
 const availableEnvironmentList = computed((): Environment[] => {
-  const environmentList = useEnvironmentList(["NORMAL"]);
-
+  const environmentList = useEnvironmentList();
   const filteredList = store.availableEnvironments(
     environmentList.value,
     props.policy?.id
@@ -187,7 +182,7 @@ const allowNext = computed((): boolean => {
       return (
         !!state.name &&
         state.selectedRuleList.length > 0 &&
-        !!state.selectedEnvironment
+        !!props.selectedEnvironment
       );
     case CONFIGURE_RULE_STEP:
       return state.selectedRuleList.length > 0;
@@ -251,10 +246,13 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
         });
       });
   } else {
+    if (!props.selectedEnvironment) {
+      return;
+    }
     store
       .addReviewPolicy({
         ...upsert,
-        environmentId: state.selectedEnvironment?.id,
+        environmentPath: props.selectedEnvironment.name,
       })
       .then(() => {
         pushNotification({
@@ -267,10 +265,6 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
 
   allowChangeCallback();
   onCancel();
-};
-
-const onEnvChange = (env: Environment) => {
-  state.selectedEnvironment = env;
 };
 
 const tryApplyTemplate = (template: SQLReviewPolicyTemplate) => {

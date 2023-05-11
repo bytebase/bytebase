@@ -410,7 +410,9 @@ const prepareSQLReviewPolicy = () => {
   if (!environmentId.value) {
     return;
   }
-  return sqlReviewStore.fetchReviewPolicyByEnvironmentId(environmentId.value);
+  return sqlReviewStore.getOrFetchReviewPolicyByEnvironmentUID(
+    environmentId.value
+  );
 };
 watchEffect(prepareSQLReviewPolicy);
 
@@ -418,7 +420,7 @@ const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
   if (!environmentId.value) {
     return;
   }
-  return sqlReviewStore.getReviewPolicyByEnvironmentId(environmentId.value);
+  return sqlReviewStore.getReviewPolicyByEnvironmentUID(environmentId.value);
 });
 
 const handleEnvironmentNameChange = (event: InputEvent) => {
