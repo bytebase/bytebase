@@ -570,7 +570,6 @@ func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectW
 
 func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) {
 	var result []string
-
 	for _, tp := range types {
 		switch tp {
 		case v1pb.Activity_TYPE_UNSPECIFIED:
@@ -622,6 +621,57 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 	return result, nil
 }
 
+func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
+	var result []v1pb.Activity_Type
+	for _, tp := range types {
+		switch tp {
+		case string(api.ActivityIssueCreate):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_CREATE)
+		case string(api.ActivityIssueCommentCreate):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_COMMENT_CREATE)
+		case string(api.ActivityIssueFieldUpdate):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE)
+		case string(api.ActivityIssueStatusUpdate):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE)
+		case string(api.ActivityPipelineStageStatusUpdate):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
+		case string(api.ActivityPipelineTaskStatusUpdate):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE)
+		case string(api.ActivityPipelineTaskFileCommit):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT)
+		case string(api.ActivityPipelineTaskStatementUpdate):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE)
+		case string(api.ActivityPipelineTaskEarliestAllowedTimeUpdate):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE)
+		case string(api.ActivityMemberCreate):
+			result = append(result, v1pb.Activity_TYPE_MEMBER_CREATE)
+		case string(api.ActivityMemberRoleUpdate):
+			result = append(result, v1pb.Activity_TYPE_MEMBER_ROLE_UPDATE)
+		case string(api.ActivityMemberActivate):
+			result = append(result, v1pb.Activity_TYPE_MEMBER_ACTIVATE)
+		case string(api.ActivityMemberDeactivate):
+			result = append(result, v1pb.Activity_TYPE_MEMBER_DEACTIVATE)
+		case string(api.ActivityProjectRepositoryPush):
+			result = append(result, v1pb.Activity_TYPE_PROJECT_REPOSITORY_PUSH)
+		case string(api.ActivityProjectDatabaseTransfer):
+			result = append(result, v1pb.Activity_TYPE_PROJECT_DATABASE_TRANSFER)
+		case string(api.ActivityProjectMemberCreate):
+			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_CREATE)
+		case string(api.ActivityProjectMemberDelete):
+			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_DELETE)
+		case string(api.ActivityProjectMemberRoleUpdate):
+			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_ROLE_UPDATE)
+		case string(api.ActivitySQLEditorQuery):
+			result = append(result, v1pb.Activity_TYPE_SQL_EDITOR_QUERY)
+		case string(api.ActivityDatabaseRecoveryPITRDone):
+			result = append(result, v1pb.Activity_TYPE_DATABASE_RECOVERY_PITR_DONE)
+		default:
+			result = append(result, v1pb.Activity_TYPE_UNSPECIFIED)
+		}
+	}
+	return result
+}
+
 func convertToAPIWebhookTypeString(tp v1pb.Webhook_Type) (string, error) {
 	switch tp {
 	case v1pb.Webhook_TYPE_UNSPECIFIED:
@@ -643,6 +693,27 @@ func convertToAPIWebhookTypeString(tp v1pb.Webhook_Type) (string, error) {
 		return "bb.plugin.webhook.custom", nil
 	default:
 		return "", common.Errorf(common.Invalid, "webhook type %q is not supported", tp)
+	}
+}
+
+func convertWebhookTypeString(tp string) v1pb.Webhook_Type {
+	switch tp {
+	case "bb.plugin.webhook.slack":
+		return v1pb.Webhook_TYPE_SLACK
+	case "bb.plugin.webhook.discord":
+		return v1pb.Webhook_TYPE_DISCORD
+	case "bb.plugin.webhook.teams":
+		return v1pb.Webhook_TYPE_TEAMS
+	case "bb.plugin.webhook.dingtalk":
+		return v1pb.Webhook_TYPE_DINGTALK
+	case "bb.plugin.webhook.feishu":
+		return v1pb.Webhook_TYPE_FEISHU
+	case "bb.plugin.webhook.wecom":
+		return v1pb.Webhook_TYPE_WECOM
+	case "bb.plugin.webhook.custom":
+		return v1pb.Webhook_TYPE_CUSTOM
+	default:
+		return v1pb.Webhook_TYPE_UNSPECIFIED
 	}
 }
 
@@ -821,6 +892,16 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		schemaChange = v1pb.SchemaChange_SDL
 	}
 
+	var projectWebhooks []*v1pb.Webhook
+	for _, webhook := range projectMessage.Webhooks {
+		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
+			Type:              convertWebhookTypeString(webhook.Type),
+			Title:             webhook.Title,
+			Url:               webhook.URL,
+			NotificationTypes: convertNotificationTypeStrings(webhook.ActivityList),
+		})
+	}
+
 	return &v1pb.Project{
 		Name:           fmt.Sprintf("%s%s", projectNamePrefix, projectMessage.ResourceID),
 		Uid:            fmt.Sprintf("%d", projectMessage.UID),
@@ -834,6 +915,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		// TODO(d): schema_version_type for project.
 		SchemaVersion: v1pb.SchemaVersion_SCHEMA_VERSION_UNSPECIFIED,
 		SchemaChange:  schemaChange,
+		Webhooks:      projectWebhooks,
 	}
 }
 
