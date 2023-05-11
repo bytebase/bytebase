@@ -15,7 +15,7 @@ import { useTabStore } from "./tab";
 import { useCurrentUserIamPolicy } from "./v1";
 
 // set the limit to 10000 temporarily to avoid the query timeout and page crash
-export const RESULT_ROWS_LIMIT = 10000;
+export const RESULT_ROWS_LIMIT = 1000;
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
