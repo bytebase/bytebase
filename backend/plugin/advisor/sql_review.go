@@ -904,6 +904,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLColumnMaximumCharacterLength, nil
 		case db.Postgres:
 			return PostgreSQLColumnMaximumCharacterLength, nil
+		case db.Oracle:
+			return OracleColumnMaximumCharacterLength, nil
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {
