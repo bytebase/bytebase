@@ -1155,6 +1155,7 @@ func getDatabasesFromQuery(engine db.Type, databaseName, statement string) ([]st
 					return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", databaseName, name))
 				}
 			}
+			return []string{databaseName}, nil
 		}
 		return databases, nil
 	}
