@@ -309,7 +309,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", database.DatabaseName)).SetInternal(err)
 				}
 				if !ok {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", database.DatabaseName))
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Permission denied to access database %q", database.DatabaseName))
 				}
 				usedExpression = ue
 			}
