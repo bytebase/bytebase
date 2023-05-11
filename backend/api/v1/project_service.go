@@ -49,16 +49,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListProjectsResponse{}
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	role := ctx.Value(common.RoleContextKey).(api.Role)
 	for _, project := range projects {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if !isOwnerOrDBA(role) && !isProjectMember(policy, principalID) {
-			continue
-		}
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
 	return response, nil

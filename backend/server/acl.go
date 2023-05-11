@@ -189,14 +189,6 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 	var permission api.ProjectPermissionType
 	var permissionErrMsg string
 	if method == "GET" {
-		if path == "/project" {
-			userIDStr := quaryParams.Get("user")
-			if userIDStr != "" {
-				if strconv.Itoa(principalID) != userIDStr {
-					return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch projects from other user")
-				}
-			}
-		}
 		// For /project/xxx subroutes, since all projects are public, we don't enforce ACL.
 	} else {
 		if matches := projectMemberRouteRegex.FindStringSubmatch(path); matches != nil {
@@ -237,27 +229,6 @@ var databaseGeneralRouteRegex = regexp.MustCompile(`^/database/(?P<databaseID>\d
 func enforceWorkspaceDeveloperDatabaseRouteACL(plan api.PlanType, path string, method string, body string, principalID int, projectIDOfDatabase func(databaseID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
 	switch method {
 	case http.MethodGet:
-		// For /database route, server should list the databases that the user has access to.
-		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
-			// For /database/xxx subroutes, since Developer cannot retrieve the database if it's not a member of the project which owns the database.
-
-			// Get the database ID from the path.
-			dbID, err := strconv.Atoi(matches[1])
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Invalid database id").SetInternal(err)
-			}
-			projectID, err := projectIDOfDatabase(dbID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request").SetInternal(err)
-			}
-			projectRoles, err := projectRolesFinder(projectID, principalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request").SetInternal(err)
-			}
-			if len(projectRoles) == 0 {
-				return echo.NewHTTPError(http.StatusUnauthorized, "user is not a member of project owns this database")
-			}
-		}
 	case http.MethodPatch:
 		// PATCH /database/xxx
 		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
