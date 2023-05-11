@@ -294,7 +294,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			// TODO(d): perfect matching condition expression.
 			var usedExpression string
 			for _, database := range databases {
-				databaseResourceURL := fmt.Sprintf("environments/%s/instances/%s/databases/%s", environment.ResourceID, instance.ResourceID, database.DatabaseName)
+				databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)
 				attributes := map[string]any{
 					"request.time":          time.Now(),
 					"resource.database":     databaseResourceURL,
