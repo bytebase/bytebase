@@ -1,12 +1,4 @@
-import {
-  RowStatus,
-  Environment,
-  IssueType,
-  PolicyId,
-  RuleType,
-  RuleLevel,
-  SubsetOf,
-} from ".";
+import { RowStatus, Environment, IssueType, PolicyId, SubsetOf } from ".";
 
 export type PolicyType =
   | "bb.policy.pipeline-approval"
