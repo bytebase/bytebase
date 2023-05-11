@@ -13,7 +13,6 @@ import {
 import { IssueReviewContext, provideIssueReviewContext } from "./context";
 import { ApprovalTemplate } from "@/types/proto/store/approval";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
-import { isGrantRequestIssueType } from "@/utils";
 
 export type ReviewEvents = {
   "issue-status-changed": boolean;
@@ -24,9 +23,6 @@ export const extractIssueReviewContext = (
   review: ComputedRef<Review>
 ): IssueReviewContext => {
   const ready = computed(() => {
-    if (issue.value && isGrantRequestIssueType(issue.value?.type)) {
-      return true;
-    }
     return review.value.approvalFindingDone ?? false;
   });
   const flow = computed((): ReviewFlow => {
@@ -42,9 +38,6 @@ export const extractIssueReviewContext = (
   const done = computed(() => {
     if (!ready.value) return false;
     if (review.value.approvalFindingError) return false;
-    if (issue.value && isGrantRequestIssueType(issue.value?.type)) {
-      return issue.value.status === "DONE";
-    }
 
     const { template, approvers } = flow.value;
     const steps = template.flow?.steps ?? [];

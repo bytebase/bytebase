@@ -38,7 +38,6 @@
       </h2>
       <!-- Only DBA can be assigned to the issue -->
       <div class="col-span-2" data-label="bb-assignee-select-container">
-        <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           class="w-full"
           :disabled="!allowEditAssignee"
