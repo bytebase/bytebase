@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 )
 
 // PolicyType is the type or name of a policy.
@@ -82,8 +83,8 @@ const (
 )
 
 var (
-	// allowedResourceTypes includes allowed resource types for each policy type.
-	allowedResourceTypes = map[PolicyType][]PolicyResourceType{
+	// AllowedResourceTypes includes allowed resource types for each policy type.
+	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
 		PolicyTypePipelineApproval: {PolicyResourceTypeEnvironment},
 		PolicyTypeBackupPlan:       {PolicyResourceTypeEnvironment},
 		PolicyTypeSQLReview:        {PolicyResourceTypeEnvironment},
@@ -324,7 +325,7 @@ func UnmarshalEnvironmentTierPolicy(payload string) (*EnvironmentTierPolicy, err
 
 // ValidatePolicyType will validate the policy type.
 func ValidatePolicyType(pType PolicyType) error {
-	if _, ok := allowedResourceTypes[pType]; !ok {
+	if _, ok := AllowedResourceTypes[pType]; !ok {
 		return errors.Errorf("invalid policy type: %s", pType)
 	}
 	return nil
@@ -333,7 +334,7 @@ func ValidatePolicyType(pType PolicyType) error {
 // ValidatePolicy will validate the policy resource type, type and payload values.
 func ValidatePolicy(resourceType PolicyResourceType, pType PolicyType, payload *string) error {
 	hasResourceType := false
-	for _, rt := range allowedResourceTypes[pType] {
+	for _, rt := range AllowedResourceTypes[pType] {
 		if rt == resourceType {
 			hasResourceType = true
 		}
@@ -465,4 +466,85 @@ func GetPolicyResourceType(resourceType string) (PolicyResourceType, error) {
 		return PolicyResourceTypeUnknown, errors.Errorf("invalid policy resource type %q", rt)
 	}
 	return rt, nil
+}
+
+// FlattenSQLReviewRulesWithEngine will map SQL review rules with engine.
+func FlattenSQLReviewRulesWithEngine(policy *advisor.SQLReviewPolicy) *advisor.SQLReviewPolicy {
+	var ruleList []*advisor.SQLReviewRule
+	for i, rule := range policy.RuleList {
+		if rule.Engine != "" {
+			ruleList = append(ruleList, policy.RuleList[i])
+		} else {
+			if advisor.RuleExists(rule.Type, db.MySQL) {
+				ruleList = append(ruleList, &advisor.SQLReviewRule{
+					Type:    rule.Type,
+					Level:   rule.Level,
+					Engine:  db.MySQL,
+					Comment: rule.Comment,
+					Payload: rule.Payload,
+				})
+			}
+			if advisor.RuleExists(rule.Type, db.TiDB) {
+				ruleList = append(ruleList, &advisor.SQLReviewRule{
+					Type:    rule.Type,
+					Level:   rule.Level,
+					Engine:  db.TiDB,
+					Comment: rule.Comment,
+					Payload: rule.Payload,
+				})
+			}
+			if advisor.RuleExists(rule.Type, db.MariaDB) {
+				ruleList = append(ruleList, &advisor.SQLReviewRule{
+					Type:    rule.Type,
+					Level:   rule.Level,
+					Engine:  db.MariaDB,
+					Comment: rule.Comment,
+					Payload: rule.Payload,
+				})
+			}
+			if advisor.RuleExists(rule.Type, db.Postgres) {
+				ruleList = append(ruleList, &advisor.SQLReviewRule{
+					Type:    rule.Type,
+					Level:   rule.Level,
+					Engine:  db.Postgres,
+					Comment: rule.Comment,
+					Payload: rule.Payload,
+				})
+			}
+		}
+	}
+
+	policy.RuleList = ruleList
+	return policy
+}
+
+// MergeSQLReviewRulesWithoutEngine will merge SQL review rules without engine.
+func MergeSQLReviewRulesWithoutEngine(payload string) string {
+	policy, err := UnmarshalSQLReviewPolicy(payload)
+	if err != nil {
+		return payload
+	}
+
+	ruleMap := make(map[advisor.SQLReviewRuleType]bool)
+	var ruleList []*advisor.SQLReviewRule
+	for _, rule := range policy.RuleList {
+		if _, exists := ruleMap[rule.Type]; exists {
+			continue
+		}
+		ruleMap[rule.Type] = true
+
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Type:    rule.Type,
+			Level:   rule.Level,
+			Comment: rule.Comment,
+			Payload: rule.Payload,
+		})
+	}
+
+	policy.RuleList = ruleList
+	result, err := json.Marshal(policy)
+	if err != nil {
+		return payload
+	}
+	return string(result)
 }

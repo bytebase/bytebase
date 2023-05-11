@@ -148,7 +148,8 @@ type PolicyMessage struct {
 	Enforce           bool
 
 	// Output only.
-	UID int
+	UID     int
+	Deleted bool
 }
 
 // FindPolicyMessage is the message for finding policies.
@@ -156,6 +157,7 @@ type FindPolicyMessage struct {
 	ResourceType *api.PolicyResourceType
 	ResourceUID  *int
 	Type         *api.PolicyType
+	ShowDeleted  bool
 }
 
 // UpdatePolicyMessage is the message for updating a policy.
@@ -167,6 +169,7 @@ type UpdatePolicyMessage struct {
 	InheritFromParent *bool
 	Payload           *string
 	Enforce           *bool
+	Delete            *bool
 }
 
 // GetPolicyV2 gets a policy.
@@ -186,6 +189,8 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 	}
 	defer tx.Rollback()
 
+	// We will always return the resource regardless of its deleted state.
+	find.ShowDeleted = true
 	policies, err := s.listPolicyImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
@@ -273,6 +278,13 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		}
 		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
+	if v := patch.Delete; v != nil {
+		rowStatus := api.Normal
+		if *patch.Delete {
+			rowStatus = api.Archived
+		}
+		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+	}
 	args = append(args, patch.ResourceType, patch.ResourceUID, patch.Type)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -310,6 +322,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	if rowStatus == string(api.Normal) {
 		policy.Enforce = true
 	}
+	policy.Deleted = convertRowStatusToDeleted(rowStatus)
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -397,6 +410,9 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
@@ -434,6 +450,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 		if rowStatus == api.Normal {
 			policyMessage.Enforce = true
 		}
+		policyMessage.Deleted = convertRowStatusToDeleted(string(rowStatus))
 		policyList = append(policyList, &policyMessage)
 	}
 	if err := rows.Err(); err != nil {

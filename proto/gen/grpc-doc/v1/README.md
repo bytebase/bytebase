@@ -221,11 +221,13 @@
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
     - [SensitiveData](#bytebase-v1-SensitiveData)
     - [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy)
+    - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
     - [ApprovalGroup](#bytebase-v1-ApprovalGroup)
     - [ApprovalStrategy](#bytebase-v1-ApprovalStrategy)
     - [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule)
+    - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
     - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
     - [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType)
@@ -3390,10 +3392,12 @@ ACTION_SQL_EDITOR_QUERY is the type for SQL editor query. If user runs SQL in Re
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id}/policies/{policy type} |
+| policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
 | page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `GetPolicies` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
 
 
 
@@ -3433,7 +3437,11 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | sensitive_data_policy | [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy) |  |  |
 | access_control_policy | [AccessControlPolicy](#bytebase-v1-AccessControlPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
+| slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
+| resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
+| resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
+| state | [State](#bytebase-v1-State) |  |  |
 
 
 
@@ -3448,7 +3456,7 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  |  |
+| name | [string](#string) |  |  |
 | rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
 
 
@@ -3502,6 +3510,21 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sensitive_data | [SensitiveData](#bytebase-v1-SensitiveData) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SlowQueryPolicy"></a>
+
+### SlowQueryPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
 
 
 
@@ -3569,6 +3592,22 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
 
+<a name="bytebase-v1-PolicyResourceType"></a>
+
+### PolicyResourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESOURCE_TYPE_UNSPECIFIED | 0 |  |
+| WORKSPACE | 1 |  |
+| ENVIRONMENT | 2 |  |
+| PROJECT | 3 |  |
+| INSTANCE | 4 |  |
+| DATABASE | 5 |  |
+
+
+
 <a name="bytebase-v1-PolicyType"></a>
 
 ### PolicyType
@@ -3582,6 +3621,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | SQL_REVIEW | 3 |  |
 | SENSITIVE_DATA | 4 |  |
 | ACCESS_CONTROL | 5 |  |
+| SLOW_QUERY | 6 |  |
 
 
 
