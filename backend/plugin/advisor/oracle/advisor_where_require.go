@@ -73,7 +73,7 @@ func (l *whereRequireListener) EnterUpdate_statement(ctx *parser.Update_statemen
 			Status:  l.level,
 			Code:    advisor.StatementNoWhere,
 			Title:   l.title,
-			Content: "WHERE clause is required for INSERT statement.",
+			Content: "WHERE clause is required for UPDATE statement.",
 			Line:    ctx.GetStop().GetLine(),
 		})
 	}
