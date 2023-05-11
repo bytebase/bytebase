@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE t(name varchar(225));
   want:
     - status: SUCCESS
@@ -12,24 +13,28 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: CREATE TABLE t(name char(225));
   want:
     - status: WARN
       code: 415
       title: column.maximum-character-length
-      content: The length of the CHAR column "name" in table "t" is bigger than 20, please use VARCHAR instead
+      content: The maximum character length is 20.
       line: 1
-- statement: ALTER TABLE public.tech_book ADD COLUMN name_2 char(225)
+      details: ""
+- statement: ALTER TABLE public.tech_book ADD name_2 char(225)
   want:
     - status: WARN
       code: 415
       title: column.maximum-character-length
-      content: The length of the CHAR column "name_2" in table "public"."tech_book" is bigger than 20, please use VARCHAR instead
+      content: The maximum character length is 20.
       line: 1
-- statement: ALTER TABLE tech_book ALTER COLUMN name SET DATA TYPE char(225)
+      details: ""
+- statement: ALTER TABLE tech_book MODIFY name char(225)
   want:
     - status: WARN
       code: 415
       title: column.maximum-character-length
-      content: The length of the CHAR column "name" in table "tech_book" is bigger than 20, please use VARCHAR instead
+      content: The maximum character length is 20.
       line: 1
+      details: ""
