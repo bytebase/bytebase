@@ -1,4 +1,4 @@
-import { computed, ref, unref, watch } from "vue";
+import { computed, onMounted, ref, unref, watch } from "vue";
 import { defineStore } from "pinia";
 
 import { IamPolicy } from "@/types/proto/v1/project_service";
@@ -6,6 +6,7 @@ import { projectServiceClient } from "@/grpcweb";
 import { MaybeRef } from "@/types";
 import { useProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
+import { useCurrentUserV1 } from "../auth";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -47,9 +48,11 @@ export const useProjectIamPolicyStore = defineStore(
       );
       await useProjectStore().fetchProjectById(parseInt(projectEntity.uid, 10));
     };
+
     const getProjectIamPolicy = (project: string) => {
       return policyMap.value.get(project) ?? IamPolicy.fromJSON({});
     };
+
     const getOrFetchProjectIamPolicy = async (project: string) => {
       if (!policyMap.value.has(project)) {
         await fetchProjectIamPolicy(project);
@@ -84,4 +87,39 @@ export const useProjectIamPolicy = (project: MaybeRef<string>) => {
     return store.policyMap.get(unref(project)) ?? IamPolicy.fromJSON({});
   });
   return { policy, ready };
+};
+
+export const useCurrentUserIamPolicy = () => {
+  const iamPolicyStore = useProjectIamPolicyStore();
+  const projectStore = useProjectV1Store();
+  const currentUser = useCurrentUserV1();
+
+  onMounted(async () => {
+    for (const project of projectStore.projectList) {
+      await iamPolicyStore.getOrFetchProjectIamPolicy(project.name);
+    }
+  });
+
+  const allowToChangeDatabaseOfProject = (projectName: string) => {
+    const policy = iamPolicyStore.policyMap.get(projectName);
+    if (!policy) {
+      return false;
+    }
+    for (const binding of policy.bindings) {
+      if (
+        (binding.role === "roles/OWNER" ||
+          binding.role === "roles/DEVELOPER") &&
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  return {
+    allowToChangeDatabaseOfProject,
+  };
 };

@@ -106,6 +106,7 @@
           </dl>
         </div>
         <div
+          v-if="allowToChangeDatabase"
           class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
           data-label="bb-database-detail-action-buttons-container"
         >
@@ -346,6 +347,7 @@ import { SQLEditorButton } from "@/components/DatabaseDetail";
 import {
   pushNotification,
   useCurrentUser,
+  useCurrentUserIamPolicy,
   useDatabaseStore,
   useDBSchemaStore,
   usePolicyByDatabaseAndType,
@@ -382,6 +384,10 @@ const sqlStore = useSQLStore();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
 const databaseTabItemList = computed((): DatabaseTabItem[] => {
+  if (!allowToChangeDatabase.value) {
+    return [{ name: t("common.overview"), hash: "overview" }];
+  }
+
   return [
     { name: t("common.overview"), hash: "overview" },
     { name: t("change-history.self"), hash: "change-history" },
@@ -402,9 +408,16 @@ const state = reactive<LocalState>({
 });
 
 const currentUser = useCurrentUser();
+const currentUserIamPolicy = useCurrentUserIamPolicy();
 
 const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
+});
+
+const allowToChangeDatabase = computed(() => {
+  return currentUserIamPolicy.allowToChangeDatabaseOfProject(
+    `projects/${database.value.project.resourceId}`
+  );
 });
 
 const hasSchemaDiagramFeature = computed((): boolean => {
