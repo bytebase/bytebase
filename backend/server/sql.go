@@ -1059,8 +1059,6 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, p
 			if member.ID != principalID {
 				continue
 			}
-			fmt.Println("Barny1", binding.Condition.Expression)
-			fmt.Println("Barny2", attributes)
 			ok, err := evaluateCondition(binding.Condition.Expression, attributes)
 			if err != nil {
 				log.Error("failed to evaluate condition", zap.Error(err), zap.String("condition", binding.Condition.Expression))
