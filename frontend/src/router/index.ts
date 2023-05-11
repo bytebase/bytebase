@@ -572,7 +572,7 @@ const routes: Array<RouteRecordRaw> = [
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.sqlReviewPolicySlug as string;
                     return (
-                      useSQLReviewStore().getReviewPolicyByEnvironmentId(
+                      useSQLReviewStore().getReviewPolicyByEnvironmentUID(
                         idFromSlug(slug)
                       )?.name ?? ""
                     );
@@ -1572,7 +1572,7 @@ router.beforeEach((to, from, next) => {
 
   if (sqlReviewPolicySlug) {
     useSQLReviewStore()
-      .fetchReviewPolicyByEnvironmentId(idFromSlug(sqlReviewPolicySlug))
+      .getOrFetchReviewPolicyByEnvironmentUID(idFromSlug(sqlReviewPolicySlug))
       .then(() => {
         next();
       })

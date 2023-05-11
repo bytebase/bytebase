@@ -1,6 +1,5 @@
 import {
   convertPolicyRuleToRuleTemplate,
-  Environment,
   RuleConfigComponent,
   RuleLevel,
   RuleTemplate,
@@ -9,9 +8,10 @@ import {
   TEMPLATE_LIST,
 } from "@/types";
 import { PayloadValueType } from "./RuleConfigComponents";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 export const templateIdForEnvironment = (environment: Environment): string => {
-  return `bb.sql-review.environment-policy.${environment.resourceId}`;
+  return `bb.sql-review.environment-policy.${environment.name}`;
 };
 
 export const rulesToTemplate = (

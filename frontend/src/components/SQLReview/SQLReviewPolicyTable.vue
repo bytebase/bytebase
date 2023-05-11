@@ -13,9 +13,11 @@
       }"
     >
       <div class="bb-grid-cell">
-        <router-link :to="`/environment/${environment.id}`">
-          {{ environment.name }}
-          <ProductionEnvironmentIcon :environment="environment" />
+        <router-link :to="`/environment/${environment.uid}`">
+          {{ environmentTitleV1(environment) }}
+          <ProductionEnvironmentIcon
+            :tier="environmentTierToJSON(environment.tier)"
+          />
         </router-link>
       </div>
       <div class="bb-grid-cell">
@@ -73,15 +75,16 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
 import { BBButtonConfirm, BBCheckbox, BBGrid, BBGridColumn } from "@/bbkit";
-import {
-  pushNotification,
-  useCurrentUser,
-  useEnvironmentList,
-  useSQLReviewStore,
-} from "@/store";
+import { pushNotification, useCurrentUser, useSQLReviewStore } from "@/store";
 import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
-import { Environment, SQLReviewPolicy } from "@/types";
+import { SQLReviewPolicy } from "@/types";
 import ProductionEnvironmentIcon from "../Environment/ProductionEnvironmentIcon.vue";
+import {
+  Environment,
+  environmentTierToJSON,
+} from "@/types/proto/v1/environment_service";
+import { useEnvironmentList } from "@/store/modules/v1/environment";
+import { environmentTitleV1 } from "@/utils";
 
 type EnvironmentReviewPolicy = {
   environment: Environment;
@@ -135,7 +138,7 @@ const reviewPolicyList = computed(() => sqlReviewStore.reviewPolicyList);
 const combinedList = computed(() => {
   return environmentList.value.map<EnvironmentReviewPolicy>((environment) => {
     const review = reviewPolicyList.value.find(
-      (review) => review.environment.id === environment.id
+      (review) => review.environment.name === environment.name
     );
     return {
       environment,
@@ -156,7 +159,7 @@ const handleClickCreate = (environment: Environment) => {
     router.push({
       name: "setting.workspace.sql-review.create",
       query: {
-        environmentId: environment.id,
+        environmentId: environment.uid,
       },
     });
   } else {

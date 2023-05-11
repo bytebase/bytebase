@@ -22,11 +22,11 @@
         <BBBadge
           v-if="reviewPolicy.environment"
           :can-remove="false"
-          :link="`/environment/${reviewPolicy.environment.id}`"
+          :link="`/environment/${reviewPolicy.environment.uid}`"
         >
-          {{ reviewPolicy.environment.name }}
+          {{ environmentTitleV1(reviewPolicy.environment) }}
           <ProductionEnvironmentIcon
-            :environment="reviewPolicy.environment"
+            :tier="environmentTierToJSON(reviewPolicy.environment.tier)"
             class="!text-current ml-1"
           />
         </BBBadge>
@@ -74,9 +74,7 @@
       </div>
     </div>
     <BBAttention
-      v-if="
-        !reviewPolicy.environment || reviewPolicy.environment.id === UNKNOWN_ID
-      "
+      v-if="!reviewPolicy.environment"
       class="my-5"
       :style="`WARN`"
       :title="$t('sql-review.create.basic-info.no-linked-environments')"
@@ -96,7 +94,7 @@
       @comment-change="onCommentChange"
     />
     <BBButtonConfirm
-      class="mt-2"
+      class="my-5"
       :disabled="!hasPermission"
       :style="'DELETE'"
       :button-text="$t('sql-review.delete')"
@@ -163,7 +161,6 @@ import {
   RuleType,
   TEMPLATE_LIST,
   convertPolicyRuleToRuleTemplate,
-  UNKNOWN_ID,
   ruleIsAvailableInSubscription,
   convertRuleTemplateToPolicyRule,
 } from "@/types";
@@ -184,6 +181,8 @@ import {
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
 import { cloneDeep } from "lodash-es";
+import { environmentTierToJSON } from "@/types/proto/v1/environment_service";
+import { environmentTitleV1 } from "@/utils";
 
 const props = defineProps({
   sqlReviewPolicySlug: {
@@ -233,7 +232,7 @@ const hasPermission = computed(() => {
 
 const reviewPolicy = computed((): SQLReviewPolicy => {
   return (
-    store.getReviewPolicyByEnvironmentId(
+    store.getReviewPolicyByEnvironmentUID(
       idFromSlug(props.sqlReviewPolicySlug)
     ) || (unknown("SQL_REVIEW") as SQLReviewPolicy)
   );
