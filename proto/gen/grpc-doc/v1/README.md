@@ -3396,6 +3396,7 @@ ACTION_SQL_EDITOR_QUERY is the type for SQL editor query. If user runs SQL in Re
 | page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `GetPolicies` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
 
 
 

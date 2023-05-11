@@ -403,6 +403,8 @@ export interface ListPoliciesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** Show deleted policies if specified. */
+  showDeleted: boolean;
 }
 
 export interface ListPoliciesResponse {
@@ -775,7 +777,7 @@ export const GetPolicyRequest = {
 };
 
 function createBaseListPoliciesRequest(): ListPoliciesRequest {
-  return { parent: "", policyType: undefined, pageSize: 0, pageToken: "" };
+  return { parent: "", policyType: undefined, pageSize: 0, pageToken: "", showDeleted: false };
 }
 
 export const ListPoliciesRequest = {
@@ -791,6 +793,9 @@ export const ListPoliciesRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(34).string(message.pageToken);
+    }
+    if (message.showDeleted === true) {
+      writer.uint32(40).bool(message.showDeleted);
     }
     return writer;
   },
@@ -830,6 +835,13 @@ export const ListPoliciesRequest = {
 
           message.pageToken = reader.string();
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.showDeleted = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -845,6 +857,7 @@ export const ListPoliciesRequest = {
       policyType: isSet(object.policyType) ? policyTypeFromJSON(object.policyType) : undefined,
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
     };
   },
 
@@ -855,6 +868,7 @@ export const ListPoliciesRequest = {
       (obj.policyType = message.policyType !== undefined ? policyTypeToJSON(message.policyType) : undefined);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
@@ -868,6 +882,7 @@ export const ListPoliciesRequest = {
     message.policyType = object.policyType ?? undefined;
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };

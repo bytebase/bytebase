@@ -157,6 +157,7 @@ type FindPolicyMessage struct {
 	ResourceType *api.PolicyResourceType
 	ResourceUID  *int
 	Type         *api.PolicyType
+	ShowDeleted  bool
 }
 
 // UpdatePolicyMessage is the message for updating a policy.
@@ -188,6 +189,8 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 	}
 	defer tx.Rollback()
 
+	// We will always return the resource regardless of its deleted state.
+	find.ShowDeleted = true
 	policies, err := s.listPolicyImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
@@ -406,6 +409,9 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	}
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+	}
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
