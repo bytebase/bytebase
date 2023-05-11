@@ -14,8 +14,16 @@ export default defineComponent({
       const currentUser = useCurrentUserV1();
       const issueCreate = cloneDeep(issue.value as IssueCreate);
 
-      // Transform create context into CEL condition.
-      const context = issueCreate.createContext as GrantRequestContext;
+      const context: GrantRequestContext = {
+        ...{
+          databases: [],
+          expireDays: 7,
+          maxRowCount: 1000,
+          statement: "",
+          exportFormat: "CSV",
+        },
+        ...(issueCreate.createContext as GrantRequestContext),
+      };
       const expression: string[] = [];
       if (context.role === "QUERIER") {
         if (Array.isArray(context.databases) && context.databases.length > 0) {
