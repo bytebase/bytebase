@@ -34,6 +34,9 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     if (create.value) {
       return false;
     }
+    if (!isDatabaseRelatedIssueType(issue.value.type)) {
+      return false;
+    }
 
     if (
       allowUserToBeAssignee(
@@ -162,13 +165,13 @@ export const calcApplicableIssueStatusTransitionList = (
   }
 
   const applicableTransitionList: IssueStatusTransition[] = [];
-  if (isDatabaseRelatedIssueType(issue.type)) {
-    const currentTask = activeTask(issue.pipeline);
-    const flattenTaskList = allTaskList(issue.pipeline);
-    transitionTypeList.forEach((type) => {
-      const transition = ISSUE_STATUS_TRANSITION_LIST.get(type);
-      if (!transition) return;
+  transitionTypeList.forEach((type) => {
+    const transition = ISSUE_STATUS_TRANSITION_LIST.get(type);
+    if (!transition) return;
 
+    if (isDatabaseRelatedIssueType(issue.type)) {
+      const currentTask = activeTask(issue.pipeline);
+      const flattenTaskList = allTaskList(issue.pipeline);
       if (flattenTaskList.some((task) => task.status === "RUNNING")) {
         // Disallow any issue status transition if some of the tasks are in RUNNING state.
         return;
@@ -187,9 +190,9 @@ export const calcApplicableIssueStatusTransitionList = (
           }
         }
       }
-      applicableTransitionList.push(transition);
-    });
-  }
+    }
+    applicableTransitionList.push(transition);
+  });
   return applicableTransitionList;
 };
 
