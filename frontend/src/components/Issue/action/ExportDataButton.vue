@@ -197,5 +197,6 @@ const handleExport = async () => {
   link.download = `${filename}.${fileFormat}`;
   link.href = encodedUri;
   link.click();
+  state.isRequesting = false;
 };
 </script>
