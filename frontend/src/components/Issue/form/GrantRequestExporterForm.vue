@@ -80,8 +80,8 @@
       </div>
     </div>
     <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center">SQL</span>
-      <div class="whitespace-pre-wrap mt-2 w-full overflow-hidden border">
+      <span class="flex w-40 items-center shrink-0">SQL</span>
+      <div class="whitespace-pre-wrap w-full overflow-hidden border">
         <MonacoEditor
           ref="editorRef"
           class="w-full h-[360px]"
