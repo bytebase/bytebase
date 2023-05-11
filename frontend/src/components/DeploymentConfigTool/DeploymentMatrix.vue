@@ -23,13 +23,14 @@
           @change-text="(text: string) => (state.keyword = text)"
         />
       </div>
-
-      <DeployDatabaseTable
-        :database-list="filteredDatabaseList"
-        :label="state.label"
-        :environment-list="environmentList"
-        :deployment="deployment"
-      />
+      <div class="w-full overflow-x-auto">
+        <DeployDatabaseTable
+          :database-list="filteredDatabaseList"
+          :label="state.label"
+          :environment-list="environmentList"
+          :deployment="deployment"
+        />
+      </div>
     </template>
   </div>
 </template>
