@@ -18,7 +18,10 @@ import {
   pushNotification,
   useActuatorStore,
   useAuthStore,
+  useDatabaseStore,
   useIdentityProviderStore,
+  useProjectStore,
+  useProjectV1Store,
   useSubscriptionStore,
 } from "./store";
 import {
@@ -170,6 +173,15 @@ const initIdentityProvider = () => {
   const idpStore = useIdentityProviderStore();
   return idpStore.fetchIdentityProviderList();
 };
+const initProjectList = () => {
+  const store = useProjectStore();
+  const storeV1 = useProjectV1Store();
+  return Promise.all([store.fetchProjectList(), storeV1.fetchProjectList()]);
+};
+const initDatabaseList = () => {
+  const store = useDatabaseStore();
+  return store.fetchDatabaseList();
+};
 const restoreUser = () => {
   const authStore = useAuthStore();
   return authStore.restoreUser();
@@ -179,6 +191,9 @@ Promise.all([
   initFeatureMatrix(),
   initSubscription(),
   initIdentityProvider(),
+  // Initial project list and database list in global.
+  initProjectList(),
+  initDatabaseList(),
   restoreUser(),
 ]).finally(() => {
   // Install router after the necessary data fetching is complete.
