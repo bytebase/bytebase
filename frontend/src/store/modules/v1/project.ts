@@ -67,6 +67,15 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     }
     return fetchProjectByName(name);
   };
+  const getOrFetchProjectByUID = async (uid: IdType) => {
+    const cachedData = projectList.value.find(
+      (project) => parseInt(project.uid, 10) === uid
+    );
+    if (cachedData) {
+      return cachedData;
+    }
+    return fetchProjectByUID(uid);
+  };
   const createProject = async (project: Project, resourceId: string) => {
     const created = await projectServiceClient.createProject({
       project,
@@ -106,6 +115,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     fetchProjectByName,
     fetchProjectByUID,
     getOrFetchProjectByName,
+    getOrFetchProjectByUID,
     createProject,
     updateProject,
     archiveProject,
@@ -148,6 +158,21 @@ export const useProjectV1ListByUser = (
     });
   });
   return { projectList, ready };
+};
+
+export const useProjectV1ByUID = (uid: MaybeRef<IdType>) => {
+  const store = useProjectV1Store();
+  const ready = ref(false);
+  watchEffect(() => {
+    ready.value = false;
+    store.getOrFetchProjectByUID(unref(uid)).then(() => {
+      ready.value = true;
+    });
+  });
+  const project = computed(() => {
+    return store.getProjectByUID(unref(uid));
+  });
+  return { project, ready };
 };
 
 const composeProjectIamPolicy = async (project: Project) => {
