@@ -579,7 +579,9 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 }
 
 func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, error) {
-	payload, err := api.UnmarshalSQLReviewPolicy(payloadStr)
+	payload, err := api.UnmarshalSQLReviewPolicy(
+		api.MergeSQLReviewRulesWithoutEngine(payloadStr),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -613,7 +615,6 @@ func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPoli
 }
 
 func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQLReviewPolicy, error) {
-	// TODO:
 	var ruleList []*advisor.SQLReviewRule
 	for _, rule := range policy.Rules {
 		var level advisor.SQLReviewRuleLevel
@@ -636,10 +637,10 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 		})
 	}
 
-	return &advisor.SQLReviewPolicy{
+	return api.FlattenSQLReviewRulesWithEngine(&advisor.SQLReviewPolicy{
 		Name:     policy.Name,
 		RuleList: ruleList,
-	}, nil
+	}), nil
 }
 
 func convertToV1PBAccessControlPolicy(payloadStr string) (*v1pb.Policy_AccessControlPolicy, error) {
