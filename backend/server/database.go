@@ -55,27 +55,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch database list").SetInternal(err)
 		}
 
-		var filteredList []*api.Database
-		role := c.Get(getRoleContextKey()).(api.Role)
-		// If the caller is a developer, we will only return databases belonging to the
-		// project where the caller is a member of.
-		if role == api.Developer {
-			principalID := c.Get(getPrincipalIDContextKey()).(int)
-			for _, database := range dbList {
-				policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &database.ProjectID})
-				if err != nil {
-					return err
-				}
-				if isProjectOwnerOrDeveloper(principalID, policy) {
-					filteredList = append(filteredList, database)
-				}
-			}
-		} else {
-			filteredList = dbList
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, filteredList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dbList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database list response").SetInternal(err)
 		}
 		return nil

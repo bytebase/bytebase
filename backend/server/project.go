@@ -83,14 +83,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	g.GET("/project", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		projectFind := &api.ProjectFind{}
-		var queryUser *int
-		if userIDStr := c.QueryParam("user"); userIDStr != "" {
-			userID, err := strconv.Atoi(userIDStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIDStr)).SetInternal(err)
-			}
-			queryUser = &userID
-		}
 
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
@@ -100,24 +92,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)
 		}
-
-		// If principalID is passed, we will filter those projects with the current principal having the role provider
-		// different from the project's current role provider.
-		if queryUser != nil {
-			var ps []*api.Project
-			principalID := *queryUser
-			for _, project := range projectList {
-				projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-				if err != nil {
-					return err
-				}
-				if isProjectMember(principalID, projectPolicy) {
-					ps = append(ps, project)
-				}
-			}
-			projectList = ps
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, projectList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal project list response").SetInternal(err)
@@ -1362,19 +1336,6 @@ func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMe
 		if binding.Role != api.Owner && binding.Role != api.Developer {
 			continue
 		}
-		for _, member := range binding.Members {
-			if member.ID == principalID {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// isProjectMember returns whether a principal is a project member in the project,
-// that is the principal has any role in the project.
-func isProjectMember(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
-	for _, binding := range projectPolicy.Bindings {
 		for _, member := range binding.Members {
 			if member.ID == principalID {
 				return true
