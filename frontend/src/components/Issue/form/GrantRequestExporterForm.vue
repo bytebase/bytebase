@@ -218,7 +218,11 @@ const useDatabaseAndTableList = () => {
   watch(
     databaseList,
     (list) => {
-      list.forEach((db) => dbSchemaStore.getOrFetchDatabaseMetadataById(db.id));
+      list.forEach((db) => {
+        if (db.id && db.id !== UNKNOWN_ID) {
+          dbSchemaStore.getOrFetchTableListByDatabaseId(db.id);
+        }
+      });
     },
     { immediate: true }
   );
@@ -237,9 +241,7 @@ const { databaseList } = useDatabaseAndTableList();
 const handleUpdateEditorAutoCompletionContext = async () => {
   const databaseMap: Map<Database, TableMetadata[]> = new Map();
   for (const database of databaseList.value) {
-    const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
-      database.id
-    );
+    const tableList = dbSchemaStore.getTableListByDatabaseId(database.id);
     databaseMap.set(database, tableList);
   }
   editorRef.value?.setEditorAutoCompletionContext(databaseMap);

@@ -15,6 +15,7 @@ import {
   StageStatusTransition,
   TaskStatusTransition,
   TASK_STATUS_TRANSITION_LIST,
+  isDatabaseRelatedIssueType,
 } from "@/utils";
 import {
   allowUserToBeAssignee,
@@ -145,9 +146,6 @@ export const calcApplicableIssueStatusTransitionList = (
   issue: Issue
 ): IssueStatusTransition[] => {
   const currentUser = useCurrentUser();
-  const currentTask = activeTask(issue.pipeline);
-  const flattenTaskList = allTaskList(issue.pipeline);
-
   const issueEntity = issue as Issue;
   const transitionTypeList: IssueStatusTransitionType[] = [];
 
@@ -164,30 +162,34 @@ export const calcApplicableIssueStatusTransitionList = (
   }
 
   const applicableTransitionList: IssueStatusTransition[] = [];
-  transitionTypeList.forEach((type) => {
-    const transition = ISSUE_STATUS_TRANSITION_LIST.get(type);
-    if (!transition) return;
+  if (isDatabaseRelatedIssueType(issue.type)) {
+    const currentTask = activeTask(issue.pipeline);
+    const flattenTaskList = allTaskList(issue.pipeline);
+    transitionTypeList.forEach((type) => {
+      const transition = ISSUE_STATUS_TRANSITION_LIST.get(type);
+      if (!transition) return;
 
-    if (flattenTaskList.some((task) => task.status === "RUNNING")) {
-      // Disallow any issue status transition if some of the tasks are in RUNNING state.
-      return;
-    }
-    if (type === "RESOLVE") {
-      if (transition.type === "RESOLVE" && flattenTaskList.length > 0) {
-        const lastTask = flattenTaskList[flattenTaskList.length - 1];
-        // Don't display the RESOLVE action if the pipeline doesn't reach the
-        // last task
-        if (lastTask.id !== currentTask.id) {
-          return;
-        }
-        // Don't display the RESOLVE action if the last task is not DONE.
-        if (currentTask.status !== "DONE") {
-          return;
+      if (flattenTaskList.some((task) => task.status === "RUNNING")) {
+        // Disallow any issue status transition if some of the tasks are in RUNNING state.
+        return;
+      }
+      if (type === "RESOLVE") {
+        if (transition.type === "RESOLVE" && flattenTaskList.length > 0) {
+          const lastTask = flattenTaskList[flattenTaskList.length - 1];
+          // Don't display the RESOLVE action if the pipeline doesn't reach the
+          // last task
+          if (lastTask.id !== currentTask.id) {
+            return;
+          }
+          // Don't display the RESOLVE action if the last task is not DONE.
+          if (currentTask.status !== "DONE") {
+            return;
+          }
         }
       }
-    }
-    applicableTransitionList.push(transition);
-  });
+      applicableTransitionList.push(transition);
+    });
+  }
   return applicableTransitionList;
 };
 
