@@ -15,14 +15,7 @@
 </template>
 
 <script lang="ts">
-import {
-  computed,
-  defineComponent,
-  PropType,
-  reactive,
-  watch,
-  watchEffect,
-} from "vue";
+import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import {
   Project,
   UNKNOWN_ID,
@@ -30,7 +23,6 @@ import {
   ProjectRoleType,
   unknown,
 } from "../types";
-import { hasWorkspacePermission } from "../utils";
 import { useCurrentUser, useProjectStore } from "@/store";
 
 interface LocalState {
@@ -79,15 +71,6 @@ export default defineComponent({
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
 
-    const prepareProjectList = () => {
-      projectStore.fetchProjectListByUser({
-        userId: currentUser.value.id,
-        rowStatusList: ["NORMAL", "ARCHIVED"],
-      });
-    };
-
-    watchEffect(prepareProjectList);
-
     const rawProjectList = computed((): Project[] => {
       let list = projectStore.getProjectListByUser(currentUser.value.id, [
         "NORMAL",
@@ -104,29 +87,9 @@ export default defineComponent({
         return false;
       });
 
-      if (
-        hasWorkspacePermission(
-          "bb.permission.workspace.manage-project",
-          currentUser.value.role
-        )
-      ) {
-        return list;
-      }
-
       return list.filter((project: Project) => {
-        if (project.id == DEFAULT_PROJECT_ID) {
-          return true;
-        }
-
-        for (const member of project.memberList) {
-          if (
-            currentUser.value.id == member.principal.id &&
-            props.allowedRoleList.includes(member.role)
-          ) {
-            return true;
-          }
-        }
-        return false;
+        // Do not show Default project in selector.
+        return project.id != DEFAULT_PROJECT_ID;
       });
     });
 
