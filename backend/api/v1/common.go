@@ -54,6 +54,14 @@ var (
 	undeletePatch     = false
 )
 
+func isNumber(v string) (int, bool) {
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err == nil {
+		return int(n), true
+	}
+	return 0, false
+}
+
 func getProjectID(name string) (string, error) {
 	tokens, err := getNameParentTokens(name, projectNamePrefix)
 	if err != nil {

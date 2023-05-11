@@ -169,7 +169,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			Name:          fmt.Sprintf("Prepare statements of database %q", tt.databaseName),
 			Type:          api.IssueDatabaseSchemaUpdate,
 			Description:   fmt.Sprintf("Prepare statements of database %q.", tt.databaseName),
-			AssigneeID:    ownerID,
+			AssigneeID:    api.SystemBotID,
 			CreateContext: string(createContext),
 		})
 		a.NoError(err)

@@ -5,6 +5,7 @@ import DatabaseGrantTemplate from "./DatabaseGrantTemplate";
 import DatabaseSchemaBaselineTemplate from "./DatabaseSchemaBaselineTemplate";
 import DatabaseSchemaUpdateTemplate from "./DatabaseSchemaUpdateTemplate";
 import DatabaseDataUpdateTemplate from "./DatabaseDataUpdateTemplate";
+import GrantRequestTemplate from "./GrantRequestTemplate";
 import DefaultTemplate from "./DefaultTemplate";
 
 export type TemplateType = IssueType | "bb.issue.database.schema.baseline";
@@ -16,6 +17,7 @@ const allIssueTemplateList: IssueTemplate[] = [
   DatabaseSchemaUpdateTemplate,
   DatabaseDataUpdateTemplate,
   DatabaseSchemaBaselineTemplate,
+  GrantRequestTemplate,
 ];
 
 export function defaultTemplate(): IssueTemplate {

@@ -90,13 +90,16 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 				for _, issue := range issues {
+					if issue.PipelineUID == nil {
+						continue
+					}
 					issueByID[issue.UID] = issue
-					stages, err := r.store.ListStageV2(ctx, issue.PipelineUID)
+					stages, err := r.store.ListStageV2(ctx, *issue.PipelineUID)
 					if err != nil {
-						log.Error("failed to list stages", zap.Int("pipeline", issue.PipelineUID), zap.Error(err))
+						log.Error("failed to list stages", zap.Int("pipeline", *issue.PipelineUID), zap.Error(err))
 						return
 					}
-					stagesByPipelineID[issue.PipelineUID] = stages
+					stagesByPipelineID[*issue.PipelineUID] = stages
 					r.scheduleApproval(ctx, issue, stages, &value)
 				}
 
@@ -126,9 +129,9 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							// it will be handled next round anyway.
 							continue
 						}
-						stages, ok := stagesByPipelineID[issue.PipelineUID]
+						stages, ok := stagesByPipelineID[*issue.PipelineUID]
 						if !ok {
-							log.Debug("expect to have found pipeline in application runner", zap.Int("pipeline_id", issue.PipelineUID))
+							log.Debug("expect to have found pipeline in application runner", zap.Int("pipeline_id", *issue.PipelineUID))
 							continue
 						}
 						activeStage := utils.GetActiveStage(stages)

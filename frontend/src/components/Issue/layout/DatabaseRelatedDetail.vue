@@ -9,7 +9,11 @@
 
       <!-- Highlight Panel -->
       <div class="bg-white px-4 pb-4">
-        <IssueHighlightPanel />
+        <IssueHighlightPanel>
+          <template #tips>
+            <IssueRollbackFromTips />
+          </template>
+        </IssueHighlightPanel>
       </div>
 
       <!-- Stage Flow Bar -->
@@ -106,20 +110,21 @@ import {
   activeTaskInStage,
   activeTask as activeTaskOfPipeline,
 } from "@/utils";
-import IssueBanner from "./IssueBanner.vue";
-import IssueHighlightPanel from "./IssueHighlightPanel.vue";
-import IssueStagePanel from "./IssueStagePanel.vue";
-import IssueOutputPanel from "./IssueOutputPanel.vue";
-import IssueSidebar from "./IssueSidebar.vue";
-import IssueTaskSDLPanel from "./IssueTaskSDLPanel.vue";
-import IssueTaskStatementPanel from "./IssueTaskStatementPanel.vue";
-import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
-import IssueActivityPanel from "./IssueActivityPanel.vue";
-import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
-import PipelineTenantFlow from "./PipelineTenantFlow.vue";
-import PipelineGhostFlow from "./PipelineGhostFlow.vue";
-import PipelinePITRFlow from "./PipelinePITRFlow.vue";
-import TaskCheckBar from "./TaskCheckBar.vue";
+import IssueBanner from "../IssueBanner.vue";
+import IssueHighlightPanel from "../IssueHighlightPanel.vue";
+import IssueRollbackFromTips from "../IssueRollbackFromTips.vue";
+import IssueStagePanel from "../IssueStagePanel.vue";
+import IssueOutputPanel from "../IssueOutputPanel.vue";
+import IssueSidebar from "../IssueSidebar.vue";
+import IssueTaskSDLPanel from "../IssueTaskSDLPanel.vue";
+import IssueTaskStatementPanel from "../IssueTaskStatementPanel.vue";
+import IssueDescriptionPanel from "../IssueDescriptionPanel.vue";
+import IssueActivityPanel from "../IssueActivityPanel.vue";
+import PipelineSimpleFlow from "../PipelineSimpleFlow.vue";
+import PipelineTenantFlow from "../PipelineTenantFlow.vue";
+import PipelineGhostFlow from "../PipelineGhostFlow.vue";
+import PipelinePITRFlow from "../PipelinePITRFlow.vue";
+import TaskCheckBar from "../TaskCheckBar.vue";
 import type {
   Issue,
   IssueCreate,
@@ -138,7 +143,7 @@ import {
   TaskTypeWithStatement,
   IssueLogic,
   useBaseIssueLogic,
-} from "./logic";
+} from "../logic";
 
 const props = defineProps({
   create: {

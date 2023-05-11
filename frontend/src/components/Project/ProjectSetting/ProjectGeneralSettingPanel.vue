@@ -11,7 +11,7 @@
         <dd class="mt-1 text-sm text-main">
           <input
             id="projectName"
-            v-model="state.name"
+            v-model="state.title"
             :disabled="!allowEdit"
             required
             autocomplete="off"
@@ -21,7 +21,7 @@
         </dd>
         <ResourceIdField
           resource-type="project"
-          :value="project.resourceId"
+          :value="extractProjectResourceName(project.name)"
           :readonly="true"
         />
       </dl>
@@ -54,20 +54,22 @@
           <label class="radio">
             <input
               v-model="state.tenantMode"
+              :disabled="!allowEdit"
               tabindex="-1"
               type="radio"
-              class="btn"
-              value="DISABLED"
+              class="btn disabled:opacity-50 disabled:cursor-not-allowed"
+              :value="TenantMode.TENANT_MODE_DISABLED"
             />
             <span class="label">{{ $t("project.mode.standard") }}</span>
           </label>
           <label class="radio">
             <input
               v-model="state.tenantMode"
+              :disabled="!allowEdit"
               tabindex="-1"
               type="radio"
-              class="btn"
-              value="TENANT"
+              class="btn disabled:opacity-50 disabled:cursor-not-allowed"
+              :value="TenantMode.TENANT_MODE_ENABLED"
             />
             <span class="label">{{ $t("project.mode.tenant") }}</span>
             <FeatureBadge
@@ -98,107 +100,87 @@
   </form>
 </template>
 
-<script lang="ts">
-import isEmpty from "lodash-es/isEmpty";
-import { computed, defineComponent, PropType, reactive } from "vue";
+<script lang="ts" setup>
+import { computed, PropType, reactive } from "vue";
+import { cloneDeep, isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import {
-  DEFAULT_PROJECT_ID,
-  Project,
-  ProjectPatch,
-  ProjectTenantMode,
-  FeatureType,
-} from "../../../types";
-import { hasFeature, pushNotification, useProjectStore } from "@/store";
+
+import { DEFAULT_PROJECT_ID, FeatureType } from "../../../types";
+import { hasFeature, pushNotification, useProjectV1Store } from "@/store";
 import FeatureModal from "@/components/FeatureModal.vue";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import { extractProjectResourceName } from "@/utils";
 
 interface LocalState {
-  name: string;
+  title: string;
   key: string;
-  tenantMode: ProjectTenantMode;
+  tenantMode: TenantMode;
   requiredFeature: FeatureType | undefined;
 }
 
-export default defineComponent({
-  name: "ProjectGeneralSettingPanel",
-  components: {
-    FeatureModal,
-    ResourceIdField,
+const props = defineProps({
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
   },
-  props: {
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-    allowEdit: {
-      default: true,
-      type: Boolean,
-    },
-  },
-  setup(props) {
-    const { t } = useI18n();
-    const projectStore = useProjectStore();
-
-    const state = reactive<LocalState>({
-      name: props.project.name,
-      key: props.project.key,
-      tenantMode: props.project.tenantMode,
-      requiredFeature: undefined,
-    });
-
-    const allowSave = computed((): boolean => {
-      return (
-        props.project.id != DEFAULT_PROJECT_ID &&
-        !isEmpty(state.name) &&
-        (state.name !== props.project.name ||
-          state.key !== props.project.key ||
-          state.tenantMode !== props.project.tenantMode)
-      );
-    });
-
-    const save = () => {
-      const projectPatch: ProjectPatch = {};
-
-      if (state.name !== props.project.name) {
-        projectPatch.name = state.name;
-      }
-      if (state.key !== props.project.key) {
-        projectPatch.key = state.key;
-      }
-      if (state.tenantMode !== props.project.tenantMode) {
-        if (state.tenantMode === "TENANT") {
-          if (!hasFeature("bb.feature.multi-tenancy")) {
-            state.tenantMode = "DISABLED";
-            state.requiredFeature = "bb.feature.multi-tenancy";
-            return;
-          }
-        }
-        projectPatch.tenantMode = state.tenantMode;
-      }
-
-      projectStore
-        .patchProject({
-          projectId: props.project.id,
-          projectPatch,
-        })
-        .then((updatedProject: Project) => {
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("project.settings.success-updated"),
-          });
-          state.name = updatedProject.name;
-          state.key = updatedProject.key;
-          state.tenantMode = updatedProject.tenantMode;
-        });
-    };
-
-    return {
-      state,
-      allowSave,
-      save,
-    };
+  allowEdit: {
+    default: true,
+    type: Boolean,
   },
 });
+
+const { t } = useI18n();
+const projectV1Store = useProjectV1Store();
+
+const state = reactive<LocalState>({
+  title: props.project.title,
+  key: props.project.key,
+  tenantMode: props.project.tenantMode,
+  requiredFeature: undefined,
+});
+
+const allowSave = computed((): boolean => {
+  return (
+    parseInt(props.project.uid, 10) !== DEFAULT_PROJECT_ID &&
+    !isEmpty(state.title) &&
+    (state.title !== props.project.title ||
+      state.key !== props.project.key ||
+      state.tenantMode !== props.project.tenantMode)
+  );
+});
+
+const save = () => {
+  const projectPatch = cloneDeep(props.project);
+  const updateMask: string[] = [];
+  if (state.title !== props.project.title) {
+    projectPatch.title = state.title;
+    updateMask.push("title");
+  }
+  if (state.key !== props.project.key) {
+    projectPatch.key = state.key;
+    updateMask.push("key");
+  }
+  if (state.tenantMode !== props.project.tenantMode) {
+    if (state.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
+      if (!hasFeature("bb.feature.multi-tenancy")) {
+        state.tenantMode = TenantMode.TENANT_MODE_DISABLED;
+        state.requiredFeature = "bb.feature.multi-tenancy";
+        return;
+      }
+    }
+    projectPatch.tenantMode = state.tenantMode;
+    updateMask.push("tenant_mode");
+  }
+  projectV1Store.updateProject(projectPatch, updateMask).then((updated) => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("project.settings.success-updated"),
+    });
+    state.title = updated.title;
+    state.key = updated.key;
+    state.tenantMode = updated.tenantMode;
+  });
+};
 </script>

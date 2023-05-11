@@ -13,15 +13,15 @@
       v-model:value="selector.operator"
       :options="OPERATORS"
       :disabled="!editable"
-      :modifier="lowerCase"
+      :modifier="operatorToText"
       class="select operator"
     />
     <LabelSelect
-      v-if="selector.operator === 'In'"
+      v-if="selector.operator == OperatorType.OPERATOR_TYPE_IN"
       v-model:value="selector.values"
       :options="values"
       :disabled="!editable"
-      :multiple="true"
+      :multiple="allowMultipleValues"
       :placeholder="$t('label.placeholder.select-values')"
       class="select values"
     />
@@ -31,11 +31,11 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import { computed, defineComponent, PropType, watch } from "vue";
-import { Database, LabelSelectorRequirement, OperatorType } from "../../types";
+import { computed, PropType, watch } from "vue";
+import { Database } from "../../types";
 import {
   getLabelValuesFromDatabaseList,
   hidePrefix,
@@ -43,69 +43,75 @@ import {
   RESERVED_LABEL_KEYS,
 } from "../../utils";
 import LabelSelect from "./LabelSelect.vue";
-import { lowerCase, uniq } from "lodash-es";
+import { uniq } from "lodash-es";
+import {
+  LabelSelectorRequirement,
+  OperatorType,
+} from "@/types/proto/v1/project_service";
 
-const OPERATORS: OperatorType[] = ["In", "Exists"];
+const OPERATORS: OperatorType[] = [
+  OperatorType.OPERATOR_TYPE_IN,
+  OperatorType.OPERATOR_TYPE_EXISTS,
+];
 
-export default defineComponent({
-  name: "SelectorItem",
-  components: { LabelSelect },
-  props: {
-    selector: {
-      type: Object as PropType<LabelSelectorRequirement>,
-      required: true,
-    },
-    databaseList: {
-      type: Array as PropType<Database[]>,
-      default: () => [],
-    },
-    editable: {
-      type: Boolean,
-      default: false,
-    },
+const props = defineProps({
+  selector: {
+    type: Object as PropType<LabelSelectorRequirement>,
+    required: true,
   },
-  emits: ["remove"],
-  setup(props) {
-    const keys = computed(() => {
-      const availableList = [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
-      const allKeys = props.databaseList.flatMap((db) =>
-        db.labels.map((label) => label.key)
-      );
-      return uniq(allKeys).filter((key) => availableList.includes(key));
-    });
-    const values = computed(() => {
-      if (!props.selector.key) return [];
-      return getLabelValuesFromDatabaseList(
-        props.selector.key,
-        props.databaseList,
-        false /* !withEmptyValue */
-      );
-    });
-
-    const resetValues = () => {
-      props.selector.values = [];
-    };
-
-    const labelKeyModifier = (key: string) => {
-      const formatedKey = hidePrefix(key);
-      if (formatedKey === "environment") {
-        return "Environment ID";
-      }
-      return formatedKey;
-    };
-
-    watch(() => props.selector.key, resetValues);
-    watch(() => props.selector.operator, resetValues);
-
-    return {
-      OPERATORS,
-      labelKeyModifier,
-      lowerCase,
-      keys,
-      values,
-    };
+  databaseList: {
+    type: Array as PropType<Database[]>,
+    default: () => [],
+  },
+  editable: {
+    type: Boolean,
+    default: false,
   },
 });
+
+defineEmits<{
+  (event: "remove"): void;
+}>();
+
+const keys = computed(() => {
+  const availableList = [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
+  const allKeys = props.databaseList.flatMap((db) =>
+    db.labels.map((label) => label.key)
+  );
+  return uniq(allKeys).filter((key) => availableList.includes(key));
+});
+const allowMultipleValues = computed(() => {
+  return props.selector.key !== "bb.environment";
+});
+const values = computed(() => {
+  if (!props.selector.key) return [];
+  return getLabelValuesFromDatabaseList(
+    props.selector.key,
+    props.databaseList,
+    false /* !withEmptyValue */
+  );
+});
+
+const resetValues = () => {
+  props.selector.values = [];
+};
+
+const labelKeyModifier = (key: string | number) => {
+  const formattedKey = hidePrefix(key as string);
+  if (formattedKey === "environment") {
+    return "Environment ID";
+  }
+  return formattedKey;
+};
+
+const operatorToText = (op: string | number) => {
+  if (op === OperatorType.OPERATOR_TYPE_IN) return "in";
+  if (op === OperatorType.OPERATOR_TYPE_EXISTS) return "exists";
+  return "";
+};
+
+watch(() => props.selector.key, resetValues);
+watch(() => props.selector.operator, resetValues);
 </script>
 
 <style scoped lang="postcss">

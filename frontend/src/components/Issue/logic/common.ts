@@ -33,6 +33,7 @@ import {
 import { IssueLogic, useIssueLogic } from "./index";
 import {
   defer,
+  getBacktracePayloadWithIssue,
   isDev,
   isTaskTriggeredByVCS,
   taskCheckRunSummary,
@@ -101,7 +102,7 @@ export const useCommonLogic = () => {
     );
     // route.query.databaseList is comma-splitted databaseId list
     // e.g. databaseList=7002,7006,7014
-    const idListString = route.query.databaseList as string;
+    const idListString = (route.query.databaseList as string) || "";
     const databaseIdList = idListString.split(",");
     if (databaseIdList.length === 0) {
       return;
@@ -110,7 +111,7 @@ export const useCommonLogic = () => {
     // route.query.sheetId is an id of sheet. Mainly using in creating rollback issue.
     const sheetId = Number(route.query.sheetId);
     // route.query.sqlList is JSON string of a string array.
-    const sqlListString = route.query.sqlList as string;
+    const sqlListString = (route.query.sqlList as string) || "";
     if (isNumber(sheetId) && !isNaN(sheetId)) {
       for (const databaseId of databaseIdList) {
         const task = taskList.find(
@@ -120,7 +121,7 @@ export const useCommonLogic = () => {
           task.sheetId = sheetId;
         }
       }
-    } else if (idListString && sqlListString) {
+    } else if (sqlListString) {
       const statementList = JSON.parse(sqlListString) as string[];
       for (
         let i = 0;
@@ -128,7 +129,7 @@ export const useCommonLogic = () => {
         i++
       ) {
         const task = taskList.find(
-          (task) => task.databaseId === databaseIdList[i]
+          (task) => task.databaseId === Number(databaseIdList[i])
         );
         if (task) {
           task.statement = statementList[i];
@@ -202,13 +203,13 @@ export const useCommonLogic = () => {
         statement: newStatement,
         visibility: "PROJECT",
         source: "BYTEBASE_ARTIFACT",
-        payload: {},
+        payload: getBacktracePayloadWithIssue(issue.value as Issue),
       });
 
       const patchRequestList = patchingTaskList.map((task) => {
         patchTask(task.id, { sheetId: sheet.id });
       });
-      return Promise.allSettled(patchRequestList);
+      await Promise.allSettled(patchRequestList);
     }
   };
 

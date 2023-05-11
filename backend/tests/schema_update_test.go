@@ -131,7 +131,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -170,7 +170,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		Name:          fmt.Sprintf("update data for database %q", databaseName),
 		Type:          api.IssueDatabaseDataUpdate,
 		Description:   fmt.Sprintf("This updates the data of database %q.", databaseName),
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -625,9 +625,9 @@ func TestVCS(t *testing.T) {
 			// simulate retrying the failed task.
 			_, err = ctl.patchTaskStatus(api.TaskStatusPatch{
 				ID:        task.ID,
-				UpdaterID: ownerID,
+				UpdaterID: api.SystemBotID,
 				Status:    api.TaskPendingApproval,
-			}, issue.PipelineID, task.ID)
+			}, issue.Pipeline.ID, task.ID)
 			a.NoError(err)
 
 			status, err = ctl.waitIssuePipeline(issue.ID)
@@ -673,7 +673,7 @@ func TestVCS(t *testing.T) {
 				Name:          fmt.Sprintf("update schema for database %q", databaseName),
 				Type:          api.IssueDatabaseSchemaUpdate,
 				Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-				AssigneeID:    ownerID,
+				AssigneeID:    api.SystemBotID,
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
@@ -2213,7 +2213,7 @@ CREATE TABLE public.book (
 				Name:          fmt.Sprintf("update schema for database %q", test.databaseName),
 				Type:          api.IssueDatabaseSchemaUpdate,
 				Description:   fmt.Sprintf("This updates the schema of database %q.", test.databaseName),
-				AssigneeID:    ownerID,
+				AssigneeID:    api.SystemBotID,
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
@@ -2334,7 +2334,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -2347,7 +2347,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	task, err = ctl.patchTaskStatus(api.TaskStatusPatch{
 		Status:  api.TaskDone,
 		Comment: &skippedReason,
-	}, issue.PipelineID, task.ID)
+	}, issue.Pipeline.ID, task.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, task.Status)
 

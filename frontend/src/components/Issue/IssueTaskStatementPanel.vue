@@ -99,7 +99,7 @@
   >
     <MonacoEditor
       ref="editorRef"
-      class="w-full h-auto max-h-[360px]"
+      class="w-full max-h-[360px]"
       data-label="bb-issue-sql-editor"
       :value="state.editStatement"
       :readonly="readonly"
@@ -135,6 +135,8 @@ import { useIssueLogic } from "./logic";
 import {
   Database,
   dialectOfEngine,
+  Issue,
+  SheetCreate,
   SheetId,
   SQLDialect,
   Task,
@@ -142,7 +144,11 @@ import {
   TaskId,
   UNKNOWN_ID,
 } from "@/types";
-import { sheetIdOfTask, useInstanceEditorLanguage } from "@/utils";
+import {
+  getBacktracePayloadWithIssue,
+  sheetIdOfTask,
+  useInstanceEditorLanguage,
+} from "@/utils";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
@@ -173,6 +179,7 @@ defineProps({
 
 const {
   create,
+  issue,
   allowEditStatement,
   selectedDatabase,
   selectedStatement: statement,
@@ -456,34 +463,37 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
   );
 
   const uploadStatementAsSheet = async (statement: string) => {
-    const sheet = await sheetStore.createSheet(
-      {
-        projectId: projectId,
-        name: filename,
-        statement,
-        visibility: "PROJECT",
-        source: "BYTEBASE_ARTIFACT",
-        payload: {},
+    const sheetCreate: SheetCreate = {
+      projectId: projectId,
+      name: filename,
+      statement,
+      visibility: "PROJECT",
+      source: "BYTEBASE_ARTIFACT",
+      payload: {},
+    };
+    if (!create.value) {
+      sheetCreate.payload = getBacktracePayloadWithIssue(issue.value as Issue);
+    }
+    const sheet = await sheetStore.createSheet(sheetCreate, {
+      timeout: 10 * 60 * 1000, // 10 minutes
+      onUploadProgress: (event) => {
+        console.debug("upload progress", event);
+        const progress = event.progress;
+        if (isNumber(progress)) {
+          tick(progress * 100);
+        } else {
+          tick(-1); // -1 to show a simple spinner instead of progress
+        }
       },
-      {
-        timeout: 10 * 60 * 1000, // 10 minutes
-        onUploadProgress: (event) => {
-          console.debug("upload progress", event);
-          const progress = event.progress;
-          if (isNumber(progress)) {
-            tick(progress * 100);
-          } else {
-            tick(-1); // -1 to show a simple spinner instead of progress
-          }
-        },
-      }
-    );
+    });
     state.isUploadingFile = false;
 
     updateSheetId(sheet.id);
     await updateStatement(statement);
     state.editing = false;
-    if (selectedTask.value) updateEditorHeight();
+    if (selectedTask.value) {
+      updateEditorHeight();
+    }
   };
 
   return new Promise((resolve, reject) => {
@@ -623,13 +633,15 @@ const handleUpdateEditorAutoCompletionContext = async () => {
 };
 
 const updateEditorHeight = () => {
-  const contentHeight =
-    editorRef.value?.editorInstance?.getContentHeight() as number;
-  let actualHeight = contentHeight;
-  if (state.editing && actualHeight < EDITOR_MIN_HEIGHT.EDITABLE) {
-    actualHeight = EDITOR_MIN_HEIGHT.EDITABLE;
-  }
-  editorRef.value?.setEditorContentHeight(actualHeight);
+  requestAnimationFrame(() => {
+    const contentHeight =
+      editorRef.value?.editorInstance?.getContentHeight() as number;
+    let actualHeight = contentHeight;
+    if (state.editing && actualHeight < EDITOR_MIN_HEIGHT.EDITABLE) {
+      actualHeight = EDITOR_MIN_HEIGHT.EDITABLE;
+    }
+    editorRef.value?.setEditorContentHeight(actualHeight);
+  });
 };
 
 const handleMonacoEditorReady = () => {

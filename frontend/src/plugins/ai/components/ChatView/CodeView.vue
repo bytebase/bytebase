@@ -1,30 +1,32 @@
 <template>
   <div class="flex items-start w-full">
-    <MonacoEditor
-      ref="editorRef"
-      class="flex-1 border h-auto"
-      language="sql"
-      :value="state.code"
-      :readonly="!state.editing"
-      :auto-focus="false"
-      :options="{
-        automaticLayout: true,
-        fontSize: 12,
-        lineHeight: 14,
-        lineNumbers: 'off',
-        wordWrap: 'off',
-        scrollbar: {
-          vertical: 'hidden',
-          horizontal: 'hidden',
-          useShadows: false,
-          verticalScrollbarSize: 0,
-          horizontalScrollbarSize: 0,
-          alwaysConsumeMouseWheel: false,
-        },
-      }"
-      @ready="handleMonacoEditorReady"
-      @change="state.code = $event"
-    />
+    <div class="flex-1 overflow-x-hidden">
+      <MonacoEditor
+        ref="editorRef"
+        class="border h-auto"
+        language="sql"
+        :value="state.code"
+        :readonly="!state.editing"
+        :auto-focus="false"
+        :options="{
+          automaticLayout: true,
+          fontSize: 12,
+          lineHeight: 14,
+          lineNumbers: 'off',
+          wordWrap: 'off',
+          scrollbar: {
+            vertical: 'hidden',
+            horizontal: 'hidden',
+            useShadows: false,
+            verticalScrollbarSize: 0,
+            horizontalScrollbarSize: 0,
+            alwaysConsumeMouseWheel: false,
+          },
+        }"
+        @ready="handleMonacoEditorReady"
+        @change="state.code = $event"
+      />
+    </div>
     <div class="flex flex-col gap-y-2 ml-0.5 mt-1">
       <NTooltip placement="right">
         <template #trigger>
@@ -123,7 +125,7 @@ const props = defineProps<{
 
 const EDITOR_HEIGHT = {
   min: 48,
-  max: 240,
+  max: 120,
 };
 
 const state = reactive<LocalState>({

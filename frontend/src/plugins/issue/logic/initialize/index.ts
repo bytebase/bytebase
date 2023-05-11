@@ -10,6 +10,7 @@ import { maybeBuildTenantDeployIssue } from "./tenant";
 import { maybeBuildGhostIssue } from "./ghost";
 import { buildNewStandardIssue } from "./standard";
 import { tryGetDefaultAssignee } from "./assignee";
+import { maybeBuildGrantRequestIssue } from "./grantRequest";
 
 export function useInitializeIssue(issueSlug: Ref<string>) {
   const issueStore = useIssueStore();
@@ -86,6 +87,11 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
 const buildNewIssue = async (
   context: BuildNewIssueContext
 ): Promise<IssueCreate> => {
+  const grantRequest = await maybeBuildGrantRequestIssue(context);
+  if (grantRequest) {
+    return grantRequest;
+  }
+
   const ghost = await maybeBuildGhostIssue(context);
   if (ghost) {
     return ghost;
@@ -109,7 +115,7 @@ const prepareDatabaseListForIssueCreation = async (query: LocationQuery) => {
     // If we found query.project, we can directly fetchDatabaseListByProjectId
     const projectId = query.project as string;
     await databaseStore.fetchDatabaseListByProjectId(parseInt(projectId, 10));
-  } else {
+  } else if (query.databaseList) {
     // Otherwise, we don't have the projectId (very rare to see, theoretically)
     // so we need to fetch the first database in databaseList by id,
     // and see what project it belongs.

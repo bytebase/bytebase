@@ -31,6 +31,7 @@ const template: IssueTemplate = {
             instanceId: ctx.databaseList[i].instance.id,
             databaseId: ctx.databaseList[i].id,
             statement: ctx.statementList ? ctx.statementList[i] : "",
+            sheetId: UNKNOWN_ID,
             earliestAllowedTs: 0,
           },
         ],

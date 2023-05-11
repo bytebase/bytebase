@@ -60,7 +60,7 @@ func getMySQLFingerprint(query string) (string, error) {
 
 	// Match multi-line comments and single-line comments, and remove them.
 	mlcRe := regexp.MustCompile(`(?s)/\*.*?\*/`)
-	olcRe := regexp.MustCompile(`--.*$`)
+	olcRe := regexp.MustCompile(`(?m)--.*$`)
 	query = mlcRe.ReplaceAllString(query, "")
 	query = olcRe.ReplaceAllString(query, "")
 

@@ -7,75 +7,51 @@
   />
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, watchEffect } from "vue";
-
-import { Project, UNKNOWN_ID, RowStatus } from "../types";
-import { projectName, projectSlug } from "../utils";
-import { BBOutlineItem } from "../bbkit/types";
-import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+<script lang="ts" setup>
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useCurrentUser, useProjectStore } from "@/store";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 
-export default defineComponent({
-  name: "ProjectListSidePanel",
-  setup() {
-    const { t } = useI18n();
-    const router = useRouter();
+import { projectV1Slug } from "../utils";
+import { BBOutlineItem } from "../bbkit/types";
+import { useCurrentUserV1, useProjectV1ListByUser } from "@/store";
 
-    const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
+const { t } = useI18n();
+const router = useRouter();
 
-    const prepareProjectList = () => {
-      // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
-        projectStore.fetchProjectListByUser({
-          userId: currentUser.value.id,
-        });
-      }
-    };
+const currentUserV1 = useCurrentUserV1();
 
-    watchEffect(prepareProjectList);
+const { projectList } = useProjectV1ListByUser(currentUserV1);
 
-    const outlineItemList = computed((): BBOutlineItem[] => {
-      const projectList = projectStore.getProjectListByUser(
-        currentUser.value.id,
-        ["NORMAL"] as RowStatus[]
-      );
-      return projectList
-        .map((item: Project): BBOutlineItem => {
-          return {
-            id: item.id.toString(),
-            name: projectName(item),
-            link: `/project/${projectSlug(item)}#overview`,
-          };
-        })
-        .sort((a: any, b: any) => {
-          return a.name.localeCompare(b.name);
-        });
+const outlineItemList = computed((): BBOutlineItem[] => {
+  return projectList.value
+    .map((project): BBOutlineItem => {
+      return {
+        id: project.uid,
+        name: project.title,
+        link: `/project/${projectV1Slug(project)}#overview`,
+      };
+    })
+    .sort((a: any, b: any) => {
+      return a.name.localeCompare(b.name);
     });
-
-    const kbarActions = computed((): Action[] => {
-      const actions = outlineItemList.value.map((proj: any) =>
-        defineAction({
-          // here `id` looks like "bb.project.1234"
-          id: `bb.project.${proj.id}`,
-          section: t("common.projects"),
-          name: proj.name,
-          keywords: "project",
-          perform: () => {
-            router.push({ path: proj.link });
-          },
-        })
-      );
-      return actions;
-    });
-    useRegisterActions(kbarActions);
-
-    return {
-      outlineItemList,
-    };
-  },
 });
+
+const kbarActions = computed((): Action[] => {
+  const actions = outlineItemList.value.map((proj: any) =>
+    defineAction({
+      // here `id` looks like "bb.project.1234"
+      id: `bb.project.${proj.id}`,
+      section: t("common.projects"),
+      name: proj.name,
+      keywords: "project",
+      perform: () => {
+        router.push({ path: proj.link });
+      },
+    })
+  );
+  return actions;
+});
+useRegisterActions(kbarActions);
 </script>

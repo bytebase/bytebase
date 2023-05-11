@@ -226,19 +226,21 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return err
 			}
 			updateIssueMessage.Assignee = assignee
-			stages, err := s.store.ListStageV2(ctx, issue.PipelineUID)
-			if err != nil {
-				return err
-			}
-			activeStage := utils.GetActiveStage(stages)
-			// When all stages have finished, assignee can be anyone such as creator.
-			if activeStage != nil {
-				ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
+			if issue.PipelineUID != nil {
+				stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
+					return err
 				}
-				if !ok {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
+				activeStage := utils.GetActiveStage(stages)
+				// When all stages have finished, assignee can be anyone such as creator.
+				if activeStage != nil {
+					ok, err := s.TaskScheduler.CanPrincipalBeAssignee(ctx, assignee.ID, activeStage.EnvironmentID, issue.Project.UID, issue.Type)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
+					}
+					if !ok {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
+					}
 				}
 			}
 			// set AssigneeNeedAttention to false on assignee change
@@ -372,6 +374,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if issueCreate.ProjectID == api.DefaultProjectUID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot create a new issue in the default project")
 	}
+	if issueCreate.Type == api.IssueGrantRequest {
+		return s.createGrantRequestIssue(ctx, issueCreate, creatorID)
+	}
 
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
 	// since we are not creating pipeline/stage list/task list in a single transaction.
@@ -456,7 +461,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if err != nil {
 		return nil, err
 	}
-	issueCreateMessage.PipelineUID = pipeline.ID
+	issueCreateMessage.PipelineUID = &pipeline.ID
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
 	if err != nil {
 		return nil, err
@@ -507,7 +512,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   api.SystemBotID,
-			ContainerID: issue.PipelineUID,
+			ContainerID: *issue.PipelineUID,
 			Type:        api.ActivityPipelineStageStatusUpdate,
 			Level:       api.ActivityInfo,
 			Payload:     string(bytes),
@@ -519,6 +524,100 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
+	return composedIssue, nil
+}
+
+func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project %d not found", issueCreate.ProjectID))
+	}
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, err
+	}
+	var assignee *store.UserMessage
+	for _, binding := range policy.Bindings {
+		if binding.Role != api.Owner {
+			continue
+		}
+		if binding.Condition == nil || binding.Condition.Expression != "" {
+			continue
+		}
+		if len(binding.Members) == 0 {
+			continue
+		}
+		assignee = binding.Members[0]
+		break
+	}
+	if assignee == nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project owner %d not found", issueCreate.ProjectID))
+	}
+
+	var issuePayload storepb.IssuePayload
+	if err := protojson.Unmarshal([]byte(issueCreate.Payload), &issuePayload); err != nil {
+		return nil, err
+	}
+	issueCreatePayload := &storepb.IssuePayload{
+		GrantRequest: issuePayload.GrantRequest,
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: false,
+		},
+	}
+	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
+	}
+	issueCreateMessage := &store.IssueMessage{
+		Project:       project,
+		Title:         issueCreate.Name,
+		Type:          issueCreate.Type,
+		Description:   issueCreate.Description,
+		Assignee:      assignee,
+		NeedAttention: issueCreate.AssigneeNeedAttention,
+		Payload:       string(issueCreatePayloadBytes),
+	}
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
+	if err != nil {
+		return nil, err
+	}
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+
+	// Composed the issue.
+	composedIssue := &api.Issue{
+		ID:                    issue.UID,
+		CreatorID:             issue.Creator.ID,
+		CreatedTs:             issue.CreatedTime.Unix(),
+		UpdaterID:             issue.Updater.ID,
+		UpdatedTs:             issue.UpdatedTime.Unix(),
+		ProjectID:             issue.Project.UID,
+		PipelineID:            issue.PipelineUID,
+		Name:                  issue.Title,
+		Status:                issue.Status,
+		Type:                  issue.Type,
+		Description:           issue.Description,
+		AssigneeID:            issue.Assignee.ID,
+		AssigneeNeedAttention: issue.NeedAttention,
+		Payload:               issue.Payload,
+	}
+	composedCreator, err := s.store.GetPrincipalByID(ctx, issue.Creator.ID)
+	if err != nil {
+		return nil, err
+	}
+	composedIssue.Creator = composedCreator
+	composedUpdater, err := s.store.GetPrincipalByID(ctx, issue.Updater.ID)
+	if err != nil {
+		return nil, err
+	}
+	composedIssue.Updater = composedUpdater
+	composedAssignee, err := s.store.GetPrincipalByID(ctx, issue.Assignee.ID)
+	if err != nil {
+		return nil, err
+	}
+	composedIssue.Assignee = composedAssignee
 	return composedIssue, nil
 }
 
@@ -1422,8 +1521,9 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 }
 
 func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
-	if s.TaskScheduler == nil {
+	if s.TaskScheduler == nil || issue.Pipeline == nil {
 		// readonly server doesn't have a TaskScheduler.
+		// Skip issues without pipelines.
 		return
 	}
 	for _, stage := range issue.Pipeline.StageList {

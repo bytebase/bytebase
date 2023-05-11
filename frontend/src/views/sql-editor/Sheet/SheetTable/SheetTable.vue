@@ -26,9 +26,6 @@
         class="truncate w-5/6"
         >{{ value.value }}</span
       >
-      <div>
-        <IssueLink :sheet="sheet" />
-      </div>
       <div class="flex flex-row justify-end items-center" @click.stop>
         <Dropdown :sheet="sheet" :view="view" @refresh="$emit('refresh')" />
       </div>
@@ -53,7 +50,6 @@ import dayjs from "dayjs";
 
 import type { Sheet } from "@/types";
 import { SheetViewMode } from "../types";
-import IssueLink from "./IssueLink.vue";
 import Dropdown from "./Dropdown.vue";
 import { useRouter } from "vue-router";
 import { sheetSlug } from "@/utils";
@@ -116,11 +112,6 @@ const headers = computed(() => {
   labelList.push({
     key: "updated",
     label: t("common.updated-at"),
-  });
-
-  labelList.push({
-    key: "linked-issue",
-    label: t("sheet.linked-issue"),
   });
 
   return labelList;

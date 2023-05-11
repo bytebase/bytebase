@@ -195,7 +195,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "update data",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -272,7 +272,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "rollback",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(rollbackCreateContext),
 	})
 	a.NoError(err)
@@ -410,7 +410,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "update data",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -426,7 +426,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	rollbackEnabled := true
 	_, err = ctl.patchTask(api.TaskPatch{
 		RollbackEnabled: &rollbackEnabled,
-	}, issue.PipelineID, task.ID)
+	}, issue.Pipeline.ID, task.ID)
 	a.NoError(err)
 
 	// Check that the data is changed.
@@ -495,7 +495,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "rollback",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(rollbackCreateContext),
 	})
 	a.NoError(err)
@@ -633,7 +633,7 @@ func TestRollbackCanceled(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "update data",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    ownerID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)

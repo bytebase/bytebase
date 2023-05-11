@@ -6,7 +6,7 @@
           <div v-if="!create">
             <IssueStatusIcon
               :issue-status="issue.status"
-              :task-status="activeTask(issue.pipeline).status"
+              :task-status="issueTaskStatus"
             />
           </div>
           <BBTextField
@@ -80,7 +80,7 @@
             </i18n-t>
           </p>
         </div>
-        <IssueRollbackFromTips />
+        <slot name="tips"></slot>
       </div>
     </div>
   </div>
@@ -91,8 +91,7 @@ import { reactive, watch, computed, Ref } from "vue";
 import { head } from "lodash-es";
 
 import IssueStatusIcon from "./IssueStatusIcon.vue";
-import IssueRollbackFromTips from "./IssueRollbackFromTips.vue";
-import { activeTask } from "@/utils";
+import { activeTask, isDatabaseRelatedIssueType } from "@/utils";
 import {
   TaskDatabaseSchemaUpdatePayload,
   TaskDatabaseDataUpdatePayload,
@@ -132,6 +131,15 @@ const showRolloutButton = computed(() => {
 
   return reviewDone.value;
 });
+
+const issueTaskStatus = () => {
+  // For grant request issue, we always show the status as "PENDING_APPROVAL" as task status.
+  if (!isDatabaseRelatedIssueType(issue.value.type)) {
+    return "PENDING_APPROVAL";
+  }
+
+  return activeTask(issue.value.pipeline).status;
+};
 
 watch(
   () => issue.value,

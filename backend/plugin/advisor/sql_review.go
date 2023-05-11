@@ -438,6 +438,9 @@ type SQLReviewCheckContext struct {
 	Catalog   catalog.Catalog
 	Driver    *sql.DB
 	Context   context.Context
+
+	// Oracle specific fields
+	CurrentSchema string
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
@@ -472,12 +475,13 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 			checkContext.DbType,
 			advisorType,
 			Context{
-				Charset:   checkContext.Charset,
-				Collation: checkContext.Collation,
-				Rule:      rule,
-				Catalog:   finder,
-				Driver:    checkContext.Driver,
-				Context:   checkContext.Context,
+				Charset:       checkContext.Charset,
+				Collation:     checkContext.Collation,
+				Rule:          rule,
+				Catalog:       finder,
+				Driver:        checkContext.Driver,
+				Context:       checkContext.Context,
+				CurrentSchema: checkContext.CurrentSchema,
 			},
 			statements,
 		)
@@ -792,6 +796,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLNamingTableConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingTableConvention, nil
+		case db.Oracle:
+			return OracleNamingTableConvention, nil
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
@@ -836,6 +842,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLColumnRequirement, nil
 		case db.Postgres:
 			return PostgreSQLColumnRequirement, nil
+		case db.Oracle:
+			return OracleColumnRequirement, nil
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
@@ -882,6 +890,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLColumnTypeRestriction, nil
 		case db.Postgres:
 			return PostgreSQLColumnTypeDisallowList, nil
+		case db.Oracle:
+			return OracleColumnTypeDisallowList, nil
 		}
 	case SchemaRuleColumnDisallowSetCharset:
 		switch engine {
@@ -923,6 +933,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLTableRequirePK, nil
 		case db.Postgres:
 			return PostgreSQLTableRequirePK, nil
+		case db.Oracle:
+			return OracleTableRequirePK, nil
 		}
 	case SchemaRuleTableNoFK:
 		switch engine {
@@ -930,6 +942,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLTableNoFK, nil
 		case db.Postgres:
 			return PostgreSQLTableNoFK, nil
+		case db.Oracle:
+			return OracleTableNoFK, nil
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {

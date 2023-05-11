@@ -27,7 +27,10 @@ const filter = (issueList: Issue[]) => {
         return Review.fromJSON({});
       }
     });
-    const context = extractIssueReviewContext(review);
+    const context = extractIssueReviewContext(
+      computed(() => issue),
+      review
+    );
     const steps = useWrappedReviewSteps(issue, context);
     const currentStep = steps.value?.find((step) => step.status === "CURRENT");
     if (!currentStep) return false;

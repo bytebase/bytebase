@@ -176,7 +176,7 @@
     "sensitive-data": "Enmascaramiento de datos confidenciales",
     "database-access-control": "Control de acceso a la base de datos",
     "roadmap": "Priorización de la hoja de ruta",
-    "custom-contract": "MSA y BAA personalizados",
+    "custom-contract": "MSA personalizados",
     "sso": "Inicio de Sesión Único (SSO)",
     "2fa": "Autenticación de dos factores (2FA)",
     "custom-approval": "Aprobación personalizada"

@@ -12,6 +12,9 @@ func TestPLSQLParser(t *testing.T) {
 		errorMessage string
 	}{
 		{
+			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
+		},
+		{
 			statement: "CREATE TABLE t1 (c1 NUMBER(10,2), c2 VARCHAR2(10));",
 		},
 		{

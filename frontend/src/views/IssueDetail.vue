@@ -1,11 +1,19 @@
 <template>
   <div class="w-full h-full relative">
-    <IssueDetailLayout
-      v-if="issue"
-      :issue="issue"
-      :create="create"
-      @status-changed="onStatusChanged"
-    />
+    <template v-if="issue">
+      <DatabaseRelatedDetail
+        v-if="isDatabaseRelatedIssue"
+        :issue="issue"
+        :create="create"
+        @status-changed="onStatusChanged"
+      />
+      <GrantRequestDetail
+        v-if="isDev && isGrantRequestIssue"
+        :issue="issue"
+        :create="create"
+        @status-changed="onStatusChanged"
+      />
+    </template>
     <div
       v-if="showLoading"
       class="w-full h-full fixed md:absolute inset-0 flex justify-center items-center bg-white/50"
@@ -26,7 +34,6 @@ import { useRoute, _RouteLocationBase } from "vue-router";
 import { NSpin } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import { IssueDetailLayout } from "@/components/Issue";
 import {
   IssueType,
   NORMAL_POLL_INTERVAL,
@@ -50,6 +57,9 @@ import {
 } from "@/plugins/issue/logic";
 import { useTitle } from "@vueuse/core";
 import Emittery from "emittery";
+import { isDatabaseRelatedIssueType, isGrantRequestIssueType } from "@/utils";
+import DatabaseRelatedDetail from "@/components/Issue/layout/DatabaseRelatedDetail.vue";
+import GrantRequestDetail from "@/components/Issue/layout/GrantRequestDetail.vue";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -83,12 +93,21 @@ const showLoading = computed(() => {
 const pollIssue = usePollIssue(issueSlug, issue);
 
 const reviewEvents = new Emittery<ReviewEvents>();
+
 provideIssueReview(
   computed(() => {
     return create.value ? undefined : (issue.value as Issue);
   }),
   reviewEvents
 );
+
+const isGrantRequestIssue = computed(() => {
+  return !!issue.value && isGrantRequestIssueType(issue.value.type);
+});
+
+const isDatabaseRelatedIssue = computed(() => {
+  return !!issue.value && isDatabaseRelatedIssueType(issue.value.type);
+});
 
 onMounted(() => {
   if (!uiStateStore.getIntroStateByKey("issue.visit")) {

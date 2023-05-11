@@ -778,7 +778,9 @@
     "transfer-in-db-title": "Transferir base de datos",
     "default-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en el proyecto predeterminado.",
     "transfer-in-db-alert": "¿Estás seguro de transferir \"{dbName}\" a nuestro proyecto?",
-    "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en bases de datos no asignadas."
+    "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en bases de datos no asignadas.",
+    "transfer-out-db": "Transferir base de datos",
+    "transfer-out-db-title": "Transferir la base de datos"
   },
   "create-db": {
     "new-database-name": "Nuevo nombre de la base de datos",
@@ -1185,7 +1187,9 @@
       "no-difference-tip": "No se encontraron diferencias.",
       "more-version": "más...",
       "character-sets-diff-found": "Hay diferencias entre los juegos de caracteres.",
-      "preview-issue": "Vista previa de incidencia"
+      "preview-issue": "Vista previa de incidencia",
+      "schema-change": "cambio de esquema",
+      "generated-ddl-statement": "Declaración DDL generada"
     },
     "sensitive": "Sensible",
     "access-denied": "No tiene permiso para acceder a esta base de datos.",
@@ -1215,7 +1219,12 @@
       "description-placeholder": "Ingrese descripción",
       "value": "Valor",
       "value-placeholder": "Valor de entrada (solo escritura)",
-      "delete-tips": "Eliminar secreto"
+      "delete-tips": "Eliminar secreto",
+      "description": "Puede usar secreto en su secuencia de comandos de cambio para ocultar información confidencial, consulte nuestra {guide}"
+    },
+    "transfer": {
+      "source-project": "Proyecto fuente",
+      "target-project": "proyecto de destino"
     }
   },
   "repository": {

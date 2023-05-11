@@ -46,7 +46,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", pipelineID))
 		}
 
-		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &issue.PipelineUID})
+		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: issue.PipelineUID})
 		if err != nil {
 			return err
 		}
@@ -186,19 +186,22 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+		ok, err := s.TaskScheduler.CanPrincipalChangeTaskStatus(ctx, currentPrincipalID, task, taskStatusPatch.Status)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %d", task.PipelineID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
 		}
-		if issue == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipeline ID %d", task.PipelineID))
-		}
-
-		if !s.TaskScheduler.CanPrincipalChangeTaskStatus(currentPrincipalID, issue) {
+		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
 
 		if taskStatusPatch.Status == api.TaskPending {
+			issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %d", task.PipelineID)).SetInternal(err)
+			}
+			if issue == nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipeline ID %d", task.PipelineID))
+			}
 			approved, err := utils.CheckIssueApproved(issue)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the issue is approved").SetInternal(err)
@@ -215,7 +218,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if err != nil {
 				return err
 			}
-			ok, err := utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
+			ok, err = utils.PassAllCheck(task, api.TaskCheckStatusWarn, taskCheckRuns, instance.Engine)
 			if err != nil {
 				return err
 			}

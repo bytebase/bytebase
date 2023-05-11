@@ -17,11 +17,10 @@
         @change-text="(text: string) => changeSearchText(text)"
       />
     </div>
-    <ProjectTable
+    <ProjectV1Table
       v-if="state.selectedIndex == PROJECT_TAB"
-      :project-list="filteredProjectList(projectList)"
-      :left-bordered="false"
-      :right-bordered="false"
+      :project-list="filteredProjectList"
+      class="border-x-0"
     />
     <InstanceTable
       v-else-if="state.selectedIndex == INSTANCE_TAB"
@@ -42,21 +41,23 @@
 import { computed, defineComponent, reactive, watchEffect } from "vue";
 import EnvironmentTable from "../components/EnvironmentTable.vue";
 import InstanceTable from "../components/InstanceTable.vue";
-import ProjectTable from "../components/ProjectTable.vue";
-import { Environment, Instance, Project, UNKNOWN_ID } from "../types";
-import { hasWorkspacePermission } from "../utils";
+import { ProjectV1Table } from "../components/v2";
+import { Environment, Instance } from "../types";
+import { filterProjectV1ListByKeyword, hasWorkspacePermission } from "../utils";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import {
   useCurrentUser,
+  useCurrentUserV1,
   useEnvironmentList,
   useEnvironmentStore,
   useIdentityProviderStore,
   useInstanceStore,
-  useProjectStore,
+  useProjectV1ListByUser,
 } from "@/store";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import IdentityProviderTable from "@/components/IdentityProviderTable.vue";
+import { State } from "@/types/proto/v1/common";
 
 const PROJECT_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -73,13 +74,12 @@ export default defineComponent({
   components: {
     EnvironmentTable,
     InstanceTable,
-    ProjectTable,
+    ProjectV1Table,
     IdentityProviderTable,
   },
   setup() {
     const { t } = useI18n();
     const instanceStore = useInstanceStore();
-    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       selectedIndex: PROJECT_TAB,
@@ -87,6 +87,7 @@ export default defineComponent({
     });
 
     const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const searchFieldPlaceholder = computed(() => {
       if (state.selectedIndex == PROJECT_TAB) {
@@ -102,15 +103,12 @@ export default defineComponent({
       }
     });
 
-    const prepareList = () => {
-      // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
-        projectStore.fetchProjectListByUser({
-          userId: currentUser.value.id,
-          rowStatusList: ["ARCHIVED"],
-        });
-      }
+    const { projectList } = useProjectV1ListByUser(
+      currentUserV1,
+      true /* showDeleted */
+    );
 
+    const prepareList = () => {
       if (
         hasWorkspacePermission(
           "bb.permission.workspace.manage-instance",
@@ -124,12 +122,6 @@ export default defineComponent({
     };
 
     watchEffect(prepareList);
-
-    const projectList = computed((): Project[] => {
-      return projectStore.getProjectListByUser(currentUser.value.id, [
-        "ARCHIVED",
-      ]);
-    });
 
     const instanceList = computed((): Instance[] => {
       return instanceStore.getInstanceList(["ARCHIVED"]);
@@ -176,16 +168,12 @@ export default defineComponent({
       return list;
     });
 
-    const filteredProjectList = (list: Project[]) => {
-      if (!state.searchText) {
-        return list;
-      }
-      return list.filter((project) => {
-        return project.name
-          .toLowerCase()
-          .includes(state.searchText.toLowerCase());
-      });
-    };
+    const filteredProjectList = computed(() => {
+      const list = projectList.value.filter(
+        (project) => project.state === State.DELETED
+      );
+      return filterProjectV1ListByKeyword(list, state.searchText);
+    });
 
     const filteredInstanceList = (list: Instance[]) => {
       if (!state.searchText) {
@@ -230,7 +218,6 @@ export default defineComponent({
       ENVIRONMENT_TAB,
       SSO_TAB,
       state,
-      projectList,
       instanceList,
       environmentList,
       deletedSSOList,

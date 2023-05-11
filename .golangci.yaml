@@ -30,6 +30,8 @@ issues:
     - pgInstance.Stop
     - fmt.Printf
     - fmt.Print
+    - Enter(.*)_(.*)
+    - Exit(.*)_(.*)
 
 run:
   timeout: 5m

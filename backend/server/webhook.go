@@ -542,66 +542,66 @@ func (s *Server) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybat
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract environment ids").SetInternal(err)
 	}
 
+	allEnvironments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to list environments").SetInternal(err)
+	}
+
 	for _, confEnv := range conf.Environments {
 		environmentIDs = append(environmentIDs, confEnv.ID)
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-			ResourceID: &confEnv.ID,
-		})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get environment").SetInternal(err)
-		}
-		if environment == nil {
-			continue
-		}
-		// If the environment is found, we extract the sql-review policy from the environment.
-		policy, err := s.store.GetSQLReviewPolicy(ctx, environment.UID)
-		if err != nil {
-			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-				log.Debug("Cannot found SQL review policy in environment", zap.String("Environment", confEnv.ID), zap.Error(err))
-				continue
-			}
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get SQL review policy").SetInternal(err)
-		}
-		if policy == nil {
-			continue
-		}
-		engineType, err := extractDBTypeFromJDBCConnectionString(confEnv.JDBCConnString)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract db type").SetInternal(err)
-		}
-		if engineType == db.UnknownType {
-			continue
-		}
-		emptyCatalog, err := store.NewEmptyCatalog(engineType)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get empty catalog").SetInternal(err)
-		}
+		for _, env := range allEnvironments {
+			if strings.EqualFold(env.Title, confEnv.ID) {
+				// If the environment is found, we extract the sql-review policy from the environment.
+				policy, err := s.store.GetSQLReviewPolicy(ctx, env.UID)
+				if err != nil {
+					if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+						log.Debug("Cannot found SQL review policy in environment", zap.String("Environment", confEnv.ID), zap.Error(err))
+						continue
+					}
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get SQL review policy").SetInternal(err)
+				}
+				if policy == nil {
+					continue
+				}
+				engineType, err := extractDBTypeFromJDBCConnectionString(confEnv.JDBCConnString)
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract db type").SetInternal(err)
+				}
+				if engineType == db.UnknownType {
+					continue
+				}
+				emptyCatalog, err := store.NewEmptyCatalog(engineType)
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get empty catalog").SetInternal(err)
+				}
 
-		mybatisSQLs, lineMapping, err := extractMybatisMapperSQL(datum.mapperContent)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract mybatis mapper sql").SetInternal(err)
-		}
+				mybatisSQLs, lineMapping, err := extractMybatisMapperSQL(datum.mapperContent)
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract mybatis mapper sql").SetInternal(err)
+				}
 
-		dbType, err := advisorDB.ConvertToAdvisorDBType(string(engineType))
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert to advisor db type").SetInternal(err)
-		}
-		adviceList, err := advisor.SQLReviewCheck(mybatisSQLs, policy.RuleList, advisor.SQLReviewCheckContext{
-			Catalog: emptyCatalog,
-			DbType:  dbType,
-		})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check sql review").SetInternal(err)
-		}
-		// Remap the line number to the original file.
-		for _, advice := range adviceList {
-			for _, line := range lineMapping {
-				if advice.Line <= line.SQLLastLine {
-					advice.Line = line.OriginalEleLine
-					break
+				dbType, err := advisorDB.ConvertToAdvisorDBType(string(engineType))
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert to advisor db type").SetInternal(err)
+				}
+				adviceList, err := advisor.SQLReviewCheck(mybatisSQLs, policy.RuleList, advisor.SQLReviewCheckContext{
+					Catalog: emptyCatalog,
+					DbType:  dbType,
+				})
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check sql review").SetInternal(err)
+				}
+				// Remap the line number to the original file.
+				for _, advice := range adviceList {
+					for _, line := range lineMapping {
+						if advice.Line <= line.SQLLastLine {
+							advice.Line = line.OriginalEleLine
+							break
+						}
+					}
+					result = append(result, advice)
 				}
 			}
-			result = append(result, advice)
 		}
 	}
 	if len(result) == 0 {

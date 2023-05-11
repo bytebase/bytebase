@@ -1,0 +1,74 @@
+- statement: CREATE TABLE "techBook"(id int, name varchar(255))
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"techBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 1
+      details: ""
+- statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtsdfasdfasdfiutqeb"(id int, name varchar(255))
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE tech_Book(id int, name varchar(255))
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"TECH_BOOK" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 1
+      details: ""
+- statement: CREATE TABLE techBook(id int, name varchar(255))
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"TECHBOOK" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 1
+      details: ""
+- statement: CREATE TABLE book(id int, name varchar(255))
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"BOOK" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 1
+      details: ""
+- statement: ALTER TABLE tech_book RENAME TO "TechBook"
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 1
+      details: ""
+- statement: |-
+    create table techBook(id int);
+    ALTER TABLE techBook RENAME TO tech_book_tmp;
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"TECHBOOK" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 1
+      details: ""
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"TECH_BOOK_TMP" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE tech_Book(id int, name varchar(255));
+                ALTER TABLE tech_book RENAME TO "tech_book";
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"TECH_BOOK" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 1
+      details: ""
