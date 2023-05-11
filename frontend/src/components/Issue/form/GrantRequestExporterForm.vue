@@ -52,13 +52,14 @@
         {{ selectedDatabase.name }}
       </div>
     </div>
-    <div v-if="create" class="w-full flex flex-row justify-start items-center">
+    <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center">Export rows</span>
       <input
         v-model="state.maxRowCount"
         required
         type="number"
         class="textfield"
+        :readonly="!create"
         placeholder="Max row count"
       />
     </div>
@@ -271,10 +272,10 @@ watch(
             databaseIdList.push(Number(last(url.split("/"))));
           }
           state.databaseId = head(databaseIdList);
-        } else if (fields[0] === "maxRowCount") {
+        } else if (fields[0] === "max_row_count") {
           state.maxRowCount = Number(fields[2]);
-        } else if (fields[0] === "exportFormat") {
-          state.exportFormat = fields[2] as "CSV" | "JSON";
+        } else if (fields[0] === "export_format") {
+          state.exportFormat = JSON.parse(fields[2]) as "CSV" | "JSON";
         }
       }
     }
