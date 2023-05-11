@@ -2,6 +2,8 @@
 package oracle
 
 import (
+	"strings"
+
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
 
@@ -72,20 +74,18 @@ func (l *whereNoLeadingWildcardLikeListener) EnterCompound_expression(ctx *parse
 		return
 	}
 
-	if ctx.Concatenation(0) == nil {
+	if ctx.Concatenation(1) == nil {
 		return
 	}
 
-	text := ctx.Concatenation(0).GetText()
-	if len(text) < 1 || text[0] != '%' {
-		return
+	text := ctx.Concatenation(1).GetText()
+	if strings.HasPrefix(text, "'%") && strings.HasSuffix(text, "'") {
+		l.adviceList = append(l.adviceList, advisor.Advice{
+			Status:  l.level,
+			Code:    advisor.StatementLeadingWildcardLike,
+			Title:   l.title,
+			Content: "Avoid using leading wildcard LIKE.",
+			Line:    ctx.GetStart().GetLine(),
+		})
 	}
-
-	l.adviceList = append(l.adviceList, advisor.Advice{
-		Status:  l.level,
-		Code:    advisor.StatementLeadingWildcardLike,
-		Title:   l.title,
-		Content: "Avoid using leading wildcard LIKE.",
-		Line:    ctx.GetStart().GetLine(),
-	})
 }
