@@ -358,6 +358,9 @@ const (
 
 	// OracleNoLeadingWildcardLike is an advisor type for Oracle no leading wildcard LIKE.
 	OracleNoLeadingWildcardLike Type = "bb.plugin.advisor.oracle.where.no-leading-wildcard-like"
+
+	// OracleWhereRequirement is an advisor type for Oracle WHERE clause requirement.
+	OracleWhereRequirement Type = "bb.plugin.advisor.oracle.where.require"
 )
 
 // Advice is the result of an advisor.
