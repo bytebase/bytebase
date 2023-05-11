@@ -98,17 +98,16 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 			}
 			sshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeys(signer))
 		} else {
-			// Establish a connection to the local ssh-agent
-			conn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
-			if err != nil {
-				return nil, err
-			}
-			defer conn.Close()
-			// Create a new instance of the ssh agent
-			agentClient := agent.NewClient(conn)
-			// When the agentClient connection succeeded, add them as AuthMethod
-			if agentClient != nil {
-				sshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeysCallback(agentClient.Signers))
+			// Users may use ssh-agent to store the private key with passphrase,
+			// we will try to connect to the ssh-agent to get the private key.
+			if conn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); err == nil {
+				defer conn.Close()
+				// Create a new instance of the ssh agent
+				agentClient := agent.NewClient(conn)
+				// When the agentClient connection succeeded, add them as AuthMethod
+				if agentClient != nil {
+					sshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeysCallback(agentClient.Signers))
+				}
 			}
 		}
 		// When there's a non empty password add the password AuthMethod.
