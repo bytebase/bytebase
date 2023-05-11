@@ -87,7 +87,7 @@ export function vcsSlug(vcs: VCS): string {
 }
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
-  return [slug(reviewPolicy.name), reviewPolicy.environment.id].join("-");
+  return [slug(reviewPolicy.name), reviewPolicy.environment.uid].join("-");
 }
 
 export function connectionSlug(

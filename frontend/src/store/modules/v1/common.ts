@@ -5,6 +5,7 @@ export const environmentNamePrefix = "environments/";
 export const projectNamePrefix = "projects/";
 export const instanceNamePrefix = "instances/";
 export const idpNamePrefix = "idps/";
+export const policyNamePrefix = "policies/";
 
 export const getNameParentTokens = (
   name: string,
