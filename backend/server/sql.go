@@ -216,6 +216,9 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 	g.POST("/sql/execute", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
+		role := c.Get(getRoleContextKey()).(api.Role)
+
 		exec := &api.SQLExecute{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, exec); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request").SetInternal(err)
@@ -250,33 +253,50 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if environment == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %s", instance.EnvironmentID))
 		}
-		principalID := c.Get(getPrincipalIDContextKey()).(int)
-		role := c.Get(getRoleContextKey()).(api.Role)
 
 		databaseNames, err := getDatabasesFromQuery(instance.Engine, exec.DatabaseName, exec.Statement)
 		if err != nil {
 			return err
 		}
-		var database *store.DatabaseMessage
 		// Check database access rights.
-		for _, databaseName := range databaseNames {
-			accessDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
-			if err != nil {
-				if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
-					// If database not found, skip.
-					continue
+		if role != api.Owner && role != api.DBA {
+			for _, databaseName := range databaseNames {
+				accessDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+				if err != nil {
+					if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+						// If database not found, skip.
+						continue
+					}
+					return err
 				}
-				return err
-			}
+				project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &accessDatabase.ProjectID})
+				if err != nil {
+					return err
+				}
+				projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+				if err != nil {
+					return err
+				}
+				databaseResourceURL := fmt.Sprintf("environments/%s/instances/%s/databases/%s", environment.ResourceID, instance.ResourceID, databaseName)
+				attributes := map[string]any{
+					"request.time":          time.Now(),
+					"resource.database":     databaseResourceURL,
+					"request.statement":     exec.Statement,
+					"request.row_limit":     exec.Limit,
+					"request.export_format": exec.ExportFormat,
+				}
 
-			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, accessDatabase)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.DatabaseName)).SetInternal(err)
-			}
-			if !hasAccessRights {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.DatabaseName))
+				hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, projectPolicy, accessDatabase, environment, attributes, exec.ExportFormat == "CSV" || exec.ExportFormat == "JSON")
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.DatabaseName)).SetInternal(err)
+				}
+				if !hasAccessRights {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.DatabaseName))
+				}
 			}
 		}
+
+		var database *store.DatabaseMessage
 		if exec.DatabaseName != "" {
 			database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &exec.DatabaseName})
 			if err != nil {
@@ -1002,27 +1022,32 @@ func isMySQLExcludeDatabase(database string) bool {
 	return true
 }
 
-func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, role api.Role, database *store.DatabaseMessage) (bool, error) {
-	// Workspace Owners and DBAs always have database access rights.
-	if role == api.Owner || role == api.DBA {
-		return true, nil
+func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, error) {
+	// Project IAM policy evaluation.
+	pass := false
+	for _, binding := range projectPolicy.Bindings {
+		if !((isExport && binding.Role == api.Role(common.ProjectExporter)) || (!isExport && binding.Role == api.Role(common.ProjectQuerier))) {
+			continue
+		}
+		for _, member := range binding.Members {
+			if member.ID != principalID {
+				continue
+			}
+			ok, err := evaluateCondition(binding.Condition.Expression, attributes)
+			if err != nil {
+				log.Error("failed to evaluate condition", zap.Error(err), zap.String("condition", binding.Condition.Expression))
+				break
+			}
+			if ok {
+				pass = true
+				break
+			}
+		}
+		if pass {
+			break
+		}
 	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
-	if err != nil {
-		return false, err
-	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
-	if err != nil {
-		return false, err
-	}
-
-	// Only project owner or developer can access database.
-	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return false, err
-	}
-	if !isProjectOwnerOrDeveloper(principalID, projectPolicy) {
+	if !pass {
 		return false, nil
 	}
 
