@@ -23,7 +23,8 @@
 
           <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
             <IssueReviewButtonGroup v-if="showReviewButton" />
-            <IssueStatusTransitionButtonGroup v-else-if="showRolloutButton" />
+            <ExportDataButton v-if="showExportButton" />
+            <IssueStatusTransitionButtonGroup v-if="showRolloutButton" />
           </div>
         </div>
         <div v-if="!create">
@@ -91,17 +92,24 @@ import { reactive, watch, computed, Ref } from "vue";
 import { head } from "lodash-es";
 
 import IssueStatusIcon from "./IssueStatusIcon.vue";
-import { activeTask, isDatabaseRelatedIssueType } from "@/utils";
+import {
+  activeTask,
+  isDatabaseRelatedIssueType,
+  isGrantRequestIssueType,
+} from "@/utils";
 import {
   TaskDatabaseSchemaUpdatePayload,
   TaskDatabaseDataUpdatePayload,
   Issue,
   VCSPushEvent,
+  GrantRequestPayload,
 } from "@/types";
+import { useCurrentUser } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
-import IssueStatusTransitionButtonGroup from "./IssueStatusTransitionButtonGroup.vue";
 import { IssueReviewButtonGroup } from "./review";
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
+import IssueStatusTransitionButtonGroup from "./IssueStatusTransitionButtonGroup.vue";
+import ExportDataButton from "./action/ExportDataButton.vue";
 
 interface LocalState {
   editing: boolean;
@@ -109,6 +117,7 @@ interface LocalState {
 }
 
 const logic = useIssueLogic();
+const currentUser = useCurrentUser();
 const create = logic.create;
 const issue = logic.issue as Ref<Issue>;
 const { allowEditNameAndDescription, updateName } = useExtraIssueLogic();
@@ -128,8 +137,26 @@ const showReviewButton = computed(() => {
 
 const showRolloutButton = computed(() => {
   if (create.value) return true;
+  // User can cancel issue when it's in review.
+  if (isGrantRequestIssueType(issue.value.type)) return true;
 
   return reviewDone.value;
+});
+
+const showExportButton = computed(() => {
+  if (create.value) return false;
+  if (!isGrantRequestIssueType(issue.value.type)) return false;
+  if (showReviewButton.value) return false;
+  // Don't show export button when issue is closed or done.
+  if (issue.value.status !== "OPEN") return false;
+
+  const payload = (issue.value.payload as any)
+    .grantRequest as GrantRequestPayload;
+
+  return (
+    currentUser.value.id === issue.value.creator.id &&
+    payload.role === "roles/EXPORTER"
+  );
 });
 
 const issueTaskStatus = () => {
