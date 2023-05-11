@@ -1036,6 +1036,7 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, p
 			ok, err := evaluateCondition(binding.Condition.Expression, attributes)
 			if err != nil {
 				log.Error("failed to evaluate condition", zap.Error(err), zap.String("condition", binding.Condition.Expression))
+				break
 			}
 			if ok {
 				pass = true
