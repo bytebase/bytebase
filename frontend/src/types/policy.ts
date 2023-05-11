@@ -11,7 +11,6 @@ import {
 export type PolicyType =
   | "bb.policy.pipeline-approval"
   | "bb.policy.backup-plan"
-  | "bb.policy.sql-review"
   | "bb.policy.environment-tier"
   | "bb.policy.sensitive-data"
   | "bb.policy.access-control"
@@ -45,17 +44,6 @@ export type BackupPlanPolicyPayload = {
 };
 
 export const DefaultSchedulePolicy: BackupPlanPolicySchedule = "UNSET";
-
-// SQLReviewPolicyPayload is the payload for SQL review policy in the backend.
-export type SQLReviewPolicyPayload = {
-  name: string;
-  ruleList: {
-    type: RuleType;
-    level: RuleLevel;
-    payload: string;
-    comment: string;
-  }[];
-};
 
 export type AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA" | "PROJECT_OWNER";
 
@@ -93,18 +81,12 @@ export type AccessControlPolicyPayload = {
   disallowRuleList: AccessControlRule[];
 };
 
-export type SlowQueryPolicyPayload = {
-  active: boolean;
-};
-
 export type PolicyPayload =
   | PipelineApprovalPolicyPayload
   | BackupPlanPolicyPayload
-  | SQLReviewPolicyPayload
   | EnvironmentTierPolicyPayload
   | SensitiveDataPolicyPayload
-  | AccessControlPolicyPayload
-  | SlowQueryPolicyPayload;
+  | AccessControlPolicyPayload;
 
 export type PolicyResourceType =
   | ""
