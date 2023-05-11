@@ -277,8 +277,16 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				if err != nil {
 					return err
 				}
+				databaseResourceURL := fmt.Sprintf("environments/%s/instances/%s/databases/%s", environment.ResourceID, instance.ResourceID, databaseName)
+				attributes := map[string]any{
+					"request.time":          time.Now(),
+					"resource.database":     databaseResourceURL,
+					"request.statement":     exec.Statement,
+					"request.row_limit":     exec.Limit,
+					"request.export_format": exec.ExportFormat,
+				}
 
-				hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, projectPolicy, accessDatabase, environment)
+				hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, projectPolicy, accessDatabase, environment, attributes, exec.ExportFormat == "CSV" || exec.ExportFormat == "JSON")
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.DatabaseName)).SetInternal(err)
 				}
@@ -1014,9 +1022,31 @@ func isMySQLExcludeDatabase(database string) bool {
 	return true
 }
 
-func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage) (bool, error) {
-	// Only project owner or developer can access database.
-	if !isProjectOwnerOrDeveloper(principalID, projectPolicy) {
+func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, error) {
+	// Project IAM policy evaluation.
+	pass := false
+	for _, binding := range projectPolicy.Bindings {
+		if !((isExport && binding.Role == api.Role(common.ProjectExporter)) || (!isExport && binding.Role == api.Role(common.ProjectQuerier))) {
+			continue
+		}
+		for _, member := range binding.Members {
+			if member.ID != principalID {
+				continue
+			}
+			ok, err := evaluateCondition(binding.Condition.Expression, attributes)
+			if err != nil {
+				log.Error("failed to evaluate condition", zap.Error(err), zap.String("condition", binding.Condition.Expression))
+			}
+			if ok {
+				pass = true
+				break
+			}
+		}
+		if pass {
+			break
+		}
+	}
+	if !pass {
 		return false, nil
 	}
 
