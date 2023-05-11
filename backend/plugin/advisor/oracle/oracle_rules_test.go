@@ -18,6 +18,7 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleColumnMaximumCharacterLength,
 		advisor.SchemaRuleStatementNoSelectAll,
 		advisor.SchemaRuleStatementNoLeadingWildcardLike,
+		advisor.SchemaRuleStatementRequireWhere,
 	}
 
 	for _, rule := range oracleRules {
