@@ -1,0 +1,91 @@
+// Package oracle is the advisor for oracle database.
+package oracle
+
+import (
+	"strings"
+
+	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	parser "github.com/bytebase/plsql-parser"
+
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
+)
+
+var (
+	_ advisor.Advisor = (*WhereNoLeadingWildcardLikeAdvisor)(nil)
+)
+
+func init() {
+	advisor.Register(db.Oracle, advisor.OracleNoLeadingWildcardLike, &WhereNoLeadingWildcardLikeAdvisor{})
+}
+
+// WhereNoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
+type WhereNoLeadingWildcardLikeAdvisor struct {
+}
+
+// Check checks for no leading wildcard LIKE.
+func (*WhereNoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+	tree, errAdvice := parseStatement(statement)
+	if errAdvice != nil {
+		return errAdvice, nil
+	}
+
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	if err != nil {
+		return nil, err
+	}
+
+	listener := &whereNoLeadingWildcardLikeListener{
+		level:         level,
+		title:         string(ctx.Rule.Type),
+		currentSchema: ctx.CurrentSchema,
+	}
+
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+
+	return listener.generateAdvice()
+}
+
+// whereNoLeadingWildcardLikeListener is the listener for no leading wildcard LIKE.
+type whereNoLeadingWildcardLikeListener struct {
+	*parser.BasePlSqlParserListener
+
+	level         advisor.Status
+	title         string
+	currentSchema string
+	adviceList    []advisor.Advice
+}
+
+func (l *whereNoLeadingWildcardLikeListener) generateAdvice() ([]advisor.Advice, error) {
+	if len(l.adviceList) == 0 {
+		l.adviceList = append(l.adviceList, advisor.Advice{
+			Status:  advisor.Success,
+			Code:    advisor.Ok,
+			Title:   "OK",
+			Content: "",
+		})
+	}
+	return l.adviceList, nil
+}
+
+// EnterCompound_expression is called when production compound_expression is entered.
+func (l *whereNoLeadingWildcardLikeListener) EnterCompound_expression(ctx *parser.Compound_expressionContext) {
+	if ctx.LIKE() == nil && ctx.LIKE2() == nil && ctx.LIKE4() == nil && ctx.LIKEC() == nil {
+		return
+	}
+
+	if ctx.Concatenation(1) == nil {
+		return
+	}
+
+	text := ctx.Concatenation(1).GetText()
+	if strings.HasPrefix(text, "'%") && strings.HasSuffix(text, "'") {
+		l.adviceList = append(l.adviceList, advisor.Advice{
+			Status:  l.level,
+			Code:    advisor.StatementLeadingWildcardLike,
+			Title:   l.title,
+			Content: "Avoid using leading wildcard LIKE.",
+			Line:    ctx.GetStart().GetLine(),
+		})
+	}
+}
