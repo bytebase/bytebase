@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,8 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -37,8 +34,17 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, policyUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed set policy request").SetInternal(err)
 		}
-		if pType == api.PolicyTypeSQLReview {
-			policyUpsert.Payload = splitSQLReviewRule(policyUpsert.Payload)
+		if pType == api.PolicyTypeSQLReview && policyUpsert.Payload != nil {
+			policy, err := api.UnmarshalSQLReviewPolicy(*policyUpsert.Payload)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Failed to unmarshal policy payload").SetInternal(err)
+			}
+			payload := api.FlattenSQLReviewRulesWithEngine(policy)
+			payloadStr, err := payload.String()
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal policy payload").SetInternal(err)
+			}
+			policyUpsert.Payload = &payloadStr
 		}
 
 		if err := s.hasAccessToUpsertPolicy(pType, policyUpsert); err != nil {
@@ -150,7 +156,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		}
 
 		if pType == api.PolicyTypeSQLReview {
-			policy.Payload = mergeSQLReviewRule(policy.Payload)
+			policy.Payload = api.MergeSQLReviewRulesWithoutEngine(policy.Payload)
 		}
 
 		composedPolicy := &api.Policy{
@@ -288,7 +294,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		}
 
 		if pType == api.PolicyTypeSQLReview {
-			policy.Payload = mergeSQLReviewRule(policy.Payload)
+			policy.Payload = api.MergeSQLReviewRulesWithoutEngine(policy.Payload)
 		}
 
 		composedPolicy := &api.Policy{
@@ -347,7 +353,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		for _, policy := range policies {
 			policy := policy
 			if pType == api.PolicyTypeSQLReview {
-				policy.Payload = mergeSQLReviewRule(policy.Payload)
+				policy.Payload = api.MergeSQLReviewRulesWithoutEngine(policy.Payload)
 			}
 
 			composedPolicy := &api.Policy{
@@ -432,96 +438,4 @@ func (s *Server) hasAccessToUpsertPolicy(pType api.PolicyType, policyUpsert *api
 		}
 	}
 	return nil
-}
-
-func mergeSQLReviewRule(payload string) string {
-	policy, err := api.UnmarshalSQLReviewPolicy(payload)
-	if err != nil {
-		return payload
-	}
-
-	ruleMap := make(map[advisor.SQLReviewRuleType]bool)
-	var ruleList []*advisor.SQLReviewRule
-	for _, rule := range policy.RuleList {
-		if _, exists := ruleMap[rule.Type]; exists {
-			continue
-		}
-		ruleMap[rule.Type] = true
-
-		ruleList = append(ruleList, &advisor.SQLReviewRule{
-			Type:    rule.Type,
-			Level:   rule.Level,
-			Comment: rule.Comment,
-			Payload: rule.Payload,
-		})
-	}
-
-	policy.RuleList = ruleList
-	result, err := json.Marshal(policy)
-	if err != nil {
-		return payload
-	}
-	return string(result)
-}
-
-func splitSQLReviewRule(payload *string) *string {
-	if payload == nil {
-		return nil
-	}
-	policy, err := api.UnmarshalSQLReviewPolicy(*payload)
-	if err != nil {
-		return payload
-	}
-
-	var ruleList []*advisor.SQLReviewRule
-	for i, rule := range policy.RuleList {
-		if rule.Engine != "" {
-			ruleList = append(ruleList, policy.RuleList[i])
-		} else {
-			if advisor.RuleExists(rule.Type, db.MySQL) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.MySQL,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-			if advisor.RuleExists(rule.Type, db.TiDB) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.TiDB,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-			if advisor.RuleExists(rule.Type, db.MariaDB) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.MariaDB,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-			if advisor.RuleExists(rule.Type, db.Postgres) {
-				ruleList = append(ruleList, &advisor.SQLReviewRule{
-					Type:    rule.Type,
-					Level:   rule.Level,
-					Engine:  db.Postgres,
-					Comment: rule.Comment,
-					Payload: rule.Payload,
-				})
-			}
-		}
-	}
-
-	policy.RuleList = ruleList
-	result, err := json.Marshal(policy)
-	if err != nil {
-		return payload
-	}
-	resultString := string(result)
-	return &resultString
 }
