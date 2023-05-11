@@ -5,10 +5,12 @@
       title: OK
       content: ""
       line: 0
+      details: ""
 - statement: INSERT INTO tech_book VALUES (1, '1')
   want:
     - status: WARN
       code: 1107
       title: statement.insert.must-specify-column
-      content: The INSERT statement must specify columns but "INSERT INTO tech_book VALUES (1, '1')" does not
+      content: INSERT statement should specify column name.
       line: 1
+      details: ""
