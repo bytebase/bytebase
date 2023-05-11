@@ -37,6 +37,8 @@ export type QueryInfo = {
   databaseName?: string;
   statement: string;
   limit?: number;
+  // exportFomat includes QUERY, CSV, JSON.
+  exportFormat?: string;
 };
 
 // TODO(Jim): not used yet
