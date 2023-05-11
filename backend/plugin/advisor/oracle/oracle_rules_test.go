@@ -15,6 +15,7 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleTableNaming,
 		advisor.SchemaRuleRequiredColumn,
 		advisor.SchemaRuleColumnTypeDisallowList,
+		advisor.SchemaRuleColumnMaximumCharacterLength,
 	}
 
 	for _, rule := range oracleRules {

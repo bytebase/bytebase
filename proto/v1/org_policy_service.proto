@@ -155,18 +155,23 @@ message ListPoliciesRequest {
   // Format: {resource type}/{resource id}/policies/{policy type}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
+  optional PolicyType policy_type = 2;
+
   // The maximum number of policies to return. The service may return fewer than
   // this value.
   // If unspecified, at most 50 policies will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
+  int32 page_size = 3;
 
   // A page token, received from a previous `GetPolicies` call.
   // Provide this to retrieve the subsequent page.
   //
   // When paginating, all other parameters provided to `GetPolicies` must match
   // the call that provided the page token.
-  string page_token = 3;
+  string page_token = 4;
+
+  // Show deleted policies if specified.
+  bool show_deleted = 5;
 }
 
 message ListPoliciesResponse {
@@ -200,9 +205,18 @@ message Policy {
     SensitiveDataPolicy sensitive_data_policy = 8;
     AccessControlPolicy access_control_policy = 9;
     SQLReviewPolicy sql_review_policy = 10;
+    SlowQueryPolicy slow_query_policy = 11;
   }
 
-  bool enforce = 11;
+  bool enforce = 12;
+
+  // The resource type for the policy.
+  PolicyResourceType resource_type = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The system-assigned, unique identifier for the resource.
+  string resource_uid = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 15;
 }
 
 enum PolicyType {
@@ -212,6 +226,16 @@ enum PolicyType {
   SQL_REVIEW = 3;
   SENSITIVE_DATA = 4;
   ACCESS_CONTROL = 5;
+  SLOW_QUERY = 6;
+}
+
+enum PolicyResourceType {
+  RESOURCE_TYPE_UNSPECIFIED = 0;
+  WORKSPACE = 1;
+  ENVIRONMENT = 2;
+  PROJECT = 3;
+  INSTANCE = 4;
+  DATABASE = 5;
 }
 
 message DeploymentApprovalPolicy {
@@ -240,6 +264,10 @@ enum ApprovalStrategy {
 message BackupPlanPolicy {
   BackupPlanSchedule schedule = 1;
   google.protobuf.Duration retention_duration = 2;
+}
+
+message SlowQueryPolicy {
+  bool active = 1;
 }
 
 enum BackupPlanSchedule {
@@ -274,7 +302,7 @@ message AccessControlRule {
 }
 
 message SQLReviewPolicy {
-  string title = 1;
+  string name = 1;
   repeated SQLReviewRule rules = 2;
 }
 

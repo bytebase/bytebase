@@ -48,7 +48,7 @@
     </div>
     <template v-else>
       <div
-        if="applicableIssueStatusTransitionList.length > 0"
+        v-if="applicableIssueStatusTransitionList.length > 0"
         class="flex space-x-2"
       >
         <template
@@ -141,6 +141,7 @@ import { DropdownOption, NDropdown } from "naive-ui";
 import {
   activeStage,
   canSkipTask,
+  isDatabaseRelatedIssueType,
   StageStatusTransition,
   taskCheckRunSummary,
   TaskStatusTransition,
@@ -261,6 +262,7 @@ const {
   getApplicableTaskStatusTransitionList,
 } = useIssueTransitionLogic(issue as Ref<Issue>);
 
+// TODO(steven): figure out how to show the dropdown for grant request issue.
 const issueStatusTransitionDropdownOptions = computed(() => {
   return applicableIssueStatusTransitionList.value.map<ExtraActionOption>(
     (transition) => {
@@ -280,6 +282,9 @@ const skippableTaskList = computed(() => {
 
   const issueEntity = issue.value as Issue;
   if (issueEntity.status !== "OPEN") {
+    return [];
+  }
+  if (!isDatabaseRelatedIssueType(issueEntity.type)) {
     return [];
   }
 

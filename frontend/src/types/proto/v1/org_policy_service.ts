@@ -4,7 +4,7 @@ import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { Engine, engineFromJSON, engineToJSON, State, stateFromJSON, stateToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
 
 export const protobufPackage = "bytebase.v1";
@@ -16,6 +16,7 @@ export enum PolicyType {
   SQL_REVIEW = 3,
   SENSITIVE_DATA = 4,
   ACCESS_CONTROL = 5,
+  SLOW_QUERY = 6,
   UNRECOGNIZED = -1,
 }
 
@@ -39,6 +40,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 5:
     case "ACCESS_CONTROL":
       return PolicyType.ACCESS_CONTROL;
+    case 6:
+    case "SLOW_QUERY":
+      return PolicyType.SLOW_QUERY;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -60,7 +64,66 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "SENSITIVE_DATA";
     case PolicyType.ACCESS_CONTROL:
       return "ACCESS_CONTROL";
+    case PolicyType.SLOW_QUERY:
+      return "SLOW_QUERY";
     case PolicyType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum PolicyResourceType {
+  RESOURCE_TYPE_UNSPECIFIED = 0,
+  WORKSPACE = 1,
+  ENVIRONMENT = 2,
+  PROJECT = 3,
+  INSTANCE = 4,
+  DATABASE = 5,
+  UNRECOGNIZED = -1,
+}
+
+export function policyResourceTypeFromJSON(object: any): PolicyResourceType {
+  switch (object) {
+    case 0:
+    case "RESOURCE_TYPE_UNSPECIFIED":
+      return PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED;
+    case 1:
+    case "WORKSPACE":
+      return PolicyResourceType.WORKSPACE;
+    case 2:
+    case "ENVIRONMENT":
+      return PolicyResourceType.ENVIRONMENT;
+    case 3:
+    case "PROJECT":
+      return PolicyResourceType.PROJECT;
+    case 4:
+    case "INSTANCE":
+      return PolicyResourceType.INSTANCE;
+    case 5:
+    case "DATABASE":
+      return PolicyResourceType.DATABASE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PolicyResourceType.UNRECOGNIZED;
+  }
+}
+
+export function policyResourceTypeToJSON(object: PolicyResourceType): string {
+  switch (object) {
+    case PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED:
+      return "RESOURCE_TYPE_UNSPECIFIED";
+    case PolicyResourceType.WORKSPACE:
+      return "WORKSPACE";
+    case PolicyResourceType.ENVIRONMENT:
+      return "ENVIRONMENT";
+    case PolicyResourceType.PROJECT:
+      return "PROJECT";
+    case PolicyResourceType.INSTANCE:
+      return "INSTANCE";
+    case PolicyResourceType.DATABASE:
+      return "DATABASE";
+    case PolicyResourceType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -328,6 +391,9 @@ export interface ListPoliciesRequest {
    * Format: {resource type}/{resource id}/policies/{policy type}
    */
   parent: string;
+  policyType?:
+    | PolicyType
+    | undefined;
   /**
    * The maximum number of policies to return. The service may return fewer than
    * this value.
@@ -343,6 +409,8 @@ export interface ListPoliciesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** Show deleted policies if specified. */
+  showDeleted: boolean;
 }
 
 export interface ListPoliciesResponse {
@@ -374,7 +442,13 @@ export interface Policy {
   sensitiveDataPolicy?: SensitiveDataPolicy | undefined;
   accessControlPolicy?: AccessControlPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
+  slowQueryPolicy?: SlowQueryPolicy | undefined;
   enforce: boolean;
+  /** The resource type for the policy. */
+  resourceType: PolicyResourceType;
+  /** The system-assigned, unique identifier for the resource. */
+  resourceUid: string;
+  state: State;
 }
 
 export interface DeploymentApprovalPolicy {
@@ -391,6 +465,10 @@ export interface DeploymentApprovalStrategy {
 export interface BackupPlanPolicy {
   schedule: BackupPlanSchedule;
   retentionDuration?: Duration;
+}
+
+export interface SlowQueryPolicy {
+  active: boolean;
 }
 
 export interface SensitiveDataPolicy {
@@ -413,7 +491,7 @@ export interface AccessControlRule {
 }
 
 export interface SQLReviewPolicy {
-  title: string;
+  name: string;
   rules: SQLReviewRule[];
 }
 
@@ -710,7 +788,7 @@ export const GetPolicyRequest = {
 };
 
 function createBaseListPoliciesRequest(): ListPoliciesRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", policyType: undefined, pageSize: 0, pageToken: "", showDeleted: false };
 }
 
 export const ListPoliciesRequest = {
@@ -718,11 +796,17 @@ export const ListPoliciesRequest = {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
+    if (message.policyType !== undefined) {
+      writer.uint32(16).int32(message.policyType);
+    }
     if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
+      writer.uint32(24).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
+      writer.uint32(34).string(message.pageToken);
+    }
+    if (message.showDeleted === true) {
+      writer.uint32(40).bool(message.showDeleted);
     }
     return writer;
   },
@@ -746,14 +830,28 @@ export const ListPoliciesRequest = {
             break;
           }
 
-          message.pageSize = reader.int32();
+          message.policyType = reader.int32() as any;
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
           message.pageToken = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.showDeleted = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -767,16 +865,21 @@ export const ListPoliciesRequest = {
   fromJSON(object: any): ListPoliciesRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
+      policyType: isSet(object.policyType) ? policyTypeFromJSON(object.policyType) : undefined,
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
     };
   },
 
   toJSON(message: ListPoliciesRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
+    message.policyType !== undefined &&
+      (obj.policyType = message.policyType !== undefined ? policyTypeToJSON(message.policyType) : undefined);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
@@ -787,8 +890,10 @@ export const ListPoliciesRequest = {
   fromPartial(object: DeepPartial<ListPoliciesRequest>): ListPoliciesRequest {
     const message = createBaseListPoliciesRequest();
     message.parent = object.parent ?? "";
+    message.policyType = object.policyType ?? undefined;
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
@@ -879,7 +984,11 @@ function createBasePolicy(): Policy {
     sensitiveDataPolicy: undefined,
     accessControlPolicy: undefined,
     sqlReviewPolicy: undefined,
+    slowQueryPolicy: undefined,
     enforce: false,
+    resourceType: 0,
+    resourceUid: "",
+    state: 0,
   };
 }
 
@@ -912,8 +1021,20 @@ export const Policy = {
     if (message.sqlReviewPolicy !== undefined) {
       SQLReviewPolicy.encode(message.sqlReviewPolicy, writer.uint32(82).fork()).ldelim();
     }
+    if (message.slowQueryPolicy !== undefined) {
+      SlowQueryPolicy.encode(message.slowQueryPolicy, writer.uint32(90).fork()).ldelim();
+    }
     if (message.enforce === true) {
-      writer.uint32(88).bool(message.enforce);
+      writer.uint32(96).bool(message.enforce);
+    }
+    if (message.resourceType !== 0) {
+      writer.uint32(104).int32(message.resourceType);
+    }
+    if (message.resourceUid !== "") {
+      writer.uint32(114).string(message.resourceUid);
+    }
+    if (message.state !== 0) {
+      writer.uint32(120).int32(message.state);
     }
     return writer;
   },
@@ -989,11 +1110,39 @@ export const Policy = {
           message.sqlReviewPolicy = SQLReviewPolicy.decode(reader, reader.uint32());
           continue;
         case 11:
-          if (tag !== 88) {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.slowQueryPolicy = SlowQueryPolicy.decode(reader, reader.uint32());
+          continue;
+        case 12:
+          if (tag !== 96) {
             break;
           }
 
           message.enforce = reader.bool();
+          continue;
+        case 13:
+          if (tag !== 104) {
+            break;
+          }
+
+          message.resourceType = reader.int32() as any;
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.resourceUid = reader.string();
+          continue;
+        case 15:
+          if (tag !== 120) {
+            break;
+          }
+
+          message.state = reader.int32() as any;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1021,7 +1170,11 @@ export const Policy = {
         ? AccessControlPolicy.fromJSON(object.accessControlPolicy)
         : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
+      slowQueryPolicy: isSet(object.slowQueryPolicy) ? SlowQueryPolicy.fromJSON(object.slowQueryPolicy) : undefined,
       enforce: isSet(object.enforce) ? Boolean(object.enforce) : false,
+      resourceType: isSet(object.resourceType) ? policyResourceTypeFromJSON(object.resourceType) : 0,
+      resourceUid: isSet(object.resourceUid) ? String(object.resourceUid) : "",
+      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
     };
   },
 
@@ -1044,7 +1197,12 @@ export const Policy = {
       : undefined);
     message.sqlReviewPolicy !== undefined &&
       (obj.sqlReviewPolicy = message.sqlReviewPolicy ? SQLReviewPolicy.toJSON(message.sqlReviewPolicy) : undefined);
+    message.slowQueryPolicy !== undefined &&
+      (obj.slowQueryPolicy = message.slowQueryPolicy ? SlowQueryPolicy.toJSON(message.slowQueryPolicy) : undefined);
     message.enforce !== undefined && (obj.enforce = message.enforce);
+    message.resourceType !== undefined && (obj.resourceType = policyResourceTypeToJSON(message.resourceType));
+    message.resourceUid !== undefined && (obj.resourceUid = message.resourceUid);
+    message.state !== undefined && (obj.state = stateToJSON(message.state));
     return obj;
   },
 
@@ -1074,7 +1232,13 @@ export const Policy = {
     message.sqlReviewPolicy = (object.sqlReviewPolicy !== undefined && object.sqlReviewPolicy !== null)
       ? SQLReviewPolicy.fromPartial(object.sqlReviewPolicy)
       : undefined;
+    message.slowQueryPolicy = (object.slowQueryPolicy !== undefined && object.slowQueryPolicy !== null)
+      ? SlowQueryPolicy.fromPartial(object.slowQueryPolicy)
+      : undefined;
     message.enforce = object.enforce ?? false;
+    message.resourceType = object.resourceType ?? 0;
+    message.resourceUid = object.resourceUid ?? "";
+    message.state = object.state ?? 0;
     return message;
   },
 };
@@ -1313,6 +1477,62 @@ export const BackupPlanPolicy = {
     message.retentionDuration = (object.retentionDuration !== undefined && object.retentionDuration !== null)
       ? Duration.fromPartial(object.retentionDuration)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseSlowQueryPolicy(): SlowQueryPolicy {
+  return { active: false };
+}
+
+export const SlowQueryPolicy = {
+  encode(message: SlowQueryPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.active === true) {
+      writer.uint32(8).bool(message.active);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SlowQueryPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSlowQueryPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.active = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SlowQueryPolicy {
+    return { active: isSet(object.active) ? Boolean(object.active) : false };
+  },
+
+  toJSON(message: SlowQueryPolicy): unknown {
+    const obj: any = {};
+    message.active !== undefined && (obj.active = message.active);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
+    return SlowQueryPolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
+    const message = createBaseSlowQueryPolicy();
+    message.active = object.active ?? false;
     return message;
   },
 };
@@ -1599,13 +1819,13 @@ export const AccessControlRule = {
 };
 
 function createBaseSQLReviewPolicy(): SQLReviewPolicy {
-  return { title: "", rules: [] };
+  return { name: "", rules: [] };
 }
 
 export const SQLReviewPolicy = {
   encode(message: SQLReviewPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     for (const v of message.rules) {
       SQLReviewRule.encode(v!, writer.uint32(18).fork()).ldelim();
@@ -1625,7 +1845,7 @@ export const SQLReviewPolicy = {
             break;
           }
 
-          message.title = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -1645,14 +1865,14 @@ export const SQLReviewPolicy = {
 
   fromJSON(object: any): SQLReviewPolicy {
     return {
-      title: isSet(object.title) ? String(object.title) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       rules: Array.isArray(object?.rules) ? object.rules.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: SQLReviewPolicy): unknown {
     const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
+    message.name !== undefined && (obj.name = message.name);
     if (message.rules) {
       obj.rules = message.rules.map((e) => e ? SQLReviewRule.toJSON(e) : undefined);
     } else {
@@ -1667,7 +1887,7 @@ export const SQLReviewPolicy = {
 
   fromPartial(object: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
     const message = createBaseSQLReviewPolicy();
-    message.title = object.title ?? "";
+    message.name = object.name ?? "";
     message.rules = object.rules?.map((e) => SQLReviewRule.fromPartial(e)) || [];
     return message;
   },

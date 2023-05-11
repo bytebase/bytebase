@@ -349,6 +349,9 @@ const (
 
 	// OracleColumnTypeDisallowList is an advisor type for Oracle column type disallow list.
 	OracleColumnTypeDisallowList Type = "bb.plugin.advisor.oracle.column.type-disallow-list"
+
+	// OracleColumnMaximumCharacterLength is an advisor type for Oracle maximum character length.
+	OracleColumnMaximumCharacterLength Type = "bb.plugin.advisor.oracle.column.maximum-character-length"
 )
 
 // Advice is the result of an advisor.
