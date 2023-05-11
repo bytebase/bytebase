@@ -184,7 +184,7 @@
         </h3>
       </div>
 
-      <template v-if="isDev()">
+      <template v-if="isDev() && hasCustomRoleFeature">
         <div
           v-if="quickAction === 'quickaction.bb.issue.grant.request.querier'"
           class="flex flex-col items-center w-24"
@@ -342,6 +342,9 @@ const router = useRouter();
 const route = useRoute();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionStore();
+const hasCustomRoleFeature = computed(() => {
+  return subscriptionStore.hasFeature("bb.feature.custom-role");
+});
 
 const state = reactive<LocalState>({
   showModal: false,
