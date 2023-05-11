@@ -191,11 +191,10 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 	if method == "GET" {
 		if path == "/project" {
 			userIDStr := quaryParams.Get("user")
-			if userIDStr == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch all project list")
-			}
-			if strconv.Itoa(principalID) != userIDStr {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch projects from other user")
+			if userIDStr != "" {
+				if strconv.Itoa(principalID) != userIDStr {
+					return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch projects from other user")
+				}
 			}
 		}
 		// For /project/xxx subroutes, since all projects are public, we don't enforce ACL.
