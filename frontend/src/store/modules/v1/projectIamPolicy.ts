@@ -149,8 +149,8 @@ export const useCurrentUserIamPolicy = () => {
             if (fields[0] === "resource.database") {
               for (const url of JSON.parse(fields[2])) {
                 const value = url.split("/");
-                const instanceName = value[2] || "";
-                const databaseName = value[4] || "";
+                const instanceName = value[1] || "";
+                const databaseName = value[3] || "";
                 if (
                   database.instance.resourceId === instanceName &&
                   database.name === databaseName
