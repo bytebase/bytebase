@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -294,11 +295,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			// TODO(d): perfect matching condition expression.
 			var usedExpression string
 			for _, database := range databases {
-				databaseResourceURL := fmt.Sprintf("environments/%s/instances/%s/databases/%s", environment.ResourceID, instance.ResourceID, database.DatabaseName)
+				databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)
 				attributes := map[string]any{
 					"request.time":          time.Now(),
 					"resource.database":     databaseResourceURL,
-					"request.statement":     exec.Statement,
+					"request.statement":     base64.StdEncoding.EncodeToString([]byte(exec.Statement)),
 					"request.row_limit":     exec.Limit,
 					"request.export_format": exec.ExportFormat,
 				}
@@ -1152,6 +1153,7 @@ func getDatabasesFromQuery(engine db.Type, databaseName, statement string) ([]st
 					return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", databaseName, name))
 				}
 			}
+			return []string{databaseName}, nil
 		}
 		return databases, nil
 	}
