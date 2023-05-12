@@ -23,6 +23,7 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleIndexKeyNumberLimit,
 		advisor.SchemaRuleColumnNotNull,
 		advisor.SchemaRuleColumnRequireDefault,
+		advisor.SchemaRuleAddNotNullColumnRequireDefault,
 	}
 
 	for _, rule := range oracleRules {

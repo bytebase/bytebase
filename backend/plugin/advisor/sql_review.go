@@ -128,6 +128,8 @@ const (
 	SchemaRuleCurrentTimeColumnCountLimit SQLReviewRuleType = "column.current-time-count-limit"
 	// SchemaRuleColumnRequireDefault enforce the column default.
 	SchemaRuleColumnRequireDefault SQLReviewRuleType = "column.require-default"
+	// SchemaRuleAddNotNullColumnRequireDefault enforce the adding not null column requires default.
+	SchemaRuleAddNotNullColumnRequireDefault SQLReviewRuleType = "column.add-not-null-require-default"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -938,6 +940,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLRequireColumnDefault, nil
 		case db.Oracle:
 			return OracleRequireColumnDefault, nil
+		}
+	case SchemaRuleAddNotNullColumnRequireDefault:
+		if engine == db.Oracle {
+			return OracleAddNotNullColumnRequireDefault, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
