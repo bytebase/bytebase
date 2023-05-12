@@ -440,6 +440,10 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 20,
 		})
+	case SchemaRuleColumnMaximumVarcharLength:
+		payload, err = json.Marshal(NumberTypeRulePayload{
+			Number: 2560,
+		})
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 20,

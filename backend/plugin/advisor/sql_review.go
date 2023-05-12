@@ -120,6 +120,8 @@ const (
 	SchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "column.disallow-set-charset"
 	// SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
 	SchemaRuleColumnMaximumCharacterLength SQLReviewRuleType = "column.maximum-character-length"
+	// SchemaRuleColumnMaximumVarcharLength enforce the maximum varchar length.
+	SchemaRuleColumnMaximumVarcharLength SQLReviewRuleType = "column.maximum-varchar-length"
 	// SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
 	SchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "column.auto-increment-initial-value"
 	// SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
@@ -265,7 +267,7 @@ func (rule *SQLReviewRule) Validate() error {
 			return err
 		}
 	case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit,
-		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleStatementAffectedRowLimit:
+		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnMaximumVarcharLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleStatementAffectedRowLimit:
 		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -916,6 +918,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLColumnMaximumCharacterLength, nil
 		case db.Oracle:
 			return OracleColumnMaximumCharacterLength, nil
+		}
+	case SchemaRuleColumnMaximumVarcharLength:
+		if engine == db.Oracle {
+			return OracleColumnMaximumVarcharLength, nil
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {
