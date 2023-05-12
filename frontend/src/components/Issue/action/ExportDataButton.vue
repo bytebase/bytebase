@@ -131,19 +131,7 @@ const handleExport = async () => {
   }
 
   state.isRequesting = true;
-  let queryResult: SQLResultSet;
-  try {
-    queryResult = await useSQLStore().query(exportContext.value);
-  } catch (error) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: `Failed to export data`,
-      description: JSON.stringify(error),
-    });
-    state.isRequesting = false;
-    return;
-  }
+  const queryResult = await useSQLStore().query(exportContext.value);
   if (queryResult.error) {
     pushNotification({
       module: "bytebase",
