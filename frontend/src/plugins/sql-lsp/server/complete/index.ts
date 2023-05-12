@@ -3,7 +3,7 @@ import type {
   CompletionItem,
   CompletionParams,
 } from "vscode-languageserver/browser";
-import type { SQLDialect, Schema, Table } from "@sql-lsp/types";
+import type { SQLDialect, Schema, Table, LanguageState } from "@sql-lsp/types";
 import {
   createColumnCandidates,
   createDatabaseCandidates,
@@ -19,14 +19,14 @@ import { SubQueryMapping } from "./sub-query";
 export const complete = async (
   params: CompletionParams,
   document: TextDocument,
-  schema: Schema,
-  dialect: SQLDialect
+  state: LanguageState
 ): Promise<CompletionItem[]> => {
   const sql = document.getText();
   const textBeforeCursor = document.getText({
     start: { line: 0, character: 0 },
     end: params.position,
   });
+  const { schema, dialect, connectionScope } = state;
 
   const tokens = simpleTokenize(textBeforeCursor);
   const lastToken = tokens[tokens.length - 1].toLowerCase();
@@ -53,7 +53,7 @@ export const complete = async (
       // provide auto completion items for its tables
       const tableListOfDatabase = createTableCandidates(
         tableList.filter((table) => table.database === databaseName),
-        false //  // without database prefix since it's already inputted
+        false // without database prefix since it's already inputted
       );
       suggestions.push(...tableListOfDatabase);
     };
@@ -153,13 +153,10 @@ export const complete = async (
 
     const suggestionsForAliases = aliasMapping.createAllAliasCandidates();
 
-    // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
-    const suggestionsForDatabase = !withSchema
-      ? createDatabaseCandidates(schema.databases)
-      : [];
     const suggestionsForTable = createTableCandidates(
       tableList,
-      !withSchema // Add database prefix to table candidates only for MySQL.
+      // Add database prefix to table candidates when connection scope is 'instance'
+      state.connectionScope === "instance"
     );
     const suggestionsForSubQueryVirtualTable = createSubQueryCandidates(
       subQueryMapping.virtualTableList
@@ -171,8 +168,13 @@ export const complete = async (
       ...suggestionsForKeyword,
       ...suggestionsForTable,
       ...suggestionsForSubQueryVirtualTable,
-      ...suggestionsForDatabase,
     ];
+    if (state.connectionScope === "instance") {
+      // Provide database suggestions only when we are connection to instance scope
+      // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
+      const suggestionsForDatabase = createDatabaseCandidates(schema.databases);
+      suggestions.push(...suggestionsForDatabase);
+    }
   }
 
   return suggestions;
