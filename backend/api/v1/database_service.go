@@ -492,7 +492,7 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 	return &v1pb.ListSecretsResponse{
-		Secrets: stripeAndConvertToServiceSecrets(database.Secrets, database.EnvironmentID, database.InstanceID, database.DatabaseName),
+		Secrets: stripeAndConvertToServiceSecrets(database.Secrets, database.InstanceID, database.DatabaseName),
 	}, nil
 }
 
@@ -592,7 +592,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	// Get the secret from the updated database.
 	for _, secret := range updatedDatabase.Secrets.Items {
 		if secret.Name == updateSecretName {
-			return stripeAndConvertToServiceSecret(secret, updatedDatabase.EnvironmentID, updatedDatabase.InstanceID, updatedDatabase.DatabaseName), nil
+			return stripeAndConvertToServiceSecret(secret, updatedDatabase.InstanceID, updatedDatabase.DatabaseName), nil
 		}
 	}
 	return &v1pb.Secret{}, nil
@@ -806,7 +806,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 		}
 
 		for _, log := range logs {
-			result.SlowQueryLogs = append(result.SlowQueryLogs, convertToSlowQueryLog(database.EnvironmentID, database.InstanceID, database.DatabaseName, database.ProjectID, log))
+			result.SlowQueryLogs = append(result.SlowQueryLogs, convertToSlowQueryLog(database.InstanceID, database.DatabaseName, database.ProjectID, log))
 			if value, exists := instanceMap[database.InstanceID]; exists {
 				value.totalQueryTime += log.Statistics.AverageQueryTime.AsDuration() * time.Duration(log.Statistics.Count)
 				value.totalCount += log.Statistics.Count
@@ -948,9 +948,9 @@ func validSlowQueryOrderByKey(keys []orderByKey) error {
 	return nil
 }
 
-func convertToSlowQueryLog(environmentID string, instanceID string, databaseName string, projectID string, log *v1pb.SlowQueryLog) *v1pb.SlowQueryLog {
+func convertToSlowQueryLog(instanceID string, databaseName string, projectID string, log *v1pb.SlowQueryLog) *v1pb.SlowQueryLog {
 	return &v1pb.SlowQueryLog{
-		Resource:   fmt.Sprintf("%s%s/%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName),
+		Resource:   fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName),
 		Project:    fmt.Sprintf("%s%s", projectNamePrefix, projectID),
 		Statistics: log.Statistics,
 	}
@@ -1260,20 +1260,20 @@ func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMe
 	return false
 }
 
-func stripeAndConvertToServiceSecrets(secrets *storepb.Secrets, environmentID, instanceID, databaseName string) []*v1pb.Secret {
+func stripeAndConvertToServiceSecrets(secrets *storepb.Secrets, instanceID, databaseName string) []*v1pb.Secret {
 	var serviceSecrets []*v1pb.Secret
 	if secrets == nil || len(secrets.Items) == 0 {
 		return serviceSecrets
 	}
 	for _, secret := range secrets.Items {
-		serviceSecrets = append(serviceSecrets, stripeAndConvertToServiceSecret(secret, environmentID, instanceID, databaseName))
+		serviceSecrets = append(serviceSecrets, stripeAndConvertToServiceSecret(secret, instanceID, databaseName))
 	}
 	return serviceSecrets
 }
 
-func stripeAndConvertToServiceSecret(secretEntry *storepb.SecretItem, environmentID, instanceID, databaseName string) *v1pb.Secret {
+func stripeAndConvertToServiceSecret(secretEntry *storepb.SecretItem, instanceID, databaseName string) *v1pb.Secret {
 	return &v1pb.Secret{
-		Name:        fmt.Sprintf("%s%s/%s%s/%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, secretNamePrefix, secretEntry.Name),
+		Name:        fmt.Sprintf("%s%s/%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, secretNamePrefix, secretEntry.Name),
 		Value:       "", /* stripped */
 		Description: secretEntry.Description,
 	}

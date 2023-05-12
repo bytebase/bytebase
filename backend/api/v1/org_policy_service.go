@@ -424,7 +424,7 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s%s/%s%s", environmentNamePrefix, ins.EnvironmentID, instanceNamePrefix, ins.ResourceID), nil
+		return fmt.Sprintf("%s%s", instanceNamePrefix, ins.ResourceID), nil
 	case api.PolicyResourceTypeDatabase:
 		db, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
 			UID: &policyMessage.ResourceUID,
@@ -432,7 +432,7 @@ func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessag
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s%s/%s%s/%s%s", environmentNamePrefix, db.EnvironmentID, instanceNamePrefix, db.InstanceID, databaseIDPrefix, db.DatabaseName), nil
+		return fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, db.InstanceID, databaseIDPrefix, db.DatabaseName), nil
 	default:
 		return "", nil
 	}
