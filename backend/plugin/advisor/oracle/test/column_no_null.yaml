@@ -7,34 +7,39 @@
     - status: WARN
       code: 402
       title: column.no-null
-      content: Column "id" in "public"."book" cannot have NULL value
+      content: Column "ID" is nullable, which is not allowed.
       line: 2
+      details: ""
     - status: WARN
       code: 402
       title: column.no-null
-      content: Column "name" in "public"."book" cannot have NULL value
+      content: Column "NAME" is nullable, which is not allowed.
       line: 3
+      details: ""
 - statement: CREATE TABLE book(id int, name varchar(255), PRIMARY KEY (id))
   want:
     - status: WARN
       code: 402
       title: column.no-null
-      content: Column "name" in "public"."book" cannot have NULL value
+      content: Column "NAME" is nullable, which is not allowed.
       line: 1
+      details: ""
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
   want:
     - status: WARN
       code: 402
       title: column.no-null
-      content: Column "name" in "public"."book" cannot have NULL value
+      content: Column "NAME" is nullable, which is not allowed.
       line: 1
+      details: ""
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
   want:
     - status: WARN
       code: 402
       title: column.no-null
-      content: Column "name" in "public"."book" cannot have NULL value
+      content: Column "NAME" is nullable, which is not allowed.
       line: 1
+      details: ""
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
   want:
     - status: SUCCESS
@@ -42,41 +47,48 @@
       title: OK
       content: ""
       line: 0
-- statement: ALTER TABLE tech_book ADD COLUMN reader int
+      details: ""
+- statement: ALTER TABLE tech_book ADD reader int
   want:
     - status: WARN
       code: 402
       title: column.no-null
-      content: Column "reader" in "public"."tech_book" cannot have NULL value
+      content: Column "READER" is nullable, which is not allowed.
       line: 1
+      details: ""
 - statement: |-
     ALTER TABLE tech_book DROP COLUMN id;
     ALTER TABLE tech_book DROP COLUMN name;
-    ALTER TABLE tech_book ADD COLUMN id int PRIMARY KEY, ADD COLUMN name varchar(255) NOT NULL;
+    ALTER TABLE tech_book ADD id int PRIMARY KEY;
+    ALTER TABLE tech_book ADD name varchar(255) NOT NULL;
   want:
     - status: SUCCESS
       code: 0
       title: OK
       content: ""
       line: 0
-- statement: ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL
+      details: ""
+- statement: ALTER TABLE tech_book MODIFY id NOT NULL
   want:
     - status: SUCCESS
       code: 0
       title: OK
       content: ""
       line: 0
-- statement: ALTER TABLE tech_book ALTER COLUMN name DROP NOT NULL
+      details: ""
+- statement: ALTER TABLE tech_book MODIFY name NULL
   want:
     - status: WARN
       code: 402
       title: column.no-null
-      content: Column "name" in "public"."tech_book" cannot have NULL value
+      content: Column "NAME" is nullable, which is not allowed.
       line: 1
-- statement: /* this is a comment */
+      details: ""
+- statement: -- this is a comment
   want:
     - status: SUCCESS
       code: 0
       title: OK
       content: ""
       line: 0
+      details: ""

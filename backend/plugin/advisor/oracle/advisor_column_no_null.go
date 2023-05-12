@@ -94,7 +94,7 @@ func (l *columnNoNullListener) generateAdvice() ([]advisor.Advice, error) {
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *columnNoNullListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentSchema)
+	l.tableName = normalizeIdentifier(ctx.Table_name(), l.currentSchema)
 }
 
 // ExitCreate_table is called when production create_table is exited.
@@ -108,7 +108,7 @@ func (l *columnNoNullListener) EnterColumn_definition(ctx *parser.Column_definit
 		return
 	}
 	columnName := normalizeIdentifier(ctx.Column_name(), l.currentSchema)
-	l.columnID = fmt.Sprintf(`"%s"."%s"`, l.tableName, columnName)
+	l.columnID = fmt.Sprintf(`%s.%s`, l.tableName, columnName)
 	l.nullableColumns[l.columnID] = ctx.GetStart().GetLine()
 }
 
@@ -138,7 +138,7 @@ func (l *columnNoNullListener) EnterOut_of_line_constraint(ctx *parser.Out_of_li
 	if ctx.PRIMARY() != nil {
 		for _, column := range ctx.AllColumn_name() {
 			columnName := normalizeIdentifier(column, l.currentSchema)
-			columnID := fmt.Sprintf(`"%s"."%s"`, l.tableName, columnName)
+			columnID := fmt.Sprintf(`%s.%s`, l.tableName, columnName)
 			delete(l.nullableColumns, columnID)
 		}
 	}
@@ -160,5 +160,5 @@ func (l *columnNoNullListener) EnterModify_col_properties(ctx *parser.Modify_col
 		return
 	}
 	columnName := normalizeIdentifier(ctx.Column_name(), l.currentSchema)
-	l.columnID = fmt.Sprintf(`"%s"."%s"`, l.tableName, columnName)
+	l.columnID = fmt.Sprintf(`%s.%s`, l.tableName, columnName)
 }
