@@ -207,25 +207,15 @@ type CommitDiffStat struct {
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-commits/#api-repositories-workspace-repo-slug-diffstat-spec-get
 func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
 	var bbcDiffs []*CommitDiffStat
-	page := 1
-	for {
-		params := url.Values{}
-		params.Add("pagelen", strconv.Itoa(apiPageSize))
-		if page > 1 {
-			params.Add("page", strconv.Itoa(page))
-		}
-
-		url := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s?%s", p.APIURL(instanceURL), repositoryID, afterCommit, beforeCommit, params.Encode())
-		diffs, hasNextPage, err := p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, url)
+	next := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s?pagelen=%d", p.APIURL(instanceURL), repositoryID, afterCommit, beforeCommit, apiPageSize)
+	for next != "" {
+		var err error
+		var diffs []*CommitDiffStat
+		diffs, next, err = p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, next)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
 		bbcDiffs = append(bbcDiffs, diffs...)
-
-		if !hasNextPage {
-			break
-		}
-		page++
 	}
 
 	var diffs []vcs.FileDiff
@@ -249,7 +239,7 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthCon
 	return diffs, nil
 }
 
-func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, url string) (diffs []*CommitDiffStat, hasNextPage bool, err error) {
+func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, url string) (diffs []*CommitDiffStat, next string, err error) {
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -266,13 +256,13 @@ func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, oauthCtx comm
 		),
 	)
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "GET %s", url)
+		return nil, "", errors.Wrapf(err, "GET %s", url)
 	}
 
 	if code == http.StatusNotFound {
-		return nil, false, common.Errorf(common.NotFound, "failed to get file diff list from URL %s", url)
+		return nil, "", common.Errorf(common.NotFound, "failed to get file diff list from URL %s", url)
 	} else if code >= 300 {
-		return nil, false, errors.Errorf("failed to get file diff list from URL %s, status code: %d, body: %s",
+		return nil, "", errors.Errorf("failed to get file diff list from URL %s, status code: %d, body: %s",
 			url,
 			code,
 			body,
@@ -281,10 +271,10 @@ func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, oauthCtx comm
 
 	var resp struct {
 		Values []*CommitDiffStat `json:"values"`
-		Next   bool              `json:"next"`
+		Next   string            `json:"next"`
 	}
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
-		return nil, false, errors.Wrapf(err, "failed to unmarshal file diff data from Bitbucket Cloud instance %s", instanceURL)
+		return nil, "", errors.Wrapf(err, "failed to unmarshal file diff data from Bitbucket Cloud instance %s", instanceURL)
 	}
 	return resp.Values, resp.Next, nil
 }
@@ -309,18 +299,18 @@ type RepositoryPermission struct {
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-user-permissions-repositories-get
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	var bbcRepos []*Repository
-	page := 1
-	for {
-		repos, hasNextPage, err := p.fetchPaginatedRepositoryList(ctx, oauthCtx, instanceURL, page)
+	params := url.Values{}
+	params.Add("q", `permission="admin"`)
+	params.Add("pagelen", strconv.Itoa(apiPageSize))
+	next := fmt.Sprintf(`%s/user/permissions/repositories?%s`, p.APIURL(instanceURL), params.Encode())
+	for next != "" {
+		var err error
+		var repos []*Repository
+		repos, next, err = p.fetchPaginatedRepositoryList(ctx, oauthCtx, instanceURL, next)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
 		bbcRepos = append(bbcRepos, repos...)
-
-		if !hasNextPage {
-			break
-		}
-		page++
 	}
 
 	var repos []*vcs.Repository
@@ -337,17 +327,10 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 	return repos, nil
 }
 
-// fetchPaginatedRepositoryList fetches repositories where the authenticated
-// user has admin access to in given page. It returns the paginated results
-// along with a boolean indicating whether the next page exists.
-func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []*Repository, hasNextPage bool, err error) {
-	params := url.Values{}
-	params.Add("q", `permission="admin"`)
-	params.Add("pagelen", strconv.Itoa(apiPageSize))
-	if page > 1 {
-		params.Add("page", strconv.Itoa(page))
-	}
-	url := fmt.Sprintf(`%s/user/permissions/repositories?%s`, p.APIURL(instanceURL), params.Encode())
+// fetchPaginatedRepositoryList fetches repositories in given page. It returns
+// the paginated results along with a string indicating the URL of the next page
+// (if exists).
+func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, url string) (repos []*Repository, next string, err error) {
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -364,13 +347,13 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 		),
 	)
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "GET %s", url)
+		return nil, "", errors.Wrapf(err, "GET %s", url)
 	}
 
 	if code == http.StatusNotFound {
-		return nil, false, common.Errorf(common.NotFound, "failed to fetch repository list from URL %s", url)
+		return nil, "", common.Errorf(common.NotFound, "failed to fetch repository list from URL %s", url)
 	} else if code >= 300 {
-		return nil, false,
+		return nil, "",
 			errors.Errorf("failed to fetch repository list from URL %s, status code: %d, body: %s",
 				url,
 				code,
@@ -380,10 +363,10 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 
 	var resp struct {
 		Values []*RepositoryPermission `json:"values"`
-		Next   bool                    `json:"next"`
+		Next   string                  `json:"next"`
 	}
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
-		return nil, false, errors.Wrap(err, "unmarshal")
+		return nil, "", errors.Wrap(err, "unmarshal")
 	}
 
 	for _, v := range resp.Values {
@@ -413,18 +396,21 @@ type TreeEntry struct {
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#directory-listings
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	var bbcTreeEntries []*TreeEntry
-	page := 1
-	for {
-		treeEntries, hasNextPage, err := p.fetchPaginatedRepositoryFileList(ctx, oauthCtx, instanceURL, repositoryID, ref, filePath, page)
+	params := url.Values{}
+	// NOTE: There is no way to ask the Bitbucket Cloud API to return all
+	// subdirectories recursively, 10 levels down is just a good guess.
+	params.Add("max_depth", "10")
+	params.Add("q", `type="commit_file"`)
+	params.Add("pagelen", strconv.Itoa(apiPageSize))
+	next := fmt.Sprintf("%s/repositories/%s/src/%s/%s?%s", p.APIURL(instanceURL), repositoryID, url.PathEscape(ref), url.PathEscape(filePath), params.Encode())
+	for next != "" {
+		var err error
+		var treeEntries []*TreeEntry
+		treeEntries, next, err = p.fetchPaginatedRepositoryFileList(ctx, oauthCtx, instanceURL, next)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
 		bbcTreeEntries = append(bbcTreeEntries, treeEntries...)
-
-		if !hasNextPage {
-			break
-		}
-		page++
 	}
 
 	var treeNodes []*vcs.RepositoryTreeNode
@@ -441,18 +427,8 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 
 // fetchPaginatedRepositoryFileList fetches files under a repository tree
 // recursively in given page. It returns the paginated results along with a
-// boolean indicating whether the next page exists.
-func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string, page int) (_ []*TreeEntry, hasNextPage bool, err error) {
-	params := url.Values{}
-	// NOTE: There is no way to ask the Bitbucket Cloud API to return all
-	// subdirectories recursively, 10 levels down is just a good guess.
-	params.Add("max_depth", "10")
-	params.Add("q", `type="commit_file"`)
-	params.Add("pagelen", strconv.Itoa(apiPageSize))
-	if page > 1 {
-		params.Add("page", strconv.Itoa(page))
-	}
-	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?%s", p.APIURL(instanceURL), repositoryID, url.PathEscape(ref), url.PathEscape(filePath), params.Encode())
+// string indicating URL of the next page (if exists).
+func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, url string) (_ []*TreeEntry, next string, err error) {
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -469,13 +445,13 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 		),
 	)
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "GET %s", url)
+		return nil, "", errors.Wrapf(err, "GET %s", url)
 	}
 
 	if code == http.StatusNotFound {
-		return nil, false, common.Errorf(common.NotFound, "failed to fetch repository file list from URL %s", url)
+		return nil, "", common.Errorf(common.NotFound, "failed to fetch repository file list from URL %s", url)
 	} else if code >= 300 {
-		return nil, false,
+		return nil, "",
 			errors.Errorf("failed to fetch repository file list from URL %s, status code: %d, body: %s",
 				url,
 				code,
@@ -485,10 +461,10 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 
 	var resp struct {
 		Values []*TreeEntry `json:"values"`
-		Next   bool         `json:"next"`
+		Next   string       `json:"next"`
 	}
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
-		return nil, false, errors.Wrap(err, "unmarshal body")
+		return nil, "", errors.Wrap(err, "unmarshal body")
 	}
 	return resp.Values, resp.Next, nil
 }
@@ -761,25 +737,15 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/#api-repositories-workspace-repo-slug-pullrequests-pull-request-id-diffstat-get
 func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	var bbcDiffs []*CommitDiffStat
-	page := 1
-	for {
-		params := url.Values{}
-		params.Add("pagelen", strconv.Itoa(apiPageSize))
-		if page > 1 {
-			params.Add("page", strconv.Itoa(page))
-		}
-
-		url := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/diffstat?%s", p.APIURL(instanceURL), url.PathEscape(repositoryID), pullRequestID, params.Encode())
-		diffs, hasNextPage, err := p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, url)
+	next := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/diffstat?pagelen=%d", p.APIURL(instanceURL), url.PathEscape(repositoryID), pullRequestID, apiPageSize)
+	for next != "" {
+		var err error
+		var diffs []*CommitDiffStat
+		diffs, next, err = p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, next)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
 		bbcDiffs = append(bbcDiffs, diffs...)
-
-		if !hasNextPage {
-			break
-		}
-		page++
 	}
 
 	// NOTE: The API response does not guarantee to return the value of the commit
