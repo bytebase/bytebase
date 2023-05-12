@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, unref, watch } from "vue";
+import { computed, ref, unref, watch, watchEffect } from "vue";
 import { defineStore } from "pinia";
 
 import { IamPolicy } from "@/types/proto/v1/project_service";
@@ -7,6 +7,7 @@ import { Database, MaybeRef } from "@/types";
 import { useProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
+import { UserRole } from "@/types/proto/v1/auth_service";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -94,13 +95,21 @@ export const useCurrentUserIamPolicy = () => {
   const projectStore = useProjectV1Store();
   const currentUser = useCurrentUserV1();
 
-  onMounted(async () => {
+  watchEffect(async () => {
     for (const project of projectStore.projectList) {
       await iamPolicyStore.getOrFetchProjectIamPolicy(project.name);
     }
   });
 
+  const isWorkspaceOwner = computed(
+    () => currentUser.value.userRole === UserRole.OWNER
+  );
+
   const allowToChangeDatabaseOfProject = (projectName: string) => {
+    if (isWorkspaceOwner.value) {
+      return true;
+    }
+
     const policy = iamPolicyStore.policyMap.get(projectName);
     if (!policy) {
       return false;
@@ -120,6 +129,10 @@ export const useCurrentUserIamPolicy = () => {
   };
 
   const allowToQueryDatabase = async (database: Database) => {
+    if (isWorkspaceOwner.value) {
+      return true;
+    }
+
     const policy = await iamPolicyStore.getOrFetchProjectIamPolicy(
       `projects/${database.project.resourceId}`
     );
