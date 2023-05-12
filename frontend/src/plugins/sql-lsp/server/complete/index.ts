@@ -3,7 +3,7 @@ import type {
   CompletionItem,
   CompletionParams,
 } from "vscode-languageserver/browser";
-import type { SQLDialect, Schema, Table, LanguageState } from "@sql-lsp/types";
+import type { Table, LanguageState } from "@sql-lsp/types";
 import {
   createColumnCandidates,
   createDatabaseCandidates,
