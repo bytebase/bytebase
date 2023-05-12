@@ -4,9 +4,7 @@ export type PolicyType =
   | "bb.policy.pipeline-approval"
   | "bb.policy.backup-plan"
   | "bb.policy.environment-tier"
-  | "bb.policy.sensitive-data"
-  | "bb.policy.access-control"
-  | "bb.policy.slow-query";
+  | "bb.policy.access-control";
 
 export type PipelineApprovalPolicyValue =
   | "MANUAL_APPROVAL_NEVER"
@@ -52,19 +50,6 @@ export type AssigneeGroup = {
   value: AssigneeGroupValue;
 };
 
-export type SensitiveDataMaskType = "DEFAULT";
-
-export type SensitiveData = {
-  schema: string;
-  table: string;
-  column: string;
-  maskType: SensitiveDataMaskType;
-};
-
-export type SensitiveDataPolicyPayload = {
-  sensitiveDataList: SensitiveData[];
-};
-
 export type AccessControlRule = {
   fullDatabase: boolean;
 };
@@ -77,7 +62,6 @@ export type PolicyPayload =
   | PipelineApprovalPolicyPayload
   | BackupPlanPolicyPayload
   | EnvironmentTierPolicyPayload
-  | SensitiveDataPolicyPayload
   | AccessControlPolicyPayload;
 
 export type PolicyResourceType =

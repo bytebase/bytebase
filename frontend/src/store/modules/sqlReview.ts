@@ -87,7 +87,7 @@ interface SQLReviewState {
 const getSQLReviewPolicyName = (environmentPath: string): string => {
   return `${environmentPath}/${policyNamePrefix}${policyTypeToJSON(
     PolicyType.SQL_REVIEW
-  )}`;
+  ).toLowerCase()}`;
 };
 
 export const useSQLReviewStore = defineStore("sqlReview", {
@@ -214,6 +214,9 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       const policy = await policyStore.getOrFetchPolicyByName(
         getSQLReviewPolicyName(targetPolicy.environment.name)
       );
+      if (!policy) {
+        return;
+      }
 
       const updateMask: string[] = [];
       if (rowStatus) {

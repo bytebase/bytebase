@@ -7,25 +7,13 @@ import {
   Policy,
   PolicyType,
   PolicyResourceType,
-  policyTypeToJSON,
 } from "@/types/proto/v1/org_policy_service";
-import { policyNamePrefix } from "@/store/modules/v1/common";
-
-const getSlowQueryPolicyName = (parentPath: string): string => {
-  return `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
-    PolicyType.SLOW_QUERY
-  )}`;
-};
 
 export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
   const policyMapByName = ref(new Map<string, Policy>());
 
   const getPolicyList = () => {
     return [...policyMapByName.value.values()];
-  };
-
-  const getPolicy = (name: string) => {
-    return policyMapByName.value.get(name);
   };
 
   const setPolicyList = (policyList: Policy[]) => {
@@ -53,24 +41,16 @@ export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
     parentPath: string;
     active: boolean;
   }) => {
-    const policyStore = usePolicyV1Store();
-    let policy: Policy;
-    if (!getPolicy(getSlowQueryPolicyName(parentPath))) {
-      policy = await await policyStore.createPolicy(parentPath, {
+    const policy = await usePolicyV1Store().upsertPolicy({
+      parentPath,
+      policy: {
         type: PolicyType.SLOW_QUERY,
         slowQueryPolicy: {
           active,
         },
-      });
-    } else {
-      policy = await policyStore.updatePolicy(["payload"], {
-        name: getSlowQueryPolicyName(parentPath),
-        type: PolicyType.SLOW_QUERY,
-        slowQueryPolicy: {
-          active,
-        },
-      });
-    }
+      },
+      updateMask: ["payload"],
+    });
 
     if (policy) {
       policyMapByName.value.set(policy.name, policy);
