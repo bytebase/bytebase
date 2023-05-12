@@ -221,7 +221,6 @@ CREATE TABLE project (
     -- db_name_template is only used when a project is in tenant mode.
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
-    schema_version_type TEXT NOT NULL CHECK (schema_version_type IN ('TIMESTAMP', 'SEMANTIC')) DEFAULT 'TIMESTAMP',
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
     resource_id TEXT NOT NULL
 );
@@ -740,10 +739,10 @@ CREATE TABLE instance_change_history (
     database_id INTEGER REFERENCES db (id),
     -- issue_id is nullable because this field is backfilled and may not be present.
     issue_id INTEGER REFERENCES issue (id),
-    -- Record the client version creating this change history. For Bytebase, we use its binary release version. Different Bytebase release might
+    -- Record the client version creating this migration history. For Bytebase, we use its binary release version. Different Bytebase release might
     -- record different history info and this field helps to handle such situation properly. Moreover, it helps debugging.
     release_version TEXT NOT NULL,
-    -- Used to detect out of order change history together with 'namespace' and 'version' column.
+    -- Used to detect out of order migration together with 'namespace' and 'version' column.
     sequence BIGINT NOT NULL CONSTRAINT instance_change_history_sequence_check CHECK (sequence >= 0),
     -- We call it source because maybe we could load history from other migration tool.
     -- Currently allowed values are UI, VCS, LIBRARY.
@@ -751,18 +750,18 @@ CREATE TABLE instance_change_history (
     -- Currently allowed values are BASELINE, MIGRATE, MIGRATE_SDL, BRANCH, DATA.
     type TEXT NOT NULL CONSTRAINT instance_change_history_type_check CHECK (type IN ('BASELINE', 'MIGRATE', 'MIGRATE_SDL', 'BRANCH', 'DATA')),
     -- Currently allowed values are PENDING, DONE, FAILED.
-    -- PostgreSQL can't do cross database transaction, so we can't record DDL and change_history into a single transaction.
+    -- PostgreSQL can't do cross database transaction, so we can't record DDL and migration_history into a single transaction.
     -- Thus, we create a "PENDING" record before applying the DDL and update that record to "DONE" after applying the DDL.
     status TEXT NOT NULL CONSTRAINT instance_change_history_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
-    -- Record the change version.
+    -- Record the migration version.
     version TEXT NOT NULL,
     description TEXT NOT NULL,
-    -- Record the change statement
+    -- Record the migration statement
     statement TEXT NOT NULL,
-    -- Record the schema after change
+    -- Record the schema after migration
     schema TEXT NOT NULL,
-    -- Record the schema before change. Though we could also fetch it from the previous change history, it would complicate fetching logic.
-    -- Besides, by storing the schema_prev, we can perform consistency check to see if the change history has any gaps.
+    -- Record the schema before migration. Though we could also fetch it from the previous migration history, it would complicate fetching logic.
+    -- Besides, by storing the schema_prev, we can perform consistency check to see if the migration history has any gaps.
     schema_prev TEXT NOT NULL,
     execution_duration_ns BIGINT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
