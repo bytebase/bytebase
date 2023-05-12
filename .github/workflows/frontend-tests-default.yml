@@ -11,11 +11,11 @@ on:
 
 jobs:
   eslint-checks:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - run: 'echo "Not required"'
 
   frontend-tests:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - run: 'echo "Not required"'
