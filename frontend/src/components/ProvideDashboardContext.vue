@@ -13,7 +13,8 @@ import {
   useProjectStore,
   useDebugStore,
   useUserStore,
-  useCurrentUser,
+  useDatabaseStore,
+  useProjectV1Store,
 } from "@/store";
 import { defineComponent } from "vue";
 import { DEFAULT_PROJECT_ID } from "../types";
@@ -22,8 +23,6 @@ import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 export default defineComponent({
   name: "ProvideDashboardContext",
   async setup() {
-    const currentUser = useCurrentUser();
-
     await Promise.all([
       useSettingStore().fetchSetting(),
       // Fetch so MemberSelect can have the data.
@@ -41,9 +40,9 @@ export default defineComponent({
       // The default project hosts databases not explicitly assigned to other users project.
       useProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),
       // For legacy project API support. Remove this after shipping to project v1.
-      useProjectStore().fetchProjectListByUser({
-        userId: currentUser.value.id,
-      }),
+      useProjectStore().fetchAllProjectList(),
+      useProjectV1Store().fetchProjectList(),
+      useDatabaseStore().fetchDatabaseList(),
       useUIStateStore().restoreState(),
       useDebugStore().fetchDebug(),
     ]);

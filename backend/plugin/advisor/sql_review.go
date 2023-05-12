@@ -768,6 +768,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLWhereRequirement, nil
 		case db.Postgres:
 			return PostgreSQLWhereRequirement, nil
+		case db.Oracle:
+			return OracleWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
@@ -1056,6 +1058,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLInsertMustSpecifyColumn, nil
 		case db.Postgres:
 			return PostgreSQLInsertMustSpecifyColumn, nil
+		case db.Oracle:
+			return OracleInsertMustSpecifyColumn, nil
 		}
 	case SchemaRuleStatementInsertDisallowOrderByRand:
 		switch engine {

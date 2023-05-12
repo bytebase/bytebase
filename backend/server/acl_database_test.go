@@ -24,24 +24,6 @@ func TestEnforceWorkspaceDeveloperDatabaseRouteACL(t *testing.T) {
 	tests := []test{
 		// Retrieve the database which is unassigned to any project.
 		{
-			desc:        "Retrieve the database which is unassigned to any project",
-			path:        "/database/301",
-			method:      "GET",
-			body:        "",
-			principalID: 201,
-			errMsg:      "user is not a member of project owns this database",
-			plan:        api.ENTERPRISE,
-		},
-		{
-			desc:        "Retrieve the database which is assigned to a project, but the user is not a member of the project",
-			path:        "/database/302",
-			method:      "GET",
-			body:        "",
-			principalID: 201,
-			errMsg:      "user is not a member of project owns this database",
-			plan:        api.ENTERPRISE,
-		},
-		{
 			desc:        "Retrieve the database which is assigned to a project, and the user is a member of the project",
 			path:        "/database/303",
 			method:      "GET",

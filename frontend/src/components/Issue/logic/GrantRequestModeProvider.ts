@@ -14,8 +14,16 @@ export default defineComponent({
       const currentUser = useCurrentUserV1();
       const issueCreate = cloneDeep(issue.value as IssueCreate);
 
-      // Transform create context into CEL condition.
-      const context = issueCreate.createContext as GrantRequestContext;
+      const context: GrantRequestContext = {
+        ...{
+          databases: [],
+          expireDays: 7,
+          maxRowCount: 1000,
+          statement: "",
+          exportFormat: "CSV",
+        },
+        ...(issueCreate.createContext as GrantRequestContext),
+      };
       const expression: string[] = [];
       if (context.role === "QUERIER") {
         if (Array.isArray(context.databases) && context.databases.length > 0) {
@@ -25,7 +33,7 @@ export default defineComponent({
               databaseId
             );
             databaseNames.push(
-              `/v1/environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.name}`
+              `instances/${database.instance.resourceId}/databases/${database.name}`
             );
           }
           expression.push(
@@ -48,7 +56,7 @@ export default defineComponent({
         const database = await databaseStore.getOrFetchDatabaseById(databaseId);
         const databaseNames = [];
         databaseNames.push(
-          `/v1/environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.name}`
+          `instances/${database.instance.resourceId}/databases/${database.name}`
         );
         expression.push(
           `resource.database in ${JSON.stringify(databaseNames)}`

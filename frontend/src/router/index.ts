@@ -778,6 +778,11 @@ const routes: Array<RouteRecordRaw> = [
                     );
                   }
 
+                  actionList.push(
+                    "quickaction.bb.issue.grant.request.querier",
+                    "quickaction.bb.issue.grant.request.exporter"
+                  );
+
                   return new Map([
                     ["OWNER", actionList],
                     ["DBA", actionList],

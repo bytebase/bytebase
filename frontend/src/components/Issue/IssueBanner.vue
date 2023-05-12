@@ -51,6 +51,7 @@ const reviewContext = useIssueReviewContext();
 
 const showPendingReview = computed(() => {
   if (issueContext.create.value) return false;
+  if (issue.value.status !== "OPEN") return false;
   return !reviewContext.done.value;
 });
 
