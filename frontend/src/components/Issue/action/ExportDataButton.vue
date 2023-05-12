@@ -39,10 +39,7 @@ import { useIssueLogic } from "../logic";
 import { DatabaseId, GrantRequestPayload, Issue, UNKNOWN_ID } from "@/types";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { pushNotification, useDatabaseStore, useSQLStore } from "@/store";
-import {
-  environmentNamePrefix,
-  instanceNamePrefix,
-} from "@/store/modules/v1/common";
+import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { head } from "lodash-es";
 import { unparse } from "papaparse";
 import dayjs from "dayjs";
@@ -101,7 +98,7 @@ onMounted(async () => {
         const instanceName = value[1] || "";
         const databaseName = value[3] || "";
         const instance = await instanceV1Store.getOrFetchInstanceByName(
-          environmentNamePrefix + "-/" + instanceNamePrefix + instanceName
+          instanceNamePrefix + instanceName
         );
         const databaseList =
           await databaseStore.getOrFetchDatabaseListByInstanceId(instance.uid);

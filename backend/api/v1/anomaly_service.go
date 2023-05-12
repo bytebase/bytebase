@@ -130,9 +130,9 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 func convertToAnomaly(anomaly *store.AnomalyMessage, environmentID, instanceID, databaseName string) (*v1pb.Anomaly, error) {
 	var pbAnomaly v1pb.Anomaly
 	if environmentID != "" && instanceID != "" && databaseName != "" {
-		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName)
+		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName)
 	} else if environmentID != "" && instanceID != "" {
-		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID)
+		pbAnomaly.Resource = fmt.Sprintf("%s%s", instanceNamePrefix, instanceID)
 	}
 
 	switch anomaly.Type {
@@ -157,7 +157,7 @@ func convertToAnomaly(anomaly *store.AnomalyMessage, environmentID, instanceID, 
 			DatabaseBackupPolicyViolationDetail: &v1pb.Anomaly_DatabaseBackupPolicyViolationDetail{
 				// The instance are bind to a specify environment, and cannot be moved to another environment in Bytebase.
 				// So it's safe to use environmentID here.
-				Parent:           fmt.Sprintf("%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID),
+				Parent:           fmt.Sprintf("%s%s", instanceNamePrefix, instanceID),
 				ExpectedSchedule: convertBackupPlanSchedule(detail.ExpectedBackupSchedule),
 				ActualSchedule:   convertBackupPlanSchedule(detail.ActualBackupSchedule),
 			},
