@@ -54,7 +54,7 @@ export default defineComponent({
     },
     mode: {
       required: true,
-      type: String as PropType<"INSTANCE" | "ENVIRONMENT" | "USER">,
+      type: String as PropType<"ALL" | "INSTANCE" | "ENVIRONMENT" | "USER">,
     },
     environmentId: {
       type: Number as PropType<EnvironmentId>,
@@ -101,7 +101,12 @@ export default defineComponent({
     const prepareDatabaseList = () => {
       // TODO(tianzhou): Instead of fetching each time, we maybe able to let the outside context
       // to provide the database list and we just do a get here.
-      if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
+      if (props.mode === "ALL") {
+        databaseStore.fetchDatabaseList();
+      } else if (
+        props.mode == "ENVIRONMENT" &&
+        props.environmentId != UNKNOWN_ID
+      ) {
         databaseStore.fetchDatabaseListByEnvironmentId(props.environmentId);
       } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
         databaseStore.fetchDatabaseListByInstanceId(props.instanceId);
@@ -114,7 +119,12 @@ export default defineComponent({
 
     const databaseList = computed(() => {
       let list: Database[] = [];
-      if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
+      if (props.mode === "ALL") {
+        list = databaseStore.getDatabaseList();
+      } else if (
+        props.mode == "ENVIRONMENT" &&
+        props.environmentId != UNKNOWN_ID
+      ) {
         list = databaseStore.getDatabaseListByEnvironmentId(
           props.environmentId
         );
