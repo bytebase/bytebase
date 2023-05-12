@@ -95,13 +95,12 @@ func TestGetFilter(t *testing.T) {
 	}
 }
 
-func TestGetEnvironmentInstanceDatabaseID(t *testing.T) {
-	environmentID, instanceID, err := getEnvironmentInstanceID("environments/e1/instances/i2")
+func TestGetInstanceDatabaseID(t *testing.T) {
+	instanceID, err := getInstanceID("instances/i2")
 	require.NoError(t, err)
-	require.Equal(t, "e1", environmentID)
 	require.Equal(t, "i2", instanceID)
 
-	_, _, err = getEnvironmentInstanceID("environments/e1/instances/i2/databases/d3")
+	_, err = getInstanceID("instances/i2/databases/d3")
 	require.Error(t, err)
 }
 

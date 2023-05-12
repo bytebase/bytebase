@@ -264,9 +264,9 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 			return api.PolicyResourceTypeEnvironment, &environment.UID, nil
 		}
 
-		// instance policy request name should be environments/{environment id}/instances/{instance id}
-		if len(sections) == 4 {
-			environmentID, instanceID, err := getEnvironmentInstanceID(requestName)
+		if strings.HasPrefix(requestName, instanceNamePrefix) && len(sections) == 2 {
+			// instance policy request name should be instances/{instance id}
+			instanceID, err := getInstanceID(requestName)
 			if err != nil {
 				return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
@@ -275,8 +275,7 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 			}
 
 			instance, err := s.findActiveInstance(ctx, &store.FindInstanceMessage{
-				EnvironmentID: &environmentID,
-				ResourceID:    &instanceID,
+				ResourceID: &instanceID,
 			})
 			if err != nil {
 				return api.PolicyResourceTypeUnknown, nil, err
@@ -285,9 +284,9 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 			return api.PolicyResourceTypeInstance, &instance.UID, nil
 		}
 
-		// database policy request name should be environments/{environment id}/instances/{instance id}/databases/{db name}
+		// database policy request name should be instances/{instance id}/databases/{db name}
 		if len(sections) == 6 {
-			environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(requestName)
+			instanceID, databaseName, err := getInstanceDatabaseID(requestName)
 			if err != nil {
 				return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
@@ -295,9 +294,8 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 				return api.PolicyResourceTypeDatabase, nil, nil
 			}
 			database, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
-				EnvironmentID: &environmentID,
-				InstanceID:    &instanceID,
-				DatabaseName:  &databaseName,
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
 			})
 			if err != nil {
 				return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.Internal, err.Error())

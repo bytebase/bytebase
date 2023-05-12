@@ -220,7 +220,7 @@ type SearchAnomaliesRequest struct {
 	// follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
 	// Only support filter by resource and type for now.
 	// For example:
-	// Search the anomalies of a specific resource: 'resource="environments/{environemnt}/instances/{instance}".'
+	// Search the anomalies of a specific resource: 'resource="instances/{instance}".'
 	// Search the specified types of anomalies: 'type="DATABASE_BACKUP_POLICY_VIOLATION" | "MIGRATION_SCHEMA".'
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Not used. The maximum number of anomalies to return. The service may return fewer than
@@ -354,8 +354,8 @@ type Anomaly struct {
 
 	// The resource that is the target of the operation.
 	// Format:
-	// - Instance: environments/{environment}/instnaces/{instance}
-	// - Database: environments/{environment}/instnaces/{instance}/databases/{database}
+	// - Instance: instnaces/{instance}
+	// - Database: instnaces/{instance}/databases/{database}
 	Resource string `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
 	// type is the type of the anomaly.
 	Type Anomaly_AnomalyType `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.v1.Anomaly_AnomalyType" json:"type,omitempty"`
