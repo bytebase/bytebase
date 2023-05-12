@@ -370,6 +370,9 @@ const (
 
 	// OracleColumnNoNull is an advisor type for Oracle column no NULL value.
 	OracleColumnNoNull Type = "bb.plugin.advisor.oracle.column.no-null"
+
+	// OracleRequireColumnDefault is an advisor type for Oracle column default requirement.
+	OracleRequireColumnDefault Type = "bb.plugin.advisor.oracle.column.require-default"
 )
 
 // Advice is the result of an advisor.
