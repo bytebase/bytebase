@@ -9,6 +9,7 @@
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
+        :only-userself="false"
         :selected-id="projectId"
         @select-project-id="handleSourceProjectSelect"
       />
