@@ -7,7 +7,6 @@ import {
   QueryHistory,
   Sheet,
   OnboardingGuideType,
-  PolicyResourceType,
 } from ".";
 import { Activity } from "./activity";
 import { Backup, BackupSetting } from "./backup";
