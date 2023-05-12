@@ -1,7 +1,7 @@
 <template>
   <!-- Description Bar -->
   <div class="flex justify-between">
-    <div class="textlabel">{{ $t("common.description") }}</div>
+    <div class="textlabel">{{ descriptionTitle }}</div>
     <div v-if="!create" class="space-x-2">
       <button
         v-if="allowEditNameAndDescription && !state.editing"
@@ -70,9 +70,18 @@
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onMounted, onUnmounted, ref, reactive, watch } from "vue";
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  reactive,
+  watch,
+  computed,
+} from "vue";
+import { useI18n } from "vue-i18n";
 import type { Issue } from "@/types";
-import { sizeToFit } from "@/utils";
+import { isGrantRequestIssueType, sizeToFit } from "@/utils";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 
 interface LocalState {
@@ -80,6 +89,7 @@ interface LocalState {
   editDescription: string;
 }
 
+const { t } = useI18n();
 const { issue, create } = useIssueLogic();
 const { allowEditNameAndDescription, updateDescription } = useExtraIssueLogic();
 
@@ -88,6 +98,16 @@ const editDescriptionTextArea = ref();
 const state = reactive<LocalState>({
   editing: false,
   editDescription: issue.value.description,
+});
+
+const isGrantRequestIssue = computed(() => {
+  return !!issue.value && isGrantRequestIssueType(issue.value.type);
+});
+
+const descriptionTitle = computed(() => {
+  return isGrantRequestIssue.value
+    ? t("common.reason")
+    : t("common.description");
 });
 
 const keyboardHandler = (e: KeyboardEvent) => {

@@ -4,7 +4,8 @@
   >
     <div v-if="create" class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center">
-        {{ $t("database.sync-schema.select-project") }}
+        {{ $t("issue.grant-request.select-project") }}
+        <RequiredStar />
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
@@ -13,8 +14,11 @@
       />
     </div>
     <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center">Databases</span>
-      <div v-if="create">
+      <span class="flex w-40 items-center shrink-0">
+        {{ $t("issue.grant-request.database") }}
+        <RequiredStar />
+      </span>
+      <div v-if="create" class="flex flex-row justify-start items-center">
         <EnvironmentSelect
           class="!w-60 mr-4 shrink-0"
           name="environment"
@@ -25,7 +29,7 @@
         <DatabaseSelect
           class="!w-128"
           :selected-id="(state.databaseId as DatabaseId)"
-          :mode="'USER'"
+          :mode="'ALL'"
           :environment-id="state.environmentId"
           :project-id="state.projectId"
           :sync-status="'OK'"
@@ -53,7 +57,10 @@
       </div>
     </div>
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center">Export rows</span>
+      <span class="flex w-40 items-center">
+        {{ $t("issue.grant-request.export-rows") }}
+        <RequiredStar />
+      </span>
       <input
         v-model="state.maxRowCount"
         required
@@ -64,7 +71,10 @@
       />
     </div>
     <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center">Export format</span>
+      <span class="flex w-40 items-center">
+        {{ $t("issue.grant-request.export-format") }}
+        <RequiredStar />
+      </span>
       <div v-if="create">
         <NRadioGroup
           v-model:value="state.exportFormat"
@@ -80,7 +90,7 @@
       </div>
     </div>
     <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center shrink-0">SQL</span>
+      <span class="flex w-40 items-center shrink-0">SQL<RequiredStar /></span>
       <div class="whitespace-pre-wrap w-full overflow-hidden border">
         <MonacoEditor
           ref="editorRef"
@@ -125,6 +135,7 @@ import {
   environmentNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
+import RequiredStar from "@/components/RequiredStar.vue";
 
 interface LocalState {
   // For creating
@@ -164,7 +175,12 @@ const dialect = computed((): SQLDialect => {
 });
 
 onMounted(() => {
-  // do nth
+  if (create.value) {
+    const projectId = (issue.value as IssueCreate).projectId;
+    if (projectId && projectId !== UNKNOWN_ID) {
+      state.projectId = projectId;
+    }
+  }
 });
 
 const handleSourceProjectSelect = async (projectId: ProjectId) => {

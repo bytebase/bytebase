@@ -242,7 +242,8 @@
     "expand": "展开",
     "collapse": "收起",
     "select": "选择",
-    "optional": "可选"
+    "optional": "可选",
+    "reason": "理由"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -749,7 +750,20 @@
     },
     "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
-    "issue-name": "工单名称"
+    "issue-name": "工单名称",
+    "grant-request": {
+      "select-project": "选择项目",
+      "database": "数据库",
+      "databases": "数据库",
+      "export-rows": "最大导出行数",
+      "export-format": "导出格式",
+      "expire-days": "过期天数",
+      "expired-at": "过期时间",
+      "all-databases": "所有数据库",
+      "manually-select": "手动选择",
+      "customize": "自定义",
+      "data-export-attention": "数据将被导出到一个文件并自动下载。而且您只能完成一次导出操作。"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",

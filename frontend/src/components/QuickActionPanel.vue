@@ -311,6 +311,7 @@ import { idFromSlug, isDev } from "../utils";
 import {
   useCommandStore,
   useInstanceStore,
+  useRouterStore,
   useSubscriptionStore,
 } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
@@ -340,6 +341,7 @@ const props = defineProps({
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
+const routerStore = useRouterStore();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionStore();
 const hasCustomRoleFeature = computed(() => {
@@ -443,6 +445,12 @@ const createRequestQueryIssue = () => {
       name: "New grant querier request",
     },
   };
+  const routeSlug = routerStore.routeSlug(route);
+  const projectSlug = routeSlug.projectSlug;
+  if (projectSlug) {
+    const id = idFromSlug(projectSlug);
+    (routeInfo.query as any).project = id;
+  }
   router.push(routeInfo);
 };
 
@@ -458,6 +466,12 @@ const createExportDataIssue = () => {
       name: "New grant exporter request",
     },
   };
+  const routeSlug = routerStore.routeSlug(route);
+  const projectSlug = routeSlug.projectSlug;
+  if (projectSlug) {
+    const id = idFromSlug(projectSlug);
+    (routeInfo.query as any).project = id;
+  }
   router.push(routeInfo);
 };
 

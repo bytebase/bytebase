@@ -148,6 +148,7 @@ import {
   TaskStatusTransition,
 } from "@/utils";
 import type {
+  GrantRequestContext,
   Issue,
   IssueCreate,
   IssueStatusTransition,
@@ -163,7 +164,6 @@ import {
   flattenTaskList,
   useIssueTransitionLogic,
   isApplicableTransition,
-  IssueTypeWithStatement,
   TaskTypeWithStatement,
   useExtraIssueLogic,
   useIssueLogic,
@@ -564,7 +564,7 @@ const allowCreate = computed(() => {
     return false;
   }
 
-  if (IssueTypeWithStatement.includes(newIssue.type)) {
+  if (isDatabaseRelatedIssueType(newIssue.type)) {
     const allTaskList = flattenTaskList<TaskCreate>(newIssue);
     for (const task of allTaskList) {
       if (TaskTypeWithStatement.includes(task.type)) {
@@ -576,6 +576,13 @@ const allowCreate = computed(() => {
           return false;
         }
       }
+    }
+  } else if (isGrantRequestIssueType(newIssue.type)) {
+    const createContext = newIssue.createContext as GrantRequestContext;
+    if (createContext.role === "EXPORTER") {
+      return (
+        createContext.databases.length === 1 && createContext.statement !== ""
+      );
     }
   }
 
