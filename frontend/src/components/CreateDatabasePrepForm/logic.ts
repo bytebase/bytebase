@@ -1,10 +1,11 @@
 import { computed, Ref, unref, watch } from "vue";
-import { DatabaseLabel, MaybeRef, Project } from "@/types";
+import { DatabaseLabel, MaybeRef } from "@/types";
 import {
   getLabelValueFromLabelList,
   parseDatabaseLabelValueByTemplate,
   setLabelValue,
 } from "@/utils";
+import { type Project, TenantMode } from "@/types/proto/v1/project_service";
 export const useDBNameTemplateInputState = (
   project: MaybeRef<Project>,
   values: {
@@ -31,7 +32,7 @@ export const useDBNameTemplateInputState = (
     parsedTenantValue,
     (newValue, oldValue) => {
       const proj = unref(project);
-      if (proj.tenantMode !== "TENANT") return;
+      if (proj.tenantMode !== TenantMode.TENANT_MODE_ENABLED) return;
       if (!proj.dbNameTemplate) return;
 
       const tenant = tenantValue.value;
