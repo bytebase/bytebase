@@ -4,7 +4,7 @@
   >
     <div v-if="create" class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center">
-        {{ $t("issue.grant-request.select-project") }}
+        {{ $t("common.project") }}
         <RequiredStar />
       </span>
       <ProjectSelect
@@ -15,7 +15,7 @@
     </div>
     <div class="w-full flex flex-row justify-start items-start">
       <span class="flex w-40 items-center shrink-0">
-        {{ $t("issue.grant-request.database") }}
+        {{ $t("common.database") }}
         <RequiredStar />
       </span>
       <div v-if="create" class="flex flex-row justify-start items-center">

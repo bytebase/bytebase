@@ -24,6 +24,7 @@ import {
   unknown,
 } from "../types";
 import { useCurrentUser, useProjectStore } from "@/store";
+import { isMemberOfProject } from "@/utils";
 
 interface LocalState {
   selectedProject?: Project;
@@ -57,6 +58,10 @@ export default defineComponent({
       type: Number as PropType<Mode>,
       default: Mode.Standard | Mode.Tenant,
     },
+    onlyUserself: {
+      type: Boolean,
+      default: true,
+    },
     required: {
       type: Boolean,
       default: false,
@@ -72,10 +77,13 @@ export default defineComponent({
     const projectStore = useProjectStore();
 
     const rawProjectList = computed((): Project[] => {
-      let list = projectStore.getProjectListByUser(currentUser.value.id, [
-        "NORMAL",
-        "ARCHIVED",
-      ]) as Project[];
+      let list = projectStore.projectList as Project[];
+
+      if (props.onlyUserself) {
+        list = list.filter((project) => {
+          return isMemberOfProject(project, currentUser.value);
+        });
+      }
 
       list = list.filter((project) => {
         if (project.tenantMode === "DISABLED" && props.mode & Mode.Standard) {

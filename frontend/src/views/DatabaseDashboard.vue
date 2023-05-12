@@ -85,6 +85,7 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentStore,
+  useProjectV1ListByCurrentUser,
   useUIStateStore,
 } from "@/store";
 
@@ -108,6 +109,7 @@ const state = reactive<LocalState>({
 });
 
 const currentUser = useCurrentUser();
+const { projectList } = useProjectV1ListByCurrentUser();
 
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
@@ -135,12 +137,15 @@ onMounted(() => {
 const prepareDatabaseList = () => {
   // It will also be called when user logout
   if (currentUser.value.id != UNKNOWN_ID) {
+    const projectIdList = projectList.value.map((project) => project.uid);
     state.loading = true;
     useDatabaseStore()
       .fetchDatabaseList()
       .then((list) => {
         state.databaseList = sortDatabaseList(
-          cloneDeep(list),
+          cloneDeep(list).filter((db) =>
+            projectIdList.includes(String(db.projectId))
+          ),
           environmentStore.getEnvironmentList()
         );
       })
