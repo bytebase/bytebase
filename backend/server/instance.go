@@ -62,7 +62,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environment %v not found", instanceCreate.EnvironmentID))
 		}
 		creator := c.Get(getPrincipalIDContextKey()).(int)
-		instance, err := s.store.CreateInstanceV2(ctx, environment.ResourceID, &store.InstanceMessage{
+		instance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
 			ResourceID:   instanceCreate.ResourceID,
 			Title:        instanceCreate.Name,
 			Engine:       instanceCreate.Engine,
@@ -90,6 +90,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					SSHObfuscatedPrivateKey: common.Obfuscate(instanceCreate.SSHPrivateKey, s.secret),
 				},
 			},
+			EnvironmentID: environment.ResourceID,
 		}, creator)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
