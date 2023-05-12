@@ -85,17 +85,20 @@ import { NPopconfirm } from "naive-ui";
 import { uniq } from "lodash-es";
 import { useRouter } from "vue-router";
 
-import {
-  featureToRef,
-  useCurrentUser,
-  useDatabaseStore,
-  usePolicyListByResourceTypeAndPolicyType,
-  usePolicyStore,
-} from "@/store";
-import { Database, Policy, SensitiveDataPolicyPayload } from "@/types";
+import { featureToRef, useCurrentUser, useDatabaseStore } from "@/store";
+import { Database } from "@/types";
 import { BBGridColumn } from "@/bbkit/types";
 import { databaseSlug, hasWorkspacePermission } from "@/utils";
 import { BBGrid } from "@/bbkit";
+import {
+  usePolicyListByResourceTypeAndPolicyType,
+  usePolicyV1Store,
+} from "@/store/modules/v1/policy";
+import {
+  PolicyType,
+  Policy,
+  PolicyResourceType,
+} from "@/types/proto/v1/org_policy_service";
 
 type SensitiveColumn = {
   database: Database;
@@ -129,14 +132,15 @@ const allowAdmin = computed(() => {
 });
 
 const policyList = usePolicyListByResourceTypeAndPolicyType({
-  resourceType: "database",
-  policyType: "bb.policy.sensitive-data",
+  resourceType: PolicyResourceType.DATABASE,
+  policyType: PolicyType.SENSITIVE_DATA,
+  showDeleted: false,
 });
 
 const updateList = async () => {
   state.isLoading = true;
   const distinctDatabaseIdList = uniq(
-    policyList.value.map((policy) => policy.resourceId)
+    policyList.value.map((policy) => policy.resourceUid)
   );
   // Fetch or get all needed databases
   await Promise.all(
@@ -148,13 +152,15 @@ const updateList = async () => {
   const sensitiveColumnList: SensitiveColumn[] = [];
   for (let i = 0; i < policyList.value.length; i++) {
     const policy = policyList.value[i];
-    const payload = policy.payload as SensitiveDataPolicyPayload;
+    if (!policy.sensitiveDataPolicy) {
+      continue;
+    }
 
-    const databaseId = policy.resourceId;
+    const databaseId = policy.resourceUid;
     const database = await databaseStore.getOrFetchDatabaseById(databaseId);
 
-    for (let j = 0; j < payload.sensitiveDataList.length; j++) {
-      const { schema, table, column } = payload.sensitiveDataList[j];
+    for (const sensitiveData of policy.sensitiveDataPolicy.sensitiveData) {
+      const { schema, table, column } = sensitiveData;
       sensitiveColumnList.push({ database, policy, schema, table, column });
     }
   }
@@ -170,27 +176,29 @@ const removeSensitiveColumn = (sensitiveColumn: SensitiveColumn) => {
     return;
   }
 
-  const { database, table, column } = sensitiveColumn;
+  const { table, column } = sensitiveColumn;
   const policy = policyList.value.find(
-    (policy) => policy.resourceId === sensitiveColumn.database.id
+    (policy) => policy.resourceUid == sensitiveColumn.database.id
   );
   if (!policy) return;
+  const sensitiveData = policy.sensitiveDataPolicy?.sensitiveData;
+  if (!sensitiveData) return;
 
-  const payload = policy.payload as SensitiveDataPolicyPayload;
-  const index = payload.sensitiveDataList.findIndex(
+  const index = sensitiveData.findIndex(
     (sensitiveData) =>
       sensitiveData.table === table && sensitiveData.column === column
   );
   if (index >= 0) {
     // mutate the list and the item directly
     // so we don't need to re-fetch the whole list.
-    payload.sensitiveDataList.splice(index, 1);
+    sensitiveData.splice(index, 1);
 
-    usePolicyStore().upsertPolicyByDatabaseAndType({
-      databaseId: database.id,
-      type: "bb.policy.sensitive-data",
-      policyUpsert: {
-        payload,
+    usePolicyV1Store().updatePolicy(["payload"], {
+      name: policy.name,
+      type: PolicyType.SENSITIVE_DATA,
+      resourceType: PolicyResourceType.DATABASE,
+      sensitiveDataPolicy: {
+        sensitiveData,
       },
     });
   }

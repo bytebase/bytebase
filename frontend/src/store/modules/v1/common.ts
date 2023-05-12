@@ -1,9 +1,10 @@
-import { ResourceId, UNKNOWN_ID, Instance } from "@/types";
+import { ResourceId, UNKNOWN_ID, Instance, Database } from "@/types";
 
 export const userNamePrefix = "users/";
 export const environmentNamePrefix = "environments/";
 export const projectNamePrefix = "projects/";
 export const instanceNamePrefix = "instances/";
+export const databaseNamePrefix = "databases/";
 export const idpNamePrefix = "idps/";
 export const policyNamePrefix = "policies/";
 
@@ -46,4 +47,8 @@ export const getIdentityProviderResourceId = (name: string): ResourceId => {
 
 export const getInstancePathByLegacyInstance = (instance: Instance): string => {
   return `${environmentNamePrefix}${instance.environment.resourceId}/${instanceNamePrefix}${instance.resourceId}`;
+};
+
+export const getDatabasePathByLegacyDatabase = (database: Database): string => {
+  return `${environmentNamePrefix}${database.instance.environment.resourceId}/${instanceNamePrefix}${database.instance.resourceId}/${databaseNamePrefix}${database.name}`;
 };
