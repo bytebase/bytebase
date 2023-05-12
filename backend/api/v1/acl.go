@@ -183,11 +183,11 @@ func (in *ACLInterceptor) getTransferDatabaseToProjects(ctx context.Context, req
 		if !hasPath(request.UpdateMask, "project") || request.Database == nil {
 			continue
 		}
-		environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Database.Name)
+		instanceID, databaseName, err := getInstanceDatabaseID(request.Database.Name)
 		if err != nil {
 			return nil, err
 		}
-		database, err := in.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &environmentID, InstanceID: &instanceID, DatabaseName: &databaseName})
+		database, err := in.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instanceID, DatabaseName: &databaseName})
 		if err != nil {
 			return nil, err
 		}

@@ -1059,7 +1059,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabase", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/databases/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabase", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1084,7 +1084,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListDatabases", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/databases"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListDatabases", runtime.WithHTTPPathPattern("/v1/{parent=instances/*}/databases"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1109,7 +1109,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateDatabase", runtime.WithHTTPPathPattern("/v1/{database.name=environments/*/instances/*/databases/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateDatabase", runtime.WithHTTPPathPattern("/v1/{database.name=instances/*/databases/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1134,7 +1134,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/BatchUpdateDatabases", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/databases:batchUpdate"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/BatchUpdateDatabases", runtime.WithHTTPPathPattern("/v1/{parent=instances/*}/databases:batchUpdate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1159,7 +1159,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabaseMetadata", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/databases/*/metadata}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabaseMetadata", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/metadata}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1184,7 +1184,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabaseSchema", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/databases/*/schema}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabaseSchema", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/schema}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1209,7 +1209,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetBackupSetting", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/databases/*/backupSetting}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetBackupSetting", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/backupSetting}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1234,7 +1234,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateBackupSetting", runtime.WithHTTPPathPattern("/v1/{setting.name=environments/*/instances/*/databases/*/backupSetting}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateBackupSetting", runtime.WithHTTPPathPattern("/v1/{setting.name=instances/*/databases/*/backupSetting}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1259,7 +1259,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/CreateBackup", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}/backups"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/CreateBackup", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}/backups"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1284,7 +1284,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListBackup", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}/backups"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListBackup", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}/backups"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1309,7 +1309,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListSlowQueries", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}/slowQueries"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListSlowQueries", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}/slowQueries"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1334,7 +1334,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListSecrets", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}/secrets"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListSecrets", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}/secrets"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1359,7 +1359,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateSecret", runtime.WithHTTPPathPattern("/v1/{secret.name=environments/*/instances/*/databases/*/secrets/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateSecret", runtime.WithHTTPPathPattern("/v1/{secret.name=instances/*/databases/*/secrets/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1384,7 +1384,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/DeleteSecret", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/databases/*/secrets/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/DeleteSecret", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/secrets/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1409,7 +1409,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/AdviseIndex", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}:adviseIndex"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/AdviseIndex", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}:adviseIndex"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1473,7 +1473,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabase", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/databases/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabase", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1495,7 +1495,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListDatabases", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/databases"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListDatabases", runtime.WithHTTPPathPattern("/v1/{parent=instances/*}/databases"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1517,7 +1517,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateDatabase", runtime.WithHTTPPathPattern("/v1/{database.name=environments/*/instances/*/databases/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateDatabase", runtime.WithHTTPPathPattern("/v1/{database.name=instances/*/databases/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1539,7 +1539,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/BatchUpdateDatabases", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/databases:batchUpdate"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/BatchUpdateDatabases", runtime.WithHTTPPathPattern("/v1/{parent=instances/*}/databases:batchUpdate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1561,7 +1561,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabaseMetadata", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/databases/*/metadata}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabaseMetadata", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/metadata}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1583,7 +1583,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabaseSchema", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/databases/*/schema}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetDatabaseSchema", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/schema}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1605,7 +1605,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetBackupSetting", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/databases/*/backupSetting}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetBackupSetting", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/backupSetting}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1627,7 +1627,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateBackupSetting", runtime.WithHTTPPathPattern("/v1/{setting.name=environments/*/instances/*/databases/*/backupSetting}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateBackupSetting", runtime.WithHTTPPathPattern("/v1/{setting.name=instances/*/databases/*/backupSetting}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1649,7 +1649,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/CreateBackup", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}/backups"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/CreateBackup", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}/backups"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1671,7 +1671,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListBackup", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}/backups"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListBackup", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}/backups"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1693,7 +1693,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListSlowQueries", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}/slowQueries"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListSlowQueries", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}/slowQueries"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1715,7 +1715,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListSecrets", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}/secrets"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListSecrets", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}/secrets"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1737,7 +1737,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateSecret", runtime.WithHTTPPathPattern("/v1/{secret.name=environments/*/instances/*/databases/*/secrets/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/UpdateSecret", runtime.WithHTTPPathPattern("/v1/{secret.name=instances/*/databases/*/secrets/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1759,7 +1759,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/DeleteSecret", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/databases/*/secrets/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/DeleteSecret", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/secrets/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1781,7 +1781,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/AdviseIndex", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*/databases/*}:adviseIndex"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/AdviseIndex", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}:adviseIndex"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1801,35 +1801,35 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 }
 
 var (
-	pattern_DatabaseService_GetDatabase_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "databases", "name"}, ""))
+	pattern_DatabaseService_GetDatabase_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "databases", "name"}, ""))
 
-	pattern_DatabaseService_ListDatabases_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "environments", "instances", "parent", "databases"}, ""))
+	pattern_DatabaseService_ListDatabases_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "instances", "parent", "databases"}, ""))
 
-	pattern_DatabaseService_UpdateDatabase_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "databases", "database.name"}, ""))
+	pattern_DatabaseService_UpdateDatabase_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "databases", "database.name"}, ""))
 
-	pattern_DatabaseService_BatchUpdateDatabases_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "environments", "instances", "parent", "databases"}, "batchUpdate"))
+	pattern_DatabaseService_BatchUpdateDatabases_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "instances", "parent", "databases"}, "batchUpdate"))
 
-	pattern_DatabaseService_GetDatabaseMetadata_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 4, 7, 5, 5}, []string{"v1", "environments", "instances", "databases", "metadata", "name"}, ""))
+	pattern_DatabaseService_GetDatabaseMetadata_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 4, 5, 5, 4}, []string{"v1", "instances", "databases", "metadata", "name"}, ""))
 
-	pattern_DatabaseService_GetDatabaseSchema_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 4, 7, 5, 5}, []string{"v1", "environments", "instances", "databases", "schema", "name"}, ""))
+	pattern_DatabaseService_GetDatabaseSchema_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 4, 5, 5, 4}, []string{"v1", "instances", "databases", "schema", "name"}, ""))
 
-	pattern_DatabaseService_GetBackupSetting_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 4, 7, 5, 5}, []string{"v1", "environments", "instances", "databases", "backupSetting", "name"}, ""))
+	pattern_DatabaseService_GetBackupSetting_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 4, 5, 5, 4}, []string{"v1", "instances", "databases", "backupSetting", "name"}, ""))
 
-	pattern_DatabaseService_UpdateBackupSetting_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 4, 7, 5, 5}, []string{"v1", "environments", "instances", "databases", "backupSetting", "setting.name"}, ""))
+	pattern_DatabaseService_UpdateBackupSetting_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 4, 5, 5, 4}, []string{"v1", "instances", "databases", "backupSetting", "setting.name"}, ""))
 
-	pattern_DatabaseService_CreateBackup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4, 2, 5}, []string{"v1", "environments", "instances", "databases", "parent", "backups"}, ""))
+	pattern_DatabaseService_CreateBackup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "instances", "databases", "parent", "backups"}, ""))
 
-	pattern_DatabaseService_ListBackup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4, 2, 5}, []string{"v1", "environments", "instances", "databases", "parent", "backups"}, ""))
+	pattern_DatabaseService_ListBackup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "instances", "databases", "parent", "backups"}, ""))
 
-	pattern_DatabaseService_ListSlowQueries_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4, 2, 5}, []string{"v1", "environments", "instances", "databases", "parent", "slowQueries"}, ""))
+	pattern_DatabaseService_ListSlowQueries_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "instances", "databases", "parent", "slowQueries"}, ""))
 
-	pattern_DatabaseService_ListSecrets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4, 2, 5}, []string{"v1", "environments", "instances", "databases", "parent", "secrets"}, ""))
+	pattern_DatabaseService_ListSecrets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "instances", "databases", "parent", "secrets"}, ""))
 
-	pattern_DatabaseService_UpdateSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 1, 0, 4, 8, 5, 5}, []string{"v1", "environments", "instances", "databases", "secrets", "secret.name"}, ""))
+	pattern_DatabaseService_UpdateSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "instances", "databases", "secrets", "secret.name"}, ""))
 
-	pattern_DatabaseService_DeleteSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 2, 4, 1, 0, 4, 8, 5, 5}, []string{"v1", "environments", "instances", "databases", "secrets", "name"}, ""))
+	pattern_DatabaseService_DeleteSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "instances", "databases", "secrets", "name"}, ""))
 
-	pattern_DatabaseService_AdviseIndex_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "databases", "parent"}, "adviseIndex"))
+	pattern_DatabaseService_AdviseIndex_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "databases", "parent"}, "adviseIndex"))
 )
 
 var (

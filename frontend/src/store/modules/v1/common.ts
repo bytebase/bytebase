@@ -58,9 +58,7 @@ export const getEnvironmentPathByLegacyEnvironment = (
 };
 
 export const getInstancePathByLegacyInstance = (instance: Instance): string => {
-  return `${getEnvironmentPathByLegacyEnvironment(
-    instance.environment
-  )}/${instanceNamePrefix}${instance.resourceId}`;
+  return `${instanceNamePrefix}${instance.resourceId}`;
 };
 
 export const getDatabasePathByLegacyDatabase = (database: Database): string => {

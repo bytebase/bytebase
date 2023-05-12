@@ -211,7 +211,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 }
 
 // CreateInstanceV2 creates the instance.
-func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, instanceCreate *InstanceMessage, creatorID int) (*InstanceMessage, error) {
+func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage, creatorID int) (*InstanceMessage, error) {
 	if err := validateDataSourceList(instanceCreate.DataSources); err != nil {
 		return nil, err
 	}
@@ -224,13 +224,13 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 
 	// TODO(d): use the same query for environment.
 	environment, err := s.getEnvironmentImplV2(ctx, tx, &FindEnvironmentMessage{
-		ResourceID: &environmentID,
+		ResourceID: &instanceCreate.EnvironmentID,
 	})
 	if err != nil {
 		return nil, err
 	}
 	if environment == nil {
-		return nil, common.Errorf(common.NotFound, "environment %s not found", environmentID)
+		return nil, common.Errorf(common.NotFound, "environment %s not found", instanceCreate.EnvironmentID)
 	}
 
 	var instanceID int
@@ -279,7 +279,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	}
 
 	instance := &InstanceMessage{
-		EnvironmentID: environmentID,
+		EnvironmentID: instanceCreate.EnvironmentID,
 		ResourceID:    instanceCreate.ResourceID,
 		UID:           instanceID,
 		Title:         instanceCreate.Title,

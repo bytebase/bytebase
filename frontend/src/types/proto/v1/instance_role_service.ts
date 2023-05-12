@@ -9,7 +9,7 @@ export const protobufPackage = "bytebase.v1";
 export interface GetInstanceRoleRequest {
   /**
    * The name of the role to retrieve.
-   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * Format: instances/{instance}/roles/{role name}
    * The role name is the unique name for the role.
    */
   name: string;
@@ -18,7 +18,7 @@ export interface GetInstanceRoleRequest {
 export interface ListInstanceRolesRequest {
   /**
    * The parent, which owns this collection of roles.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   parent: string;
   /**
@@ -51,7 +51,7 @@ export interface ListInstanceRolesResponse {
 export interface CreateInstanceRoleRequest {
   /**
    * The parent resource where this role will be created.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   parent: string;
   /** The role to create. */
@@ -62,8 +62,8 @@ export interface UpdateInstanceRoleRequest {
   /**
    * The role to update.
    *
-   * The role's `name`, `environment` and `instance` field is used to identify the role to update.
-   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * The role's `name` and `instance` field is used to identify the role to update.
+   * Format: instances/{instance}/roles/{role name}
    */
   role?: InstanceRole;
   /** The list of fields to update. */
@@ -73,7 +73,7 @@ export interface UpdateInstanceRoleRequest {
 export interface DeleteInstanceRoleRequest {
   /**
    * The name of the role to delete.
-   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * Format: instances/{instance}/roles/{role name}
    */
   name: string;
 }
@@ -81,7 +81,7 @@ export interface DeleteInstanceRoleRequest {
 export interface UndeleteInstanceRoleRequest {
   /**
    * The name of the deleted role.
-   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * Format: instances/{instance}/roles/{role name}
    */
   name: string;
 }
@@ -90,7 +90,7 @@ export interface UndeleteInstanceRoleRequest {
 export interface InstanceRole {
   /**
    * The name of the role.
-   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * Format: instances/{instance}/roles/{role name}
    * The role name is the unique name for the role.
    */
   name: string;
@@ -735,9 +735,9 @@ export const InstanceRoleServiceDefinition = {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              47,
+              32,
               18,
-              45,
+              30,
               47,
               118,
               49,
@@ -748,21 +748,6 @@ export const InstanceRoleServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -799,9 +784,9 @@ export const InstanceRoleServiceDefinition = {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              47,
+              32,
               18,
-              45,
+              30,
               47,
               118,
               49,
@@ -814,21 +799,6 @@ export const InstanceRoleServiceDefinition = {
               110,
               116,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -863,7 +833,7 @@ export const InstanceRoleServiceDefinition = {
           8410: [new Uint8Array([11, 112, 97, 114, 101, 110, 116, 44, 114, 111, 108, 101])],
           578365826: [
             new Uint8Array([
-              53,
+              38,
               58,
               4,
               114,
@@ -871,7 +841,7 @@ export const InstanceRoleServiceDefinition = {
               108,
               101,
               34,
-              45,
+              30,
               47,
               118,
               49,
@@ -884,21 +854,6 @@ export const InstanceRoleServiceDefinition = {
               110,
               116,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -933,7 +888,7 @@ export const InstanceRoleServiceDefinition = {
           8410: [new Uint8Array([16, 114, 111, 108, 101, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
           578365826: [
             new Uint8Array([
-              58,
+              43,
               58,
               4,
               114,
@@ -941,7 +896,7 @@ export const InstanceRoleServiceDefinition = {
               108,
               101,
               50,
-              50,
+              35,
               47,
               118,
               49,
@@ -957,21 +912,6 @@ export const InstanceRoleServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -1008,9 +948,9 @@ export const InstanceRoleServiceDefinition = {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              47,
+              32,
               42,
-              45,
+              30,
               47,
               118,
               49,
@@ -1021,21 +961,6 @@ export const InstanceRoleServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -1071,12 +996,12 @@ export const InstanceRoleServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              59,
+              44,
               58,
               1,
               42,
               34,
-              54,
+              39,
               47,
               118,
               49,
@@ -1087,21 +1012,6 @@ export const InstanceRoleServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
