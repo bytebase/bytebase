@@ -3,8 +3,7 @@ import { RowStatus, Environment, IssueType, PolicyId, SubsetOf } from ".";
 export type PolicyType =
   | "bb.policy.pipeline-approval"
   | "bb.policy.backup-plan"
-  | "bb.policy.environment-tier"
-  | "bb.policy.access-control";
+  | "bb.policy.environment-tier";
 
 export type PipelineApprovalPolicyValue =
   | "MANUAL_APPROVAL_NEVER"
@@ -50,19 +49,10 @@ export type AssigneeGroup = {
   value: AssigneeGroupValue;
 };
 
-export type AccessControlRule = {
-  fullDatabase: boolean;
-};
-
-export type AccessControlPolicyPayload = {
-  disallowRuleList: AccessControlRule[];
-};
-
 export type PolicyPayload =
   | PipelineApprovalPolicyPayload
   | BackupPlanPolicyPayload
-  | EnvironmentTierPolicyPayload
-  | AccessControlPolicyPayload;
+  | EnvironmentTierPolicyPayload;
 
 export type PolicyResourceType =
   | ""
