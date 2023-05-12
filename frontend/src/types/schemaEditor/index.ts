@@ -1,6 +1,8 @@
 import { Database, DatabaseId } from "..";
 import { Schema } from "./atomType";
 
+export * from "./atomType";
+
 export enum SchemaEditorTabType {
   TabForDatabase = "database",
   TabForTable = "table",

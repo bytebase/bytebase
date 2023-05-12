@@ -73,16 +73,18 @@
 import { cloneDeep } from "lodash-es";
 import { computed, defineComponent, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  Column,
-  Database,
-  SensitiveData,
-  SensitiveDataPolicyPayload,
-} from "@/types";
+import { Column, Database } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
-import { featureToRef, useCurrentUser, usePolicyStore } from "@/store";
+import { featureToRef, useCurrentUser } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
 import { BBTableColumn } from "@/bbkit/types";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { getDatabasePathByLegacyDatabase } from "@/store/modules/v1/common";
+import {
+  PolicyType,
+  SensitiveData,
+  SensitiveDataMaskType,
+} from "@/types/proto/v1/org_policy_service";
 
 type LocalState = {
   showFeatureModal: boolean;
@@ -276,20 +278,21 @@ export default defineComponent({
           schema: props.schema,
           table: props.table.name,
           column: column.name,
-          maskType: "DEFAULT",
+          maskType: SensitiveDataMaskType.DEFAULT,
         });
       } else if (!on && index >= 0) {
         sensitiveDataList.splice(index, 1);
       }
-      const payload: SensitiveDataPolicyPayload = {
-        sensitiveDataList,
-      };
-      usePolicyStore().upsertPolicyByDatabaseAndType({
-        databaseId: props.database.id,
-        type: "bb.policy.sensitive-data",
-        policyUpsert: {
-          payload,
+
+      usePolicyV1Store().upsertPolicy({
+        parentPath: getDatabasePathByLegacyDatabase(props.database),
+        policy: {
+          type: PolicyType.SENSITIVE_DATA,
+          sensitiveDataPolicy: {
+            sensitiveData: sensitiveDataList,
+          },
         },
+        updateMask: ["payload"],
       });
     };
 
