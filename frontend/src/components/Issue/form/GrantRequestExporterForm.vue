@@ -14,11 +14,11 @@
       />
     </div>
     <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center">
+      <span class="flex w-40 items-center shrink-0">
         {{ $t("issue.grant-request.database") }}
         <RequiredStar />
       </span>
-      <div v-if="create">
+      <div v-if="create" class="flex flex-row justify-start items-center">
         <EnvironmentSelect
           class="!w-60 mr-4 shrink-0"
           name="environment"
@@ -29,7 +29,7 @@
         <DatabaseSelect
           class="!w-128"
           :selected-id="(state.databaseId as DatabaseId)"
-          :mode="'USER'"
+          :mode="'ALL'"
           :environment-id="state.environmentId"
           :project-id="state.projectId"
           :sync-status="'OK'"
