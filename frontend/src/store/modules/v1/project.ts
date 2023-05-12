@@ -15,6 +15,7 @@ import { Project } from "@/types/proto/v1/project_service";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 import { State } from "@/types/proto/v1/common";
 import { User } from "@/types/proto/v1/auth_service";
+import { useCurrentUserV1 } from "../auth";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
@@ -159,6 +160,10 @@ export const useProjectV1ListByUser = (
   });
   return { projectList, ready };
 };
+
+export const useProjectV1ListByCurrentUser = (
+  showDeleted: MaybeRef<boolean> = false
+) => useProjectV1ListByUser(useCurrentUserV1(), showDeleted);
 
 export const useProjectV1ByUID = (uid: MaybeRef<IdType>) => {
   const store = useProjectV1Store();

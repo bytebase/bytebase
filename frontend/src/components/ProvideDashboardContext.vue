@@ -13,8 +13,6 @@ import {
   useProjectStore,
   useDebugStore,
   useUserStore,
-  useDatabaseStore,
-  useProjectV1Store,
 } from "@/store";
 import { defineComponent } from "vue";
 import { DEFAULT_PROJECT_ID } from "../types";
@@ -39,10 +37,6 @@ export default defineComponent({
       useEnvironmentV1Store().fetchEnvironments(),
       // The default project hosts databases not explicitly assigned to other users project.
       useProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),
-      // For legacy project API support. Remove this after shipping to project v1.
-      useProjectStore().fetchAllProjectList(),
-      useProjectV1Store().fetchProjectList(),
-      useDatabaseStore().fetchDatabaseList(),
       useUIStateStore().restoreState(),
       useDebugStore().fetchDebug(),
     ]);

@@ -48,12 +48,11 @@ import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import {
   useCurrentUser,
-  useCurrentUserV1,
   useEnvironmentList,
   useEnvironmentStore,
   useIdentityProviderStore,
   useInstanceStore,
-  useProjectV1ListByUser,
+  useProjectV1ListByCurrentUser,
 } from "@/store";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import IdentityProviderTable from "@/components/IdentityProviderTable.vue";
@@ -87,7 +86,6 @@ export default defineComponent({
     });
 
     const currentUser = useCurrentUser();
-    const currentUserV1 = useCurrentUserV1();
 
     const searchFieldPlaceholder = computed(() => {
       if (state.selectedIndex == PROJECT_TAB) {
@@ -103,8 +101,7 @@ export default defineComponent({
       }
     });
 
-    const { projectList } = useProjectV1ListByUser(
-      currentUserV1,
+    const { projectList } = useProjectV1ListByCurrentUser(
       true /* showDeleted */
     );
 

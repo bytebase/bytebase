@@ -4,18 +4,19 @@
   >
     <div v-if="create" class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center">
-        {{ $t("issue.grant-request.select-project") }}
+        {{ $t("common.project") }}
         <RequiredStar />
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
+        :only-userself="false"
         :selected-id="projectId"
         @select-project-id="handleSourceProjectSelect"
       />
     </div>
     <div class="w-full flex flex-row justify-start items-start">
       <span class="flex w-40 items-center">
-        {{ $t("issue.grant-request.databases") }}
+        {{ $t("common.databases") }}
         <RequiredStar />
       </span>
       <div v-if="create">
