@@ -752,9 +752,6 @@
     "waiting-for-review": "等待审核",
     "issue-name": "工单名称",
     "grant-request": {
-      "select-project": "选择项目",
-      "database": "数据库",
-      "databases": "数据库",
       "export-rows": "最大导出行数",
       "export-format": "导出格式",
       "expire-days": "过期天数",

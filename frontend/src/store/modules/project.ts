@@ -16,6 +16,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
+import { isMemberOfProject } from "@/utils";
 
 function convert(
   project: ResourceObject,
@@ -104,7 +105,9 @@ export const useProjectStore = defineStore("project", {
           (!rowStatusList && project.rowStatus == "NORMAL") ||
           (rowStatusList && rowStatusList.includes(project.rowStatus))
         ) {
-          result.push(project);
+          if (isMemberOfProject(project, userId)) {
+            result.push(project);
+          }
         }
       }
 
@@ -134,17 +137,6 @@ export const useProjectStore = defineStore("project", {
         return convert(project, data.included);
       }) as Project[];
 
-      this.upsertProjectList(projectList);
-      return projectList;
-    },
-
-    async fetchProjectList() {
-      const data = (await axios.get(`/api/project`)).data;
-      const projectList: Project[] = data.data.map(
-        (project: ResourceObject) => {
-          return convert(project, data.included);
-        }
-      );
       this.upsertProjectList(projectList);
       return projectList;
     },

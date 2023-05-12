@@ -754,9 +754,6 @@
     "waiting-for-review": "Waiting for review",
     "issue-name": "Issue name",
     "grant-request": {
-      "select-project": "Select project",
-      "database": "Database",
-      "databases": "Databases",
       "export-rows": "Export rows",
       "export-format": "Export format",
       "expire-days": "Expire days",

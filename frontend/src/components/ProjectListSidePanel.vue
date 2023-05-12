@@ -15,14 +15,11 @@ import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 
 import { projectV1Slug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
-import { useCurrentUserV1, useProjectV1ListByUser } from "@/store";
+import { useProjectV1ListByCurrentUser } from "@/store";
 
 const { t } = useI18n();
 const router = useRouter();
-
-const currentUserV1 = useCurrentUserV1();
-
-const { projectList } = useProjectV1ListByUser(currentUserV1);
+const { projectList } = useProjectV1ListByCurrentUser();
 
 const outlineItemList = computed((): BBOutlineItem[] => {
   return projectList.value
