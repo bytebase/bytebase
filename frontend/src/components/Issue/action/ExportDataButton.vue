@@ -36,13 +36,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 import { useIssueLogic } from "../logic";
-import {
-  DatabaseId,
-  GrantRequestPayload,
-  Issue,
-  SQLResultSet,
-  UNKNOWN_ID,
-} from "@/types";
+import { DatabaseId, GrantRequestPayload, Issue, UNKNOWN_ID } from "@/types";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { pushNotification, useDatabaseStore, useSQLStore } from "@/store";
 import {
@@ -131,19 +125,7 @@ const handleExport = async () => {
   }
 
   state.isRequesting = true;
-  let queryResult: SQLResultSet;
-  try {
-    queryResult = await useSQLStore().query(exportContext.value);
-  } catch (error) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: `Failed to export data`,
-      description: JSON.stringify(error),
-    });
-    state.isRequesting = false;
-    return;
-  }
+  const queryResult = await useSQLStore().query(exportContext.value);
   if (queryResult.error) {
     pushNotification({
       module: "bytebase",
