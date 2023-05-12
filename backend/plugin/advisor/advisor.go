@@ -367,6 +367,9 @@ const (
 
 	// OracleIndexKeyNumberLimit is an advisor type for Oracle index key number limit.
 	OracleIndexKeyNumberLimit Type = "bb.plugin.advisor.oracle.index.key-number-limit"
+
+	// OracleColumnNoNull is an advisor type for Oracle column no NULL value.
+	OracleColumnNoNull Type = "bb.plugin.advisor.oracle.column.no-null"
 )
 
 // Advice is the result of an advisor.
