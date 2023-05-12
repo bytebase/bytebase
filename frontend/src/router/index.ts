@@ -23,7 +23,6 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import {
-  extractProjectWebhookID,
   hasPermissionInProject,
   hasWorkspacePermission,
   idFromSlug,
