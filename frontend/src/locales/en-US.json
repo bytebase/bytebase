@@ -244,7 +244,8 @@
     "expand": "Expand",
     "collapse": "Collapse",
     "select": "Select",
-    "optional": "Optional"
+    "optional": "Optional",
+    "reason": "Reason"
   },
   "error-page": {
     "go-back-home": "Go back home"
