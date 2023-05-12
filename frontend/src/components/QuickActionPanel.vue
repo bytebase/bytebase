@@ -184,7 +184,7 @@
         </h3>
       </div>
 
-      <template v-if="isDev() && hasCustomRoleFeature">
+      <template v-if="hasCustomRoleFeature">
         <div
           v-if="quickAction === 'quickaction.bb.issue.grant.request.querier'"
           class="flex flex-col items-center w-24"
