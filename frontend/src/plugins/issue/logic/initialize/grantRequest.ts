@@ -34,5 +34,9 @@ const buildNewGrantRequestIssue = async (
   const issueCreate = await helper.generate();
   const role = route.query.role as string;
   (issueCreate.createContext as GrantRequestContext).role = role as any;
+  const project = route.query.project as string;
+  if (project) {
+    issueCreate.projectId = Number(project);
+  }
   return issueCreate;
 };
