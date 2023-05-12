@@ -677,7 +677,6 @@ EXECUTE FUNCTION trigger_update_updated_ts();
 -- Pipeline related END
 -----------------------
 -- issue
--- Each issue links a pipeline driving the resolution.
 CREATE TABLE issue (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
@@ -686,7 +685,7 @@ CREATE TABLE issue (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
+    pipeline_id INTEGER REFERENCES pipeline (id),
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.issue.%'),
