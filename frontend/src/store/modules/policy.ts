@@ -19,7 +19,6 @@ import {
   PolicyResourceType,
   PolicyType,
   PolicyUpsert,
-  SensitiveDataPolicyPayload,
 } from "@/types/policy";
 import { useEnvironmentStore } from "./environment";
 import { useCurrentUser } from "./auth";
@@ -75,13 +74,6 @@ function convert(
     if (!payload.assigneeGroupList) {
       // Assign an empty array as fallback
       payload.assigneeGroupList = [];
-    }
-  }
-  if (result.type === "bb.policy.sensitive-data") {
-    const payload = result.payload as SensitiveDataPolicyPayload;
-    if (!payload.sensitiveDataList) {
-      // The array might be null, fill it with empty array to fallback.
-      payload.sensitiveDataList = [];
     }
   }
 
