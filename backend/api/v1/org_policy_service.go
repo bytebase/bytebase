@@ -460,10 +460,12 @@ func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 		}
 		return payload.String()
 	case v1pb.PolicyType_BACKUP_PLAN:
-		// TODO: validate
 		payload, err := convertToBackupPlanPolicyPayload(policy.GetBackupPlanPolicy())
 		if err != nil {
 			return "", err
+		}
+		if payload.Schedule != api.BackupPlanPolicyScheduleUnset && payload.Schedule != api.BackupPlanPolicyScheduleDaily && payload.Schedule != api.BackupPlanPolicyScheduleWeekly {
+			return "", errors.Errorf("invalid backup plan policy schedule: %q", payload.Schedule)
 		}
 		return payload.String()
 	case v1pb.PolicyType_SQL_REVIEW:
@@ -763,9 +765,14 @@ func convertToBackupPlanPolicyPayload(policy *v1pb.BackupPlanPolicy) (*api.Backu
 		return nil, errors.Errorf("invalid backup plan schedule %v", policy.Schedule)
 	}
 
+	retentionPeriodTs := 0
+	if policy.RetentionDuration != nil {
+		retentionPeriodTs = int(policy.RetentionDuration.Seconds)
+	}
+
 	return &api.BackupPlanPolicy{
 		Schedule:          schedule,
-		RetentionPeriodTs: int(policy.RetentionDuration.Seconds),
+		RetentionPeriodTs: retentionPeriodTs,
 	}, nil
 }
 

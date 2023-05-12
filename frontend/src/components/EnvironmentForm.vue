@@ -139,11 +139,11 @@
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
-              v-model="(state.backupPolicy.payload as BackupPlanPolicyPayload).schedule"
+              v-model="state.backupPolicy.backupPlanPolicy!.schedule"
               tabindex="-1"
               type="radio"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
-              value="UNSET"
+              :value="BackupPlanSchedule.UNSET"
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
@@ -157,11 +157,11 @@
           </div>
           <div class="flex space-x-4">
             <input
-              v-model="(state.backupPolicy.payload as BackupPlanPolicyPayload).schedule"
+              v-model="state.backupPolicy.backupPlanPolicy!.schedule"
               tabindex="-1"
               type="radio"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
-              value="DAILY"
+              :value="BackupPlanSchedule.DAILY"
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
@@ -179,11 +179,11 @@
           </div>
           <div class="flex space-x-4">
             <input
-              v-model="(state.backupPolicy.payload as BackupPlanPolicyPayload).schedule"
+              v-model="state.backupPolicy.backupPlanPolicy!.schedule"
               tabindex="-1"
               type="radio"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
-              value="WEEKLY"
+              :value="BackupPlanSchedule.WEEKLY"
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
@@ -320,7 +320,6 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
 import type {
-  BackupPlanPolicyPayload,
   Environment,
   EnvironmentCreate,
   EnvironmentPatch,
@@ -344,11 +343,16 @@ import {
 } from "@/store";
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import {
+  Policy as PolicyV1,
+  PolicyType as PolicyTypeV1,
+  BackupPlanSchedule,
+} from "@/types/proto/v1/org_policy_service";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
   approvalPolicy: Policy;
-  backupPolicy: Policy;
+  backupPolicy: PolicyV1;
   environmentTierPolicy: Policy;
 }
 
@@ -369,7 +373,7 @@ const props = defineProps({
   },
   backupPolicy: {
     required: true,
-    type: Object as PropType<Policy>,
+    type: Object as PropType<PolicyV1>,
   },
   environmentTierPolicy: {
     required: true,
@@ -384,6 +388,7 @@ const emit = defineEmits([
   "archive",
   "restore",
   "update-policy",
+  "update-policy-v1",
 ]);
 
 const { t } = useI18n();
@@ -461,7 +466,7 @@ watch(
 
 watch(
   () => props.backupPolicy,
-  (cur: Policy) => {
+  (cur: PolicyV1) => {
     state.backupPolicy = cloneDeep(cur);
   }
 );
@@ -612,9 +617,9 @@ const updateEnvironment = () => {
 
   if (!isEqual(props.backupPolicy, state.backupPolicy)) {
     emit(
-      "update-policy",
-      environmentId,
-      "bb.policy.backup-plan",
+      "update-policy-v1",
+      state.environment,
+      PolicyTypeV1.BACKUP_PLAN,
       state.backupPolicy
     );
   }
