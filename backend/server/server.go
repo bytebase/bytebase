@@ -983,7 +983,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		return errors.Wrapf(err, "failed to create onboarding project")
 	}
 
-	instance, err := s.store.CreateInstanceV2(ctx, api.DefaultProdEnvironmentID, &store.InstanceMessage{
+	instance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
 		ResourceID:   postgres.SampleInstanceResourceID,
 		Title:        "Postgres Sample Instance",
 		Engine:       db.Postgres,
@@ -999,6 +999,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 				Database:           postgres.SampleDatabase,
 			},
 		},
+		EnvironmentID: api.DefaultProdEnvironmentID,
 	}, userID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding instance")

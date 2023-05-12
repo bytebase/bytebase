@@ -20,8 +20,8 @@ service OrgPolicyService {
 
       additional_bindings {get: "/v1/{name=projects/*/policies/*}"}
       additional_bindings {get: "/v1/{name=environments/*/policies/*}"}
-      additional_bindings {get: "/v1/{name=environments/*/instances/*/policies/*}"}
-      additional_bindings {get: "/v1/{name=environments/*/instances/*/databases/*/policies/*}"}
+      additional_bindings {get: "/v1/{name=instances/*/policies/*}"}
+      additional_bindings {get: "/v1/{name=instances/*/databases/*/policies/*}"}
     };
     option (google.api.method_signature) = "name";
   }
@@ -32,8 +32,8 @@ service OrgPolicyService {
 
       additional_bindings {get: "/v1/{parent=projects/*}/policies"}
       additional_bindings {get: "/v1/{parent=environments/*}/policies"}
-      additional_bindings {get: "/v1/{parent=environments/*/instances/*}/policies"}
-      additional_bindings {get: "/v1/{parent=environments/*/instances/*/databases/*}/policies"}
+      additional_bindings {get: "/v1/{parent=instances/*}/policies"}
+      additional_bindings {get: "/v1/{parent=instances/*/databases/*}/policies"}
     };
     option (google.api.method_signature) = "";
   }
@@ -52,11 +52,11 @@ service OrgPolicyService {
         body: "policy"
       }
       additional_bindings {
-        post: "/v1/{parent=environments/*/instances/*}/policies"
+        post: "/v1/{parent=instances/*}/policies"
         body: "policy"
       }
       additional_bindings {
-        post: "/v1/{parent=environments/*/instances/*/databases/*}/policies"
+        post: "/v1/{parent=instances/*/databases/*}/policies"
         body: "policy"
       }
     };
@@ -77,11 +77,11 @@ service OrgPolicyService {
         body: "policy"
       }
       additional_bindings {
-        patch: "/v1/{policy.name=environments/*/instances/*/policies/*}"
+        patch: "/v1/{policy.name=instances/*/policies/*}"
         body: "policy"
       }
       additional_bindings {
-        patch: "/v1/{policy.name=environments/*/instances/*/databases/*/policies/*}"
+        patch: "/v1/{policy.name=instances/*/databases/*/policies/*}"
         body: "policy"
       }
     };
@@ -94,8 +94,8 @@ service OrgPolicyService {
 
       additional_bindings {delete: "/v1/{name=projects/*/policies/*}"}
       additional_bindings {delete: "/v1/{name=environments/*/policies/*}"}
-      additional_bindings {delete: "/v1/{name=environments/*/instances/*/policies/*}"}
-      additional_bindings {delete: "/v1/{name=environments/*/instances/*/databases/*/policies/*}"}
+      additional_bindings {delete: "/v1/{name=instances/*/policies/*}"}
+      additional_bindings {delete: "/v1/{name=instances/*/databases/*/policies/*}"}
     };
     option (google.api.method_signature) = "name";
   }

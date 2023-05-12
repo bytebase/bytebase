@@ -2954,6 +2954,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
+| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 
 
 
@@ -2968,7 +2969,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of instances. Format: environments/{environment} Use &#34;environments/-&#34; to list all instances from all environments. |
+| parent | [string](#string) |  | The parent, which owns this collection of instances. Format: environments/{environment} |
 | page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 50 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
 

@@ -13,18 +13,18 @@ option go_package = "generated-go/v1";
 
 service InstanceService {
   rpc GetInstance(GetInstanceRequest) returns (Instance) {
-    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*}"};
+    option (google.api.http) = {get: "/v1/{name=instances/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=environments/*}/instances"};
+    option (google.api.http) = {get: "/v1/instances"};
     option (google.api.method_signature) = "parent";
   }
 
   rpc CreateInstance(CreateInstanceRequest) returns (Instance) {
     option (google.api.http) = {
-      post: "/v1/{parent=environments/*}/instances"
+      post: "/v1/instances"
       body: "instance"
     };
     option (google.api.method_signature) = "parent,instance";
@@ -32,48 +32,48 @@ service InstanceService {
 
   rpc UpdateInstance(UpdateInstanceRequest) returns (Instance) {
     option (google.api.http) = {
-      patch: "/v1/{instance.name=environments/*/instances/*}"
+      patch: "/v1/{instance.name=instances/*}"
       body: "instance"
     };
     option (google.api.method_signature) = "instance,update_mask";
   }
 
   rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=environments/*/instances/*}"};
+    option (google.api.http) = {delete: "/v1/{name=instances/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
     option (google.api.http) = {
-      post: "/v1/{name=environments/*/instances/*}:undelete"
+      post: "/v1/{name=instances/*}:undelete"
       body: "*"
     };
   }
 
   rpc AddDataSource(AddDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
-      post: "/v1/{instance=environments/*/instances/*}:addDataSource"
+      post: "/v1/{instance=instances/*}:addDataSource"
       body: "*"
     };
   }
 
   rpc RemoveDataSource(RemoveDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
-      post: "/v1/{instance=environments/*/instances/*}:removeDataSource"
+      post: "/v1/{instance=instances/*}:removeDataSource"
       body: "*"
     };
   }
 
   rpc UpdateDataSource(UpdateDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
-      patch: "/v1/{instance=environments/*/instances/*}:updateDataSource"
+      patch: "/v1/{instance=instances/*}:updateDataSource"
       body: "*"
     };
   }
 
   rpc SyncSlowQueries(SyncSlowQueriesRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/v1/{instance=environments/*/instances/*}:syncSlowQueries"
+      post: "/v1/{instance=instances/*}:syncSlowQueries"
       body: "*"
     };
   }
@@ -88,7 +88,6 @@ message GetInstanceRequest {
 message ListInstancesRequest {
   // The parent, which owns this collection of instances.
   // Format: environments/{environment}
-  // Use "environments/-" to list all instances from all environments.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of instances to return. The service may return fewer than
@@ -214,6 +213,10 @@ message Instance {
   string external_link = 6;
 
   repeated DataSource data_sources = 7;
+
+  // The environment resource.
+  // Format: environments/prod where prod is the environment resource ID.
+  string environment = 8;
 }
 
 message DataSource {

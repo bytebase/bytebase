@@ -16,18 +16,18 @@ option go_package = "generated-go/v1";
 
 service DatabaseService {
   rpc GetDatabase(GetDatabaseRequest) returns (Database) {
-    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*}"};
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*}/databases"};
+    option (google.api.http) = {get: "/v1/{parent=instances/*}/databases"};
     option (google.api.method_signature) = "";
   }
 
   rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
     option (google.api.http) = {
-      patch: "/v1/{database.name=environments/*/instances/*/databases/*}"
+      patch: "/v1/{database.name=instances/*/databases/*}"
       body: "database"
     };
     option (google.api.method_signature) = "database,update_mask";
@@ -35,65 +35,65 @@ service DatabaseService {
 
   rpc BatchUpdateDatabases(BatchUpdateDatabasesRequest) returns (BatchUpdateDatabasesResponse) {
     option (google.api.http) = {
-      post: "/v1/{parent=environments/*/instances/*}/databases:batchUpdate"
+      post: "/v1/{parent=instances/*}/databases:batchUpdate"
       body: "*"
     };
   }
 
   rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
-    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*/metadata}"};
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
   }
 
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
-    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*/schema}"};
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
 
   rpc GetBackupSetting(GetBackupSettingRequest) returns (BackupSetting) {
-    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*/backupSetting}"};
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/backupSetting}"};
   }
 
   rpc UpdateBackupSetting(UpdateBackupSettingRequest) returns (BackupSetting) {
     option (google.api.http) = {
-      patch: "/v1/{setting.name=environments/*/instances/*/databases/*/backupSetting}"
+      patch: "/v1/{setting.name=instances/*/databases/*/backupSetting}"
       body: "setting"
     };
   }
 
   rpc CreateBackup(CreateBackupRequest) returns (Backup) {
     option (google.api.http) = {
-      post: "/v1/{parent=environments/*/instances/*/databases/*}/backups"
+      post: "/v1/{parent=instances/*/databases/*}/backups"
       body: "backup"
     };
   }
 
   rpc ListBackup(ListBackupRequest) returns (ListBackupResponse) {
-    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/backups"};
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/backups"};
     option (google.api.method_signature) = "parent";
   }
 
   rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/slowQueries"};
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/slowQueries"};
     option (google.api.method_signature) = "parent";
   }
 
   rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/secrets"};
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/secrets"};
     option (google.api.method_signature) = "parent";
   }
 
   rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
     option (google.api.http) = {
-      patch: "/v1/{secret.name=environments/*/instances/*/databases/*/secrets/*}";
+      patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}";
       body: "secret";
     };
   }
 
   rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=environments/*/instances/*/databases/*/secrets/*}"};
+    option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/secrets/*}"};
   }
 
   rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
-    option (google.api.http) = {post: "/v1/{parent=environments/*/instances/*/databases/*}:adviseIndex"};
+    option (google.api.http) = {post: "/v1/{parent=instances/*/databases/*}:adviseIndex"};
     option (google.api.method_signature) = "parent";
   }
 }

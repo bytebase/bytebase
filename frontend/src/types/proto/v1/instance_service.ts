@@ -58,7 +58,6 @@ export interface ListInstancesRequest {
   /**
    * The parent, which owns this collection of instances.
    * Format: environments/{environment}
-   * Use "environments/-" to list all instances from all environments.
    */
   parent: string;
   /**
@@ -197,6 +196,11 @@ export interface Instance {
   engine: Engine;
   externalLink: string;
   dataSources: DataSource[];
+  /**
+   * The environment resource.
+   * Format: environments/prod where prod is the environment resource ID.
+   */
+  environment: string;
 }
 
 export interface DataSource {
@@ -1044,7 +1048,7 @@ export const SyncSlowQueriesRequest = {
 };
 
 function createBaseInstance(): Instance {
-  return { name: "", uid: "", state: 0, title: "", engine: 0, externalLink: "", dataSources: [] };
+  return { name: "", uid: "", state: 0, title: "", engine: 0, externalLink: "", dataSources: [], environment: "" };
 }
 
 export const Instance = {
@@ -1069,6 +1073,9 @@ export const Instance = {
     }
     for (const v of message.dataSources) {
       DataSource.encode(v!, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.environment !== "") {
+      writer.uint32(66).string(message.environment);
     }
     return writer;
   },
@@ -1129,6 +1136,13 @@ export const Instance = {
 
           message.dataSources.push(DataSource.decode(reader, reader.uint32()));
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.environment = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1147,6 +1161,7 @@ export const Instance = {
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       externalLink: isSet(object.externalLink) ? String(object.externalLink) : "",
       dataSources: Array.isArray(object?.dataSources) ? object.dataSources.map((e: any) => DataSource.fromJSON(e)) : [],
+      environment: isSet(object.environment) ? String(object.environment) : "",
     };
   },
 
@@ -1163,6 +1178,7 @@ export const Instance = {
     } else {
       obj.dataSources = [];
     }
+    message.environment !== undefined && (obj.environment = message.environment);
     return obj;
   },
 
@@ -1179,6 +1195,7 @@ export const Instance = {
     message.engine = object.engine ?? 0;
     message.externalLink = object.externalLink ?? "";
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
+    message.environment = object.environment ?? "";
     return message;
   },
 };
@@ -1511,9 +1528,9 @@ export const InstanceServiceDefinition = {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              39,
+              24,
               18,
-              37,
+              22,
               47,
               118,
               49,
@@ -1524,21 +1541,6 @@ export const InstanceServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -1565,50 +1567,7 @@ export const InstanceServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
-          578365826: [
-            new Uint8Array([
-              39,
-              18,
-              37,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              125,
-              47,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-            ]),
-          ],
+          578365826: [new Uint8Array([15, 18, 13, 47, 118, 49, 47, 105, 110, 115, 116, 97, 110, 99, 101, 115])],
         },
       },
     },
@@ -1623,7 +1582,7 @@ export const InstanceServiceDefinition = {
           8410: [new Uint8Array([15, 112, 97, 114, 101, 110, 116, 44, 105, 110, 115, 116, 97, 110, 99, 101])],
           578365826: [
             new Uint8Array([
-              49,
+              25,
               58,
               8,
               105,
@@ -1635,34 +1594,10 @@ export const InstanceServiceDefinition = {
               99,
               101,
               34,
-              37,
+              13,
               47,
               118,
               49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              125,
               47,
               105,
               110,
@@ -1713,7 +1648,7 @@ export const InstanceServiceDefinition = {
           ],
           578365826: [
             new Uint8Array([
-              58,
+              43,
               58,
               8,
               105,
@@ -1725,7 +1660,7 @@ export const InstanceServiceDefinition = {
               99,
               101,
               50,
-              46,
+              31,
               47,
               118,
               49,
@@ -1745,21 +1680,6 @@ export const InstanceServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -1788,9 +1708,9 @@ export const InstanceServiceDefinition = {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              39,
+              24,
               42,
-              37,
+              22,
               47,
               118,
               49,
@@ -1801,21 +1721,6 @@ export const InstanceServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -1843,12 +1748,12 @@ export const InstanceServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              51,
+              36,
               58,
               1,
               42,
               34,
-              46,
+              31,
               47,
               118,
               49,
@@ -1859,21 +1764,6 @@ export const InstanceServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -1910,12 +1800,12 @@ export const InstanceServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              60,
+              45,
               58,
               1,
               42,
               34,
-              55,
+              40,
               47,
               118,
               49,
@@ -1930,21 +1820,6 @@ export const InstanceServiceDefinition = {
               99,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -1986,12 +1861,12 @@ export const InstanceServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              63,
+              48,
               58,
               1,
               42,
               34,
-              58,
+              43,
               47,
               118,
               49,
@@ -2006,21 +1881,6 @@ export const InstanceServiceDefinition = {
               99,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -2065,12 +1925,12 @@ export const InstanceServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              63,
+              48,
               58,
               1,
               42,
               50,
-              58,
+              43,
               47,
               118,
               49,
@@ -2085,21 +1945,6 @@ export const InstanceServiceDefinition = {
               99,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -2144,12 +1989,12 @@ export const InstanceServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              62,
+              47,
               58,
               1,
               42,
               34,
-              57,
+              42,
               47,
               118,
               49,
@@ -2164,21 +2009,6 @@ export const InstanceServiceDefinition = {
               99,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
