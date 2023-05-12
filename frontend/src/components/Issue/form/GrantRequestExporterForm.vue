@@ -176,7 +176,10 @@ const dialect = computed((): SQLDialect => {
 
 onMounted(() => {
   if (create.value) {
-    state.projectId = (issue.value as IssueCreate).projectId;
+    const projectId = (issue.value as IssueCreate).projectId;
+    if (projectId && projectId !== UNKNOWN_ID) {
+      state.projectId = projectId;
+    }
   }
 });
 

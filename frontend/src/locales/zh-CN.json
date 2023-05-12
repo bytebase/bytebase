@@ -242,7 +242,8 @@
     "expand": "展开",
     "collapse": "收起",
     "select": "选择",
-    "optional": "可选"
+    "optional": "可选",
+    "reason": "理由"
   },
   "error-page": {
     "go-back-home": "回到主页"
