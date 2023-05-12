@@ -20,6 +20,7 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleStatementNoLeadingWildcardLike,
 		advisor.SchemaRuleStatementRequireWhere,
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
+		advisor.SchemaRuleIndexKeyNumberLimit,
 	}
 
 	for _, rule := range oracleRules {
