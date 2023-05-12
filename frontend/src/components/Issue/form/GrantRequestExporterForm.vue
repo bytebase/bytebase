@@ -175,7 +175,9 @@ const dialect = computed((): SQLDialect => {
 });
 
 onMounted(() => {
-  // do nth
+  if (create.value) {
+    state.projectId = (issue.value as IssueCreate).projectId;
+  }
 });
 
 const handleSourceProjectSelect = async (projectId: ProjectId) => {

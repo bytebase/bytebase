@@ -749,7 +749,20 @@
     },
     "waiting-to-rollout": "Esperando para implementar",
     "waiting-for-review": "Esperando revisión",
-    "issue-name": "Nombre de la incidencia"
+    "issue-name": "Nombre de la incidencia",
+    "grant-request": {
+      "select-project": "seleccionar proyecto",
+      "database": "base de datos",
+      "databases": "bases de datos",
+      "export-rows": "número máximo de filas",
+      "export-format": "formato de exportación",
+      "expire-days": "días de caducidad",
+      "expired-at": "tiempo de caducidad",
+      "all-databases": "todas las bases de datos",
+      "manually-select": "selección manual",
+      "customize": "personalice",
+      "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez."
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
