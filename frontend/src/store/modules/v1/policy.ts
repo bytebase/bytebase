@@ -6,6 +6,7 @@ import {
   PolicyType,
   PolicyResourceType,
   policyTypeToJSON,
+  BackupPlanSchedule,
 } from "@/types/proto/v1/org_policy_service";
 import { MaybeRef, UNKNOWN_ID } from "@/types";
 import { useCurrentUser } from "../auth";
@@ -25,9 +26,9 @@ const getPolicyParentByResourceType = (
     case PolicyResourceType.ENVIRONMENT:
       return "environments/-";
     case PolicyResourceType.INSTANCE:
-      return "environments/-/instances/-";
+      return "instances/-";
     case PolicyResourceType.DATABASE:
-      return "environments/-/instances/-/databases/-";
+      return "instances/-/databases/-";
     default:
       return "";
   }
@@ -91,18 +92,20 @@ export const usePolicyV1Store = defineStore("policy_v1", {
     async getOrFetchPolicyByParentAndType({
       parentPath,
       policyType,
+      refresh,
     }: {
       parentPath: string;
       policyType: PolicyType;
+      refresh?: boolean;
     }) {
       const name = `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
         policyType
       )}`;
-      return this.getOrFetchPolicyByName(name);
+      return this.getOrFetchPolicyByName(name, refresh);
     },
-    async getOrFetchPolicyByName(name: string) {
+    async getOrFetchPolicyByName(name: string, refresh = false) {
       const cachedData = this.getPolicyByName(name);
-      if (cachedData) {
+      if (cachedData && !refresh) {
         return cachedData;
       }
       try {
@@ -114,6 +117,18 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       } catch {
         return;
       }
+    },
+    getPolicyByParentAndType({
+      parentPath,
+      policyType,
+    }: {
+      parentPath: string;
+      policyType: PolicyType;
+    }) {
+      const name = `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
+        policyType
+      )}`;
+      return this.getPolicyByName(name);
     },
     getPolicyByName(name: string) {
       return this.policyMapByName.get(name.toLowerCase());
@@ -210,4 +225,25 @@ export const usePolicyByParentAndType = (
     );
     return res;
   });
+};
+
+export const getDefaultBackupPlanPolicy = (
+  parentPath: string,
+  resourceType: PolicyResourceType
+): Policy => {
+  return {
+    name: `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
+      PolicyType.BACKUP_PLAN
+    )}`,
+    uid: "",
+    resourceUid: "",
+    inheritFromParent: false,
+    type: PolicyType.BACKUP_PLAN,
+    resourceType: resourceType,
+    enforce: true,
+    backupPlanPolicy: {
+      schedule: BackupPlanSchedule.UNSET,
+    },
+    state: State.ACTIVE,
+  };
 };
