@@ -32,6 +32,7 @@ const (
 	reviewPrefix                 = "reviews/"
 	rolePrefix                   = "roles/"
 	secretNamePrefix             = "secrets/"
+	webhookIDPrefix              = "webhooks/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -68,6 +69,14 @@ func getProjectID(name string) (string, error) {
 		return "", err
 	}
 	return tokens[0], nil
+}
+
+func getProjectIDWebhookID(name string) (string, string, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, webhookIDPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
 }
 
 func trimSuffixAndGetProjectID(name string, suffix string) (string, error) {

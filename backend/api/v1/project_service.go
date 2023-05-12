@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -380,10 +381,15 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 
 // UpdateWebhook updates a webhook.
 func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.UpdateWebhookRequest) (*v1pb.Project, error) {
-	projectID, err := getProjectID(request.Project)
+	projectID, webhookID, err := getProjectIDWebhookID(request.Webhook.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	webhookIDInt, err := strconv.Atoi(webhookID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid webhook id %q", webhookID)
+	}
+
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
@@ -391,15 +397,15 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
 	}
 
 	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
 		ProjectID: &project.UID,
-		URL:       &request.Webhook.Url,
+		ID:        &webhookIDInt,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -443,10 +449,15 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 
 // RemoveWebhook removes a webhook from a given project.
 func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.RemoveWebhookRequest) (*v1pb.Project, error) {
-	projectID, err := getProjectID(request.Project)
+	projectID, webhookID, err := getProjectIDWebhookID(request.Webhook.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	webhookIDInt, err := strconv.Atoi(webhookID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid webhook id %q", webhookID)
+	}
+
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
@@ -454,15 +465,15 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.Remove
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", webhookID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
 	}
 
 	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
 		ProjectID: &project.UID,
-		URL:       &request.Webhook.Url,
+		ID:        &webhookIDInt,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -886,6 +897,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
+			Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, projectMessage.ResourceID, webhookIDPrefix, webhook.ID),
 			Type:              convertWebhookTypeString(webhook.Type),
 			Title:             webhook.Title,
 			Url:               webhook.URL,

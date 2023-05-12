@@ -3,7 +3,7 @@ import { MonacoLanguageClient, MonacoServices } from "monaco-languageclient";
 import { StandaloneServices } from "@codingame/monaco-vscode-api/services";
 import getMessageServiceOverride from "@codingame/monaco-vscode-api/service-override/messages";
 import { createLanguageServerWorker } from "@sql-lsp/server";
-import { Schema, SQLDialect } from "@sql-lsp/types";
+import { ConnectionScope, Schema, SQLDialect } from "@sql-lsp/types";
 import { createLanguageClient } from "./createLanguageClient";
 
 type LocalStage = {
@@ -87,6 +87,13 @@ const changeDialect = (dialect: SQLDialect) => {
   });
 };
 
+const changeConnectionScope = (scope: ConnectionScope) => {
+  executeCommand({
+    command: "changeConnectionScope",
+    arguments: [scope],
+  });
+};
+
 const resolvePendingCommands = (client: MonacoLanguageClient) => {
   if (state.stopped) {
     return;
@@ -136,5 +143,5 @@ export const useLanguageClient = () => {
   // Initialize if needed
   getLanguageClient();
 
-  return { start, stop, changeSchema, changeDialect };
+  return { start, stop, changeSchema, changeDialect, changeConnectionScope };
 };

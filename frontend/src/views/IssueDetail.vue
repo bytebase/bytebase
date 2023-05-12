@@ -8,7 +8,7 @@
         @status-changed="onStatusChanged"
       />
       <GrantRequestDetail
-        v-if="isDev && isGrantRequestIssue"
+        v-if="isGrantRequestIssue"
         :issue="issue"
         :create="create"
         @status-changed="onStatusChanged"
