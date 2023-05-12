@@ -21,6 +21,7 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleStatementRequireWhere,
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
 		advisor.SchemaRuleIndexKeyNumberLimit,
+		advisor.SchemaRuleColumnNotNull,
 	}
 
 	for _, rule := range oracleRules {
