@@ -5,7 +5,7 @@ import {
   CompletionItem,
 } from "vscode-languageserver/browser";
 import { initializeConnection } from "./initializeConnection";
-import { EngineTypesUsingSQL, Schema, SQLDialect } from "@sql-lsp/types";
+import { EngineTypesUsingSQL, LanguageState } from "@sql-lsp/types";
 import { complete } from "./complete";
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -14,14 +14,10 @@ const TRIGGER_CHARACTERS = [".", " "];
 
 const { connection, documents } = initializeConnection(self);
 
-type LocalState = {
-  schema: Schema;
-  dialect: SQLDialect;
-};
-
-const state: LocalState = {
-  schema: { databases: [] } as Schema,
+const state: LanguageState = {
+  schema: { databases: [] },
   dialect: "MYSQL",
+  connectionScope: "database",
 };
 
 connection.onInitialize((params): InitializeResult => {
@@ -63,12 +59,7 @@ connection.onCompletion(
     if (!text) {
       return [];
     }
-    const candidates = await complete(
-      params,
-      document,
-      state.schema,
-      state.dialect
-    );
+    const candidates = await complete(params, document, state);
     console.debug("onCompletion returns: " + JSON.stringify(candidates));
     return candidates;
   }
@@ -100,6 +91,14 @@ connection.onExecuteCommand((request) => {
       state.dialect = dialect;
     } else {
       state.dialect = "MYSQL";
+    }
+  } else if (request.command === "changeConnectionScope") {
+    const scope = args[0];
+    if (scope === "instance") {
+      state.connectionScope = "instance";
+    }
+    if (scope === "database") {
+      state.connectionScope = "database";
     }
   } else {
     connection.sendNotification("error", {

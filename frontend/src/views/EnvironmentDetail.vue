@@ -77,6 +77,9 @@ import {
 } from "@/store";
 import { useI18n } from "vue-i18n";
 import BBModal from "@/bbkit/BBModal.vue";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
+import { PolicyType as PolicyTypeV1 } from "@/types/proto/v1/org_policy_service";
 
 interface LocalState {
   environment: Environment;
@@ -266,13 +269,16 @@ export default defineComponent({
             ).environmentTier;
             // Also upsert the environment's access-control policy
             const disallowed = state.environment.tier === "PROTECTED";
-            await policyStore.upsertPolicyByEnvironmentAndType({
-              environmentId: state.environment.id,
-              type: "bb.policy.access-control",
-              policyUpsert: {
+            await usePolicyV1Store().upsertPolicy({
+              parentPath: getEnvironmentPathByLegacyEnvironment(
+                state.environment
+              ),
+              updateMask: ["payload", "inherit_from_parent"],
+              policy: {
+                type: PolicyTypeV1.ACCESS_CONTROL,
                 inheritFromParent: false,
-                payload: {
-                  disallowRuleList: [{ fullDatabase: disallowed }],
+                accessControlPolicy: {
+                  disallowRules: [{ fullDatabase: disallowed }],
                 },
               },
             });
