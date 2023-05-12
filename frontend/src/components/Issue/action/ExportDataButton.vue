@@ -36,13 +36,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 import { useIssueLogic } from "../logic";
-import {
-  DatabaseId,
-  GrantRequestPayload,
-  Issue,
-  SQLResultSet,
-  UNKNOWN_ID,
-} from "@/types";
+import { DatabaseId, GrantRequestPayload, Issue, UNKNOWN_ID } from "@/types";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { pushNotification, useDatabaseStore, useSQLStore } from "@/store";
 import {
