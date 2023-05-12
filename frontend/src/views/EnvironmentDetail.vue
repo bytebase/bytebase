@@ -14,6 +14,7 @@
     @archive="doArchive"
     @restore="doRestore"
     @update-policy="updatePolicy"
+    @update-policy-v1="updatePolicyV1"
   />
   <FeatureModal
     v-if="state.missingRequiredFeature != undefined"
@@ -61,9 +62,7 @@ import {
   Policy,
   PolicyType,
   DefaultApprovalPolicy,
-  DefaultSchedulePolicy,
   PipelineApprovalPolicyPayload,
-  BackupPlanPolicyPayload,
   EnvironmentTierPolicyPayload,
   DefaultEnvironmentTier,
 } from "../types";
@@ -77,15 +76,23 @@ import {
 } from "@/store";
 import { useI18n } from "vue-i18n";
 import BBModal from "@/bbkit/BBModal.vue";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import {
+  usePolicyV1Store,
+  getDefaultBackupPlanPolicy,
+} from "@/store/modules/v1/policy";
 import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
-import { PolicyType as PolicyTypeV1 } from "@/types/proto/v1/org_policy_service";
+import {
+  Policy as PolicyV1,
+  PolicyType as PolicyTypeV1,
+  PolicyResourceType,
+  BackupPlanSchedule,
+} from "@/types/proto/v1/org_policy_service";
 
 interface LocalState {
   environment: Environment;
   showArchiveModal: boolean;
   approvalPolicy?: Policy;
-  backupPolicy?: Policy;
+  backupPolicy?: PolicyV1;
   environmentTierPolicy?: Policy;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
@@ -111,6 +118,7 @@ export default defineComponent({
   setup(props, { emit }) {
     const environmentStore = useEnvironmentStore();
     const policyStore = usePolicyStore();
+    const policyV1Store = usePolicyV1Store();
     const backupStore = useBackupStore();
     const { t } = useI18n();
 
@@ -123,7 +131,7 @@ export default defineComponent({
     });
 
     const preparePolicy = () => {
-      const environmentId = (state.environment as Environment).id;
+      const environmentId = state.environment.id;
 
       policyStore
         .fetchPolicyByEnvironmentAndType({
@@ -134,13 +142,18 @@ export default defineComponent({
           state.approvalPolicy = policy;
         });
 
-      policyStore
-        .fetchPolicyByEnvironmentAndType({
-          environmentId,
-          type: "bb.policy.backup-plan",
+      policyV1Store
+        .getOrFetchPolicyByParentAndType({
+          parentPath: getEnvironmentPathByLegacyEnvironment(state.environment),
+          policyType: PolicyTypeV1.BACKUP_PLAN,
         })
         .then((policy) => {
-          state.backupPolicy = policy;
+          state.backupPolicy =
+            policy ||
+            getDefaultBackupPlanPolicy(
+              getEnvironmentPathByLegacyEnvironment(state.environment),
+              PolicyResourceType.ENVIRONMENT
+            );
         });
 
       policyStore
@@ -215,6 +228,46 @@ export default defineComponent({
       });
     };
 
+    const updatePolicyV1 = async (
+      environment: Environment,
+      policyType: PolicyTypeV1,
+      policy: PolicyV1
+    ) => {
+      switch (policyType) {
+        case PolicyTypeV1.BACKUP_PLAN:
+          if (
+            policy.backupPlanPolicy?.schedule != BackupPlanSchedule.UNSET &&
+            !hasFeature("bb.feature.backup-policy")
+          ) {
+            state.missingRequiredFeature = "bb.feature.backup-policy";
+            return;
+          }
+          break;
+      }
+
+      const updatedPolicy = await policyV1Store.upsertPolicy({
+        parentPath: getEnvironmentPathByLegacyEnvironment(environment),
+        updateMask: ["payload"],
+        policy,
+      });
+      switch (policyType) {
+        case PolicyTypeV1.BACKUP_PLAN:
+          state.backupPolicy = updatedPolicy;
+          break;
+      }
+
+      success();
+      if (policyType === PolicyTypeV1.BACKUP_PLAN) {
+        if (
+          state.backupPolicy?.backupPlanPolicy?.schedule ==
+          BackupPlanSchedule.UNSET
+        ) {
+          // Changing backup policy from "DAILY"|"WEEKLY" to "UNSET"
+          state.showDisableAutoBackupModal = true;
+        }
+      }
+    };
+
     const updatePolicy = (
       environmentId: EnvironmentId,
       type: PolicyType,
@@ -227,15 +280,6 @@ export default defineComponent({
         !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
-        return;
-      }
-      if (
-        type === "bb.policy.backup-plan" &&
-        (policy.payload as BackupPlanPolicyPayload).schedule !==
-          DefaultSchedulePolicy &&
-        !hasFeature("bb.feature.backup-policy")
-      ) {
-        state.missingRequiredFeature = "bb.feature.backup-policy";
         return;
       }
       if (
@@ -258,8 +302,6 @@ export default defineComponent({
         .then(async (policy: Policy) => {
           if (type === "bb.policy.pipeline-approval") {
             state.approvalPolicy = policy;
-          } else if (type === "bb.policy.backup-plan") {
-            state.backupPolicy = policy;
           } else if (type === "bb.policy.environment-tier") {
             state.environmentTierPolicy = policy;
             // Write the value to state.environment entity. So that we don't
@@ -269,7 +311,7 @@ export default defineComponent({
             ).environmentTier;
             // Also upsert the environment's access-control policy
             const disallowed = state.environment.tier === "PROTECTED";
-            await usePolicyV1Store().upsertPolicy({
+            await policyV1Store.upsertPolicy({
               parentPath: getEnvironmentPathByLegacyEnvironment(
                 state.environment
               ),
@@ -284,15 +326,6 @@ export default defineComponent({
             });
           }
           success();
-
-          if (type === "bb.policy.backup-plan") {
-            const payload = state.backupPolicy!
-              .payload as BackupPlanPolicyPayload;
-            if (payload.schedule === "UNSET") {
-              // Changing backup policy from "DAILY"|"WEEKLY" to "UNSET"
-              state.showDisableAutoBackupModal = true;
-            }
-          }
         });
     };
 
@@ -321,6 +354,7 @@ export default defineComponent({
       doArchive,
       doRestore,
       updatePolicy,
+      updatePolicyV1,
       disableAutoBackupContent,
       disableEnvironmentAutoBackup,
     };

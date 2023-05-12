@@ -242,67 +242,66 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 		return api.PolicyResourceTypeProject, &project.UID, nil
 	}
 
-	if strings.HasPrefix(requestName, environmentNamePrefix) {
-		sections := strings.Split(requestName, "/")
+	sections := strings.Split(requestName, "/")
 
+	if strings.HasPrefix(requestName, environmentNamePrefix) && len(sections) == 2 {
 		// environment policy request name should be environments/{environment id}
-		if len(sections) == 2 {
-			environmentID, err := getEnvironmentID(requestName)
-			if err != nil {
-				return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
-			if environmentID == "-" {
-				return api.PolicyResourceTypeEnvironment, nil, nil
-			}
-			environment, err := s.findActiveEnvironment(ctx, &store.FindEnvironmentMessage{
-				ResourceID: &environmentID,
-			})
-			if err != nil {
-				return api.PolicyResourceTypeUnknown, nil, err
-			}
-
-			return api.PolicyResourceTypeEnvironment, &environment.UID, nil
+		environmentID, err := getEnvironmentID(requestName)
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		if environmentID == "-" {
+			return api.PolicyResourceTypeEnvironment, nil, nil
+		}
+		environment, err := s.findActiveEnvironment(ctx, &store.FindEnvironmentMessage{
+			ResourceID: &environmentID,
+		})
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, err
 		}
 
-		if strings.HasPrefix(requestName, instanceNamePrefix) && len(sections) == 2 {
-			// instance policy request name should be instances/{instance id}
-			instanceID, err := getInstanceID(requestName)
-			if err != nil {
-				return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
-			if instanceID == "-" {
-				return api.PolicyResourceTypeInstance, nil, nil
-			}
+		return api.PolicyResourceTypeEnvironment, &environment.UID, nil
+	}
 
-			instance, err := s.findActiveInstance(ctx, &store.FindInstanceMessage{
-				ResourceID: &instanceID,
-			})
-			if err != nil {
-				return api.PolicyResourceTypeUnknown, nil, err
-			}
-
-			return api.PolicyResourceTypeInstance, &instance.UID, nil
+	if strings.HasPrefix(requestName, instanceNamePrefix) && len(sections) == 2 {
+		// instance policy request name should be instances/{instance id}
+		instanceID, err := getInstanceID(requestName)
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		if instanceID == "-" {
+			return api.PolicyResourceTypeInstance, nil, nil
 		}
 
+		instance, err := s.findActiveInstance(ctx, &store.FindInstanceMessage{
+			ResourceID: &instanceID,
+		})
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, err
+		}
+
+		return api.PolicyResourceTypeInstance, &instance.UID, nil
+	}
+
+	if strings.HasPrefix(requestName, instanceNamePrefix) && len(sections) == 4 {
 		// database policy request name should be instances/{instance id}/databases/{db name}
-		if len(sections) == 6 {
-			instanceID, databaseName, err := getInstanceDatabaseID(requestName)
-			if err != nil {
-				return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
-			if databaseName == "-" {
-				return api.PolicyResourceTypeDatabase, nil, nil
-			}
-			database, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &instanceID,
-				DatabaseName: &databaseName,
-			})
-			if err != nil {
-				return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.Internal, err.Error())
-			}
 
-			return api.PolicyResourceTypeDatabase, &database.UID, nil
+		instanceID, databaseName, err := getInstanceDatabaseID(requestName)
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
+		if databaseName == "-" {
+			return api.PolicyResourceTypeDatabase, nil, nil
+		}
+		database, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.Internal, err.Error())
+		}
+
+		return api.PolicyResourceTypeDatabase, &database.UID, nil
 	}
 
 	return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, "unknown request name %s", requestName)
@@ -458,10 +457,12 @@ func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 		}
 		return payload.String()
 	case v1pb.PolicyType_BACKUP_PLAN:
-		// TODO: validate
 		payload, err := convertToBackupPlanPolicyPayload(policy.GetBackupPlanPolicy())
 		if err != nil {
 			return "", err
+		}
+		if payload.Schedule != api.BackupPlanPolicyScheduleUnset && payload.Schedule != api.BackupPlanPolicyScheduleDaily && payload.Schedule != api.BackupPlanPolicyScheduleWeekly {
+			return "", errors.Errorf("invalid backup plan policy schedule: %q", payload.Schedule)
 		}
 		return payload.String()
 	case v1pb.PolicyType_SQL_REVIEW:
@@ -761,9 +762,14 @@ func convertToBackupPlanPolicyPayload(policy *v1pb.BackupPlanPolicy) (*api.Backu
 		return nil, errors.Errorf("invalid backup plan schedule %v", policy.Schedule)
 	}
 
+	retentionPeriodTs := 0
+	if policy.RetentionDuration != nil {
+		retentionPeriodTs = int(policy.RetentionDuration.Seconds)
+	}
+
 	return &api.BackupPlanPolicy{
 		Schedule:          schedule,
-		RetentionPeriodTs: int(policy.RetentionDuration.Seconds),
+		RetentionPeriodTs: retentionPeriodTs,
 	}, nil
 }
 
