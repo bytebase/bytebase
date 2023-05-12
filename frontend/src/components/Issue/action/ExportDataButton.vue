@@ -1,18 +1,17 @@
 <template>
   <button class="btn-primary" @click="state.showConfirmModal = true">
-    Export
+    {{ $t("common.export") }}
   </button>
 
   <BBModal
     v-if="state.showConfirmModal"
-    :title="'Export'"
+    :title="$t('common.export')"
     header-class="overflow-hidden"
     @confirm="handleExport"
     @close="state.showConfirmModal = false"
   >
     <div class="w-128 mb-6">
-      Your data will be exported to a file and downloaded to your local machine.
-      And you can only do the export action once.
+      {{ $t("issue.grant-request.data-export-attention") }}
     </div>
     <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
       <button
@@ -184,7 +183,15 @@ const handleExport = async () => {
       data: csvData,
     });
   } else {
-    rawText = JSON.stringify(data);
+    const objects = [];
+    for (const item of data) {
+      const object = {} as any;
+      for (let i = 0; i < columns.length; i++) {
+        object[columns[i]] = item[i];
+      }
+      objects.push(object);
+    }
+    rawText = JSON.stringify(objects);
   }
 
   const fileFormat = state.exportFormat.toLowerCase();
