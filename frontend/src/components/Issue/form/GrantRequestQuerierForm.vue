@@ -121,6 +121,7 @@ import {
   Issue,
   IssueCreate,
   ProjectId,
+  UNKNOWN_ID,
 } from "@/types";
 import { getProjectMemberList, parseExpiredTimeString } from "@/utils";
 import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
@@ -196,7 +197,10 @@ const selectedDatabaseList = computed(() => {
 
 onMounted(() => {
   if (create.value) {
-    state.projectId = (issue.value as IssueCreate).projectId;
+    const projectId = (issue.value as IssueCreate).projectId;
+    if (projectId && projectId !== UNKNOWN_ID) {
+      state.projectId = projectId;
+    }
   }
 });
 
