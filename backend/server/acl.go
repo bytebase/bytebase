@@ -166,7 +166,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				}
 				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-				aclErr = enforceWorkspaceDeveloperIssueRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), projectRolesFinder)
+				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), projectRolesFinder)
 			}
 			if aclErr != nil {
 				return aclErr
@@ -359,11 +359,8 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 	return nil
 }
 
-var issueStatusRegex = regexp.MustCompile(`^/issue/(?P<issueID>\d+)/status$`)
-
-func enforceWorkspaceDeveloperIssueRouteACL(plan api.PlanType, path string, method string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
-	switch method {
-	case http.MethodGet:
+func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
+	if method == http.MethodGet {
 		// For /issue route, require the caller principal to be the same as the user in the query.
 		// Only /issue and /project route will bring parameter user in the query.
 		if userStr := queryParams.Get("user"); userStr != "" {
@@ -373,26 +370,6 @@ func enforceWorkspaceDeveloperIssueRouteACL(plan api.PlanType, path string, meth
 			}
 			if principalID != userID {
 				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to list other users' issues")
-			}
-		}
-	case http.MethodPatch:
-		// Workspace developer can only operating the issues if the user is the member of the project that the issue belongs to.
-		if matches := issueStatusRegex.FindStringSubmatch(path); len(matches) > 0 {
-			issueIDStr := matches[1]
-			issueID, err := strconv.Atoi(issueIDStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid issue ID").SetInternal(err)
-			}
-			projectID, err := getIssueProjectID(issueID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-			projectRoles, err := projectRolesFinder(projectID, principalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-			if !api.ProjectPermission(api.ProjectPermissionOrganizeSheet, plan, projectRoles) {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to operate the issue")
 			}
 		}
 	}
