@@ -179,22 +179,28 @@ import {
   BackupSettingUpsert,
   Database,
   NORMAL_POLL_INTERVAL,
-  BackupPlanPolicyPayload,
   POLL_JITTER,
   MINIMUM_POLL_INTERVAL,
   UNKNOWN_ID,
+  BackupPlanPolicySchedule,
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useBackupStore, usePolicyStore } from "@/store";
+import { pushNotification, useBackupStore } from "@/store";
 import {
   DatabaseBackupSettingForm,
   levelOfSchedule,
   localFromUTC,
   parseScheduleFromBackupSetting,
 } from "@/components/DatabaseBackup/";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
+import {
+  PolicyType,
+  BackupPlanSchedule,
+} from "@/types/proto/v1/org_policy_service";
 
 import { instanceHasBackupRestore } from "@/utils";
 
@@ -234,7 +240,7 @@ export default defineComponent({
   },
   setup(props) {
     const backupStore = useBackupStore();
-    const policyStore = usePolicyStore();
+    const policyV1Store = usePolicyV1Store();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -262,9 +268,11 @@ export default defineComponent({
     watchEffect(prepareBackupList);
 
     const prepareBackupPolicy = () => {
-      policyStore.fetchPolicyByEnvironmentAndType({
-        environmentId: props.database.instance.environment.id,
-        type: "bb.policy.backup-plan",
+      policyV1Store.getOrFetchPolicyByParentAndType({
+        parentPath: getEnvironmentPathByLegacyEnvironment(
+          props.database.instance.environment
+        ),
+        policyType: PolicyType.BACKUP_PLAN,
       });
     };
 
@@ -351,13 +359,21 @@ export default defineComponent({
       return state.autoBackupRetentionPeriodTs / 3600 / 24;
     });
 
-    const backupPolicy = computed(() => {
-      const policy = policyStore.getPolicyByEnvironmentIdAndType(
-        props.database.instance.environment.id,
-        "bb.policy.backup-plan"
-      );
-      const payload = policy?.payload;
-      return (payload as BackupPlanPolicyPayload | undefined)?.schedule;
+    const backupPolicy = computed((): BackupPlanPolicySchedule => {
+      const policy = policyV1Store.getPolicyByParentAndType({
+        parentPath: getEnvironmentPathByLegacyEnvironment(
+          props.database.instance.environment
+        ),
+        policyType: PolicyType.BACKUP_PLAN,
+      });
+      switch (policy?.backupPlanPolicy?.schedule) {
+        case BackupPlanSchedule.DAILY:
+          return "DAILY";
+        case BackupPlanSchedule.WEEKLY:
+          return "WEEKLY";
+        default:
+          return "UNSET";
+      }
     });
 
     const hasBackupPolicyViolation = computed((): boolean => {

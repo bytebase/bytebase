@@ -81,14 +81,9 @@ import type {
   Policy,
   PolicyUpsert,
   PipelineApprovalPolicyPayload,
-  BackupPlanPolicyPayload,
   EnvironmentTierPolicyPayload,
 } from "../types";
-import {
-  DefaultApprovalPolicy,
-  DefaultSchedulePolicy,
-  DefaultEnvironmentTier,
-} from "../types";
+import { DefaultApprovalPolicy, DefaultEnvironmentTier } from "../types";
 import type { BBTabItem } from "../bbkit/types";
 import {
   useRegisterCommand,
@@ -101,8 +96,16 @@ import {
 import ProductionEnvironmentIcon from "../components/Environment/ProductionEnvironmentIcon.vue";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import { environmentTierFromJSON } from "@/types/proto/v1/environment_service";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
-import { PolicyType as PolicyTypeV1 } from "@/types/proto/v1/org_policy_service";
+import {
+  usePolicyV1Store,
+  getDefaultBackupPlanPolicy,
+} from "@/store/modules/v1/policy";
+import {
+  Policy as PolicyV1,
+  PolicyType as PolicyTypeV1,
+  PolicyResourceType,
+  BackupPlanSchedule,
+} from "@/types/proto/v1/org_policy_service";
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
@@ -113,12 +116,10 @@ const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
 };
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
-const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyUpsert = {
-  payload: {
-    schedule: DefaultSchedulePolicy,
-    retentionPeriodTs: 0,
-  },
-};
+const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyV1 = getDefaultBackupPlanPolicy(
+  "",
+  PolicyResourceType.ENVIRONMENT
+);
 
 const DEFAULT_NEW_ENVIRONMENT_TIER_POLICY: PolicyUpsert = {
   payload: {
@@ -140,6 +141,7 @@ const environmentStore = useEnvironmentStore();
 const environmentV1Store = useEnvironmentV1Store();
 const uiStateStore = useUIStateStore();
 const policyStore = usePolicyStore();
+const policyV1Store = usePolicyV1Store();
 const router = useRouter();
 
 const state = reactive<LocalState>({
@@ -233,7 +235,7 @@ const createEnvironment = () => {
 const doCreate = async (
   newEnvironment: EnvironmentCreate,
   approvalPolicy: Policy,
-  backupPolicy: Policy,
+  backupPolicy: PolicyV1,
   environmentTierPolicy: Policy
 ) => {
   if (
@@ -245,8 +247,7 @@ const doCreate = async (
     return;
   }
   if (
-    (backupPolicy.payload as BackupPlanPolicyPayload).schedule !==
-      DefaultSchedulePolicy &&
+    backupPolicy.backupPlanPolicy?.schedule !== BackupPlanSchedule.UNSET &&
     !hasFeature("bb.feature.backup-policy")
   ) {
     state.missingRequiredFeature = "bb.feature.backup-policy";
@@ -271,17 +272,17 @@ const doCreate = async (
       type: "bb.policy.pipeline-approval",
       policyUpsert: { payload: approvalPolicy.payload },
     }),
-    policyStore.upsertPolicyByEnvironmentAndType({
-      environmentId: environment.uid,
-      type: "bb.policy.backup-plan",
-      policyUpsert: { payload: backupPolicy.payload },
+    policyV1Store.upsertPolicy({
+      parentPath: environment.name,
+      updateMask: ["payload"],
+      policy: backupPolicy,
     }),
     policyStore.upsertPolicyByEnvironmentAndType({
       environmentId: environment.uid,
       type: "bb.policy.environment-tier",
       policyUpsert: { payload: environmentTierPayload },
     }),
-    usePolicyV1Store().upsertPolicy({
+    policyV1Store.upsertPolicy({
       parentPath: environment.name,
       updateMask: ["payload", "inherit_from_parent"],
       policy: {

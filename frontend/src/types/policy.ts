@@ -2,7 +2,6 @@ import { RowStatus, Environment, IssueType, PolicyId, SubsetOf } from ".";
 
 export type PolicyType =
   | "bb.policy.pipeline-approval"
-  | "bb.policy.backup-plan"
   | "bb.policy.environment-tier";
 
 export type PipelineApprovalPolicyValue =
@@ -27,13 +26,6 @@ export const DefaultEnvironmentTier: EnvironmentTier = "UNPROTECTED";
 
 export type BackupPlanPolicySchedule = "UNSET" | "DAILY" | "WEEKLY";
 
-export type BackupPlanPolicyPayload = {
-  schedule: BackupPlanPolicySchedule;
-  retentionPeriodTs: number;
-};
-
-export const DefaultSchedulePolicy: BackupPlanPolicySchedule = "UNSET";
-
 export type AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA" | "PROJECT_OWNER";
 
 export const DefaultAssigneeGroup: AssigneeGroupValue =
@@ -51,7 +43,6 @@ export type AssigneeGroup = {
 
 export type PolicyPayload =
   | PipelineApprovalPolicyPayload
-  | BackupPlanPolicyPayload
   | EnvironmentTierPolicyPayload;
 
 export type PolicyResourceType =
