@@ -118,6 +118,7 @@ const props = defineProps<{
 const ROLE_OWNER = "roles/OWNER";
 const { t } = useI18n();
 const hasRBACFeature = featureToRef("bb.feature.rbac");
+const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
@@ -234,14 +235,16 @@ const allowAddRole = (item: ComposedPrincipal) => {
 };
 
 const getRoleOptions = (item: ComposedPrincipal) => {
-  // TODO(steven): We don't allow to add EXPORTER and QUERIER roles directly for now.
-  const roleList = useRoleStore().roleList.filter((role) => {
-    return (
-      role.name !== "roles/EXPORTER" &&
-      role.name !== "roles/QUERIER" &&
-      !item.roleList.includes(role.name)
-    );
-  });
+  let roleList = useRoleStore().roleList;
+  if (hasCustomRoleFeature.value) {
+    roleList = useRoleStore().roleList.filter((role) => {
+      return (
+        role.name !== "roles/EXPORTER" &&
+        role.name !== "roles/QUERIER" &&
+        !item.roleList.includes(role.name)
+      );
+    });
+  }
   return roleList.map<SelectOption>((role) => {
     return {
       label: displayRoleTitle(role.name),
