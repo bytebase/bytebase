@@ -7,7 +7,6 @@ import {
   IssueId,
   MigrationHistoryId,
   Project,
-  ProjectWebhook,
   VCS,
   SQLReviewPolicy,
   Sheet,
@@ -41,10 +40,6 @@ export function environmentSlug(environment: Environment): string {
 
 export function projectSlug(project: Project): string {
   return [slug(project.name), project.id].join("-");
-}
-
-export function projectWebhookSlug(projectWebhook: ProjectWebhook): string {
-  return [slug(projectWebhook.name), projectWebhook.id].join("-");
 }
 
 export function instanceSlug(instance: Instance): string {

@@ -28,7 +28,6 @@ export * from "./plan";
 export * from "./policy";
 export * from "./principal";
 export * from "./project";
-export * from "./projectWebhook";
 export * from "./repository";
 export * from "./sql";
 export * from "./sqlAdvice";
