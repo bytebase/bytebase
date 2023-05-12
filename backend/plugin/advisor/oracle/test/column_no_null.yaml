@@ -1,0 +1,94 @@
+- statement: |-
+    CREATE TABLE book (
+      id int,
+      name varchar(255)
+    )
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column "ID" is nullable, which is not allowed.
+      line: 2
+      details: ""
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column "NAME" is nullable, which is not allowed.
+      line: 3
+      details: ""
+- statement: CREATE TABLE book(id int, name varchar(255), PRIMARY KEY (id))
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column "NAME" is nullable, which is not allowed.
+      line: 1
+      details: ""
+- statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column "NAME" is nullable, which is not allowed.
+      line: 1
+      details: ""
+- statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column "NAME" is nullable, which is not allowed.
+      line: 1
+      details: ""
+- statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE tech_book ADD reader int
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column "READER" is nullable, which is not allowed.
+      line: 1
+      details: ""
+- statement: |-
+    ALTER TABLE tech_book DROP COLUMN id;
+    ALTER TABLE tech_book DROP COLUMN name;
+    ALTER TABLE tech_book ADD id int PRIMARY KEY;
+    ALTER TABLE tech_book ADD name varchar(255) NOT NULL;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE tech_book MODIFY id NOT NULL
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE tech_book MODIFY name NULL
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: Column "NAME" is nullable, which is not allowed.
+      line: 1
+      details: ""
+- statement: -- this is a comment
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
