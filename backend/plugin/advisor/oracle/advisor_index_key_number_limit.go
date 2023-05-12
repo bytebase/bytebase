@@ -89,3 +89,17 @@ func (l *indexKeyNumberLimitListener) EnterTable_index_clause(ctx *parser.Table_
 		})
 	}
 }
+
+// EnterOut_of_line_constraint is called when production out_of_line_constraint is entered.
+func (l *indexKeyNumberLimitListener) EnterOut_of_line_constraint(ctx *parser.Out_of_line_constraintContext) {
+	keys := len(ctx.AllColumn_name())
+	if keys > l.max {
+		l.adviceList = append(l.adviceList, advisor.Advice{
+			Status:  l.level,
+			Code:    advisor.IndexKeyNumberExceedsLimit,
+			Title:   l.title,
+			Content: fmt.Sprintf("Index key number should be less than or equal to %d", l.max),
+			Line:    ctx.GetStart().GetLine(),
+		})
+	}
+}
