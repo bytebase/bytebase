@@ -364,6 +364,9 @@ const (
 
 	// OracleInsertMustSpecifyColumn is an advisor type for Oracle to enforce column specified.
 	OracleInsertMustSpecifyColumn Type = "bb.plugin.advisor.oracle.insert.must-specify-column"
+
+	// OracleIndexKeyNumberLimit is an advisor type for Oracle index key number limit.
+	OracleIndexKeyNumberLimit Type = "bb.plugin.advisor.oracle.index.key-number-limit"
 )
 
 // Advice is the result of an advisor.
