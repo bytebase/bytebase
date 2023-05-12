@@ -156,7 +156,7 @@ export const complete = async (
     const suggestionsForTable = createTableCandidates(
       tableList,
       // Add database prefix to table candidates when connection scope is 'instance'
-      state.connectionScope === "instance"
+      connectionScope === "instance"
     );
     const suggestionsForSubQueryVirtualTable = createSubQueryCandidates(
       subQueryMapping.virtualTableList
@@ -169,7 +169,7 @@ export const complete = async (
       ...suggestionsForTable,
       ...suggestionsForSubQueryVirtualTable,
     ];
-    if (state.connectionScope === "instance") {
+    if (connectionScope === "instance") {
       // Provide database suggestions only when we are connection to instance scope
       // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
       const suggestionsForDatabase = createDatabaseCandidates(schema.databases);
