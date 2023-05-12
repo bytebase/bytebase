@@ -335,8 +335,8 @@ export interface CreatePolicyRequest {
    * The parent resource where this instance will be created.
    * Workspace resource name: "".
    * Environment resource name: environments/environment-id.
-   * Instance resource name: environments/environment-id/instances/instance-id.
-   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   * Instance resource name: instances/instance-id.
+   * Database resource name: instances/instance-id/databases/database-name.
    */
   parent: string;
   /** The policy to create. */
@@ -352,8 +352,8 @@ export interface UpdatePolicyRequest {
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: "".
    * Environment resource name: environments/environment-id.
-   * Instance resource name: environments/environment-id/instances/instance-id.
-   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   * Instance resource name: instances/instance-id.
+   * Database resource name: instances/instance-id/databases/database-name.
    */
   policy?: Policy;
   /** The list of fields to update. */
@@ -371,8 +371,8 @@ export interface DeletePolicyRequest {
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: "".
    * Environment resource name: environments/environment-id.
-   * Instance resource name: environments/environment-id/instances/instance-id.
-   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   * Instance resource name: instances/instance-id.
+   * Database resource name: instances/instance-id/databases/database-name.
    */
   name: string;
 }
@@ -429,8 +429,8 @@ export interface Policy {
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: "".
    * Environment resource name: environments/environment-id.
-   * Instance resource name: environments/environment-id/instances/instance-id.
-   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   * Instance resource name: instances/instance-id.
+   * Database resource name: instances/instance-id/databases/database-name.
    */
   name: string;
   /** The system-assigned, unique identifier for a resource. */

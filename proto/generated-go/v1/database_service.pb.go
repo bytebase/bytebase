@@ -146,7 +146,7 @@ type GetDatabaseRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the database to retrieve.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -195,8 +195,8 @@ type ListDatabasesRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent, which owns this collection of databases.
-	// Format: environments/{environment}/instances/{instance}
-	// Use "environments/-/instances/-" to list all databases from all environments.
+	// Format: instances/{instance}
+	// Use "instances/-" to list all databases.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of databases to return. The service may return fewer than
 	// this value.
@@ -340,7 +340,7 @@ type UpdateDatabaseRequest struct {
 	// The database to update.
 	//
 	// The database's `name` field is used to identify the database to update.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}
 	Database *Database `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
@@ -398,7 +398,7 @@ type BatchUpdateDatabasesRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent resource shared by all databases being updated.
-	// Format: environments/{environment}/instances/{instance}
+	// Format: instances/{instance}
 	// If the operation spans parents, a dash (-) may be accepted as a wildcard.
 	// We only support updating the project of databases for now.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
@@ -507,7 +507,7 @@ type GetDatabaseMetadataRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the database to retrieve metadata.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -556,7 +556,7 @@ type GetDatabaseSchemaRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the database to retrieve schema.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -605,7 +605,7 @@ type GetBackupSettingRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the database to retrieve backup setting.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
+	// Format: instances/{instance}/databases/{database}/backupSetting
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -703,7 +703,7 @@ type CreateBackupRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent resource where this backup will be created.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}
 	Parent string  `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	Backup *Backup `protobuf:"bytes,2,opt,name=backup,proto3" json:"backup,omitempty"`
 }
@@ -761,7 +761,7 @@ type ListBackupRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent resource where this backup will be created.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// Not used. The maximum number of backups to return. The service may return fewer than
 	// this value.
@@ -893,7 +893,7 @@ type Database struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the database.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}
 	// {database} is the database name in the instance.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The system-assigned, unique identifier for a resource.
@@ -1966,7 +1966,7 @@ type BackupSetting struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the database backup setting.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}/backupSettings
+	// Format: instances/{instance}/databases/{database}/backupSettings
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The default maximum age of a Backup created via this BackupPlan.
 	// If specified, a Backup will be automatically deleted after its age reaches.
@@ -2049,7 +2049,7 @@ type Backup struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The resource name of the database backup. backup-name is specified by the client.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name}
+	// Format: instances/{instance}/databases/{database}/backups/{backup-name}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The timestamp when the backup resource was created initally.
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
@@ -2143,7 +2143,7 @@ type ListSlowQueriesRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The filter of the slow query log.
 	// follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
@@ -2277,7 +2277,7 @@ type SlowQueryLog struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The resource of the slow query log.
-	// The format is "environments/{environment}/instances/{instance}/databases/{database}".
+	// The format is "instances/{instance}/databases/{database}".
 	Resource string `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
 	// The project of the slow query log.
 	// The format is "projects/{project}".
@@ -2587,7 +2587,7 @@ type ListSecretsRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent of the secret.
-	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// Not used. The maximum number of databases to return. The service may return fewer than
 	// this value.
@@ -2786,7 +2786,7 @@ type DeleteSecretRequest struct {
 
 	// The name of the secret to be deleted.
 	// Format:
-	// environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+	// instances/{instance}/databases/{database}/secrets/{secret}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -2837,7 +2837,7 @@ type Secret struct {
 
 	// name is the unique name of the secret, which is specified by the client.
 	// Format:
-	// environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+	// instances/{instance}/databases/{database}/secrets/{secret}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Not used. The timestamp when the secret resource was created initally.
 	CreatedTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=created_time,json=createdTime,proto3" json:"created_time,omitempty"`
@@ -2922,7 +2922,7 @@ type AdviseIndexRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The statement to be advised.
 	Statement string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`

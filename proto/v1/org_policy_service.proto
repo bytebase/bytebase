@@ -105,8 +105,8 @@ message CreatePolicyRequest {
   // The parent resource where this instance will be created.
   // Workspace resource name: "".
   // Environment resource name: environments/environment-id.
-  // Instance resource name: environments/environment-id/instances/instance-id.
-  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  // Instance resource name: instances/instance-id.
+  // Database resource name: instances/instance-id/databases/database-name.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The policy to create.
@@ -122,8 +122,8 @@ message UpdatePolicyRequest {
   // Format: {resource name}/policies/{policy type}
   // Workspace resource name: "".
   // Environment resource name: environments/environment-id.
-  // Instance resource name: environments/environment-id/instances/instance-id.
-  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  // Instance resource name: instances/instance-id.
+  // Database resource name: instances/instance-id/databases/database-name.
   Policy policy = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
@@ -139,8 +139,8 @@ message DeletePolicyRequest {
   // Format: {resource name}/policies/{policy type}
   // Workspace resource name: "".
   // Environment resource name: environments/environment-id.
-  // Instance resource name: environments/environment-id/instances/instance-id.
-  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  // Instance resource name: instances/instance-id.
+  // Database resource name: instances/instance-id/databases/database-name.
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -188,8 +188,8 @@ message Policy {
   // Format: {resource name}/policies/{policy type}
   // Workspace resource name: "".
   // Environment resource name: environments/environment-id.
-  // Instance resource name: environments/environment-id/instances/instance-id.
-  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  // Instance resource name: instances/instance-id.
+  // Database resource name: instances/instance-id/databases/database-name.
   string name = 1;
 
   // The system-assigned, unique identifier for a resource.

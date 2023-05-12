@@ -399,8 +399,8 @@ type CreatePolicyRequest struct {
 	// The parent resource where this instance will be created.
 	// Workspace resource name: "".
 	// Environment resource name: environments/environment-id.
-	// Instance resource name: environments/environment-id/instances/instance-id.
-	// Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+	// Instance resource name: instances/instance-id.
+	// Database resource name: instances/instance-id/databases/database-name.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The policy to create.
 	Policy *Policy    `protobuf:"bytes,2,opt,name=policy,proto3" json:"policy,omitempty"`
@@ -471,8 +471,8 @@ type UpdatePolicyRequest struct {
 	// Format: {resource name}/policies/{policy type}
 	// Workspace resource name: "".
 	// Environment resource name: environments/environment-id.
-	// Instance resource name: environments/environment-id/instances/instance-id.
-	// Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+	// Instance resource name: instances/instance-id.
+	// Database resource name: instances/instance-id/databases/database-name.
 	Policy *Policy `protobuf:"bytes,1,opt,name=policy,proto3" json:"policy,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
@@ -543,8 +543,8 @@ type DeletePolicyRequest struct {
 	// Format: {resource name}/policies/{policy type}
 	// Workspace resource name: "".
 	// Environment resource name: environments/environment-id.
-	// Instance resource name: environments/environment-id/instances/instance-id.
-	// Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+	// Instance resource name: instances/instance-id.
+	// Database resource name: instances/instance-id/databases/database-name.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -794,8 +794,8 @@ type Policy struct {
 	// Format: {resource name}/policies/{policy type}
 	// Workspace resource name: "".
 	// Environment resource name: environments/environment-id.
-	// Instance resource name: environments/environment-id/instances/instance-id.
-	// Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+	// Instance resource name: instances/instance-id.
+	// Database resource name: instances/instance-id/databases/database-name.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The system-assigned, unique identifier for a resource.
 	Uid               string     `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`

@@ -52,14 +52,14 @@ service InstanceRoleService {
 
 message GetInstanceRoleRequest {
   // The name of the role to retrieve.
-  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  // Format: instances/{instance}/roles/{role name}
   // The role name is the unique name for the role.
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListInstanceRolesRequest {
   // The parent, which owns this collection of roles.
-  // Format: environments/{environment}/instances/{instance}
+  // Format: instances/{instance}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of roles to return. The service may return fewer than
@@ -87,7 +87,7 @@ message ListInstanceRolesResponse {
 
 message CreateInstanceRoleRequest {
   // The parent resource where this role will be created.
-  // Format: environments/{environment}/instances/{instance}
+  // Format: instances/{instance}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The role to create.
@@ -97,8 +97,8 @@ message CreateInstanceRoleRequest {
 message UpdateInstanceRoleRequest {
   // The role to update.
   //
-  // The role's `name`, `environment` and `instance` field is used to identify the role to update.
-  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  // The role's `name` and `instance` field is used to identify the role to update.
+  // Format: instances/{instance}/roles/{role name}
   InstanceRole role = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
@@ -107,20 +107,20 @@ message UpdateInstanceRoleRequest {
 
 message DeleteInstanceRoleRequest {
   // The name of the role to delete.
-  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  // Format: instances/{instance}/roles/{role name}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message UndeleteInstanceRoleRequest {
   // The name of the deleted role.
-  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  // Format: instances/{instance}/roles/{role name}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // InstanceRole is the API message for instance role.
 message InstanceRole {
   // The name of the role.
-  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  // Format: instances/{instance}/roles/{role name}
   // The role name is the unique name for the role.
   string name = 1;
 

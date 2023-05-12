@@ -9,7 +9,7 @@ export const protobufPackage = "bytebase.v1";
 export interface GetInstanceRoleRequest {
   /**
    * The name of the role to retrieve.
-   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * Format: instances/{instance}/roles/{role name}
    * The role name is the unique name for the role.
    */
   name: string;
@@ -18,7 +18,7 @@ export interface GetInstanceRoleRequest {
 export interface ListInstanceRolesRequest {
   /**
    * The parent, which owns this collection of roles.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   parent: string;
   /**
@@ -51,7 +51,7 @@ export interface ListInstanceRolesResponse {
 export interface CreateInstanceRoleRequest {
   /**
    * The parent resource where this role will be created.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   parent: string;
   /** The role to create. */
@@ -62,8 +62,8 @@ export interface UpdateInstanceRoleRequest {
   /**
    * The role to update.
    *
-   * The role's `name`, `environment` and `instance` field is used to identify the role to update.
-   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * The role's `name` and `instance` field is used to identify the role to update.
+   * Format: instances/{instance}/roles/{role name}
    */
   role?: InstanceRole;
   /** The list of fields to update. */
@@ -73,7 +73,7 @@ export interface UpdateInstanceRoleRequest {
 export interface DeleteInstanceRoleRequest {
   /**
    * The name of the role to delete.
-   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * Format: instances/{instance}/roles/{role name}
    */
   name: string;
 }
@@ -81,7 +81,7 @@ export interface DeleteInstanceRoleRequest {
 export interface UndeleteInstanceRoleRequest {
   /**
    * The name of the deleted role.
-   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * Format: instances/{instance}/roles/{role name}
    */
   name: string;
 }
@@ -90,7 +90,7 @@ export interface UndeleteInstanceRoleRequest {
 export interface InstanceRole {
   /**
    * The name of the role.
-   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * Format: instances/{instance}/roles/{role name}
    * The role name is the unique name for the role.
    */
   name: string;

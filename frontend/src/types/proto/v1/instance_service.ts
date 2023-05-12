@@ -49,17 +49,12 @@ export function dataSourceTypeToJSON(object: DataSourceType): string {
 export interface GetInstanceRequest {
   /**
    * The name of the instance to retrieve.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   name: string;
 }
 
 export interface ListInstancesRequest {
-  /**
-   * The parent, which owns this collection of instances.
-   * Format: environments/{environment}
-   */
-  parent: string;
   /**
    * The maximum number of instances to return. The service may return fewer than
    * this value.
@@ -90,11 +85,6 @@ export interface ListInstancesResponse {
 }
 
 export interface CreateInstanceRequest {
-  /**
-   * The parent resource where this instance will be created.
-   * Format: environments/{environment}
-   */
-  parent: string;
   /** The instance to create. */
   instance?: Instance;
   /**
@@ -112,7 +102,7 @@ export interface UpdateInstanceRequest {
    * The instance to update.
    *
    * The instance's `name` field is used to identify the instance to update.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   instance?: Instance;
   /** The list of fields to update. */
@@ -122,7 +112,7 @@ export interface UpdateInstanceRequest {
 export interface DeleteInstanceRequest {
   /**
    * The name of the instance to delete.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   name: string;
   /** If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. */
@@ -132,7 +122,7 @@ export interface DeleteInstanceRequest {
 export interface UndeleteInstanceRequest {
   /**
    * The name of the deleted instance.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   name: string;
 }
@@ -140,7 +130,7 @@ export interface UndeleteInstanceRequest {
 export interface AddDataSourceRequest {
   /**
    * The name of the instance to add a data source to.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   instance: string;
   /**
@@ -153,7 +143,7 @@ export interface AddDataSourceRequest {
 export interface RemoveDataSourceRequest {
   /**
    * The name of the instance to remove a data source from.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   instance: string;
   /**
@@ -166,7 +156,7 @@ export interface RemoveDataSourceRequest {
 export interface UpdateDataSourceRequest {
   /**
    * The name of the instance to update a data source.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   instance: string;
   /** Identified by type. */
@@ -178,7 +168,7 @@ export interface UpdateDataSourceRequest {
 export interface SyncSlowQueriesRequest {
   /**
    * The name of the instance to sync slow queries.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   instance: string;
 }
@@ -186,7 +176,7 @@ export interface SyncSlowQueriesRequest {
 export interface Instance {
   /**
    * The name of the instance.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    */
   name: string;
   /** The system-assigned, unique identifier for a resource. */
@@ -299,22 +289,19 @@ export const GetInstanceRequest = {
 };
 
 function createBaseListInstancesRequest(): ListInstancesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", showDeleted: false };
+  return { pageSize: 0, pageToken: "", showDeleted: false };
 }
 
 export const ListInstancesRequest = {
   encode(message: ListInstancesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
     if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
+      writer.uint32(8).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
+      writer.uint32(18).string(message.pageToken);
     }
     if (message.showDeleted === true) {
-      writer.uint32(32).bool(message.showDeleted);
+      writer.uint32(24).bool(message.showDeleted);
     }
     return writer;
   },
@@ -327,28 +314,21 @@ export const ListInstancesRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
+          if (tag !== 8) {
             break;
           }
 
           message.pageSize = reader.int32();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
           message.pageToken = reader.string();
           continue;
-        case 4:
-          if (tag !== 32) {
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
@@ -365,7 +345,6 @@ export const ListInstancesRequest = {
 
   fromJSON(object: any): ListInstancesRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
       showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
@@ -374,7 +353,6 @@ export const ListInstancesRequest = {
 
   toJSON(message: ListInstancesRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
@@ -387,7 +365,6 @@ export const ListInstancesRequest = {
 
   fromPartial(object: DeepPartial<ListInstancesRequest>): ListInstancesRequest {
     const message = createBaseListInstancesRequest();
-    message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.showDeleted = object.showDeleted ?? false;
@@ -471,19 +448,16 @@ export const ListInstancesResponse = {
 };
 
 function createBaseCreateInstanceRequest(): CreateInstanceRequest {
-  return { parent: "", instance: undefined, instanceId: "" };
+  return { instance: undefined, instanceId: "" };
 }
 
 export const CreateInstanceRequest = {
   encode(message: CreateInstanceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
     if (message.instance !== undefined) {
-      Instance.encode(message.instance, writer.uint32(18).fork()).ldelim();
+      Instance.encode(message.instance, writer.uint32(10).fork()).ldelim();
     }
     if (message.instanceId !== "") {
-      writer.uint32(26).string(message.instanceId);
+      writer.uint32(18).string(message.instanceId);
     }
     return writer;
   },
@@ -500,17 +474,10 @@ export const CreateInstanceRequest = {
             break;
           }
 
-          message.parent = reader.string();
+          message.instance = Instance.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
-            break;
-          }
-
-          message.instance = Instance.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
             break;
           }
 
@@ -527,7 +494,6 @@ export const CreateInstanceRequest = {
 
   fromJSON(object: any): CreateInstanceRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
       instance: isSet(object.instance) ? Instance.fromJSON(object.instance) : undefined,
       instanceId: isSet(object.instanceId) ? String(object.instanceId) : "",
     };
@@ -535,7 +501,6 @@ export const CreateInstanceRequest = {
 
   toJSON(message: CreateInstanceRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
     message.instance !== undefined && (obj.instance = message.instance ? Instance.toJSON(message.instance) : undefined);
     message.instanceId !== undefined && (obj.instanceId = message.instanceId);
     return obj;
@@ -547,7 +512,6 @@ export const CreateInstanceRequest = {
 
   fromPartial(object: DeepPartial<CreateInstanceRequest>): CreateInstanceRequest {
     const message = createBaseCreateInstanceRequest();
-    message.parent = object.parent ?? "";
     message.instance = (object.instance !== undefined && object.instance !== null)
       ? Instance.fromPartial(object.instance)
       : undefined;
@@ -1566,7 +1530,7 @@ export const InstanceServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          8410: [new Uint8Array([0])],
           578365826: [new Uint8Array([15, 18, 13, 47, 118, 49, 47, 105, 110, 115, 116, 97, 110, 99, 101, 115])],
         },
       },
@@ -1579,7 +1543,7 @@ export const InstanceServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([15, 112, 97, 114, 101, 110, 116, 44, 105, 110, 115, 116, 97, 110, 99, 101])],
+          8410: [new Uint8Array([8, 105, 110, 115, 116, 97, 110, 99, 101])],
           578365826: [
             new Uint8Array([
               25,

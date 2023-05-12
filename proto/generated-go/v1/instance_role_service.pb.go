@@ -29,7 +29,7 @@ type GetInstanceRoleRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the role to retrieve.
-	// Format: environments/{environment}/instances/{instance}/roles/{role name}
+	// Format: instances/{instance}/roles/{role name}
 	// The role name is the unique name for the role.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
@@ -79,7 +79,7 @@ type ListInstanceRolesRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent, which owns this collection of roles.
-	// Format: environments/{environment}/instances/{instance}
+	// Format: instances/{instance}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of roles to return. The service may return fewer than
 	// this value.
@@ -211,7 +211,7 @@ type CreateInstanceRoleRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent resource where this role will be created.
-	// Format: environments/{environment}/instances/{instance}
+	// Format: instances/{instance}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The role to create.
 	Role *InstanceRole `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
@@ -270,8 +270,8 @@ type UpdateInstanceRoleRequest struct {
 
 	// The role to update.
 	//
-	// The role's `name`, `environment` and `instance` field is used to identify the role to update.
-	// Format: environments/{environment}/instances/{instance}/roles/{role name}
+	// The role's `name` and `instance` field is used to identify the role to update.
+	// Format: instances/{instance}/roles/{role name}
 	Role *InstanceRole `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
@@ -329,7 +329,7 @@ type DeleteInstanceRoleRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the role to delete.
-	// Format: environments/{environment}/instances/{instance}/roles/{role name}
+	// Format: instances/{instance}/roles/{role name}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -378,7 +378,7 @@ type UndeleteInstanceRoleRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the deleted role.
-	// Format: environments/{environment}/instances/{instance}/roles/{role name}
+	// Format: instances/{instance}/roles/{role name}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -428,7 +428,7 @@ type InstanceRole struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the role.
-	// Format: environments/{environment}/instances/{instance}/roles/{role name}
+	// Format: instances/{instance}/roles/{role name}
 	// The role name is the unique name for the role.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The role name. It's unique within the instance.
