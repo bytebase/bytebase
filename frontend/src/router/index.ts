@@ -23,6 +23,7 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import {
+  extractProjectWebhookID,
   hasPermissionInProject,
   hasWorkspacePermission,
   idFromSlug,
@@ -37,7 +38,6 @@ import Home from "../views/Home.vue";
 import {
   hasFeature,
   useVCSStore,
-  useProjectWebhookStore,
   useDataSourceStore,
   useSQLReviewStore,
   useProjectStore,
@@ -58,6 +58,7 @@ import {
   useSubscriptionStore,
   useUserStore,
   useProjectV1Store,
+  useProjectWebhookV1Store,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -836,11 +837,17 @@ const routes: Array<RouteRecordRaw> = [
                     const projectSlug = route.params.projectSlug as string;
                     const projectWebhookSlug = route.params
                       .projectWebhookSlug as string;
-                    return `${t("common.webhook")} - ${
-                      useProjectWebhookStore().projectWebhookById(
-                        idFromSlug(projectSlug),
+                    const project = useProjectV1Store().getProjectByUID(
+                      idFromSlug(projectSlug)
+                    );
+                    const webhook =
+                      useProjectWebhookV1Store().getProjectWebhookFromProjectById(
+                        project,
                         idFromSlug(projectWebhookSlug)
-                      ).name
+                      );
+
+                    return `${t("common.webhook")} - ${
+                      webhook?.title ?? "unknown"
                     }`;
                   },
                   allowBookmark: true,
@@ -1123,9 +1130,9 @@ router.beforeEach((to, from, next) => {
   const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
   const routerStore = useRouterStore();
-  const projectWebhookStore = useProjectWebhookStore();
   const projectStore = useProjectStore();
   const projectV1Store = useProjectV1Store();
+  const projectWebhookV1Store = useProjectWebhookV1Store();
 
   const isLoggedIn = authStore.isLoggedIn();
 
@@ -1446,25 +1453,24 @@ router.beforeEach((to, from, next) => {
     projectStore
       .fetchProjectById(idFromSlug(projectSlug))
       .then(() => projectV1Store.fetchProjectByUID(idFromSlug(projectSlug)))
-      .then(() => {
+      .then((project) => {
         if (!projectWebhookSlug) {
           next();
         } else {
-          projectWebhookStore
-            .fetchProjectWebhookById({
-              projectId: idFromSlug(projectSlug),
-              projectWebhookId: idFromSlug(projectWebhookSlug),
-            })
-            .then(() => {
-              next();
-            })
-            .catch((error) => {
-              next({
-                name: "error.404",
-                replace: false,
-              });
-              throw error;
+          const webhook =
+            projectWebhookV1Store.getProjectWebhookFromProjectById(
+              project,
+              idFromSlug(projectWebhookSlug)
+            );
+          if (webhook) {
+            next();
+          } else {
+            next({
+              name: "error.404",
+              replace: false,
             });
+            throw new Error("not found");
+          }
         }
       })
       .catch((error) => {

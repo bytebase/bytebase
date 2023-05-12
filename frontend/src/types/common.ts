@@ -14,7 +14,6 @@ import { Member } from "./member";
 import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
-import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
 import { Policy, DefaultApprovalPolicy } from "./policy";
@@ -110,7 +109,6 @@ export type ResourceType =
   | "MEMBER"
   | "ENVIRONMENT"
   | "PROJECT"
-  | "PROJECT_HOOK"
   | "PROJECT_MEMBER"
   | "INSTANCE"
   | "DATABASE"
@@ -138,7 +136,6 @@ interface ResourceMaker {
   (type: "MEMBER"): Member;
   (type: "ENVIRONMENT"): Environment;
   (type: "PROJECT"): Project;
-  (type: "PROJECT_HOOK"): ProjectWebhook;
   (type: "PROJECT_MEMBER"): ProjectMember;
   (type: "INSTANCE"): Instance;
   (type: "DATABASE"): Database;
@@ -200,15 +197,6 @@ const makeUnknown = (type: ResourceType) => {
     tenantMode: "DISABLED",
     dbNameTemplate: "",
     schemaChangeType: "DDL",
-  };
-
-  const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
-    id: UNKNOWN_ID,
-    projectId: UNKNOWN_ID,
-    type: "",
-    name: "",
-    url: "",
-    activityList: [],
   };
 
   const UNKNOWN_PROJECT_MEMBER: ProjectMember = {
@@ -473,8 +461,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_ENVIRONMENT;
     case "PROJECT":
       return UNKNOWN_PROJECT;
-    case "PROJECT_HOOK":
-      return UNKNOWN_PROJECT_HOOK;
     case "PROJECT_MEMBER":
       return UNKNOWN_PROJECT_MEMBER;
     case "INSTANCE":
@@ -556,15 +542,6 @@ const makeEmpty = (type: ResourceType) => {
     tenantMode: "DISABLED",
     dbNameTemplate: "",
     schemaChangeType: "DDL",
-  };
-
-  const EMPTY_PROJECT_HOOK: ProjectWebhook = {
-    id: EMPTY_ID,
-    projectId: EMPTY_ID,
-    type: "",
-    name: "",
-    url: "",
-    activityList: [],
   };
 
   const EMPTY_PROJECT_MEMBER: ProjectMember = {
@@ -838,8 +815,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_ENVIRONMENT;
     case "PROJECT":
       return EMPTY_PROJECT;
-    case "PROJECT_HOOK":
-      return EMPTY_PROJECT_HOOK;
     case "PROJECT_MEMBER":
       return EMPTY_PROJECT_MEMBER;
     case "INSTANCE":

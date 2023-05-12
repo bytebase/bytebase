@@ -7,7 +7,7 @@
       class="pt-4"
       :create="true"
       :project="project"
-      :webhook="DEFAULT_NEW_WEBHOOK"
+      :webhook="defaultNewWebhook"
     />
   </div>
 </template>
@@ -16,15 +16,8 @@
 import { computed, defineComponent } from "vue";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
-import { ProjectWebhookCreate } from "../types";
-import { useProjectStore } from "@/store";
-
-const DEFAULT_NEW_WEBHOOK: ProjectWebhookCreate = {
-  type: "bb.plugin.webhook.slack",
-  name: "",
-  url: "",
-  activityList: ["bb.issue.status.update"],
-};
+import { useProjectV1Store } from "@/store";
+import { emptyProjectWebhook } from "@/types";
 
 export default defineComponent({
   name: "ProjectWebhookCreate",
@@ -36,14 +29,16 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const projectStore = useProjectStore();
+    const projectV1Store = useProjectV1Store();
 
     const project = computed(() => {
-      return projectStore.getProjectById(idFromSlug(props.projectSlug));
+      return projectV1Store.getProjectByUID(idFromSlug(props.projectSlug));
     });
 
+    const defaultNewWebhook = emptyProjectWebhook();
+
     return {
-      DEFAULT_NEW_WEBHOOK,
+      defaultNewWebhook,
       project,
     };
   },
