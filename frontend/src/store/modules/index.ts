@@ -24,7 +24,6 @@ export * from "./policy";
 export * from "./slowQueryPolicy";
 export * from "./principal";
 export * from "./project";
-export * from "./projectWebhook";
 export * from "./repository";
 export * from "./router";
 export * from "./setting";
@@ -53,3 +52,5 @@ export * from "./slowQuery";
 export * from "./role";
 
 export * from "./v1";
+
+export * from "./utils";
