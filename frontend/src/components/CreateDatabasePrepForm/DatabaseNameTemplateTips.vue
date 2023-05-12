@@ -28,7 +28,8 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 
-import type { DatabaseLabel, Project } from "@/types";
+import type { DatabaseLabel } from "@/types";
+import type { Project } from "@/types/proto/v1/project_service";
 import {
   buildDatabaseNameRegExpByTemplate,
   getLabelValueFromLabelList,

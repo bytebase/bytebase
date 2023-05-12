@@ -455,7 +455,7 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/GetInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/GetInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -480,7 +480,7 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/ListInstanceRoles", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/ListInstanceRoles", runtime.WithHTTPPathPattern("/v1/{parent=instances/*}/roles"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -505,7 +505,7 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/CreateInstanceRole", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/CreateInstanceRole", runtime.WithHTTPPathPattern("/v1/{parent=instances/*}/roles"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -530,7 +530,7 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UpdateInstanceRole", runtime.WithHTTPPathPattern("/v1/{role.name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UpdateInstanceRole", runtime.WithHTTPPathPattern("/v1/{role.name=instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -555,7 +555,7 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/DeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/DeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -580,7 +580,7 @@ func RegisterInstanceRoleServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UndeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}:undelete"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UndeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=instances/*/roles/*}:undelete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -644,7 +644,7 @@ func RegisterInstanceRoleServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/GetInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/GetInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -666,7 +666,7 @@ func RegisterInstanceRoleServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/ListInstanceRoles", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/ListInstanceRoles", runtime.WithHTTPPathPattern("/v1/{parent=instances/*}/roles"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -688,7 +688,7 @@ func RegisterInstanceRoleServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/CreateInstanceRole", runtime.WithHTTPPathPattern("/v1/{parent=environments/*/instances/*}/roles"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/CreateInstanceRole", runtime.WithHTTPPathPattern("/v1/{parent=instances/*}/roles"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -710,7 +710,7 @@ func RegisterInstanceRoleServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UpdateInstanceRole", runtime.WithHTTPPathPattern("/v1/{role.name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UpdateInstanceRole", runtime.WithHTTPPathPattern("/v1/{role.name=instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -732,7 +732,7 @@ func RegisterInstanceRoleServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/DeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/DeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=instances/*/roles/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -754,7 +754,7 @@ func RegisterInstanceRoleServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UndeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=environments/*/instances/*/roles/*}:undelete"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.InstanceRoleService/UndeleteInstanceRole", runtime.WithHTTPPathPattern("/v1/{name=instances/*/roles/*}:undelete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -774,17 +774,17 @@ func RegisterInstanceRoleServiceHandlerClient(ctx context.Context, mux *runtime.
 }
 
 var (
-	pattern_InstanceRoleService_GetInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "name"}, ""))
+	pattern_InstanceRoleService_GetInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "roles", "name"}, ""))
 
-	pattern_InstanceRoleService_ListInstanceRoles_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "environments", "instances", "parent", "roles"}, ""))
+	pattern_InstanceRoleService_ListInstanceRoles_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "instances", "parent", "roles"}, ""))
 
-	pattern_InstanceRoleService_CreateInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "environments", "instances", "parent", "roles"}, ""))
+	pattern_InstanceRoleService_CreateInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "instances", "parent", "roles"}, ""))
 
-	pattern_InstanceRoleService_UpdateInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "role.name"}, ""))
+	pattern_InstanceRoleService_UpdateInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "roles", "role.name"}, ""))
 
-	pattern_InstanceRoleService_DeleteInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "name"}, ""))
+	pattern_InstanceRoleService_DeleteInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "roles", "name"}, ""))
 
-	pattern_InstanceRoleService_UndeleteInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "environments", "instances", "roles", "name"}, "undelete"))
+	pattern_InstanceRoleService_UndeleteInstanceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "roles", "name"}, "undelete"))
 )
 
 var (

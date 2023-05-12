@@ -74,14 +74,13 @@ func NewDatabaseService(store *store.Store, br *backuprun.Runner, licenseService
 
 // GetDatabase gets a database.
 func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetDatabaseRequest) (*v1pb.Database, error) {
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Name)
+	instanceID, databaseName, err := getInstanceDatabaseID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -94,14 +93,11 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 
 // ListDatabases lists all databases.
 func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
-	environmentID, instanceID, err := getEnvironmentInstanceID(request.Parent)
+	instanceID, err := getInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	find := &store.FindDatabaseMessage{}
-	if environmentID != "-" {
-		find.EnvironmentID = &environmentID
-	}
 	if instanceID != "-" {
 		find.InstanceID = &instanceID
 	}
@@ -136,14 +132,13 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Database.Name)
+	instanceID, databaseName, err := getInstanceDatabaseID(request.Database.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -205,14 +200,13 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		if req.UpdateMask == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 		}
-		environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(req.Database.Name)
+		instanceID, databaseName, err := getInstanceDatabaseID(req.Database.Name)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			EnvironmentID: &environmentID,
-			InstanceID:    &instanceID,
-			DatabaseName:  &databaseName,
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
@@ -263,14 +257,13 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 
 // GetDatabaseMetadata gets the metadata of a database.
 func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb.GetDatabaseMetadataRequest) (*v1pb.DatabaseMetadata, error) {
-	environmentID, instanceID, databaseName, err := trimSuffixAndGetEnvironmentInstanceDatabaseID(request.Name, metadataSuffix)
+	instanceID, databaseName, err := trimSuffixAndGetInstanceDatabaseID(request.Name, metadataSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -287,14 +280,13 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 
 // GetDatabaseSchema gets the schema of a database.
 func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.GetDatabaseSchemaRequest) (*v1pb.DatabaseSchema, error) {
-	environmentID, instanceID, databaseName, err := trimSuffixAndGetEnvironmentInstanceDatabaseID(request.Name, schemaSuffix)
+	instanceID, databaseName, err := trimSuffixAndGetInstanceDatabaseID(request.Name, schemaSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -314,22 +306,12 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 
 // GetBackupSetting gets the backup setting of a database.
 func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.GetBackupSettingRequest) (*v1pb.BackupSetting, error) {
-	environmentID, instanceID, databaseName, err := trimSuffixAndGetEnvironmentInstanceDatabaseID(request.Name, backupSettingSuffix)
+	instanceID, databaseName, err := trimSuffixAndGetInstanceDatabaseID(request.Name, backupSettingSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
-	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
+		ResourceID: &instanceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -338,9 +320,8 @@ func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.Ge
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -354,29 +335,19 @@ func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.Ge
 	}
 	if backupSetting == nil {
 		// If the backup setting is not found, return the default backup setting.
-		return getDefaultBackupSetting(environment.ResourceID, instance.ResourceID, database.DatabaseName), nil
+		return getDefaultBackupSetting(instance.ResourceID, database.DatabaseName), nil
 	}
-	return convertToBackupSetting(backupSetting, environment.ResourceID, instance.ResourceID, database.DatabaseName)
+	return convertToBackupSetting(backupSetting, instance.ResourceID, database.DatabaseName)
 }
 
 // UpdateBackupSetting updates the backup setting of a database.
 func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb.UpdateBackupSettingRequest) (*v1pb.BackupSetting, error) {
-	environmentID, instanceID, databaseName, err := trimSuffixAndGetEnvironmentInstanceDatabaseID(request.Setting.Name, backupSettingSuffix)
+	instanceID, databaseName, err := trimSuffixAndGetInstanceDatabaseID(request.Setting.Name, backupSettingSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
-	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
+		ResourceID: &instanceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -385,9 +356,8 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -404,27 +374,17 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertToBackupSetting(backupSetting, environment.ResourceID, instance.ResourceID, database.DatabaseName)
+	return convertToBackupSetting(backupSetting, instance.ResourceID, database.DatabaseName)
 }
 
 // ListBackup lists the backups of a database.
 func (s *DatabaseService) ListBackup(ctx context.Context, request *v1pb.ListBackupRequest) (*v1pb.ListBackupResponse, error) {
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Parent)
+	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
-	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
+		ResourceID: &instanceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -433,9 +393,8 @@ func (s *DatabaseService) ListBackup(ctx context.Context, request *v1pb.ListBack
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -455,7 +414,7 @@ func (s *DatabaseService) ListBackup(ctx context.Context, request *v1pb.ListBack
 
 	var backupList []*v1pb.Backup
 	for _, existedBackup := range existedBackupList {
-		backupList = append(backupList, convertToBackup(existedBackup, environment.ResourceID, instance.ResourceID, database.DatabaseName))
+		backupList = append(backupList, convertToBackup(existedBackup, instance.ResourceID, database.DatabaseName))
 	}
 	return &v1pb.ListBackupResponse{
 		Backups: backupList,
@@ -464,22 +423,12 @@ func (s *DatabaseService) ListBackup(ctx context.Context, request *v1pb.ListBack
 
 // CreateBackup creates a backup of a database.
 func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.CreateBackupRequest) (*v1pb.Backup, error) {
-	environmentID, instanceID, databaseName, backupName, err := getEnvironmentIDInstanceDatabaseIDBackupName(request.Backup.Name)
+	instanceID, databaseName, backupName, err := getInstanceDatabaseIDBackupName(request.Backup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
-	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
+		ResourceID: &instanceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -488,9 +437,8 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -515,27 +463,17 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertToBackup(backup, environmentID, instanceID, databaseName), nil
+	return convertToBackup(backup, instanceID, databaseName), nil
 }
 
 // ListSecrets lists the secrets of a database.
 func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSecretsRequest) (*v1pb.ListSecretsResponse, error) {
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Parent)
+	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
-	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
+		ResourceID: &instanceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -544,9 +482,8 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -569,22 +506,12 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.InvalidArgument, "secret is required")
 	}
 
-	environmentID, instanceID, databaseName, updateSecretName, err := getEnvironmentInstanceDatabaseIDSecretName(request.Secret.Name)
+	instanceID, databaseName, updateSecretName, err := getInstanceDatabaseIDSecretName(request.Secret.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
-	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
+		ResourceID: &instanceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -593,9 +520,8 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -678,23 +604,13 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecrets.AccessErrorMessage())
 	}
 
-	environmentID, instanceID, databaseName, secretName, err := getEnvironmentInstanceDatabaseIDSecretName(request.Name)
+	instanceID, databaseName, secretName, err := getInstanceDatabaseIDSecretName(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
-	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
+		ResourceID: &instanceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -703,9 +619,8 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -753,12 +668,9 @@ type totalValue struct {
 // ListSlowQueries lists the slow queries.
 func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.ListSlowQueriesRequest) (*v1pb.ListSlowQueriesResponse, error) {
 	findDatabase := &store.FindDatabaseMessage{}
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Parent)
+	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	if environmentID != "-" {
-		findDatabase.EnvironmentID = &environmentID
 	}
 	if instanceID != "-" {
 		findDatabase.InstanceID = &instanceID
@@ -908,7 +820,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 	}
 
 	for _, log := range result.SlowQueryLogs {
-		_, instanceID, _, err := getEnvironmentInstanceDatabaseID(log.Resource)
+		instanceID, _, err := getInstanceDatabaseID(log.Resource)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get instance id %q", err.Error())
 		}
@@ -1044,7 +956,7 @@ func convertToSlowQueryLog(environmentID string, instanceID string, databaseName
 	}
 }
 
-func convertToBackup(backup *store.BackupMessage, enviromentID string, instanceID string, databaseName string) *v1pb.Backup {
+func convertToBackup(backup *store.BackupMessage, instanceID string, databaseName string) *v1pb.Backup {
 	createTime := timestamppb.New(time.Unix(backup.CreatedTs, 0))
 	updateTime := timestamppb.New(time.Unix(backup.UpdatedTs, 0))
 	backupState := v1pb.Backup_BACKUP_STATE_UNSPECIFIED
@@ -1066,7 +978,7 @@ func convertToBackup(backup *store.BackupMessage, enviromentID string, instanceI
 		backupType = v1pb.Backup_PITR
 	}
 	return &v1pb.Backup{
-		Name:       fmt.Sprintf("%s%s/%s%s/%s%s/%s", environmentNamePrefix, enviromentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backup.Name),
+		Name:       fmt.Sprintf("%s%s/%s%s/%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backup.Name),
 		CreateTime: createTime,
 		UpdateTime: updateTime,
 		State:      backupState,
@@ -1228,20 +1140,20 @@ func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, new
 	return nil
 }
 
-func getDefaultBackupSetting(environmentID, instanceID, databaseName string) *v1pb.BackupSetting {
+func getDefaultBackupSetting(instanceID, databaseName string) *v1pb.BackupSetting {
 	sevenDays, err := convertPeriodTsToDuration(int(time.Duration(7 * 24 * time.Hour).Seconds()))
 	if err != nil {
 		log.Warn("failed to convert period ts to duration", zap.Error(err))
 	}
 	return &v1pb.BackupSetting{
-		Name:                 fmt.Sprintf("%s%s/%s%s/%s%s/%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupSettingSuffix),
+		Name:                 fmt.Sprintf("%s%s/%s%s/%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupSettingSuffix),
 		BackupRetainDuration: sevenDays,
 		CronSchedule:         "", /* Disable automatic backup */
 		HookUrl:              "",
 	}
 }
 
-func convertToBackupSetting(backupSetting *store.BackupSettingMessage, environmentID, instanceID, databaseName string) (*v1pb.BackupSetting, error) {
+func convertToBackupSetting(backupSetting *store.BackupSettingMessage, instanceID, databaseName string) (*v1pb.BackupSetting, error) {
 	period, err := convertPeriodTsToDuration(backupSetting.RetentionPeriodTs)
 	if err != nil {
 		return nil, err
@@ -1251,7 +1163,7 @@ func convertToBackupSetting(backupSetting *store.BackupSettingMessage, environme
 		cronSchedule = buildSimpleCron(backupSetting.HourOfDay, backupSetting.DayOfWeek)
 	}
 	return &v1pb.BackupSetting{
-		Name:                 fmt.Sprintf("%s%s%s%s%s%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupSettingSuffix),
+		Name:                 fmt.Sprintf("%s%s/%s%s/%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupSettingSuffix),
 		BackupRetainDuration: period,
 		CronSchedule:         cronSchedule,
 		HookUrl:              backupSetting.HookURL,
@@ -1405,15 +1317,14 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	if !s.licenseService.IsFeatureEnabled(api.FeaturePluginOpenAI) {
 		return nil, status.Errorf(codes.PermissionDenied, api.FeaturePluginOpenAI.AccessErrorMessage())
 	}
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Parent)
+	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	findDatabase := &store.FindDatabaseMessage{
-		EnvironmentID: &environmentID,
-		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	}
 	database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 	if err != nil {
@@ -1421,8 +1332,7 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	}
 
 	findInstance := &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
+		ResourceID: &instanceID,
 	}
 	instance, err := s.store.GetInstanceV2(ctx, findInstance)
 	if err != nil {

@@ -752,9 +752,6 @@
     "waiting-for-review": "Esperando revisión",
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
-      "select-project": "seleccionar proyecto",
-      "database": "base de datos",
-      "databases": "bases de datos",
       "export-rows": "número máximo de filas",
       "export-format": "formato de exportación",
       "expire-days": "días de caducidad",

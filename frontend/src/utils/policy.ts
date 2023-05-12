@@ -3,6 +3,7 @@ import type { Database, Instance, Principal } from "@/types";
 import { hasWorkspacePermission } from "./role";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
 import { State } from "@/types/proto/v1/common";
+import { isMemberOfProject } from ".";
 
 export const isInstanceAccessible = (instance: Instance, user: Principal) => {
   if (!hasFeature("bb.feature.access-control")) {
@@ -36,6 +37,10 @@ export const isDatabaseAccessible = (
   policyList: Policy[],
   user: Principal
 ) => {
+  if (!isMemberOfProject(database.project, user)) {
+    return false;
+  }
+
   if (!hasFeature("bb.feature.access-control")) {
     // The current plan doesn't have access control feature.
     // Fallback to true.

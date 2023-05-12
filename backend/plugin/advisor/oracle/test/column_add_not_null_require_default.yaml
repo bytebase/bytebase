@@ -1,0 +1,16 @@
+- statement: ALTER TABLE tech_book ADD reader int NOT NULL
+  want:
+    - status: WARN
+      code: 404
+      title: column.add-not-null-require-default
+      content: Adding not null column "READER" requires default.
+      line: 1
+      details: ""
+- statement: ALTER TABLE tech_book ADD reader int DEFAULT 0 NOT NULL
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
