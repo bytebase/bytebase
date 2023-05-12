@@ -1,20 +1,6 @@
-import { RowStatus, Environment, IssueType, PolicyId, SubsetOf } from ".";
+import { RowStatus, Environment, PolicyId } from ".";
 
-export type PolicyType =
-  | "bb.policy.pipeline-approval"
-  | "bb.policy.environment-tier";
-
-export type PipelineApprovalPolicyValue =
-  | "MANUAL_APPROVAL_NEVER"
-  | "MANUAL_APPROVAL_ALWAYS";
-
-export type PipelineApprovalPolicyPayload = {
-  value: PipelineApprovalPolicyValue;
-  assigneeGroupList: AssigneeGroup[];
-};
-
-export const DefaultApprovalPolicy: PipelineApprovalPolicyValue =
-  "MANUAL_APPROVAL_ALWAYS";
+export type PolicyType = "bb.policy.environment-tier";
 
 export type EnvironmentTier = "PROTECTED" | "UNPROTECTED";
 
@@ -26,24 +12,7 @@ export const DefaultEnvironmentTier: EnvironmentTier = "UNPROTECTED";
 
 export type BackupPlanPolicySchedule = "UNSET" | "DAILY" | "WEEKLY";
 
-export type AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA" | "PROJECT_OWNER";
-
-export const DefaultAssigneeGroup: AssigneeGroupValue =
-  "WORKSPACE_OWNER_OR_DBA";
-
-export type AssigneeGroup = {
-  issueType: SubsetOf<
-    IssueType,
-    | "bb.issue.database.schema.update"
-    | "bb.issue.database.data.update"
-    | "bb.issue.database.schema.update.ghost"
-  >;
-  value: AssigneeGroupValue;
-};
-
-export type PolicyPayload =
-  | PipelineApprovalPolicyPayload
-  | EnvironmentTierPolicyPayload;
+export type PolicyPayload = EnvironmentTierPolicyPayload;
 
 export type PolicyResourceType =
   | ""

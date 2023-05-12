@@ -14,7 +14,6 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
-  PipelineApprovalPolicyPayload,
   Policy,
   PolicyResourceType,
   PolicyType,
@@ -68,14 +67,6 @@ function convert(
   // So we need to rewrite the resourceId here to improve robustness.
   if (result.id === UNKNOWN_ID) result.resourceId = UNKNOWN_ID;
   if (result.id === EMPTY_ID) result.resourceId = EMPTY_ID;
-
-  if (result.type === "bb.policy.pipeline-approval") {
-    const payload = result.payload as PipelineApprovalPolicyPayload;
-    if (!payload.assigneeGroupList) {
-      // Assign an empty array as fallback
-      payload.assigneeGroupList = [];
-    }
-  }
 
   return result;
 }
