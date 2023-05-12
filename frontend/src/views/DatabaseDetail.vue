@@ -350,9 +350,11 @@ import {
   useCurrentUserIamPolicy,
   useDatabaseStore,
   useDBSchemaStore,
-  usePolicyByDatabaseAndType,
   useSQLStore,
 } from "@/store";
+import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
+import { getDatabasePathByLegacyDatabase } from "@/store/modules/v1/common";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 
 type DatabaseTabItem = {
   name: string;
@@ -424,10 +426,10 @@ const hasSchemaDiagramFeature = computed((): boolean => {
   return instanceHasAlterSchema(database.value.instance);
 });
 
-const accessControlPolicy = usePolicyByDatabaseAndType(
+const accessControlPolicy = usePolicyByParentAndType(
   computed(() => ({
-    databaseId: database.value.id,
-    type: "bb.policy.access-control",
+    parentPath: getDatabasePathByLegacyDatabase(database.value),
+    policyType: PolicyType.ACCESS_CONTROL,
   }))
 );
 const allowQuery = computed(() => {

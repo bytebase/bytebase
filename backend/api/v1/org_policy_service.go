@@ -476,14 +476,20 @@ func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 		}
 		return payload.String()
 	case v1pb.PolicyType_SENSITIVE_DATA:
-		// TODO: validate
 		payload, err := convertToSensitiveDataPolicyPayload(policy.GetSensitiveDataPolicy())
 		if err != nil {
 			return "", err
 		}
+		for _, v := range payload.SensitiveDataList {
+			if v.Table == "" || v.Column == "" {
+				return "", errors.Errorf("sensitive data policy rule cannot have empty table or column name")
+			}
+			if v.Type != api.SensitiveDataMaskTypeDefault {
+				return "", errors.Errorf("sensitive data policy rule must have mask type %q", api.SensitiveDataMaskTypeDefault)
+			}
+		}
 		return payload.String()
 	case v1pb.PolicyType_ACCESS_CONTROL:
-		// TODO: validate
 		payload, err := convertToAccessControlPolicyPayload(policy.GetAccessControlPolicy())
 		if err != nil {
 			return "", err
