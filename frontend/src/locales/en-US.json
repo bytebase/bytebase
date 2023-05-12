@@ -751,7 +751,20 @@
     },
     "waiting-to-rollout": "Waiting to rollout",
     "waiting-for-review": "Waiting for review",
-    "issue-name": "Issue name"
+    "issue-name": "Issue name",
+    "grant-request": {
+      "select-project": "Select project",
+      "database": "Database",
+      "databases": "Databases",
+      "export-rows": "Export rows",
+      "export-format": "Export format",
+      "expire-days": "Expire days",
+      "expired-at": "Expired at",
+      "all-databases": "All",
+      "manually-select": "Manually select",
+      "customize": "Customize",
+      "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once."
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",

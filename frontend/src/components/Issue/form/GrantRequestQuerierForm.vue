@@ -4,7 +4,8 @@
   >
     <div v-if="create" class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center">
-        {{ $t("database.sync-schema.select-project") }}
+        {{ $t("issue.grant-request.select-project") }}
+        <RequiredStar />
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
@@ -13,32 +14,40 @@
       />
     </div>
     <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center">Databases</span>
+      <span class="flex w-40 items-center">
+        {{ $t("issue.grant-request.databases") }}
+        <RequiredStar />
+      </span>
       <div v-if="create">
         <NRadioGroup
           v-model:value="state.allDatabases"
           class="w-full !flex flex-row justify-start items-center gap-4"
           name="radiogroup"
         >
-          <NRadio :value="true" label="All" />
+          <NRadio
+            :value="true"
+            :label="$t('issue.grant-request.all-databases')"
+          />
           <div>
             <NRadio
               :value="false"
               :disabled="!state.projectId"
-              label="Manually select"
+              :label="$t('issue.grant-request.manually-select')"
             />
             <button
               v-if="state.projectId"
               class="ml-2 normal-link disabled:cursor-not-allowed"
               @click="state.showSelectDatabasePanel = true"
             >
-              Select
+              {{ $t("common.select") }}
             </button>
           </div>
         </NRadioGroup>
       </div>
       <div v-else class="flex flex-row justify-start items-start gap-4">
-        <span v-if="state.selectedDatabaseIdList.length === 0">All</span>
+        <span v-if="state.selectedDatabaseIdList.length === 0">{{
+          $t("issue.grant-request.all-databases")
+        }}</span>
         <div
           v-for="database in selectedDatabaseList"
           v-else
@@ -51,9 +60,14 @@
       </div>
     </div>
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-start">{{
-        create ? "Expire days" : "Expired at"
-      }}</span>
+      <span class="flex w-40 items-start">
+        {{
+          create
+            ? $t("issue.grant-request.expire-days")
+            : $t("issue.grant-request.expired-at")
+        }}
+        <RequiredStar />
+      </span>
       <div v-if="create">
         <NRadioGroup
           v-model:value="state.expireDays"
@@ -67,7 +81,7 @@
             :label="day.label"
           />
           <div class="col-span-2 flex flex-row justify-start items-center">
-            <NRadio :value="-1" label="Customrized" />
+            <NRadio :value="-1" :label="$t('issue.grant-request.customize')" />
             <NInputNumber
               v-model:value="state.customDays"
               :disabled="state.expireDays !== -1"
@@ -116,6 +130,7 @@ import {
   environmentNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
+import RequiredStar from "@/components/RequiredStar.vue";
 
 interface LocalState {
   showSelectDatabasePanel: boolean;
@@ -180,7 +195,9 @@ const selectedDatabaseList = computed(() => {
 });
 
 onMounted(() => {
-  // do nth
+  if (create.value) {
+    state.projectId = (issue.value as IssueCreate).projectId;
+  }
 });
 
 const handleSourceProjectSelect = async (projectId: ProjectId) => {
