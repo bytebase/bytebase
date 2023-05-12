@@ -31,12 +31,8 @@
 
 import { capitalize } from "lodash-es";
 import { computed, defineComponent } from "vue";
-import type {
-  DatabaseLabel,
-  LabelKeyType,
-  LabelValueType,
-  Project,
-} from "@/types";
+import type { DatabaseLabel, LabelKeyType, LabelValueType } from "@/types";
+import type { Project } from "@/types/proto/v1/project_service";
 import {
   hidePrefix,
   validateLabelsWithTemplate,
