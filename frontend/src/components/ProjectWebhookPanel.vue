@@ -35,55 +35,32 @@
   </div>
 </template>
 
-<script lang="ts">
-import { computed, PropType, watchEffect, defineComponent } from "vue";
+<script lang="ts" setup>
+import { computed, PropType } from "vue";
 import { useRouter } from "vue-router";
-import { useProjectWebhookStore } from "@/store";
 
 import ProjectWebhookCard from "./ProjectWebhookCard.vue";
-import { Project } from "../types";
+import { Project } from "@/types/proto/v1/project_service";
 
-export default defineComponent({
-  name: "ProjectWebhookPanel",
-  components: {
-    ProjectWebhookCard,
+const props = defineProps({
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
   },
-  props: {
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-    allowEdit: {
-      default: true,
-      type: Boolean,
-    },
-  },
-  setup(props) {
-    const router = useRouter();
-    const projectWebhookStore = useProjectWebhookStore();
-
-    const prepareProjectWebhookList = () => {
-      projectWebhookStore.fetchProjectWebhookListByProjectId(props.project.id);
-    };
-
-    watchEffect(prepareProjectWebhookList);
-
-    const projectWebhookList = computed(() => {
-      return projectWebhookStore.projectWebhookListByProjectId(
-        props.project.id
-      );
-    });
-
-    const addProjectWebhook = () => {
-      router.push({
-        name: "workspace.project.hook.create",
-      });
-    };
-
-    return {
-      projectWebhookList,
-      addProjectWebhook,
-    };
+  allowEdit: {
+    default: true,
+    type: Boolean,
   },
 });
+const router = useRouter();
+
+const projectWebhookList = computed(() => {
+  return props.project.webhooks;
+});
+
+const addProjectWebhook = () => {
+  router.push({
+    name: "workspace.project.hook.create",
+  });
+};
 </script>

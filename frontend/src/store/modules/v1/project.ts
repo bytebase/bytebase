@@ -111,6 +111,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   return {
     projectMapByName,
     projectList,
+    upsertProjectMap,
     getProjectByUID,
     fetchProjectList,
     fetchProjectByName,

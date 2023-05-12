@@ -36,7 +36,6 @@ import { Member } from "./member";
 import { Notification } from "./notification";
 import { Principal } from "./principal";
 import { Project } from "./project";
-import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { Setting, SettingName } from "./setting";
 import { VCS } from "./vcs";
@@ -108,10 +107,6 @@ export interface PolicyState {
 
 export interface ProjectState {
   projectById: Map<ProjectId, Project>;
-}
-
-export interface ProjectWebhookState {
-  projectWebhookList: Map<ProjectId, ProjectWebhook[]>;
 }
 
 export interface EnvironmentState {

@@ -38,7 +38,7 @@
   <template v-if="project.id !== DEFAULT_PROJECT_ID && hash === 'webhook'">
     <ProjectWebhookPanel
       id="webhook"
-      :project="project"
+      :project="projectV1"
       :allow-edit="allowEdit"
     />
   </template>
