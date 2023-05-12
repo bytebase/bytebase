@@ -194,12 +194,7 @@ import {
   isDatabaseAccessible,
   isGhostTable,
 } from "@/utils";
-import {
-  useCurrentUser,
-  useDatabaseStore,
-  useDBSchemaStore,
-  usePolicyByDatabaseAndType,
-} from "@/store";
+import { useCurrentUser, useDatabaseStore, useDBSchemaStore } from "@/store";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import ColumnTable from "../components/ColumnTable.vue";
@@ -240,10 +235,10 @@ export default defineComponent({
       return database.value.instance.engine;
     });
 
-    const accessControlPolicy = usePolicyByDatabaseAndType(
+    const accessControlPolicy = usePolicyByParentAndType(
       computed(() => ({
-        databaseId: database.value.id,
-        type: "bb.policy.access-control",
+        parentPath: getDatabasePathByLegacyDatabase(database.value),
+        policyType: PolicyType.ACCESS_CONTROL,
       }))
     );
     const allowQuery = computed(() => {

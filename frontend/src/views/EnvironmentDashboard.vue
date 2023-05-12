@@ -101,6 +101,8 @@ import {
 import ProductionEnvironmentIcon from "../components/Environment/ProductionEnvironmentIcon.vue";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import { environmentTierFromJSON } from "@/types/proto/v1/environment_service";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { PolicyType as PolicyTypeV1 } from "@/types/proto/v1/org_policy_service";
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
@@ -279,13 +281,14 @@ const doCreate = async (
       type: "bb.policy.environment-tier",
       policyUpsert: { payload: environmentTierPayload },
     }),
-    policyStore.upsertPolicyByEnvironmentAndType({
-      environmentId: environment.uid,
-      type: "bb.policy.access-control",
-      policyUpsert: {
+    usePolicyV1Store().upsertPolicy({
+      parentPath: environment.name,
+      updateMask: ["payload", "inherit_from_parent"],
+      policy: {
+        type: PolicyTypeV1.ACCESS_CONTROL,
         inheritFromParent: false,
-        payload: {
-          disallowRuleList: [
+        accessControlPolicy: {
+          disallowRules: [
             {
               fullDatabase:
                 environmentTierPayload.environmentTier === "PROTECTED",

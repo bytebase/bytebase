@@ -15,7 +15,6 @@ import {
   useDebugStore,
   useInstanceStore,
   pushNotification,
-  usePolicyStore,
   useConnectionTreeStore,
   useSettingStore,
 } from "@/store";
@@ -39,6 +38,11 @@ import {
   hasWorkspacePermission,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import {
+  PolicyType,
+  PolicyResourceType,
+} from "@/types/proto/v1/org_policy_service";
 
 const route = useRoute();
 const router = useRouter();
@@ -47,7 +51,7 @@ const { t } = useI18n();
 const currentUser = useCurrentUser();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
-const policyStore = usePolicyStore();
+const policyV1Store = usePolicyV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const connectionTreeStore = useConnectionTreeStore();
 const tabStore = useTabStore();
@@ -55,10 +59,10 @@ const sheetStore = useSheetStore();
 
 const prepareAccessControlPolicy = async () => {
   connectionTreeStore.accessControlPolicyList =
-    await policyStore.fetchPolicyListByResourceTypeAndPolicyType(
-      "database",
-      "bb.policy.access-control"
-    );
+    await policyV1Store.fetchPolicies({
+      policyType: PolicyType.ACCESS_CONTROL,
+      resourceType: PolicyResourceType.DATABASE,
+    });
 };
 
 const prepareAccessibleDatabaseList = async () => {
