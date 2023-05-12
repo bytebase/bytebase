@@ -53,24 +53,16 @@ export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
     parentPath: string;
     active: boolean;
   }) => {
-    const policyStore = usePolicyV1Store();
-    let policy: Policy;
-    if (!getPolicy(getSlowQueryPolicyName(parentPath))) {
-      policy = await await policyStore.createPolicy(parentPath, {
+    const policy = await usePolicyV1Store().upsertPolicy({
+      parentPath,
+      policy: {
         type: PolicyType.SLOW_QUERY,
         slowQueryPolicy: {
           active,
         },
-      });
-    } else {
-      policy = await policyStore.updatePolicy(["payload"], {
-        name: getSlowQueryPolicyName(parentPath),
-        type: PolicyType.SLOW_QUERY,
-        slowQueryPolicy: {
-          active,
-        },
-      });
-    }
+      },
+      updateMask: ["payload"],
+    });
 
     if (policy) {
       policyMapByName.value.set(policy.name, policy);
