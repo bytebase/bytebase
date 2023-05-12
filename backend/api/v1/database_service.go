@@ -950,7 +950,7 @@ func validSlowQueryOrderByKey(keys []orderByKey) error {
 
 func convertToSlowQueryLog(environmentID string, instanceID string, databaseName string, projectID string, log *v1pb.SlowQueryLog) *v1pb.SlowQueryLog {
 	return &v1pb.SlowQueryLog{
-		Resource:   fmt.Sprintf("%s%s/%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName),
+		Resource:   fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName),
 		Project:    fmt.Sprintf("%s%s", projectNamePrefix, projectID),
 		Statistics: log.Statistics,
 	}
@@ -1273,7 +1273,7 @@ func stripeAndConvertToServiceSecrets(secrets *storepb.Secrets, environmentID, i
 
 func stripeAndConvertToServiceSecret(secretEntry *storepb.SecretItem, environmentID, instanceID, databaseName string) *v1pb.Secret {
 	return &v1pb.Secret{
-		Name:        fmt.Sprintf("%s%s/%s%s/%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, secretNamePrefix, secretEntry.Name),
+		Name:        fmt.Sprintf("%s%s/%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, secretNamePrefix, secretEntry.Name),
 		Value:       "", /* stripped */
 		Description: secretEntry.Description,
 	}
