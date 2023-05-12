@@ -26,9 +26,9 @@ const getPolicyParentByResourceType = (
     case PolicyResourceType.ENVIRONMENT:
       return "environments/-";
     case PolicyResourceType.INSTANCE:
-      return "environments/-/instances/-";
+      return "instances/-";
     case PolicyResourceType.DATABASE:
-      return "environments/-/instances/-/databases/-";
+      return "instances/-/databases/-";
     default:
       return "";
   }
@@ -247,5 +247,3 @@ export const getDefaultBackupPlanPolicy = (
     state: State.ACTIVE,
   };
 };
-
-// export const mapToLegacyBackupPlanSchedule = (v1Schedule: BackupPlanSchedule)
