@@ -94,7 +94,11 @@ func (l *columnNoNullListener) generateAdvice() ([]advisor.Advice, error) {
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *columnNoNullListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	l.tableName = normalizeIdentifier(ctx.Table_name(), l.currentSchema)
+	schemaName := l.currentSchema
+	if ctx.Schema_name() != nil {
+		schemaName = normalizeIdentifier(ctx.Schema_name(), l.currentSchema)
+	}
+	l.tableName = fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), schemaName))
 }
 
 // ExitCreate_table is called when production create_table is exited.
