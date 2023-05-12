@@ -353,6 +353,9 @@ const (
 	// OracleColumnMaximumCharacterLength is an advisor type for Oracle maximum character length.
 	OracleColumnMaximumCharacterLength Type = "bb.plugin.advisor.oracle.column.maximum-character-length"
 
+	// OracleColumnMaximumVarcharLength is an advisor type for Oracle maximum varchar length.
+	OracleColumnMaximumVarcharLength Type = "bb.plugin.advisor.oracle.column.maximum-varchar-length"
+
 	// OracleNoSelectAll is an advisor type for Oracle no select all.
 	OracleNoSelectAll Type = "bb.plugin.advisor.oracle.select.no-select-all"
 

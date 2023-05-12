@@ -128,10 +128,7 @@ import { getProjectMemberList, parseExpiredTimeString } from "@/utils";
 import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
 import { useDatabaseStore } from "@/store";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
-import {
-  environmentNamePrefix,
-  instanceNamePrefix,
-} from "@/store/modules/v1/common";
+import { instanceNamePrefix } from "@/store/modules/v1/common";
 import RequiredStar from "@/components/RequiredStar.vue";
 
 interface LocalState {
@@ -272,7 +269,7 @@ watch(
             const instanceName = value[1] || "";
             const databaseName = value[3] || "";
             const instance = await instanceV1Store.getOrFetchInstanceByName(
-              environmentNamePrefix + "-/" + instanceNamePrefix + instanceName
+              instanceNamePrefix + instanceName
             );
             const databaseList =
               await databaseStore.getOrFetchDatabaseListByInstanceId(
