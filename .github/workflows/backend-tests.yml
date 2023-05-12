@@ -45,7 +45,6 @@ jobs:
     strategy:
       matrix:
         release-tags:
-          - "release,mysql"
           - "mysql"
     runs-on: self-hosted
     timeout-minutes: 20
