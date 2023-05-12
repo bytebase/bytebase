@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -153,20 +152,6 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(s.licenseService.GetEffectivePlan(), path, method, string(bodyBytes), principalID, getRetrieveDatabaseProjectID(ctx, s.store), projectRolesFinder)
-			} else if strings.HasPrefix(path, "/issue") {
-				// We need to copy the body because it will be consumed by the next middleware.
-				// And TeeReader require us the write must complete before the read completes.
-				// The body under the /issue route is a JSON object, and always not too large, so using ioutil.ReadAll is fine here.
-				bodyBytes, err := io.ReadAll(c.Request().Body)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read request body.").SetInternal(err)
-				}
-				if err := c.Request().Body.Close(); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to close request body.").SetInternal(err)
-				}
-				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-				aclErr = enforceWorkspaceDeveloperIssueRouteACL(path, method, c.QueryParams(), principalID, getRetrieveIssueProjectID(ctx, s.store), projectRolesFinder)
 			}
 			if aclErr != nil {
 				return aclErr
@@ -357,38 +342,6 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 	}
 
 	return nil
-}
-
-func enforceWorkspaceDeveloperIssueRouteACL(path string, method string, queryParams url.Values, principalID int, getIssueProjectID func(issueID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
-	if method == http.MethodGet {
-		// For /issue route, require the caller principal to be the same as the user in the query.
-		// Only /issue and /project route will bring parameter user in the query.
-		if userStr := queryParams.Get("user"); userStr != "" {
-			userID, err := strconv.Atoi(userStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID").SetInternal(err)
-			}
-			if principalID != userID {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to list other users' issues")
-			}
-		}
-	}
-	return nil
-}
-
-func getRetrieveIssueProjectID(ctx context.Context, s *store.Store) func(issueID int) (int, error) {
-	return func(issueID int) (int, error) {
-		issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{
-			UID: &issueID,
-		})
-		if err != nil {
-			return 0, err
-		}
-		if issue == nil {
-			return 0, errors.Errorf("cannot find issue %d", issueID)
-		}
-		return issue.Project.UID, nil
-	}
 }
 
 func getRetrieveDatabaseProjectID(ctx context.Context, s *store.Store) func(databaseID int) (int, error) {
