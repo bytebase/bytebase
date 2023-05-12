@@ -81,7 +81,7 @@
             :label="day.label"
           />
           <div class="col-span-2 flex flex-row justify-start items-center">
-            <NRadio :value="-1" label="Customrized" />
+            <NRadio :value="-1" :label="$t('issue.grant-request.customize')" />
             <NInputNumber
               v-model:value="state.customDays"
               :disabled="state.expireDays !== -1"
