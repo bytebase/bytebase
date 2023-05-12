@@ -6,7 +6,7 @@
     @update:show="(show) => !show && $emit('close')"
   >
     <NDrawerContent
-      :title="$t('database.sync-schema.target-databases')"
+      :title="$t('common.database')"
       :closable="true"
       class="w-[30rem] max-w-[100vw] relative"
     >
