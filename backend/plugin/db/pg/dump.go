@@ -77,9 +77,18 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 
 	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
+	// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 	if driver.config.Password != "" {
-		// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
+	}
+	if driver.config.TLSConfig.SslCert != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLCERT=%s", driver.config.TLSConfig.SslCert))
+	}
+	if driver.config.TLSConfig.SslCA != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", driver.config.TLSConfig.SslCA))
+	}
+	if driver.config.TLSConfig.SslKey != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLKEY=%s", driver.config.TLSConfig.SslKey))
 	}
 	cmd.Env = append(cmd.Env, "OPENSSL_CONF=/etc/ssl/")
 	outPipe, err := cmd.StdoutPipe()
