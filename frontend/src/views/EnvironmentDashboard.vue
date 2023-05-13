@@ -241,8 +241,6 @@ const doCreate = async (
     return;
   }
 
-  console.log(newEnvironment);
-
   const environment = await environmentV1Store.createEnvironment({
     name: newEnvironment.name,
     title: newEnvironment.title,
