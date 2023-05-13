@@ -122,7 +122,8 @@ interface LocalState {
   reorder: boolean;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
-    | "bb.feature.backup-policy";
+    | "bb.feature.backup-policy"
+    | "bb.feature.environment-tier-policy";
 }
 
 const environmentStore = useEnvironmentStore();
@@ -238,6 +239,13 @@ const doCreate = async (
     !hasFeature("bb.feature.backup-policy")
   ) {
     state.missingRequiredFeature = "bb.feature.backup-policy";
+    return;
+  }
+  if (
+    environmentTier !== defaultEnvironmentTier &&
+    !hasFeature("bb.feature.backup-policy")
+  ) {
+    state.missingRequiredFeature = "bb.feature.environment-tier-policy";
     return;
   }
 

@@ -71,7 +71,10 @@ import {
   PolicyResourceType,
   BackupPlanSchedule,
 } from "@/types/proto/v1/org_policy_service";
-import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
+import {
+  useEnvironmentV1Store,
+  defaultEnvironmentTier,
+} from "@/store/modules/v1/environment";
 import {
   Environment,
   EnvironmentTier,
@@ -161,6 +164,14 @@ const doUpdate = (environmentPatch: EnvironmentPatch) => {
   }
   if (environmentPatch.tier) {
     pendingUpdate.tier = environmentPatch.tier;
+  }
+  if (
+    pendingUpdate.tier &&
+    pendingUpdate.tier !== defaultEnvironmentTier &&
+    !hasFeature("bb.feature.environment-tier-policy")
+  ) {
+    state.missingRequiredFeature = "bb.feature.environment-tier-policy";
+    return;
   }
 
   environmentV1Store.updateEnvironment(pendingUpdate).then((environment) => {
