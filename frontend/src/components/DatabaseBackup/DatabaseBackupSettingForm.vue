@@ -47,7 +47,10 @@
         </NPopover>
       </div>
 
-      <div v-if="checkedSchedule === 'WEEKLY'" class="flex flex-col gap-y-2">
+      <div
+        v-if="checkedSchedule === BackupPlanSchedule.WEEKLY"
+        class="flex flex-col gap-y-2"
+      >
         <label class="textlabel">
           {{ $t("database.backup-setting.form.day-of-week") }}
         </label>
@@ -68,7 +71,10 @@
       </div>
 
       <div
-        v-if="checkedSchedule === 'WEEKLY' || checkedSchedule === 'DAILY'"
+        v-if="
+          checkedSchedule === BackupPlanSchedule.WEEKLY ||
+          checkedSchedule === BackupPlanSchedule.DAILY
+        "
         class="flex flex-col gap-y-2"
       >
         <label class="textlabel">
@@ -95,7 +101,10 @@
       </div>
 
       <div
-        v-if="checkedSchedule === 'WEEKLY' || checkedSchedule === 'DAILY'"
+        v-if="
+          checkedSchedule === BackupPlanSchedule.WEEKLY ||
+          checkedSchedule === BackupPlanSchedule.DAILY
+        "
         class="flex flex-col gap-y-2"
       >
         <label class="textlabel">
@@ -143,13 +152,7 @@
 import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NPopover } from "naive-ui";
-import {
-  BackupPlanPolicySchedule,
-  BackupSetting,
-  BackupSettingUpsert,
-  Database,
-  unknown,
-} from "@/types";
+import { BackupSetting, BackupSettingUpsert, Database, unknown } from "@/types";
 import {
   AVAILABLE_DAYS_OF_WEEK,
   AVAILABLE_HOURS_OF_DAY,
@@ -162,6 +165,7 @@ import {
   BackupSettingEdit,
 } from "./utils";
 import { pushNotification, useBackupStore } from "@/store";
+import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
 
 type LocalState = {
   setting: BackupSettingEdit;
@@ -181,8 +185,8 @@ const props = defineProps({
     type: Boolean,
   },
   backupPolicy: {
-    type: String as PropType<BackupPlanPolicySchedule>,
-    default: "UNSET",
+    type: Object as PropType<BackupPlanSchedule>,
+    default: BackupPlanSchedule.UNSET,
   },
   backupSetting: {
     type: Object as PropType<BackupSetting>,
@@ -205,7 +209,7 @@ const backupStore = useBackupStore();
 const { t } = useI18n();
 
 const allowDisableAutoBackup = computed(() => {
-  return props.allowAdmin && props.backupPolicy == "UNSET";
+  return props.allowAdmin && props.backupPolicy == BackupPlanSchedule.UNSET;
 });
 
 const daysOfWeek = computed(() => [
@@ -226,7 +230,7 @@ watch(
   { deep: true }
 );
 
-const checkedSchedule = computed((): BackupPlanPolicySchedule => {
+const checkedSchedule = computed((): BackupPlanSchedule => {
   return parseScheduleFromBackupSetting(state.setting);
 });
 
@@ -290,7 +294,7 @@ const handleSave = async () => {
   }
 };
 
-function setSchedule(schedule: BackupPlanPolicySchedule) {
+function setSchedule(schedule: BackupPlanSchedule) {
   if (!isAllowedScheduleByPolicy(schedule)) {
     // show a popup and automatically disappear after several seconds
     state.showBackupPolicyEnforcement = true;
@@ -317,10 +321,10 @@ function setSchedule(schedule: BackupPlanPolicySchedule) {
   };
 
   switch (schedule) {
-    case "UNSET":
+    case BackupPlanSchedule.UNSET:
       setting.enabled = false;
       break;
-    case "WEEKLY":
+    case BackupPlanSchedule.WEEKLY:
       setting.enabled = true;
       if (setting.dayOfWeek < 0) {
         setting.dayOfWeek = 0;
@@ -330,7 +334,7 @@ function setSchedule(schedule: BackupPlanPolicySchedule) {
       }
       normalizeHour();
       break;
-    case "DAILY":
+    case BackupPlanSchedule.DAILY:
       setting.enabled = true;
       setting.dayOfWeek = -1;
       if (!setting.retentionPeriodTs || setting.retentionPeriodTs <= 0) {
@@ -377,10 +381,8 @@ function extractEditValue(backupSetting: BackupSetting): BackupSettingEdit {
   };
 }
 
-function isAllowedScheduleByPolicy(
-  schedule: BackupPlanPolicySchedule
-): boolean {
-  if (schedule === "UNSET") {
+function isAllowedScheduleByPolicy(schedule: BackupPlanSchedule): boolean {
+  if (schedule === BackupPlanSchedule.UNSET) {
     return allowDisableAutoBackup.value;
   }
 
@@ -388,19 +390,21 @@ function isAllowedScheduleByPolicy(
   // can be set separately.
   // Now, the database backup policy can be configured when its environment
   // backup policy is "Not enforced"
-  return props.backupPolicy === schedule || props.backupPolicy === "UNSET";
+  return (
+    props.backupPolicy === schedule ||
+    props.backupPolicy === BackupPlanSchedule.UNSET
+  );
 }
 
-function nameOfSchedule(schedule: BackupPlanPolicySchedule): string {
+function nameOfSchedule(schedule: BackupPlanSchedule): string {
   switch (schedule) {
-    case "UNSET":
-      return t("database.backup-setting.schedule.disabled");
-    case "WEEKLY":
+    case BackupPlanSchedule.WEEKLY:
       return t("database.backup-setting.schedule.weekly");
-    case "DAILY":
+    case BackupPlanSchedule.DAILY:
       return t("database.backup-setting.schedule.daily");
+    default:
+      return t("database.backup-setting.schedule.disabled");
   }
-  console.assert(false, "should never reach this line");
 }
 
 function nameOfDay(day: number): string {
