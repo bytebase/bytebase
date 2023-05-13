@@ -1,12 +1,14 @@
 import { IssueCreate, ProjectRoleTypeOwner } from "@/types";
-import {
-  useInstanceStore,
-  useMemberStore,
-  usePolicyStore,
-  useProjectStore,
-} from "@/store";
+import { useInstanceStore, useMemberStore, useProjectStore } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
 import { extractRollOutPolicyValue } from "@/components/Issue/logic";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
+import {
+  PolicyType,
+  ApprovalStrategy,
+  ApprovalGroup,
+} from "@/types/proto/v1/org_policy_service";
 
 export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
   const firstTask = issueCreate.pipeline?.stageList[0]?.taskList[0];
@@ -17,24 +19,24 @@ export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
     firstTask.instanceId
   );
 
-  const policy = await usePolicyStore().fetchPolicyByEnvironmentAndType({
-    environmentId: instance.environment.id,
-    type: "bb.policy.pipeline-approval",
+  const policy = await usePolicyV1Store().getOrFetchPolicyByParentAndType({
+    parentPath: getEnvironmentPathByLegacyEnvironment(instance.environment),
+    policyType: PolicyType.DEPLOYMENT_APPROVAL,
   });
 
   const rollOutPolicy = extractRollOutPolicyValue(policy, issueCreate.type);
 
-  if (rollOutPolicy.policy === "MANUAL_APPROVAL_NEVER") {
+  if (rollOutPolicy.policy === ApprovalStrategy.AUTOMATIC) {
     // We don't need to approve manually.
     // But we still set the workspace owner or DBA as the default assignee.
     // Just to notify the project owner.
     assignToWorkspaceOwnerOrDBA(issueCreate);
     return;
   }
-  if (rollOutPolicy.policy === "MANUAL_APPROVAL_ALWAYS") {
+  if (rollOutPolicy.policy === ApprovalStrategy.MANUAL) {
     const { assigneeGroup } = rollOutPolicy;
 
-    if (assigneeGroup === "PROJECT_OWNER") {
+    if (assigneeGroup === ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER) {
       // Assign to the project owner if needed.
       assignToProjectOwner(issueCreate);
       return;

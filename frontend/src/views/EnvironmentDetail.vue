@@ -61,8 +61,6 @@ import {
   EnvironmentPatch,
   Policy,
   PolicyType,
-  DefaultApprovalPolicy,
-  PipelineApprovalPolicyPayload,
   EnvironmentTierPolicyPayload,
   DefaultEnvironmentTier,
 } from "../types";
@@ -78,7 +76,10 @@ import { useI18n } from "vue-i18n";
 import BBModal from "@/bbkit/BBModal.vue";
 import {
   usePolicyV1Store,
+  defaultBackupSchedule,
+  defaultApprovalStrategy,
   getDefaultBackupPlanPolicy,
+  getDefaultDeploymentApprovalPolicy,
 } from "@/store/modules/v1/policy";
 import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
 import {
@@ -91,7 +92,7 @@ import {
 interface LocalState {
   environment: Environment;
   showArchiveModal: boolean;
-  approvalPolicy?: Policy;
+  approvalPolicy?: PolicyV1;
   backupPolicy?: PolicyV1;
   environmentTierPolicy?: Policy;
   missingRequiredFeature?:
@@ -133,13 +134,18 @@ export default defineComponent({
     const preparePolicy = () => {
       const environmentId = state.environment.id;
 
-      policyStore
-        .fetchPolicyByEnvironmentAndType({
-          environmentId,
-          type: "bb.policy.pipeline-approval",
+      policyV1Store
+        .getOrFetchPolicyByParentAndType({
+          parentPath: getEnvironmentPathByLegacyEnvironment(state.environment),
+          policyType: PolicyTypeV1.DEPLOYMENT_APPROVAL,
         })
         .then((policy) => {
-          state.approvalPolicy = policy;
+          state.approvalPolicy =
+            policy ||
+            getDefaultDeploymentApprovalPolicy(
+              getEnvironmentPathByLegacyEnvironment(state.environment),
+              PolicyResourceType.ENVIRONMENT
+            );
         });
 
       policyV1Store
@@ -234,9 +240,19 @@ export default defineComponent({
       policy: PolicyV1
     ) => {
       switch (policyType) {
+        case PolicyTypeV1.DEPLOYMENT_APPROVAL:
+          if (
+            policy.deploymentApprovalPolicy?.defaultStrategy !=
+              defaultApprovalStrategy &&
+            !hasFeature("bb.feature.approval-policy")
+          ) {
+            state.missingRequiredFeature = "bb.feature.approval-policy";
+            return;
+          }
+          break;
         case PolicyTypeV1.BACKUP_PLAN:
           if (
-            policy.backupPlanPolicy?.schedule != BackupPlanSchedule.UNSET &&
+            policy.backupPlanPolicy?.schedule != defaultBackupSchedule &&
             !hasFeature("bb.feature.backup-policy")
           ) {
             state.missingRequiredFeature = "bb.feature.backup-policy";
@@ -251,6 +267,9 @@ export default defineComponent({
         policy,
       });
       switch (policyType) {
+        case PolicyTypeV1.DEPLOYMENT_APPROVAL:
+          state.approvalPolicy = updatedPolicy;
+          break;
         case PolicyTypeV1.BACKUP_PLAN:
           state.backupPolicy = updatedPolicy;
           break;
@@ -274,15 +293,6 @@ export default defineComponent({
       policy: Policy
     ) => {
       if (
-        type === "bb.policy.pipeline-approval" &&
-        (policy.payload as PipelineApprovalPolicyPayload).value !==
-          DefaultApprovalPolicy &&
-        !hasFeature("bb.feature.approval-policy")
-      ) {
-        state.missingRequiredFeature = "bb.feature.approval-policy";
-        return;
-      }
-      if (
         type === "bb.policy.environment-tier" &&
         (policy.payload as EnvironmentTierPolicyPayload).environmentTier !==
           DefaultEnvironmentTier &&
@@ -300,9 +310,7 @@ export default defineComponent({
           },
         })
         .then(async (policy: Policy) => {
-          if (type === "bb.policy.pipeline-approval") {
-            state.approvalPolicy = policy;
-          } else if (type === "bb.policy.environment-tier") {
+          if (type === "bb.policy.environment-tier") {
             state.environmentTierPolicy = policy;
             // Write the value to state.environment entity. So that we don't
             // need to re-fetch it front the server.

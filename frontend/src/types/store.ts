@@ -7,7 +7,6 @@ import {
   QueryHistory,
   Sheet,
   OnboardingGuideType,
-  PolicyResourceType,
 } from ".";
 import { Activity } from "./activity";
 import { Backup, BackupSetting } from "./backup";
@@ -101,8 +100,6 @@ export interface TaskState {}
 
 export interface PolicyState {
   policyMapByEnvironmentId: Map<EnvironmentId, Map<PolicyType, Policy>>;
-  policyMapByDatabaseId: Map<DatabaseId, Map<PolicyType, Policy>>;
-  policyMapByResourceType: Map<PolicyResourceType, Map<PolicyType, Policy[]>>;
 }
 
 export interface ProjectState {

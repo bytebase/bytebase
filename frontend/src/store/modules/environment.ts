@@ -13,8 +13,10 @@ import {
   RowStatus,
   unknown,
 } from "@/types";
-import { usePolicyStore } from "./policy";
+import { usePolicyV1Store } from "./v1/policy";
 import { environmentName } from "../../utils";
+import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 
 function convert(
   environment: ResourceObject,
@@ -87,13 +89,14 @@ export const useEnvironmentStore = defineStore("environment", {
       );
       this.upsertEnvironmentList(environmentList);
 
-      const policyStore = usePolicyStore();
+      const policyStore = usePolicyV1Store();
 
       await Promise.all(
         environmentList.map((environment) => {
-          return policyStore.fetchPolicyByEnvironmentAndType({
-            environmentId: environment.id,
-            type: "bb.policy.pipeline-approval",
+          return policyStore.getOrFetchPolicyByParentAndType({
+            parentPath: getEnvironmentPathByLegacyEnvironment(environment),
+            policyType: PolicyType.DEPLOYMENT_APPROVAL,
+            refresh: true,
           });
         })
       );

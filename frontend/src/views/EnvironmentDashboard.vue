@@ -80,10 +80,9 @@ import type {
   EnvironmentCreate,
   Policy,
   PolicyUpsert,
-  PipelineApprovalPolicyPayload,
   EnvironmentTierPolicyPayload,
 } from "../types";
-import { DefaultApprovalPolicy, DefaultEnvironmentTier } from "../types";
+import { DefaultEnvironmentTier } from "../types";
 import type { BBTabItem } from "../bbkit/types";
 import {
   useRegisterCommand,
@@ -98,22 +97,20 @@ import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import { environmentTierFromJSON } from "@/types/proto/v1/environment_service";
 import {
   usePolicyV1Store,
+  defaultBackupSchedule,
+  defaultApprovalStrategy,
   getDefaultBackupPlanPolicy,
+  getDefaultDeploymentApprovalPolicy,
 } from "@/store/modules/v1/policy";
 import {
   Policy as PolicyV1,
   PolicyType as PolicyTypeV1,
   PolicyResourceType,
-  BackupPlanSchedule,
 } from "@/types/proto/v1/org_policy_service";
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
-const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
-  payload: {
-    value: DefaultApprovalPolicy,
-    assigneeGroupList: [],
-  },
-};
+const DEFAULT_NEW_APPROVAL_POLICY: PolicyV1 =
+  getDefaultDeploymentApprovalPolicy("", PolicyResourceType.ENVIRONMENT);
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyV1 = getDefaultBackupPlanPolicy(
@@ -234,20 +231,20 @@ const createEnvironment = () => {
 
 const doCreate = async (
   newEnvironment: EnvironmentCreate,
-  approvalPolicy: Policy,
+  approvalPolicy: PolicyV1,
   backupPolicy: PolicyV1,
   environmentTierPolicy: Policy
 ) => {
   if (
-    (approvalPolicy.payload as PipelineApprovalPolicyPayload).value ===
-      "MANUAL_APPROVAL_NEVER" &&
+    approvalPolicy.deploymentApprovalPolicy?.defaultStrategy !==
+      defaultApprovalStrategy &&
     !hasFeature("bb.feature.approval-policy")
   ) {
     state.missingRequiredFeature = "bb.feature.approval-policy";
     return;
   }
   if (
-    backupPolicy.backupPlanPolicy?.schedule !== BackupPlanSchedule.UNSET &&
+    backupPolicy.backupPlanPolicy?.schedule !== defaultBackupSchedule &&
     !hasFeature("bb.feature.backup-policy")
   ) {
     state.missingRequiredFeature = "bb.feature.backup-policy";
@@ -267,10 +264,10 @@ const doCreate = async (
   await environmentStore.fetchEnvironmentList();
 
   const requests = [
-    policyStore.upsertPolicyByEnvironmentAndType({
-      environmentId: environment.uid,
-      type: "bb.policy.pipeline-approval",
-      policyUpsert: { payload: approvalPolicy.payload },
+    policyV1Store.upsertPolicy({
+      parentPath: environment.name,
+      updateMask: ["payload"],
+      policy: approvalPolicy,
     }),
     policyV1Store.upsertPolicy({
       parentPath: environment.name,

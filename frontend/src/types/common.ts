@@ -16,7 +16,7 @@ import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
-import { Policy, DefaultApprovalPolicy } from "./policy";
+import { Policy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
 import { AuditLog, AuditActivityType, AuditActivityLevel } from "./auditLog";
@@ -281,20 +281,6 @@ const makeUnknown = (type: ResourceType) => {
     stageList: [],
   };
 
-  const UNKNOWN_POLICY: Policy = {
-    id: UNKNOWN_ID,
-    rowStatus: "NORMAL",
-    resourceType: "",
-    resourceId: UNKNOWN_ID,
-    environment: UNKNOWN_ENVIRONMENT,
-    type: "bb.policy.pipeline-approval",
-    inheritFromParent: false,
-    payload: {
-      value: DefaultApprovalPolicy,
-      assigneeGroupList: [],
-    },
-  };
-
   const UNKNOWN_ISSUE: Issue = {
     id: UNKNOWN_ID,
     project: UNKNOWN_PROJECT,
@@ -444,14 +430,6 @@ const makeUnknown = (type: ResourceType) => {
     size: 0,
   };
 
-  const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
-    id: UNKNOWN_ID,
-    rowStatus: "NORMAL",
-    environment: UNKNOWN_ENVIRONMENT,
-    name: "",
-    ruleList: [],
-  };
-
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -475,8 +453,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_ISSUE;
     case "PIPELINE":
       return UNKNOWN_PIPELINE;
-    case "POLICY":
-      return UNKNOWN_POLICY;
     case "STAGE":
       return UNKNOWN_STAGE;
     case "TASK_PROGRESS":
@@ -497,8 +473,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_ANOMALY;
     case "SHEET":
       return UNKNOWN_SHEET;
-    case "SQL_REVIEW":
-      return UNKNOWN_SQL_REVIEW_POLICY;
   }
 };
 export const unknown = makeUnknown as ResourceMaker;
@@ -624,20 +598,6 @@ const makeEmpty = (type: ResourceType) => {
     id: EMPTY_ID,
     name: "",
     stageList: [],
-  };
-
-  const EMPTY_POLICY: Policy = {
-    id: EMPTY_ID,
-    rowStatus: "NORMAL",
-    resourceType: "",
-    resourceId: EMPTY_ID,
-    environment: EMPTY_ENVIRONMENT,
-    type: "bb.policy.pipeline-approval",
-    inheritFromParent: false,
-    payload: {
-      value: DefaultApprovalPolicy,
-      assigneeGroupList: [],
-    },
   };
 
   const EMPTY_ISSUE: Issue = {
@@ -829,8 +789,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_ISSUE;
     case "PIPELINE":
       return EMPTY_PIPELINE;
-    case "POLICY":
-      return EMPTY_POLICY;
     case "STAGE":
       return EMPTY_STAGE;
     case "TASK_PROGRESS":

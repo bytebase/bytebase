@@ -450,10 +450,24 @@ func validatePolicyType(policyType api.PolicyType, policyResourceType api.Policy
 func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
 	case v1pb.PolicyType_DEPLOYMENT_APPROVAL:
-		// TODO: validate
 		payload, err := convertToPipelineApprovalPolicyPayload(policy.GetDeploymentApprovalPolicy())
 		if err != nil {
 			return "", err
+		}
+		if payload.Value != api.PipelineApprovalValueManualNever && payload.Value != api.PipelineApprovalValueManualAlways {
+			return "", errors.Errorf("invalid approval policy value: %q", *payload)
+		}
+		issueTypeSeen := make(map[api.IssueType]bool)
+		for _, group := range payload.AssigneeGroupList {
+			if group.IssueType != api.IssueDatabaseSchemaUpdate &&
+				group.IssueType != api.IssueDatabaseSchemaUpdateGhost &&
+				group.IssueType != api.IssueDatabaseDataUpdate {
+				return "", errors.Errorf("invalid assignee group issue type %q", group.IssueType)
+			}
+			if issueTypeSeen[group.IssueType] {
+				return "", errors.Errorf("duplicate assignee group issue type %q", group.IssueType)
+			}
+			issueTypeSeen[group.IssueType] = true
 		}
 		return payload.String()
 	case v1pb.PolicyType_BACKUP_PLAN:
