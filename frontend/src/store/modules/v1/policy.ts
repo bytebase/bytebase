@@ -7,6 +7,7 @@ import {
   PolicyResourceType,
   policyTypeToJSON,
   BackupPlanSchedule,
+  ApprovalStrategy,
 } from "@/types/proto/v1/org_policy_service";
 import { MaybeRef, UNKNOWN_ID } from "@/types";
 import { useCurrentUser } from "../auth";
@@ -227,6 +228,8 @@ export const usePolicyByParentAndType = (
   });
 };
 
+export const defaultBackupSchedule = BackupPlanSchedule.UNSET;
+
 export const getDefaultBackupPlanPolicy = (
   parentPath: string,
   resourceType: PolicyResourceType
@@ -234,7 +237,7 @@ export const getDefaultBackupPlanPolicy = (
   return {
     name: `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
       PolicyType.BACKUP_PLAN
-    )}`,
+    ).toLowerCase()}`,
     uid: "",
     resourceUid: "",
     inheritFromParent: false,
@@ -242,7 +245,31 @@ export const getDefaultBackupPlanPolicy = (
     resourceType: resourceType,
     enforce: true,
     backupPlanPolicy: {
-      schedule: BackupPlanSchedule.UNSET,
+      schedule: defaultBackupSchedule,
+    },
+    state: State.ACTIVE,
+  };
+};
+
+export const defaultApprovalStrategy = ApprovalStrategy.MANUAL;
+
+export const getDefaultDeploymentApprovalPolicy = (
+  parentPath: string,
+  resourceType: PolicyResourceType
+): Policy => {
+  return {
+    name: `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
+      PolicyType.DEPLOYMENT_APPROVAL
+    ).toLowerCase()}`,
+    uid: "",
+    resourceUid: "",
+    inheritFromParent: false,
+    type: PolicyType.DEPLOYMENT_APPROVAL,
+    resourceType: resourceType,
+    enforce: true,
+    deploymentApprovalPolicy: {
+      defaultStrategy: defaultApprovalStrategy,
+      deploymentApprovalStrategies: [],
     },
     state: State.ACTIVE,
   };
