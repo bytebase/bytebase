@@ -1,10 +1,8 @@
 import { pullAt } from "lodash-es";
 import {
-  empty,
   PolicyId,
   EnvironmentId,
   RowStatus,
-  EMPTY_ID,
   SchemaPolicyRule,
   SQLReviewPolicy,
   IdType,
@@ -259,10 +257,6 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     getReviewPolicyByEnvironmentUID(
       environmentUID: EnvironmentId
     ): SQLReviewPolicy | undefined {
-      if (environmentUID == EMPTY_ID) {
-        return empty("SQL_REVIEW") as SQLReviewPolicy;
-      }
-
       return this.reviewPolicyList.find(
         (g) => g.environment.uid == environmentUID
       );

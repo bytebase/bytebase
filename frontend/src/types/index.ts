@@ -25,7 +25,6 @@ export * from "./notification";
 export * from "./oauth";
 export * from "./pipeline";
 export * from "./plan";
-export * from "./policy";
 export * from "./principal";
 export * from "./project";
 export * from "./repository";
