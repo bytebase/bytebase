@@ -27,7 +27,13 @@ export const useSettingStore = defineStore("setting", {
         return;
       }
 
-      return WorkspaceProfileSetting.fromJSON(JSON.parse(setting.value));
+      const profileSetting = WorkspaceProfileSetting.fromJSON(
+        JSON.parse(setting.value)
+      );
+      if (profileSetting.gitopsWebhookUrl === "") {
+        profileSetting.gitopsWebhookUrl = profileSetting.externalUrl;
+      }
+      return profileSetting;
     },
   },
   actions: {
@@ -85,6 +91,7 @@ export const useSettingStore = defineStore("setting", {
         externalUrl: this.workspaceSetting.externalUrl,
         require2fa: this.workspaceSetting.require2fa,
         outboundIpList: this.workspaceSetting.outboundIpList,
+        gitopsWebhookUrl: this.workspaceSetting.gitopsWebhookUrl,
         ...payload,
       };
       await this.updateSettingByName({

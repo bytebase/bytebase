@@ -43,12 +43,41 @@
           :value="state.externalUrl"
           @input="handleExternalUrlChange"
         />
+
+        <label
+          class="flex items-center gap-x-2 tooltip-wrapper"
+          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
+        >
+          <span class="font-medium">{{
+            $t("settings.general.workspace.gitops-webhook-url.self")
+          }}</span>
+
+          <span
+            v-if="!allowEdit"
+            class="text-sm text-gray-400 -translate-y-2 tooltip"
+          >
+            {{ $t("settings.general.workspace.only-owner-can-edit") }}
+          </span>
+        </label>
+        <div class="mb-3 text-sm text-gray-400">
+          <i18n-t
+            keypath="settings.general.workspace.gitops-webhook-url.description"
+          >
+          </i18n-t>
+        </div>
+        <BBTextField
+          class="mb-5 w-full"
+          :disabled="!allowEdit"
+          :value="state.gitopsWebhookUrl"
+          @input="handleGitOpsWebhookUrlChange"
+        />
+
         <div class="flex">
           <button
             type="button"
             class="btn-primary ml-auto"
             :disabled="!allowSave"
-            @click.prevent="updateExternalUrl"
+            @click.prevent="updateNetworkSetting"
           >
             {{ $t("common.update") }}
           </button>
@@ -66,6 +95,7 @@ import { useI18n } from "vue-i18n";
 
 interface LocalState {
   externalUrl: string;
+  gitopsWebhookUrl: string;
 }
 
 const { t } = useI18n();
@@ -74,10 +104,13 @@ const currentUser = useCurrentUser();
 
 const state = reactive<LocalState>({
   externalUrl: "",
+  gitopsWebhookUrl: "",
 });
 
 watchEffect(() => {
   state.externalUrl = settingStore.workspaceSetting?.externalUrl ?? "";
+  state.gitopsWebhookUrl =
+    settingStore.workspaceSetting?.gitopsWebhookUrl ?? "";
 });
 
 const allowEdit = computed((): boolean => {
@@ -88,23 +121,34 @@ const allowEdit = computed((): boolean => {
 });
 
 const allowSave = computed((): boolean => {
-  return (
-    allowEdit.value &&
+  if (!allowEdit.value) {
+    return false;
+  }
+
+  const externalUrlChanged =
     state.externalUrl !== "" &&
-    state.externalUrl !== settingStore.workspaceSetting?.externalUrl
-  );
+    state.externalUrl !== settingStore.workspaceSetting?.externalUrl;
+  const gitopsWebhookUrlChanged =
+    state.gitopsWebhookUrl !== "" &&
+    state.gitopsWebhookUrl !== settingStore.workspaceSetting?.gitopsWebhookUrl;
+  return externalUrlChanged || gitopsWebhookUrlChanged;
 });
 
 const handleExternalUrlChange = (event: InputEvent) => {
   state.externalUrl = (event.target as HTMLInputElement).value;
 };
 
-const updateExternalUrl = async () => {
+const handleGitOpsWebhookUrlChange = (event: InputEvent) => {
+  state.gitopsWebhookUrl = (event.target as HTMLInputElement).value;
+};
+
+const updateNetworkSetting = async () => {
   if (!allowSave.value) {
     return;
   }
   await settingStore.updateWorkspaceProfile({
     externalUrl: state.externalUrl,
+    gitopsWebhookUrl: state.gitopsWebhookUrl,
   });
   pushNotification({
     module: "bytebase",
@@ -113,5 +157,7 @@ const updateExternalUrl = async () => {
   });
 
   state.externalUrl = settingStore.workspaceSetting?.externalUrl ?? "";
+  state.gitopsWebhookUrl =
+    settingStore.workspaceSetting?.gitopsWebhookUrl ?? "";
 };
 </script>

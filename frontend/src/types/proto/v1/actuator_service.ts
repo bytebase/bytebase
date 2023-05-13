@@ -43,6 +43,8 @@ export interface ActuatorInfo {
   require2fa: boolean;
   /** workspace_id is the identifier for the workspace. */
   workspaceId: string;
+  /** gitops_webhook_url is the webhook URL for GitOps. */
+  gitopsWebhookUrl: string;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -148,6 +150,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     lastActiveTime: undefined,
     require2fa: false,
     workspaceId: "",
+    gitopsWebhookUrl: "",
   };
 }
 
@@ -191,6 +194,9 @@ export const ActuatorInfo = {
     }
     if (message.workspaceId !== "") {
       writer.uint32(106).string(message.workspaceId);
+    }
+    if (message.gitopsWebhookUrl !== "") {
+      writer.uint32(114).string(message.gitopsWebhookUrl);
     }
     return writer;
   },
@@ -293,6 +299,13 @@ export const ActuatorInfo = {
 
           message.workspaceId = reader.string();
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.gitopsWebhookUrl = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -317,6 +330,7 @@ export const ActuatorInfo = {
       lastActiveTime: isSet(object.lastActiveTime) ? fromJsonTimestamp(object.lastActiveTime) : undefined,
       require2fa: isSet(object.require2fa) ? Boolean(object.require2fa) : false,
       workspaceId: isSet(object.workspaceId) ? String(object.workspaceId) : "",
+      gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? String(object.gitopsWebhookUrl) : "",
     };
   },
 
@@ -335,6 +349,7 @@ export const ActuatorInfo = {
     message.lastActiveTime !== undefined && (obj.lastActiveTime = message.lastActiveTime.toISOString());
     message.require2fa !== undefined && (obj.require2fa = message.require2fa);
     message.workspaceId !== undefined && (obj.workspaceId = message.workspaceId);
+    message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
     return obj;
   },
 
@@ -357,6 +372,7 @@ export const ActuatorInfo = {
     message.lastActiveTime = object.lastActiveTime ?? undefined;
     message.require2fa = object.require2fa ?? false;
     message.workspaceId = object.workspaceId ?? "";
+    message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
     return message;
   },
 };

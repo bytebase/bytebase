@@ -66,4 +66,7 @@ message ActuatorInfo {
 
   // workspace_id is the identifier for the workspace.
   string workspace_id = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // gitops_webhook_url is the webhook URL for GitOps.
+  string gitops_webhook_url = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
