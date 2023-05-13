@@ -307,8 +307,7 @@ const state = reactive<LocalState>({
   instanceCount:
     subscriptionStore.subscription?.instanceCount ?? minimumInstanceCount,
 });
-const enterprisePlanFormLink =
-  "https://docs.google.com/forms/d/e/1FAIpQLSfe1JvroV4ckBMJo8hDXBYGeuzN0Sn1Ylg1lIUamN2jqu9Fcw/viewform";
+const enterprisePlanFormLink = "https://airtable.com/shrS2Ot5BfGExwemj";
 
 watch(
   () => subscriptionStore.subscription,
