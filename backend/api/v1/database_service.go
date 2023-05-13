@@ -40,8 +40,9 @@ import (
 )
 
 const (
-	filterKeyProject   = "project"
-	filterKeyStartTime = "start_time"
+	filterKeyEnvironment = "environment"
+	filterKeyProject     = "project"
+	filterKeyStartTime   = "start_time"
 
 	// Support order by count, latest_log_time, average_query_time, maximum_query_time,
 	// average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
@@ -687,6 +688,13 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 	var startLogDate, endLogDate *time.Time
 	for _, expr := range filters {
 		switch expr.key {
+		case filterKeyEnvironment:
+			reg := regexp.MustCompile(`^environments/(.+)`)
+			match := reg.FindStringSubmatch(expr.value)
+			if len(match) != 2 {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid environment filter %q", expr.value)
+			}
+			findDatabase.EnvironmentID = &match[1]
 		case filterKeyProject:
 			reg := regexp.MustCompile(`^projects/(.+)`)
 			match := reg.FindStringSubmatch(expr.value)

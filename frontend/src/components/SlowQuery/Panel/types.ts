@@ -37,17 +37,19 @@ export const defaultSlowQueryFilterParams = (): SlowQueryFilterParams => {
 
 export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
   const request = {} as Partial<ListSlowQueriesRequest>;
-  const { project, instance, database, fromTime, toTime } = filter;
+  const { project, environment, instance, database, fromTime, toTime } = filter;
 
+  const query: string[] = [];
   request.parent = "instances/-/databases/-";
   if (database && database.id !== UNKNOWN_ID) {
     request.parent = `instances/${database.instance.resourceId}/databases/${database.name}`;
   } else if (instance && instance.id !== UNKNOWN_ID) {
     request.parent = `instances/${instance.resourceId}/databases/-`;
+  } else if (environment && environment.id !== UNKNOWN_ID) {
+    request.parent = `instances/-/databases/-`;
+    query.push(`environment = "environments/${environment.resourceId}`);
   }
 
-  // TODO(d): fix environment filter.
-  const query: string[] = [];
   if (project) {
     query.push(`project = "projects/${project.resourceId}"`);
   }
