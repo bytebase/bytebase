@@ -47,7 +47,7 @@ export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
     request.parent = `instances/${instance.resourceId}/databases/-`;
   } else if (environment && environment.id !== UNKNOWN_ID) {
     request.parent = `instances/-/databases/-`;
-    query.push(`environment = "environments/${environment.resourceId}`);
+    query.push(`environment = "environments/${environment.resourceId}"`);
   }
 
   if (project) {
