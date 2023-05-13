@@ -45,15 +45,13 @@ func init() {
 
 // Driver is the Postgres driver.
 type Driver struct {
-	connectionCtx db.ConnectionContext
-	config        db.ConnectionConfig
+	config db.ConnectionConfig
 
 	db        *sql.DB
 	sshClient *ssh.Client
 	// connectionString is the connection string registered by pgx.
 	// Unregister connectionString if we don't need it.
 	connectionString string
-	baseDSN          string
 	databaseName     string
 }
 
