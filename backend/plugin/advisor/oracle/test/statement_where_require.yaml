@@ -1,0 +1,64 @@
+- statement: INSERT INTO t VALUES(1)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: DELETE FROM t1
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: WHERE clause is required for DELETE statement.
+      line: 1
+      details: ""
+- statement: UPDATE t1 SET a = 1
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: WHERE clause is required for UPDATE statement.
+      line: 1
+      details: ""
+- statement: DELETE FROM t1 WHERE a > 0
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: UPDATE t1 SET a = 1 WHERE a > 10
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: SELECT a FROM t
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: WHERE clause is required for SELECT statement.
+      line: 1
+      details: ""
+- statement: SELECT a FROM t WHERE a > 0
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: SELECT a FROM t WHERE a > (SELECT max(id) FROM user)
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: WHERE clause is required for SELECT statement.
+      line: 1
+      details: ""

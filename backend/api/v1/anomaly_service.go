@@ -71,33 +71,21 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 		}
 
 		// For resources filter, we only support filter by instance and database.
-		envID, insID, err := getEnvironmentInstanceID(resources[0])
+		insID, err := getInstanceID(resources[0])
 		if err != nil {
 			// Try to treat as database resource.
-			envID, insID, dbName, err := getEnvironmentInstanceDatabaseID(resources[0])
+			insID, dbName, err := getInstanceDatabaseID(resources[0])
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "Only support filter by instance and database in resource filter")
 			}
-			environmentID, instanceID, databaseName = envID, insID, dbName
+			instanceID, databaseName = insID, dbName
 		} else {
 			// Treat as instance resource.
-			environmentID, instanceID = envID, insID
+			instanceID = insID
 		}
-		if environmentID != "" {
-			env, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-				ResourceID: &environmentID,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-			if env == nil {
-				return nil, status.Errorf(codes.NotFound, "Environment %q not found", environmentID)
-			}
-		}
-		if environmentID != "" && instanceID != "" {
+		if instanceID != "" {
 			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-				EnvironmentID: &environmentID,
-				ResourceID:    &instanceID,
+				ResourceID: &instanceID,
 			})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())
@@ -142,9 +130,9 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 func convertToAnomaly(anomaly *store.AnomalyMessage, environmentID, instanceID, databaseName string) (*v1pb.Anomaly, error) {
 	var pbAnomaly v1pb.Anomaly
 	if environmentID != "" && instanceID != "" && databaseName != "" {
-		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID, databaseIDPrefix, databaseName)
+		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName)
 	} else if environmentID != "" && instanceID != "" {
-		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID)
+		pbAnomaly.Resource = fmt.Sprintf("%s%s", instanceNamePrefix, instanceID)
 	}
 
 	switch anomaly.Type {
@@ -169,7 +157,7 @@ func convertToAnomaly(anomaly *store.AnomalyMessage, environmentID, instanceID, 
 			DatabaseBackupPolicyViolationDetail: &v1pb.Anomaly_DatabaseBackupPolicyViolationDetail{
 				// The instance are bind to a specify environment, and cannot be moved to another environment in Bytebase.
 				// So it's safe to use environmentID here.
-				Parent:           fmt.Sprintf("%s%s/%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instanceID),
+				Parent:           fmt.Sprintf("%s%s", instanceNamePrefix, instanceID),
 				ExpectedSchedule: convertBackupPlanSchedule(detail.ExpectedBackupSchedule),
 				ActualSchedule:   convertBackupPlanSchedule(detail.ActualBackupSchedule),
 			},

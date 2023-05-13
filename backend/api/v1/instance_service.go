@@ -59,17 +59,8 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 
 // ListInstances lists all instances.
 func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListInstancesRequest) (*v1pb.ListInstancesResponse, error) {
-	environmentID, err := getEnvironmentID(request.Parent)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
 	find := &store.FindInstanceMessage{
 		ShowDeleted: request.ShowDeleted,
-	}
-	// Use "environments/-" to list all instances from all environments.
-	if environmentID != "-" {
-		find.EnvironmentID = &environmentID
 	}
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
@@ -87,10 +78,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if request.Instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
 	}
-	environmentID, err := getEnvironmentID(request.Parent)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 	if !isValidResourceID(request.InstanceId) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid instance ID %v", request.InstanceId)
 	}
@@ -106,7 +93,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	}
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	instance, err := s.store.CreateInstanceV2(ctx,
-		environmentID,
 		instanceMessage,
 		principalID,
 	)
@@ -500,16 +486,13 @@ func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
 }
 
 func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (*store.InstanceMessage, error) {
-	environmentID, instanceID, err := getEnvironmentInstanceID(name)
+	instanceID, err := getInstanceID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	find := &store.FindInstanceMessage{
 		ResourceID: &instanceID,
-	}
-	if environmentID != "-" {
-		find.EnvironmentID = &environmentID
 	}
 	instance, err := s.store.GetInstanceV2(ctx, find)
 	if err != nil {
@@ -550,13 +533,14 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	}
 
 	return &v1pb.Instance{
-		Name:         fmt.Sprintf("%s%s/%s%s", environmentNamePrefix, instance.EnvironmentID, instanceNamePrefix, instance.ResourceID),
+		Name:         fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID),
 		Uid:          fmt.Sprintf("%d", instance.UID),
 		Title:        instance.Title,
 		Engine:       engine,
 		ExternalLink: instance.ExternalLink,
 		DataSources:  dataSourceList,
 		State:        convertDeletedToState(instance.Deleted),
+		Environment:  fmt.Sprintf("environments/%s", instance.EnvironmentID),
 	}
 }
 
@@ -567,11 +551,12 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 	}
 
 	return &store.InstanceMessage{
-		ResourceID:   instanceID,
-		Title:        instance.Title,
-		Engine:       convertEngine(instance.Engine),
-		ExternalLink: instance.ExternalLink,
-		DataSources:  datasources,
+		ResourceID:    instanceID,
+		Title:         instance.Title,
+		Engine:        convertEngine(instance.Engine),
+		ExternalLink:  instance.ExternalLink,
+		DataSources:   datasources,
+		EnvironmentID: instance.Environment,
 	}, nil
 }
 

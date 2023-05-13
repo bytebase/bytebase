@@ -120,6 +120,8 @@ const (
 	SchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "column.disallow-set-charset"
 	// SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
 	SchemaRuleColumnMaximumCharacterLength SQLReviewRuleType = "column.maximum-character-length"
+	// SchemaRuleColumnMaximumVarcharLength enforce the maximum varchar length.
+	SchemaRuleColumnMaximumVarcharLength SQLReviewRuleType = "column.maximum-varchar-length"
 	// SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
 	SchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "column.auto-increment-initial-value"
 	// SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
@@ -128,6 +130,8 @@ const (
 	SchemaRuleCurrentTimeColumnCountLimit SQLReviewRuleType = "column.current-time-count-limit"
 	// SchemaRuleColumnRequireDefault enforce the column default.
 	SchemaRuleColumnRequireDefault SQLReviewRuleType = "column.require-default"
+	// SchemaRuleAddNotNullColumnRequireDefault enforce the adding not null column requires default.
+	SchemaRuleAddNotNullColumnRequireDefault SQLReviewRuleType = "column.add-not-null-require-default"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -263,7 +267,7 @@ func (rule *SQLReviewRule) Validate() error {
 			return err
 		}
 	case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit,
-		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleStatementAffectedRowLimit:
+		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnMaximumVarcharLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleStatementAffectedRowLimit:
 		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -768,6 +772,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLWhereRequirement, nil
 		case db.Postgres:
 			return PostgreSQLWhereRequirement, nil
+		case db.Oracle:
+			return OracleWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
@@ -775,6 +781,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLNoLeadingWildcardLike, nil
 		case db.Postgres:
 			return PostgreSQLNoLeadingWildcardLike, nil
+		case db.Oracle:
+			return OracleNoLeadingWildcardLike, nil
 		}
 	case SchemaRuleStatementNoSelectAll:
 		switch engine {
@@ -782,6 +790,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLNoSelectAll, nil
 		case db.Postgres:
 			return PostgreSQLNoSelectAll, nil
+		case db.Oracle:
+			return OracleNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
@@ -842,6 +852,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLColumnRequirement, nil
 		case db.Postgres:
 			return PostgreSQLColumnRequirement, nil
+		case db.Oracle:
+			return OracleColumnRequirement, nil
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
@@ -849,6 +861,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLColumnNoNull, nil
 		case db.Postgres:
 			return PostgreSQLColumnNoNull, nil
+		case db.Oracle:
+			return OracleColumnNoNull, nil
 		}
 	case SchemaRuleColumnDisallowChangeType:
 		switch engine {
@@ -888,6 +902,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLColumnTypeRestriction, nil
 		case db.Postgres:
 			return PostgreSQLColumnTypeDisallowList, nil
+		case db.Oracle:
+			return OracleColumnTypeDisallowList, nil
 		}
 	case SchemaRuleColumnDisallowSetCharset:
 		switch engine {
@@ -900,6 +916,12 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLColumnMaximumCharacterLength, nil
 		case db.Postgres:
 			return PostgreSQLColumnMaximumCharacterLength, nil
+		case db.Oracle:
+			return OracleColumnMaximumCharacterLength, nil
+		}
+	case SchemaRuleColumnMaximumVarcharLength:
+		if engine == db.Oracle {
+			return OracleColumnMaximumVarcharLength, nil
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {
@@ -922,6 +944,12 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLRequireColumnDefault, nil
 		case db.Postgres:
 			return PostgreSQLRequireColumnDefault, nil
+		case db.Oracle:
+			return OracleRequireColumnDefault, nil
+		}
+	case SchemaRuleAddNotNullColumnRequireDefault:
+		if engine == db.Oracle {
+			return OracleAddNotNullColumnRequireDefault, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
@@ -983,6 +1011,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLIndexKeyNumberLimit, nil
 		case db.Postgres:
 			return PostgreSQLIndexKeyNumberLimit, nil
+		case db.Oracle:
+			return OracleIndexKeyNumberLimit, nil
 		}
 	case SchemaRuleIndexTotalNumberLimit:
 		switch engine {
@@ -1046,6 +1076,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLInsertMustSpecifyColumn, nil
 		case db.Postgres:
 			return PostgreSQLInsertMustSpecifyColumn, nil
+		case db.Oracle:
+			return OracleInsertMustSpecifyColumn, nil
 		}
 	case SchemaRuleStatementInsertDisallowOrderByRand:
 		switch engine {

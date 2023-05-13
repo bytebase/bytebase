@@ -16,18 +16,18 @@ option go_package = "generated-go/v1";
 
 service DatabaseService {
   rpc GetDatabase(GetDatabaseRequest) returns (Database) {
-    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*}"};
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*}/databases"};
+    option (google.api.http) = {get: "/v1/{parent=instances/*}/databases"};
     option (google.api.method_signature) = "";
   }
 
   rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
     option (google.api.http) = {
-      patch: "/v1/{database.name=environments/*/instances/*/databases/*}"
+      patch: "/v1/{database.name=instances/*/databases/*}"
       body: "database"
     };
     option (google.api.method_signature) = "database,update_mask";
@@ -35,79 +35,79 @@ service DatabaseService {
 
   rpc BatchUpdateDatabases(BatchUpdateDatabasesRequest) returns (BatchUpdateDatabasesResponse) {
     option (google.api.http) = {
-      post: "/v1/{parent=environments/*/instances/*}/databases:batchUpdate"
+      post: "/v1/{parent=instances/*}/databases:batchUpdate"
       body: "*"
     };
   }
 
   rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
-    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*/metadata}"};
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
   }
 
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
-    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*/schema}"};
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
   }
 
   rpc GetBackupSetting(GetBackupSettingRequest) returns (BackupSetting) {
-    option (google.api.http) = {get: "/v1/{name=environments/*/instances/*/databases/*/backupSetting}"};
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/backupSetting}"};
   }
 
   rpc UpdateBackupSetting(UpdateBackupSettingRequest) returns (BackupSetting) {
     option (google.api.http) = {
-      patch: "/v1/{setting.name=environments/*/instances/*/databases/*/backupSetting}"
+      patch: "/v1/{setting.name=instances/*/databases/*/backupSetting}"
       body: "setting"
     };
   }
 
   rpc CreateBackup(CreateBackupRequest) returns (Backup) {
     option (google.api.http) = {
-      post: "/v1/{parent=environments/*/instances/*/databases/*}/backups"
+      post: "/v1/{parent=instances/*/databases/*}/backups"
       body: "backup"
     };
   }
 
   rpc ListBackup(ListBackupRequest) returns (ListBackupResponse) {
-    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/backups"};
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/backups"};
     option (google.api.method_signature) = "parent";
   }
 
   rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/slowQueries"};
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/slowQueries"};
     option (google.api.method_signature) = "parent";
   }
 
   rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=environments/*/instances/*/databases/*}/secrets"};
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/secrets"};
     option (google.api.method_signature) = "parent";
   }
 
   rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
     option (google.api.http) = {
-      patch: "/v1/{secret.name=environments/*/instances/*/databases/*/secrets/*}";
+      patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}";
       body: "secret";
     };
   }
 
   rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=environments/*/instances/*/databases/*/secrets/*}"};
+    option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/secrets/*}"};
   }
 
   rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
-    option (google.api.http) = {post: "/v1/{parent=environments/*/instances/*/databases/*}:adviseIndex"};
+    option (google.api.http) = {post: "/v1/{parent=instances/*/databases/*}:adviseIndex"};
     option (google.api.method_signature) = "parent";
   }
 }
 
 message GetDatabaseRequest {
   // The name of the database to retrieve.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListDatabasesRequest {
   // The parent, which owns this collection of databases.
-  // Format: environments/{environment}/instances/{instance}
-  // Use "environments/-/instances/-" to list all databases from all environments.
+  // Format: instances/{instance}
+  // Use "instances/-" to list all databases.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of databases to return. The service may return fewer than
@@ -141,7 +141,7 @@ message UpdateDatabaseRequest {
   // The database to update.
   //
   // The database's `name` field is used to identify the database to update.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}
   Database database = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
@@ -150,7 +150,7 @@ message UpdateDatabaseRequest {
 
 message BatchUpdateDatabasesRequest {
   // The parent resource shared by all databases being updated.
-  // Format: environments/{environment}/instances/{instance}
+  // Format: instances/{instance}
   // If the operation spans parents, a dash (-) may be accepted as a wildcard.
   // We only support updating the project of databases for now.
   string parent = 1;
@@ -167,19 +167,19 @@ message BatchUpdateDatabasesResponse {
 
 message GetDatabaseMetadataRequest {
   // The name of the database to retrieve metadata.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetDatabaseSchemaRequest {
   // The name of the database to retrieve schema.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetBackupSettingRequest {
   // The name of the database to retrieve backup setting.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
+  // Format: instances/{instance}/databases/{database}/backupSetting
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -191,7 +191,7 @@ message UpdateBackupSettingRequest {
 // CreateBackupRequest is the request message for CreateBackup.
 message CreateBackupRequest {
   // The parent resource where this backup will be created.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   Backup backup = 2 [(google.api.field_behavior) = REQUIRED];
@@ -200,7 +200,7 @@ message CreateBackupRequest {
 // ListBackupRequest is the request message for ListBackup.
 message ListBackupRequest {
   // The parent resource where this backup will be created.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // Not used. The maximum number of backups to return. The service may return fewer than
@@ -228,7 +228,7 @@ message ListBackupResponse {
 
 message Database {
   // The name of the database.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}
   // {database} is the database name in the instance.
   string name = 1;
 
@@ -467,7 +467,7 @@ message DatabaseSchema {
 // BackupSetting is the setting for database backup.
 message BackupSetting {
   // The name of the database backup setting.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}/backupSettings
+  // Format: instances/{instance}/databases/{database}/backupSettings
   string name = 1;
 
   // The default maximum age of a Backup created via this BackupPlan.
@@ -519,7 +519,7 @@ message Backup {
   }
 
   // The resource name of the database backup. backup-name is specified by the client.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name}
+  // Format: instances/{instance}/databases/{database}/backups/{backup-name}
   string name = 1;
 
   // The timestamp when the backup resource was created initally.
@@ -540,7 +540,7 @@ message Backup {
 
 // ListSlowQueriesRequest is the request of listing slow query.
 message ListSlowQueriesRequest {
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The filter of the slow query log.
@@ -574,7 +574,7 @@ message ListSlowQueriesResponse {
 // SlowQueryLog is the slow query log.
 message SlowQueryLog {
   // The resource of the slow query log.
-  // The format is "environments/{environment}/instances/{instance}/databases/{database}".
+  // The format is "instances/{instance}/databases/{database}".
   string resource = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The project of the slow query log.
@@ -647,7 +647,7 @@ message SlowQueryDetails {
 
 message ListSecretsRequest {
   // The parent of the secret.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // Not used. The maximum number of databases to return. The service may return fewer than
@@ -687,7 +687,7 @@ message UpdateSecretRequest {
 message DeleteSecretRequest {
   // The name of the secret to be deleted.
   // Format:
-  // environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+  // instances/{instance}/databases/{database}/secrets/{secret}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -695,7 +695,7 @@ message DeleteSecretRequest {
 message Secret {
   // name is the unique name of the secret, which is specified by the client.
   // Format:
-  // environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+  // instances/{instance}/databases/{database}/secrets/{secret}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
   // Not used. The timestamp when the secret resource was created initally.
@@ -713,7 +713,7 @@ message Secret {
 
 // AdviseIndexRequest is the request of advising index.
 message AdviseIndexRequest {
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The statement to be advised.

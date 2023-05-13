@@ -4,33 +4,31 @@
       <div class="flex flex-row space-x-2 items-center">
         <!-- This awkward code is author couldn't figure out proper way to use dynamic src under vite
                    https://github.com/vitejs/vite/issues/1265 -->
-        <template v-if="projectWebhook.type == 'bb.plugin.webhook.slack'">
+        <template v-if="projectWebhook.type === Webhook_Type.TYPE_SLACK">
           <img class="h-6 w-6" src="../assets/slack-logo.png" alt="" />
         </template>
-        <template
-          v-else-if="projectWebhook.type == 'bb.plugin.webhook.discord'"
-        >
+        <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_DISCORD">
           <img class="h-6 w-6" src="../assets/discord-logo.svg" />
         </template>
-        <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.teams'">
+        <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_TEAMS">
           <img class="h-6 w-6" src="../assets/teams-logo.svg" />
         </template>
         <template
-          v-else-if="projectWebhook.type == 'bb.plugin.webhook.dingtalk'"
+          v-else-if="projectWebhook.type === Webhook_Type.TYPE_DINGTALK"
         >
           <img class="h-6 w-6" src="../assets/dingtalk-logo.png" />
         </template>
-        <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.feishu'">
+        <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_FEISHU">
           <img class="h-6 w-6" src="../assets/feishu-logo.webp" />
         </template>
-        <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.wecom'">
+        <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_WECOM">
           <img class="h-6 w-6" src="../assets/wecom-logo.png" />
         </template>
-        <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.custom'">
+        <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_CUSTOM">
           <heroicons-outline:puzzle class="w-6 h-6" />
         </template>
         <h3 class="text-xl leading-6 font-medium text-main">
-          {{ projectWebhook.name }}
+          {{ projectWebhook.title }}
         </h3>
       </div>
       <button
@@ -51,81 +49,74 @@
   </div>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent } from "vue";
+<script lang="ts" setup>
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
-import { ProjectWebhookTestResult } from "../types";
-import { useI18n } from "vue-i18n";
 import {
   pushNotification,
-  useProjectWebhookStore,
-  useProjectStore,
+  useProjectV1Store,
+  useProjectWebhookV1Store,
+  useGracefulRequest,
 } from "@/store";
+import { Webhook_Type } from "@/types/proto/v1/project_service";
+import { emptyProjectWebhook } from "@/types";
 
-export default defineComponent({
-  name: "ProjectWebhookDetail",
-  components: { ProjectWebhookForm },
-  props: {
-    projectSlug: {
-      required: true,
-      type: String,
-    },
-    projectWebhookSlug: {
-      required: true,
-      type: String,
-    },
-    allowEdit: {
-      required: true,
-      type: Boolean,
-    },
+const props = defineProps({
+  projectSlug: {
+    required: true,
+    type: String,
   },
-  setup(props) {
-    const { t } = useI18n();
-    const projectWebhookStore = useProjectWebhookStore();
-    const projectStore = useProjectStore();
-
-    const project = computed(() => {
-      return projectStore.getProjectById(idFromSlug(props.projectSlug));
-    });
-
-    const projectWebhook = computed(() => {
-      return projectWebhookStore.projectWebhookById(
-        idFromSlug(props.projectSlug),
-        idFromSlug(props.projectWebhookSlug)
-      );
-    });
-
-    const testWebhook = () => {
-      projectWebhookStore
-        .testProjectWebhookById({
-          projectId: idFromSlug(props.projectSlug),
-          projectWebhookId: idFromSlug(props.projectWebhookSlug),
-        })
-        .then((testResult: ProjectWebhookTestResult) => {
-          if (testResult.error) {
-            pushNotification({
-              module: "bytebase",
-              style: "CRITICAL",
-              title: t("project.webhook.fail-tested-title"),
-              description: testResult.error,
-              manualHide: true,
-            });
-          } else {
-            pushNotification({
-              module: "bytebase",
-              style: "SUCCESS",
-              title: t("project.webhook.success-tested-prompt"),
-            });
-          }
-        });
-    };
-
-    return {
-      project,
-      projectWebhook,
-      testWebhook,
-    };
+  projectWebhookSlug: {
+    required: true,
+    type: String,
+  },
+  allowEdit: {
+    required: true,
+    type: Boolean,
   },
 });
+
+const { t } = useI18n();
+const projectV1Store = useProjectV1Store();
+const projectWebhookV1Store = useProjectWebhookV1Store();
+
+const project = computed(() => {
+  return projectV1Store.getProjectByUID(idFromSlug(props.projectSlug));
+});
+
+const projectWebhook = computed(() => {
+  const id = idFromSlug(props.projectWebhookSlug);
+  return (
+    projectWebhookV1Store.getProjectWebhookFromProjectById(project.value, id) ??
+    emptyProjectWebhook()
+  );
+});
+
+const testWebhook = () => {
+  useGracefulRequest(async () => {
+    const result = await useProjectWebhookV1Store().testProjectWebhook(
+      project.value,
+      projectWebhook.value
+    );
+
+    if (result.error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("project.webhook.fail-tested-title"),
+        description: result.error,
+        manualHide: true,
+      });
+    } else {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("project.webhook.success-tested-prompt"),
+      });
+    }
+  });
+};
 </script>

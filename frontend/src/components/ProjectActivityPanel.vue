@@ -7,7 +7,7 @@
       <PagedActivityTableVue
         :activity-find="{
           typePrefix: ['bb.project.', 'bb.database.'],
-          container: project.id,
+          container: project.uid,
           order: 'DESC',
         }"
         session-key="project-activity-panel"
@@ -21,20 +21,16 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, PropType } from "vue";
-import { Project } from "../types";
+<script lang="ts" setup>
+import { PropType } from "vue";
 import ActivityTable from "../components/ActivityTable.vue";
 import PagedActivityTableVue from "@/components/PagedActivityTable.vue";
+import { Project } from "@/types/proto/v1/project_service";
 
-export default defineComponent({
-  name: "ProjectActivityPanel",
-  components: { ActivityTable, PagedActivityTableVue },
-  props: {
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
+defineProps({
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
   },
 });
 </script>

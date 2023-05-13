@@ -14,7 +14,7 @@ export const protobufPackage = "bytebase.v1";
 export interface GetDatabaseRequest {
   /**
    * The name of the database to retrieve.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}
    */
   name: string;
 }
@@ -22,8 +22,8 @@ export interface GetDatabaseRequest {
 export interface ListDatabasesRequest {
   /**
    * The parent, which owns this collection of databases.
-   * Format: environments/{environment}/instances/{instance}
-   * Use "environments/-/instances/-" to list all databases from all environments.
+   * Format: instances/{instance}
+   * Use "instances/-" to list all databases.
    */
   parent: string;
   /**
@@ -63,7 +63,7 @@ export interface UpdateDatabaseRequest {
    * The database to update.
    *
    * The database's `name` field is used to identify the database to update.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}
    */
   database?: Database;
   /** The list of fields to update. */
@@ -73,7 +73,7 @@ export interface UpdateDatabaseRequest {
 export interface BatchUpdateDatabasesRequest {
   /**
    * The parent resource shared by all databases being updated.
-   * Format: environments/{environment}/instances/{instance}
+   * Format: instances/{instance}
    * If the operation spans parents, a dash (-) may be accepted as a wildcard.
    * We only support updating the project of databases for now.
    */
@@ -93,7 +93,7 @@ export interface BatchUpdateDatabasesResponse {
 export interface GetDatabaseMetadataRequest {
   /**
    * The name of the database to retrieve metadata.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}
    */
   name: string;
 }
@@ -101,7 +101,7 @@ export interface GetDatabaseMetadataRequest {
 export interface GetDatabaseSchemaRequest {
   /**
    * The name of the database to retrieve schema.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}
    */
   name: string;
 }
@@ -109,7 +109,7 @@ export interface GetDatabaseSchemaRequest {
 export interface GetBackupSettingRequest {
   /**
    * The name of the database to retrieve backup setting.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting
+   * Format: instances/{instance}/databases/{database}/backupSetting
    */
   name: string;
 }
@@ -123,7 +123,7 @@ export interface UpdateBackupSettingRequest {
 export interface CreateBackupRequest {
   /**
    * The parent resource where this backup will be created.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}
    */
   parent: string;
   backup?: Backup;
@@ -133,7 +133,7 @@ export interface CreateBackupRequest {
 export interface ListBackupRequest {
   /**
    * The parent resource where this backup will be created.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}
    */
   parent: string;
   /**
@@ -166,7 +166,7 @@ export interface ListBackupResponse {
 export interface Database {
   /**
    * The name of the database.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}
    * {database} is the database name in the instance.
    */
   name: string;
@@ -371,7 +371,7 @@ export interface DatabaseSchema {
 export interface BackupSetting {
   /**
    * The name of the database backup setting.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}/backupSettings
+   * Format: instances/{instance}/databases/{database}/backupSettings
    */
   name: string;
   /**
@@ -396,7 +396,7 @@ export interface BackupSetting {
 export interface Backup {
   /**
    * The resource name of the database backup. backup-name is specified by the client.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name}
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
    */
   name: string;
   /** The timestamp when the backup resource was created initally. */
@@ -513,7 +513,7 @@ export function backup_BackupStateToJSON(object: Backup_BackupState): string {
 
 /** ListSlowQueriesRequest is the request of listing slow query. */
 export interface ListSlowQueriesRequest {
-  /** Format: environments/{environment}/instances/{instance}/databases/{database} */
+  /** Format: instances/{instance}/databases/{database} */
   parent: string;
   /**
    * The filter of the slow query log.
@@ -550,7 +550,7 @@ export interface ListSlowQueriesResponse {
 export interface SlowQueryLog {
   /**
    * The resource of the slow query log.
-   * The format is "environments/{environment}/instances/{instance}/databases/{database}".
+   * The format is "instances/{instance}/databases/{database}".
    */
   resource: string;
   /**
@@ -609,7 +609,7 @@ export interface SlowQueryDetails {
 export interface ListSecretsRequest {
   /**
    * The parent of the secret.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}
    */
   parent: string;
   /**
@@ -652,7 +652,7 @@ export interface DeleteSecretRequest {
   /**
    * The name of the secret to be deleted.
    * Format:
-   * environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+   * instances/{instance}/databases/{database}/secrets/{secret}
    */
   name: string;
 }
@@ -662,7 +662,7 @@ export interface Secret {
   /**
    * name is the unique name of the secret, which is specified by the client.
    * Format:
-   * environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret}
+   * instances/{instance}/databases/{database}/secrets/{secret}
    */
   name: string;
   /** Not used. The timestamp when the secret resource was created initally. */
@@ -677,7 +677,7 @@ export interface Secret {
 
 /** AdviseIndexRequest is the request of advising index. */
 export interface AdviseIndexRequest {
-  /** Format: environments/{environment}/instances/{instance}/databases/{database} */
+  /** Format: instances/{instance}/databases/{database} */
   parent: string;
   /** The statement to be advised. */
   statement: string;
@@ -4543,9 +4543,9 @@ export const DatabaseServiceDefinition = {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              51,
+              36,
               18,
-              49,
+              34,
               47,
               118,
               49,
@@ -4556,21 +4556,6 @@ export const DatabaseServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -4611,9 +4596,9 @@ export const DatabaseServiceDefinition = {
           8410: [new Uint8Array([0])],
           578365826: [
             new Uint8Array([
-              51,
+              36,
               18,
-              49,
+              34,
               47,
               118,
               49,
@@ -4626,21 +4611,6 @@ export const DatabaseServiceDefinition = {
               110,
               116,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -4703,7 +4673,7 @@ export const DatabaseServiceDefinition = {
           ],
           578365826: [
             new Uint8Array([
-              70,
+              55,
               58,
               8,
               100,
@@ -4715,7 +4685,7 @@ export const DatabaseServiceDefinition = {
               115,
               101,
               50,
-              58,
+              43,
               47,
               118,
               49,
@@ -4735,21 +4705,6 @@ export const DatabaseServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -4789,12 +4744,12 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              66,
+              51,
               58,
               1,
               42,
               34,
-              61,
+              46,
               47,
               118,
               49,
@@ -4807,21 +4762,6 @@ export const DatabaseServiceDefinition = {
               110,
               116,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -4871,9 +4811,9 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              60,
+              45,
               18,
-              58,
+              43,
               47,
               118,
               49,
@@ -4884,21 +4824,6 @@ export const DatabaseServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -4947,9 +4872,9 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              58,
+              43,
               18,
-              56,
+              41,
               47,
               118,
               49,
@@ -4960,21 +4885,6 @@ export const DatabaseServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -5021,9 +4931,9 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              65,
+              50,
               18,
-              63,
+              48,
               47,
               118,
               49,
@@ -5034,21 +4944,6 @@ export const DatabaseServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -5102,7 +4997,7 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              82,
+              67,
               58,
               7,
               115,
@@ -5113,7 +5008,7 @@ export const DatabaseServiceDefinition = {
               110,
               103,
               50,
-              71,
+              56,
               47,
               118,
               49,
@@ -5132,21 +5027,6 @@ export const DatabaseServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -5200,7 +5080,7 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              69,
+              54,
               58,
               6,
               98,
@@ -5210,7 +5090,7 @@ export const DatabaseServiceDefinition = {
               117,
               112,
               34,
-              59,
+              44,
               47,
               118,
               49,
@@ -5223,21 +5103,6 @@ export const DatabaseServiceDefinition = {
               110,
               116,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -5286,9 +5151,9 @@ export const DatabaseServiceDefinition = {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              61,
+              46,
               18,
-              59,
+              44,
               47,
               118,
               49,
@@ -5301,21 +5166,6 @@ export const DatabaseServiceDefinition = {
               110,
               116,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -5364,9 +5214,9 @@ export const DatabaseServiceDefinition = {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              65,
+              50,
               18,
-              63,
+              48,
               47,
               118,
               49,
@@ -5379,21 +5229,6 @@ export const DatabaseServiceDefinition = {
               110,
               116,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -5446,9 +5281,9 @@ export const DatabaseServiceDefinition = {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              61,
+              46,
               18,
-              59,
+              44,
               47,
               118,
               49,
@@ -5461,21 +5296,6 @@ export const DatabaseServiceDefinition = {
               110,
               116,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -5523,7 +5343,7 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              76,
+              61,
               58,
               6,
               115,
@@ -5533,7 +5353,7 @@ export const DatabaseServiceDefinition = {
               101,
               116,
               50,
-              66,
+              51,
               47,
               118,
               49,
@@ -5551,21 +5371,6 @@ export const DatabaseServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -5615,9 +5420,9 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              61,
+              46,
               42,
-              59,
+              44,
               47,
               118,
               49,
@@ -5628,21 +5433,6 @@ export const DatabaseServiceDefinition = {
               109,
               101,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,
@@ -5693,9 +5483,9 @@ export const DatabaseServiceDefinition = {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
           578365826: [
             new Uint8Array([
-              65,
+              50,
               34,
-              63,
+              48,
               47,
               118,
               49,
@@ -5708,21 +5498,6 @@ export const DatabaseServiceDefinition = {
               110,
               116,
               61,
-              101,
-              110,
-              118,
-              105,
-              114,
-              111,
-              110,
-              109,
-              101,
-              110,
-              116,
-              115,
-              47,
-              42,
-              47,
               105,
               110,
               115,

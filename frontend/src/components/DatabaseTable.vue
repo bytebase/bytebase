@@ -239,13 +239,13 @@ import {
   isPITRDatabase,
   VueClass,
 } from "../utils";
-import { Database, Policy } from "../types";
+import { Database } from "../types";
 import { BBGridColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import TenantIcon from "./TenantIcon.vue";
 import DatabaseName from "@/components/DatabaseName.vue";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
-import { useCurrentUser, usePolicyStore } from "@/store";
+import { useCurrentUser } from "@/store";
 import {
   ColumnDef,
   getCoreRowModel,
@@ -253,6 +253,12 @@ import {
   useVueTable,
 } from "@tanstack/vue-table";
 import { getScrollParent } from "@/plugins/demo/utils";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import {
+  Policy,
+  PolicyType,
+  PolicyResourceType,
+} from "@/types/proto/v1/org_policy_service";
 
 type Mode =
   | "ALL"
@@ -361,11 +367,11 @@ const policyList = ref<Policy[]>([]);
 
 const preparePolicyList = () => {
   if (showSQLEditorLink.value) {
-    usePolicyStore()
-      .fetchPolicyListByResourceTypeAndPolicyType(
-        "database",
-        "bb.policy.access-control"
-      )
+    usePolicyV1Store()
+      .fetchPolicies({
+        resourceType: PolicyResourceType.DATABASE,
+        policyType: PolicyType.ACCESS_CONTROL,
+      })
       .then((list) => (policyList.value = list));
   }
 };

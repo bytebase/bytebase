@@ -630,10 +630,7 @@ import {
   OracleSIDAndServiceNameInput,
 } from "./InstanceForm";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
-import {
-  environmentNamePrefix,
-  instanceNamePrefix,
-} from "@/store/modules/v1/common";
+import { instanceNamePrefix } from "@/store/modules/v1/common";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 
 const props = defineProps({
@@ -1181,7 +1178,7 @@ const validateResourceId = async (
 
   try {
     const instance = await instanceV1Store.getOrFetchInstanceByName(
-      environmentNamePrefix + "-/" + instanceNamePrefix + resourceId
+      instanceNamePrefix + resourceId
     );
     if (instance) {
       return [

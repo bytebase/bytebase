@@ -35,6 +35,7 @@ import {
   ExecuteConfig,
   ExecuteOption,
   SQLDialect,
+  UNKNOWN_ID,
 } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import { useInstanceEditorLanguage } from "@/utils";
@@ -76,6 +77,11 @@ const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 const selectedInstance = useInstanceById(
   computed(() => tabStore.currentTab.connection.instanceId)
 );
+const selectedDatabase = computed(() => {
+  const id = tabStore.currentTab.connection.databaseId;
+  if (id === UNKNOWN_ID) return undefined;
+  return databaseStore.getDatabaseById(id);
+});
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
@@ -310,16 +316,20 @@ const handleEditorReady = async () => {
   watchEffect(async () => {
     if (selectedInstance.value) {
       const databaseMap: Map<Database, TableMetadata[]> = new Map();
-      const databaseList = databaseStore.getDatabaseListByInstanceId(
-        selectedInstance.value.id
-      );
+      const databaseList = selectedDatabase.value
+        ? [selectedDatabase.value]
+        : databaseStore.getDatabaseListByInstanceId(selectedInstance.value.id);
       for (const database of databaseList) {
         const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
           database.id
         );
         databaseMap.set(database, tableList);
       }
-      editorRef.value?.setEditorAutoCompletionContext(databaseMap);
+      const connectionScope = selectedDatabase.value ? "database" : "instance";
+      editorRef.value?.setEditorAutoCompletionContext(
+        databaseMap,
+        connectionScope
+      );
     }
   });
 

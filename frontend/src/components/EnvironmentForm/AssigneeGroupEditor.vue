@@ -1,5 +1,8 @@
 <template>
-  <div v-if="payload.value === 'MANUAL_APPROVAL_ALWAYS'" class="my-4 space-y-4">
+  <div
+    v-if="payload.defaultStrategy === ApprovalStrategy.MANUAL"
+    class="my-4 space-y-4"
+  >
     <div class="flex space-x-4">
       <input
         v-model="state.assigneeGroup"
@@ -7,7 +10,7 @@
         tabindex="-1"
         type="radio"
         class="text-accent disabled:text-accent-disabled focus:ring-accent"
-        value="WORKSPACE_OWNER_OR_DBA"
+        :value="ApprovalGroup.APPROVAL_GROUP_DBA"
         :disabled="!allowEdit"
       />
       <div class="-mt-0.5">
@@ -23,7 +26,7 @@
         tabindex="-1"
         type="radio"
         class="text-accent disabled:text-accent-disabled focus:ring-accent"
-        value="PROJECT_OWNER"
+        :value="ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER"
         :disabled="!allowEdit"
       />
       <div class="-mt-0.5">
@@ -38,15 +41,15 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive, watch } from "vue";
 import {
-  AssigneeGroup,
-  AssigneeGroupValue,
-  DefaultAssigneeGroup,
-  PipelineApprovalPolicyPayload,
   Policy,
-} from "@/types";
+  ApprovalGroup,
+  ApprovalStrategy,
+  DeploymentApprovalStrategy,
+} from "@/types/proto/v1/org_policy_service";
+import { DeploymentType } from "@/types/proto/v1/deployment";
 
 type LocalState = {
-  assigneeGroup: AssigneeGroupValue;
+  assigneeGroup: ApprovalGroup;
 };
 
 const props = defineProps({
@@ -61,40 +64,42 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (event: "update", assigneeGroupList: AssigneeGroup[]): void;
+  (event: "update", assigneeGroupList: DeploymentApprovalStrategy[]): void;
 }>();
 
 const payload = computed(() => {
-  return props.policy.payload as PipelineApprovalPolicyPayload;
+  return props.policy.deploymentApprovalPolicy!;
 });
 
-const getAssigneeGroup = (): AssigneeGroupValue => {
-  const { value, assigneeGroupList } = payload.value;
-  if (value === "MANUAL_APPROVAL_NEVER") {
-    return "WORKSPACE_OWNER_OR_DBA";
+const getAssigneeGroup = (): ApprovalGroup => {
+  if (payload.value.defaultStrategy === ApprovalStrategy.AUTOMATIC) {
+    return ApprovalGroup.APPROVAL_GROUP_DBA;
   }
 
-  if (assigneeGroupList.length === 0) {
-    return DefaultAssigneeGroup;
+  if (payload.value.deploymentApprovalStrategies.length == 0) {
+    return ApprovalGroup.APPROVAL_GROUP_DBA;
   }
-  return assigneeGroupList[0].value;
+
+  return payload.value.deploymentApprovalStrategies[0].approvalGroup;
 };
 
 const state = reactive<LocalState>({
   assigneeGroup: getAssigneeGroup(),
 });
 
-const getAssigneeGroupListByValue = (value: AssigneeGroupValue) => {
-  const issueTypeList: Array<AssigneeGroup["issueType"]> = [
-    "bb.issue.database.schema.update",
-    "bb.issue.database.data.update",
-    "bb.issue.database.schema.update.ghost",
+const getAssigneeGroupListByValue = (
+  approvalGroup: ApprovalGroup
+): DeploymentApprovalStrategy[] => {
+  const issueTypeList: Array<DeploymentType> = [
+    DeploymentType.DATABASE_DDL,
+    DeploymentType.DATABASE_DML,
+    DeploymentType.DATABASE_DDL_GHOST,
   ];
-  const assigneeGroupList = issueTypeList.map<AssigneeGroup>((issueType) => ({
-    issueType,
-    value,
+  return issueTypeList.map((deploymentType) => ({
+    deploymentType,
+    approvalGroup,
+    approvalStrategy: payload.value.defaultStrategy,
   }));
-  return assigneeGroupList;
 };
 
 // Editing different AssigneeGroup for each issueType is not supported by now.
@@ -108,12 +113,12 @@ watch(
 );
 
 watch(
-  () => payload.value.value,
+  () => payload.value?.defaultStrategy,
   (value) => {
-    if (value === "MANUAL_APPROVAL_NEVER") {
+    if (value === ApprovalStrategy.AUTOMATIC) {
       // Empty the array since it's meaningless when MANUAL_APPROVAL_NEVER
       emit("update", []);
-    } else if (value === "MANUAL_APPROVAL_ALWAYS") {
+    } else if (value === ApprovalStrategy.MANUAL) {
       // Sync the local state (DBA_OR_OWNER / PROJECT_OWNER) to the payload
       // when switching from "skip manual approval" -> "require manual approval"
       emit("update", getAssigneeGroupListByValue(state.assigneeGroup));

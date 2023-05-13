@@ -37,7 +37,6 @@ import Home from "../views/Home.vue";
 import {
   hasFeature,
   useVCSStore,
-  useProjectWebhookStore,
   useDataSourceStore,
   useSQLReviewStore,
   useProjectStore,
@@ -57,6 +56,8 @@ import {
   useCurrentUser,
   useSubscriptionStore,
   useUserStore,
+  useProjectV1Store,
+  useProjectWebhookV1Store,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -165,6 +166,8 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
@@ -172,6 +175,8 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ];
                 const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
@@ -180,6 +185,8 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
@@ -187,18 +194,24 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ];
                 const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.schema.sync",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ];
                 return new Map([
                   ["OWNER", ownerList],
@@ -559,7 +572,7 @@ const routes: Array<RouteRecordRaw> = [
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.sqlReviewPolicySlug as string;
                     return (
-                      useSQLReviewStore().getReviewPolicyByEnvironmentId(
+                      useSQLReviewStore().getReviewPolicyByEnvironmentUID(
                         idFromSlug(slug)
                       )?.name ?? ""
                     );
@@ -765,6 +778,11 @@ const routes: Array<RouteRecordRaw> = [
                     );
                   }
 
+                  actionList.push(
+                    "quickaction.bb.issue.grant.request.querier",
+                    "quickaction.bb.issue.grant.request.exporter"
+                  );
+
                   return new Map([
                     ["OWNER", actionList],
                     ["DBA", actionList],
@@ -818,11 +836,17 @@ const routes: Array<RouteRecordRaw> = [
                     const projectSlug = route.params.projectSlug as string;
                     const projectWebhookSlug = route.params
                       .projectWebhookSlug as string;
-                    return `${t("common.webhook")} - ${
-                      useProjectWebhookStore().projectWebhookById(
-                        idFromSlug(projectSlug),
+                    const project = useProjectV1Store().getProjectByUID(
+                      idFromSlug(projectSlug)
+                    );
+                    const webhook =
+                      useProjectWebhookV1Store().getProjectWebhookFromProjectById(
+                        project,
                         idFromSlug(projectWebhookSlug)
-                      ).name
+                      );
+
+                    return `${t("common.webhook")} - ${
+                      webhook?.title ?? "unknown"
                     }`;
                   },
                   allowBookmark: true,
@@ -1105,8 +1129,9 @@ router.beforeEach((to, from, next) => {
   const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
   const routerStore = useRouterStore();
-  const projectWebhookStore = useProjectWebhookStore();
   const projectStore = useProjectStore();
+  const projectV1Store = useProjectV1Store();
+  const projectWebhookV1Store = useProjectWebhookV1Store();
 
   const isLoggedIn = authStore.isLoggedIn();
 
@@ -1426,25 +1451,25 @@ router.beforeEach((to, from, next) => {
   if (projectSlug) {
     projectStore
       .fetchProjectById(idFromSlug(projectSlug))
-      .then(() => {
+      .then(() => projectV1Store.fetchProjectByUID(idFromSlug(projectSlug)))
+      .then((project) => {
         if (!projectWebhookSlug) {
           next();
         } else {
-          projectWebhookStore
-            .fetchProjectWebhookById({
-              projectId: idFromSlug(projectSlug),
-              projectWebhookId: idFromSlug(projectWebhookSlug),
-            })
-            .then(() => {
-              next();
-            })
-            .catch((error) => {
-              next({
-                name: "error.404",
-                replace: false,
-              });
-              throw error;
+          const webhook =
+            projectWebhookV1Store.getProjectWebhookFromProjectById(
+              project,
+              idFromSlug(projectWebhookSlug)
+            );
+          if (webhook) {
+            next();
+          } else {
+            next({
+              name: "error.404",
+              replace: false,
             });
+            throw new Error("not found");
+          }
         }
       })
       .catch((error) => {
@@ -1557,7 +1582,7 @@ router.beforeEach((to, from, next) => {
 
   if (sqlReviewPolicySlug) {
     useSQLReviewStore()
-      .fetchReviewPolicyByEnvironmentId(idFromSlug(sqlReviewPolicySlug))
+      .getOrFetchReviewPolicyByEnvironmentUID(idFromSlug(sqlReviewPolicySlug))
       .then(() => {
         next();
       })

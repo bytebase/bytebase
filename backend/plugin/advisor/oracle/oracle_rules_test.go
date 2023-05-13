@@ -13,6 +13,18 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleTableRequirePK,
 		advisor.SchemaRuleTableNoFK,
 		advisor.SchemaRuleTableNaming,
+		advisor.SchemaRuleRequiredColumn,
+		advisor.SchemaRuleColumnTypeDisallowList,
+		advisor.SchemaRuleColumnMaximumCharacterLength,
+		advisor.SchemaRuleStatementNoSelectAll,
+		advisor.SchemaRuleStatementNoLeadingWildcardLike,
+		advisor.SchemaRuleStatementRequireWhere,
+		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
+		advisor.SchemaRuleIndexKeyNumberLimit,
+		advisor.SchemaRuleColumnNotNull,
+		advisor.SchemaRuleColumnRequireDefault,
+		advisor.SchemaRuleAddNotNullColumnRequireDefault,
+		advisor.SchemaRuleColumnMaximumVarcharLength,
 	}
 
 	for _, rule := range oracleRules {

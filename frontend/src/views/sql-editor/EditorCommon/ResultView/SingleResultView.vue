@@ -46,7 +46,9 @@
         >
           {{ $t("sql-editor.visualize-explain") }}
         </NButton>
+        <!-- In enterprise plan, we don't allow export data in SQL editor. -->
         <NDropdown
+          v-if="!hasCustomRoleFeature"
           trigger="hover"
           :options="exportDropdownOptions"
           @select="handleExportBtnClick"
@@ -108,7 +110,12 @@ import dayjs from "dayjs";
 
 import type { SingleSQLResult } from "@/types";
 import { createExplainToken, instanceHasStructuredQueryResult } from "@/utils";
-import { useInstanceStore, useTabStore, RESULT_ROWS_LIMIT } from "@/store";
+import {
+  useInstanceStore,
+  useTabStore,
+  RESULT_ROWS_LIMIT,
+  featureToRef,
+} from "@/store";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
@@ -158,6 +165,8 @@ const showSearchFeature = computed(() => {
   );
   return instanceHasStructuredQueryResult(instance);
 });
+
+const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 
 // use a debounced value to improve performance when typing rapidly
 const keyword = debouncedRef(

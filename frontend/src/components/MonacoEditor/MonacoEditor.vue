@@ -360,7 +360,8 @@ const formatEditorContent = () => {
 };
 
 const setEditorAutoCompletionContext = (
-  databaseMap: Map<Database, TableMetadata[]>
+  databaseMap: Map<Database, TableMetadata[]>,
+  connectionScope: "instance" | "database" = "database"
 ) => {
   const databases = [];
   for (const [database, tableList] of databaseMap) {
@@ -378,6 +379,7 @@ const setEditorAutoCompletionContext = (
   languageClientRef.value?.changeSchema({
     databases: databases,
   });
+  languageClientRef.value?.changeConnectionScope(connectionScope);
 };
 
 defineExpose({

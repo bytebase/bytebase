@@ -34,12 +34,12 @@ func NewInstanceRoleService(store *store.Store, dbFactory *dbfactory.DBFactory) 
 
 // GetInstanceRole gets an role.
 func (s *InstanceRoleService) GetInstanceRole(ctx context.Context, request *v1pb.GetInstanceRoleRequest) (*v1pb.InstanceRole, error) {
-	environmentID, instanceID, roleName, err := getEnvironmentInstanceRoleID(request.Name)
+	instanceID, roleName, err := getInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.getInstanceMessage(ctx, environmentID, instanceID)
+	instance, err := s.getInstanceMessage(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -70,12 +70,12 @@ func (s *InstanceRoleService) GetInstanceRole(ctx context.Context, request *v1pb
 
 // ListInstanceRoles lists all roles in an instance.
 func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, request *v1pb.ListInstanceRolesRequest) (*v1pb.ListInstanceRolesResponse, error) {
-	environmentID, instanceID, err := getEnvironmentInstanceID(request.Parent)
+	instanceID, err := getInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.getInstanceMessage(ctx, environmentID, instanceID)
+	instance, err := s.getInstanceMessage(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -110,11 +110,11 @@ func (s *InstanceRoleService) CreateInstanceRole(ctx context.Context, request *v
 	if request.Role == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "role must be set")
 	}
-	environmentID, instanceID, err := getEnvironmentInstanceID(request.Parent)
+	instanceID, err := getInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	instance, err := s.getInstanceMessage(ctx, environmentID, instanceID)
+	instance, err := s.getInstanceMessage(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -160,12 +160,12 @@ func (s *InstanceRoleService) UpdateInstanceRole(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	environmentID, instanceID, roleName, err := getEnvironmentInstanceRoleID(request.Role.Name)
+	instanceID, roleName, err := getInstanceRoleID(request.Role.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.getInstanceMessage(ctx, environmentID, instanceID)
+	instance, err := s.getInstanceMessage(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -217,12 +217,12 @@ func (s *InstanceRoleService) UpdateInstanceRole(ctx context.Context, request *v
 
 // DeleteInstanceRole deletes an role.
 func (s *InstanceRoleService) DeleteInstanceRole(ctx context.Context, request *v1pb.DeleteInstanceRoleRequest) (*emptypb.Empty, error) {
-	environmentID, instanceID, roleName, err := getEnvironmentInstanceRoleID(request.Name)
+	instanceID, roleName, err := getInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.getInstanceMessage(ctx, environmentID, instanceID)
+	instance, err := s.getInstanceMessage(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -247,10 +247,9 @@ func (*InstanceRoleService) UndeleteInstanceRole(_ context.Context, _ *v1pb.Unde
 	return nil, status.Errorf(codes.Unimplemented, "Undelete role is not supported")
 }
 
-func (s *InstanceRoleService) getInstanceMessage(ctx context.Context, environmentID, instanceID string) (*store.InstanceMessage, error) {
+func (s *InstanceRoleService) getInstanceMessage(ctx context.Context, instanceID string) (*store.InstanceMessage, error) {
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
+		ResourceID: &instanceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

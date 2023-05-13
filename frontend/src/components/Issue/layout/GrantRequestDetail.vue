@@ -1,6 +1,5 @@
-<!-- TODO(steven): Implement grant request issue detail -->
 <template>
-  <component :is="logicProviderType" ref="issueLogic">
+  <component :is="GrantRequestModeProvider" ref="issueLogic">
     <div
       id="issue-detail-top"
       class="flex-1 overflow-auto focus:outline-none"
@@ -23,11 +22,15 @@
             class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2 overflow-x-hidden"
           >
             <div
+              v-if="!create"
               class="py-6 lg:pl-4 lg:w-72 xl:w-96 lg:border-l lg:border-block-border overflow-hidden"
-            ></div>
+            >
+              <GrantRequestIssueSidebar />
+            </div>
             <div class="lg:hidden border-t border-block-border" />
             <div class="w-full lg:w-auto lg:flex-1 py-4 pr-4 overflow-x-hidden">
-              <GrantRequestForm />
+              <GrantRequestExporterForm v-if="requestRole === 'EXPORTER'" />
+              <GrantRequestQuerierForm v-if="requestRole === 'QUERIER'" />
               <IssueDescriptionPanel />
               <section
                 v-if="!create"
@@ -52,16 +55,24 @@ import IssueBanner from "../IssueBanner.vue";
 import IssueHighlightPanel from "../IssueHighlightPanel.vue";
 import IssueDescriptionPanel from "../IssueDescriptionPanel.vue";
 import IssueActivityPanel from "../IssueActivityPanel.vue";
-import { Issue, IssueCreate, UNKNOWN_ID } from "@/types";
+import {
+  GrantRequestContext,
+  GrantRequestPayload,
+  Issue,
+  IssueCreate,
+  UNKNOWN_ID,
+} from "@/types";
 import { defaultTemplate, templateForType } from "@/plugins";
-import { useProjectStore, useIssueStore } from "@/store";
+import { useProjectStore } from "@/store";
 import {
   provideIssueLogic,
-  StandardModeProvider,
   IssueLogic,
-  useBaseIssueLogic,
+  GrantRequestModeProvider,
 } from "../logic";
-import GrantRequestForm from "../GrantRequestForm.vue";
+import { useGrantRequestIssueLogic } from "../logic/grantRequest";
+import GrantRequestIssueSidebar from "../GrantRequestIssueSidebar.vue";
+import GrantRequestExporterForm from "../form/GrantRequestExporterForm.vue";
+import GrantRequestQuerierForm from "../form/GrantRequestQuerierForm.vue";
 
 const props = defineProps({
   create: {
@@ -78,7 +89,6 @@ const emit = defineEmits<{
   (e: "status-changed", eager: boolean): void;
 }>();
 
-const issueStore = useIssueStore();
 const projectStore = useProjectStore();
 
 const create = computed(() => props.create);
@@ -86,14 +96,9 @@ const issue = computed(() => props.issue);
 
 const dialog = useDialog();
 
-const { project, createIssue } = useBaseIssueLogic({ issue, create });
+const { project, createIssue } = useGrantRequestIssueLogic({ issue, create });
 
 const issueLogic = ref<IssueLogic>();
-
-// Determine which type of IssueLogicProvider should be used
-const logicProviderType = computed(() => {
-  return StandardModeProvider;
-});
 
 watchEffect(() => {
   if (props.create) {
@@ -108,10 +113,21 @@ const issueTemplate = computed(
   () => templateForType(props.issue.type) || defaultTemplate()
 );
 
-onMounted(() => {
+const requestRole = computed(() => {
   if (create.value) {
-    // Set issue store issueStore.isCreatingIssue to false directly.
-    issueStore.isCreatingIssue = false;
+    return ((issue.value as IssueCreate).createContext as GrantRequestContext)
+      .role;
+  } else {
+    const payload = ((issue.value as Issue).payload as any)
+      .grantRequest as GrantRequestPayload;
+    return payload.role.replace(/^roles\//, "");
+  }
+});
+
+onMounted(() => {
+  if (requestRole.value !== "EXPORTER" && requestRole.value !== "QUERIER") {
+    console.error("Invalid request role", requestRole.value);
+    return;
   }
   // Always scroll to top, the scrollBehavior doesn't seem to work.
   // The hypothesis is that because the scroll bar is in the nested

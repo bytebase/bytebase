@@ -94,7 +94,7 @@
       </div>
 
       <div
-        v-if="isDev && quickAction === 'quickaction.bb.database.troubleshoot'"
+        v-if="isDev() && quickAction === 'quickaction.bb.database.troubleshoot'"
         class="flex flex-col items-center w-24"
       >
         <router-link to="/issue/new" class="btn-icon-primary p-3">
@@ -183,6 +183,42 @@
           {{ $t("quick-action.transfer-out-db") }}
         </h3>
       </div>
+
+      <template v-if="hasCustomRoleFeature">
+        <div
+          v-if="quickAction === 'quickaction.bb.issue.grant.request.querier'"
+          class="flex flex-col items-center w-24"
+        >
+          <button
+            class="btn-icon-primary p-3"
+            @click.prevent="createRequestQueryIssue"
+          >
+            <heroicons-outline:document-search class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("quick-action.request-query") }}
+          </h3>
+        </div>
+
+        <div
+          v-if="quickAction === 'quickaction.bb.issue.grant.request.exporter'"
+          class="flex flex-col items-center w-24"
+        >
+          <button
+            class="btn-icon-primary p-3"
+            @click.prevent="createExportDataIssue"
+          >
+            <heroicons-outline:document-download class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("quick-action.export-data") }}
+          </h3>
+        </div>
+      </template>
     </template>
   </div>
   <BBModal
@@ -271,10 +307,11 @@ import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { ProjectId, QuickActionType } from "../types";
-import { idFromSlug } from "../utils";
+import { idFromSlug, isDev } from "../utils";
 import {
   useCommandStore,
   useInstanceStore,
+  useRouterStore,
   useSubscriptionStore,
 } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
@@ -304,8 +341,12 @@ const props = defineProps({
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
+const routerStore = useRouterStore();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionStore();
+const hasCustomRoleFeature = computed(() => {
+  return subscriptionStore.hasFeature("bb.feature.custom-role");
+});
 
 const state = reactive<LocalState>({
   showModal: false,
@@ -390,6 +431,48 @@ const requestDatabase = () => {
 
 const createEnvironment = () => {
   commandStore.dispatchCommand("bb.environment.create");
+};
+
+const createRequestQueryIssue = () => {
+  const routeInfo = {
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query: {
+      template: "bb.issue.grant.request",
+      role: "QUERIER",
+      name: "New grant querier request",
+    },
+  };
+  const routeSlug = routerStore.routeSlug(route);
+  const projectSlug = routeSlug.projectSlug;
+  if (projectSlug) {
+    const id = idFromSlug(projectSlug);
+    (routeInfo.query as any).project = id;
+  }
+  router.push(routeInfo);
+};
+
+const createExportDataIssue = () => {
+  const routeInfo = {
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query: {
+      template: "bb.issue.grant.request",
+      role: "EXPORTER",
+      name: "New grant exporter request",
+    },
+  };
+  const routeSlug = routerStore.routeSlug(route);
+  const projectSlug = routeSlug.projectSlug;
+  if (projectSlug) {
+    const id = idFromSlug(projectSlug);
+    (routeInfo.query as any).project = id;
+  }
+  router.push(routeInfo);
 };
 
 const reorderEnvironment = () => {

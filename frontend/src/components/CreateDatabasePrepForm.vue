@@ -267,7 +267,6 @@ import {
   defaultCharset,
   defaultCollation,
   unknown,
-  Project,
   DatabaseLabel,
   CreateDatabaseContext,
   UNKNOWN_ID,
@@ -275,6 +274,7 @@ import {
   InstanceUserId,
   PITRContext,
 } from "../types";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   type InstanceUser,
   INTERNAL_RDS_INSTANCE_USER_LIST,
@@ -291,7 +291,7 @@ import {
   useEnvironmentStore,
   useInstanceStore,
   useIssueStore,
-  useProjectStore,
+  useProjectV1Store,
 } from "@/store";
 
 interface LocalState {
@@ -346,7 +346,7 @@ export default defineComponent({
     const router = useRouter();
 
     const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
+    const projectV1Store = useProjectV1Store();
 
     useEventListener("keydown", (e: KeyboardEvent) => {
       if (e.code == "Escape") {
@@ -385,9 +385,8 @@ export default defineComponent({
       creating: false,
     });
 
-    const project = computed((): Project => {
-      if (!state.projectId) return unknown("PROJECT") as Project;
-      return projectStore.getProjectById(state.projectId) as Project;
+    const project = computed(() => {
+      return projectV1Store.getProjectByUID(state.projectId ?? UNKNOWN_ID);
     });
 
     const isReservedName = computed(() => {
@@ -395,18 +394,22 @@ export default defineComponent({
     });
 
     const isTenantProject = computed((): boolean => {
-      if (project.value.id === UNKNOWN_ID) return false;
+      if (parseInt(project.value.uid, 10) === UNKNOWN_ID) {
+        return false;
+      }
 
-      return project.value.tenantMode === "TENANT";
+      return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
     });
 
     // reference to <DatabaseLabelForm /> to call validate()
     const labelForm = ref<InstanceType<typeof DatabaseLabelForm> | null>(null);
 
     const isDbNameTemplateMode = computed((): boolean => {
-      if (project.value.id === UNKNOWN_ID) return false;
+      if (parseInt(project.value.uid, 10) === UNKNOWN_ID) return false;
 
-      if (project.value.tenantMode !== "TENANT") return false;
+      if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
+        return false;
+      }
 
       // true if dbNameTemplate is not empty
       return !!project.value.dbNameTemplate;

@@ -75,6 +75,7 @@ const (
 	OnUpdateCurrentTimeColumnCountExceedsLimit Code = 419
 	NoDefault                                  Code = 420
 	ColumnIsReferencedByView                   Code = 421
+	VarcharLengthExceedsLimit                  Code = 422
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501

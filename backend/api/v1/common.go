@@ -32,6 +32,7 @@ const (
 	reviewPrefix                 = "reviews/"
 	rolePrefix                   = "roles/"
 	secretNamePrefix             = "secrets/"
+	webhookIDPrefix              = "webhooks/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -70,6 +71,14 @@ func getProjectID(name string) (string, error) {
 	return tokens[0], nil
 }
 
+func getProjectIDWebhookID(name string) (string, string, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, webhookIDPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
 func trimSuffixAndGetProjectID(name string, suffix string) (string, error) {
 	trimmed, err := trimSuffix(name, suffix)
 	if err != nil {
@@ -78,12 +87,12 @@ func trimSuffixAndGetProjectID(name string, suffix string) (string, error) {
 	return getProjectID(trimmed)
 }
 
-func trimSuffixAndGetEnvironmentInstanceDatabaseID(name string, suffix string) (string, string, string, error) {
+func trimSuffixAndGetInstanceDatabaseID(name string, suffix string) (string, string, error) {
 	trimmed, err := trimSuffix(name, suffix)
 	if err != nil {
-		return "", "", "", err
+		return "", "", err
 	}
-	return getEnvironmentInstanceDatabaseID(trimmed)
+	return getInstanceDatabaseID(trimmed)
 }
 
 func getEnvironmentID(name string) (string, error) {
@@ -94,48 +103,48 @@ func getEnvironmentID(name string) (string, error) {
 	return tokens[0], nil
 }
 
-func getEnvironmentInstanceID(name string) (string, string, error) {
-	// the instance request should be environments/{environment-id}/instances/{instance-id}
-	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix)
+func getInstanceID(name string) (string, error) {
+	// the instance request should be instances/{instance-id}
+	tokens, err := getNameParentTokens(name, instanceNamePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
+}
+
+func getInstanceRoleID(name string) (string, string, error) {
+	// the instance request should be instances/{instance-id}/roles/{role-name}
+	tokens, err := getNameParentTokens(name, instanceNamePrefix, instanceRolePrefix)
 	if err != nil {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
 }
 
-func getEnvironmentInstanceRoleID(name string) (string, string, string, error) {
-	// the instance request should be environments/{environment-id}/instances/{instance-id}/roles/{role-name}
-	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, instanceRolePrefix)
+func getInstanceDatabaseID(name string) (string, string, error) {
+	// the instance request should be instances/{instance-id}/databases/{database-id}
+	tokens, err := getNameParentTokens(name, instanceNamePrefix, databaseIDPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+func getInstanceDatabaseIDSecretName(name string) (string, string, string, error) {
+	// the instance request should be instances/{instance-id}/databases/{database-id}/secrets/{secret-name}
+	tokens, err := getNameParentTokens(name, instanceNamePrefix, databaseIDPrefix, secretNamePrefix)
 	if err != nil {
 		return "", "", "", err
 	}
 	return tokens[0], tokens[1], tokens[2], nil
 }
 
-func getEnvironmentInstanceDatabaseID(name string) (string, string, string, error) {
-	// the instance request should be environments/{environment-id}/instances/{instance-id}/databases/{database-id}
-	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseIDPrefix)
-	if err != nil {
-		return "", "", "", err
-	}
-	return tokens[0], tokens[1], tokens[2], nil
-}
-
-func getEnvironmentInstanceDatabaseIDSecretName(name string) (string, string, string, string, error) {
-	// the instance request should be environments/{environment-id}/instances/{instance-id}/databases/{database-id}/secrets/{secret-name}
-	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseIDPrefix, secretNamePrefix)
-	if err != nil {
-		return "", "", "", "", err
-	}
-	return tokens[0], tokens[1], tokens[2], tokens[3], nil
-}
-
-func getEnvironmentIDInstanceDatabaseIDBackupName(name string) (string, string, string, string, error) {
+func getInstanceDatabaseIDBackupName(name string) (string, string, string, error) {
 	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseIDPrefix, backupPrefix)
 	if err != nil {
-		return "", "", "", "", err
+		return "", "", "", err
 	}
-	return tokens[0], tokens[1], tokens[2], tokens[3], nil
+	return tokens[0], tokens[1], tokens[2], nil
 }
 
 func getUserID(name string) (int, error) {

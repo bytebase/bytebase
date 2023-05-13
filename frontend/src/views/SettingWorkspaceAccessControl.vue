@@ -215,23 +215,18 @@ import { useI18n } from "vue-i18n";
 import { NPopconfirm } from "naive-ui";
 import { uniq } from "lodash-es";
 
-import {
-  featureToRef,
-  useCurrentUser,
-  useDatabaseStore,
-  usePolicyStore,
-} from "@/store";
-import {
-  AccessControlPolicyPayload,
-  Database,
-  DatabaseId,
-  DEFAULT_PROJECT_ID,
-  Policy,
-  PolicyUpsert,
-} from "@/types";
+import { featureToRef, useCurrentUser, useDatabaseStore } from "@/store";
+import { Database, DatabaseId, DEFAULT_PROJECT_ID } from "@/types";
 import { BBTableColumn } from "@/bbkit/types";
 import { hasWorkspacePermission } from "@/utils";
 import AddRuleForm from "@/components/AccessControl/AddRuleForm.vue";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import {
+  Policy,
+  PolicyType,
+  PolicyResourceType,
+} from "@/types/proto/v1/org_policy_service";
+import { getDatabasePathByLegacyDatabase } from "@/store/modules/v1/common";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -252,7 +247,7 @@ const state = reactive<LocalState>({
   databaseList: [],
 });
 const databaseStore = useDatabaseStore();
-const policyStore = usePolicyStore();
+const policyStore = usePolicyV1Store();
 const hasAccessControlFeature = featureToRef("bb.feature.access-control");
 
 const currentUser = useCurrentUser();
@@ -264,7 +259,7 @@ const allowAdmin = computed(() => {
 });
 
 const databaseOfPolicy = (policy: Policy) => {
-  return databaseStore.getDatabaseById(policy.resourceId as DatabaseId);
+  return databaseStore.getDatabaseById(policy.resourceUid as DatabaseId);
 };
 
 const activePolicyList = computed(() => {
@@ -284,10 +279,10 @@ const inactivePolicyList = computed(() => {
 const prepareList = async () => {
   state.isLoading = true;
 
-  const policyList = await policyStore.fetchPolicyListByTypeAndResourceType(
-    "bb.policy.access-control",
-    "DATABASE"
-  );
+  const policyList = await policyStore.fetchPolicies({
+    policyType: PolicyType.ACCESS_CONTROL,
+    resourceType: PolicyResourceType.DATABASE,
+  });
 
   const allDatabaseList = await databaseStore.fetchDatabaseList();
   state.databaseList = allDatabaseList
@@ -298,9 +293,9 @@ const prepareList = async () => {
   // fetch them.
   const databaseIdList = uniq(
     policyList
-      .map((policy) => policy.resourceId as DatabaseId)
+      .map((policy) => policy.resourceUid as DatabaseId)
       .filter((databaseId) =>
-        state.databaseList.findIndex((db) => db.id === databaseId)
+        state.databaseList.findIndex((db) => `${db.id}` == databaseId)
       )
   );
 
@@ -328,17 +323,16 @@ const handleAddRule = async (databaseList: Database[]) => {
   try {
     for (let i = 0; i < databaseList.length; i++) {
       const database = databaseList[i];
-      const payload: AccessControlPolicyPayload = {
-        disallowRuleList: [],
-      };
-      const policyUpsert: PolicyUpsert = {
-        inheritFromParent: false,
-        payload,
-      };
-      await policyStore.upsertPolicyByDatabaseAndType({
-        databaseId: database.id,
-        type: "bb.policy.access-control",
-        policyUpsert,
+      await policyStore.upsertPolicy({
+        parentPath: getDatabasePathByLegacyDatabase(database),
+        updateMask: ["payload", "inherit_from_parent"],
+        policy: {
+          type: PolicyType.ACCESS_CONTROL,
+          inheritFromParent: false,
+          accessControlPolicy: {
+            disallowRules: [],
+          },
+        },
       });
     }
   } finally {
@@ -355,10 +349,7 @@ const handleRemove = async (policy: Policy) => {
 
   state.isUpdating = true;
   try {
-    await policyStore.deletePolicyByDatabaseAndType({
-      databaseId: policy.resourceId,
-      type: "bb.policy.access-control",
-    });
+    await policyStore.deletePolicy(policy.name);
 
     prepareList();
   } finally {

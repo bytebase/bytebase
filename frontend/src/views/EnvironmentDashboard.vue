@@ -56,7 +56,7 @@
       :environment="getEnvironmentCreate()"
       :approval-policy="(DEFAULT_NEW_APPROVAL_POLICY as any)"
       :backup-policy="(DEFAULT_NEW_BACKUP_PLAN_POLICY as any)"
-      :environment-tier-policy="(DEFAULT_NEW_ENVIRONMENT_TIER_POLICY as any)"
+      :environment-tier="defaultEnvironmentTier"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
@@ -75,54 +75,45 @@ import { useRouter } from "vue-router";
 import { arraySwap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import type {
-  Environment,
-  EnvironmentCreate,
-  Policy,
-  PolicyUpsert,
-  PipelineApprovalPolicyPayload,
-  BackupPlanPolicyPayload,
-  EnvironmentTierPolicyPayload,
-} from "../types";
-import {
-  DefaultApprovalPolicy,
-  DefaultSchedulePolicy,
-  DefaultEnvironmentTier,
-} from "../types";
+import type { Environment, EnvironmentCreate } from "../types";
 import type { BBTabItem } from "../bbkit/types";
 import {
   useRegisterCommand,
   useUIStateStore,
   hasFeature,
-  usePolicyStore,
   useEnvironmentStore,
   useEnvironmentList,
 } from "@/store";
 import ProductionEnvironmentIcon from "../components/Environment/ProductionEnvironmentIcon.vue";
-import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
-import { environmentTierFromJSON } from "@/types/proto/v1/environment_service";
+import {
+  useEnvironmentV1Store,
+  defaultEnvironmentTier,
+} from "@/store/modules/v1/environment";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import {
+  usePolicyV1Store,
+  defaultBackupSchedule,
+  defaultApprovalStrategy,
+  getDefaultBackupPlanPolicy,
+  getDefaultDeploymentApprovalPolicy,
+} from "@/store/modules/v1/policy";
+import {
+  Policy,
+  PolicyType,
+  PolicyResourceType,
+} from "@/types/proto/v1/org_policy_service";
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
-const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
-  payload: {
-    value: DefaultApprovalPolicy,
-    assigneeGroupList: [],
-  },
-};
+const DEFAULT_NEW_APPROVAL_POLICY: Policy = getDefaultDeploymentApprovalPolicy(
+  "",
+  PolicyResourceType.ENVIRONMENT
+);
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
-const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyUpsert = {
-  payload: {
-    schedule: DefaultSchedulePolicy,
-    retentionPeriodTs: 0,
-  },
-};
-
-const DEFAULT_NEW_ENVIRONMENT_TIER_POLICY: PolicyUpsert = {
-  payload: {
-    environmentTier: DefaultEnvironmentTier,
-  },
-};
+const DEFAULT_NEW_BACKUP_PLAN_POLICY: Policy = getDefaultBackupPlanPolicy(
+  "",
+  PolicyResourceType.ENVIRONMENT
+);
 
 interface LocalState {
   reorderedEnvironmentList: Environment[];
@@ -131,13 +122,14 @@ interface LocalState {
   reorder: boolean;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
-    | "bb.feature.backup-policy";
+    | "bb.feature.backup-policy"
+    | "bb.feature.environment-tier-policy";
 }
 
 const environmentStore = useEnvironmentStore();
 const environmentV1Store = useEnvironmentV1Store();
 const uiStateStore = useUIStateStore();
-const policyStore = usePolicyStore();
+const policyV1Store = usePolicyV1Store();
 const router = useRouter();
 
 const state = reactive<LocalState>({
@@ -218,8 +210,8 @@ const tabItemList = computed((): BBTabItem[] => {
 
 const getEnvironmentCreate = (): EnvironmentCreate => {
   return {
+    title: "",
     name: "",
-    resourceId: "",
   };
 };
 
@@ -232,63 +224,62 @@ const doCreate = async (
   newEnvironment: EnvironmentCreate,
   approvalPolicy: Policy,
   backupPolicy: Policy,
-  environmentTierPolicy: Policy
+  environmentTier: EnvironmentTier
 ) => {
   if (
-    (approvalPolicy.payload as PipelineApprovalPolicyPayload).value ===
-      "MANUAL_APPROVAL_NEVER" &&
+    approvalPolicy.deploymentApprovalPolicy?.defaultStrategy !==
+      defaultApprovalStrategy &&
     !hasFeature("bb.feature.approval-policy")
   ) {
     state.missingRequiredFeature = "bb.feature.approval-policy";
     return;
   }
   if (
-    (backupPolicy.payload as BackupPlanPolicyPayload).schedule !==
-      DefaultSchedulePolicy &&
+    backupPolicy.backupPlanPolicy?.schedule !== defaultBackupSchedule &&
     !hasFeature("bb.feature.backup-policy")
   ) {
     state.missingRequiredFeature = "bb.feature.backup-policy";
     return;
   }
+  if (
+    environmentTier !== defaultEnvironmentTier &&
+    !hasFeature("bb.feature.backup-policy")
+  ) {
+    state.missingRequiredFeature = "bb.feature.environment-tier-policy";
+    return;
+  }
 
-  const environmentTierPayload =
-    environmentTierPolicy.payload as EnvironmentTierPolicyPayload;
   const environment = await environmentV1Store.createEnvironment({
-    name: newEnvironment.resourceId,
-    title: newEnvironment.name,
+    name: newEnvironment.name,
+    title: newEnvironment.title,
     order: environmentList.value.length,
-    tier: environmentTierFromJSON(environmentTierPayload.environmentTier),
+    tier: environmentTier,
   });
   // After creating with v1 store, we need to fetch the latest data in old store.
   // TODO(steven): using grpc store.
   await environmentStore.fetchEnvironmentList();
 
   const requests = [
-    policyStore.upsertPolicyByEnvironmentAndType({
-      environmentId: environment.uid,
-      type: "bb.policy.pipeline-approval",
-      policyUpsert: { payload: approvalPolicy.payload },
+    policyV1Store.upsertPolicy({
+      parentPath: environment.name,
+      updateMask: ["payload"],
+      policy: approvalPolicy,
     }),
-    policyStore.upsertPolicyByEnvironmentAndType({
-      environmentId: environment.uid,
-      type: "bb.policy.backup-plan",
-      policyUpsert: { payload: backupPolicy.payload },
+    policyV1Store.upsertPolicy({
+      parentPath: environment.name,
+      updateMask: ["payload"],
+      policy: backupPolicy,
     }),
-    policyStore.upsertPolicyByEnvironmentAndType({
-      environmentId: environment.uid,
-      type: "bb.policy.environment-tier",
-      policyUpsert: { payload: environmentTierPayload },
-    }),
-    policyStore.upsertPolicyByEnvironmentAndType({
-      environmentId: environment.uid,
-      type: "bb.policy.access-control",
-      policyUpsert: {
+    policyV1Store.upsertPolicy({
+      parentPath: environment.name,
+      updateMask: ["payload", "inherit_from_parent"],
+      policy: {
+        type: PolicyType.ACCESS_CONTROL,
         inheritFromParent: false,
-        payload: {
-          disallowRuleList: [
+        accessControlPolicy: {
+          disallowRules: [
             {
-              fullDatabase:
-                environmentTierPayload.environmentTier === "PROTECTED",
+              fullDatabase: environmentTier === EnvironmentTier.PROTECTED,
             },
           ],
         },

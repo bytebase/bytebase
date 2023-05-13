@@ -223,7 +223,7 @@ const secretList = ref<Secret[]>([]);
 const ready = ref(false);
 const parent = computed(() => {
   const { database } = props;
-  return `environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.name}`;
+  return `instances/${database.instance.resourceId}/databases/${database.name}`;
 });
 const detail = ref<Detail>();
 const showFeatureModal = ref(false);

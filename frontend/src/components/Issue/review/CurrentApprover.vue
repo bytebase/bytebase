@@ -38,7 +38,10 @@ const review = computed(() => {
   }
 });
 
-const context = extractIssueReviewContext(review);
+const context = extractIssueReviewContext(
+  computed(() => props.issue),
+  review
+);
 const { ready, done } = context;
 const currentUserName = computed(() => useAuthStore().currentUser.name);
 const issue = computed(() => props.issue);

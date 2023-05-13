@@ -1,6 +1,5 @@
 import { RemovableRef } from "@vueuse/core";
 import {
-  DeploymentConfig,
   EnvironmentId,
   MigrationHistoryId,
   Policy,
@@ -8,7 +7,6 @@ import {
   QueryHistory,
   Sheet,
   OnboardingGuideType,
-  PolicyResourceType,
 } from ".";
 import { Activity } from "./activity";
 import { Backup, BackupSetting } from "./backup";
@@ -37,7 +35,6 @@ import { Member } from "./member";
 import { Notification } from "./notification";
 import { Principal } from "./principal";
 import { Project } from "./project";
-import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { Setting, SettingName } from "./setting";
 import { VCS } from "./vcs";
@@ -103,16 +100,10 @@ export interface TaskState {}
 
 export interface PolicyState {
   policyMapByEnvironmentId: Map<EnvironmentId, Map<PolicyType, Policy>>;
-  policyMapByDatabaseId: Map<DatabaseId, Map<PolicyType, Policy>>;
-  policyMapByResourceType: Map<PolicyResourceType, Map<PolicyType, Policy[]>>;
 }
 
 export interface ProjectState {
   projectById: Map<ProjectId, Project>;
-}
-
-export interface ProjectWebhookState {
-  projectWebhookList: Map<ProjectId, ProjectWebhook[]>;
 }
 
 export interface EnvironmentState {
@@ -187,10 +178,6 @@ export interface SQLEditorState {
   isFetchingQueryHistory: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
-}
-
-export interface DeploymentState {
-  deploymentConfigByProjectId: Map<ProjectId, DeploymentConfig>;
 }
 
 export interface SheetState {

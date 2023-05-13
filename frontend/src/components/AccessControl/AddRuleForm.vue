@@ -100,8 +100,9 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 
-import type { Database, DatabaseId, Policy } from "@/types";
+import type { Database, DatabaseId } from "@/types";
 import { filterDatabaseByKeyword } from "@/utils";
+import { Policy } from "@/types/proto/v1/org_policy_service";
 
 type LocalState = {
   isLoading: boolean;
@@ -133,7 +134,7 @@ const state = reactive<LocalState>({
 
 const presetDatabaseIdList = computed(() => {
   const databaseIdList = props.policyList.map(
-    (policy) => policy.resourceId as DatabaseId
+    (policy) => policy.resourceUid as DatabaseId
   );
   return new Set(databaseIdList);
 });
@@ -141,7 +142,7 @@ const presetDatabaseIdList = computed(() => {
 const databaseList = computed(() => {
   // Don't show the databases already have access control policy.
   let list = props.databaseList.filter(
-    (db) => !presetDatabaseIdList.value.has(db.id)
+    (db) => !presetDatabaseIdList.value.has(`${db.id}`)
   );
 
   const keyword = state.searchText.trim();
