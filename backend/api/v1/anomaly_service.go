@@ -95,11 +95,10 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 			}
 			find.InstanceUID = &instance.UID
 		}
-		if environmentID != "" && instanceID != "" && databaseName != "" {
+		if instanceID != "" && databaseName != "" {
 			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				EnvironmentID: &environmentID,
-				InstanceID:    &instanceID,
-				DatabaseName:  &databaseName,
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
 			})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())

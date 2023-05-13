@@ -1012,10 +1012,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 
 	// Transfer sample database to the just created project.
 	transferDatabaseMessage := &store.UpdateDatabaseMessage{
-		EnvironmentID: api.DefaultProdEnvironmentID,
-		InstanceID:    instance.ResourceID,
-		DatabaseName:  postgres.SampleDatabase,
-		ProjectID:     &project.ResourceID,
+		InstanceID:   instance.ResourceID,
+		DatabaseName: postgres.SampleDatabase,
+		ProjectID:    &project.ResourceID,
 	}
 	_, err = s.store.UpdateDatabase(ctx, transferDatabaseMessage, userID)
 	if err != nil {
@@ -1023,11 +1022,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 	}
 
 	dbName := postgres.SampleDatabase
-	envID := api.DefaultProdEnvironmentID
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &envID,
-		InstanceID:    &instance.ResourceID,
-		DatabaseName:  &dbName,
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &dbName,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find onboarding instance")

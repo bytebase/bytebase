@@ -147,7 +147,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *store.Tas
 
 	syncStatus := api.OK
 	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		EnvironmentID: environment.ResourceID,
 		InstanceID:    instance.ResourceID,
 		DatabaseName:  payload.DatabaseName,
 		SyncState:     &syncStatus,
@@ -341,7 +340,7 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	if similarDB == nil {
 		return "", "", nil
 	}
-	similarDBInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &similarDB.EnvironmentID, ResourceID: &similarDB.InstanceID})
+	similarDBInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &similarDB.InstanceID})
 	if err != nil {
 		return "", "", err
 	}
