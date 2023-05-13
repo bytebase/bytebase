@@ -79,12 +79,12 @@
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
-              v-model="(state.approvalPolicy.payload as PipelineApprovalPolicyPayload).value"
+              v-model="state.approvalPolicy.deploymentApprovalPolicy!.defaultStrategy"
               name="manual-approval-always"
               tabindex="-1"
               type="radio"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
-              value="MANUAL_APPROVAL_ALWAYS"
+              :value="ApprovalStrategy.MANUAL"
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
@@ -102,18 +102,18 @@
             :policy="state.approvalPolicy"
             :allow-edit="allowEdit"
             @update="(assigneeGroupList) => {
-              (state.approvalPolicy.payload as PipelineApprovalPolicyPayload).assigneeGroupList = assigneeGroupList
+              state.approvalPolicy.deploymentApprovalPolicy!.deploymentApprovalStrategies = assigneeGroupList
             }"
           />
 
           <div class="flex space-x-4">
             <input
-              v-model="(state.approvalPolicy.payload as PipelineApprovalPolicyPayload).value"
+              v-model="state.approvalPolicy.deploymentApprovalPolicy!.defaultStrategy"
               name="manual-approval-never"
               tabindex="-1"
               type="radio"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
-              value="MANUAL_APPROVAL_NEVER"
+              :value="ApprovalStrategy.AUTOMATIC"
               :disabled="!allowEdit"
             />
             <div class="-mt-0.5">
@@ -324,7 +324,6 @@ import type {
   EnvironmentCreate,
   EnvironmentPatch,
   EnvironmentTierPolicyPayload,
-  PipelineApprovalPolicyPayload,
   Policy,
   ResourceId,
   SQLReviewPolicy,
@@ -347,11 +346,12 @@ import {
   Policy as PolicyV1,
   PolicyType as PolicyTypeV1,
   BackupPlanSchedule,
+  ApprovalStrategy,
 } from "@/types/proto/v1/org_policy_service";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
-  approvalPolicy: Policy;
+  approvalPolicy: PolicyV1;
   backupPolicy: PolicyV1;
   environmentTierPolicy: Policy;
 }
@@ -369,7 +369,7 @@ const props = defineProps({
   },
   approvalPolicy: {
     required: true,
-    type: Object as PropType<Policy>,
+    type: Object as PropType<PolicyV1>,
   },
   backupPolicy: {
     required: true,
@@ -459,7 +459,7 @@ watch(
 
 watch(
   () => props.approvalPolicy,
-  (cur: Policy) => {
+  (cur: PolicyV1) => {
     state.approvalPolicy = cloneDeep(cur);
   }
 );
@@ -608,9 +608,9 @@ const updateEnvironment = () => {
 
   if (!isEqual(props.approvalPolicy, state.approvalPolicy)) {
     emit(
-      "update-policy",
-      environmentId,
-      "bb.policy.pipeline-approval",
+      "update-policy-v1",
+      state.environment,
+      PolicyTypeV1.DEPLOYMENT_APPROVAL,
       state.approvalPolicy
     );
   }
