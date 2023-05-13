@@ -163,15 +163,14 @@ const doUpdate = (environmentPatch: EnvironmentPatch) => {
     pendingUpdate.order = environmentPatch.order;
   }
   if (environmentPatch.tier) {
+    if (
+      pendingUpdate.tier !== defaultEnvironmentTier &&
+      !hasFeature("bb.feature.environment-tier-policy")
+    ) {
+      state.missingRequiredFeature = "bb.feature.environment-tier-policy";
+      return;
+    }
     pendingUpdate.tier = environmentPatch.tier;
-  }
-  if (
-    pendingUpdate.tier &&
-    pendingUpdate.tier !== defaultEnvironmentTier &&
-    !hasFeature("bb.feature.environment-tier-policy")
-  ) {
-    state.missingRequiredFeature = "bb.feature.environment-tier-policy";
-    return;
   }
 
   environmentV1Store.updateEnvironment(pendingUpdate).then((environment) => {
