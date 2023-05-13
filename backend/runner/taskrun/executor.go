@@ -355,10 +355,6 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	if err != nil {
 		return true, nil, err
 	}
-	environment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
-	if err != nil {
-		return true, nil, err
-	}
 	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return true, nil, err
@@ -385,7 +381,6 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 	if mi.Type == db.Migrate || mi.Type == db.MigrateSDL {
 		if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-			EnvironmentID: environment.ResourceID,
 			InstanceID:    instance.ResourceID,
 			DatabaseName:  database.DatabaseName,
 			SchemaVersion: &mi.Version,
