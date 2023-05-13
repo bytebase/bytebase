@@ -1,7 +1,10 @@
 import { defineStore } from "pinia";
 import { computed } from "vue";
 import { environmentServiceClient } from "@/grpcweb";
-import { Environment } from "@/types/proto/v1/environment_service";
+import {
+  Environment,
+  EnvironmentTier,
+} from "@/types/proto/v1/environment_service";
 import { ResourceId, EnvironmentId } from "@/types";
 import { isEqual, isUndefined } from "lodash-es";
 import { State } from "@/types/proto/v1/common";
@@ -82,6 +85,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
         name,
       });
       this.environmentMapByName.set(environment.name, environment);
+      return environment;
     },
     async getOrFetchEnvironmentByName(name: string) {
       const cachedData = this.environmentMapByName.get(name);
@@ -102,7 +106,10 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       return this.environmentMapByName.get(name);
     },
     getEnvironmentByUID(uid: EnvironmentId) {
-      return this.environmentList.find((env) => env.uid == uid);
+      return (
+        this.environmentList.find((env) => env.uid == uid) ??
+        ({} as Environment)
+      );
     },
   },
 });
@@ -128,3 +135,5 @@ export const useEnvironmentList = (showDeleted = false) => {
   const store = useEnvironmentV1Store();
   return computed(() => store.getEnvironmentList(showDeleted));
 };
+
+export const defaultEnvironmentTier = EnvironmentTier.UNPROTECTED;

@@ -5,16 +5,13 @@ import {
   empty,
   EMPTY_ID,
   Environment,
-  EnvironmentCreate,
   EnvironmentId,
-  EnvironmentPatch,
   EnvironmentState,
   ResourceObject,
   RowStatus,
   unknown,
 } from "@/types";
 import { usePolicyV1Store } from "./v1/policy";
-import { environmentName } from "../../utils";
 import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 
@@ -59,10 +56,6 @@ export const useEnvironmentStore = defineStore("environment", {
       }
       return unknown("ENVIRONMENT") as Environment;
     },
-    getEnvironmentNameById(environmentId: EnvironmentId): string {
-      const env = this.getEnvironmentById(environmentId);
-      return environmentName(env);
-    },
     upsertEnvironmentList(environmentList: Environment[]) {
       for (const environment of environmentList) {
         const i = this.environmentList.findIndex(
@@ -103,19 +96,6 @@ export const useEnvironmentStore = defineStore("environment", {
 
       return environmentList;
     },
-    async createEnvironment(newEnvironment: EnvironmentCreate) {
-      const data = (
-        await axios.post(`/api/environment`, {
-          data: {
-            type: "environment",
-            attributes: newEnvironment,
-          },
-        })
-      ).data;
-      const createdEnvironment = convert(data.data, data.included);
-      this.upsertEnvironmentList([createdEnvironment]);
-      return createdEnvironment;
-    },
     async reorderEnvironmentList(orderedEnvironmentList: Environment[]) {
       const list: any[] = [];
       orderedEnvironmentList.forEach((item, index) => {
@@ -142,27 +122,6 @@ export const useEnvironmentStore = defineStore("environment", {
       this.upsertEnvironmentList(environmentList);
 
       return environmentList;
-    },
-    async patchEnvironment({
-      environmentId,
-      environmentPatch,
-    }: {
-      environmentId: EnvironmentId;
-      environmentPatch: EnvironmentPatch;
-    }) {
-      const data = (
-        await axios.patch(`/api/environment/${environmentId}`, {
-          data: {
-            type: "environmentPatch",
-            attributes: environmentPatch,
-          },
-        })
-      ).data;
-      const updatedEnvironment = convert(data.data, data.included);
-
-      this.upsertEnvironmentList([updatedEnvironment]);
-
-      return updatedEnvironment;
     },
   },
 });
