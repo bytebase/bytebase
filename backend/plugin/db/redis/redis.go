@@ -6,15 +6,20 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 var (
@@ -28,6 +33,7 @@ func init() {
 // Driver is the redis driver.
 type Driver struct {
 	rdb          redis.UniversalClient
+	sshClient    *ssh.Client
 	databaseName string
 }
 
@@ -58,14 +64,30 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 	}
 	d.databaseName = fmt.Sprintf("%d", db)
 
-	d.rdb = redis.NewUniversalClient(&redis.UniversalOptions{
+	options := &redis.UniversalOptions{
 		Addrs:     []string{addr},
 		Username:  config.Username,
 		Password:  config.Password,
 		TLSConfig: tlsConfig,
 		ReadOnly:  config.ReadOnly,
 		DB:        db,
-	})
+	}
+	if config.SSHConfig.Host != "" {
+		sshClient, err := util.GetSSHClient(config.SSHConfig)
+		if err != nil {
+			return nil, err
+		}
+		d.sshClient = sshClient
+
+		options.Dialer = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			conn, err := sshClient.Dial(network, addr)
+			if err != nil {
+				return nil, err
+			}
+			return &noDeadlineConn{Conn: conn}, nil
+		}
+	}
+	d.rdb = redis.NewUniversalClient(options)
 
 	clusterEnabled, err := d.getClusterEnabled(ctx)
 	if err != nil {
@@ -89,9 +111,20 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 	return d, nil
 }
 
+type noDeadlineConn struct{ net.Conn }
+
+func (*noDeadlineConn) SetDeadline(time.Time) error      { return nil }
+func (*noDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
+func (*noDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
+
 // Close closes the redis driver.
 func (d *Driver) Close(context.Context) error {
-	return d.rdb.Close()
+	var err error
+	err = multierr.Append(err, d.rdb.Close())
+	if d.sshClient != nil {
+		err = multierr.Append(err, d.sshClient.Close())
+	}
+	return err
 }
 
 // Ping pings the redis server.
