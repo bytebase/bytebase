@@ -1,6 +1,5 @@
 import {
   AnomalyId,
-  BackupPlanPolicySchedule,
   Database,
   DatabaseId,
   EnvironmentId,
@@ -9,6 +8,7 @@ import {
   Principal,
   RowStatus,
 } from ".";
+import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
 
 export type AnomalyType =
   | "bb.anomaly.instance.connection"
@@ -24,12 +24,12 @@ export type AnomalyInstanceConnectionPayload = {
 
 export type AnomalyDatabaseBackupPolicyViolationPayload = {
   environmentId: EnvironmentId;
-  expectedSchedule: BackupPlanPolicySchedule;
-  actualSchedule: BackupPlanPolicySchedule;
+  expectedSchedule: BackupPlanSchedule;
+  actualSchedule: BackupPlanSchedule;
 };
 
 export type AnomalyDatabaseBackupMissingPayload = {
-  expectedSchedule: BackupPlanPolicySchedule;
+  expectedSchedule: BackupPlanSchedule;
   lastBackupTs: number;
 };
 

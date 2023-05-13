@@ -182,7 +182,6 @@ import {
   POLL_JITTER,
   MINIMUM_POLL_INTERVAL,
   UNKNOWN_ID,
-  BackupPlanPolicySchedule,
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
@@ -195,7 +194,10 @@ import {
   localFromUTC,
   parseScheduleFromBackupSetting,
 } from "@/components/DatabaseBackup/";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import {
+  usePolicyV1Store,
+  defaultBackupSchedule,
+} from "@/store/modules/v1/policy";
 import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
 import {
   PolicyType,
@@ -359,21 +361,14 @@ export default defineComponent({
       return state.autoBackupRetentionPeriodTs / 3600 / 24;
     });
 
-    const backupPolicy = computed((): BackupPlanPolicySchedule => {
+    const backupPolicy = computed((): BackupPlanSchedule => {
       const policy = policyV1Store.getPolicyByParentAndType({
         parentPath: getEnvironmentPathByLegacyEnvironment(
           props.database.instance.environment
         ),
         policyType: PolicyType.BACKUP_PLAN,
       });
-      switch (policy?.backupPlanPolicy?.schedule) {
-        case BackupPlanSchedule.DAILY:
-          return "DAILY";
-        case BackupPlanSchedule.WEEKLY:
-          return "WEEKLY";
-        default:
-          return "UNSET";
-      }
+      return policy?.backupPlanPolicy?.schedule ?? defaultBackupSchedule;
     });
 
     const hasBackupPolicyViolation = computed((): boolean => {
