@@ -42,10 +42,9 @@ type DataSourceMessage struct {
 
 // UpdateDataSourceMessage is the message for the data source.
 type UpdateDataSourceMessage struct {
-	UpdaterID     int
-	InstanceUID   int
-	EnvironmentID string
-	InstanceID    string
+	UpdaterID   int
+	InstanceUID int
+	InstanceID  string
 
 	Type api.DataSourceType
 
@@ -141,7 +140,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 }
 
 // AddDataSourceToInstanceV2 adds a RO data source to an instance and return the instance where the data source is added.
-func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, creatorID int, environmentID, instanceID string, dataSource *DataSourceMessage) error {
+func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, creatorID int, instanceID string, dataSource *DataSourceMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.New("Failed to begin transaction")
@@ -166,13 +165,13 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 		return errors.New("Failed to commit transaction")
 	}
 
-	s.instanceCache.Delete(getInstanceCacheKey(environmentID, instanceID))
+	s.instanceCache.Delete(getInstanceCacheKey(instanceID))
 	s.instanceIDCache.Delete(instanceUID)
 	return nil
 }
 
 // RemoveDataSourceV2 removes a RO data source from an instance.
-func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, environmentID, instanceID string, dataSourceTp api.DataSourceType) error {
+func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, instanceID string, dataSourceTp api.DataSourceType) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.New("Failed to begin transaction")
@@ -198,7 +197,7 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, environ
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.instanceCache.Delete(getInstanceCacheKey(environmentID, instanceID))
+	s.instanceCache.Delete(getInstanceCacheKey(instanceID))
 	s.instanceIDCache.Delete(instanceUID)
 	return nil
 }
@@ -293,7 +292,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.instanceCache.Delete(getInstanceCacheKey(patch.EnvironmentID, patch.InstanceID))
+	s.instanceCache.Delete(getInstanceCacheKey(patch.InstanceID))
 	s.instanceIDCache.Delete(patch.InstanceUID)
 	return nil
 }

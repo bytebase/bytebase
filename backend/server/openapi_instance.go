@@ -41,9 +41,8 @@ func (s *Server) updateInstanceDatabase(c echo.Context) error {
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &instance.EnvironmentID,
-		InstanceID:    &instance.ResourceID,
-		DatabaseName:  &databaseName,
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find database").SetInternal(err)
@@ -63,10 +62,9 @@ func (s *Server) updateInstanceDatabase(c echo.Context) error {
 
 		updaterID := c.Get(getPrincipalIDContextKey()).(int)
 		if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-			EnvironmentID: database.EnvironmentID,
-			InstanceID:    database.InstanceID,
-			DatabaseName:  database.DatabaseName,
-			ProjectID:     &project.ResourceID,
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+			ProjectID:    &project.ResourceID,
 		}, updaterID); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to patch database project").SetInternal(err)
 		}

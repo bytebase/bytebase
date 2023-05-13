@@ -114,7 +114,6 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *api.Instance) {
 
 	find := &store.FindDatabaseMessage{}
 	if instance != nil {
-		find.EnvironmentID = &instance.Environment.ResourceID
 		find.InstanceID = &instance.ResourceID
 	}
 	databases, err := s.store.ListDatabases(ctx, find)
@@ -233,10 +232,9 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		if !exist {
 			syncStatus := api.NotFound
 			if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-				EnvironmentID: instance.EnvironmentID,
-				InstanceID:    instance.ResourceID,
-				DatabaseName:  database.DatabaseName,
-				SyncState:     &syncStatus,
+				InstanceID:   instance.ResourceID,
+				DatabaseName: database.DatabaseName,
+				SyncState:    &syncStatus,
 			}, api.SystemBotID); err != nil {
 				return nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 			}
@@ -252,7 +250,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 // SyncDatabaseSchema will sync the schema for a database.
 func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, force bool) error {
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return err
 	}
@@ -284,7 +282,6 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	syncStatus := api.OK
 	ts := time.Now().Unix()
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		EnvironmentID:        database.EnvironmentID,
 		InstanceID:           database.InstanceID,
 		DatabaseName:         database.DatabaseName,
 		SyncState:            &syncStatus,

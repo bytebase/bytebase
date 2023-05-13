@@ -33,7 +33,7 @@ func (e *DatabaseConnectExecutor) Run(ctx context.Context, _ *store.TaskCheckRun
 	if database == nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "database ID not found %v", task.DatabaseID)
 	}
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "instance %q not found", database.InstanceID)
 	}
