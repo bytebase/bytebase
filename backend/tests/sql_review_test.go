@@ -16,7 +16,7 @@ import (
 
 	// Import pg driver.
 	// init() in pgx will register it's pgx driver.
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 

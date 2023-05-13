@@ -24,8 +24,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	// Import pg driver.
-	// init() in pgx/v5/stdlib will register it's pgx driver.
-	_ "github.com/jackc/pgx/v5/stdlib"
+	// init() in pgx/v4/stdlib will register it's pgx driver.
+	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
