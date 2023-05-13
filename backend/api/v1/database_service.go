@@ -689,7 +689,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 	for _, expr := range filters {
 		switch expr.key {
 		case filterKeyEnvironment:
-			reg := regexp.MustCompile(`^environment/(.+)`)
+			reg := regexp.MustCompile(`^environments/(.+)`)
 			match := reg.FindStringSubmatch(expr.value)
 			if len(match) != 2 {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid environment filter %q", expr.value)
