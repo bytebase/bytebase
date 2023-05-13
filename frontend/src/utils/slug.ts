@@ -7,7 +7,6 @@ import {
   IssueId,
   MigrationHistoryId,
   Project,
-  ProjectWebhook,
   VCS,
   SQLReviewPolicy,
   Sheet,
@@ -41,10 +40,6 @@ export function environmentSlug(environment: Environment): string {
 
 export function projectSlug(project: Project): string {
   return [slug(project.name), project.id].join("-");
-}
-
-export function projectWebhookSlug(projectWebhook: ProjectWebhook): string {
-  return [slug(projectWebhook.name), projectWebhook.id].join("-");
 }
 
 export function instanceSlug(instance: Instance): string {
@@ -87,7 +82,7 @@ export function vcsSlug(vcs: VCS): string {
 }
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
-  return [slug(reviewPolicy.name), reviewPolicy.environment.id].join("-");
+  return [slug(reviewPolicy.name), reviewPolicy.environment.uid].join("-");
 }
 
 export function connectionSlug(

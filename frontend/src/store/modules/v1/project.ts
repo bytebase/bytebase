@@ -15,6 +15,7 @@ import { Project } from "@/types/proto/v1/project_service";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 import { State } from "@/types/proto/v1/common";
 import { User } from "@/types/proto/v1/auth_service";
+import { useCurrentUserV1 } from "../auth";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
@@ -67,10 +68,24 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     }
     return fetchProjectByName(name);
   };
-  const updateProject = async (
-    project: Project,
-    updateMask: Array<keyof Project>
-  ) => {
+  const getOrFetchProjectByUID = async (uid: IdType) => {
+    const cachedData = projectList.value.find(
+      (project) => parseInt(project.uid, 10) === uid
+    );
+    if (cachedData) {
+      return cachedData;
+    }
+    return fetchProjectByUID(uid);
+  };
+  const createProject = async (project: Project, resourceId: string) => {
+    const created = await projectServiceClient.createProject({
+      project,
+      projectId: resourceId,
+    });
+    await upsertProjectMap([created]);
+    return created;
+  };
+  const updateProject = async (project: Project, updateMask: string[]) => {
     const updated = await projectServiceClient.updateProject({
       project,
       updateMask,
@@ -96,11 +111,14 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   return {
     projectMapByName,
     projectList,
+    upsertProjectMap,
     getProjectByUID,
     fetchProjectList,
     fetchProjectByName,
     fetchProjectByUID,
     getOrFetchProjectByName,
+    getOrFetchProjectByUID,
+    createProject,
     updateProject,
     archiveProject,
     restoreProject,
@@ -142,6 +160,25 @@ export const useProjectV1ListByUser = (
     });
   });
   return { projectList, ready };
+};
+
+export const useProjectV1ListByCurrentUser = (
+  showDeleted: MaybeRef<boolean> = false
+) => useProjectV1ListByUser(useCurrentUserV1(), showDeleted);
+
+export const useProjectV1ByUID = (uid: MaybeRef<IdType>) => {
+  const store = useProjectV1Store();
+  const ready = ref(false);
+  watchEffect(() => {
+    ready.value = false;
+    store.getOrFetchProjectByUID(unref(uid)).then(() => {
+      ready.value = true;
+    });
+  });
+  const project = computed(() => {
+    return store.getProjectByUID(unref(uid));
+  });
+  return { project, ready };
 };
 
 const composeProjectIamPolicy = async (project: Project) => {

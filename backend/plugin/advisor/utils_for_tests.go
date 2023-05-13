@@ -365,6 +365,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 		SchemaRuleColumnAutoIncrementMustInteger,
 		SchemaRuleColumnDisallowSetCharset,
 		SchemaRuleColumnAutoIncrementMustUnsigned,
+		SchemaRuleAddNotNullColumnRequireDefault,
 		SchemaRuleCurrentTimeColumnCountLimit,
 		SchemaRuleColumnRequireDefault,
 		SchemaRuleSchemaBackwardCompatibility,
@@ -433,11 +434,15 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 		})
 	case SchemaRuleColumnTypeDisallowList:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
-			List: []string{"JSON"},
+			List: []string{"JSON", "BINARY_FLOAT"},
 		})
 	case SchemaRuleColumnMaximumCharacterLength:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 20,
+		})
+	case SchemaRuleColumnMaximumVarcharLength:
+		payload, err = json.Marshal(NumberTypeRulePayload{
+			Number: 2560,
 		})
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		payload, err = json.Marshal(NumberTypeRulePayload{

@@ -221,11 +221,13 @@
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
     - [SensitiveData](#bytebase-v1-SensitiveData)
     - [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy)
+    - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
     - [ApprovalGroup](#bytebase-v1-ApprovalGroup)
     - [ApprovalStrategy](#bytebase-v1-ApprovalStrategy)
     - [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule)
+    - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
     - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
     - [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType)
@@ -444,7 +446,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The resource that is the target of the operation. Format: - Instance: environments/{environment}/instnaces/{instance} - Database: environments/{environment}/instnaces/{instance}/databases/{database} |
+| resource | [string](#string) |  | The resource that is the target of the operation. Format: - Instance: instnaces/{instance} - Database: instnaces/{instance}/databases/{database} |
 | type | [Anomaly.AnomalyType](#bytebase-v1-Anomaly-AnomalyType) |  | type is the type of the anomaly. |
 | severity | [Anomaly.AnomalySeverity](#bytebase-v1-Anomaly-AnomalySeverity) |  | severity is the severity of the anomaly. |
 | instance_connection_detail | [Anomaly.InstanceConnectionDetail](#bytebase-v1-Anomaly-InstanceConnectionDetail) |  |  |
@@ -550,7 +552,7 @@ InstanceConnectionDetail is the detail for instance connection anomaly.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  | filter is the filter to apply on the search anomaly request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by resource and type for now. For example: Search the anomalies of a specific resource: &#39;resource=&#34;environments/{environemnt}/instances/{instance}&#34;.&#39; Search the specified types of anomalies: &#39;type=&#34;DATABASE_BACKUP_POLICY_VIOLATION&#34; | &#34;MIGRATION_SCHEMA&#34;.&#39; |
+| filter | [string](#string) |  | filter is the filter to apply on the search anomaly request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by resource and type for now. For example: Search the anomalies of a specific resource: &#39;resource=&#34;instances/{instance}&#34;.&#39; Search the specified types of anomalies: &#39;type=&#34;DATABASE_BACKUP_POLICY_VIOLATION&#34; | &#34;MIGRATION_SCHEMA&#34;.&#39; |
 | page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchAnomalies` call. Provide this to retrieve the subsequent page.
 
@@ -1116,7 +1118,7 @@ AdviseIndexRequest is the request of advising index.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: environments/{environment}/instances/{instance}/databases/{database} |
+| parent | [string](#string) |  | Format: instances/{instance}/databases/{database} |
 | statement | [string](#string) |  | The statement to be advised. |
 
 
@@ -1149,7 +1151,7 @@ The message of the backup.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The resource name of the database backup. backup-name is specified by the client. Format: environments/{environment}/instances/{instance}/databases/{database}/backups/{backup-name} |
+| name | [string](#string) |  | The resource name of the database backup. backup-name is specified by the client. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was created initally. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was updated. |
 | state | [Backup.BackupState](#bytebase-v1-Backup-BackupState) |  | The state of the backup. |
@@ -1169,7 +1171,7 @@ BackupSetting is the setting for database backup.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database backup setting. Format: environments/{environment}/instances/{instance}/databases/{database}/backupSettings |
+| name | [string](#string) |  | The name of the database backup setting. Format: instances/{instance}/databases/{database}/backupSettings |
 | backup_retain_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The default maximum age of a Backup created via this BackupPlan. If specified, a Backup will be automatically deleted after its age reaches. If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS. It will be rounded up to the number of days. |
 | cron_schedule | [string](#string) |  | Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups. Support hour of day, day of week. (UTC time)
 
@@ -1189,7 +1191,7 @@ Default (empty): Disable automatic backup. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: environments/{environment}/instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the project of databases for now. |
+| parent | [string](#string) |  | The parent resource shared by all databases being updated. Format: instances/{instance} If the operation spans parents, a dash (-) may be accepted as a wildcard. We only support updating the project of databases for now. |
 | requests | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | repeated | The request message specifying the resources to update. A maximum of 1000 databases can be modified in a batch. |
 
 
@@ -1242,7 +1244,7 @@ CreateBackupRequest is the request message for CreateBackup.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this backup will be created. Format: environments/{environment}/instances/{instance}/databases/{database} |
+| parent | [string](#string) |  | The parent resource where this backup will be created. Format: instances/{instance}/databases/{database} |
 | backup | [Backup](#bytebase-v1-Backup) |  |  |
 
 
@@ -1258,7 +1260,7 @@ CreateBackupRequest is the request message for CreateBackup.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database. Format: environments/{environment}/instances/{instance}/databases/{database} {database} is the database name in the instance. |
+| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} {database} is the database name in the instance. |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | sync_state | [State](#bytebase-v1-State) |  | The existence of a database on latest sync. |
 | successful_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest synchronization time. |
@@ -1329,7 +1331,7 @@ DatabaseMetadata is the metadata for databases.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the secret to be deleted. Format: environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret} |
+| name | [string](#string) |  | The name of the secret to be deleted. Format: instances/{instance}/databases/{database}/secrets/{secret} |
 
 
 
@@ -1417,7 +1419,7 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve backup setting. Format: environments/{environment}/instances/{instance}/databases/{database}/backupSetting |
+| name | [string](#string) |  | The name of the database to retrieve backup setting. Format: instances/{instance}/databases/{database}/backupSetting |
 
 
 
@@ -1432,7 +1434,7 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve metadata. Format: environments/{environment}/instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database} |
 
 
 
@@ -1447,7 +1449,7 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve. Format: environments/{environment}/instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The name of the database to retrieve. Format: instances/{instance}/databases/{database} |
 
 
 
@@ -1462,7 +1464,7 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve schema. Format: environments/{environment}/instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database} |
 
 
 
@@ -1498,7 +1500,7 @@ ListBackupRequest is the request message for ListBackup.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this backup will be created. Format: environments/{environment}/instances/{instance}/databases/{database} |
+| parent | [string](#string) |  | The parent resource where this backup will be created. Format: instances/{instance}/databases/{database} |
 | page_size | [int32](#int32) |  | Not used. The maximum number of backups to return. The service may return fewer than this value. If unspecified, at most 50 backups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBackup` call. Provide this to retrieve the subsequent page.
 
@@ -1533,7 +1535,7 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of databases. Format: environments/{environment}/instances/{instance} Use &#34;environments/-/instances/-&#34; to list all databases from all environments. |
+| parent | [string](#string) |  | The parent, which owns this collection of databases. Format: instances/{instance} Use &#34;instances/-&#34; to list all databases. |
 | page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 
@@ -1569,7 +1571,7 @@ When paginating, all other parameters provided to `ListDatabases` must match the
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent of the secret. Format: environments/{environment}/instances/{instance}/databases/{database} |
+| parent | [string](#string) |  | The parent of the secret. Format: instances/{instance}/databases/{database} |
 | page_size | [int32](#int32) |  | Not used. The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListSecrets` call. Provide this to retrieve the subsequent page.
 
@@ -1604,7 +1606,7 @@ ListSlowQueriesRequest is the request of listing slow query.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: environments/{environment}/instances/{instance}/databases/{database} |
+| parent | [string](#string) |  | Format: instances/{instance}/databases/{database} |
 | filter | [string](#string) |  | The filter of the slow query log. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by project and start_time in SlowQueryDetails for now. For example: Search the slow query log of the specific project: - the specific project: project = &#34;projects/{project}&#34; Search the slow query log that start_time after 2022-01-01T12:00:00.000Z: - start_time &gt; &#34;2022-01-01T12:00:00.000Z&#34; - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339). - Currently we only support filtering down to date granularity. |
 | order_by | [string](#string) |  | The order by of the slow query log. Support order by count, latest_log_time, average_query_time, maximum_query_time, average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now. For example: - order by count: order_by = &#34;count&#34; - order by latest_log_time desc: order_by = &#34;latest_log_time desc&#34; Default: order by average_query_time desc. |
 
@@ -1655,7 +1657,7 @@ Secret is the secret of the database now.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | name is the unique name of the secret, which is specified by the client. Format: environments/{environment}/instances/{instance}/databases/{database}/secrets/{secret} |
+| name | [string](#string) |  | name is the unique name of the secret, which is specified by the client. Format: instances/{instance}/databases/{database}/secrets/{secret} |
 | created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was created initally. |
 | updated_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was updated. |
 | value | [string](#string) |  | The value of the secret. |
@@ -1694,7 +1696,7 @@ SlowQueryLog is the slow query log.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The resource of the slow query log. The format is &#34;environments/{environment}/instances/{instance}/databases/{database}&#34;. |
+| resource | [string](#string) |  | The resource of the slow query log. The format is &#34;instances/{instance}/databases/{database}&#34;. |
 | project | [string](#string) |  | The project of the slow query log. The format is &#34;projects/{project}&#34;. |
 | statistics | [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics) |  | The statistics of the slow query log. |
 
@@ -1780,7 +1782,7 @@ TableMetadata is the metadata for tables.
 | ----- | ---- | ----- | ----------- |
 | database | [Database](#bytebase-v1-Database) |  | The database to update.
 
-The database&#39;s `name` field is used to identify the database to update. Format: environments/{environment}/instances/{instance}/databases/{database} |
+The database&#39;s `name` field is used to identify the database to update. Format: instances/{instance}/databases/{database} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
@@ -2681,7 +2683,7 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this role will be created. Format: environments/{environment}/instances/{instance} |
+| parent | [string](#string) |  | The parent resource where this role will be created. Format: instances/{instance} |
 | role | [InstanceRole](#bytebase-v1-InstanceRole) |  | The role to create. |
 
 
@@ -2697,7 +2699,7 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the role to delete. Format: environments/{environment}/instances/{instance}/roles/{role name} |
+| name | [string](#string) |  | The name of the role to delete. Format: instances/{instance}/roles/{role name} |
 
 
 
@@ -2712,7 +2714,7 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the role to retrieve. Format: environments/{environment}/instances/{instance}/roles/{role name} The role name is the unique name for the role. |
+| name | [string](#string) |  | The name of the role to retrieve. Format: instances/{instance}/roles/{role name} The role name is the unique name for the role. |
 
 
 
@@ -2727,7 +2729,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the role. Format: environments/{environment}/instances/{instance}/roles/{role name} The role name is the unique name for the role. |
+| name | [string](#string) |  | The name of the role. Format: instances/{instance}/roles/{role name} The role name is the unique name for the role. |
 | role_name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
 | password | [string](#string) | optional | The role password. |
 | connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
@@ -2747,7 +2749,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of roles. Format: environments/{environment}/instances/{instance} |
+| parent | [string](#string) |  | The parent, which owns this collection of roles. Format: instances/{instance} |
 | page_size | [int32](#int32) |  | The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 50 roles will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListRoles` call. Provide this to retrieve the subsequent page.
 
@@ -2782,7 +2784,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted role. Format: environments/{environment}/instances/{instance}/roles/{role name} |
+| name | [string](#string) |  | The name of the deleted role. Format: instances/{instance}/roles/{role name} |
 
 
 
@@ -2799,7 +2801,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | ----- | ---- | ----- | ----------- |
 | role | [InstanceRole](#bytebase-v1-InstanceRole) |  | The role to update.
 
-The role&#39;s `name`, `environment` and `instance` field is used to identify the role to update. Format: environments/{environment}/instances/{instance}/roles/{role name} |
+The role&#39;s `name` and `instance` field is used to identify the role to update. Format: instances/{instance}/roles/{role name} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
@@ -2846,7 +2848,7 @@ The role&#39;s `name`, `environment` and `instance` field is used to identify th
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The name of the instance to add a data source to. Format: environments/{environment}/instances/{instance} |
+| instance | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
 | data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be added. |
 
 
@@ -2862,7 +2864,6 @@ The role&#39;s `name`, `environment` and `instance` field is used to identify th
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this instance will be created. Format: environments/{environment} |
 | instance | [Instance](#bytebase-v1-Instance) |  | The instance to create. |
 | instance_id | [string](#string) |  | The ID to use for the instance, which will become the final component of the instance&#39;s resource name.
 
@@ -2914,7 +2915,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to delete. Format: environments/{environment}/instances/{instance} |
+| name | [string](#string) |  | The name of the instance to delete. Format: instances/{instance} |
 | force | [bool](#bool) |  | If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. |
 
 
@@ -2930,7 +2931,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to retrieve. Format: environments/{environment}/instances/{instance} |
+| name | [string](#string) |  | The name of the instance to retrieve. Format: instances/{instance} |
 
 
 
@@ -2945,13 +2946,14 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance. Format: environments/{environment}/instances/{instance} |
+| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | state | [State](#bytebase-v1-State) |  |  |
 | title | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
+| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 
 
 
@@ -2966,7 +2968,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of instances. Format: environments/{environment} Use &#34;environments/-&#34; to list all instances from all environments. |
 | page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 50 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
 
@@ -3002,7 +3003,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The name of the instance to remove a data source from. Format: environments/{environment}/instances/{instance} |
+| instance | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
 | data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be removed. |
 
 
@@ -3018,7 +3019,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The name of the instance to sync slow queries. Format: environments/{environment}/instances/{instance} |
+| instance | [string](#string) |  | The name of the instance to sync slow queries. Format: instances/{instance} |
 
 
 
@@ -3033,7 +3034,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted instance. Format: environments/{environment}/instances/{instance} |
+| name | [string](#string) |  | The name of the deleted instance. Format: instances/{instance} |
 
 
 
@@ -3048,7 +3049,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The name of the instance to update a data source. Format: environments/{environment}/instances/{instance} |
+| instance | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
 | data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
@@ -3067,7 +3068,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | ----- | ---- | ----- | ----------- |
 | instance | [Instance](#bytebase-v1-Instance) |  | The instance to update.
 
-The instance&#39;s `name` field is used to identify the instance to update. Format: environments/{environment}/instances/{instance} |
+The instance&#39;s `name` field is used to identify the instance to update. Format: instances/{instance} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
@@ -3309,7 +3310,7 @@ ACTION_SQL_EDITOR_QUERY is the type for SQL editor query. If user runs SQL in Re
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: environments/environment-id/instances/instance-id. Database resource name: environments/environment-id/instances/instance-id/databases/database-name. |
+| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
 | policy | [Policy](#bytebase-v1-Policy) |  | The policy to create. |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
 
@@ -3326,7 +3327,7 @@ ACTION_SQL_EDITOR_QUERY is the type for SQL editor query. If user runs SQL in Re
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: environments/environment-id/instances/instance-id. Database resource name: environments/environment-id/instances/instance-id/databases/database-name. |
+| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
 
 
 
@@ -3390,10 +3391,12 @@ ACTION_SQL_EDITOR_QUERY is the type for SQL editor query. If user runs SQL in Re
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id}/policies/{policy type} |
+| policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
 | page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `GetPolicies` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
 
 
 
@@ -3424,7 +3427,7 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: environments/environment-id/instances/instance-id. Database resource name: environments/environment-id/instances/instance-id/databases/database-name. |
+| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | inherit_from_parent | [bool](#bool) |  |  |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
@@ -3433,7 +3436,11 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | sensitive_data_policy | [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy) |  |  |
 | access_control_policy | [AccessControlPolicy](#bytebase-v1-AccessControlPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
+| slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
+| resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
+| resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
+| state | [State](#bytebase-v1-State) |  |  |
 
 
 
@@ -3448,7 +3455,7 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  |  |
+| name | [string](#string) |  |  |
 | rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
 
 
@@ -3508,6 +3515,21 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 
 
 
+<a name="bytebase-v1-SlowQueryPolicy"></a>
+
+### SlowQueryPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdatePolicyRequest"></a>
 
 ### UpdatePolicyRequest
@@ -3518,7 +3540,7 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | ----- | ---- | ----- | ----------- |
 | policy | [Policy](#bytebase-v1-Policy) |  | The policy to update.
 
-The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: environments/environment-id/instances/instance-id. Database resource name: environments/environment-id/instances/instance-id/databases/database-name. |
+The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | allow_missing | [bool](#bool) |  | If set to true, and the policy is not found, a new policy will be created. In this situation, `update_mask` is ignored. |
 
@@ -3569,6 +3591,22 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
 
+<a name="bytebase-v1-PolicyResourceType"></a>
+
+### PolicyResourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESOURCE_TYPE_UNSPECIFIED | 0 |  |
+| WORKSPACE | 1 |  |
+| ENVIRONMENT | 2 |  |
+| PROJECT | 3 |  |
+| INSTANCE | 4 |  |
+| DATABASE | 5 |  |
+
+
+
 <a name="bytebase-v1-PolicyType"></a>
 
 ### PolicyType
@@ -3582,6 +3620,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | SQL_REVIEW | 3 |  |
 | SENSITIVE_DATA | 4 |  |
 | ACCESS_CONTROL | 5 |  |
+| SLOW_QUERY | 6 |  |
 
 
 
@@ -3926,7 +3965,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project to remove the webhook from. Format: projects/{project} |
 | webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to remove. Identified by its url. |
 
 
@@ -4084,8 +4122,7 @@ The project&#39;s `name` field is used to identify the project to update. Format
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project which owns the webhook to be updated. Format: projects/{project} |
-| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to modify. Identified by its url. |
+| webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to modify. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
@@ -4101,6 +4138,7 @@ The project&#39;s `name` field is used to identify the project to update. Format
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | name is the name of the webhook, generated by the server. format: projects/{project}/webhooks/{webhook} |
 | type | [Webhook.Type](#bytebase-v1-Webhook-Type) |  | type is the type of the webhook. |
 | title | [string](#string) |  | title is the title of the webhook. |
 | url | [string](#string) |  | url is the url of the webhook, should be unique within the project. |

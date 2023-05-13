@@ -1,9 +1,14 @@
 import { defineStore } from "pinia";
+import { computed } from "vue";
 import { environmentServiceClient } from "@/grpcweb";
-import { Environment } from "@/types/proto/v1/environment_service";
-import { ResourceId } from "@/types";
+import {
+  Environment,
+  EnvironmentTier,
+} from "@/types/proto/v1/environment_service";
+import { ResourceId, EnvironmentId } from "@/types";
 import { isEqual, isUndefined } from "lodash-es";
 import { State } from "@/types/proto/v1/common";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
 
 interface EnvironmentState {
   environmentMapByName: Map<ResourceId, Environment>;
@@ -27,6 +32,14 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
         this.environmentMapByName.set(env.name, env);
       }
       return environments;
+    },
+    getEnvironmentList(showDeleted = false): Environment[] {
+      return this.environmentList.filter((environment: Environment) => {
+        if (environment.state == State.DELETED && !showDeleted) {
+          return false;
+        }
+        return true;
+      });
     },
     async createEnvironment(environment: Partial<Environment>) {
       const createdEnvironment =
@@ -72,6 +85,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
         name,
       });
       this.environmentMapByName.set(environment.name, environment);
+      return environment;
     },
     async getOrFetchEnvironmentByName(name: string) {
       const cachedData = this.environmentMapByName.get(name);
@@ -84,8 +98,18 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       this.environmentMapByName.set(environment.name, environment);
       return environment;
     },
+    async getOrFetchEnvironmentByUID(uid: EnvironmentId) {
+      const name = `${environmentNamePrefix}${uid}`;
+      return this.getOrFetchEnvironmentByName(name);
+    },
     getEnvironmentByName(name: string) {
       return this.environmentMapByName.get(name);
+    },
+    getEnvironmentByUID(uid: EnvironmentId) {
+      return (
+        this.environmentList.find((env) => env.uid == uid) ??
+        ({} as Environment)
+      );
     },
   },
 });
@@ -106,3 +130,10 @@ const getUpdateMaskFromEnvironments = (
   }
   return updateMask;
 };
+
+export const useEnvironmentList = (showDeleted = false) => {
+  const store = useEnvironmentV1Store();
+  return computed(() => store.getEnvironmentList(showDeleted));
+};
+
+export const defaultEnvironmentTier = EnvironmentTier.UNPROTECTED;

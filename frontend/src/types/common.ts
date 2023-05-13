@@ -14,14 +14,13 @@ import { Member } from "./member";
 import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
-import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
-import { DeploymentConfig } from "./deployment";
-import { Policy, DefaultApprovalPolicy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
 import { AuditLog, AuditActivityType, AuditActivityLevel } from "./auditLog";
+import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -94,20 +93,23 @@ export type DatabaseQuickActionType =
   | "quickaction.bb.database.data.update"
   | "quickaction.bb.database.troubleshoot"
   | "quickaction.bb.database.schema.sync";
+export type IssueQuickActionType =
+  | "quickaction.bb.issue.grant.request.querier"
+  | "quickaction.bb.issue.grant.request.exporter";
 
 export type QuickActionType =
   | EnvironmentQuickActionType
   | ProjectQuickActionType
   | InstanceQuickActionType
   | UserQuickActionType
-  | DatabaseQuickActionType;
+  | DatabaseQuickActionType
+  | IssueQuickActionType;
 
 export type ResourceType =
   | "PRINCIPAL"
   | "MEMBER"
   | "ENVIRONMENT"
   | "PROJECT"
-  | "PROJECT_HOOK"
   | "PROJECT_MEMBER"
   | "INSTANCE"
   | "DATABASE"
@@ -135,7 +137,6 @@ interface ResourceMaker {
   (type: "MEMBER"): Member;
   (type: "ENVIRONMENT"): Environment;
   (type: "PROJECT"): Project;
-  (type: "PROJECT_HOOK"): ProjectWebhook;
   (type: "PROJECT_MEMBER"): ProjectMember;
   (type: "INSTANCE"): Instance;
   (type: "DATABASE"): Database;
@@ -143,7 +144,6 @@ interface ResourceMaker {
   (type: "BACKUP_SETTING"): BackupSetting;
   (type: "ISSUE"): Issue;
   (type: "PIPELINE"): Pipeline;
-  (type: "POLICY"): Policy;
   (type: "STAGE"): Stage;
   (type: "TASK_PROGRESS"): TaskProgress;
   (type: "TASK"): Task;
@@ -153,7 +153,6 @@ interface ResourceMaker {
   (type: "VCS"): VCS;
   (type: "REPOSITORY"): Repository;
   (type: "ANOMALY"): Anomaly;
-  (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
   (type: "SHEET"): Sheet;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
   (type: "AUDIT_LOG"): AuditLog;
@@ -183,7 +182,7 @@ const makeUnknown = (type: ResourceType) => {
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
-    tier: "UNPROTECTED",
+    tier: EnvironmentTier.UNPROTECTED,
   };
 
   const UNKNOWN_PROJECT: Project = {
@@ -198,15 +197,6 @@ const makeUnknown = (type: ResourceType) => {
     tenantMode: "DISABLED",
     dbNameTemplate: "",
     schemaChangeType: "DDL",
-  };
-
-  const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
-    id: UNKNOWN_ID,
-    projectId: UNKNOWN_ID,
-    type: "",
-    name: "",
-    url: "",
-    activityList: [],
   };
 
   const UNKNOWN_PROJECT_MEMBER: ProjectMember = {
@@ -289,20 +279,6 @@ const makeUnknown = (type: ResourceType) => {
     id: UNKNOWN_ID,
     name: "<<Unknown pipeline>>",
     stageList: [],
-  };
-
-  const UNKNOWN_POLICY: Policy = {
-    id: UNKNOWN_ID,
-    rowStatus: "NORMAL",
-    resourceType: "",
-    resourceId: UNKNOWN_ID,
-    environment: UNKNOWN_ENVIRONMENT,
-    type: "bb.policy.pipeline-approval",
-    inheritFromParent: false,
-    payload: {
-      value: DefaultApprovalPolicy,
-      assigneeGroupList: [],
-    },
   };
 
   const UNKNOWN_ISSUE: Issue = {
@@ -426,15 +402,8 @@ const makeUnknown = (type: ResourceType) => {
     severity: "MEDIUM",
     payload: {
       environmentId: UNKNOWN_ID,
-      expectedSchedule: "DAILY",
-      actualSchedule: "UNSET",
-    },
-  };
-
-  const UNKNOWN_DEPLOYMENT_CONFIG: DeploymentConfig = {
-    id: UNKNOWN_ID,
-    schedule: {
-      deployments: [],
+      expectedSchedule: BackupPlanSchedule.DAILY,
+      actualSchedule: BackupPlanSchedule.UNSET,
     },
   };
 
@@ -461,14 +430,6 @@ const makeUnknown = (type: ResourceType) => {
     size: 0,
   };
 
-  const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
-    id: UNKNOWN_ID,
-    rowStatus: "NORMAL",
-    environment: UNKNOWN_ENVIRONMENT,
-    name: "",
-    ruleList: [],
-  };
-
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -478,8 +439,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_ENVIRONMENT;
     case "PROJECT":
       return UNKNOWN_PROJECT;
-    case "PROJECT_HOOK":
-      return UNKNOWN_PROJECT_HOOK;
     case "PROJECT_MEMBER":
       return UNKNOWN_PROJECT_MEMBER;
     case "INSTANCE":
@@ -494,8 +453,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_ISSUE;
     case "PIPELINE":
       return UNKNOWN_PIPELINE;
-    case "POLICY":
-      return UNKNOWN_POLICY;
     case "STAGE":
       return UNKNOWN_STAGE;
     case "TASK_PROGRESS":
@@ -514,12 +471,8 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_REPOSITORY;
     case "ANOMALY":
       return UNKNOWN_ANOMALY;
-    case "DEPLOYMENT_CONFIG":
-      return UNKNOWN_DEPLOYMENT_CONFIG;
     case "SHEET":
       return UNKNOWN_SHEET;
-    case "SQL_REVIEW":
-      return UNKNOWN_SQL_REVIEW_POLICY;
   }
 };
 export const unknown = makeUnknown as ResourceMaker;
@@ -548,7 +501,7 @@ const makeEmpty = (type: ResourceType) => {
     rowStatus: "NORMAL",
     name: "",
     order: 0,
-    tier: "UNPROTECTED",
+    tier: EnvironmentTier.UNPROTECTED,
   };
 
   const EMPTY_PROJECT: Project = {
@@ -563,15 +516,6 @@ const makeEmpty = (type: ResourceType) => {
     tenantMode: "DISABLED",
     dbNameTemplate: "",
     schemaChangeType: "DDL",
-  };
-
-  const EMPTY_PROJECT_HOOK: ProjectWebhook = {
-    id: EMPTY_ID,
-    projectId: EMPTY_ID,
-    type: "",
-    name: "",
-    url: "",
-    activityList: [],
   };
 
   const EMPTY_PROJECT_MEMBER: ProjectMember = {
@@ -654,20 +598,6 @@ const makeEmpty = (type: ResourceType) => {
     id: EMPTY_ID,
     name: "",
     stageList: [],
-  };
-
-  const EMPTY_POLICY: Policy = {
-    id: EMPTY_ID,
-    rowStatus: "NORMAL",
-    resourceType: "",
-    resourceId: EMPTY_ID,
-    environment: EMPTY_ENVIRONMENT,
-    type: "bb.policy.pipeline-approval",
-    inheritFromParent: false,
-    payload: {
-      value: DefaultApprovalPolicy,
-      assigneeGroupList: [],
-    },
   };
 
   const EMPTY_ISSUE: Issue = {
@@ -791,15 +721,8 @@ const makeEmpty = (type: ResourceType) => {
     severity: "MEDIUM",
     payload: {
       environmentId: EMPTY_ID,
-      expectedSchedule: "DAILY",
-      actualSchedule: "UNSET",
-    },
-  };
-
-  const EMPTY_DEPLOYMENT_CONFIG: DeploymentConfig = {
-    id: EMPTY_ID,
-    schedule: {
-      deployments: [],
+      expectedSchedule: BackupPlanSchedule.DAILY,
+      actualSchedule: BackupPlanSchedule.UNSET,
     },
   };
 
@@ -826,14 +749,6 @@ const makeEmpty = (type: ResourceType) => {
     size: 0,
   };
 
-  const EMPTY_SQL_REVIEW_POLICY: SQLReviewPolicy = {
-    id: EMPTY_ID,
-    rowStatus: "NORMAL",
-    environment: EMPTY_ENVIRONMENT,
-    name: "",
-    ruleList: [],
-  };
-
   const EMPTY_AUDIT_LOG: AuditLog = {
     createdTs: 0,
     creator: EMPTY_PRINCIPAL.email,
@@ -852,8 +767,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_ENVIRONMENT;
     case "PROJECT":
       return EMPTY_PROJECT;
-    case "PROJECT_HOOK":
-      return EMPTY_PROJECT_HOOK;
     case "PROJECT_MEMBER":
       return EMPTY_PROJECT_MEMBER;
     case "INSTANCE":
@@ -868,8 +781,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_ISSUE;
     case "PIPELINE":
       return EMPTY_PIPELINE;
-    case "POLICY":
-      return EMPTY_POLICY;
     case "STAGE":
       return EMPTY_STAGE;
     case "TASK_PROGRESS":
@@ -888,12 +799,8 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_REPOSITORY;
     case "ANOMALY":
       return EMPTY_ANOMALY;
-    case "DEPLOYMENT_CONFIG":
-      return EMPTY_DEPLOYMENT_CONFIG;
     case "SHEET":
       return EMPTY_SHEET;
-    case "SQL_REVIEW":
-      return EMPTY_SQL_REVIEW_POLICY;
     case "AUDIT_LOG":
       return EMPTY_AUDIT_LOG;
   }

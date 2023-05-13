@@ -1,0 +1,40 @@
+- statement: CREATE TABLE t(name char(20));
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE t(name varchar(225));
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE t(name char(225));
+  want:
+    - status: WARN
+      code: 415
+      title: column.maximum-character-length
+      content: The maximum character length is 20.
+      line: 1
+      details: ""
+- statement: ALTER TABLE public.tech_book ADD name_2 char(225)
+  want:
+    - status: WARN
+      code: 415
+      title: column.maximum-character-length
+      content: The maximum character length is 20.
+      line: 1
+      details: ""
+- statement: ALTER TABLE tech_book MODIFY name char(225)
+  want:
+    - status: WARN
+      code: 415
+      title: column.maximum-character-length
+      content: The maximum character length is 20.
+      line: 1
+      details: ""

@@ -11,7 +11,7 @@ export interface SearchAnomaliesRequest {
    * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
    * Only support filter by resource and type for now.
    * For example:
-   * Search the anomalies of a specific resource: 'resource="environments/{environemnt}/instances/{instance}".'
+   * Search the anomalies of a specific resource: 'resource="instances/{instance}".'
    * Search the specified types of anomalies: 'type="DATABASE_BACKUP_POLICY_VIOLATION" | "MIGRATION_SCHEMA".'
    */
   filter: string;
@@ -46,8 +46,8 @@ export interface Anomaly {
   /**
    * The resource that is the target of the operation.
    * Format:
-   * - Instance: environments/{environment}/instnaces/{instance}
-   * - Database: environments/{environment}/instnaces/{instance}/databases/{database}
+   * - Instance: instnaces/{instance}
+   * - Database: instnaces/{instance}/databases/{database}
    */
   resource: string;
   /** type is the type of the anomaly. */

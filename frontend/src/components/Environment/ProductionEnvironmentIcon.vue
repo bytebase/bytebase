@@ -30,7 +30,11 @@ export default defineComponent({
   props: {
     environment: {
       type: Object as PropType<Environment>,
-      required: true,
+      default: undefined,
+    },
+    tier: {
+      type: String,
+      default: "",
     },
     tooltip: {
       type: Boolean,
@@ -46,7 +50,7 @@ export default defineComponent({
       if (!hasEnvironmentTierPolicyFeature.value) {
         return false;
       }
-      return props.environment.tier === "PROTECTED";
+      return (props.environment?.tier || props.tier) === "PROTECTED";
     });
 
     return { enabled };

@@ -6,30 +6,28 @@
       <div class="flex flex-row space-x-2 items-center">
         <!-- This awkward code is author couldn't figure out proper way to use dynamic src under vite
                    https://github.com/vitejs/vite/issues/1265 -->
-        <template v-if="projectWebhook.type == 'bb.plugin.webhook.slack'">
+        <template v-if="projectWebhook.type === Webhook_Type.TYPE_SLACK">
           <img class="h-5 w-5" src="../assets/slack-logo.png" />
         </template>
-        <template
-          v-else-if="projectWebhook.type == 'bb.plugin.webhook.discord'"
-        >
+        <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_DISCORD">
           <img class="h-5 w-5" src="../assets/discord-logo.svg" />
         </template>
-        <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.teams'">
+        <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_TEAMS">
           <img class="h-5 w-5" src="../assets/teams-logo.svg" />
         </template>
         <template
-          v-else-if="projectWebhook.type == 'bb.plugin.webhook.dingtalk'"
+          v-else-if="projectWebhook.type === Webhook_Type.TYPE_DINGTALK"
         >
           <img class="h-5 w-5" src="../assets/dingtalk-logo.png" />
         </template>
-        <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.feishu'">
+        <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_FEISHU">
           <img class="h-5 w-5" src="../assets/feishu-logo.webp" />
         </template>
-        <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.wecom'">
+        <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_WECOM">
           <img class="h-5 w-5" src="../assets/wecom-logo.png" />
         </template>
         <h3 class="text-lg leading-6 font-medium text-main">
-          {{ projectWebhook.name }}
+          {{ projectWebhook.title }}
         </h3>
       </div>
       <button
@@ -61,60 +59,46 @@
   </div>
 </template>
 
-<script lang="ts">
-import { reactive, PropType, computed, defineComponent } from "vue";
+<script lang="ts" setup>
+import { PropType, computed } from "vue";
 import { useRouter } from "vue-router";
+import { projectWebhookV1ActivityItemList } from "@/types";
 import {
-  ProjectWebhook,
-  PROJECT_HOOK_ACTIVITY_ITEM_LIST,
-  redirectUrl,
-} from "../types";
-import { projectWebhookSlug } from "../utils";
+  Webhook,
+  Webhook_Type,
+  activity_TypeToJSON,
+} from "@/types/proto/v1/project_service";
+import { projectWebhookV1Slug } from "@/utils";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+const props = defineProps({
+  projectWebhook: {
+    required: true,
+    type: Object as PropType<Webhook>,
+  },
+});
+const router = useRouter();
 
-export default defineComponent({
-  name: "ProjectWebhookCard",
-  props: {
-    projectWebhook: {
-      required: true,
-      type: Object as PropType<ProjectWebhook>,
+const viewProjectWebhook = () => {
+  router.push({
+    name: "workspace.project.hook.detail",
+    params: {
+      projectWebhookSlug: projectWebhookV1Slug(props.projectWebhook),
     },
-  },
-  setup(props) {
-    const router = useRouter();
+  });
+};
 
-    const state = reactive<LocalState>({});
+const activityListStr = computed(() => {
+  const wellknownActivityItemList = projectWebhookV1ActivityItemList();
+  const list = props.projectWebhook.notificationTypes.map((activity) => {
+    const item = wellknownActivityItemList.find(
+      (item) => item.activity === activity
+    );
+    if (item) {
+      return item.title;
+    }
+    return activity_TypeToJSON(activity);
+  });
 
-    const viewProjectWebhook = () => {
-      router.push({
-        name: "workspace.project.hook.detail",
-        params: {
-          projectWebhookSlug: projectWebhookSlug(props.projectWebhook),
-        },
-      });
-    };
-
-    const activityListStr = computed(() => {
-      const list = props.projectWebhook.activityList.map((activity) => {
-        for (const item of PROJECT_HOOK_ACTIVITY_ITEM_LIST()) {
-          if (item.activity == activity) {
-            return item.title;
-          }
-        }
-        return activity;
-      });
-
-      return list.join(", ");
-    });
-
-    return {
-      state,
-      redirectUrl,
-      viewProjectWebhook,
-      activityListStr,
-    };
-  },
+  return list.join(", ");
 });
 </script>

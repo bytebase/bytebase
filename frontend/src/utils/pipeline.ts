@@ -146,7 +146,10 @@ export function activeTaskInStage(stage: Stage): Task {
   return empty("TASK") as Task;
 }
 
-export function activeEnvironment(pipeline: Pipeline): Environment {
+export function activeEnvironment(pipeline: Pipeline | undefined): Environment {
+  if (!pipeline) {
+    return empty("ENVIRONMENT");
+  }
   const stage: Stage = activeStage(pipeline);
   if (stage.id == EMPTY_ID) {
     return empty("ENVIRONMENT") as Environment;

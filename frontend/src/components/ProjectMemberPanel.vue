@@ -88,17 +88,17 @@ import { cloneDeep, orderBy, uniq } from "lodash-es";
 
 import { ProjectMemberTable } from "../components/Project/ProjectSetting";
 import {
+  ComposedPrincipal,
   DEFAULT_PROJECT_ID,
   Principal,
   PrincipalId,
-  Project,
   ProjectRoleType,
   UNKNOWN_ID,
 } from "../types";
 import { PrincipalSelect, ProjectRolesSelect } from "./v2";
 import {
   addRoleToProjectIamPolicy,
-  hasPermissionInProject,
+  hasPermissionInProjectV1,
   hasWorkspacePermission,
 } from "../utils";
 import {
@@ -106,13 +106,15 @@ import {
   featureToRef,
   pushNotification,
   useCurrentUser,
+  useCurrentUserV1,
   useMemberStore,
   usePrincipalStore,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
-import { ComposedPrincipal } from "./Project/ProjectSetting/common";
+import { Project } from "@/types/proto/v1/project_service";
+import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
   principalId: PrincipalId | undefined;
@@ -131,9 +133,8 @@ const props = defineProps({
 const ROLE_OWNER = "roles/OWNER";
 const { t } = useI18n();
 const currentUser = useCurrentUser();
-const projectResourceName = computed(
-  () => `projects/${props.project.resourceId}`
-);
+const currentUserV1 = useCurrentUserV1();
+const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy, ready } = useProjectIamPolicy(projectResourceName);
 
 const state = reactive<LocalState>({
@@ -148,11 +149,11 @@ const userStore = useUserStore();
 const memberStore = useMemberStore();
 
 const allowAdmin = computed(() => {
-  if (props.project.id === DEFAULT_PROJECT_ID) {
+  if (parseInt(props.project.uid, 10) === DEFAULT_PROJECT_ID) {
     return false;
   }
 
-  if (props.project.rowStatus === "ARCHIVED") {
+  if (props.project.state === State.DELETED) {
     return false;
   }
 
@@ -167,9 +168,9 @@ const allowAdmin = computed(() => {
   }
 
   if (
-    hasPermissionInProject(
-      props.project,
-      currentUser.value,
+    hasPermissionInProjectV1(
+      iamPolicy.value,
+      currentUserV1.value,
       "bb.permission.project.manage-member"
     )
   ) {

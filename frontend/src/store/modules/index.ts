@@ -9,7 +9,6 @@ export * from "./command";
 export * from "./database";
 export * from "./dataSource";
 export * from "./debug";
-export * from "./deployment";
 export * from "./environment";
 export * from "./gitlab";
 export * from "./help";
@@ -21,11 +20,9 @@ export * from "./member";
 export * from "./notification";
 export * from "./oauth";
 export * from "./pipeline";
-export * from "./policy";
 export * from "./slowQueryPolicy";
 export * from "./principal";
 export * from "./project";
-export * from "./projectWebhook";
 export * from "./repository";
 export * from "./router";
 export * from "./setting";
@@ -54,3 +51,5 @@ export * from "./slowQuery";
 export * from "./role";
 
 export * from "./v1";
+
+export * from "./utils";

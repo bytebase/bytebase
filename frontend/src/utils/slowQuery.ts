@@ -1,17 +1,6 @@
-import type {
-  EngineType,
-  Instance,
-  Policy,
-  SlowQueryPolicyPayload,
-} from "@/types";
+import type { EngineType, Instance } from "@/types";
 import { semverCompare } from "./util";
 
-export const extractSlowQueryPolicyPayload = (
-  policy: Policy | undefined
-): SlowQueryPolicyPayload => {
-  if (!policy) return { active: false };
-  return policy.payload as SlowQueryPolicyPayload;
-};
 export const InstanceListSupportSlowQuery: [EngineType, string][] = [
   ["MYSQL", "5.7"],
   ["POSTGRES", "0"],

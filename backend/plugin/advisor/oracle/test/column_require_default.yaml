@@ -1,0 +1,20 @@
+- statement: CREATE TABLE t(a int primary key, b int default 1)
+  want:
+    - status: WARN
+      code: 420
+      title: column.require-default
+      content: Column "A" doesn't have default value
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE t(
+      a int,
+      b int default 1
+    )
+  want:
+    - status: WARN
+      code: 420
+      title: column.require-default
+      content: Column "A" doesn't have default value
+      line: 2
+      details: ""

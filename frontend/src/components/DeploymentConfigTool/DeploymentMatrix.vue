@@ -23,32 +23,27 @@
           @change-text="(text: string) => (state.keyword = text)"
         />
       </div>
-
-      <DeployDatabaseTable
-        :database-list="filteredDatabaseList"
-        :label="state.label"
-        :environment-list="environmentList"
-        :deployment="deployment"
-      />
+      <div class="w-full overflow-x-auto">
+        <DeployDatabaseTable
+          :database-list="filteredDatabaseList"
+          :label="state.label"
+          :environment-list="environmentList"
+          :deployment="deployment"
+        />
+      </div>
     </template>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import {
-  Project,
-  DeploymentConfig,
-  Environment,
-  Database,
-  LabelKeyType,
-} from "@/types";
+import { Environment, Database, LabelKeyType } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import { filterDatabaseByKeyword } from "@/utils";
+import { DeploymentConfig } from "@/types/proto/v1/project_service";
 
 const props = withDefaults(
   defineProps<{
-    project: Project;
     deployment: DeploymentConfig;
     environmentList: Environment[];
     databaseList: Database[];

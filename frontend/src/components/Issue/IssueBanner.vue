@@ -41,7 +41,7 @@ import { computed, Ref } from "vue";
 import dayjs from "dayjs";
 
 import { Issue } from "@/types";
-import { activeTask } from "@/utils";
+import { activeTask, isDatabaseRelatedIssueType } from "@/utils";
 import { useIssueLogic } from "./logic";
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 
@@ -51,6 +51,7 @@ const reviewContext = useIssueReviewContext();
 
 const showPendingReview = computed(() => {
   if (issueContext.create.value) return false;
+  if (issue.value.status !== "OPEN") return false;
   return !reviewContext.done.value;
 });
 
@@ -64,12 +65,20 @@ const showSuccessBanner = computed(() => {
 
 const showPendingRollout = computed(() => {
   if (issue.value.status !== "OPEN") return false;
+  if (!isDatabaseRelatedIssueType(issue.value.type)) {
+    return false;
+  }
+
   const task = activeTask(issue.value.pipeline);
   return task.status == "PENDING_APPROVAL";
 });
 
 const showEarliestAllowedTimeBanner = computed(() => {
   if (issue.value.status !== "OPEN") return false;
+  if (!isDatabaseRelatedIssueType(issue.value.type)) {
+    return false;
+  }
+
   const task = activeTask(issue.value.pipeline);
 
   if (task.status !== "PENDING") {

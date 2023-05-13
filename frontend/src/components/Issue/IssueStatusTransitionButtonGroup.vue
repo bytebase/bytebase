@@ -48,11 +48,11 @@
     </div>
     <template v-else>
       <div
-        if="applicableIssueStatusTransitionList.length > 0"
+        v-if="issueStatusTransitionActionList.length > 0"
         class="flex space-x-2"
       >
         <template
-          v-for="(transition, index) in applicableIssueStatusTransitionList"
+          v-for="(transition, index) in issueStatusTransitionActionList"
           :key="index"
         >
           <button
@@ -134,18 +134,21 @@
 
 <script lang="ts" setup>
 import { computed, reactive, ref, Ref } from "vue";
-import { isEmpty } from "lodash-es";
+import { cloneDeep, isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { DropdownOption, NDropdown } from "naive-ui";
 
 import {
   activeStage,
   canSkipTask,
+  isDatabaseRelatedIssueType,
+  isGrantRequestIssueType,
   StageStatusTransition,
   taskCheckRunSummary,
   TaskStatusTransition,
 } from "@/utils";
 import type {
+  GrantRequestContext,
   Issue,
   IssueCreate,
   IssueStatusTransition,
@@ -161,7 +164,6 @@ import {
   flattenTaskList,
   useIssueTransitionLogic,
   isApplicableTransition,
-  IssueTypeWithStatement,
   TaskTypeWithStatement,
   useExtraIssueLogic,
   useIssueLogic,
@@ -170,6 +172,7 @@ import BBContextMenuButton, {
   type ButtonAction,
 } from "@/bbkit/BBContextMenuButton.vue";
 import BatchTaskActionForm from "./BatchTaskActionForm.vue";
+import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 
 export type IssueContext = {
   currentUser: Principal;
@@ -244,6 +247,9 @@ const batchTaskActionState = ref<BatchTaskActionState>();
 
 const currentUser = useCurrentUser();
 
+const issueReview = useIssueReviewContext();
+const { done: reviewDone } = issueReview;
+
 const issueContext = computed((): IssueContext => {
   return {
     currentUser: currentUser.value,
@@ -261,6 +267,7 @@ const {
   getApplicableTaskStatusTransitionList,
 } = useIssueTransitionLogic(issue as Ref<Issue>);
 
+// TODO(steven): figure out how to show the dropdown for grant request issue.
 const issueStatusTransitionDropdownOptions = computed(() => {
   return applicableIssueStatusTransitionList.value.map<ExtraActionOption>(
     (transition) => {
@@ -275,11 +282,28 @@ const issueStatusTransitionDropdownOptions = computed(() => {
   );
 });
 
+const issueStatusTransitionActionList = computed(() => {
+  const actionList = cloneDeep(applicableIssueStatusTransitionList.value);
+  const resolveActionIndex = actionList.findIndex(
+    (item) => item.type === "RESOLVE"
+  );
+  // Hide resolve button when grant request issue isn't review done.
+  if (isGrantRequestIssueType(issue.value.type) && resolveActionIndex > -1) {
+    if (!reviewDone.value) {
+      actionList.splice(resolveActionIndex, 1);
+    }
+  }
+  return actionList;
+});
+
 const skippableTaskList = computed(() => {
   if (create.value) return [];
 
   const issueEntity = issue.value as Issue;
   if (issueEntity.status !== "OPEN") {
+    return [];
+  }
+  if (!isDatabaseRelatedIssueType(issueEntity.type)) {
     return [];
   }
 
@@ -436,6 +460,9 @@ const doStageStatusTransition = (
 };
 
 const currentTask = computed(() => {
+  if (!isDatabaseRelatedIssueType(issue.value.type)) {
+    return undefined;
+  }
   return activeTaskOfPipeline((issue.value as Issue).pipeline);
 });
 
@@ -537,7 +564,7 @@ const allowCreate = computed(() => {
     return false;
   }
 
-  if (IssueTypeWithStatement.includes(newIssue.type)) {
+  if (isDatabaseRelatedIssueType(newIssue.type)) {
     const allTaskList = flattenTaskList<TaskCreate>(newIssue);
     for (const task of allTaskList) {
       if (TaskTypeWithStatement.includes(task.type)) {
@@ -549,6 +576,13 @@ const allowCreate = computed(() => {
           return false;
         }
       }
+    }
+  } else if (isGrantRequestIssueType(newIssue.type)) {
+    const createContext = newIssue.createContext as GrantRequestContext;
+    if (createContext.role === "EXPORTER") {
+      return (
+        createContext.databases.length === 1 && createContext.statement !== ""
+      );
     }
   }
 

@@ -2,8 +2,8 @@
   <!-- eslint-disable vue/no-mutating-props -->
 
   <div class="project-tenant-view">
-    <template v-if="!!project">
-      <template v-if="deployment?.id === UNKNOWN_ID">
+    <template v-if="project && ready">
+      <template v-if="deploymentConfig === undefined">
         <i18n-t
           tag="p"
           keypath="deployment-config.project-has-no-deployment-config"
@@ -42,7 +42,7 @@
             :database-list="databaseList"
             :label="state.label"
             :environment-list="environmentList"
-            :deployment="deployment!"
+            :deployment="deploymentConfig"
           />
         </template>
       </template>
@@ -63,10 +63,9 @@ import type {
   LabelKeyType,
   Project,
 } from "@/types";
-import { UNKNOWN_ID } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
-import { getPipelineFromDeploymentSchedule, projectSlug } from "@/utils";
-import { useDeploymentStore } from "@/store";
+import { getPipelineFromDeploymentScheduleV1, projectSlug } from "@/utils";
+import { useDeploymentConfigV1ByProject } from "@/store";
 import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 
 export type State = {
@@ -88,32 +87,20 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const deploymentStore = useDeploymentStore();
-
-const fetchData = () => {
-  if (props.project) {
-    deploymentStore.fetchDeploymentConfigByProjectId(props.project.id);
-  }
-};
-
-watchEffect(fetchData);
-
-const deployment = computed(() => {
-  if (props.project) {
-    return deploymentStore.getDeploymentConfigByProjectId(props.project.id);
-  } else {
-    return undefined;
-  }
-});
+const { deploymentConfig, ready } = useDeploymentConfigV1ByProject(
+  computed(() => {
+    return `projects/${props.project?.resourceId ?? -1}`;
+  })
+);
 
 watchEffect(() => {
-  if (!deployment.value) return;
+  if (!deploymentConfig.value) return;
   const { databaseList } = props;
 
   // calculate the deployment matching to preview the pipeline
-  const stages = getPipelineFromDeploymentSchedule(
+  const stages = getPipelineFromDeploymentScheduleV1(
     databaseList,
-    deployment.value.schedule
+    deploymentConfig.value.schedule
   );
 
   // flatten all stages' database id list

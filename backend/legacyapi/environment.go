@@ -50,10 +50,10 @@ var alphaNumeric = regexp.MustCompile(`^[a-zA-Z0-9]*$`)
 // IsValidEnvironmentName checks if the environment name is valid.
 func IsValidEnvironmentName(environmentName string) error {
 	if !placeholderRegexp.MatchString(environmentName) {
-		return errors.Errorf("environment name %q cannot contain placeholder characters (\\, /, ?, %%, *, :, |, \", <, >)", environmentName)
+		return errors.Errorf("environment title %q cannot contain placeholder characters (\\, /, ?, %%, *, :, |, \", <, >)", environmentName)
 	}
 	if !alphaNumeric.MatchString(environmentName) {
-		return errors.Errorf("environment name %q can only contain alphabet numeric characters (a-z, A-Z, 0-9)", environmentName)
+		return errors.Errorf("environment title %q can only contain alphabet numeric characters (a-z, A-Z, 0-9)", environmentName)
 	}
 
 	return nil

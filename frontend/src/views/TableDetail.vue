@@ -194,23 +194,16 @@ import {
   isDatabaseAccessible,
   isGhostTable,
 } from "@/utils";
-import {
-  useCurrentUser,
-  useDatabaseStore,
-  useDBSchemaStore,
-  usePolicyByDatabaseAndType,
-} from "@/store";
-import {
-  DEFAULT_PROJECT_ID,
-  SensitiveData,
-  SensitiveDataPolicyPayload,
-  UNKNOWN_ID,
-} from "@/types";
+import { useCurrentUser, useDatabaseStore, useDBSchemaStore } from "@/store";
+import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
+import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
+import { getDatabasePathByLegacyDatabase } from "@/store/modules/v1/common";
+import { PolicyType, SensitiveData } from "@/types/proto/v1/org_policy_service";
 
 export default defineComponent({
   name: "TableDetail",
@@ -242,10 +235,10 @@ export default defineComponent({
       return database.value.instance.engine;
     });
 
-    const accessControlPolicy = usePolicyByDatabaseAndType(
+    const accessControlPolicy = usePolicyByParentAndType(
       computed(() => ({
-        databaseId: database.value.id,
-        type: "bb.policy.access-control",
+        parentPath: getDatabasePathByLegacyDatabase(database.value),
+        policyType: PolicyType.ACCESS_CONTROL,
       }))
     );
     const allowQuery = computed(() => {
@@ -290,20 +283,20 @@ export default defineComponent({
       }
     });
 
-    const sensitiveDataPolicy = usePolicyByDatabaseAndType(
+    const sensitiveDataPolicy = usePolicyByParentAndType(
       computed(() => ({
-        databaseId: database.value.id,
-        type: "bb.policy.sensitive-data",
+        parentPath: getDatabasePathByLegacyDatabase(database.value),
+        policyType: PolicyType.SENSITIVE_DATA,
       }))
     );
 
     const sensitiveDataList = computed((): SensitiveData[] => {
       const policy = sensitiveDataPolicy.value;
-      if (!policy) {
+      if (!policy || !policy.sensitiveDataPolicy) {
         return [];
       }
-      const payload = policy.payload as SensitiveDataPolicyPayload;
-      return payload.sensitiveDataList;
+
+      return policy.sensitiveDataPolicy.sensitiveData;
     });
 
     return {

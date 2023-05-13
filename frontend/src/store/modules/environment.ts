@@ -5,16 +5,15 @@ import {
   empty,
   EMPTY_ID,
   Environment,
-  EnvironmentCreate,
   EnvironmentId,
-  EnvironmentPatch,
   EnvironmentState,
   ResourceObject,
   RowStatus,
   unknown,
 } from "@/types";
-import { usePolicyStore } from "./policy";
-import { environmentName } from "../../utils";
+import { usePolicyV1Store } from "./v1/policy";
+import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 
 function convert(
   environment: ResourceObject,
@@ -57,10 +56,6 @@ export const useEnvironmentStore = defineStore("environment", {
       }
       return unknown("ENVIRONMENT") as Environment;
     },
-    getEnvironmentNameById(environmentId: EnvironmentId): string {
-      const env = this.getEnvironmentById(environmentId);
-      return environmentName(env);
-    },
     upsertEnvironmentList(environmentList: Environment[]) {
       for (const environment of environmentList) {
         const i = this.environmentList.findIndex(
@@ -87,31 +82,19 @@ export const useEnvironmentStore = defineStore("environment", {
       );
       this.upsertEnvironmentList(environmentList);
 
-      const policyStore = usePolicyStore();
+      const policyStore = usePolicyV1Store();
 
       await Promise.all(
         environmentList.map((environment) => {
-          return policyStore.fetchPolicyByEnvironmentAndType({
-            environmentId: environment.id,
-            type: "bb.policy.pipeline-approval",
+          return policyStore.getOrFetchPolicyByParentAndType({
+            parentPath: getEnvironmentPathByLegacyEnvironment(environment),
+            policyType: PolicyType.DEPLOYMENT_APPROVAL,
+            refresh: true,
           });
         })
       );
 
       return environmentList;
-    },
-    async createEnvironment(newEnvironment: EnvironmentCreate) {
-      const data = (
-        await axios.post(`/api/environment`, {
-          data: {
-            type: "environment",
-            attributes: newEnvironment,
-          },
-        })
-      ).data;
-      const createdEnvironment = convert(data.data, data.included);
-      this.upsertEnvironmentList([createdEnvironment]);
-      return createdEnvironment;
     },
     async reorderEnvironmentList(orderedEnvironmentList: Environment[]) {
       const list: any[] = [];
@@ -139,27 +122,6 @@ export const useEnvironmentStore = defineStore("environment", {
       this.upsertEnvironmentList(environmentList);
 
       return environmentList;
-    },
-    async patchEnvironment({
-      environmentId,
-      environmentPatch,
-    }: {
-      environmentId: EnvironmentId;
-      environmentPatch: EnvironmentPatch;
-    }) {
-      const data = (
-        await axios.patch(`/api/environment/${environmentId}`, {
-          data: {
-            type: "environmentPatch",
-            attributes: environmentPatch,
-          },
-        })
-      ).data;
-      const updatedEnvironment = convert(data.data, data.included);
-
-      this.upsertEnvironmentList([updatedEnvironment]);
-
-      return updatedEnvironment;
     },
   },
 });

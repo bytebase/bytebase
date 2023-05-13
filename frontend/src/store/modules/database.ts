@@ -1,3 +1,4 @@
+import { isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import axios from "axios";
 import { computed, unref, watch, markRaw } from "vue";
@@ -162,6 +163,15 @@ export const useDatabaseStore = defineStore("database", {
     getDatabaseListByInstanceId(instanceId: InstanceId): Database[] {
       return this.databaseListByInstanceId.get(instanceId) || [];
     },
+    async getOrFetchDatabaseListByInstanceId(
+      instanceId: InstanceId
+    ): Promise<Database[]> {
+      const databaseList = this.databaseListByInstanceId.get(instanceId);
+      if (isUndefined(databaseList)) {
+        await this.fetchDatabaseListByInstanceId(instanceId);
+      }
+      return this.databaseListByInstanceId.get(instanceId) || [];
+    },
     getDatabaseListByPrincipalId(userId: PrincipalId): Database[] {
       const list: Database[] = [];
       for (const [_, databaseList] of this.databaseListByInstanceId) {
@@ -294,7 +304,7 @@ export const useDatabaseStore = defineStore("database", {
       const databaseList = await this.fetchDatabaseList({
         instanceId,
       });
-
+      this.databaseListByInstanceId.set(instanceId, databaseList);
       return databaseList;
     },
     async fetchDatabaseByInstanceIdAndName({

@@ -1,3 +1,5 @@
+import slug from "slug";
+
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -7,6 +9,16 @@ import {
   hasProjectPermission,
   ProjectPermissionType,
 } from "../role";
+
+export function projectV1Slug(project: Project): string {
+  return [slug(project.title), project.uid].join("-");
+}
+
+export const extractProjectResourceName = (name: string) => {
+  const pattern = /(?:^|\/)projects\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
 
 export const hasPermissionInProjectV1 = (
   policy: IamPolicy,

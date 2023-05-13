@@ -19,6 +19,7 @@ export type ReviewEvents = {
 };
 
 export const extractIssueReviewContext = (
+  issue: ComputedRef<Issue | undefined>,
   review: ComputedRef<Review>
 ): IssueReviewContext => {
   const ready = computed(() => {
@@ -96,7 +97,7 @@ export const provideIssueReview = (
     update();
   });
 
-  const context = extractIssueReviewContext(review);
+  const context = extractIssueReviewContext(issue, review);
 
   provideIssueReviewContext(context);
 };

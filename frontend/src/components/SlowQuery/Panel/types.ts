@@ -39,16 +39,17 @@ export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
   const request = {} as Partial<ListSlowQueriesRequest>;
   const { project, environment, instance, database, fromTime, toTime } = filter;
 
-  request.parent = "environments/-/instances/-/databases/-";
+  const query: string[] = [];
+  request.parent = "instances/-/databases/-";
   if (database && database.id !== UNKNOWN_ID) {
-    request.parent = `environments/${database.instance.environment.resourceId}/instances/${database.instance.resourceId}/databases/${database.name}`;
+    request.parent = `instances/${database.instance.resourceId}/databases/${database.name}`;
   } else if (instance && instance.id !== UNKNOWN_ID) {
-    request.parent = `environments/${instance.environment.resourceId}/instances/${instance.resourceId}/databases/-`;
+    request.parent = `instances/${instance.resourceId}/databases/-`;
   } else if (environment && environment.id !== UNKNOWN_ID) {
-    request.parent = `environments/${environment.resourceId}/instances/-/databases/-`;
+    request.parent = `instances/-/databases/-`;
+    query.push(`environment = "environments/${environment.resourceId}"`);
   }
 
-  const query: string[] = [];
   if (project) {
     query.push(`project = "projects/${project.resourceId}"`);
   }

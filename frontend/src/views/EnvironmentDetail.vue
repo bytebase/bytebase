@@ -1,15 +1,13 @@
 <template>
   <div class="py-2">
-    <ArchiveBanner v-if="state.environment.rowStatus == 'ARCHIVED'" />
+    <ArchiveBanner v-if="state.environment.state == State.DELETED" />
   </div>
   <EnvironmentForm
-    v-if="
-      state.approvalPolicy && state.backupPolicy && state.environmentTierPolicy
-    "
+    v-if="state.approvalPolicy && state.backupPolicy && state.environmentTier"
     :environment="state.environment"
     :approval-policy="state.approvalPolicy"
     :backup-policy="state.backupPolicy"
-    :environment-tier-policy="state.environmentTierPolicy"
+    :environment-tier="state.environmentTier"
     @update="doUpdate"
     @archive="doArchive"
     @restore="doRestore"
@@ -50,40 +48,45 @@
   </BBModal>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, reactive, watchEffect } from "vue";
+<script lang="ts" setup>
+import { computed, reactive, watchEffect } from "vue";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
+import { EnvironmentPatch } from "../types";
+import { idFromSlug } from "../utils";
+import { hasFeature, pushNotification, useBackupStore } from "@/store";
+import { useI18n } from "vue-i18n";
+import { cloneDeep } from "lodash-es";
+import BBModal from "@/bbkit/BBModal.vue";
+import {
+  usePolicyV1Store,
+  defaultBackupSchedule,
+  defaultApprovalStrategy,
+  getDefaultBackupPlanPolicy,
+  getDefaultDeploymentApprovalPolicy,
+} from "@/store/modules/v1/policy";
+import {
+  Policy as PolicyV1,
+  PolicyType as PolicyTypeV1,
+  PolicyResourceType,
+  BackupPlanSchedule,
+} from "@/types/proto/v1/org_policy_service";
+import {
+  useEnvironmentV1Store,
+  defaultEnvironmentTier,
+} from "@/store/modules/v1/environment";
 import {
   Environment,
-  EnvironmentId,
-  EnvironmentPatch,
-  Policy,
-  PolicyType,
-  DefaultApprovalPolicy,
-  DefaultSchedulePolicy,
-  PipelineApprovalPolicyPayload,
-  BackupPlanPolicyPayload,
-  EnvironmentTierPolicyPayload,
-  DefaultEnvironmentTier,
-} from "../types";
-import { idFromSlug } from "../utils";
-import {
-  hasFeature,
-  pushNotification,
-  useBackupStore,
-  useEnvironmentStore,
-  usePolicyStore,
-} from "@/store";
-import { useI18n } from "vue-i18n";
-import BBModal from "@/bbkit/BBModal.vue";
+  EnvironmentTier,
+} from "@/types/proto/v1/environment_service";
+import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
   environment: Environment;
   showArchiveModal: boolean;
-  approvalPolicy?: Policy;
-  backupPolicy?: Policy;
-  environmentTierPolicy?: Policy;
+  approvalPolicy?: PolicyV1;
+  backupPolicy?: PolicyV1;
+  environmentTier?: EnvironmentTier;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
     | "bb.feature.backup-policy"
@@ -91,233 +94,189 @@ interface LocalState {
   showDisableAutoBackupModal: boolean;
 }
 
-export default defineComponent({
-  name: "EnvironmentDetail",
-  components: {
-    ArchiveBanner,
-    EnvironmentForm,
-    BBModal,
+const props = defineProps({
+  environmentSlug: {
+    required: true,
+    type: String,
   },
-  props: {
-    environmentSlug: {
-      required: true,
-      type: String,
-    },
-  },
-  emits: ["archive"],
-  setup(props, { emit }) {
-    const environmentStore = useEnvironmentStore();
-    const policyStore = usePolicyStore();
-    const backupStore = useBackupStore();
-    const { t } = useI18n();
+});
 
-    const state = reactive<LocalState>({
-      environment: environmentStore.getEnvironmentById(
-        idFromSlug(props.environmentSlug)
-      ),
-      showArchiveModal: false,
-      showDisableAutoBackupModal: false,
+const emit = defineEmits(["archive"]);
+
+const environmentV1Store = useEnvironmentV1Store();
+const policyV1Store = usePolicyV1Store();
+const backupStore = useBackupStore();
+const { t } = useI18n();
+
+const state = reactive<LocalState>({
+  environment: environmentV1Store.getEnvironmentByUID(
+    idFromSlug(props.environmentSlug)
+  ),
+  showArchiveModal: false,
+  showDisableAutoBackupModal: false,
+});
+
+const preparePolicy = () => {
+  policyV1Store
+    .getOrFetchPolicyByParentAndType({
+      parentPath: state.environment.name,
+      policyType: PolicyTypeV1.DEPLOYMENT_APPROVAL,
+    })
+    .then((policy) => {
+      state.approvalPolicy =
+        policy ||
+        getDefaultDeploymentApprovalPolicy(
+          state.environment.name,
+          PolicyResourceType.ENVIRONMENT
+        );
     });
 
-    const preparePolicy = () => {
-      const environmentId = (state.environment as Environment).id;
+  policyV1Store
+    .getOrFetchPolicyByParentAndType({
+      parentPath: state.environment.name,
+      policyType: PolicyTypeV1.BACKUP_PLAN,
+    })
+    .then((policy) => {
+      state.backupPolicy =
+        policy ||
+        getDefaultBackupPlanPolicy(
+          state.environment.name,
+          PolicyResourceType.ENVIRONMENT
+        );
+    });
 
-      policyStore
-        .fetchPolicyByEnvironmentAndType({
-          environmentId,
-          type: "bb.policy.pipeline-approval",
-        })
-        .then((policy) => {
-          state.approvalPolicy = policy;
-        });
+  state.environmentTier = state.environment.tier;
+};
 
-      policyStore
-        .fetchPolicyByEnvironmentAndType({
-          environmentId,
-          type: "bb.policy.backup-plan",
-        })
-        .then((policy) => {
-          state.backupPolicy = policy;
-        });
+watchEffect(preparePolicy);
 
-      policyStore
-        .fetchPolicyByEnvironmentAndType({
-          environmentId,
-          type: "bb.policy.environment-tier",
-        })
-        .then((policy) => {
-          state.environmentTierPolicy = policy;
-        });
-    };
+const assignEnvironment = (environment: Environment) => {
+  state.environment = environment;
+};
 
-    watchEffect(preparePolicy);
+const doUpdate = (environmentPatch: EnvironmentPatch) => {
+  const pendingUpdate = cloneDeep(state.environment);
+  if (environmentPatch.title) {
+    pendingUpdate.title = environmentPatch.title;
+  }
+  if (environmentPatch.order) {
+    pendingUpdate.order = environmentPatch.order;
+  }
+  if (environmentPatch.tier) {
+    if (
+      pendingUpdate.tier !== defaultEnvironmentTier &&
+      !hasFeature("bb.feature.environment-tier-policy")
+    ) {
+      state.missingRequiredFeature = "bb.feature.environment-tier-policy";
+      return;
+    }
+    pendingUpdate.tier = environmentPatch.tier;
+  }
 
-    const assignEnvironment = (environment: Environment) => {
-      state.environment = environment;
-    };
+  environmentV1Store.updateEnvironment(pendingUpdate).then((environment) => {
+    assignEnvironment(environment);
 
-    const doUpdate = (environmentPatch: EnvironmentPatch) => {
-      environmentStore
-        .patchEnvironment({
-          environmentId: idFromSlug(props.environmentSlug),
-          environmentPatch,
-        })
-        .then((environment) => {
-          assignEnvironment(environment);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("environment.successfully-updated-environment", {
+        name: environment.name,
+      }),
+    });
+  });
+};
 
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("environment.successfully-updated-environment", {
-              name: environment.name,
-            }),
-          });
-        });
-    };
+const doArchive = (environment: Environment) => {
+  environmentV1Store.deleteEnvironment(environment.name).then(() => {
+    emit("archive", environment);
+    environment.state = State.DELETED;
+    assignEnvironment(environment);
+  });
+};
 
-    const doArchive = (environment: Environment) => {
-      environmentStore
-        .patchEnvironment({
-          environmentId: environment.id,
-          environmentPatch: {
-            rowStatus: "ARCHIVED",
-          },
-        })
-        .then((environment) => {
-          emit("archive", environment);
-          assignEnvironment(environment);
-        });
-    };
+const doRestore = (environment: Environment) => {
+  environmentV1Store
+    .undeleteEnvironment(environment.name)
+    .then((environment) => {
+      assignEnvironment(environment);
+    });
+};
 
-    const doRestore = (environment: Environment) => {
-      environmentStore
-        .patchEnvironment({
-          environmentId: environment.id,
-          environmentPatch: {
-            rowStatus: "NORMAL",
-          },
-        })
-        .then((environment) => {
-          assignEnvironment(environment);
-        });
-    };
+const success = () => {
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("environment.successfully-updated-environment", {
+      name: state.environment.name,
+    }),
+  });
+};
 
-    const success = () => {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("environment.successfully-updated-environment", {
-          name: state.environment.name,
-        }),
-      });
-    };
-
-    const updatePolicy = (
-      environmentId: EnvironmentId,
-      type: PolicyType,
-      policy: Policy
-    ) => {
+const updatePolicy = async (
+  environment: Environment,
+  policyType: PolicyTypeV1,
+  policy: PolicyV1
+) => {
+  switch (policyType) {
+    case PolicyTypeV1.DEPLOYMENT_APPROVAL:
       if (
-        type === "bb.policy.pipeline-approval" &&
-        (policy.payload as PipelineApprovalPolicyPayload).value !==
-          DefaultApprovalPolicy &&
+        policy.deploymentApprovalPolicy?.defaultStrategy !=
+          defaultApprovalStrategy &&
         !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
         return;
       }
+      break;
+    case PolicyTypeV1.BACKUP_PLAN:
       if (
-        type === "bb.policy.backup-plan" &&
-        (policy.payload as BackupPlanPolicyPayload).schedule !==
-          DefaultSchedulePolicy &&
+        policy.backupPlanPolicy?.schedule != defaultBackupSchedule &&
         !hasFeature("bb.feature.backup-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";
         return;
       }
-      if (
-        type === "bb.policy.environment-tier" &&
-        (policy.payload as EnvironmentTierPolicyPayload).environmentTier !==
-          DefaultEnvironmentTier &&
-        !hasFeature("bb.feature.environment-tier-policy")
-      ) {
-        state.missingRequiredFeature = "bb.feature.environment-tier-policy";
-        return;
-      }
-      policyStore
-        .upsertPolicyByEnvironmentAndType({
-          environmentId,
-          type: type,
-          policyUpsert: {
-            payload: policy.payload,
-          },
-        })
-        .then(async (policy: Policy) => {
-          if (type === "bb.policy.pipeline-approval") {
-            state.approvalPolicy = policy;
-          } else if (type === "bb.policy.backup-plan") {
-            state.backupPolicy = policy;
-          } else if (type === "bb.policy.environment-tier") {
-            state.environmentTierPolicy = policy;
-            // Write the value to state.environment entity. So that we don't
-            // need to re-fetch it front the server.
-            state.environment.tier = (
-              policy.payload as EnvironmentTierPolicyPayload
-            ).environmentTier;
-            // Also upsert the environment's access-control policy
-            const disallowed = state.environment.tier === "PROTECTED";
-            await policyStore.upsertPolicyByEnvironmentAndType({
-              environmentId: state.environment.id,
-              type: "bb.policy.access-control",
-              policyUpsert: {
-                inheritFromParent: false,
-                payload: {
-                  disallowRuleList: [{ fullDatabase: disallowed }],
-                },
-              },
-            });
-          }
-          success();
+      break;
+  }
 
-          if (type === "bb.policy.backup-plan") {
-            const payload = state.backupPolicy!
-              .payload as BackupPlanPolicyPayload;
-            if (payload.schedule === "UNSET") {
-              // Changing backup policy from "DAILY"|"WEEKLY" to "UNSET"
-              state.showDisableAutoBackupModal = true;
-            }
-          }
-        });
-    };
+  const updatedPolicy = await policyV1Store.upsertPolicy({
+    parentPath: environment.name,
+    updateMask: ["payload"],
+    policy,
+  });
+  switch (policyType) {
+    case PolicyTypeV1.DEPLOYMENT_APPROVAL:
+      state.approvalPolicy = updatedPolicy;
+      break;
+    case PolicyTypeV1.BACKUP_PLAN:
+      state.backupPolicy = updatedPolicy;
+      break;
+  }
 
-    const disableAutoBackupContent = computed(() => {
-      return t("environment.disable-auto-backup.content");
-    });
+  success();
+  if (policyType === PolicyTypeV1.BACKUP_PLAN) {
+    if (
+      state.backupPolicy?.backupPlanPolicy?.schedule == BackupPlanSchedule.UNSET
+    ) {
+      // Changing backup policy from "DAILY"|"WEEKLY" to "UNSET"
+      state.showDisableAutoBackupModal = true;
+    }
+  }
+};
 
-    const disableEnvironmentAutoBackup = async () => {
-      await backupStore.upsertBackupSettingByEnvironmentId(
-        state.environment.id,
-        {
-          enabled: false,
-          hour: 0,
-          dayOfWeek: 0,
-          retentionPeriodTs: 0,
-          hookUrl: "",
-        }
-      );
-      success();
-      state.showDisableAutoBackupModal = false;
-    };
-
-    return {
-      state,
-      doUpdate,
-      doArchive,
-      doRestore,
-      updatePolicy,
-      disableAutoBackupContent,
-      disableEnvironmentAutoBackup,
-    };
-  },
+const disableAutoBackupContent = computed(() => {
+  return t("environment.disable-auto-backup.content");
 });
+
+const disableEnvironmentAutoBackup = async () => {
+  await backupStore.upsertBackupSettingByEnvironmentId(state.environment.uid, {
+    enabled: false,
+    hour: 0,
+    dayOfWeek: 0,
+    retentionPeriodTs: 0,
+    hookUrl: "",
+  });
+  success();
+  state.showDisableAutoBackupModal = false;
+};
 </script>

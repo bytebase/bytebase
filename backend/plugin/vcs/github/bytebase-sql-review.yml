@@ -11,7 +11,7 @@ jobs:
           echo "Start request $API"
 
           pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          repository=`echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]'`
+          repository=`echo $GITHUB_REPOSITORY`
           request_body=$(jq -n \
             --arg repositoryId "$repository" \
             --arg pullRequestId $pull_number \

@@ -31,7 +31,7 @@ export const useSlowQueryStore = defineStore("slow-query", () => {
   };
 
   const syncSlowQueriesByInstance = async (instance: Instance) => {
-    const name = `environments/${instance.environment.resourceId}/instances/${instance.resourceId}`;
+    const name = `instances/${instance.resourceId}`;
     await instanceServiceClient.syncSlowQueries({
       instance: name,
     });
@@ -70,7 +70,7 @@ const composeSlowQueryLogDatabase = async (
   );
   const databaseMap = databaseList.reduce((map, db) => {
     if (db.id !== UNKNOWN_ID) {
-      const resource = `environments/${db.instance.environment.resourceId}/instances/${db.instance.resourceId}/databases/${db.name}`;
+      const resource = `instances/${db.instance.resourceId}/databases/${db.name}`;
       map.set(resource, db);
     }
     return map;

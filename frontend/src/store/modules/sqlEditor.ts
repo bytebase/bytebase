@@ -12,9 +12,10 @@ import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
 import { useSQLStore } from "./sql";
 import { useTabStore } from "./tab";
+import { useCurrentUserIamPolicy } from "./v1";
 
 // set the limit to 10000 temporarily to avoid the query timeout and page crash
-export const RESULT_ROWS_LIMIT = 10000;
+export const RESULT_ROWS_LIMIT = 1000;
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
@@ -43,6 +44,11 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       const { instanceId, databaseId } = useTabStore().currentTab.connection;
       const database = useDatabaseStore().getDatabaseById(databaseId);
       const databaseName = database.id === UNKNOWN_ID ? "" : database.name;
+      // Check whether the current user has permission to query the database.
+      const currentUserIamPolicy = useCurrentUserIamPolicy();
+      if (!currentUserIamPolicy.allowToQueryDatabase(database)) {
+        throw new Error("You don't have permission to query this database.");
+      }
       const queryResult = await useSQLStore().query({
         instanceId,
         databaseName,

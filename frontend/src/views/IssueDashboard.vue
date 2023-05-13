@@ -13,6 +13,7 @@
 
         <NInputGroup style="width: auto">
           <PrincipalSelect
+            v-if="allowFilterUsers"
             :principal="selectedPrincipalId"
             :include-system-bot="true"
             :include-all="allowSelectAllUsers"
@@ -86,7 +87,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed } from "vue";
+import { reactive, computed, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { NInputGroup, NButton } from "naive-ui";
 
@@ -107,9 +108,14 @@ import {
 import {
   activeEnvironment,
   hasWorkspacePermission,
-  projectSlug,
+  isDatabaseRelatedIssueType,
+  projectV1Slug,
 } from "../utils";
-import { useCurrentUser, useEnvironmentStore, useProjectStore } from "@/store";
+import {
+  useCurrentUser,
+  useEnvironmentStore,
+  useProjectV1Store,
+} from "@/store";
 import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
 
 interface LocalState {
@@ -120,7 +126,7 @@ const router = useRouter();
 const route = useRoute();
 
 const currentUser = useCurrentUser();
-const projectStore = useProjectStore();
+const projectV1Store = useProjectV1Store();
 const environmentStore = useEnvironmentStore();
 
 const statusList = computed((): string[] =>
@@ -131,12 +137,31 @@ const state = reactive<LocalState>({
   searchText: "",
 });
 
+const project = computed(() => {
+  if (selectedProjectId.value) {
+    return projectV1Store.getProjectByUID(selectedProjectId.value);
+  }
+  return undefined;
+});
+
 const showOpen = computed(
   () => statusList.value.length === 0 || statusList.value.includes("open")
 );
 const showClosed = computed(
   () => statusList.value.length === 0 || statusList.value.includes("closed")
 );
+
+const allowFilterUsers = computed(() => {
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-issue",
+      currentUser.value.role
+    )
+  ) {
+    return true;
+  }
+  return false;
+});
 
 const allowSelectAllUsers = computed(() => {
   return hasWorkspacePermission(
@@ -146,6 +171,11 @@ const allowSelectAllUsers = computed(() => {
 });
 
 const selectedPrincipalId = computed((): PrincipalId => {
+  if (!allowFilterUsers.value) {
+    // If current user is low-privileged. Don't filter by user id.
+    return UNKNOWN_ID;
+  }
+
   const id = parseInt(route.query.user as string, 10);
   if (id >= 0) {
     return id;
@@ -167,15 +197,11 @@ const selectedProjectId = computed((): ProjectId | undefined => {
   return project ? parseInt(project as string, 10) : undefined;
 });
 
-const project = computed(() => {
-  if (selectedProjectId.value) {
-    return projectStore.getProjectById(selectedProjectId.value);
-  }
-  return undefined;
-});
-
 const filter = (issue: Issue) => {
   if (selectedEnvironment.value) {
+    if (!isDatabaseRelatedIssueType(issue.type)) {
+      return false;
+    }
     if (activeEnvironment(issue.pipeline).id !== selectedEnvironment.value.id) {
       return false;
     }
@@ -231,8 +257,14 @@ const goProject = () => {
   router.push({
     name: "workspace.project.detail",
     params: {
-      projectSlug: projectSlug(project.value),
+      projectSlug: projectV1Slug(project.value),
     },
   });
 };
+
+watchEffect(() => {
+  if (selectedProjectId.value) {
+    projectV1Store.getOrFetchProjectByUID(selectedProjectId.value);
+  }
+});
 </script>

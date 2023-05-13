@@ -4,7 +4,6 @@ import {
   DatabaseId,
   InstanceId,
   Connection,
-  Policy,
   ConnectionAtom,
   ConnectionTreeMode,
   ConnectionAtomType,
@@ -18,6 +17,7 @@ import { useInstanceStore } from "./instance";
 import { emptyConnection } from "@/utils";
 import { useDBSchemaStore } from "./dbSchema";
 import { useLocalStorage } from "@vueuse/core";
+import { Policy } from "@/types/proto/v1/org_policy_service";
 
 // Normalize value, fallback to ConnectionTreeMode.PROJECT
 const normalizeConnectionTreeMode = (raw: string) => {

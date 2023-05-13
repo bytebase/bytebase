@@ -1,0 +1,42 @@
+- statement: CREATE TABLE book("id" int)
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: 'Table "BOOK" requires columns: "created_ts", "creator_id", "updated_ts", "updater_id"'
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+                  "id" int,
+                  "creator_id" int,
+                  "created_ts" timestamp,
+                  "updater_id" int,
+                  "updated_ts" timestamp)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    ALTER TABLE tech_book ADD "creator_id" int;
+    ALTER TABLE tech_book RENAME COLUMN "creator_id" TO creator;
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: 'Table "TECH_BOOK" requires columns: "creator_id"'
+      line: 2
+      details: ""
+- statement: |-
+    ALTER TABLE tech_book ADD "creator_id" int;
+    ALTER TABLE tech_book DROP COLUMN "creator_id";
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: 'Table "TECH_BOOK" requires columns: "creator_id"'
+      line: 2
+      details: ""

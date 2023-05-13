@@ -343,6 +343,42 @@ const (
 
 	// OracleNamingTableConvention is an advisor type for Oracle table naming convention.
 	OracleNamingTableConvention Type = "bb.plugin.advisor.oracle.naming.table"
+
+	// OracleColumnRequirement is an advisor type for Oracle column requirement.
+	OracleColumnRequirement Type = "bb.plugin.advisor.oracle.column.require"
+
+	// OracleColumnTypeDisallowList is an advisor type for Oracle column type disallow list.
+	OracleColumnTypeDisallowList Type = "bb.plugin.advisor.oracle.column.type-disallow-list"
+
+	// OracleColumnMaximumCharacterLength is an advisor type for Oracle maximum character length.
+	OracleColumnMaximumCharacterLength Type = "bb.plugin.advisor.oracle.column.maximum-character-length"
+
+	// OracleColumnMaximumVarcharLength is an advisor type for Oracle maximum varchar length.
+	OracleColumnMaximumVarcharLength Type = "bb.plugin.advisor.oracle.column.maximum-varchar-length"
+
+	// OracleNoSelectAll is an advisor type for Oracle no select all.
+	OracleNoSelectAll Type = "bb.plugin.advisor.oracle.select.no-select-all"
+
+	// OracleNoLeadingWildcardLike is an advisor type for Oracle no leading wildcard LIKE.
+	OracleNoLeadingWildcardLike Type = "bb.plugin.advisor.oracle.where.no-leading-wildcard-like"
+
+	// OracleWhereRequirement is an advisor type for Oracle WHERE clause requirement.
+	OracleWhereRequirement Type = "bb.plugin.advisor.oracle.where.require"
+
+	// OracleInsertMustSpecifyColumn is an advisor type for Oracle to enforce column specified.
+	OracleInsertMustSpecifyColumn Type = "bb.plugin.advisor.oracle.insert.must-specify-column"
+
+	// OracleIndexKeyNumberLimit is an advisor type for Oracle index key number limit.
+	OracleIndexKeyNumberLimit Type = "bb.plugin.advisor.oracle.index.key-number-limit"
+
+	// OracleColumnNoNull is an advisor type for Oracle column no NULL value.
+	OracleColumnNoNull Type = "bb.plugin.advisor.oracle.column.no-null"
+
+	// OracleRequireColumnDefault is an advisor type for Oracle column default requirement.
+	OracleRequireColumnDefault Type = "bb.plugin.advisor.oracle.column.require-default"
+
+	// OracleAddNotNullColumnRequireDefault is an advisor type for Oracle adding not null column requires default.
+	OracleAddNotNullColumnRequireDefault Type = "bb.plugin.advisor.oracle.column.add-not-null-column-require-default"
 )
 
 // Advice is the result of an advisor.

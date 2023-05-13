@@ -3,12 +3,15 @@ package server
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
+	"github.com/google/cel-go/cel"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -214,6 +217,9 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 	g.POST("/sql/execute", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
+		role := c.Get(getRoleContextKey()).(api.Role)
+
 		exec := &api.SQLExecute{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, exec); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request").SetInternal(err)
@@ -248,72 +254,78 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if environment == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %s", instance.EnvironmentID))
 		}
-		principalID := c.Get(getPrincipalIDContextKey()).(int)
-		role := c.Get(getRoleContextKey()).(api.Role)
+
+		databaseNames, err := getDatabasesFromQuery(instance.Engine, exec.DatabaseName, exec.Statement)
+		if err != nil {
+			return err
+		}
+		// Check database access rights.
+		isExport := exec.ExportFormat == "CSV" || exec.ExportFormat == "JSON"
+		if role != api.Owner && role != api.DBA {
+			var project *store.ProjectMessage
+			var databases []*store.DatabaseMessage
+			for _, databaseName := range databaseNames {
+				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+				if err != nil {
+					if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+						// If database not found, skip.
+						continue
+					}
+					return err
+				}
+				databases = append(databases, database)
+				p, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+				if err != nil {
+					return err
+				}
+				if project == nil {
+					project = p
+				}
+				if project.UID != p.UID {
+					return echo.NewHTTPError(http.StatusBadRequest, "allow querying databases within the same project only")
+				}
+			}
+			if project == nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "project not found")
+			}
+			projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+			if err != nil {
+				return err
+			}
+			// TODO(d): perfect matching condition expression.
+			var usedExpression string
+			for _, database := range databases {
+				databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)
+				attributes := map[string]any{
+					"request.time":          time.Now(),
+					"resource.database":     databaseResourceURL,
+					"request.statement":     base64.StdEncoding.EncodeToString([]byte(exec.Statement)),
+					"request.row_limit":     exec.Limit,
+					"request.export_format": exec.ExportFormat,
+				}
+
+				ok, ue, err := s.hasDatabaseAccessRights(ctx, principalID, projectPolicy, database, environment, attributes, isExport)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", database.DatabaseName)).SetInternal(err)
+				}
+				if !ok {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Permission denied to access database %q", database.DatabaseName))
+				}
+				usedExpression = ue
+			}
+			if isExport {
+				newPolicy := removeExportBinding(principalID, usedExpression, projectPolicy)
+				if _, err := s.store.SetProjectIAMPolicy(ctx, newPolicy, api.SystemBotID, project.UID); err != nil {
+					return err
+				}
+			}
+		}
+
 		var database *store.DatabaseMessage
 		if exec.DatabaseName != "" {
 			database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &exec.DatabaseName})
 			if err != nil {
 				return err
-			}
-			if database == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database %q not found", exec.DatabaseName))
-			}
-			// Database Access Control
-			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, database)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", exec.DatabaseName)).SetInternal(err)
-			}
-			if !hasAccessRights {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", exec.DatabaseName))
-			}
-		}
-
-		// Database Access Control for MySQL dialect.
-		// MySQL dialect can query cross the database.
-		// We need special check.
-		if instance.Engine == db.MySQL || instance.Engine == db.TiDB || instance.Engine == db.MariaDB || instance.Engine == db.OceanBase {
-			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to extract database list: %q", exec.Statement)).SetInternal(err)
-			}
-
-			if exec.DatabaseName != "" {
-				// Disallow cross-database query if specify database.
-				for _, databaseName := range databaseList {
-					upperDatabaseName := strings.ToUpper(databaseName)
-					// We allow querying information schema.
-					if upperDatabaseName == "" || upperDatabaseName == "INFORMATION_SCHEMA" {
-						continue
-					}
-					if databaseName != exec.DatabaseName {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", exec.DatabaseName, databaseName))
-					}
-				}
-			} else {
-				// Check database access rights.
-				for _, databaseName := range databaseList {
-					if databaseName == "" {
-						// We have already checked the current database access rights.
-						continue
-					}
-					accessDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
-					if err != nil {
-						if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
-							// If database not found, skip.
-							continue
-						}
-						return err
-					}
-
-					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, accessDatabase)
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.DatabaseName)).SetInternal(err)
-					}
-					if !hasAccessRights {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.DatabaseName))
-					}
-				}
 			}
 		}
 
@@ -1035,44 +1047,50 @@ func isMySQLExcludeDatabase(database string) bool {
 	return true
 }
 
-func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, role api.Role, database *store.DatabaseMessage) (bool, error) {
-	// Workspace Owners and DBAs always have database access rights.
-	if role == api.Owner || role == api.DBA {
-		return true, nil
+func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, string, error) {
+	// Project IAM policy evaluation.
+	pass := false
+	var usedExpression string
+	for _, binding := range projectPolicy.Bindings {
+		if !((isExport && binding.Role == api.Role(common.ProjectExporter)) || (!isExport && binding.Role == api.Role(common.ProjectQuerier))) {
+			continue
+		}
+		for _, member := range binding.Members {
+			if member.ID != principalID {
+				continue
+			}
+			ok, err := evaluateCondition(binding.Condition.Expression, attributes)
+			if err != nil {
+				log.Error("failed to evaluate condition", zap.Error(err), zap.String("condition", binding.Condition.Expression))
+				break
+			}
+			if ok {
+				pass = true
+				usedExpression = binding.Condition.Expression
+				break
+			}
+		}
+		if pass {
+			break
+		}
 	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
-	if err != nil {
-		return false, err
+	if !pass {
+		return false, "", nil
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
-	if err != nil {
-		return false, err
-	}
-
-	// Only project owner or developer can access database.
-	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return false, err
-	}
-	if !isProjectOwnerOrDeveloper(principalID, projectPolicy) {
-		return false, nil
-	}
-
 	// calculate the effective policy.
 	databasePolicy, inheritFromEnvironment, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.UID)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	environmentPolicy, _, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, environment.UID)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	if !inheritFromEnvironment {
 		// Use database policy.
-		return databasePolicy != nil && len(databasePolicy.DisallowRuleList) == 0, nil
+		return databasePolicy != nil && len(databasePolicy.DisallowRuleList) == 0, "", nil
 	}
 	// Use both database policy and environment policy.
 	hasAccessRights := true
@@ -1089,5 +1107,98 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, r
 		// Allow by database access policy.
 		hasAccessRights = true
 	}
-	return hasAccessRights, nil
+	return hasAccessRights, usedExpression, nil
+}
+
+func removeExportBinding(principalID int, usedExpression string, projectPolicy *store.IAMPolicyMessage) *store.IAMPolicyMessage {
+	var newPolicy store.IAMPolicyMessage
+	for _, binding := range projectPolicy.Bindings {
+		if binding.Role != api.Role(common.ProjectExporter) || binding.Condition.Expression != usedExpression {
+			newPolicy.Bindings = append(newPolicy.Bindings, binding)
+			continue
+		}
+
+		var newMembers []*store.UserMessage
+		for _, member := range binding.Members {
+			if member.ID != principalID {
+				newMembers = append(newMembers, member)
+			}
+		}
+		if len(newMembers) == 0 {
+			continue
+		}
+		newBinding := *binding
+		newBinding.Members = newMembers
+		newPolicy.Bindings = append(newPolicy.Bindings, &newBinding)
+	}
+	return &newPolicy
+}
+
+func getDatabasesFromQuery(engine db.Type, databaseName, statement string) ([]string, error) {
+	if engine == db.MySQL || engine == db.TiDB || engine == db.MariaDB || engine == db.OceanBase {
+		databases, err := parser.ExtractDatabaseList(parser.MySQL, statement)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to extract database list: %q", statement)).SetInternal(err)
+		}
+
+		if databaseName != "" {
+			// Disallow cross-database query if specify database.
+			for _, name := range databases {
+				upperDatabaseName := strings.ToUpper(name)
+				// We allow querying information schema.
+				if upperDatabaseName == "" || upperDatabaseName == "INFORMATION_SCHEMA" {
+					continue
+				}
+				if databaseName != name {
+					return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", databaseName, name))
+				}
+			}
+			return []string{databaseName}, nil
+		}
+		return databases, nil
+	}
+	if databaseName == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "databaseName is required")
+	}
+	return []string{databaseName}, nil
+}
+
+var queryAttributes = []cel.EnvOption{
+	cel.Variable("request.time", cel.TimestampType),
+	cel.Variable("resource.database", cel.StringType),
+	cel.Variable("request.statement", cel.StringType),
+	cel.Variable("request.row_limit", cel.IntType),
+	cel.Variable("request.export_format", cel.StringType),
+}
+
+func evaluateCondition(expression string, attributes map[string]any) (bool, error) {
+	if expression == "" {
+		return true, nil
+	}
+	env, err := cel.NewEnv(queryAttributes...)
+	if err != nil {
+		return false, err
+	}
+	ast, issues := env.Compile(expression)
+	if issues != nil && issues.Err() != nil {
+		return false, issues.Err()
+	}
+	prg, err := env.Program(ast)
+	if err != nil {
+		return false, err
+	}
+
+	out, _, err := prg.Eval(attributes)
+	if err != nil {
+		return false, err
+	}
+	val, err := out.ConvertToNative(reflect.TypeOf(false))
+	if err != nil {
+		return false, errors.Wrap(err, "expect bool result")
+	}
+	boolVal, ok := val.(bool)
+	if !ok {
+		return false, errors.Wrap(err, "failed to convert to bool")
+	}
+	return boolVal, nil
 }
