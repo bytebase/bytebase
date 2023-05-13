@@ -13,7 +13,7 @@
           class="mt-2 w-full"
           :disabled="!allowEdit"
           :required="true"
-          :value="state.environment.name"
+          :value="state.environment.title"
           @input="handleEnvironmentNameChange"
         />
       </div>
@@ -23,8 +23,8 @@
           ref="resourceIdField"
           resource-type="environment"
           :readonly="!create"
-          :value="state.environment.resourceId"
-          :resource-title="state.environment.name"
+          :value="state.environment.name"
+          :resource-title="state.environment.title"
           :validate="validateResourceId"
         />
       </div>
@@ -52,10 +52,10 @@
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <BBCheckbox
-              :value="(state.environmentTierPolicy.payload as EnvironmentTierPolicyPayload).environmentTier === 'PROTECTED'"
+              :value="state.environmentTier === EnvironmentTier.PROTECTED"
               :disabled="!allowEdit"
               @toggle="(on: boolean) => {
-                (state.environmentTierPolicy.payload as EnvironmentTierPolicyPayload).environmentTier = on ? 'PROTECTED' : 'UNPROTECTED'
+                state.environmentTier = on ? EnvironmentTier.PROTECTED : EnvironmentTier.UNPROTECTED
               }"
             />
             <div>
@@ -258,7 +258,7 @@
     <!-- Update button group -->
     <div v-else class="mt-6 flex justify-between items-center pt-5">
       <template
-        v-if="(state.environment as Environment).rowStatus === 'NORMAL'"
+        v-if="(state.environment as Environment).state === State.ACTIVE"
       >
         <BBButtonConfirm
           v-if="allowArchive"
@@ -266,7 +266,7 @@
           :button-text="$t('environment.archive')"
           :ok-text="$t('common.archive')"
           :confirm-title="
-            $t('environment.archive') + ` '${state.environment.name}'?`
+            $t('environment.archive') + ` '${(state.environment as Environment).title}'?`
           "
           :confirm-description="$t('environment.archive-info')"
           :require-confirm="true"
@@ -274,7 +274,7 @@
         />
       </template>
       <template
-        v-else-if="(state.environment as Environment).rowStatus === 'ARCHIVED'"
+        v-else-if="(state.environment as Environment).state === State.DELETED"
       >
         <BBButtonConfirm
           v-if="allowRestore"
@@ -282,7 +282,7 @@
           :button-text="$t('environment.restore')"
           :ok-text="$t('common.restore')"
           :confirm-title="
-            $t('environment.restore') + ` '${state.environment.name}'?`
+            $t('environment.restore') + ` '${(state.environment as Environment).title}'?`
           "
           :confirm-description="''"
           :require-confirm="true"
@@ -320,11 +320,8 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
 import type {
-  Environment,
   EnvironmentCreate,
   EnvironmentPatch,
-  EnvironmentTierPolicyPayload,
-  Policy,
   ResourceId,
   SQLReviewPolicy,
   ValidatedMessage,
@@ -343,17 +340,22 @@ import {
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
-  Policy as PolicyV1,
-  PolicyType as PolicyTypeV1,
+  Policy,
+  PolicyType,
   BackupPlanSchedule,
   ApprovalStrategy,
 } from "@/types/proto/v1/org_policy_service";
+import {
+  Environment,
+  EnvironmentTier,
+} from "@/types/proto/v1/environment_service";
+import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
-  approvalPolicy: PolicyV1;
-  backupPolicy: PolicyV1;
-  environmentTierPolicy: Policy;
+  approvalPolicy: Policy;
+  backupPolicy: Policy;
+  environmentTier: EnvironmentTier;
 }
 
 const ROUTE_NAME = "setting.workspace.sql-review";
@@ -369,15 +371,15 @@ const props = defineProps({
   },
   approvalPolicy: {
     required: true,
-    type: Object as PropType<PolicyV1>,
+    type: Object as PropType<Policy>,
   },
   backupPolicy: {
     required: true,
-    type: Object as PropType<PolicyV1>,
-  },
-  environmentTierPolicy: {
-    required: true,
     type: Object as PropType<Policy>,
+  },
+  environmentTier: {
+    required: true,
+    type: Object as PropType<EnvironmentTier>,
   },
 });
 
@@ -388,7 +390,6 @@ const emit = defineEmits([
   "archive",
   "restore",
   "update-policy",
-  "update-policy-v1",
 ]);
 
 const { t } = useI18n();
@@ -396,7 +397,7 @@ const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
   approvalPolicy: cloneDeep(props.approvalPolicy),
   backupPolicy: cloneDeep(props.backupPolicy),
-  environmentTierPolicy: cloneDeep(props.environmentTierPolicy),
+  environmentTier: props.environmentTier,
 });
 
 const router = useRouter();
@@ -408,7 +409,7 @@ const environmentId = computed(() => {
   if (props.create) {
     return;
   }
-  return (props.environment as Environment).id;
+  return (props.environment as Environment).uid;
 });
 
 const prepareSQLReviewPolicy = () => {
@@ -429,7 +430,7 @@ const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
 });
 
 const handleEnvironmentNameChange = (event: InputEvent) => {
-  state.environment.name = (event.target as HTMLInputElement).value;
+  state.environment.title = (event.target as HTMLInputElement).value;
 };
 
 const onSQLReviewPolicyClick = () => {
@@ -459,22 +460,22 @@ watch(
 
 watch(
   () => props.approvalPolicy,
-  (cur: PolicyV1) => {
+  (cur: Policy) => {
     state.approvalPolicy = cloneDeep(cur);
   }
 );
 
 watch(
   () => props.backupPolicy,
-  (cur: PolicyV1) => {
+  (cur: Policy) => {
     state.backupPolicy = cloneDeep(cur);
   }
 );
 
 watch(
-  () => props.environmentTierPolicy,
-  (cur: Policy) => {
-    state.environmentTierPolicy = cloneDeep(cur);
+  () => props.environmentTier,
+  (cur: EnvironmentTier) => {
+    state.environmentTier = cur;
   }
 );
 
@@ -529,14 +530,14 @@ const allowRestore = computed(() => {
 const allowEdit = computed(() => {
   return (
     props.create ||
-    ((state.environment as Environment).rowStatus === "NORMAL" &&
+    ((state.environment as Environment).state === State.ACTIVE &&
       hasPermission.value)
   );
 });
 
 const allowCreate = computed(() => {
   return (
-    !isEmpty(state.environment?.name) &&
+    !isEmpty(state.environment?.title) &&
     resourceIdField.value?.resourceId &&
     resourceIdField.value?.isValidated
   );
@@ -550,11 +551,7 @@ const allowEditSQLReviewPolicy = computed(() => {
 });
 
 const valueChanged = (
-  field?:
-    | "environment"
-    | "approvalPolicy"
-    | "backupPolicy"
-    | "environmentTierPolicy"
+  field?: "environment" | "approvalPolicy" | "backupPolicy" | "environmentTier"
 ): boolean => {
   switch (field) {
     case "environment":
@@ -563,15 +560,15 @@ const valueChanged = (
       return !isEqual(props.approvalPolicy, state.approvalPolicy);
     case "backupPolicy":
       return !isEqual(props.backupPolicy, state.backupPolicy);
-    case "environmentTierPolicy":
-      return !isEqual(props.environmentTierPolicy, state.environmentTierPolicy);
+    case "environmentTier":
+      return !isEqual(props.environmentTier, state.environmentTier);
 
     default:
       return (
         !isEqual(props.environment, state.environment) ||
         !isEqual(props.approvalPolicy, state.approvalPolicy) ||
         !isEqual(props.backupPolicy, state.backupPolicy) ||
-        !isEqual(props.environmentTierPolicy, state.environmentTierPolicy)
+        !isEqual(props.environmentTier, state.environmentTier)
       );
   }
 };
@@ -580,56 +577,50 @@ const revertEnvironment = () => {
   state.environment = cloneDeep(props.environment!);
   state.approvalPolicy = cloneDeep(props.approvalPolicy!);
   state.backupPolicy = cloneDeep(props.backupPolicy!);
-  state.environmentTierPolicy = cloneDeep(props.environmentTierPolicy!);
+  state.environmentTier = cloneDeep(props.environmentTier!);
 };
 
 const createEnvironment = () => {
   emit(
     "create",
     {
-      ...state.environment,
-      resourceId: resourceIdField.value?.resourceId,
+      name: resourceIdField.value?.resourceId,
+      title: state.environment.title,
     },
     state.approvalPolicy,
     state.backupPolicy,
-    state.environmentTierPolicy
+    state.environmentTier
   );
 };
 
 const updateEnvironment = () => {
-  if (state.environment.name != props.environment!.name) {
-    const patchedEnvironment: EnvironmentPatch = {};
-
-    patchedEnvironment.name = state.environment.name;
+  const env = props.environment as Environment;
+  if (
+    state.environment.title != env.title ||
+    state.environmentTier != env.tier
+  ) {
+    const patchedEnvironment: EnvironmentPatch = {
+      title: state.environment.title,
+      tier: state.environmentTier,
+    };
     emit("update", patchedEnvironment);
   }
 
-  const environmentId = (state.environment as Environment).id;
-
   if (!isEqual(props.approvalPolicy, state.approvalPolicy)) {
     emit(
-      "update-policy-v1",
+      "update-policy",
       state.environment,
-      PolicyTypeV1.DEPLOYMENT_APPROVAL,
+      PolicyType.DEPLOYMENT_APPROVAL,
       state.approvalPolicy
     );
   }
 
   if (!isEqual(props.backupPolicy, state.backupPolicy)) {
     emit(
-      "update-policy-v1",
-      state.environment,
-      PolicyTypeV1.BACKUP_PLAN,
-      state.backupPolicy
-    );
-  }
-
-  if (!isEqual(props.environmentTierPolicy, state.environmentTierPolicy)) {
-    emit(
       "update-policy",
-      environmentId,
-      "bb.policy.environment-tier",
-      state.environmentTierPolicy
+      state.environment,
+      PolicyType.BACKUP_PLAN,
+      state.backupPolicy
     );
   }
 };
