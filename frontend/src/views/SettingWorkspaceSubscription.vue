@@ -86,7 +86,7 @@
             type="button"
             class="btn-primary inline-flex justify-center ml-auto"
             target="_blank"
-            href="https://docs.google.com/forms/d/e/1FAIpQLSfe1JvroV4ckBMJo8hDXBYGeuzN0Sn1Ylg1lIUamN2jqu9Fcw/viewform"
+            href="https://airtable.com/shrS2Ot5BfGExwemj"
           >
             {{ $t("subscription.contact-us") }}
           </a>
