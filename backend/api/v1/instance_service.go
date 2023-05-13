@@ -258,7 +258,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Name)
 	}
 
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID})
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +338,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 
-	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, instance.EnvironmentID, instance.ResourceID, dataSource); err != nil {
+	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, instance.ResourceID, dataSource); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -375,13 +375,12 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
 
-	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.EnvironmentID, instance.ResourceID, dataSource.Type); err != nil {
+	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.Type); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &instance.EnvironmentID,
-		ResourceID:    &instance.ResourceID,
+		ResourceID: &instance.ResourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -416,11 +415,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	patch := &store.UpdateDataSourceMessage{
-		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
-		InstanceUID:   instance.UID,
-		Type:          tp,
-		EnvironmentID: instance.EnvironmentID,
-		InstanceID:    instance.ResourceID,
+		UpdaterID:   ctx.Value(common.PrincipalIDContextKey).(int),
+		InstanceUID: instance.UID,
+		Type:        tp,
+		InstanceID:  instance.ResourceID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {

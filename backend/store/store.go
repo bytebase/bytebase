@@ -52,14 +52,14 @@ func (s *Store) Close(ctx context.Context) error {
 	return s.db.Close(ctx)
 }
 
-func getInstanceCacheKey(environmentID, instanceID string) string {
-	return fmt.Sprintf("%s/%s", environmentID, instanceID)
+func getInstanceCacheKey(instanceID string) string {
+	return instanceID
 }
 
 func getPolicyCacheKey(resourceType api.PolicyResourceType, resourceUID int, policyType api.PolicyType) string {
 	return fmt.Sprintf("policies/%s/%d/%s", resourceType, resourceUID, policyType)
 }
 
-func getDatabaseCacheKey(environmentID, instanceID, databaseName string) string {
-	return fmt.Sprintf("%s/%s/%s", environmentID, instanceID, databaseName)
+func getDatabaseCacheKey(instanceID, databaseName string) string {
+	return fmt.Sprintf("%s/%s", instanceID, databaseName)
 }

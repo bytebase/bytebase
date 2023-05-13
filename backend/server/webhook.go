@@ -728,7 +728,7 @@ func (s *Server) sqlAdviceForFile(
 	// There may exist many databases that match the file name.
 	// We just need to use the first one, which has the SQL review policy and can let us take the check.
 	for _, database := range databases {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
 			return nil, err
 		}

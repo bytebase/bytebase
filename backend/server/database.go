@@ -132,9 +132,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		updateMessage := &store.UpdateDatabaseMessage{
-			EnvironmentID: database.EnvironmentID,
-			InstanceID:    database.InstanceID,
-			DatabaseName:  database.DatabaseName,
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
 		}
 		if toProject != nil {
 			updateMessage.ProjectID = &toProject.ResourceID
@@ -227,7 +226,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
 			}
 		} else if isSDL {
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 			if err != nil {
 				return err
 			}
@@ -279,7 +278,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
 			return err
 		}
@@ -446,7 +445,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
 		}
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get instance").SetInternal(err)
 		}
@@ -490,7 +489,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
 		}
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get instance").SetInternal(err)
 		}
@@ -534,7 +533,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			SSHObfuscatedPassword:   common.Obfuscate(dataSourceCreate.Options.SSHPassword, s.secret),
 			SSHObfuscatedPrivateKey: common.Obfuscate(dataSourceCreate.Options.SSHPrivateKey, s.secret),
 		}
-		if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, creatorID, instance.EnvironmentID, instance.ResourceID, dataSourceMessage); err != nil {
+		if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, creatorID, instance.ResourceID, dataSourceMessage); err != nil {
 			return err
 		}
 
@@ -580,7 +579,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
 		}
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get instance").SetInternal(err)
 		}
@@ -609,15 +608,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		updateMessage := &store.UpdateDataSourceMessage{
-			UpdaterID:     c.Get(getPrincipalIDContextKey()).(int),
-			InstanceUID:   instance.UID,
-			EnvironmentID: instance.EnvironmentID,
-			InstanceID:    instance.ResourceID,
-			Type:          dataSource.Type,
-			Username:      dataSourcePatch.Username,
-			Host:          dataSourcePatch.Host,
-			Port:          dataSourcePatch.Port,
-			Database:      dataSourcePatch.Database,
+			UpdaterID:   c.Get(getPrincipalIDContextKey()).(int),
+			InstanceUID: instance.UID,
+			InstanceID:  instance.ResourceID,
+			Type:        dataSource.Type,
+			Username:    dataSourcePatch.Username,
+			Host:        dataSourcePatch.Host,
+			Port:        dataSourcePatch.Port,
+			Database:    dataSourcePatch.Database,
 		}
 		if dataSourcePatch.Password != nil {
 			obfuscated := common.Obfuscate(*dataSourcePatch.Password, s.secret)
@@ -716,7 +714,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
 		}
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get instance").SetInternal(err)
 		}
@@ -737,7 +735,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if dataSource.Type == api.Admin {
 			return echo.NewHTTPError(http.StatusBadRequest, "admin data source cannot be deleted")
 		}
-		if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.EnvironmentID, instance.ResourceID, dataSource.Type); err != nil {
+		if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.Type); err != nil {
 			return err
 		}
 
@@ -760,7 +758,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
 		}
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get instance").SetInternal(err)
 		}

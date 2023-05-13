@@ -197,7 +197,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				deletes = &f
 			} else if *patch.RowStatus == string(api.Archived) {
 				// Transfer databases to the default project automatically.
-				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID})
+				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 				if err != nil {
 					return err
 				}

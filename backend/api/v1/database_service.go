@@ -581,7 +581,6 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	updateDatabaseMessage.Secrets = &storepb.Secrets{
 		Items: secretItems,
 	}
-	updateDatabaseMessage.EnvironmentID = database.EnvironmentID
 	updateDatabaseMessage.InstanceID = database.InstanceID
 	updateDatabaseMessage.DatabaseName = database.DatabaseName
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -650,7 +649,6 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	updateDatabaseMessage.Secrets = &storepb.Secrets{
 		Items: secretItems,
 	}
-	updateDatabaseMessage.EnvironmentID = database.EnvironmentID
 	updateDatabaseMessage.InstanceID = database.InstanceID
 	updateDatabaseMessage.DatabaseName = database.DatabaseName
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -1377,9 +1375,8 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 	for _, db := range dbList {
 		if db != "" && db != database.DatabaseName {
 			findDatabase := &store.FindDatabaseMessage{
-				EnvironmentID: &database.EnvironmentID,
-				InstanceID:    &database.InstanceID,
-				DatabaseName:  &db,
+				InstanceID:   &database.InstanceID,
+				DatabaseName: &db,
 			}
 			database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 			if err != nil {

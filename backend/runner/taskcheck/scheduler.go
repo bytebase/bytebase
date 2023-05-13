@@ -261,7 +261,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, task *store.TaskMessage, c
 	if dbSchema == nil {
 		return nil, errors.Errorf("database schema not found %v", task.DatabaseID)
 	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, err
 	}
