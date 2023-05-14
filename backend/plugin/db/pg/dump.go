@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
@@ -62,8 +64,24 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	if driver.config.Password == "" {
 		args = append(args, "--no-password")
 	}
-	args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
-	args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
+	if driver.sshClient == nil {
+		args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
+		args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
+	} else {
+		localPort := <-util.PortFIFO
+		defer func() {
+			util.PortFIFO <- localPort
+		}()
+		args = append(args, fmt.Sprintf("--host=%s", "localhost"))
+		args = append(args, fmt.Sprintf("--port=%d", localPort))
+		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", localPort))
+		if err != nil {
+			return err
+		}
+		defer listener.Close()
+		databaseAddress := fmt.Sprintf("%s:%s", driver.config.Host, driver.config.Port)
+		go util.ProxyConnection(driver.sshClient, listener, databaseAddress)
+	}
 	if schemaOnly {
 		args = append(args, "--schema-only")
 	}
