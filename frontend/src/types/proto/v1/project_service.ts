@@ -284,6 +284,36 @@ export interface ListProjectsResponse {
   nextPageToken: string;
 }
 
+export interface SearchProjectsRequest {
+  /**
+   * The maximum number of projects to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 projects will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListProjects` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListProjects` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+  /** Filter is used to filter projects returned in the list. */
+  filter: string;
+}
+
+export interface SearchProjectsResponse {
+  /** The projects from the specified request. */
+  projects: Project[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
 export interface CreateProjectRequest {
   /** The project to create. */
   project?: Project;
@@ -991,6 +1021,165 @@ export const ListProjectsResponse = {
 
   fromPartial(object: DeepPartial<ListProjectsResponse>): ListProjectsResponse {
     const message = createBaseListProjectsResponse();
+    message.projects = object.projects?.map((e) => Project.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchProjectsRequest(): SearchProjectsRequest {
+  return { pageSize: 0, pageToken: "", filter: "" };
+}
+
+export const SearchProjectsRequest = {
+  encode(message: SearchProjectsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.pageSize !== 0) {
+      writer.uint32(8).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(18).string(message.pageToken);
+    }
+    if (message.filter !== "") {
+      writer.uint32(26).string(message.filter);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchProjectsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchProjectsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchProjectsRequest {
+    return {
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      filter: isSet(object.filter) ? String(object.filter) : "",
+    };
+  },
+
+  toJSON(message: SearchProjectsRequest): unknown {
+    const obj: any = {};
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.filter !== undefined && (obj.filter = message.filter);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchProjectsRequest>): SearchProjectsRequest {
+    return SearchProjectsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SearchProjectsRequest>): SearchProjectsRequest {
+    const message = createBaseSearchProjectsRequest();
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    message.filter = object.filter ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchProjectsResponse(): SearchProjectsResponse {
+  return { projects: [], nextPageToken: "" };
+}
+
+export const SearchProjectsResponse = {
+  encode(message: SearchProjectsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.projects) {
+      Project.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchProjectsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchProjectsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projects.push(Project.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchProjectsResponse {
+    return {
+      projects: Array.isArray(object?.projects) ? object.projects.map((e: any) => Project.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: SearchProjectsResponse): unknown {
+    const obj: any = {};
+    if (message.projects) {
+      obj.projects = message.projects.map((e) => e ? Project.toJSON(e) : undefined);
+    } else {
+      obj.projects = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchProjectsResponse>): SearchProjectsResponse {
+    return SearchProjectsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SearchProjectsResponse>): SearchProjectsResponse {
+    const message = createBaseSearchProjectsResponse();
     message.projects = object.projects?.map((e) => Project.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
@@ -3011,6 +3200,45 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    /** Search for projects that the caller has both projects.get permission on, and also satisfy the specified query. */
+    searchProjects: {
+      name: "SearchProjects",
+      requestType: SearchProjectsRequest,
+      requestStream: false,
+      responseType: SearchProjectsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              21,
+              18,
+              19,
+              47,
+              118,
+              49,
+              47,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
+            ]),
+          ],
+        },
+      },
+    },
     createProject: {
       name: "CreateProject",
       requestType: CreateProjectRequest,
@@ -3867,6 +4095,11 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
     request: ListProjectsRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListProjectsResponse>>;
+  /** Search for projects that the caller has both projects.get permission on, and also satisfy the specified query. */
+  searchProjects(
+    request: SearchProjectsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<SearchProjectsResponse>>;
   createProject(request: CreateProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
   updateProject(request: UpdateProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
   deleteProject(request: DeleteProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
@@ -3907,6 +4140,11 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListProjectsRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListProjectsResponse>;
+  /** Search for projects that the caller has both projects.get permission on, and also satisfy the specified query. */
+  searchProjects(
+    request: DeepPartial<SearchProjectsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<SearchProjectsResponse>;
   createProject(request: DeepPartial<CreateProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
   updateProject(request: DeepPartial<UpdateProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
   deleteProject(request: DeepPartial<DeleteProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
