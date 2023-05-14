@@ -140,7 +140,14 @@ export const instanceHasSSH = (
   instanceOrEngine: Instance | EngineType
 ): boolean => {
   const engine = engineOfInstance(instanceOrEngine);
-  return ["MYSQL", "TIDB", "MARIADB", "OCEANBASE", "REDIS"].includes(engine);
+  return [
+    "MYSQL",
+    "TIDB",
+    "MARIADB",
+    "OCEANBASE",
+    "POSTGRES",
+    "REDIS",
+  ].includes(engine);
 };
 
 export const instanceHasCollationAndCharacterSet = (
