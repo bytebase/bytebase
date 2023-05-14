@@ -125,7 +125,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 }
 
 // SearchDatabases searches all databases.
-func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
+func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.SearchDatabasesRequest) (*v1pb.SearchDatabasesResponse, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	role := ctx.Value(common.RoleContextKey).(api.Role)
 
@@ -152,7 +152,7 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Lis
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	response := &v1pb.ListDatabasesResponse{}
+	response := &v1pb.SearchDatabasesResponse{}
 	for _, database := range databases {
 		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.ProjectID})
 		if err != nil {
