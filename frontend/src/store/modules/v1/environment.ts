@@ -111,7 +111,9 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       }
       return (
         this.environmentList.find((env) => parseInt(env.uid, 10) == uid) ??
-        Environment.fromJSON({})
+        Environment.fromJSON({
+          uid: "-1",
+        })
       );
     },
   },

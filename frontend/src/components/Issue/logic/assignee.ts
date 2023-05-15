@@ -7,7 +7,6 @@ import {
   Principal,
   Project,
   SYSTEM_BOT_ID,
-  Environment,
 } from "@/types";
 import { useIssueLogic } from ".";
 import {
@@ -26,8 +25,7 @@ import {
   usePolicyByParentAndType,
   defaultApprovalStrategy,
 } from "@/store/modules/v1/policy";
-import { useEnvironmentStore } from "@/store";
-import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
+import { useEnvironmentV1Store } from "@/store";
 
 export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   const { create, issue, activeStageOfPipeline } = useIssueLogic();
@@ -40,28 +38,27 @@ export const useCurrentRollOutPolicyForActiveEnvironment = () => {
     }));
   }
 
-  const activeEnvironment = computed((): Environment => {
+  const activeEnvironment = computed(() => {
     if (create.value) {
       // When creating an issue, activeEnvironmentId is the first stage's environmentId
       const stage = (issue.value as IssueCreate).pipeline!.stageList[0];
-      return useEnvironmentStore().getEnvironmentById(stage.environmentId);
+      return useEnvironmentV1Store().getEnvironmentByUID(stage.environmentId);
     }
 
     const stage = activeStageOfPipeline(issue.value.pipeline as Pipeline);
-    return stage.environment;
+    return useEnvironmentV1Store().getEnvironmentByUID(stage.environment.id);
   });
 
   const activeEnvironmentApprovalPolicy = usePolicyByParentAndType(
     computed(() => ({
-      parentPath: getEnvironmentPathByLegacyEnvironment(
-        activeEnvironment.value
-      ),
+      parentPath: activeEnvironment.value.name,
       policyType: PolicyType.DEPLOYMENT_APPROVAL,
     }))
   );
 
   return computed(() => {
     const policy = activeEnvironmentApprovalPolicy.value;
+    console.log("policy", policy);
     return extractRollOutPolicyValue(policy, issue.value.type);
   });
 };

@@ -44,7 +44,6 @@ import {
   useAuthStore,
   useActuatorStore,
   useDatabaseStore,
-  useEnvironmentStore,
   useInstanceStore,
   usePrincipalStore,
   useRouterStore,
@@ -58,6 +57,7 @@ import {
   useUserStore,
   useProjectV1Store,
   useProjectWebhookV1Store,
+  useEnvironmentV1Store,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -652,9 +652,9 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: (route: RouteLocationNormalized) => {
                 const slug = route.params.environmentSlug as string;
-                return useEnvironmentStore().getEnvironmentById(
+                return useEnvironmentV1Store().getEnvironmentByUID(
                   idFromSlug(slug)
-                ).name;
+                ).title;
               },
               allowBookmark: true,
             },
@@ -1134,7 +1134,6 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   const databaseStore = useDatabaseStore();
   const dbSchemaStore = useDBSchemaStore();
-  const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
   const routerStore = useRouterStore();
   const projectStore = useProjectStore();
@@ -1441,19 +1440,25 @@ router.beforeEach((to, from, next) => {
   }
 
   if (environmentSlug) {
-    const env = environmentStore.getEnvironmentById(
-      idFromSlug(environmentSlug)
-    );
-    // getEnvironmentById returns unknown("ENVIRONMENT") when it doesn't exist
-    // so we need to check the id here
-    if (env && env.id !== UNKNOWN_ID) {
-      next();
-      return;
-    }
-    next({
-      name: "error.404",
-      replace: false,
-    });
+    useEnvironmentV1Store()
+      .getOrFetchEnvironmentByUID(idFromSlug(environmentSlug))
+      .then((env) => {
+        // getEnvironmentById returns unknown("ENVIRONMENT") when it doesn't exist
+        // so we need to check the id here
+        if (env && env.uid !== String(UNKNOWN_ID)) {
+          next();
+          return;
+        } else {
+          throw new Error();
+        }
+      })
+      .catch(() => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+      });
+    return;
   }
 
   if (projectSlug) {
