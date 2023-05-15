@@ -20,16 +20,21 @@ service SheetService {
     option (google.api.method_signature) = "parent,sheet";
   }
 
+  rpc GetSheet(GetSheetRequest) returns (Sheet) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/sheets/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc SearchSheets(SearchSheetsRequest) returns (SearchSheetsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/sheets:search"};
+  }
+
   rpc UpdateSheet(UpdateSheetRequest) returns (Sheet) {
     option (google.api.http) = {
       patch: "/v1/{sheet.name=projects/*/sheets/*}"
       body: "sheet"
     };
     option (google.api.method_signature) = "sheet,update_mask";
-  }
-
-  rpc SearchSheets(SearchSheetsRequest) returns (SearchSheetsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/sheets:search"};
   }
 
   rpc DeleteSheet(DeleteSheetRequest) returns (google.protobuf.Empty) {
@@ -50,6 +55,15 @@ message CreateSheetRequest {
 
   // The sheet to create.
   Sheet sheet = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetSheetRequest {
+  // The name of the sheet to retrieve.
+  // Format: projects/{project}/sheets/{sheet}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // By default, the content of the sheet is cut off, set the `raw` to true to retrieve the full content.
+  bool raw = 2;
 }
 
 message UpdateSheetRequest {
@@ -139,10 +153,13 @@ message Sheet {
   // The last update time of the sheet.
   google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string statement = 7 [(google.api.field_behavior) = REQUIRED];
+  // The content of the sheet.
+  // By default, it will be cut off, if it doesn't match the `content_size`, you can
+  // set the `raw` to true in GetSheet request to retrieve the full content.
+  bytes content = 7 [(google.api.field_behavior) = REQUIRED];
 
-  // statement_size is the size of the statement in bytes.
-  int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // content_size is the full size of the content, may not match the size of the `content` field.
+  bytes content_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum Visibility {
     VISIBILITY_UNSPECIFIED = 0;
