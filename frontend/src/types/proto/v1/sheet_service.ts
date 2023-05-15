@@ -59,6 +59,13 @@ export interface SearchSheetsRequest {
    */
   parent: string;
   /**
+   * To filter the search result.
+   * Format: only support the following spec for now:
+   * - `creator = user:{email}`, `creator != user:{email}`
+   * - `starred = true`, `starred = false`.
+   */
+  filter: string;
+  /**
    * Not used. The maximum number of sheets to return. The service may return fewer than
    * this value.
    * If unspecified, at most 50 sheets will be returned.
@@ -78,13 +85,6 @@ export interface SearchSheetsRequest {
 export interface SearchSheetsResponse {
   /** The sheets that matched the search criteria. */
   sheets: Sheet[];
-  /**
-   * To filter the search result.
-   * Format: only support the following spec for now:
-   * - `creator = user:{email}`, `creator != user:{email}`
-   * - `starred = true`, `starred = false`.
-   */
-  filter: string;
   /**
    * Not used. A token, which can be sent as `page_token` to retrieve the next page.
    * If this field is omitted, there are no subsequent pages.
@@ -555,7 +555,7 @@ export const DeleteSheetRequest = {
 };
 
 function createBaseSearchSheetsRequest(): SearchSheetsRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", filter: "", pageSize: 0, pageToken: "" };
 }
 
 export const SearchSheetsRequest = {
@@ -563,11 +563,14 @@ export const SearchSheetsRequest = {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
+    if (message.filter !== "") {
+      writer.uint32(18).string(message.filter);
+    }
     if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
+      writer.uint32(24).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
+      writer.uint32(34).string(message.pageToken);
     }
     return writer;
   },
@@ -587,14 +590,21 @@ export const SearchSheetsRequest = {
           message.parent = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
           message.pageSize = reader.int32();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -612,6 +622,7 @@ export const SearchSheetsRequest = {
   fromJSON(object: any): SearchSheetsRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
+      filter: isSet(object.filter) ? String(object.filter) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
     };
@@ -620,6 +631,7 @@ export const SearchSheetsRequest = {
   toJSON(message: SearchSheetsRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
+    message.filter !== undefined && (obj.filter = message.filter);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
@@ -632,6 +644,7 @@ export const SearchSheetsRequest = {
   fromPartial(object: DeepPartial<SearchSheetsRequest>): SearchSheetsRequest {
     const message = createBaseSearchSheetsRequest();
     message.parent = object.parent ?? "";
+    message.filter = object.filter ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     return message;
@@ -639,7 +652,7 @@ export const SearchSheetsRequest = {
 };
 
 function createBaseSearchSheetsResponse(): SearchSheetsResponse {
-  return { sheets: [], filter: "", nextPageToken: "" };
+  return { sheets: [], nextPageToken: "" };
 }
 
 export const SearchSheetsResponse = {
@@ -647,11 +660,8 @@ export const SearchSheetsResponse = {
     for (const v of message.sheets) {
       Sheet.encode(v!, writer.uint32(10).fork()).ldelim();
     }
-    if (message.filter !== "") {
-      writer.uint32(18).string(message.filter);
-    }
     if (message.nextPageToken !== "") {
-      writer.uint32(26).string(message.nextPageToken);
+      writer.uint32(18).string(message.nextPageToken);
     }
     return writer;
   },
@@ -675,13 +685,6 @@ export const SearchSheetsResponse = {
             break;
           }
 
-          message.filter = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
           message.nextPageToken = reader.string();
           continue;
       }
@@ -696,7 +699,6 @@ export const SearchSheetsResponse = {
   fromJSON(object: any): SearchSheetsResponse {
     return {
       sheets: Array.isArray(object?.sheets) ? object.sheets.map((e: any) => Sheet.fromJSON(e)) : [],
-      filter: isSet(object.filter) ? String(object.filter) : "",
       nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
     };
   },
@@ -708,7 +710,6 @@ export const SearchSheetsResponse = {
     } else {
       obj.sheets = [];
     }
-    message.filter !== undefined && (obj.filter = message.filter);
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
@@ -720,7 +721,6 @@ export const SearchSheetsResponse = {
   fromPartial(object: DeepPartial<SearchSheetsResponse>): SearchSheetsResponse {
     const message = createBaseSearchSheetsResponse();
     message.sheets = object.sheets?.map((e) => Sheet.fromPartial(e)) || [];
-    message.filter = object.filter ?? "";
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
