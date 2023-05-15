@@ -1210,7 +1210,7 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 
 	stages, err := s.store.ListStageV2(ctx, taskPatched.PipelineID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to list stages")
 	}
 	var taskStage, nextStage *store.StageMessage
 	for i, stage := range stages {
@@ -1261,7 +1261,7 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 
 	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &taskPatched.PipelineID, StageID: &taskPatched.StageID})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to list tasks")
 	}
 	stageTaskHasPendingApproval := false
 	stageTaskAllTerminated := true
@@ -1285,54 +1285,64 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 	// every task in the stage terminated
 	// create "stage ends" activity.
 	if stageTaskAllTerminated {
-		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
-			StageID:               taskStage.ID,
-			StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
-			IssueName:             issue.Title,
-			StageName:             taskStage.Name,
-		}
-		bytes, err := json.Marshal(createActivityPayload)
-		if err != nil {
-			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
-		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: *issue.PipelineUID,
-			Type:        api.ActivityPipelineStageStatusUpdate,
-			Level:       api.ActivityInfo,
-			Payload:     string(bytes),
-		}
-		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-			Issue: issue,
-		}); err != nil {
-			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
+		if err := func() error {
+			createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+				StageID:               taskStage.ID,
+				StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
+				IssueName:             issue.Title,
+				StageName:             taskStage.Name,
+			}
+			bytes, err := json.Marshal(createActivityPayload)
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
+			}
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   api.SystemBotID,
+				ContainerID: *issue.PipelineUID,
+				Type:        api.ActivityPipelineStageStatusUpdate,
+				Level:       api.ActivityInfo,
+				Payload:     string(bytes),
+			}
+			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+				Issue: issue,
+			}); err != nil {
+				return errors.Wrap(err, "failed to create activity")
+			}
+			return nil
+		}(); err != nil {
+			log.Error("failed to create ActivityPipelineStageStatusUpdate activity", zap.Error(err))
 		}
 	}
 
 	// every task in the stage completes and this is not the last stage.
 	// create "stage begins" activity.
 	if !taskStage.Active && nextStage != nil {
-		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
-			StageID:               nextStage.ID,
-			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
-			IssueName:             issue.Title,
-			StageName:             nextStage.Name,
-		}
-		bytes, err := json.Marshal(createActivityPayload)
-		if err != nil {
-			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
-		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: *issue.PipelineUID,
-			Type:        api.ActivityPipelineStageStatusUpdate,
-			Level:       api.ActivityInfo,
-			Payload:     string(bytes),
-		}
-		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-			Issue: issue,
-		}); err != nil {
-			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
+		if err := func() error {
+			createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+				StageID:               nextStage.ID,
+				StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
+				IssueName:             issue.Title,
+				StageName:             nextStage.Name,
+			}
+			bytes, err := json.Marshal(createActivityPayload)
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
+			}
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   api.SystemBotID,
+				ContainerID: *issue.PipelineUID,
+				Type:        api.ActivityPipelineStageStatusUpdate,
+				Level:       api.ActivityInfo,
+				Payload:     string(bytes),
+			}
+			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+				Issue: issue,
+			}); err != nil {
+				return errors.Wrap(err, "failed to create activity")
+			}
+			return nil
+		}(); err != nil {
+			log.Error("failed to create ActivityPipelineStageStatusUpdate activity", zap.Error(err))
 		}
 	}
 
@@ -1341,7 +1351,7 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 	if taskPatched.Status == api.TaskPending && issue.Project.Workflow == api.UIWorkflow && !stageTaskHasPendingApproval {
 		needAttention := false
 		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{NeedAttention: &needAttention}, api.SystemBotID); err != nil {
-			return errors.Wrapf(err, "failed to patch issue assigneeNeedAttention after finding out that there isn't any pendingApproval task in the stage")
+			log.Error("failed to patch issue assigneeNeedAttention after finding out that there isn't any pendingApproval task in the stage", zap.Error(err))
 		}
 	}
 
