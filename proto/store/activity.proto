@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
-option go_package = "generated-go/store";
+option go_package = "github.com/bytebase/bytebase/proto/generated-go/store";
 
 // ActivityIssueCreatePayload is the payloads for creating issues.
 // These payload types are only used when marshalling to the json format for saving into the database.

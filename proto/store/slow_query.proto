@@ -5,7 +5,7 @@ package bytebase.store;
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "generated-go/store";
+option go_package = "github.com/bytebase/bytebase/proto/generated-go/store";
 
 // SlowQueryStatistics is the slow query statistics.
 message SlowQueryStatistics {

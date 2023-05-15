@@ -211,7 +211,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting value: %v", err)
 		}
 		storeSettingValue = string(bytes)
-	//TODO: convert setting values and validate
+	// TODO: convert setting values and validate
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}

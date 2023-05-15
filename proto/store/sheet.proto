@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
-option go_package = "generated-go/store";
+option go_package = "github.com/bytebase/bytebase/proto/generated-go/store";
 
 message SheetPayload {
   message VCSPayload {
