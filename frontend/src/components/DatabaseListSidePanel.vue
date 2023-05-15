@@ -15,8 +15,17 @@ import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import type { BBOutlineItem } from "@/bbkit/types";
 import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "@/types";
-import { databaseSlug, environmentName, projectSlug } from "@/utils";
-import { useEnvironmentList, useCurrentUser, useDatabaseStore } from "@/store";
+import {
+  databaseSlug,
+  environmentName,
+  environmentV1Name,
+  projectSlug,
+} from "@/utils";
+import {
+  useEnvironmentV1List,
+  useCurrentUser,
+  useDatabaseStore,
+} from "@/store";
 
 export default defineComponent({
   name: "DatabaseListSidePanel",
@@ -27,14 +36,16 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
 
-    const rawEnvironmentList = useEnvironmentList();
+    const rawEnvironmentList = useEnvironmentV1List();
+
+    // Reserve the environment list, put "Prod" to the top.
     const environmentList = computed(() =>
       cloneDeep(rawEnvironmentList.value).reverse()
     );
 
     const prepareList = () => {
       // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
+      if (currentUser.value.id !== UNKNOWN_ID) {
         databaseStore.fetchDatabaseList();
       }
     };
@@ -51,7 +62,7 @@ export default defineComponent({
     const databaseListByEnvironment = computed(() => {
       const envToDbMap: Map<EnvironmentId, BBOutlineItem[]> = new Map();
       for (const environment of environmentList.value) {
-        envToDbMap.set(environment.id, []);
+        envToDbMap.set(environment.uid, []);
       }
       const list = [...databaseList.value].filter(
         (db) => db.project.tenantMode !== "TENANT"
@@ -60,7 +71,9 @@ export default defineComponent({
         return a.name.localeCompare(b.name);
       });
       for (const database of list) {
-        const dbList = envToDbMap.get(database.instance.environment.id)!;
+        const dbList = envToDbMap.get(
+          String(database.instance.environment.id)
+        )!;
         // dbList may be undefined if the environment is archived
         if (dbList) {
           dbList.push({
@@ -72,14 +85,14 @@ export default defineComponent({
       }
 
       return environmentList.value
-        .filter((environment: Environment) => {
-          return envToDbMap.get(environment.id)!.length > 0;
+        .filter((environment) => {
+          return envToDbMap.get(environment.uid)!.length > 0;
         })
-        .map((environment: Environment): BBOutlineItem => {
+        .map((environment): BBOutlineItem => {
           return {
-            id: `bb.env.${environment.id}`,
-            name: environmentName(environment),
-            childList: envToDbMap.get(environment.id),
+            id: `bb.env.${environment.uid}`,
+            name: environmentV1Name(environment),
+            childList: envToDbMap.get(environment.uid),
             childCollapse: true,
           };
         });

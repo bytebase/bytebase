@@ -3,22 +3,29 @@ import type { SelectOption } from "naive-ui";
 
 import { ConditionExpr, Factor, SQLTypeList } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
-import { useCurrentUser, useEnvironmentStore, useProjectStore } from "@/store";
+import {
+  useCurrentUser,
+  useEnvironmentV1Store,
+  useProjectStore,
+} from "@/store";
 import { engineName, PresetRiskLevelList, SupportedSourceList } from "@/types";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
 import { levelText } from "../../utils";
-import { supportedEngineList } from "@/utils";
+import { extractEnvironmentResourceName, supportedEngineList } from "@/utils";
 
 export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
   const context = useExprEditorContext();
   const { riskSource } = context;
 
   const getEnvironmentIdOptions = () => {
-    const environmentList = useEnvironmentStore().getEnvironmentList();
-    return environmentList.map<SelectOption>((env) => ({
-      label: env.resourceId,
-      value: env.resourceId,
-    }));
+    const environmentList = useEnvironmentV1Store().getEnvironmentList();
+    return environmentList.map<SelectOption>((env) => {
+      const environmentId = extractEnvironmentResourceName(env.name);
+      return {
+        label: environmentId,
+        value: environmentId,
+      };
+    });
   };
 
   const getProjectIdOptions = () => {

@@ -334,7 +334,7 @@ import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
 import {
   pushNotification,
   useCurrentUser,
-  useEnvironmentList,
+  useEnvironmentV1List,
   useSQLReviewStore,
 } from "@/store";
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
@@ -481,7 +481,7 @@ watch(
 
 const currentUser = useCurrentUser();
 
-const environmentList = useEnvironmentList();
+const environmentList = useEnvironmentV1List();
 
 const hasPermission = computed(() => {
   return hasWorkspacePermission(
