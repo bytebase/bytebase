@@ -132,19 +132,6 @@ export default defineComponent({
         list = databaseStore.getDatabaseListByInstanceId(props.instanceId);
       } else if (props.mode == "USER") {
         list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
-        if (
-          props.environmentId != UNKNOWN_ID ||
-          props.projectId != UNKNOWN_ID
-        ) {
-          list = list.filter((database: Database) => {
-            return (
-              (props.environmentId == UNKNOWN_ID ||
-                database.instance.environment.id == props.environmentId) &&
-              (props.projectId == UNKNOWN_ID ||
-                database.project.id == props.projectId)
-            );
-          });
-        }
       }
 
       if (!isNullOrUndefined(props.engineTypeList)) {
@@ -156,6 +143,17 @@ export default defineComponent({
       if (!isNullOrUndefined(props.syncStatus)) {
         list = list.filter((database: Database) => {
           return database.syncStatus === props.syncStatus;
+        });
+      }
+
+      if (props.environmentId != UNKNOWN_ID || props.projectId != UNKNOWN_ID) {
+        list = list.filter((database: Database) => {
+          return (
+            (props.environmentId == UNKNOWN_ID ||
+              database.instance.environment.id == props.environmentId) &&
+            (props.projectId == UNKNOWN_ID ||
+              database.project.id == props.projectId)
+          );
         });
       }
 
