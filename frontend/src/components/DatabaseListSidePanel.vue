@@ -14,7 +14,7 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import type { BBOutlineItem } from "@/bbkit/types";
-import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "@/types";
+import { Database, EnvironmentId, UNKNOWN_ID } from "@/types";
 import { databaseSlug, environmentV1Name, projectSlug } from "@/utils";
 import {
   useEnvironmentV1List,
