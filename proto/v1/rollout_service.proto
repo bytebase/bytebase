@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "generated-go/v1";
+
+service RolloutService {
+  rpc GetPlan(GetPlanRequest) returns (Plan) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/plans/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListPlans(ListPlansRequest) returns (ListPlansResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/plans"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc CreatePlan(CreatePlanRequest) returns (Plan) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/plans"
+      body: "plan"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdatePlan(UpdatePlanRequest) returns (Plan) {
+    option (google.api.http) = {
+      patch: "/v1/{plan.name=projects/*/plans/*}"
+      body: "plan"
+    };
+    option (google.api.method_signature) = "plan,update_mask";
+  }
+}
+
+message GetPlanRequest {
+  // The name of the plan to retrieve.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListPlansRequest {
+  // The parent, which owns this collection of plans.
+  // Format: projects/{project}
+  // Use "projects/-" to list all plans from all projects.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of plans to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 plans will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListPlans` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListPlans` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListPlansResponse {
+  // The plans from the specified request.
+  repeated Plan plans = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreatePlanRequest {
+  // The parent project where this plan will be created.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The plan to create.
+  Plan plan = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdatePlanRequest {
+  // The plan to update.
+  //
+  // The plan's `name` field is used to identify the plan to update.
+  // Format: projects/{project}/plans/{plan}
+  Plan plan = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Plan {
+  // The name of the plan.
+  // `plan` is a system generated ID.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string title = 3;
+
+  string description = 4;
+
+  // TODO(d/xz): support spec with 1) deployment config, 2) user specified targets with stages/steps, 3) project groups in the future.
+}
