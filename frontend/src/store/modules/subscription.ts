@@ -4,11 +4,8 @@ import dayjs from "dayjs";
 import { computed, Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { FeatureType, SubscriptionState, planTypeToString } from "@/types";
-import {
-  PlanType,
-  Subscription,
-  planTypeFromJSON,
-} from "@/types/proto/v1/subscription_service";
+import { Subscription } from "@/types/proto/v1/subscription_service";
+import { PlanType, planTypeFromJSON } from "@/types/proto/store/subscription";
 
 export const useSubscriptionStore = defineStore("subscription", {
   state: (): SubscriptionState => ({

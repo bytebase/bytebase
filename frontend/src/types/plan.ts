@@ -1,9 +1,6 @@
 import { useI18n } from "vue-i18n";
 import planData from "./plan.yaml";
-import {
-  PlanType,
-  planTypeFromJSON,
-} from "@/types/proto/v1/subscription_service";
+import { PlanType, planTypeFromJSON } from "@/types/proto/store/subscription";
 
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =

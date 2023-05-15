@@ -289,7 +289,7 @@ import { Plan, PLANS, FEATURE_SECTIONS } from "@/types";
 import { useSubscriptionStore } from "@/store";
 import { LocalPlan } from "./types";
 import FeatureItem from "./FeatureItem.vue";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/store/subscription";
 
 interface LocalState {
   isMonthly: boolean;

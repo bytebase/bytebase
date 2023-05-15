@@ -57,7 +57,7 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionStore, pushNotification } from "@/store";
 import { planTypeToString } from "@/types";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/store/subscription";
 
 const emit = defineEmits(["cancel"]);
 const { t } = useI18n();

@@ -60,7 +60,7 @@ import {
   useProjectWebhookV1Store,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/store/subscription";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";

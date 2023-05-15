@@ -218,7 +218,7 @@ import {
   useInboxStore,
 } from "@/store";
 import { storeToRefs } from "pinia";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/store/subscription";
 
 interface LocalState {
   showMobileMenu: boolean;

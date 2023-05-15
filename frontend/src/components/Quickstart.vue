@@ -126,7 +126,7 @@ import {
   useSubscriptionStore,
   useUIStateStore,
 } from "@/store";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/store/subscription";
 
 type IntroItem = {
   name: string | Ref<string>;

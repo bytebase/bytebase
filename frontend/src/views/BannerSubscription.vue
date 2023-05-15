@@ -43,7 +43,7 @@
 <script lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/store/subscription";
 import { useSubscriptionStore } from "@/store";
 import { storeToRefs } from "pinia";
 

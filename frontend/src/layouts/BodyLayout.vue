@@ -250,7 +250,7 @@ import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/store/subscription";
 import {
   useActuatorStore,
   useCurrentUser,

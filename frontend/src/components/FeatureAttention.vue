@@ -15,7 +15,7 @@ import { FeatureType, planTypeToString } from "@/types";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionStore, pushNotification } from "@/store";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import { PlanType } from "@/types/proto/store/subscription";
 
 const props = defineProps({
   feature: {
