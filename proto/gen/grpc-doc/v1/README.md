@@ -325,6 +325,16 @@
   
     - [RoleService](#bytebase-v1-RoleService)
   
+- [v1/rollout_service.proto](#v1_rollout_service-proto)
+    - [CreatePlanRequest](#bytebase-v1-CreatePlanRequest)
+    - [GetPlanRequest](#bytebase-v1-GetPlanRequest)
+    - [ListPlansRequest](#bytebase-v1-ListPlansRequest)
+    - [ListPlansResponse](#bytebase-v1-ListPlansResponse)
+    - [Plan](#bytebase-v1-Plan)
+    - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
+  
+    - [RolloutService](#bytebase-v1-RolloutService)
+  
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
@@ -4993,6 +5003,137 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | CreateRole | [CreateRoleRequest](#bytebase-v1-CreateRoleRequest) | [Role](#bytebase-v1-Role) |  |
 | UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [Role](#bytebase-v1-Role) |  |
 | DeleteRole | [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+
+ 
+
+
+
+<a name="v1_rollout_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/rollout_service.proto
+
+
+
+<a name="bytebase-v1-CreatePlanRequest"></a>
+
+### CreatePlanRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent project where this plan will be created. Format: projects/{project} |
+| plan | [Plan](#bytebase-v1-Plan) |  | The plan to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetPlanRequest"></a>
+
+### GetPlanRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the plan to retrieve. Format: projects/{project}/plans/{plan} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPlansRequest"></a>
+
+### ListPlansRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project} Use &#34;projects/-&#34; to list all plans from all projects. |
+| page_size | [int32](#int32) |  | The maximum number of plans to return. The service may return fewer than this value. If unspecified, at most 50 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListPlans` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListPlans` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPlansResponse"></a>
+
+### ListPlansResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plans | [Plan](#bytebase-v1-Plan) | repeated | The plans from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan"></a>
+
+### Plan
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the plan. `plan` is a system generated ID. Format: projects/{project}/plans/{plan} |
+| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdatePlanRequest"></a>
+
+### UpdatePlanRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan | [Plan](#bytebase-v1-Plan) |  | The plan to update.
+
+The plan&#39;s `name` field is used to identify the plan to update. Format: projects/{project}/plans/{plan} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-RolloutService"></a>
+
+### RolloutService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetPlan | [GetPlanRequest](#bytebase-v1-GetPlanRequest) | [Plan](#bytebase-v1-Plan) |  |
+| ListPlans | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
+| CreatePlan | [CreatePlanRequest](#bytebase-v1-CreatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
+| UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 
  
 
