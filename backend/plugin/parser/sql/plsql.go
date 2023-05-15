@@ -254,7 +254,7 @@ func IsOracleKeyword(text string) bool {
 
 	lexer := parser.NewPlSqlLexer(antlr.NewInputStream(text))
 	for _, keyword := range lexer.GetLiteralNames() {
-		if strings.ToUpper(strings.Trim(keyword, "'")) == strings.ToUpper(text) {
+		if strings.EqualFold(strings.Trim(keyword, "'"), text) {
 			return true
 		}
 	}
