@@ -17,7 +17,6 @@ import type { BBOutlineItem } from "@/bbkit/types";
 import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "@/types";
 import {
   databaseSlug,
-  environmentName,
   environmentV1Name,
   projectSlug,
 } from "@/utils";
