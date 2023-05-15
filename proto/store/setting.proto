@@ -3,9 +3,9 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/api/expr/v1alpha1/syntax.proto";
+import "google/protobuf/timestamp.proto";
 import "store/approval.proto";
 import "store/subscription.proto";
-import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/bytebase/bytebase/proto/generated-go/store";
 
@@ -74,6 +74,7 @@ message SMTPMailDeliverySetting {
     AUTHENTICATION_LOGIN = 3;
     AUTHENTICATION_CRAM_MD5 = 4;
   }
+
   Authentication authentication = 7;
   string username = 8;
   optional string password = 9;
