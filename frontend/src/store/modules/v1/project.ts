@@ -27,10 +27,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
 
   // Actions
   const upsertProjectMap = async (projectList: Project[]) => {
-    for (const project of projectList) {
-      const composed = await composeProjectIamPolicy(project);
-      projectMapByName.set(composed.name, composed);
-    }
+    const composedProjectList = await batchComposeProjectIamPolicy(projectList);
+    composedProjectList.forEach((project) => {
+      projectMapByName.set(project.name, project);
+    });
   };
   const fetchProjectList = async (showDeleted = false) => {
     const { projects } = await projectServiceClient.listProjects({
@@ -181,11 +181,15 @@ export const useProjectV1ByUID = (uid: MaybeRef<IdType>) => {
   return { project, ready };
 };
 
-const composeProjectIamPolicy = async (project: Project) => {
-  const policy = await useProjectIamPolicyStore().getOrFetchProjectIamPolicy(
-    project.name
+const batchComposeProjectIamPolicy = async (projectList: Project[]) => {
+  const projectIamPolicyStore = useProjectIamPolicyStore();
+  await projectIamPolicyStore.batchGetOrFetchProjectIamPolicy(
+    projectList.map((project) => project.name)
   );
-  const composedProject = project as ComposedProject;
-  composedProject.iamPolicy = policy;
-  return composedProject;
+  return projectList.map((project) => {
+    const policy = projectIamPolicyStore.getProjectIamPolicy(project.name);
+    const composedProject = project as ComposedProject;
+    composedProject.iamPolicy = policy;
+    return composedProject;
+  });
 };
