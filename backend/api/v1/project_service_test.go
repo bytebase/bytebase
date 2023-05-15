@@ -108,7 +108,6 @@ func TestValidateBindings(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		// We have not merge the binding by the same role yet, so the roles in each binding must be unique.
 		{
 			bindings: []*v1pb.Binding{
 				{
@@ -129,7 +128,7 @@ func TestValidateBindings(t *testing.T) {
 					Name: "roles/DEVELOPER",
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		// Valid case.
 		{
