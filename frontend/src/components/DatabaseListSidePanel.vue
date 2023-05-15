@@ -15,11 +15,7 @@ import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import type { BBOutlineItem } from "@/bbkit/types";
 import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "@/types";
-import {
-  databaseSlug,
-  environmentV1Name,
-  projectSlug,
-} from "@/utils";
+import { databaseSlug, environmentV1Name, projectSlug } from "@/utils";
 import {
   useEnvironmentV1List,
   useCurrentUser,
@@ -85,7 +81,8 @@ export default defineComponent({
 
       return environmentList.value
         .filter((environment) => {
-          return envToDbMap.get(environment.uid)!.length > 0;
+          const items = envToDbMap.get(environment.uid) ?? [];
+          return items.length > 0;
         })
         .map((environment): BBOutlineItem => {
           return {
