@@ -48,7 +48,7 @@
         </NButton>
         <!-- In enterprise plan, we don't allow export data in SQL editor. -->
         <NDropdown
-          v-if="!hasCustomRoleFeature"
+          v-if="showExportButton"
           trigger="hover"
           :options="exportDropdownOptions"
           @select="handleExportBtnClick"
@@ -166,7 +166,11 @@ const showSearchFeature = computed(() => {
   return instanceHasStructuredQueryResult(instance);
 });
 
-const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
+// show export button only when the subscription is not enterprise.
+// In enterprise plan, all users need to fill in the export data request issue.
+const showExportButton = computed(() => {
+  return !featureToRef("bb.feature.custom-role").value;
+});
 
 // use a debounced value to improve performance when typing rapidly
 const keyword = debouncedRef(

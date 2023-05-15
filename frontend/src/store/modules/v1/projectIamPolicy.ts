@@ -7,7 +7,7 @@ import { Database, MaybeRef } from "@/types";
 import { useProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
-import { UserRole } from "@/types/proto/v1/auth_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -95,18 +95,44 @@ export const useCurrentUserIamPolicy = () => {
   const projectStore = useProjectV1Store();
   const currentUser = useCurrentUserV1();
 
-  watchEffect(async () => {
-    for (const project of projectStore.projectList) {
-      await iamPolicyStore.getOrFetchProjectIamPolicy(project.name);
-    }
+  watchEffect(() => {
+    // Fetch all project iam policies.
+    Promise.all(
+      projectStore.projectList.map((project) =>
+        iamPolicyStore.getOrFetchProjectIamPolicy(project.name)
+      )
+    );
   });
 
-  const isWorkspaceOwner = computed(
-    () => currentUser.value.userRole === UserRole.OWNER
+  // hasWorkspaceSuperPrivilege checks whether the current user has the super privilege to access all databases. AKA. Owners and DBAs
+  const hasWorkspaceSuperPrivilege = hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-access-control",
+    currentUser.value.userRole
   );
 
+  const isMemberOfProject = (projectName: string) => {
+    if (hasWorkspaceSuperPrivilege) {
+      return true;
+    }
+
+    const policy = iamPolicyStore.policyMap.get(projectName);
+    if (!policy) {
+      return false;
+    }
+    for (const binding of policy.bindings) {
+      if (
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const allowToChangeDatabaseOfProject = (projectName: string) => {
-    if (isWorkspaceOwner.value) {
+    if (hasWorkspaceSuperPrivilege) {
       return true;
     }
 
@@ -129,14 +155,13 @@ export const useCurrentUserIamPolicy = () => {
   };
 
   const allowToQueryDatabase = async (database: Database) => {
-    if (isWorkspaceOwner.value) {
+    if (hasWorkspaceSuperPrivilege) {
       return true;
     }
 
     const policy = await iamPolicyStore.getOrFetchProjectIamPolicy(
       `projects/${database.project.resourceId}`
     );
-    console.log("!", policy, database.project.resourceId);
     if (!policy) {
       return false;
     }
@@ -182,6 +207,7 @@ export const useCurrentUserIamPolicy = () => {
   };
 
   return {
+    isMemberOfProject,
     allowToChangeDatabaseOfProject,
     allowToQueryDatabase,
   };
