@@ -210,6 +210,29 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 	return convertToProject(project), nil
 }
 
+// SearchProjects searches all projects that the caller have permission to.
+func (s *ProjectService) SearchProjects(ctx context.Context, _ *v1pb.SearchProjectsRequest) (*v1pb.SearchProjectsResponse, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+
+	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	response := &v1pb.SearchProjectsResponse{}
+	for _, project := range projects {
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if !isOwnerOrDBA(role) && !isProjectMember(policy, principalID) {
+			continue
+		}
+		response.Projects = append(response.Projects, convertToProject(project))
+	}
+	return response, nil
+}
+
 // GetIamPolicy returns the IAM policy for a project.
 func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
 	projectID, err := getProjectID(request.Project)
@@ -1218,4 +1241,15 @@ func validateMember(member string) error {
 		}
 	}
 	return errors.Errorf("invalid user %s", member)
+}
+
+func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID == userID {
+				return true
+			}
+		}
+	}
+	return false
 }

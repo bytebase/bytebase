@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 )
 
@@ -62,8 +64,24 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	if driver.config.Password == "" {
 		args = append(args, "--no-password")
 	}
-	args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
-	args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
+	if driver.sshClient == nil {
+		args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
+		args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
+	} else {
+		localPort := <-util.PortFIFO
+		defer func() {
+			util.PortFIFO <- localPort
+		}()
+		args = append(args, fmt.Sprintf("--host=%s", "localhost"))
+		args = append(args, fmt.Sprintf("--port=%d", localPort))
+		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", localPort))
+		if err != nil {
+			return err
+		}
+		defer listener.Close()
+		databaseAddress := fmt.Sprintf("%s:%s", driver.config.Host, driver.config.Port)
+		go util.ProxyConnection(driver.sshClient, listener, databaseAddress)
+	}
 	if schemaOnly {
 		args = append(args, "--schema-only")
 	}
@@ -77,9 +95,18 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 
 	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
+	// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 	if driver.config.Password != "" {
-		// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
+	}
+	if driver.config.TLSConfig.SslCert != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLCERT=%s", driver.config.TLSConfig.SslCert))
+	}
+	if driver.config.TLSConfig.SslCA != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", driver.config.TLSConfig.SslCA))
+	}
+	if driver.config.TLSConfig.SslKey != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLKEY=%s", driver.config.TLSConfig.SslKey))
 	}
 	cmd.Env = append(cmd.Env, "OPENSSL_CONF=/etc/ssl/")
 	outPipe, err := cmd.StdoutPipe()

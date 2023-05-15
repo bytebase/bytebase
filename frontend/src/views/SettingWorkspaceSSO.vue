@@ -92,7 +92,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
@@ -116,6 +116,10 @@ const hasSSOFeature = featureToRef("bb.feature.sso");
 
 const identityProviderList = computed(() => {
   return identityProviderStore.identityProviderList;
+});
+
+onMounted(() => {
+  identityProviderStore.fetchIdentityProviderList();
 });
 
 const handleCreateSSO = () => {

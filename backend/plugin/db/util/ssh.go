@@ -2,12 +2,15 @@ package util
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 
+	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -49,4 +52,78 @@ func GetSSHClient(cfg db.SSHConfig) (*ssh.Client, error) {
 		return nil, err
 	}
 	return sshConn, nil
+}
+
+// ProxyConnection proxies the connection between ssh client and listener.
+func ProxyConnection(sshClient *ssh.Client, listener net.Listener, databaseAddr string) {
+	// Accept incoming connections.
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+
+		// Create a new connection to the target server.
+		targetConn, err := sshClient.Dial("tcp", databaseAddr)
+		if err != nil {
+			return
+		}
+
+		// Copy data from the incoming connection to the target connection.
+		go func() {
+			defer conn.Close()
+			defer targetConn.Close()
+
+			for {
+				buf := make([]byte, 1024)
+				n, err := conn.Read(buf)
+				if err != nil {
+					if err != io.EOF {
+						log.Error("proxy source read error", zap.Error(err))
+					}
+					return
+				}
+
+				_, err = targetConn.Write(buf[:n])
+				if err != nil {
+					log.Error("proxy source write error", zap.Error(err))
+					return
+				}
+			}
+		}()
+
+		// Copy data from the target connection to the incoming connection.
+		go func() {
+			defer conn.Close()
+			defer targetConn.Close()
+
+			for {
+				buf := make([]byte, 1024)
+				n, err := targetConn.Read(buf)
+				if err != nil {
+					if err != io.EOF {
+						log.Error("proxy target read error", zap.Error(err))
+					}
+					return
+				}
+
+				_, err = conn.Write(buf[:n])
+				if err != nil {
+					log.Error("proxy target write error", zap.Error(err))
+					return
+				}
+			}
+		}()
+	}
+}
+
+const sshPortSize = 100
+
+// PortFIFO is the fifo for SSH client port queue.
+var PortFIFO = make(chan int, sshPortSize)
+
+func init() {
+	for i := 0; i < sshPortSize; i++ {
+		PortFIFO <- i + 6113
+	}
 }
