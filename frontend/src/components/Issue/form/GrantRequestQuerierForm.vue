@@ -197,7 +197,7 @@ onMounted(() => {
   if (create.value) {
     const projectId = (issue.value as IssueCreate).projectId;
     if (projectId && projectId !== UNKNOWN_ID) {
-      state.projectId = projectId;
+      handleSourceProjectSelect(projectId);
     }
   }
 });
