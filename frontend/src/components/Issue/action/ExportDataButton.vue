@@ -1,5 +1,9 @@
 <template>
-  <button class="btn-primary" @click="state.showConfirmModal = true">
+  <button
+    class="btn-primary flex flex-row justify-center items-center"
+    @click="state.showConfirmModal = true"
+  >
+    <heroicons-outline:document-download class="w-4 h-auto mr-0.5" />
     {{ $t("common.export") }}
   </button>
 
@@ -35,7 +39,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
-import { useIssueLogic } from "../logic";
+import { useExtraIssueLogic, useIssueLogic } from "../logic";
 import { DatabaseId, GrantRequestPayload, Issue, UNKNOWN_ID } from "@/types";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { pushNotification, useDatabaseStore, useSQLStore } from "@/store";
@@ -54,6 +58,7 @@ interface LocalState {
   isRequesting: boolean;
 }
 
+const { changeIssueStatus } = useExtraIssueLogic();
 const { issue } = useIssueLogic();
 const databaseStore = useDatabaseStore();
 const instanceV1Store = useInstanceV1Store();
@@ -185,5 +190,8 @@ const handleExport = async () => {
   link.click();
   state.isRequesting = false;
   state.showConfirmModal = false;
+
+  // After data exported successfully, we change the issue status to DONE automatically.
+  changeIssueStatus("DONE", "");
 };
 </script>

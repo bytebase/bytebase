@@ -105,11 +105,22 @@ export default defineComponent({
 
     const projectTabItemList = computed((): ProjectTabItem[] => {
       if (
-        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+        !currentUserIamPolicy.isMemberOfProject(
           `projects/${project.value.resourceId}`
         )
       ) {
         return [{ name: t("common.databases"), hash: "databases" }];
+      }
+      if (
+        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+          `projects/${project.value.resourceId}`
+        )
+      ) {
+        const list = [{ name: t("common.databases"), hash: "databases" }];
+        if (!isDefaultProject.value) {
+          list.push({ name: t("common.settings"), hash: "setting" });
+        }
+        return list;
       }
 
       const list: (ProjectTabItem | null)[] = [

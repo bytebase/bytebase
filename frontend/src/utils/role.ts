@@ -2,6 +2,7 @@ import { computed, unref } from "vue";
 import { MaybeRef, ProjectRoleType, RoleType } from "../types";
 import { hasFeature, useCurrentUser, useRoleStore } from "@/store";
 import { t } from "@/plugins/i18n";
+import { UserRole } from "@/types/proto/v1/auth_service";
 
 export type WorkspacePermissionType =
   | "bb.permission.workspace.debug"
@@ -80,6 +81,24 @@ export function hasWorkspacePermission(
     case "OWNER":
       return WORKSPACE_PERMISSION_MATRIX.get(permission)![2];
   }
+}
+
+export function hasWorkspacePermissionV1(
+  permission: WorkspacePermissionType,
+  role: UserRole
+): boolean {
+  if (!hasFeature("bb.feature.rbac")) {
+    return true;
+  }
+  switch (role) {
+    case UserRole.DEVELOPER:
+      return WORKSPACE_PERMISSION_MATRIX.get(permission)![0];
+    case UserRole.DBA:
+      return WORKSPACE_PERMISSION_MATRIX.get(permission)![1];
+    case UserRole.OWNER:
+      return WORKSPACE_PERMISSION_MATRIX.get(permission)![2];
+  }
+  return true;
 }
 
 export const useWorkspacePermission = (
