@@ -11,7 +11,7 @@
         class="!w-60 shrink-0"
         :only-userself="false"
         :selected-id="projectId"
-        @select-project-id="handleSourceProjectSelect"
+        @select-project-id="handleProjectSelect"
       />
     </div>
     <div class="w-full flex flex-row justify-start items-start">
@@ -197,12 +197,12 @@ onMounted(() => {
   if (create.value) {
     const projectId = (issue.value as IssueCreate).projectId;
     if (projectId && projectId !== UNKNOWN_ID) {
-      state.projectId = projectId;
+      handleProjectSelect(projectId);
     }
   }
 });
 
-const handleSourceProjectSelect = async (projectId: ProjectId) => {
+const handleProjectSelect = async (projectId: ProjectId) => {
   if (!create.value) {
     return;
   }
