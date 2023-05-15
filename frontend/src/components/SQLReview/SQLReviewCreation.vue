@@ -68,11 +68,11 @@ import {
   pushNotification,
   useSQLReviewStore,
   useSubscriptionStore,
+  useEnvironmentV1List,
 } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
 import { rulesToTemplate } from "./components";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { useEnvironmentList } from "@/store/modules/v1/environment";
 
 interface LocalState {
   currentStep: number;
@@ -157,7 +157,7 @@ const onTemplateApply = (template: SQLReviewPolicyTemplate | undefined) => {
 };
 
 const availableEnvironmentList = computed((): Environment[] => {
-  const environmentList = useEnvironmentList();
+  const environmentList = useEnvironmentV1List();
   const filteredList = store.availableEnvironments(
     environmentList.value,
     props.policy?.id
