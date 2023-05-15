@@ -1,4 +1,4 @@
-import { hasFeature } from "@/store";
+import { hasFeature, useCurrentUserIamPolicy } from "@/store";
 import type { Database, Instance, Principal } from "@/types";
 import { hasWorkspacePermission } from "./role";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -71,6 +71,11 @@ export const isDatabaseAccessible = (
     // The database is in the allowed list
     return true;
   }
+  const currentUserIamPolicy = useCurrentUserIamPolicy();
+  if (currentUserIamPolicy.allowToQueryDatabase(database)) {
+    return true;
+  }
+
   // denied otherwise
   return false;
 };
