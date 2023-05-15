@@ -5,6 +5,7 @@
 <script lang="ts">
 import {
   useEnvironmentStore,
+  useEnvironmentV1Store,
   useMemberStore,
   useRoleStore,
   usePrincipalStore,
@@ -16,7 +17,6 @@ import {
 } from "@/store";
 import { defineComponent } from "vue";
 import { DEFAULT_PROJECT_ID } from "../types";
-import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 
 export default defineComponent({
   name: "ProvideDashboardContext",

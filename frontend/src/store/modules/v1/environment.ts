@@ -106,9 +106,12 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       return this.environmentMapByName.get(name);
     },
     getEnvironmentByUID(uid: EnvironmentId) {
+      if (typeof uid === "string") {
+        uid = parseInt(uid, 10);
+      }
       return (
-        this.environmentList.find((env) => env.uid == uid) ??
-        ({} as Environment)
+        this.environmentList.find((env) => parseInt(env.uid, 10) == uid) ??
+        Environment.fromJSON({})
       );
     },
   },
@@ -131,7 +134,7 @@ const getUpdateMaskFromEnvironments = (
   return updateMask;
 };
 
-export const useEnvironmentList = (showDeleted = false) => {
+export const useEnvironmentV1List = (showDeleted = false) => {
   const store = useEnvironmentV1Store();
   return computed(() => store.getEnvironmentList(showDeleted));
 };
