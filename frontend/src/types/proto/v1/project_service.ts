@@ -365,6 +365,21 @@ export interface GetIamPolicyRequest {
   project: string;
 }
 
+export interface BatchGetIamPolicyRequest {
+  /** The scope of the batch get. Typically it's "projects/-". */
+  scope: string;
+  names: string[];
+}
+
+export interface BatchGetIamPolicyResponse {
+  policyResults: BatchGetIamPolicyResponse_PolicyResult[];
+}
+
+export interface BatchGetIamPolicyResponse_PolicyResult {
+  project: string;
+  policy?: IamPolicy;
+}
+
 export interface SetIamPolicyRequest {
   /**
    * The name of the project to set the IAM policy.
@@ -1511,6 +1526,221 @@ export const GetIamPolicyRequest = {
   fromPartial(object: DeepPartial<GetIamPolicyRequest>): GetIamPolicyRequest {
     const message = createBaseGetIamPolicyRequest();
     message.project = object.project ?? "";
+    return message;
+  },
+};
+
+function createBaseBatchGetIamPolicyRequest(): BatchGetIamPolicyRequest {
+  return { scope: "", names: [] };
+}
+
+export const BatchGetIamPolicyRequest = {
+  encode(message: BatchGetIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.scope !== "") {
+      writer.uint32(10).string(message.scope);
+    }
+    for (const v of message.names) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchGetIamPolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchGetIamPolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.scope = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.names.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchGetIamPolicyRequest {
+    return {
+      scope: isSet(object.scope) ? String(object.scope) : "",
+      names: Array.isArray(object?.names) ? object.names.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: BatchGetIamPolicyRequest): unknown {
+    const obj: any = {};
+    message.scope !== undefined && (obj.scope = message.scope);
+    if (message.names) {
+      obj.names = message.names.map((e) => e);
+    } else {
+      obj.names = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchGetIamPolicyRequest>): BatchGetIamPolicyRequest {
+    return BatchGetIamPolicyRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<BatchGetIamPolicyRequest>): BatchGetIamPolicyRequest {
+    const message = createBaseBatchGetIamPolicyRequest();
+    message.scope = object.scope ?? "";
+    message.names = object.names?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseBatchGetIamPolicyResponse(): BatchGetIamPolicyResponse {
+  return { policyResults: [] };
+}
+
+export const BatchGetIamPolicyResponse = {
+  encode(message: BatchGetIamPolicyResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.policyResults) {
+      BatchGetIamPolicyResponse_PolicyResult.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchGetIamPolicyResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchGetIamPolicyResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.policyResults.push(BatchGetIamPolicyResponse_PolicyResult.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchGetIamPolicyResponse {
+    return {
+      policyResults: Array.isArray(object?.policyResults)
+        ? object.policyResults.map((e: any) => BatchGetIamPolicyResponse_PolicyResult.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: BatchGetIamPolicyResponse): unknown {
+    const obj: any = {};
+    if (message.policyResults) {
+      obj.policyResults = message.policyResults.map((e) =>
+        e ? BatchGetIamPolicyResponse_PolicyResult.toJSON(e) : undefined
+      );
+    } else {
+      obj.policyResults = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchGetIamPolicyResponse>): BatchGetIamPolicyResponse {
+    return BatchGetIamPolicyResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<BatchGetIamPolicyResponse>): BatchGetIamPolicyResponse {
+    const message = createBaseBatchGetIamPolicyResponse();
+    message.policyResults = object.policyResults?.map((e) => BatchGetIamPolicyResponse_PolicyResult.fromPartial(e)) ||
+      [];
+    return message;
+  },
+};
+
+function createBaseBatchGetIamPolicyResponse_PolicyResult(): BatchGetIamPolicyResponse_PolicyResult {
+  return { project: "", policy: undefined };
+}
+
+export const BatchGetIamPolicyResponse_PolicyResult = {
+  encode(message: BatchGetIamPolicyResponse_PolicyResult, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    if (message.policy !== undefined) {
+      IamPolicy.encode(message.policy, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): BatchGetIamPolicyResponse_PolicyResult {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBatchGetIamPolicyResponse_PolicyResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.project = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.policy = IamPolicy.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BatchGetIamPolicyResponse_PolicyResult {
+    return {
+      project: isSet(object.project) ? String(object.project) : "",
+      policy: isSet(object.policy) ? IamPolicy.fromJSON(object.policy) : undefined,
+    };
+  },
+
+  toJSON(message: BatchGetIamPolicyResponse_PolicyResult): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    message.policy !== undefined && (obj.policy = message.policy ? IamPolicy.toJSON(message.policy) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<BatchGetIamPolicyResponse_PolicyResult>): BatchGetIamPolicyResponse_PolicyResult {
+    return BatchGetIamPolicyResponse_PolicyResult.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<BatchGetIamPolicyResponse_PolicyResult>): BatchGetIamPolicyResponse_PolicyResult {
+    const message = createBaseBatchGetIamPolicyResponse_PolicyResult();
+    message.project = object.project ?? "";
+    message.policy = (object.policy !== undefined && object.policy !== null)
+      ? IamPolicy.fromPartial(object.policy)
+      : undefined;
     return message;
   },
 };
@@ -3505,6 +3735,60 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    batchGetIamPolicy: {
+      name: "BatchGetIamPolicy",
+      requestType: BatchGetIamPolicyRequest,
+      requestStream: false,
+      responseType: BatchGetIamPolicyResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              38,
+              18,
+              36,
+              47,
+              118,
+              49,
+              47,
+              123,
+              115,
+              99,
+              111,
+              112,
+              101,
+              61,
+              42,
+              47,
+              42,
+              125,
+              47,
+              105,
+              97,
+              109,
+              80,
+              111,
+              108,
+              105,
+              99,
+              105,
+              101,
+              115,
+              58,
+              98,
+              97,
+              116,
+              99,
+              104,
+              71,
+              101,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
     setIamPolicy: {
       name: "SetIamPolicy",
       requestType: SetIamPolicyRequest,
@@ -4108,6 +4392,10 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Project>>;
   getIamPolicy(request: GetIamPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<IamPolicy>>;
+  batchGetIamPolicy(
+    request: BatchGetIamPolicyRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<BatchGetIamPolicyResponse>>;
   setIamPolicy(request: SetIamPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<IamPolicy>>;
   getDeploymentConfig(
     request: GetDeploymentConfigRequest,
@@ -4153,6 +4441,10 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
     options?: CallOptions & CallOptionsExt,
   ): Promise<Project>;
   getIamPolicy(request: DeepPartial<GetIamPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<IamPolicy>;
+  batchGetIamPolicy(
+    request: DeepPartial<BatchGetIamPolicyRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<BatchGetIamPolicyResponse>;
   setIamPolicy(request: DeepPartial<SetIamPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<IamPolicy>;
   getDeploymentConfig(
     request: DeepPartial<GetDeploymentConfigRequest>,
