@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 
@@ -243,4 +244,19 @@ func equivalentType(lType parser.IDatatypeContext, rType parser.IDatatypeContext
 	}
 
 	return lType.GetText() == rType.GetText()
+}
+
+// IsOracleKeyword returns true if the given text is an Oracle keyword.
+func IsOracleKeyword(text string) bool {
+	if len(text) == 0 {
+		return false
+	}
+
+	lexer := parser.NewPlSqlLexer(antlr.NewInputStream(text))
+	for _, keyword := range lexer.GetLiteralNames() {
+		if strings.ToUpper(strings.Trim(keyword, "'")) == strings.ToUpper(text) {
+			return true
+		}
+	}
+	return false
 }
