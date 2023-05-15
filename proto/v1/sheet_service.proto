@@ -110,7 +110,7 @@ message SearchSheetsResponse {
 
   // To filter the search result.
   // Format: only support the following spec for now:
-  // - `creator == user:{email}`, `creator != user:{email}`
+  // - `creator = user:{email}`, `creator != user:{email}`
   // - `starred = true`, `starred = false`.
   string filter = 2;
 
