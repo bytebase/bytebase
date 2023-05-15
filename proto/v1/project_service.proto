@@ -62,6 +62,10 @@ service ProjectService {
     option (google.api.http) = {get: "/v1/{project=projects/*}:getIamPolicy"};
   }
 
+  rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
+    option (google.api.http) = {get: "/v1/{scope=*/*}/iamPolicies:batchGet"};
+  }
+
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {
       post: "/v1/{project=projects/*}:setIamPolicy"
@@ -223,6 +227,22 @@ message GetIamPolicyRequest {
   // The name of the project to get the IAM policy.
   // Format: projects/{project}
   string project = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchGetIamPolicyRequest {
+  // The scope of the batch get. Typically it's "projects/-".
+  string scope = 1 [(google.api.field_behavior) = REQUIRED];
+
+  repeated string names = 2;
+}
+
+message BatchGetIamPolicyResponse {
+  message PolicyResult {
+    string project = 1;
+
+    IamPolicy policy = 2;
+  }
+  repeated PolicyResult policy_results = 1;
 }
 
 message SetIamPolicyRequest {
