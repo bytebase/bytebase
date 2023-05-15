@@ -136,7 +136,7 @@ export const useCurrentUserIamPolicy = () => {
       return true;
     }
 
-    const policy = iamPolicyStore.policyMap.get(projectName);
+    const policy = iamPolicyStore.getProjectIamPolicy(projectName);
     if (!policy) {
       return false;
     }
@@ -154,12 +154,12 @@ export const useCurrentUserIamPolicy = () => {
     return false;
   };
 
-  const allowToQueryDatabase = async (database: Database) => {
+  const allowToQueryDatabase = (database: Database) => {
     if (hasWorkspaceSuperPrivilege) {
       return true;
     }
 
-    const policy = await iamPolicyStore.getOrFetchProjectIamPolicy(
+    const policy = iamPolicyStore.getProjectIamPolicy(
       `projects/${database.project.resourceId}`
     );
     if (!policy) {
@@ -182,9 +182,11 @@ export const useCurrentUserIamPolicy = () => {
       ) {
         const expressionList = binding.condition?.expression.split(" && ");
         if (expressionList && expressionList.length > 0) {
+          let hasDatabaseField = false;
           for (const expression of expressionList) {
             const fields = expression.split(" ");
             if (fields[0] === "resource.database") {
+              hasDatabaseField = true;
               for (const url of JSON.parse(fields[2])) {
                 const value = url.split("/");
                 const instanceName = value[1] || "";
@@ -197,6 +199,9 @@ export const useCurrentUserIamPolicy = () => {
                 }
               }
             }
+          }
+          if (!hasDatabaseField) {
+            return true;
           }
         } else {
           return true;
