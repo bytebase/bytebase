@@ -219,7 +219,7 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-// GetActiveStage returns an active stage among all stages.
+// GetActiveStage returns the first active stage among all stages.
 func GetActiveStage(stages []*store.StageMessage) *store.StageMessage {
 	for _, stage := range stages {
 		if stage.Active {
@@ -664,25 +664,30 @@ func FindNextPendingStep(template *storepb.ApprovalTemplate, approvers []*storep
 	return template.Flow.Steps[len(approvers)]
 }
 
+// CheckApprovalApproved checks if the approval is approved.
+func CheckApprovalApproved(approval *storepb.IssuePayloadApproval) (bool, error) {
+	if approval == nil || !approval.ApprovalFindingDone {
+		return false, nil
+	}
+	if approval.ApprovalFindingError != "" {
+		return false, nil
+	}
+	if len(approval.ApprovalTemplates) == 0 {
+		return true, nil
+	}
+	if len(approval.ApprovalTemplates) != 1 {
+		return false, errors.Errorf("expecting one approval template but got %d", len(approval.ApprovalTemplates))
+	}
+	return FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers) == nil, nil
+}
+
 // CheckIssueApproved checks if the issue is approved.
 func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	issuePayload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), issuePayload); err != nil {
 		return false, errors.Wrap(err, "failed to unmarshal issue payload")
 	}
-	if issuePayload.Approval == nil || !issuePayload.Approval.ApprovalFindingDone {
-		return false, nil
-	}
-	if issuePayload.Approval.ApprovalFindingError != "" {
-		return false, nil
-	}
-	if len(issuePayload.Approval.ApprovalTemplates) == 0 {
-		return true, nil
-	}
-	if len(issuePayload.Approval.ApprovalTemplates) != 1 {
-		return false, errors.Errorf("expecting one approval template but got %d", len(issuePayload.Approval.ApprovalTemplates))
-	}
-	return FindNextPendingStep(issuePayload.Approval.ApprovalTemplates[0], issuePayload.Approval.Approvers) == nil, nil
+	return CheckApprovalApproved(issuePayload.Approval)
 }
 
 // SkipApprovalStepIfNeeded skips approval steps if no user can approve the step.
