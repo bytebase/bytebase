@@ -313,8 +313,10 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								log.Error("failed to getIssueByPipelineID", zap.Int("pipelineID", task.PipelineID), zap.Error(err))
 								return
 							}
-							// The task has finished, and we may move to a new stage.
-							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
+							// The task has finished,
+							// 1. If we are moving into a new stage
+							// and the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
+							// 2. If every task in the pipeline has finished, we will resolve the issue automatically for the user.
 							if issue != nil && issue.PipelineUID != nil {
 								stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
 								if err != nil {
@@ -339,6 +341,14 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 											log.Error("failed to update the issue assignee", zap.Error(err))
 											return
 										}
+									}
+								}
+								if activeStage == nil {
+									// resolve the issue because every task in the pipeline has finished.
+									status := api.IssueDone
+									if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &status}, api.SystemBotID); err != nil {
+										log.Error("failed to update the issue status to done automatically after completing every task", zap.Error(err))
+										return
 									}
 								}
 
