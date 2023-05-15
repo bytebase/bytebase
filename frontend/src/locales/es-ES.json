@@ -1828,6 +1828,7 @@
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
     "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
+    "upgrade-now": "Actualizar ahora",
     "update": {
       "success": {
         "title": "Licencia actualizada con éxito",
@@ -1837,6 +1838,12 @@
         "title": "Error al actualizar la licencia",
         "description": "Por favor, comprueba si tu licencia es válida."
       }
+    },
+    "plan-features": "{plan} función",
+    "overuse-warning": "{neededPlan} puede estar restringido en {currentPlan}, actualice ahora para asegurar un uso adecuado.",
+    "overuse-modal": {
+      "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones.",
+      "instance-count-exceeds": "El número de instancias excedió el límite {count}"
     },
     "features": {
       "bb-feature-task-schedule-time": {
