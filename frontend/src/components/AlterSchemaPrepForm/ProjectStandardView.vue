@@ -1,12 +1,16 @@
 <template>
   <template v-if="state.alterType === 'MULTI_DB'">
     <!-- multiple stage view -->
-    <div v-if="databaseList.length === 0" class="textinfolabel">
-      {{ $t("alter-schema.no-databases-in-project") }}
+    <div class="flex items-center justify-between">
+      <div>
+        <div v-if="databaseList.length === 0" class="textinfolabel">
+          {{ $t("alter-schema.no-databases-in-project") }}
+        </div>
+      </div>
+      <div>
+        <slot name="header"></slot>
+      </div>
     </div>
-    <template v-else>
-      <slot name="header"></slot>
-    </template>
 
     <NCollapse
       arrow-placement="left"
