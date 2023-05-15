@@ -866,12 +866,6 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 	}, nil
 }
 
-// getUserIdentifier returns the user identifier.
-// See more details in project_service.proto.
-func getUserIdentifier(email string) string {
-	return "user:" + email
-}
-
 func convertToProjectRole(role api.Role) string {
 	return fmt.Sprintf("%s%s", rolePrefix, role)
 }

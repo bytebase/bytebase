@@ -33,6 +33,7 @@ const (
 	rolePrefix                   = "roles/"
 	secretNamePrefix             = "secrets/"
 	webhookIDPrefix              = "webhooks/"
+	sheetIDPrefix                = "sheets/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -233,6 +234,14 @@ func getRoleID(name string) (string, error) {
 		return "", err
 	}
 	return tokens[0], nil
+}
+
+func getProjectResourceIDSheetID(name string) (string, string, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, sheetIDPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
 }
 
 func trimSuffix(name, suffix string) (string, error) {
@@ -571,4 +580,10 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.OceanBase
 	}
 	return db.UnknownType
+}
+
+// getUserIdentifier returns the user identifier.
+// See more details in project_service.proto.
+func getUserIdentifier(email string) string {
+	return "user:" + email
 }
