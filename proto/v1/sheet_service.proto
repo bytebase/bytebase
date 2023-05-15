@@ -159,7 +159,7 @@ message Sheet {
   bytes content = 7 [(google.api.field_behavior) = REQUIRED];
 
   // content_size is the full size of the content, may not match the size of the `content` field.
-  bytes content_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 content_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum Visibility {
     VISIBILITY_UNSPECIFIED = 0;

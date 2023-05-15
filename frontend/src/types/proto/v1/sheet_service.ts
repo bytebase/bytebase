@@ -1,4 +1,5 @@
 /* eslint-disable */
+import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
@@ -131,7 +132,7 @@ export interface Sheet {
    */
   content: Uint8Array;
   /** content_size is the full size of the content, may not match the size of the `content` field. */
-  contentSize: Uint8Array;
+  contentSize: number;
   visibility: Sheet_Visibility;
   /** The source of the sheet. */
   source: Sheet_Source;
@@ -790,7 +791,7 @@ function createBaseSheet(): Sheet {
     createTime: undefined,
     updateTime: undefined,
     content: new Uint8Array(),
-    contentSize: new Uint8Array(),
+    contentSize: 0,
     visibility: 0,
     source: 0,
     type: 0,
@@ -821,8 +822,8 @@ export const Sheet = {
     if (message.content.length !== 0) {
       writer.uint32(58).bytes(message.content);
     }
-    if (message.contentSize.length !== 0) {
-      writer.uint32(66).bytes(message.contentSize);
+    if (message.contentSize !== 0) {
+      writer.uint32(64).int64(message.contentSize);
     }
     if (message.visibility !== 0) {
       writer.uint32(72).int32(message.visibility);
@@ -896,11 +897,11 @@ export const Sheet = {
           message.content = reader.bytes();
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag !== 64) {
             break;
           }
 
-          message.contentSize = reader.bytes();
+          message.contentSize = longToNumber(reader.int64() as Long);
           continue;
         case 9:
           if (tag !== 72) {
@@ -948,7 +949,7 @@ export const Sheet = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(),
-      contentSize: isSet(object.contentSize) ? bytesFromBase64(object.contentSize) : new Uint8Array(),
+      contentSize: isSet(object.contentSize) ? Number(object.contentSize) : 0,
       visibility: isSet(object.visibility) ? sheet_VisibilityFromJSON(object.visibility) : 0,
       source: isSet(object.source) ? sheet_SourceFromJSON(object.source) : 0,
       type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
@@ -966,8 +967,7 @@ export const Sheet = {
     message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
     message.content !== undefined &&
       (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array()));
-    message.contentSize !== undefined &&
-      (obj.contentSize = base64FromBytes(message.contentSize !== undefined ? message.contentSize : new Uint8Array()));
+    message.contentSize !== undefined && (obj.contentSize = Math.round(message.contentSize));
     message.visibility !== undefined && (obj.visibility = sheet_VisibilityToJSON(message.visibility));
     message.source !== undefined && (obj.source = sheet_SourceToJSON(message.source));
     message.type !== undefined && (obj.type = sheet_TypeToJSON(message.type));
@@ -988,7 +988,7 @@ export const Sheet = {
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
     message.content = object.content ?? new Uint8Array();
-    message.contentSize = object.contentSize ?? new Uint8Array();
+    message.contentSize = object.contentSize ?? 0;
     message.visibility = object.visibility ?? 0;
     message.source = object.source ?? 0;
     message.type = object.type ?? 0;
@@ -1425,6 +1425,20 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {
