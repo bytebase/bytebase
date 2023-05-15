@@ -376,7 +376,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 		SchemaRuleCreateIndexConcurrently,
 		SchemaRuleStatementAddCheckNotValid,
 		SchemaRuleStatementDisallowAddNotNull,
-		SchemaRuleIndexTypeNoBlob:
+		SchemaRuleIndexTypeNoBlob,
+		SchemaRuleTableNameNoKeyword:
 	case SchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format: "_delete$",

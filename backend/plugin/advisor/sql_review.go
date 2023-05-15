@@ -55,6 +55,8 @@ const (
 	SchemaRuleIDXNaming SQLReviewRuleType = "naming.index.idx"
 	// SchemaRuleAutoIncrementColumnNaming enforce the auto_increment column name format.
 	SchemaRuleAutoIncrementColumnNaming SQLReviewRuleType = "naming.column.auto-increment"
+	// SchemaRuleTableNameNoKeyword enforce the table name not to use keyword.
+	SchemaRuleTableNameNoKeyword SQLReviewRuleType = "naming.table.no-keyword"
 
 	// SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 	SchemaRuleStatementNoSelectAll SQLReviewRuleType = "statement.select.no-select-all"
@@ -845,6 +847,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB, db.MariaDB:
 			return MySQLNamingAutoIncrementColumnConvention, nil
+		}
+	case SchemaRuleTableNameNoKeyword:
+		if engine == db.Oracle {
+			return OracleTableNamingNoKeyword, nil
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
