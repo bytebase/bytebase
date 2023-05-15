@@ -20,6 +20,14 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
   }
 
+  rpc CreatePlan(CreatePlanRequest) returns (Plan) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/plans"
+      body: "plan"
+    };
+    option (google.api.method_signature) = "";
+  }
+
   rpc UpdatePlan(UpdatePlanRequest) returns (Plan) {
     option (google.api.http) = {
       patch: "/v1/{plan.name=projects/*/plans/*}"
@@ -62,6 +70,15 @@ message ListPlansResponse {
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
+}
+
+message CreatePlanRequest {
+  // The parent project where this plan will be created.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The plan to create.
+  Plan plan = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message UpdatePlanRequest {

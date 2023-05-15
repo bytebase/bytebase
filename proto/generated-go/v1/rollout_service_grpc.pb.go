@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	RolloutService_GetPlan_FullMethodName    = "/bytebase.v1.RolloutService/GetPlan"
 	RolloutService_ListPlans_FullMethodName  = "/bytebase.v1.RolloutService/ListPlans"
+	RolloutService_CreatePlan_FullMethodName = "/bytebase.v1.RolloutService/CreatePlan"
 	RolloutService_UpdatePlan_FullMethodName = "/bytebase.v1.RolloutService/UpdatePlan"
 )
 
@@ -30,6 +31,7 @@ const (
 type RolloutServiceClient interface {
 	GetPlan(ctx context.Context, in *GetPlanRequest, opts ...grpc.CallOption) (*Plan, error)
 	ListPlans(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error)
+	CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
 	UpdatePlan(ctx context.Context, in *UpdatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
 }
 
@@ -59,6 +61,15 @@ func (c *rolloutServiceClient) ListPlans(ctx context.Context, in *ListPlansReque
 	return out, nil
 }
 
+func (c *rolloutServiceClient) CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...grpc.CallOption) (*Plan, error) {
+	out := new(Plan)
+	err := c.cc.Invoke(ctx, RolloutService_CreatePlan_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *rolloutServiceClient) UpdatePlan(ctx context.Context, in *UpdatePlanRequest, opts ...grpc.CallOption) (*Plan, error) {
 	out := new(Plan)
 	err := c.cc.Invoke(ctx, RolloutService_UpdatePlan_FullMethodName, in, out, opts...)
@@ -74,6 +85,7 @@ func (c *rolloutServiceClient) UpdatePlan(ctx context.Context, in *UpdatePlanReq
 type RolloutServiceServer interface {
 	GetPlan(context.Context, *GetPlanRequest) (*Plan, error)
 	ListPlans(context.Context, *ListPlansRequest) (*ListPlansResponse, error)
+	CreatePlan(context.Context, *CreatePlanRequest) (*Plan, error)
 	UpdatePlan(context.Context, *UpdatePlanRequest) (*Plan, error)
 	mustEmbedUnimplementedRolloutServiceServer()
 }
@@ -87,6 +99,9 @@ func (UnimplementedRolloutServiceServer) GetPlan(context.Context, *GetPlanReques
 }
 func (UnimplementedRolloutServiceServer) ListPlans(context.Context, *ListPlansRequest) (*ListPlansResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPlans not implemented")
+}
+func (UnimplementedRolloutServiceServer) CreatePlan(context.Context, *CreatePlanRequest) (*Plan, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePlan not implemented")
 }
 func (UnimplementedRolloutServiceServer) UpdatePlan(context.Context, *UpdatePlanRequest) (*Plan, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePlan not implemented")
@@ -140,6 +155,24 @@ func _RolloutService_ListPlans_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RolloutService_CreatePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePlanRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RolloutServiceServer).CreatePlan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RolloutService_CreatePlan_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RolloutServiceServer).CreatePlan(ctx, req.(*CreatePlanRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RolloutService_UpdatePlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdatePlanRequest)
 	if err := dec(in); err != nil {
@@ -172,6 +205,10 @@ var RolloutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPlans",
 			Handler:    _RolloutService_ListPlans_Handler,
+		},
+		{
+			MethodName: "CreatePlan",
+			Handler:    _RolloutService_CreatePlan_Handler,
 		},
 		{
 			MethodName: "UpdatePlan",
