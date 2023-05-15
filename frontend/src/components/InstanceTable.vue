@@ -40,9 +40,9 @@
 import { PropType, defineComponent, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { urlfy, instanceSlug, environmentName } from "@/utils";
+import { urlfy, instanceSlug, environmentV1Name } from "@/utils";
 import { EnvironmentId, Instance } from "@/types";
-import { useEnvironmentStore } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import ProductionEnvironmentIcon from "./Environment/ProductionEnvironmentIcon.vue";
 import { BBGridColumn } from "@/bbkit";
@@ -102,8 +102,8 @@ export default defineComponent({
     };
 
     const environmentNameFromId = (id: EnvironmentId) => {
-      const env = useEnvironmentStore().getEnvironmentById(id);
-      return environmentName(env);
+      const env = useEnvironmentV1Store().getEnvironmentByUID(id);
+      return environmentV1Name(env);
     };
 
     return {
