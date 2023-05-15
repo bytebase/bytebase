@@ -210,8 +210,8 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 	return convertToProject(project), nil
 }
 
-// SarchProjects searches all projects that the caller have permission to.
-func (s *ProjectService) SarchProjects(ctx context.Context, _ *v1pb.SearchProjectsRequest) (*v1pb.SearchProjectsResponse, error) {
+// SearchProjects searches all projects that the caller have permission to.
+func (s *ProjectService) SearchProjects(ctx context.Context, _ *v1pb.SearchProjectsRequest) (*v1pb.SearchProjectsResponse, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	role := ctx.Value(common.RoleContextKey).(api.Role)
 
