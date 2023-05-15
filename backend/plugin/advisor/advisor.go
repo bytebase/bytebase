@@ -379,6 +379,9 @@ const (
 
 	// OracleAddNotNullColumnRequireDefault is an advisor type for Oracle adding not null column requires default.
 	OracleAddNotNullColumnRequireDefault Type = "bb.plugin.advisor.oracle.column.add-not-null-column-require-default"
+
+	// OracleTableNamingNoKeyword is an advisor type for Oracle table naming convention without keyword.
+	OracleTableNamingNoKeyword Type = "bb.plugin.advisor.oracle.naming.table-no-keyword"
 )
 
 // Advice is the result of an advisor.
