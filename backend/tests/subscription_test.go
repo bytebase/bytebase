@@ -9,14 +9,15 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 type trial struct {
 	instanceCount       int32
 	expectInstanceCount int32
-	plan                v1pb.PlanType
-	expectPlan          v1pb.PlanType
+	plan                storepb.PlanType
+	expectPlan          storepb.PlanType
 	Days                int32
 }
 
@@ -35,31 +36,31 @@ func TestSubscription(t *testing.T) {
 
 	subscription, err := ctl.getSubscription()
 	a.NoError(err)
-	a.Equal(v1pb.PlanType_FREE, subscription.Plan)
+	a.Equal(storepb.PlanType_FREE, subscription.Plan)
 
 	trialList := []trial{
 		{
 			// Test trial the TEAM plan.
 			instanceCount:       20,
 			expectInstanceCount: 20,
-			plan:                v1pb.PlanType_TEAM,
-			expectPlan:          v1pb.PlanType_TEAM,
+			plan:                storepb.PlanType_TEAM,
+			expectPlan:          storepb.PlanType_TEAM,
 			Days:                7,
 		},
 		{
 			// Test trial the ENTERPRISE plan.
 			instanceCount:       10,
 			expectInstanceCount: 10,
-			plan:                v1pb.PlanType_ENTERPRISE,
-			expectPlan:          v1pb.PlanType_ENTERPRISE,
+			plan:                storepb.PlanType_ENTERPRISE,
+			expectPlan:          storepb.PlanType_ENTERPRISE,
 			Days:                7,
 		},
 		{
 			// Downgrade should be ignored.
 			instanceCount:       99,
 			expectInstanceCount: 10,
-			plan:                v1pb.PlanType_TEAM,
-			expectPlan:          v1pb.PlanType_ENTERPRISE,
+			plan:                storepb.PlanType_TEAM,
+			expectPlan:          storepb.PlanType_ENTERPRISE,
 			Days:                7,
 		},
 	}

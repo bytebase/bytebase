@@ -713,14 +713,13 @@ func convertStorepbToAPIMailDeliveryValue(pb *storepb.SMTPMailDeliverySetting) *
 	if pb == nil {
 		return nil
 	}
-	password := pb.Password
 	value := api.SettingWorkspaceMailDeliveryValue{
 		SMTPServerHost:         pb.Server,
 		SMTPServerPort:         int(pb.Port),
 		SMTPEncryptionType:     pb.Encryption,
 		SMTPAuthenticationType: pb.Authentication,
 		SMTPUsername:           pb.Username,
-		SMTPPassword:           &password,
+		SMTPPassword:           pb.Password,
 		SMTPFrom:               pb.From,
 	}
 	return &value

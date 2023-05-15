@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -75,9 +76,9 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, request *v
 func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1pb.TrialSubscriptionRequest) (*v1pb.Subscription, error) {
 	planType := api.FREE
 	switch request.Trial.Plan {
-	case v1pb.PlanType_TEAM:
+	case storepb.PlanType_TEAM:
 		planType = api.TEAM
-	case v1pb.PlanType_ENTERPRISE:
+	case storepb.PlanType_ENTERPRISE:
 		planType = api.ENTERPRISE
 	}
 
@@ -150,14 +151,14 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 func (s *SubscriptionService) loadSubscription(ctx context.Context) (*v1pb.Subscription, error) {
 	sub := s.licenseService.LoadSubscription(ctx)
 
-	plan := v1pb.PlanType_PLAN_TYPE_UNSPECIFIED
+	plan := storepb.PlanType_PLAN_TYPE_UNSPECIFIED
 	switch sub.Plan {
 	case api.FREE:
-		plan = v1pb.PlanType_FREE
+		plan = storepb.PlanType_FREE
 	case api.TEAM:
-		plan = v1pb.PlanType_TEAM
+		plan = storepb.PlanType_TEAM
 	case api.ENTERPRISE:
-		plan = v1pb.PlanType_ENTERPRISE
+		plan = storepb.PlanType_ENTERPRISE
 	}
 
 	subscription := &v1pb.Subscription{

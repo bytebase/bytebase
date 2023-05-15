@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
+import "store/subscription.proto";
 
 option go_package = "generated-go/v1";
 
@@ -40,22 +41,12 @@ message TrialSubscriptionRequest {
   TrialSubscription trial = 1;
 }
 
-enum PlanType {
-  PLAN_TYPE_UNSPECIFIED = 0;
-
-  FREE = 1;
-
-  TEAM = 2;
-
-  ENTERPRISE = 3;
-}
-
 message PatchSubscription {
   string license = 1;
 }
 
 message TrialSubscription {
-  PlanType plan = 1;
+  store.PlanType plan = 1;
 
   int32 days = 2;
 
@@ -69,7 +60,7 @@ message Subscription {
 
   google.protobuf.Timestamp started_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  PlanType plan = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  store.PlanType plan = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   bool trialing = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 

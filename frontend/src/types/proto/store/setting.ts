@@ -1,7 +1,9 @@
 /* eslint-disable */
 import * as _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
+import { Timestamp } from "../google/protobuf/timestamp";
 import { ApprovalTemplate } from "./approval";
+import { PlanType, planTypeFromJSON, planTypeToJSON } from "./subscription";
 
 export const protobufPackage = "bytebase.store";
 
@@ -46,14 +48,18 @@ export interface SMTPMailDeliverySetting {
   /** The SMTP server encryption. */
   encryption: SMTPMailDeliverySetting_Encryption;
   /** The CA, KEY, and CERT for the SMTP server. */
-  ca: string;
-  key: string;
-  cert: string;
+  ca?: string | undefined;
+  key?: string | undefined;
+  cert?: string | undefined;
   authentication: SMTPMailDeliverySetting_Authentication;
   username: string;
-  password: string;
+  password?:
+    | string
+    | undefined;
   /** The sender email address. */
   from: string;
+  /** The recipient email address, used with validate_only to send test email. */
+  to?: string | undefined;
 }
 
 /** We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS. */
@@ -152,6 +158,54 @@ export function sMTPMailDeliverySetting_AuthenticationToJSON(object: SMTPMailDel
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface AppIMSetting {
+  imType: AppIMSetting_IMType;
+  appId: string;
+  appSecret: string;
+  externalApproval?: AppIMSetting_ExternalApproval;
+}
+
+export enum AppIMSetting_IMType {
+  IM_FEISHU = 0,
+  UNRECOGNIZED = -1,
+}
+
+export function appIMSetting_IMTypeFromJSON(object: any): AppIMSetting_IMType {
+  switch (object) {
+    case 0:
+    case "IM_FEISHU":
+      return AppIMSetting_IMType.IM_FEISHU;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return AppIMSetting_IMType.UNRECOGNIZED;
+  }
+}
+
+export function appIMSetting_IMTypeToJSON(object: AppIMSetting_IMType): string {
+  switch (object) {
+    case AppIMSetting_IMType.IM_FEISHU:
+      return "IM_FEISHU";
+    case AppIMSetting_IMType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface AppIMSetting_ExternalApproval {
+  enabled: boolean;
+  approvalDefinitionId: string;
+}
+
+export interface WorkspaceTrialSetting {
+  instanceCount: number;
+  expireTime?: Date;
+  issuedTime?: Date;
+  subject: string;
+  orgName: string;
+  plan: PlanType;
 }
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
@@ -469,13 +523,14 @@ function createBaseSMTPMailDeliverySetting(): SMTPMailDeliverySetting {
     server: "",
     port: 0,
     encryption: 0,
-    ca: "",
-    key: "",
-    cert: "",
+    ca: undefined,
+    key: undefined,
+    cert: undefined,
     authentication: 0,
     username: "",
-    password: "",
+    password: undefined,
     from: "",
+    to: undefined,
   };
 }
 
@@ -490,13 +545,13 @@ export const SMTPMailDeliverySetting = {
     if (message.encryption !== 0) {
       writer.uint32(24).int32(message.encryption);
     }
-    if (message.ca !== "") {
+    if (message.ca !== undefined) {
       writer.uint32(34).string(message.ca);
     }
-    if (message.key !== "") {
+    if (message.key !== undefined) {
       writer.uint32(42).string(message.key);
     }
-    if (message.cert !== "") {
+    if (message.cert !== undefined) {
       writer.uint32(50).string(message.cert);
     }
     if (message.authentication !== 0) {
@@ -505,11 +560,14 @@ export const SMTPMailDeliverySetting = {
     if (message.username !== "") {
       writer.uint32(66).string(message.username);
     }
-    if (message.password !== "") {
+    if (message.password !== undefined) {
       writer.uint32(74).string(message.password);
     }
     if (message.from !== "") {
       writer.uint32(82).string(message.from);
+    }
+    if (message.to !== undefined) {
+      writer.uint32(90).string(message.to);
     }
     return writer;
   },
@@ -591,6 +649,13 @@ export const SMTPMailDeliverySetting = {
 
           message.from = reader.string();
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.to = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -605,15 +670,16 @@ export const SMTPMailDeliverySetting = {
       server: isSet(object.server) ? String(object.server) : "",
       port: isSet(object.port) ? Number(object.port) : 0,
       encryption: isSet(object.encryption) ? sMTPMailDeliverySetting_EncryptionFromJSON(object.encryption) : 0,
-      ca: isSet(object.ca) ? String(object.ca) : "",
-      key: isSet(object.key) ? String(object.key) : "",
-      cert: isSet(object.cert) ? String(object.cert) : "",
+      ca: isSet(object.ca) ? String(object.ca) : undefined,
+      key: isSet(object.key) ? String(object.key) : undefined,
+      cert: isSet(object.cert) ? String(object.cert) : undefined,
       authentication: isSet(object.authentication)
         ? sMTPMailDeliverySetting_AuthenticationFromJSON(object.authentication)
         : 0,
       username: isSet(object.username) ? String(object.username) : "",
-      password: isSet(object.password) ? String(object.password) : "",
+      password: isSet(object.password) ? String(object.password) : undefined,
       from: isSet(object.from) ? String(object.from) : "",
+      to: isSet(object.to) ? String(object.to) : undefined,
     };
   },
 
@@ -630,6 +696,7 @@ export const SMTPMailDeliverySetting = {
     message.username !== undefined && (obj.username = message.username);
     message.password !== undefined && (obj.password = message.password);
     message.from !== undefined && (obj.from = message.from);
+    message.to !== undefined && (obj.to = message.to);
     return obj;
   },
 
@@ -642,13 +709,311 @@ export const SMTPMailDeliverySetting = {
     message.server = object.server ?? "";
     message.port = object.port ?? 0;
     message.encryption = object.encryption ?? 0;
-    message.ca = object.ca ?? "";
-    message.key = object.key ?? "";
-    message.cert = object.cert ?? "";
+    message.ca = object.ca ?? undefined;
+    message.key = object.key ?? undefined;
+    message.cert = object.cert ?? undefined;
     message.authentication = object.authentication ?? 0;
     message.username = object.username ?? "";
-    message.password = object.password ?? "";
+    message.password = object.password ?? undefined;
     message.from = object.from ?? "";
+    message.to = object.to ?? undefined;
+    return message;
+  },
+};
+
+function createBaseAppIMSetting(): AppIMSetting {
+  return { imType: 0, appId: "", appSecret: "", externalApproval: undefined };
+}
+
+export const AppIMSetting = {
+  encode(message: AppIMSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.imType !== 0) {
+      writer.uint32(8).int32(message.imType);
+    }
+    if (message.appId !== "") {
+      writer.uint32(18).string(message.appId);
+    }
+    if (message.appSecret !== "") {
+      writer.uint32(26).string(message.appSecret);
+    }
+    if (message.externalApproval !== undefined) {
+      AppIMSetting_ExternalApproval.encode(message.externalApproval, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.imType = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.appId = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.appSecret = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.externalApproval = AppIMSetting_ExternalApproval.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting {
+    return {
+      imType: isSet(object.imType) ? appIMSetting_IMTypeFromJSON(object.imType) : 0,
+      appId: isSet(object.appId) ? String(object.appId) : "",
+      appSecret: isSet(object.appSecret) ? String(object.appSecret) : "",
+      externalApproval: isSet(object.externalApproval)
+        ? AppIMSetting_ExternalApproval.fromJSON(object.externalApproval)
+        : undefined,
+    };
+  },
+
+  toJSON(message: AppIMSetting): unknown {
+    const obj: any = {};
+    message.imType !== undefined && (obj.imType = appIMSetting_IMTypeToJSON(message.imType));
+    message.appId !== undefined && (obj.appId = message.appId);
+    message.appSecret !== undefined && (obj.appSecret = message.appSecret);
+    message.externalApproval !== undefined && (obj.externalApproval = message.externalApproval
+      ? AppIMSetting_ExternalApproval.toJSON(message.externalApproval)
+      : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting>): AppIMSetting {
+    return AppIMSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<AppIMSetting>): AppIMSetting {
+    const message = createBaseAppIMSetting();
+    message.imType = object.imType ?? 0;
+    message.appId = object.appId ?? "";
+    message.appSecret = object.appSecret ?? "";
+    message.externalApproval = (object.externalApproval !== undefined && object.externalApproval !== null)
+      ? AppIMSetting_ExternalApproval.fromPartial(object.externalApproval)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAppIMSetting_ExternalApproval(): AppIMSetting_ExternalApproval {
+  return { enabled: false, approvalDefinitionId: "" };
+}
+
+export const AppIMSetting_ExternalApproval = {
+  encode(message: AppIMSetting_ExternalApproval, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.enabled === true) {
+      writer.uint32(8).bool(message.enabled);
+    }
+    if (message.approvalDefinitionId !== "") {
+      writer.uint32(18).string(message.approvalDefinitionId);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AppIMSetting_ExternalApproval {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting_ExternalApproval();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.approvalDefinitionId = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting_ExternalApproval {
+    return {
+      enabled: isSet(object.enabled) ? Boolean(object.enabled) : false,
+      approvalDefinitionId: isSet(object.approvalDefinitionId) ? String(object.approvalDefinitionId) : "",
+    };
+  },
+
+  toJSON(message: AppIMSetting_ExternalApproval): unknown {
+    const obj: any = {};
+    message.enabled !== undefined && (obj.enabled = message.enabled);
+    message.approvalDefinitionId !== undefined && (obj.approvalDefinitionId = message.approvalDefinitionId);
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting_ExternalApproval>): AppIMSetting_ExternalApproval {
+    return AppIMSetting_ExternalApproval.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<AppIMSetting_ExternalApproval>): AppIMSetting_ExternalApproval {
+    const message = createBaseAppIMSetting_ExternalApproval();
+    message.enabled = object.enabled ?? false;
+    message.approvalDefinitionId = object.approvalDefinitionId ?? "";
+    return message;
+  },
+};
+
+function createBaseWorkspaceTrialSetting(): WorkspaceTrialSetting {
+  return { instanceCount: 0, expireTime: undefined, issuedTime: undefined, subject: "", orgName: "", plan: 0 };
+}
+
+export const WorkspaceTrialSetting = {
+  encode(message: WorkspaceTrialSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.instanceCount !== 0) {
+      writer.uint32(8).int32(message.instanceCount);
+    }
+    if (message.expireTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.expireTime), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.issuedTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.issuedTime), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.subject !== "") {
+      writer.uint32(34).string(message.subject);
+    }
+    if (message.orgName !== "") {
+      writer.uint32(42).string(message.orgName);
+    }
+    if (message.plan !== 0) {
+      writer.uint32(48).int32(message.plan);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkspaceTrialSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkspaceTrialSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.instanceCount = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.expireTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.issuedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.subject = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.orgName = reader.string();
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.plan = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkspaceTrialSetting {
+    return {
+      instanceCount: isSet(object.instanceCount) ? Number(object.instanceCount) : 0,
+      expireTime: isSet(object.expireTime) ? fromJsonTimestamp(object.expireTime) : undefined,
+      issuedTime: isSet(object.issuedTime) ? fromJsonTimestamp(object.issuedTime) : undefined,
+      subject: isSet(object.subject) ? String(object.subject) : "",
+      orgName: isSet(object.orgName) ? String(object.orgName) : "",
+      plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : 0,
+    };
+  },
+
+  toJSON(message: WorkspaceTrialSetting): unknown {
+    const obj: any = {};
+    message.instanceCount !== undefined && (obj.instanceCount = Math.round(message.instanceCount));
+    message.expireTime !== undefined && (obj.expireTime = message.expireTime.toISOString());
+    message.issuedTime !== undefined && (obj.issuedTime = message.issuedTime.toISOString());
+    message.subject !== undefined && (obj.subject = message.subject);
+    message.orgName !== undefined && (obj.orgName = message.orgName);
+    message.plan !== undefined && (obj.plan = planTypeToJSON(message.plan));
+    return obj;
+  },
+
+  create(base?: DeepPartial<WorkspaceTrialSetting>): WorkspaceTrialSetting {
+    return WorkspaceTrialSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<WorkspaceTrialSetting>): WorkspaceTrialSetting {
+    const message = createBaseWorkspaceTrialSetting();
+    message.instanceCount = object.instanceCount ?? 0;
+    message.expireTime = object.expireTime ?? undefined;
+    message.issuedTime = object.issuedTime ?? undefined;
+    message.subject = object.subject ?? "";
+    message.orgName = object.orgName ?? "";
+    message.plan = object.plan ?? 0;
     return message;
   },
 };
@@ -659,6 +1024,28 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = t.seconds * 1_000;
+  millis += t.nanos / 1_000_000;
+  return new Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

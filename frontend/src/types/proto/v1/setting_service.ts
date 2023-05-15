@@ -1,6 +1,14 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import {
+  AgentPluginSetting,
+  AppIMSetting,
+  SMTPMailDeliverySetting,
+  WorkspaceApprovalSetting,
+  WorkspaceProfileSetting,
+  WorkspaceTrialSetting,
+} from "../store/setting";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -43,135 +51,12 @@ export interface Setting {
 export interface Value {
   /** Defines this value as being a string value. */
   stringValue?: string | undefined;
-  smtpMailDeliverySettingValue?: SMTPMailDeliverySettingValue | undefined;
-}
-
-export interface SMTPMailDeliverySettingValue {
-  /** The SMTP server address. */
-  server: string;
-  /** The SMTP server port. */
-  port: number;
-  /** The SMTP server encryption. */
-  encryption: SMTPMailDeliverySettingValue_Encryption;
-  /**
-   * The CA, KEY, and CERT for the SMTP server.
-   * Not used.
-   */
-  ca?: string | undefined;
-  key?: string | undefined;
-  cert?: string | undefined;
-  authentication: SMTPMailDeliverySettingValue_Authentication;
-  username: string;
-  /** If not specified, server will use the existed password. */
-  password?:
-    | string
-    | undefined;
-  /** The sender email address. */
-  from: string;
-  /** The recipient email address, used with validate_only to send test email. */
-  to: string;
-}
-
-/** We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS. */
-export enum SMTPMailDeliverySettingValue_Encryption {
-  ENCRYPTION_UNSPECIFIED = 0,
-  ENCRYPTION_NONE = 1,
-  ENCRYPTION_STARTTLS = 2,
-  ENCRYPTION_SSL_TLS = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function sMTPMailDeliverySettingValue_EncryptionFromJSON(object: any): SMTPMailDeliverySettingValue_Encryption {
-  switch (object) {
-    case 0:
-    case "ENCRYPTION_UNSPECIFIED":
-      return SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_UNSPECIFIED;
-    case 1:
-    case "ENCRYPTION_NONE":
-      return SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_NONE;
-    case 2:
-    case "ENCRYPTION_STARTTLS":
-      return SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_STARTTLS;
-    case 3:
-    case "ENCRYPTION_SSL_TLS":
-      return SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_SSL_TLS;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return SMTPMailDeliverySettingValue_Encryption.UNRECOGNIZED;
-  }
-}
-
-export function sMTPMailDeliverySettingValue_EncryptionToJSON(object: SMTPMailDeliverySettingValue_Encryption): string {
-  switch (object) {
-    case SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_UNSPECIFIED:
-      return "ENCRYPTION_UNSPECIFIED";
-    case SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_NONE:
-      return "ENCRYPTION_NONE";
-    case SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_STARTTLS:
-      return "ENCRYPTION_STARTTLS";
-    case SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_SSL_TLS:
-      return "ENCRYPTION_SSL_TLS";
-    case SMTPMailDeliverySettingValue_Encryption.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-/** We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5. */
-export enum SMTPMailDeliverySettingValue_Authentication {
-  AUTHENTICATION_UNSPECIFIED = 0,
-  AUTHENTICATION_NONE = 1,
-  AUTHENTICATION_PLAIN = 2,
-  AUTHENTICATION_LOGIN = 3,
-  AUTHENTICATION_CRAM_MD5 = 4,
-  UNRECOGNIZED = -1,
-}
-
-export function sMTPMailDeliverySettingValue_AuthenticationFromJSON(
-  object: any,
-): SMTPMailDeliverySettingValue_Authentication {
-  switch (object) {
-    case 0:
-    case "AUTHENTICATION_UNSPECIFIED":
-      return SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_UNSPECIFIED;
-    case 1:
-    case "AUTHENTICATION_NONE":
-      return SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_NONE;
-    case 2:
-    case "AUTHENTICATION_PLAIN":
-      return SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_PLAIN;
-    case 3:
-    case "AUTHENTICATION_LOGIN":
-      return SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_LOGIN;
-    case 4:
-    case "AUTHENTICATION_CRAM_MD5":
-      return SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_CRAM_MD5;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return SMTPMailDeliverySettingValue_Authentication.UNRECOGNIZED;
-  }
-}
-
-export function sMTPMailDeliverySettingValue_AuthenticationToJSON(
-  object: SMTPMailDeliverySettingValue_Authentication,
-): string {
-  switch (object) {
-    case SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_UNSPECIFIED:
-      return "AUTHENTICATION_UNSPECIFIED";
-    case SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_NONE:
-      return "AUTHENTICATION_NONE";
-    case SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_PLAIN:
-      return "AUTHENTICATION_PLAIN";
-    case SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_LOGIN:
-      return "AUTHENTICATION_LOGIN";
-    case SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_CRAM_MD5:
-      return "AUTHENTICATION_CRAM_MD5";
-    case SMTPMailDeliverySettingValue_Authentication.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
+  smtpMailDeliverySettingValue?: SMTPMailDeliverySetting | undefined;
+  workspaceProfileSettingValue?: WorkspaceProfileSetting | undefined;
+  agentPluginSettingValue?: AgentPluginSetting | undefined;
+  workspaceApprovalSettingValue?: WorkspaceApprovalSetting | undefined;
+  appImSettingValue?: AppIMSetting | undefined;
+  workspaceTrialSettingValue?: WorkspaceTrialSetting | undefined;
 }
 
 function createBaseGetSettingRequest(): GetSettingRequest {
@@ -433,7 +318,15 @@ export const Setting = {
 };
 
 function createBaseValue(): Value {
-  return { stringValue: undefined, smtpMailDeliverySettingValue: undefined };
+  return {
+    stringValue: undefined,
+    smtpMailDeliverySettingValue: undefined,
+    workspaceProfileSettingValue: undefined,
+    agentPluginSettingValue: undefined,
+    workspaceApprovalSettingValue: undefined,
+    appImSettingValue: undefined,
+    workspaceTrialSettingValue: undefined,
+  };
 }
 
 export const Value = {
@@ -442,7 +335,22 @@ export const Value = {
       writer.uint32(10).string(message.stringValue);
     }
     if (message.smtpMailDeliverySettingValue !== undefined) {
-      SMTPMailDeliverySettingValue.encode(message.smtpMailDeliverySettingValue, writer.uint32(18).fork()).ldelim();
+      SMTPMailDeliverySetting.encode(message.smtpMailDeliverySettingValue, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.workspaceProfileSettingValue !== undefined) {
+      WorkspaceProfileSetting.encode(message.workspaceProfileSettingValue, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.agentPluginSettingValue !== undefined) {
+      AgentPluginSetting.encode(message.agentPluginSettingValue, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.workspaceApprovalSettingValue !== undefined) {
+      WorkspaceApprovalSetting.encode(message.workspaceApprovalSettingValue, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.appImSettingValue !== undefined) {
+      AppIMSetting.encode(message.appImSettingValue, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.workspaceTrialSettingValue !== undefined) {
+      WorkspaceTrialSetting.encode(message.workspaceTrialSettingValue, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -466,7 +374,42 @@ export const Value = {
             break;
           }
 
-          message.smtpMailDeliverySettingValue = SMTPMailDeliverySettingValue.decode(reader, reader.uint32());
+          message.smtpMailDeliverySettingValue = SMTPMailDeliverySetting.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.workspaceProfileSettingValue = WorkspaceProfileSetting.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.agentPluginSettingValue = AgentPluginSetting.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.workspaceApprovalSettingValue = WorkspaceApprovalSetting.decode(reader, reader.uint32());
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.appImSettingValue = AppIMSetting.decode(reader, reader.uint32());
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.workspaceTrialSettingValue = WorkspaceTrialSetting.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -481,7 +424,20 @@ export const Value = {
     return {
       stringValue: isSet(object.stringValue) ? String(object.stringValue) : undefined,
       smtpMailDeliverySettingValue: isSet(object.smtpMailDeliverySettingValue)
-        ? SMTPMailDeliverySettingValue.fromJSON(object.smtpMailDeliverySettingValue)
+        ? SMTPMailDeliverySetting.fromJSON(object.smtpMailDeliverySettingValue)
+        : undefined,
+      workspaceProfileSettingValue: isSet(object.workspaceProfileSettingValue)
+        ? WorkspaceProfileSetting.fromJSON(object.workspaceProfileSettingValue)
+        : undefined,
+      agentPluginSettingValue: isSet(object.agentPluginSettingValue)
+        ? AgentPluginSetting.fromJSON(object.agentPluginSettingValue)
+        : undefined,
+      workspaceApprovalSettingValue: isSet(object.workspaceApprovalSettingValue)
+        ? WorkspaceApprovalSetting.fromJSON(object.workspaceApprovalSettingValue)
+        : undefined,
+      appImSettingValue: isSet(object.appImSettingValue) ? AppIMSetting.fromJSON(object.appImSettingValue) : undefined,
+      workspaceTrialSettingValue: isSet(object.workspaceTrialSettingValue)
+        ? WorkspaceTrialSetting.fromJSON(object.workspaceTrialSettingValue)
         : undefined,
     };
   },
@@ -491,7 +447,24 @@ export const Value = {
     message.stringValue !== undefined && (obj.stringValue = message.stringValue);
     message.smtpMailDeliverySettingValue !== undefined &&
       (obj.smtpMailDeliverySettingValue = message.smtpMailDeliverySettingValue
-        ? SMTPMailDeliverySettingValue.toJSON(message.smtpMailDeliverySettingValue)
+        ? SMTPMailDeliverySetting.toJSON(message.smtpMailDeliverySettingValue)
+        : undefined);
+    message.workspaceProfileSettingValue !== undefined &&
+      (obj.workspaceProfileSettingValue = message.workspaceProfileSettingValue
+        ? WorkspaceProfileSetting.toJSON(message.workspaceProfileSettingValue)
+        : undefined);
+    message.agentPluginSettingValue !== undefined && (obj.agentPluginSettingValue = message.agentPluginSettingValue
+      ? AgentPluginSetting.toJSON(message.agentPluginSettingValue)
+      : undefined);
+    message.workspaceApprovalSettingValue !== undefined &&
+      (obj.workspaceApprovalSettingValue = message.workspaceApprovalSettingValue
+        ? WorkspaceApprovalSetting.toJSON(message.workspaceApprovalSettingValue)
+        : undefined);
+    message.appImSettingValue !== undefined &&
+      (obj.appImSettingValue = message.appImSettingValue ? AppIMSetting.toJSON(message.appImSettingValue) : undefined);
+    message.workspaceTrialSettingValue !== undefined &&
+      (obj.workspaceTrialSettingValue = message.workspaceTrialSettingValue
+        ? WorkspaceTrialSetting.toJSON(message.workspaceTrialSettingValue)
         : undefined);
     return obj;
   },
@@ -505,212 +478,27 @@ export const Value = {
     message.stringValue = object.stringValue ?? undefined;
     message.smtpMailDeliverySettingValue =
       (object.smtpMailDeliverySettingValue !== undefined && object.smtpMailDeliverySettingValue !== null)
-        ? SMTPMailDeliverySettingValue.fromPartial(object.smtpMailDeliverySettingValue)
+        ? SMTPMailDeliverySetting.fromPartial(object.smtpMailDeliverySettingValue)
         : undefined;
-    return message;
-  },
-};
-
-function createBaseSMTPMailDeliverySettingValue(): SMTPMailDeliverySettingValue {
-  return {
-    server: "",
-    port: 0,
-    encryption: 0,
-    ca: undefined,
-    key: undefined,
-    cert: undefined,
-    authentication: 0,
-    username: "",
-    password: undefined,
-    from: "",
-    to: "",
-  };
-}
-
-export const SMTPMailDeliverySettingValue = {
-  encode(message: SMTPMailDeliverySettingValue, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.server !== "") {
-      writer.uint32(10).string(message.server);
-    }
-    if (message.port !== 0) {
-      writer.uint32(16).int32(message.port);
-    }
-    if (message.encryption !== 0) {
-      writer.uint32(24).int32(message.encryption);
-    }
-    if (message.ca !== undefined) {
-      writer.uint32(34).string(message.ca);
-    }
-    if (message.key !== undefined) {
-      writer.uint32(42).string(message.key);
-    }
-    if (message.cert !== undefined) {
-      writer.uint32(50).string(message.cert);
-    }
-    if (message.authentication !== 0) {
-      writer.uint32(56).int32(message.authentication);
-    }
-    if (message.username !== "") {
-      writer.uint32(66).string(message.username);
-    }
-    if (message.password !== undefined) {
-      writer.uint32(74).string(message.password);
-    }
-    if (message.from !== "") {
-      writer.uint32(82).string(message.from);
-    }
-    if (message.to !== "") {
-      writer.uint32(90).string(message.to);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SMTPMailDeliverySettingValue {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSMTPMailDeliverySettingValue();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.server = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.port = reader.int32();
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.encryption = reader.int32() as any;
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.ca = reader.string();
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.cert = reader.string();
-          continue;
-        case 7:
-          if (tag !== 56) {
-            break;
-          }
-
-          message.authentication = reader.int32() as any;
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.username = reader.string();
-          continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.password = reader.string();
-          continue;
-        case 10:
-          if (tag !== 82) {
-            break;
-          }
-
-          message.from = reader.string();
-          continue;
-        case 11:
-          if (tag !== 90) {
-            break;
-          }
-
-          message.to = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SMTPMailDeliverySettingValue {
-    return {
-      server: isSet(object.server) ? String(object.server) : "",
-      port: isSet(object.port) ? Number(object.port) : 0,
-      encryption: isSet(object.encryption) ? sMTPMailDeliverySettingValue_EncryptionFromJSON(object.encryption) : 0,
-      ca: isSet(object.ca) ? String(object.ca) : undefined,
-      key: isSet(object.key) ? String(object.key) : undefined,
-      cert: isSet(object.cert) ? String(object.cert) : undefined,
-      authentication: isSet(object.authentication)
-        ? sMTPMailDeliverySettingValue_AuthenticationFromJSON(object.authentication)
-        : 0,
-      username: isSet(object.username) ? String(object.username) : "",
-      password: isSet(object.password) ? String(object.password) : undefined,
-      from: isSet(object.from) ? String(object.from) : "",
-      to: isSet(object.to) ? String(object.to) : "",
-    };
-  },
-
-  toJSON(message: SMTPMailDeliverySettingValue): unknown {
-    const obj: any = {};
-    message.server !== undefined && (obj.server = message.server);
-    message.port !== undefined && (obj.port = Math.round(message.port));
-    message.encryption !== undefined &&
-      (obj.encryption = sMTPMailDeliverySettingValue_EncryptionToJSON(message.encryption));
-    message.ca !== undefined && (obj.ca = message.ca);
-    message.key !== undefined && (obj.key = message.key);
-    message.cert !== undefined && (obj.cert = message.cert);
-    message.authentication !== undefined &&
-      (obj.authentication = sMTPMailDeliverySettingValue_AuthenticationToJSON(message.authentication));
-    message.username !== undefined && (obj.username = message.username);
-    message.password !== undefined && (obj.password = message.password);
-    message.from !== undefined && (obj.from = message.from);
-    message.to !== undefined && (obj.to = message.to);
-    return obj;
-  },
-
-  create(base?: DeepPartial<SMTPMailDeliverySettingValue>): SMTPMailDeliverySettingValue {
-    return SMTPMailDeliverySettingValue.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<SMTPMailDeliverySettingValue>): SMTPMailDeliverySettingValue {
-    const message = createBaseSMTPMailDeliverySettingValue();
-    message.server = object.server ?? "";
-    message.port = object.port ?? 0;
-    message.encryption = object.encryption ?? 0;
-    message.ca = object.ca ?? undefined;
-    message.key = object.key ?? undefined;
-    message.cert = object.cert ?? undefined;
-    message.authentication = object.authentication ?? 0;
-    message.username = object.username ?? "";
-    message.password = object.password ?? undefined;
-    message.from = object.from ?? "";
-    message.to = object.to ?? "";
+    message.workspaceProfileSettingValue =
+      (object.workspaceProfileSettingValue !== undefined && object.workspaceProfileSettingValue !== null)
+        ? WorkspaceProfileSetting.fromPartial(object.workspaceProfileSettingValue)
+        : undefined;
+    message.agentPluginSettingValue =
+      (object.agentPluginSettingValue !== undefined && object.agentPluginSettingValue !== null)
+        ? AgentPluginSetting.fromPartial(object.agentPluginSettingValue)
+        : undefined;
+    message.workspaceApprovalSettingValue =
+      (object.workspaceApprovalSettingValue !== undefined && object.workspaceApprovalSettingValue !== null)
+        ? WorkspaceApprovalSetting.fromPartial(object.workspaceApprovalSettingValue)
+        : undefined;
+    message.appImSettingValue = (object.appImSettingValue !== undefined && object.appImSettingValue !== null)
+      ? AppIMSetting.fromPartial(object.appImSettingValue)
+      : undefined;
+    message.workspaceTrialSettingValue =
+      (object.workspaceTrialSettingValue !== undefined && object.workspaceTrialSettingValue !== null)
+        ? WorkspaceTrialSetting.fromPartial(object.workspaceTrialSettingValue)
+        : undefined;
     return message;
   },
 };

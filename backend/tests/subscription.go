@@ -7,13 +7,14 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func (ctl *controller) setLicense() error {
 	return ctl.trialPlan(&v1pb.TrialSubscription{
 		InstanceCount: 100,
-		Plan:          v1pb.PlanType_ENTERPRISE,
+		Plan:          storepb.PlanType_ENTERPRISE,
 		Days:          1,
 	})
 }

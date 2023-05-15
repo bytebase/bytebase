@@ -37,7 +37,12 @@ type SettingService struct {
 }
 
 // NewSettingService creates a new setting service.
-func NewSettingService(store *store.Store, profile *config.Profile, licenseService enterpriseAPI.LicenseService, stateCfg *state.State) *SettingService {
+func NewSettingService(
+	store *store.Store,
+	profile *config.Profile,
+	licenseService enterpriseAPI.LicenseService,
+	stateCfg *state.State,
+) *SettingService {
 	return &SettingService{
 		store:          store,
 		profile:        profile,
@@ -51,6 +56,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingBrandingLogo,
 	api.SettingAppIM,
 	api.SettingWatermark,
+	api.SettingWorkspaceProfile,
 	api.SettingPluginOpenAIKey,
 	api.SettingPluginOpenAIEndpoint,
 	api.SettingWorkspaceApproval,
@@ -118,38 +124,31 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	var storeSettingValue string
 	switch apiSettingName {
 	case api.SettingWorkspaceProfile:
-		settingValue := request.Setting.Value.GetStringValue()
-		payload := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+		settingValue := request.Setting.Value.GetWorkspaceProfileSettingValue()
+		if settingValue == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "setting value for %s is empty", apiSettingName)
 		}
-		if payload.ExternalUrl != "" {
-			externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
+		if settingValue.ExternalUrl != "" {
+			externalURL, err := common.NormalizeExternalURL(settingValue.ExternalUrl)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid external url: %v", err)
 			}
-			payload.ExternalUrl = externalURL
+			settingValue.ExternalUrl = externalURL
 		}
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting value: %v", err)
-		}
-		storeSettingValue = string(bytes)
-
+		storeSettingValue = settingValue.String()
 	case api.SettingWorkspaceApproval:
 		if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
 			return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
 		}
-		settingValue := request.Setting.Value.GetStringValue()
-		payload := new(storepb.WorkspaceApprovalSetting)
-		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+		settingValue := request.Setting.Value.GetWorkspaceApprovalSettingValue()
+		if settingValue == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "setting value for %s is empty", apiSettingName)
 		}
 		e, err := cel.NewEnv(approval.ApprovalFactors...)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create cel env: %v", err)
 		}
-		for _, rule := range payload.Rules {
+		for _, rule := range settingValue.Rules {
 			if rule.Expression != nil && rule.Expression.Expr != nil {
 				ast := cel.ParsedExprToAst(rule.Expression)
 				_, issues := e.Check(ast)
@@ -161,9 +160,12 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 				return nil, status.Errorf(codes.InvalidArgument, "invalid approval template: %v, err: %v", rule.Template, err)
 			}
 		}
-		storeSettingValue = settingValue
+		storeSettingValue = settingValue.String()
 	case api.SettingWorkspaceMailDelivery:
 		apiValue := request.Setting.Value.GetSmtpMailDeliverySettingValue()
+		if apiValue == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "setting value for %s is empty", apiSettingName)
+		}
 		// We will fill the password read from the store if it is not set.
 		if apiValue.Password == nil {
 			oldStoreSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
@@ -179,7 +181,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			if err := protojson.Unmarshal([]byte(oldStoreSetting.Value), oldValue); err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
 			}
-			apiValue.Password = &oldValue.Password
+			apiValue.Password = oldValue.Password
 		}
 		if request.ValidateOnly {
 			if err := s.sendTestEmail(ctx, apiValue); err != nil {
@@ -195,20 +197,13 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 				},
 			}, nil
 		}
-		password := ""
-		if apiValue.Password != nil {
-			password = *apiValue.Password
-		}
 		storeMailDeliveryValue := &storepb.SMTPMailDeliverySetting{
 			Server:         apiValue.Server,
 			Port:           apiValue.Port,
-			Encryption:     convertToStorePbSMTPEncryptionType(apiValue.Encryption),
-			Authentication: convertToStorePbSMTPAuthType(apiValue.Authentication),
+			Encryption:     apiValue.Encryption,
+			Authentication: apiValue.Authentication,
 			Username:       apiValue.Username,
-			Password:       password,
-			Ca:             "",
-			Key:            "",
-			Cert:           "",
+			Password:       apiValue.Password,
 			From:           apiValue.From,
 		}
 		bytes, err := protojson.Marshal(storeMailDeliveryValue)
@@ -216,6 +211,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting value: %v", err)
 		}
 		storeSettingValue = string(bytes)
+	//TODO: convert setting values and validate
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
@@ -249,21 +245,22 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 			Name: settingNamePrefix + string(setting.Name),
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_SmtpMailDeliverySettingValue{
-					SmtpMailDeliverySettingValue: &v1pb.SMTPMailDeliverySettingValue{
+					SmtpMailDeliverySettingValue: &storepb.SMTPMailDeliverySetting{
 						Server:         storeValue.Server,
 						Port:           storeValue.Port,
-						Encryption:     convertToSMTPEncryptionType(storeValue.Encryption),
-						Authentication: convertToSMTPAuthType(storeValue.Authentication),
-						Ca:             &storeValue.Ca,
-						Key:            &storeValue.Key,
-						Cert:           &storeValue.Cert,
+						Encryption:     storeValue.Encryption,
+						Authentication: storeValue.Authentication,
+						Ca:             storeValue.Ca,
+						Key:            storeValue.Key,
+						Cert:           storeValue.Cert,
 						Username:       storeValue.Username,
-						Password:       &storeValue.Password,
+						Password:       storeValue.Password,
 						From:           storeValue.From,
 					},
 				},
 			},
 		}, nil
+	// TODO: convert setting values
 	default:
 		return &v1pb.Setting{
 			Name: settingNamePrefix + string(setting.Name),
@@ -294,11 +291,11 @@ func validateApprovalTemplate(template *storepb.ApprovalTemplate) error {
 	return nil
 }
 
-func (s *SettingService) sendTestEmail(ctx context.Context, value *v1pb.SMTPMailDeliverySettingValue) error {
+func (s *SettingService) sendTestEmail(ctx context.Context, value *storepb.SMTPMailDeliverySetting) error {
 	if value.Password == nil {
 		return status.Errorf(codes.InvalidArgument, "password is required when sending test email")
 	}
-	if value.To == "" {
+	if value.To == nil {
 		return status.Errorf(codes.InvalidArgument, "to is required when sending test email")
 	}
 	if value.From == "" {
@@ -347,7 +344,7 @@ func (s *SettingService) sendTestEmail(ctx context.Context, value *v1pb.SMTPMail
 	}
 
 	polishHTMLBody := prepareTestMailContent(string(mailHTMLBody), consoleRedirectURL, logoFullFileName, bannerFileName)
-	email.SetFrom(fmt.Sprintf("Bytebase <%s>", value.From)).AddTo(value.To).SetSubject("Bytebase mail server test").SetBody(polishHTMLBody)
+	email.SetFrom(fmt.Sprintf("Bytebase <%s>", value.From)).AddTo(*value.To).SetSubject("Bytebase mail server test").SetBody(polishHTMLBody)
 	client := mail.NewSMTPClient(value.Server, int(value.Port))
 	client.SetAuthType(convertToMailSMTPAuthType(value.Authentication)).
 		SetAuthCredentials(value.Username, *value.Password).
@@ -366,82 +363,30 @@ func prepareTestMailContent(htmlTemplate, consoleRedirectURL, logoContentID, ban
 	return testEmailContent
 }
 
-func convertToMailSMTPAuthType(authType v1pb.SMTPMailDeliverySettingValue_Authentication) mail.SMTPAuthType {
+func convertToMailSMTPAuthType(authType storepb.SMTPMailDeliverySetting_Authentication) mail.SMTPAuthType {
 	switch authType {
-	case v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_NONE:
+	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_NONE:
 		return mail.SMTPAuthTypeNone
-	case v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_PLAIN:
+	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_PLAIN:
 		return mail.SMTPAuthTypePlain
-	case v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_LOGIN:
+	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_LOGIN:
 		return mail.SMTPAuthTypeLogin
-	case v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_CRAM_MD5:
+	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_CRAM_MD5:
 		return mail.SMTPAuthTypeCRAMMD5
 	}
 	return mail.SMTPAuthTypeNone
 }
 
-func convertToStorePbSMTPAuthType(authType v1pb.SMTPMailDeliverySettingValue_Authentication) storepb.SMTPMailDeliverySetting_Authentication {
-	switch authType {
-	case v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_NONE:
-		return storepb.SMTPMailDeliverySetting_AUTHENTICATION_NONE
-	case v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_PLAIN:
-		return storepb.SMTPMailDeliverySetting_AUTHENTICATION_PLAIN
-	case v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_LOGIN:
-		return storepb.SMTPMailDeliverySetting_AUTHENTICATION_LOGIN
-	case v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_CRAM_MD5:
-		return storepb.SMTPMailDeliverySetting_AUTHENTICATION_CRAM_MD5
-	}
-	return storepb.SMTPMailDeliverySetting_AUTHENTICATION_NONE
-}
-
-func convertToSMTPAuthType(authType storepb.SMTPMailDeliverySetting_Authentication) v1pb.SMTPMailDeliverySettingValue_Authentication {
-	switch authType {
-	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_NONE:
-		return v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_NONE
-	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_PLAIN:
-		return v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_PLAIN
-	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_LOGIN:
-		return v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_LOGIN
-	case storepb.SMTPMailDeliverySetting_AUTHENTICATION_CRAM_MD5:
-		return v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_CRAM_MD5
-	}
-	return v1pb.SMTPMailDeliverySettingValue_AUTHENTICATION_UNSPECIFIED
-}
-
-func convertToMailSMTPEncryptionType(encryptionType v1pb.SMTPMailDeliverySettingValue_Encryption) mail.SMTPEncryptionType {
+func convertToMailSMTPEncryptionType(encryptionType storepb.SMTPMailDeliverySetting_Encryption) mail.SMTPEncryptionType {
 	switch encryptionType {
-	case v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_NONE:
+	case storepb.SMTPMailDeliverySetting_ENCRYPTION_NONE:
 		return mail.SMTPEncryptionTypeNone
-	case v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_STARTTLS:
+	case storepb.SMTPMailDeliverySetting_ENCRYPTION_STARTTLS:
 		return mail.SMTPEncryptionTypeSTARTTLS
-	case v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_SSL_TLS:
+	case storepb.SMTPMailDeliverySetting_ENCRYPTION_SSL_TLS:
 		return mail.SMTPEncryptionTypeSSLTLS
 	}
 	return mail.SMTPEncryptionTypeNone
-}
-
-func convertToStorePbSMTPEncryptionType(encryptionType v1pb.SMTPMailDeliverySettingValue_Encryption) storepb.SMTPMailDeliverySetting_Encryption {
-	switch encryptionType {
-	case v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_NONE:
-		return storepb.SMTPMailDeliverySetting_ENCRYPTION_NONE
-	case v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_STARTTLS:
-		return storepb.SMTPMailDeliverySetting_ENCRYPTION_STARTTLS
-	case v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_SSL_TLS:
-		return storepb.SMTPMailDeliverySetting_ENCRYPTION_SSL_TLS
-	}
-	return storepb.SMTPMailDeliverySetting_ENCRYPTION_NONE
-}
-
-func convertToSMTPEncryptionType(encryptionType storepb.SMTPMailDeliverySetting_Encryption) v1pb.SMTPMailDeliverySettingValue_Encryption {
-	switch encryptionType {
-	case storepb.SMTPMailDeliverySetting_ENCRYPTION_NONE:
-		return v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_NONE
-	case storepb.SMTPMailDeliverySetting_ENCRYPTION_STARTTLS:
-		return v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_STARTTLS
-	case storepb.SMTPMailDeliverySetting_ENCRYPTION_SSL_TLS:
-		return v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_SSL_TLS
-	}
-	return v1pb.SMTPMailDeliverySettingValue_ENCRYPTION_UNSPECIFIED
 }
 
 // stripSensitiveData strips the sensitive data like password from the setting.value.

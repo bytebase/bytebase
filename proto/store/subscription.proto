@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "google/api/expr/v1alpha1/syntax.proto";
+
+option go_package = "github.com/bytebase/bytebase/proto/generated-go/store";
+
+enum PlanType {
+  PLAN_TYPE_UNSPECIFIED = 0;
+
+  FREE = 1;
+
+  TEAM = 2;
+
+  ENTERPRISE = 3;
+}

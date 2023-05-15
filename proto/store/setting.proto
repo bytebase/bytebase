@@ -4,8 +4,10 @@ package bytebase.store;
 
 import "google/api/expr/v1alpha1/syntax.proto";
 import "store/approval.proto";
+import "store/subscription.proto";
+import "google/protobuf/timestamp.proto";
 
-option go_package = "generated-go/store";
+option go_package = "github.com/bytebase/bytebase/proto/generated-go/store";
 
 message WorkspaceProfileSetting {
   // The URL user visits Bytebase.
@@ -60,9 +62,9 @@ message SMTPMailDeliverySetting {
   Encryption encryption = 3;
 
   // The CA, KEY, and CERT for the SMTP server.
-  string ca = 4;
-  string key = 5;
-  string cert = 6;
+  optional string ca = 4;
+  optional string key = 5;
+  optional string cert = 6;
 
   // We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5.
   enum Authentication {
@@ -74,8 +76,45 @@ message SMTPMailDeliverySetting {
   }
   Authentication authentication = 7;
   string username = 8;
-  string password = 9;
+  optional string password = 9;
 
   // The sender email address.
   string from = 10;
+
+  // The recipient email address, used with validate_only to send test email.
+  optional string to = 11;
+}
+
+message AppIMSetting {
+  enum IMType {
+    IM_FEISHU = 0;
+  }
+
+  IMType im_type = 1;
+
+  string app_id = 2;
+
+  string app_secret = 3;
+
+  message ExternalApproval {
+    bool enabled = 1;
+
+    string approval_definition_id = 2;
+  }
+
+  ExternalApproval external_approval = 4;
+}
+
+message WorkspaceTrialSetting {
+  int32 instance_count = 1;
+
+  google.protobuf.Timestamp expire_time = 2;
+
+  google.protobuf.Timestamp issued_time = 3;
+
+  string subject = 4;
+
+  string org_name = 5;
+
+  PlanType plan = 6;
 }

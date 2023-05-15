@@ -45,7 +45,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				if err := protojson.Unmarshal([]byte(setting.Value), &value); err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal mail delivery setting value").SetInternal(err)
 				}
-				value.Password = ""
+				value.Password = nil
 				apiValue := convertStorepbToAPIMailDeliveryValue(&value)
 				bytes, err := json.Marshal(apiValue)
 				if err != nil {
@@ -230,7 +230,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			if err := protojson.Unmarshal([]byte(setting.Value), &value); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal mail delivery setting value").SetInternal(err)
 			}
-			value.Password = ""
+			value.Password = nil
 			apiValue := convertStorepbToAPIMailDeliveryValue(&value)
 			bytes, err := json.Marshal(apiValue)
 			if err != nil {
@@ -277,21 +277,14 @@ func convertAPIMailDeliveryValueToStorePb(value *api.SettingWorkspaceMailDeliver
 	if value == nil {
 		return nil
 	}
-	password := ""
-	if value.SMTPPassword != nil {
-		password = *value.SMTPPassword
-	}
 
 	pb := storepb.SMTPMailDeliverySetting{
 		Server:         value.SMTPServerHost,
 		Port:           int32(value.SMTPServerPort),
 		Encryption:     value.SMTPEncryptionType,
-		Ca:             "",
-		Key:            "",
-		Cert:           "",
 		Authentication: value.SMTPAuthenticationType,
 		Username:       value.SMTPUsername,
-		Password:       password,
+		Password:       value.SMTPPassword,
 		From:           value.SMTPFrom,
 	}
 	return &pb
@@ -301,14 +294,13 @@ func convertStorepbToAPIMailDeliveryValue(pb *storepb.SMTPMailDeliverySetting) *
 	if pb == nil {
 		return nil
 	}
-	password := pb.Password
 	value := api.SettingWorkspaceMailDeliveryValue{
 		SMTPServerHost:         pb.Server,
 		SMTPServerPort:         int(pb.Port),
 		SMTPEncryptionType:     pb.Encryption,
 		SMTPAuthenticationType: pb.Authentication,
 		SMTPUsername:           pb.Username,
-		SMTPPassword:           &password,
+		SMTPPassword:           pb.Password,
 		SMTPFrom:               pb.From,
 	}
 	return &value

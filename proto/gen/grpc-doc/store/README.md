@@ -58,13 +58,20 @@
     - [GrantRequest](#bytebase-store-GrantRequest)
     - [IssuePayload](#bytebase-store-IssuePayload)
   
+- [store/subscription.proto](#store_subscription-proto)
+    - [PlanType](#bytebase-store-PlanType)
+  
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
+    - [AppIMSetting](#bytebase-store-AppIMSetting)
+    - [AppIMSetting.ExternalApproval](#bytebase-store-AppIMSetting-ExternalApproval)
     - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
+    - [WorkspaceTrialSetting](#bytebase-store-WorkspaceTrialSetting)
   
+    - [AppIMSetting.IMType](#bytebase-store-AppIMSetting-IMType)
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
   
@@ -883,6 +890,36 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
+<a name="store_subscription-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/subscription.proto
+
+
+ 
+
+
+<a name="bytebase-store-PlanType"></a>
+
+### PlanType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PLAN_TYPE_UNSPECIFIED | 0 |  |
+| FREE | 1 |  |
+| TEAM | 2 |  |
+| ENTERPRISE | 3 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_setting-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -906,6 +943,40 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
+<a name="bytebase-store-AppIMSetting"></a>
+
+### AppIMSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| im_type | [AppIMSetting.IMType](#bytebase-store-AppIMSetting-IMType) |  |  |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+| external_approval | [AppIMSetting.ExternalApproval](#bytebase-store-AppIMSetting-ExternalApproval) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-ExternalApproval"></a>
+
+### AppIMSetting.ExternalApproval
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| approval_definition_id | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-SMTPMailDeliverySetting"></a>
 
 ### SMTPMailDeliverySetting
@@ -917,13 +988,14 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | server | [string](#string) |  | The SMTP server address. |
 | port | [int32](#int32) |  | The SMTP server port. |
 | encryption | [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption) |  | The SMTP server encryption. |
-| ca | [string](#string) |  | The CA, KEY, and CERT for the SMTP server. |
-| key | [string](#string) |  |  |
-| cert | [string](#string) |  |  |
+| ca | [string](#string) | optional | The CA, KEY, and CERT for the SMTP server. |
+| key | [string](#string) | optional |  |
+| cert | [string](#string) | optional |  |
 | authentication | [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication) |  |  |
 | username | [string](#string) |  |  |
-| password | [string](#string) |  |  |
+| password | [string](#string) | optional |  |
 | from | [string](#string) |  | The sender email address. |
+| to | [string](#string) | optional | The recipient email address, used with validate_only to send test email. |
 
 
 
@@ -980,7 +1052,38 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 
 
 
+
+<a name="bytebase-store-WorkspaceTrialSetting"></a>
+
+### WorkspaceTrialSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance_count | [int32](#int32) |  |  |
+| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| issued_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| subject | [string](#string) |  |  |
+| org_name | [string](#string) |  |  |
+| plan | [PlanType](#bytebase-store-PlanType) |  |  |
+
+
+
+
+
  
+
+
+<a name="bytebase-store-AppIMSetting-IMType"></a>
+
+### AppIMSetting.IMType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| IM_FEISHU | 0 |  |
+
 
 
 <a name="bytebase-store-SMTPMailDeliverySetting-Authentication"></a>

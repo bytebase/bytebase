@@ -324,13 +324,9 @@
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
-    - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
     - [Value](#bytebase-v1-Value)
-  
-    - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
-    - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
   
     - [SettingService](#bytebase-v1-SettingService)
   
@@ -347,8 +343,6 @@
     - [TrialSubscription](#bytebase-v1-TrialSubscription)
     - [TrialSubscriptionRequest](#bytebase-v1-TrialSubscriptionRequest)
     - [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest)
-  
-    - [PlanType](#bytebase-v1-PlanType)
   
     - [SubscriptionService](#bytebase-v1-SubscriptionService)
   
@@ -4958,31 +4952,6 @@ The response message for getting a setting.
 
 
 
-<a name="bytebase-v1-SMTPMailDeliverySettingValue"></a>
-
-### SMTPMailDeliverySettingValue
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| server | [string](#string) |  | The SMTP server address. |
-| port | [int32](#int32) |  | The SMTP server port. |
-| encryption | [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption) |  | The SMTP server encryption. |
-| ca | [string](#string) | optional | The CA, KEY, and CERT for the SMTP server. Not used. |
-| key | [string](#string) | optional |  |
-| cert | [string](#string) | optional |  |
-| authentication | [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication) |  |  |
-| username | [string](#string) |  |  |
-| password | [string](#string) | optional | If not specified, server will use the existed password. |
-| from | [string](#string) |  | The sender email address. |
-| to | [string](#string) |  | The recipient email address, used with validate_only to send test email. |
-
-
-
-
-
-
 <a name="bytebase-v1-SetSettingRequest"></a>
 
 ### SetSettingRequest
@@ -5026,42 +4995,18 @@ The data in setting value.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | string_value | [string](#string) |  | Defines this value as being a string value. |
-| smtp_mail_delivery_setting_value | [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue) |  |  |
+| smtp_mail_delivery_setting_value | [bytebase.store.SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting) |  |  |
+| workspace_profile_setting_value | [bytebase.store.WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting) |  |  |
+| agent_plugin_setting_value | [bytebase.store.AgentPluginSetting](#bytebase-store-AgentPluginSetting) |  |  |
+| workspace_approval_setting_value | [bytebase.store.WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting) |  |  |
+| app_im_setting_value | [bytebase.store.AppIMSetting](#bytebase-store-AppIMSetting) |  |  |
+| workspace_trial_setting_value | [bytebase.store.WorkspaceTrialSetting](#bytebase-store-WorkspaceTrialSetting) |  |  |
 
 
 
 
 
  
-
-
-<a name="bytebase-v1-SMTPMailDeliverySettingValue-Authentication"></a>
-
-### SMTPMailDeliverySettingValue.Authentication
-We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| AUTHENTICATION_UNSPECIFIED | 0 |  |
-| AUTHENTICATION_NONE | 1 |  |
-| AUTHENTICATION_PLAIN | 2 |  |
-| AUTHENTICATION_LOGIN | 3 |  |
-| AUTHENTICATION_CRAM_MD5 | 4 |  |
-
-
-
-<a name="bytebase-v1-SMTPMailDeliverySettingValue-Encryption"></a>
-
-### SMTPMailDeliverySettingValue.Encryption
-We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENCRYPTION_UNSPECIFIED | 0 |  |
-| ENCRYPTION_NONE | 1 |  |
-| ENCRYPTION_STARTTLS | 2 |  |
-| ENCRYPTION_SSL_TLS | 3 |  |
-
 
  
 
@@ -5184,7 +5129,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | instance_count | [int32](#int32) |  |  |
 | expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | started_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
+| plan | [bytebase.store.PlanType](#bytebase-store-PlanType) |  |  |
 | trialing | [bool](#bool) |  |  |
 | org_id | [string](#string) |  |  |
 | org_name | [string](#string) |  |  |
@@ -5202,7 +5147,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
+| plan | [bytebase.store.PlanType](#bytebase-store-PlanType) |  |  |
 | days | [int32](#int32) |  |  |
 | instance_count | [int32](#int32) |  |  |
 
@@ -5241,20 +5186,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
  
-
-
-<a name="bytebase-v1-PlanType"></a>
-
-### PlanType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PLAN_TYPE_UNSPECIFIED | 0 |  |
-| FREE | 1 |  |
-| TEAM | 2 |  |
-| ENTERPRISE | 3 |  |
-
 
  
 

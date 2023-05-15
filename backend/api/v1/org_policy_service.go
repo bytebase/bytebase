@@ -104,7 +104,6 @@ func (s *OrgPolicyService) CreatePolicy(ctx context.Context, request *v1pb.Creat
 		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
 	}
 
-	// TODO(d): validate policy.
 	return s.createPolicyMessage(ctx, principalID, request.Parent, request.Policy)
 }
 
