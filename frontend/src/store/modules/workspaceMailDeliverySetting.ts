@@ -1,8 +1,6 @@
 import { settingServiceClient } from "@/grpcweb";
-import {
-  SMTPMailDeliverySettingValue,
-  Setting,
-} from "@/types/proto/v1/setting_service";
+import { Setting } from "@/types/proto/v1/setting_service";
+import { SMTPMailDeliverySetting } from "@/types/proto/store/setting";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
@@ -11,7 +9,7 @@ const SETTING_NAME = "settings/bb.workspace.mail-delivery";
 export const useWorkspaceMailDeliverySettingStore = defineStore(
   "workspaceMailDeliverySetting",
   () => {
-    const mailDeliverySetting = ref<SMTPMailDeliverySettingValue>();
+    const mailDeliverySetting = ref<SMTPMailDeliverySetting>();
 
     const setMailDeliverySetting = (setting: Setting) => {
       const _mailDeliverySetting = setting.value!.smtpMailDeliverySettingValue;
@@ -32,7 +30,7 @@ export const useWorkspaceMailDeliverySettingStore = defineStore(
     };
 
     const updateMailDeliverySetting = async (
-      value: SMTPMailDeliverySettingValue
+      value: SMTPMailDeliverySetting
     ) => {
       const setting = await settingServiceClient.setSetting({
         setting: {
@@ -46,7 +44,7 @@ export const useWorkspaceMailDeliverySettingStore = defineStore(
     };
 
     const validateMailDeliverySetting = async (
-      value: SMTPMailDeliverySettingValue
+      value: SMTPMailDeliverySetting
     ) => {
       await settingServiceClient.setSetting({
         setting: {

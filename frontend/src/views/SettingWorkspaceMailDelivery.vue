@@ -85,7 +85,7 @@
       <template
         v-if="
           state.mailDeliverySetting.authentication !==
-          SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_NONE
+          SMTPMailDeliverySetting_Authentication.AUTHENTICATION_NONE
         "
       >
         <div class="w-full flex flex-row gap-4 mt-4">
@@ -205,15 +205,16 @@ import { useI18n } from "vue-i18n";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
 import {
-  SMTPMailDeliverySettingValue,
-  SMTPMailDeliverySettingValue_Authentication,
-  SMTPMailDeliverySettingValue_Encryption,
-} from "@/types/proto/v1/setting_service";
+  SMTPMailDeliverySetting,
+  SMTPMailDeliverySetting_Authentication,
+  SMTPMailDeliverySetting_Encryption,
+} from "@/types/proto/store/setting";
+
 import { ClientError } from "nice-grpc-web";
 
 interface LocalState {
-  originMailDeliverySetting?: SMTPMailDeliverySettingValue;
-  mailDeliverySetting: SMTPMailDeliverySettingValue;
+  originMailDeliverySetting?: SMTPMailDeliverySetting;
+  mailDeliverySetting: SMTPMailDeliverySetting;
   testMailTo: string;
   isSendLoading: boolean;
   isCreateOrUpdateLoading: boolean;
@@ -221,16 +222,15 @@ interface LocalState {
 }
 const { t } = useI18n();
 
-const defaultMailDeliverySetting = function (): SMTPMailDeliverySettingValue {
+const defaultMailDeliverySetting = function (): SMTPMailDeliverySetting {
   return {
     server: "",
     port: 587,
     username: "",
     password: undefined,
     from: "",
-    authentication:
-      SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_PLAIN,
-    encryption: SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_STARTTLS,
+    authentication: SMTPMailDeliverySetting_Authentication.AUTHENTICATION_PLAIN,
+    encryption: SMTPMailDeliverySetting_Encryption.ENCRYPTION_STARTTLS,
     to: "",
   };
 };
@@ -324,29 +324,29 @@ const handleSelectEncryptionType = (method: string) => {
   switch (method) {
     case "NONE":
       state.mailDeliverySetting.encryption =
-        SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_NONE;
+        SMTPMailDeliverySetting_Encryption.ENCRYPTION_NONE;
       break;
     case "SSL/TLS":
       state.mailDeliverySetting.encryption =
-        SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_SSL_TLS;
+        SMTPMailDeliverySetting_Encryption.ENCRYPTION_SSL_TLS;
       break;
     case "STARTTLS":
       state.mailDeliverySetting.encryption =
-        SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_STARTTLS;
+        SMTPMailDeliverySetting_Encryption.ENCRYPTION_STARTTLS;
       break;
     default:
       state.mailDeliverySetting.encryption =
-        SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_NONE;
+        SMTPMailDeliverySetting_Encryption.ENCRYPTION_NONE;
       break;
   }
 };
 const getSelectedEncryptionTypeItem = computed(() => {
   switch (state.mailDeliverySetting.encryption) {
-    case SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_NONE:
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_NONE:
       return "NONE";
-    case SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_SSL_TLS:
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_SSL_TLS:
       return "SSL/TLS";
-    case SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_STARTTLS:
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_STARTTLS:
       return "STARTTLS";
     default:
       return "NONE";
@@ -357,35 +357,35 @@ const handleSelectAuthenticationType = (method: string) => {
   switch (method) {
     case "NONE":
       state.mailDeliverySetting.authentication =
-        SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_NONE;
+        SMTPMailDeliverySetting_Authentication.AUTHENTICATION_NONE;
       break;
     case "PLAIN":
       state.mailDeliverySetting.authentication =
-        SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_PLAIN;
+        SMTPMailDeliverySetting_Authentication.AUTHENTICATION_PLAIN;
       break;
     case "LOGIN":
       state.mailDeliverySetting.authentication =
-        SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_LOGIN;
+        SMTPMailDeliverySetting_Authentication.AUTHENTICATION_LOGIN;
       break;
     case "CRAM-MD5":
       state.mailDeliverySetting.authentication =
-        SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_CRAM_MD5;
+        SMTPMailDeliverySetting_Authentication.AUTHENTICATION_CRAM_MD5;
       break;
     default:
       state.mailDeliverySetting.authentication =
-        SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_PLAIN;
+        SMTPMailDeliverySetting_Authentication.AUTHENTICATION_PLAIN;
       break;
   }
 };
 const getSelectedAuthenticationTypeItem = computed(() => {
   switch (state.mailDeliverySetting.authentication) {
-    case SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_NONE:
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_NONE:
       return "NONE";
-    case SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_PLAIN:
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_PLAIN:
       return "PLAIN";
-    case SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_LOGIN:
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_LOGIN:
       return "LOGIN";
-    case SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_CRAM_MD5:
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_CRAM_MD5:
       return "CRAM-MD5";
     default:
       return "PLAIN";
