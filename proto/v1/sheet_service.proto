@@ -7,6 +7,7 @@ import "google/api/field_behavior.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/empty.proto";
+import "google/api/client.proto";
 
 
 option go_package = "generated-go/v1";
@@ -78,6 +79,10 @@ message DeleteSheetRequest {
 }
 
 message SearchSheetsRequest {
+  // The parent resource of the sheet.
+  // Foramt: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
   // Not used. The maximum number of sheets to return. The service may return fewer than
   // this value.
   // If unspecified, at most 50 sheets will be returned.
