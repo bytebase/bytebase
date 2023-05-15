@@ -1267,13 +1267,9 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 	}
 	stageTaskHasPendingApproval := false
 	stageTaskAllTerminated := true
-	stageTaskAllDone := true
 	for _, task := range tasks {
 		if task.Status == api.TaskPendingApproval {
 			stageTaskHasPendingApproval = true
-		}
-		if task.Status != api.TaskDone {
-			stageTaskAllDone = false
 		}
 		if !terminatedTaskStatus[task.Status] {
 			stageTaskAllTerminated = false
@@ -1317,7 +1313,7 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 
 	// every task in the stage completes and this is not the last stage.
 	// create "stage begins" activity.
-	if stageTaskAllDone && nextStage != nil {
+	if !taskStage.Active && nextStage != nil {
 		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
 			StageID:               nextStage.ID,
 			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,

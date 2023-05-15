@@ -219,7 +219,7 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-// GetActiveStage returns an active stage among all stages.
+// GetActiveStage returns the first active stage among all stages.
 func GetActiveStage(stages []*store.StageMessage) *store.StageMessage {
 	for _, stage := range stages {
 		if stage.Active {
