@@ -1253,9 +1253,8 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 	if !taskStage.Active && nextStage == nil {
 		// Every task in the pipeline has finished.
 		// Resolve the issue automatically for the user.
-		status := api.IssueDone
-		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &status}, api.SystemBotID); err != nil {
-			log.Error("failed to update the issue status to done automatically after completing every task", zap.Error(err))
+		if err := s.ChangeIssueStatus(ctx, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+			log.Error("failed to change the issue status to done automatically after completing every task", zap.Error(err))
 		}
 	}
 
