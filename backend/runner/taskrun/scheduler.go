@@ -307,60 +307,6 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								)
 								return
 							}
-
-							issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-							if err != nil {
-								log.Error("failed to getIssueByPipelineID", zap.Int("pipelineID", task.PipelineID), zap.Error(err))
-								return
-							}
-							// The task has finished,
-							// 1. If we are moving into a new stage
-							// and the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
-							// 2. If every task in the pipeline has finished, we will resolve the issue automatically for the user.
-							if issue != nil && issue.PipelineUID != nil {
-								stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
-								if err != nil {
-									return
-								}
-								activeStage := utils.GetActiveStage(stages)
-								if activeStage != nil && activeStage.ID != task.StageID {
-									environmentID := activeStage.EnvironmentID
-									ok, err := s.CanPrincipalBeAssignee(ctx, issue.Assignee.ID, environmentID, issue.Project.UID, issue.Type)
-									if err != nil {
-										log.Error("failed to check if the current assignee still fits in the new assignee group", zap.Error(err))
-										return
-									}
-									if !ok {
-										// reassign the issue to a new assignee if the current one doesn't fit.
-										assignee, err := s.GetDefaultAssignee(ctx, environmentID, issue.Project.UID, issue.Type)
-										if err != nil {
-											log.Error("failed to get a default assignee", zap.Error(err))
-											return
-										}
-										if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Assignee: assignee}, api.SystemBotID); err != nil {
-											log.Error("failed to update the issue assignee", zap.Error(err))
-											return
-										}
-									}
-								}
-								if activeStage == nil {
-									// resolve the issue because every task in the pipeline has finished.
-									status := api.IssueDone
-									if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &status}, api.SystemBotID); err != nil {
-										log.Error("failed to update the issue status to done automatically after completing every task", zap.Error(err))
-										return
-									}
-								}
-
-								s.metricReporter.Report(ctx, &metric.Metric{
-									Name:  metricAPI.TaskStatusMetricName,
-									Value: 1,
-									Labels: map[string]any{
-										"type":  task.Type,
-										"value": taskStatusPatch.Status,
-									},
-								})
-							}
 							return
 						}
 					}(ctx, task, executor)
@@ -1253,6 +1199,15 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 }
 
 func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueMessage, taskPatched *store.TaskMessage) error {
+	s.metricReporter.Report(ctx, &metric.Metric{
+		Name:  metricAPI.TaskStatusMetricName,
+		Value: 1,
+		Labels: map[string]any{
+			"type":  taskPatched.Type,
+			"value": taskPatched.Status,
+		},
+	})
+
 	stages, err := s.store.ListStageV2(ctx, taskPatched.PipelineID)
 	if err != nil {
 		return err
@@ -1269,6 +1224,39 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 	}
 	if taskStage == nil {
 		return errors.New("failed to find corresponding stage of the task in the issue pipeline")
+	}
+
+	if !taskStage.Active && nextStage != nil {
+		// Every task in this stage has finished, we are moving to the next stage.
+		// The current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
+		func() {
+			environmentID := nextStage.EnvironmentID
+			ok, err := s.CanPrincipalBeAssignee(ctx, issue.Assignee.ID, environmentID, issue.Project.UID, issue.Type)
+			if err != nil {
+				log.Error("failed to check if the current assignee still fits in the new assignee group", zap.Error(err))
+				return
+			}
+			if !ok {
+				// reassign the issue to a new assignee if the current one doesn't fit.
+				assignee, err := s.GetDefaultAssignee(ctx, environmentID, issue.Project.UID, issue.Type)
+				if err != nil {
+					log.Error("failed to get a default assignee", zap.Error(err))
+					return
+				}
+				if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Assignee: assignee}, api.SystemBotID); err != nil {
+					log.Error("failed to update the issue assignee", zap.Error(err))
+					return
+				}
+			}
+		}()
+	}
+	if !taskStage.Active && nextStage == nil {
+		// Every task in the pipeline has finished.
+		// Resolve the issue automatically for the user.
+		status := api.IssueDone
+		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &status}, api.SystemBotID); err != nil {
+			log.Error("failed to update the issue status to done automatically after completing every task", zap.Error(err))
+		}
 	}
 
 	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &taskPatched.PipelineID, StageID: &taskPatched.StageID})
