@@ -16,7 +16,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisordb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -652,7 +651,7 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 			Payload: rule.Payload,
 			Type:    advisor.SQLReviewRuleType(rule.Type),
 			Comment: rule.Comment,
-			Engine:  advisordb.Type(convertEngine(rule.Engine)),
+			// DONOT assign the engine, we will use FlattenSQLReviewRulesWithEngine to map available engine with the rule.
 		})
 	}
 
