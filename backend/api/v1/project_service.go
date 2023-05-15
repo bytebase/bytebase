@@ -1206,12 +1206,8 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 		if len(binding.Members) == 0 {
 			return errors.Errorf("Each IAM binding must have at least one member")
 		}
-		// We have not merge the binding by the same role yet, so the roles in each binding must be unique.
-		if _, ok := projectRoleMap[binding.Role]; ok {
-			return errors.Errorf("Each IAM binding must have a unique role")
-		}
 
-		// Users with each role must be unique.
+		// Users within each binding must be unique.
 		userMap := make(map[string]bool)
 		for _, member := range binding.Members {
 			if _, ok := userMap[member]; ok {
