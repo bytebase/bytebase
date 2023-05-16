@@ -11,6 +11,9 @@ const props = defineProps<{
 }>();
 
 const icon = computed(() => {
+  if (props.engine === "ORACLE") {
+    return new URL("../../../assets/db-oracle.svg", import.meta.url).href;
+  }
   return new URL(
     `../../../assets/db-${props.engine.toLowerCase()}.png`,
     import.meta.url

@@ -519,7 +519,7 @@ func IsSyntaxCheckSupported(dbType db.Type) bool {
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres:
+	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle:
 		return true
 	}
 	return false
