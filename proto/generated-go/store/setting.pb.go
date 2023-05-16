@@ -130,52 +130,6 @@ func (SMTPMailDeliverySetting_Authentication) EnumDescriptor() ([]byte, []int) {
 	return file_store_setting_proto_rawDescGZIP(), []int{3, 1}
 }
 
-type AppIMSetting_IMType int32
-
-const (
-	AppIMSetting_IM_TYPE_UNSPECIFIED AppIMSetting_IMType = 0
-	AppIMSetting_FEISHU              AppIMSetting_IMType = 1
-)
-
-// Enum value maps for AppIMSetting_IMType.
-var (
-	AppIMSetting_IMType_name = map[int32]string{
-		0: "IM_TYPE_UNSPECIFIED",
-		1: "FEISHU",
-	}
-	AppIMSetting_IMType_value = map[string]int32{
-		"IM_TYPE_UNSPECIFIED": 0,
-		"FEISHU":              1,
-	}
-)
-
-func (x AppIMSetting_IMType) Enum() *AppIMSetting_IMType {
-	p := new(AppIMSetting_IMType)
-	*p = x
-	return p
-}
-
-func (x AppIMSetting_IMType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (AppIMSetting_IMType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_setting_proto_enumTypes[2].Descriptor()
-}
-
-func (AppIMSetting_IMType) Type() protoreflect.EnumType {
-	return &file_store_setting_proto_enumTypes[2]
-}
-
-func (x AppIMSetting_IMType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use AppIMSetting_IMType.Descriptor instead.
-func (AppIMSetting_IMType) EnumDescriptor() ([]byte, []int) {
-	return file_store_setting_proto_rawDescGZIP(), []int{4, 0}
-}
-
 type WorkspaceProfileSetting struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -483,77 +437,6 @@ func (x *SMTPMailDeliverySetting) GetFrom() string {
 	return ""
 }
 
-type AppIMSetting struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	ImType           AppIMSetting_IMType            `protobuf:"varint,1,opt,name=im_type,json=imType,proto3,enum=bytebase.store.AppIMSetting_IMType" json:"im_type,omitempty"`
-	AppId            string                         `protobuf:"bytes,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`
-	AppSecret        string                         `protobuf:"bytes,3,opt,name=app_secret,json=appSecret,proto3" json:"app_secret,omitempty"`
-	ExternalApproval *AppIMSetting_ExternalApproval `protobuf:"bytes,4,opt,name=external_approval,json=externalApproval,proto3" json:"external_approval,omitempty"`
-}
-
-func (x *AppIMSetting) Reset() {
-	*x = AppIMSetting{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *AppIMSetting) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AppIMSetting) ProtoMessage() {}
-
-func (x *AppIMSetting) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AppIMSetting.ProtoReflect.Descriptor instead.
-func (*AppIMSetting) Descriptor() ([]byte, []int) {
-	return file_store_setting_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *AppIMSetting) GetImType() AppIMSetting_IMType {
-	if x != nil {
-		return x.ImType
-	}
-	return AppIMSetting_IM_TYPE_UNSPECIFIED
-}
-
-func (x *AppIMSetting) GetAppId() string {
-	if x != nil {
-		return x.AppId
-	}
-	return ""
-}
-
-func (x *AppIMSetting) GetAppSecret() string {
-	if x != nil {
-		return x.AppSecret
-	}
-	return ""
-}
-
-func (x *AppIMSetting) GetExternalApproval() *AppIMSetting_ExternalApproval {
-	if x != nil {
-		return x.ExternalApproval
-	}
-	return nil
-}
-
 type WorkspaceApprovalSetting_Rule struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -566,7 +449,7 @@ type WorkspaceApprovalSetting_Rule struct {
 func (x *WorkspaceApprovalSetting_Rule) Reset() {
 	*x = WorkspaceApprovalSetting_Rule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[5]
+		mi := &file_store_setting_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -579,7 +462,7 @@ func (x *WorkspaceApprovalSetting_Rule) String() string {
 func (*WorkspaceApprovalSetting_Rule) ProtoMessage() {}
 
 func (x *WorkspaceApprovalSetting_Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[5]
+	mi := &file_store_setting_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -607,61 +490,6 @@ func (x *WorkspaceApprovalSetting_Rule) GetTemplate() *ApprovalTemplate {
 		return x.Template
 	}
 	return nil
-}
-
-type AppIMSetting_ExternalApproval struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Enabled              bool   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	ApprovalDefinitionId string `protobuf:"bytes,2,opt,name=approval_definition_id,json=approvalDefinitionId,proto3" json:"approval_definition_id,omitempty"`
-}
-
-func (x *AppIMSetting_ExternalApproval) Reset() {
-	*x = AppIMSetting_ExternalApproval{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[6]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *AppIMSetting_ExternalApproval) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AppIMSetting_ExternalApproval) ProtoMessage() {}
-
-func (x *AppIMSetting_ExternalApproval) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[6]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AppIMSetting_ExternalApproval.ProtoReflect.Descriptor instead.
-func (*AppIMSetting_ExternalApproval) Descriptor() ([]byte, []int) {
-	return file_store_setting_proto_rawDescGZIP(), []int{4, 0}
-}
-
-func (x *AppIMSetting_ExternalApproval) GetEnabled() bool {
-	if x != nil {
-		return x.Enabled
-	}
-	return false
-}
-
-func (x *AppIMSetting_ExternalApproval) GetApprovalDefinitionId() string {
-	if x != nil {
-		return x.ApprovalDefinitionId
-	}
-	return ""
 }
 
 var File_store_setting_proto protoreflect.FileDescriptor
@@ -743,32 +571,9 @@ var file_store_setting_proto_rawDesc = []byte{
 	0x4c, 0x41, 0x49, 0x4e, 0x10, 0x02, 0x12, 0x18, 0x0a, 0x14, 0x41, 0x55, 0x54, 0x48, 0x45, 0x4e,
 	0x54, 0x49, 0x43, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x4c, 0x4f, 0x47, 0x49, 0x4e, 0x10, 0x03,
 	0x12, 0x1b, 0x0a, 0x17, 0x41, 0x55, 0x54, 0x48, 0x45, 0x4e, 0x54, 0x49, 0x43, 0x41, 0x54, 0x49,
-	0x4f, 0x4e, 0x5f, 0x43, 0x52, 0x41, 0x4d, 0x5f, 0x4d, 0x44, 0x35, 0x10, 0x04, 0x22, 0xf1, 0x02,
-	0x0a, 0x0c, 0x41, 0x70, 0x70, 0x49, 0x4d, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x3c,
-	0x0a, 0x07, 0x69, 0x6d, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32,
-	0x23, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65,
-	0x2e, 0x41, 0x70, 0x70, 0x49, 0x4d, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x49, 0x4d,
-	0x54, 0x79, 0x70, 0x65, 0x52, 0x06, 0x69, 0x6d, 0x54, 0x79, 0x70, 0x65, 0x12, 0x15, 0x0a, 0x06,
-	0x61, 0x70, 0x70, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x61, 0x70,
-	0x70, 0x49, 0x64, 0x12, 0x1d, 0x0a, 0x0a, 0x61, 0x70, 0x70, 0x5f, 0x73, 0x65, 0x63, 0x72, 0x65,
-	0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x61, 0x70, 0x70, 0x53, 0x65, 0x63, 0x72,
-	0x65, 0x74, 0x12, 0x5a, 0x0a, 0x11, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x5f, 0x61,
-	0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2d, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x41,
-	0x70, 0x70, 0x49, 0x4d, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x45, 0x78, 0x74, 0x65,
-	0x72, 0x6e, 0x61, 0x6c, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x52, 0x10, 0x65, 0x78,
-	0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x1a, 0x62,
-	0x0a, 0x10, 0x45, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76,
-	0x61, 0x6c, 0x12, 0x18, 0x0a, 0x07, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x08, 0x52, 0x07, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x12, 0x34, 0x0a, 0x16,
-	0x61, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x5f, 0x64, 0x65, 0x66, 0x69, 0x6e, 0x69, 0x74,
-	0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x14, 0x61, 0x70,
-	0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x44, 0x65, 0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e,
-	0x49, 0x64, 0x22, 0x2d, 0x0a, 0x06, 0x49, 0x4d, 0x54, 0x79, 0x70, 0x65, 0x12, 0x17, 0x0a, 0x13,
-	0x49, 0x4d, 0x5f, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46,
-	0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x46, 0x45, 0x49, 0x53, 0x48, 0x55, 0x10,
-	0x01, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67,
-	0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x4f, 0x4e, 0x5f, 0x43, 0x52, 0x41, 0x4d, 0x5f, 0x4d, 0x44, 0x35, 0x10, 0x04, 0x42, 0x14, 0x5a,
+	0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74,
+	0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -783,35 +588,30 @@ func file_store_setting_proto_rawDescGZIP() []byte {
 	return file_store_setting_proto_rawDescData
 }
 
-var file_store_setting_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_store_setting_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_store_setting_proto_goTypes = []interface{}{
 	(SMTPMailDeliverySetting_Encryption)(0),     // 0: bytebase.store.SMTPMailDeliverySetting.Encryption
 	(SMTPMailDeliverySetting_Authentication)(0), // 1: bytebase.store.SMTPMailDeliverySetting.Authentication
-	(AppIMSetting_IMType)(0),                    // 2: bytebase.store.AppIMSetting.IMType
-	(*WorkspaceProfileSetting)(nil),             // 3: bytebase.store.WorkspaceProfileSetting
-	(*AgentPluginSetting)(nil),                  // 4: bytebase.store.AgentPluginSetting
-	(*WorkspaceApprovalSetting)(nil),            // 5: bytebase.store.WorkspaceApprovalSetting
-	(*SMTPMailDeliverySetting)(nil),             // 6: bytebase.store.SMTPMailDeliverySetting
-	(*AppIMSetting)(nil),                        // 7: bytebase.store.AppIMSetting
-	(*WorkspaceApprovalSetting_Rule)(nil),       // 8: bytebase.store.WorkspaceApprovalSetting.Rule
-	(*AppIMSetting_ExternalApproval)(nil),       // 9: bytebase.store.AppIMSetting.ExternalApproval
-	(*v1alpha1.ParsedExpr)(nil),                 // 10: google.api.expr.v1alpha1.ParsedExpr
-	(*ApprovalTemplate)(nil),                    // 11: bytebase.store.ApprovalTemplate
+	(*WorkspaceProfileSetting)(nil),             // 2: bytebase.store.WorkspaceProfileSetting
+	(*AgentPluginSetting)(nil),                  // 3: bytebase.store.AgentPluginSetting
+	(*WorkspaceApprovalSetting)(nil),            // 4: bytebase.store.WorkspaceApprovalSetting
+	(*SMTPMailDeliverySetting)(nil),             // 5: bytebase.store.SMTPMailDeliverySetting
+	(*WorkspaceApprovalSetting_Rule)(nil),       // 6: bytebase.store.WorkspaceApprovalSetting.Rule
+	(*v1alpha1.ParsedExpr)(nil),                 // 7: google.api.expr.v1alpha1.ParsedExpr
+	(*ApprovalTemplate)(nil),                    // 8: bytebase.store.ApprovalTemplate
 }
 var file_store_setting_proto_depIdxs = []int32{
-	8,  // 0: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
-	0,  // 1: bytebase.store.SMTPMailDeliverySetting.encryption:type_name -> bytebase.store.SMTPMailDeliverySetting.Encryption
-	1,  // 2: bytebase.store.SMTPMailDeliverySetting.authentication:type_name -> bytebase.store.SMTPMailDeliverySetting.Authentication
-	2,  // 3: bytebase.store.AppIMSetting.im_type:type_name -> bytebase.store.AppIMSetting.IMType
-	9,  // 4: bytebase.store.AppIMSetting.external_approval:type_name -> bytebase.store.AppIMSetting.ExternalApproval
-	10, // 5: bytebase.store.WorkspaceApprovalSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
-	11, // 6: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
-	7,  // [7:7] is the sub-list for method output_type
-	7,  // [7:7] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	6, // 0: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
+	0, // 1: bytebase.store.SMTPMailDeliverySetting.encryption:type_name -> bytebase.store.SMTPMailDeliverySetting.Encryption
+	1, // 2: bytebase.store.SMTPMailDeliverySetting.authentication:type_name -> bytebase.store.SMTPMailDeliverySetting.Authentication
+	7, // 3: bytebase.store.WorkspaceApprovalSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
+	8, // 4: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_setting_proto_init() }
@@ -870,31 +670,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AppIMSetting); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_setting_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*WorkspaceApprovalSetting_Rule); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_setting_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AppIMSetting_ExternalApproval); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -911,8 +687,8 @@ func file_store_setting_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_setting_proto_rawDesc,
-			NumEnums:      3,
-			NumMessages:   7,
+			NumEnums:      2,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

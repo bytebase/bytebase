@@ -3,6 +3,7 @@ package v1
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -234,20 +235,29 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		storeSettingValue = payload.String()
 	case api.SettingAppIM:
-		settingValue := request.Setting.Value.GetAppImSettingValue().String()
-		payload := new(storepb.AppIMSetting)
-		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v for %s", err, apiSettingName)
+		settingValue := request.Setting.Value.GetAppImSettingValue()
+		imType, err := convertToIMType(settingValue.ImType)
+		if err != nil {
+			return nil, err
 		}
-		if payload.ImType != storepb.AppIMSetting_FEISHU {
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unknown IM Type %s", payload.ImType))
+		payload := &api.SettingAppIMValue{
+			IMType:    imType,
+			AppID:     settingValue.AppId,
+			AppSecret: settingValue.AppSecret,
+			ExternalApproval: api.ExternalApproval{
+				Enabled:              settingValue.ExternalApproval.Enabled,
+				ApprovalDefinitionID: settingValue.ExternalApproval.ApprovalDefinitionId,
+			},
+		}
+		if payload.IMType != api.IMTypeFeishu {
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unknown IM Type %s", payload.IMType))
 		}
 		if payload.ExternalApproval.Enabled {
 			if !s.licenseService.IsFeatureEnabled(api.FeatureIMApproval) {
 				return nil, status.Errorf(codes.PermissionDenied, api.FeatureIMApproval.AccessErrorMessage())
 			}
 
-			if payload.AppId == "" || payload.AppSecret == "" {
+			if payload.AppID == "" || payload.AppSecret == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "application ID and secret cannot be empty")
 			}
 
@@ -257,7 +267,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 
 			// check bot info
 			if _, err := p.GetBotID(ctx, feishu.TokenCtx{
-				AppID:     payload.AppId,
+				AppID:     payload.AppID,
 				AppSecret: payload.AppSecret,
 			}); err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to get bot id. Hint: check if bot is enabled")
@@ -265,16 +275,20 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 
 			// create approval definition
 			approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
-				AppID:     payload.AppId,
+				AppID:     payload.AppID,
 				AppSecret: payload.AppSecret,
 			}, "")
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to create approval definition")
+				return nil, status.Errorf(codes.Internal, "failed to create approval definition: %v", err)
 			}
-			payload.ExternalApproval.ApprovalDefinitionId = approvalDefinitionID
+			payload.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
 		}
 
-		storeSettingValue = payload.String()
+		s, err := json.Marshal(payload)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal approval setting: %v", err)
+		}
+		storeSettingValue = string(s)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
@@ -325,15 +339,23 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 			},
 		}, nil
 	case api.SettingAppIM:
-		v1Value := new(v1pb.AppIMSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		apiValue := new(api.SettingAppIMValue)
+		if err := json.Unmarshal([]byte(setting.Value), apiValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_AppImSettingValue{
-					AppImSettingValue: v1Value,
+					AppImSettingValue: &v1pb.AppIMSetting{
+						ImType:    convertV1IMType(apiValue.IMType),
+						AppId:     apiValue.AppID,
+						AppSecret: apiValue.AppSecret,
+						ExternalApproval: &v1pb.AppIMSetting_ExternalApproval{
+							Enabled:              apiValue.ExternalApproval.Enabled,
+							ApprovalDefinitionId: apiValue.ExternalApproval.ApprovalDefinitionID,
+						},
+					},
 				},
 			},
 		}, nil
@@ -385,6 +407,26 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 				},
 			},
 		}, nil
+	}
+}
+
+func convertToIMType(imType v1pb.AppIMSetting_IMType) (api.IMType, error) {
+	var resp api.IMType
+	switch imType {
+	case v1pb.AppIMSetting_FEISHU:
+		resp = api.IMTypeFeishu
+	default:
+		return resp, status.Errorf(codes.InvalidArgument, "unknown im type %v", imType.String())
+	}
+	return resp, nil
+}
+
+func convertV1IMType(imType api.IMType) v1pb.AppIMSetting_IMType {
+	switch imType {
+	case api.IMTypeFeishu:
+		return v1pb.AppIMSetting_FEISHU
+	default:
+		return v1pb.AppIMSetting_IM_TYPE_UNSPECIFIED
 	}
 }
 

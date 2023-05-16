@@ -86,15 +86,18 @@ func (find *SettingFind) String() string {
 	return string(str)
 }
 
+// ExternalApproval is the external approval setting for app IM.
+type ExternalApproval struct {
+	Enabled              bool   `json:"enabled"`
+	ApprovalDefinitionID string `json:"approvalDefinitionID"`
+}
+
 // SettingAppIMValue is the setting value of SettingAppIM type setting.
 type SettingAppIMValue struct {
-	IMType           IMType `json:"imType"`
-	AppID            string `json:"appId"`
-	AppSecret        string `json:"appSecret"`
-	ExternalApproval struct {
-		Enabled              bool   `json:"enabled"`
-		ApprovalDefinitionID string `json:"approvalDefinitionID"`
-	} `json:"externalApproval"`
+	IMType           IMType           `json:"imType"`
+	AppID            string           `json:"appId"`
+	AppSecret        string           `json:"appSecret"`
+	ExternalApproval ExternalApproval `json:"externalApproval"`
 }
 
 // SettingWorkspaceMailDeliveryValue is the setting value of SettingMailDelivery type setting.

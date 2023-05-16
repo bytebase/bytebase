@@ -60,14 +60,11 @@
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
-    - [AppIMSetting](#bytebase-store-AppIMSetting)
-    - [AppIMSetting.ExternalApproval](#bytebase-store-AppIMSetting-ExternalApproval)
     - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
-    - [AppIMSetting.IMType](#bytebase-store-AppIMSetting-IMType)
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
   
@@ -909,40 +906,6 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-AppIMSetting"></a>
-
-### AppIMSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| im_type | [AppIMSetting.IMType](#bytebase-store-AppIMSetting-IMType) |  |  |
-| app_id | [string](#string) |  |  |
-| app_secret | [string](#string) |  |  |
-| external_approval | [AppIMSetting.ExternalApproval](#bytebase-store-AppIMSetting-ExternalApproval) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-AppIMSetting-ExternalApproval"></a>
-
-### AppIMSetting.ExternalApproval
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
-| approval_definition_id | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-SMTPMailDeliverySetting"></a>
 
 ### SMTPMailDeliverySetting
@@ -1018,18 +981,6 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 
 
  
-
-
-<a name="bytebase-store-AppIMSetting-IMType"></a>
-
-### AppIMSetting.IMType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| IM_TYPE_UNSPECIFIED | 0 |  |
-| FEISHU | 1 |  |
-
 
 
 <a name="bytebase-store-SMTPMailDeliverySetting-Authentication"></a>
