@@ -264,14 +264,16 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Start a Postgres sample server. This is used for onboarding users without requiring them to
 	// configure an external instance.
-	log.Info("-----Sample Postgres Instance BEGIN-----")
-	sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir)
-	log.Info(fmt.Sprintf("sampleDatabasePort=%d", profile.SampleDatabasePort))
-	log.Info(fmt.Sprintf("sampleDataDir=%s", sampleDataDir))
-	if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
-		return nil, err
+	if profile.SampleDatabasePort != 0 {
+		log.Info("-----Sample Postgres Instance BEGIN-----")
+		sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir)
+		log.Info(fmt.Sprintf("sampleDatabasePort=%d", profile.SampleDatabasePort))
+		log.Info(fmt.Sprintf("sampleDataDir=%s", sampleDataDir))
+		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
+			return nil, err
+		}
+		log.Info("-----Sample Postgres Instance END-----")
 	}
-	log.Info("-----Sample Postgres Instance END-----")
 
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
@@ -542,8 +544,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			}
 			// Only generate onboarding data after the first enduser signup.
 			if firstEndUser {
-				if err := s.generateOnboardingData(ctx, user.ID); err != nil {
-					return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
+				if profile.SampleDatabasePort != 0 {
+					if err := s.generateOnboardingData(ctx, user.ID); err != nil {
+						return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
+					}
 				}
 			}
 			return nil
@@ -911,8 +915,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown postgres sample instance.
-	if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir)); err != nil {
-		log.Error("Failed to stop postgres sample instance", zap.Error(err))
+	if s.profile.SampleDatabasePort != 0 {
+		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir)); err != nil {
+			log.Error("Failed to stop postgres sample instance", zap.Error(err))
+		}
 	}
 
 	// Shutdown postgres server if embed.
