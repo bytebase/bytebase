@@ -40,12 +40,12 @@ import { useRouter } from "vue-router";
 import { urlfy, instanceSlug } from "@/utils";
 import { Instance } from "@/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
-import ProductionEnvironmentIcon from "./Environment/ProductionEnvironmentIcon.vue";
 import { BBGridColumn } from "@/bbkit";
+import { EnvironmentName } from "@/components/v2";
 
 export default defineComponent({
   name: "InstanceTable",
-  components: { InstanceEngineIcon, ProductionEnvironmentIcon },
+  components: { InstanceEngineIcon },
   props: {
     instanceList: {
       required: true,
