@@ -382,6 +382,12 @@ const (
 
 	// OracleTableNamingNoKeyword is an advisor type for Oracle table naming convention without keyword.
 	OracleTableNamingNoKeyword Type = "bb.plugin.advisor.oracle.naming.table-no-keyword"
+
+	// OracleIdentifierNamingNoKeyword is an advisor type for Oracle identifier naming convention without keyword.
+	OracleIdentifierNamingNoKeyword Type = "bb.plugin.advisor.oracle.naming.identifier-no-keyword"
+
+	// OracleIdentifierCase is an advisor type for Oracle identifier case.
+	OracleIdentifierCase Type = "bb.plugin.advisor.oracle.naming.identifier-case"
 )
 
 // Advice is the result of an advisor.

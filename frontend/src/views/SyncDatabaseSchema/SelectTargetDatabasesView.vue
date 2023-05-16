@@ -15,8 +15,8 @@
           <span>{{ $t("common.environment") }} - </span>
           <a
             class="normal-link inline-flex items-center"
-            :href="`/environment#${environment.id}`"
-            >{{ environment.name }}</a
+            :href="`/environment#${environment.uid}`"
+            >{{ environment.title }}</a
           >
         </div>
       </div>
@@ -191,7 +191,7 @@
   <TargetDatabasesSelectPanel
     v-if="state.showSelectDatabasePanel"
     :project-id="projectId"
-    :environment-id="sourceSchema.environmentId"
+    :environment-id="String(sourceSchema.environmentId)"
     :database-id="sourceSchema.databaseId"
     :selected-database-id-list="state.selectedDatabaseIdList"
     @close="state.showSelectDatabasePanel = false"
@@ -209,7 +209,7 @@ import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useDatabaseStore,
-  useEnvironmentStore,
+  useEnvironmentV1Store,
   useProjectStore,
 } from "@/store";
 import {
@@ -253,7 +253,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
-const environmentStore = useEnvironmentStore();
+const environmentV1Store = useEnvironmentV1Store();
 const databaseStore = useDatabaseStore();
 const diffViewerRef = ref<HTMLDivElement>();
 const state = reactive<LocalState>({
@@ -278,7 +278,9 @@ const project = computed(() => {
   return projectStore.getProjectById(props.projectId);
 });
 const environment = computed(() => {
-  return environmentStore.getEnvironmentById(props.sourceSchema.environmentId);
+  return environmentV1Store.getEnvironmentByUID(
+    props.sourceSchema.environmentId
+  );
 });
 const sourceDatabase = computed(() => {
   return databaseStore.getDatabaseById(props.sourceSchema.databaseId);

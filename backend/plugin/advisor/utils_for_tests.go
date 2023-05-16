@@ -377,6 +377,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 		SchemaRuleStatementAddCheckNotValid,
 		SchemaRuleStatementDisallowAddNotNull,
 		SchemaRuleIndexTypeNoBlob,
+		SchemaRuleIdentifierNoKeyword,
 		SchemaRuleTableNameNoKeyword:
 	case SchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(NamingRulePayload{
@@ -468,6 +469,10 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"serial", "bigserial", "int", "bigint"},
+		})
+	case SchemaRuleIdentifierCase:
+		payload, err = json.Marshal(NamingCaseRulePayload{
+			Case: NamingCaseUpper,
 		})
 	default:
 		return "", errors.Errorf("unknown SQL review type for default payload: %s", ruleTp)

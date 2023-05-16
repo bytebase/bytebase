@@ -445,3 +445,38 @@ func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, pipelineID in
 	}
 	return s.store.CreateTaskCheckRun(ctx, createList...)
 }
+
+// SchedulePipelineTaskCheckReport schedules the task check reports for a pipeline.
+func (s *Scheduler) SchedulePipelineTaskCheckReport(ctx context.Context, pipelineID int) error {
+	var createList []*store.TaskCheckRunMessage
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &pipelineID})
+	if err != nil {
+		return err
+	}
+	for _, task := range tasks {
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+		if err != nil {
+			return err
+		}
+		if instance == nil {
+			return errors.Errorf("instance %q not found", task.InstanceID)
+		}
+
+		create, err := getStatementTypeReportTaskCheck(task, instance, api.SystemBotID)
+		if err != nil {
+			return errors.Wrap(err, "failed to schedule statement type report task check")
+		}
+		if create != nil {
+			createList = append(createList, create...)
+		}
+
+		create, err = getStatementAffectedRowsReportTaskCheck(task, instance, api.SystemBotID)
+		if err != nil {
+			return errors.Wrap(err, "failed to schedule statement affected rows report task check")
+		}
+		if create != nil {
+			createList = append(createList, create...)
+		}
+	}
+	return s.store.CreateTaskCheckRun(ctx, createList...)
+}

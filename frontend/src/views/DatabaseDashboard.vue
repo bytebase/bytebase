@@ -3,7 +3,7 @@
     <div class="px-5 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
-        :environment="selectedEnvironment?.id ?? UNKNOWN_ID"
+        :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
         @update:environment="changeEnvironmentId"
       />
 
@@ -33,7 +33,7 @@
           <InstanceSelect
             :instance="state.instanceFilter"
             :include-all="true"
-            :environment="selectedEnvironment?.id"
+            :environment="selectedEnvironment?.uid"
             @update:instance="state.instanceFilter = $event ?? UNKNOWN_ID"
           />
           <SearchBox
@@ -79,12 +79,12 @@ import {
 import {
   filterDatabaseByKeyword,
   hasWorkspacePermission,
-  sortDatabaseList,
+  sortDatabaseListByEnvironmentV1,
 } from "../utils";
 import {
   useCurrentUser,
   useDatabaseStore,
-  useEnvironmentStore,
+  useEnvironmentV1Store,
   useProjectV1ListByCurrentUser,
   useUIStateStore,
 } from "@/store";
@@ -97,7 +97,7 @@ interface LocalState {
 }
 
 const uiStateStore = useUIStateStore();
-const environmentStore = useEnvironmentStore();
+const environmentV1Store = useEnvironmentV1Store();
 const router = useRouter();
 const route = useRoute();
 
@@ -114,7 +114,7 @@ const { projectList } = useProjectV1ListByCurrentUser();
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
   return environment
-    ? environmentStore.getEnvironmentById(parseInt(environment as string, 10))
+    ? environmentV1Store.getEnvironmentByUID(environment as string)
     : undefined;
 });
 
@@ -142,11 +142,11 @@ const prepareDatabaseList = () => {
     useDatabaseStore()
       .fetchDatabaseList()
       .then((list) => {
-        state.databaseList = sortDatabaseList(
+        state.databaseList = sortDatabaseListByEnvironmentV1(
           cloneDeep(list).filter((db) =>
             projectIdList.includes(String(db.projectId))
           ),
-          environmentStore.getEnvironmentList()
+          environmentV1Store.getEnvironmentList()
         );
       })
       .finally(() => {
@@ -176,8 +176,10 @@ const filteredList = computed(() => {
   const { databaseList, searchText } = state;
   let list = [...databaseList];
   const environment = selectedEnvironment.value;
-  if (environment && environment.id !== UNKNOWN_ID) {
-    list = list.filter((db) => db.instance.environment.id === environment.id);
+  if (environment && parseInt(environment.uid, 10) !== UNKNOWN_ID) {
+    list = list.filter(
+      (db) => String(db.instance.environment.id) === environment.uid
+    );
   }
   if (state.instanceFilter !== UNKNOWN_ID) {
     list = list.filter((db) => db.instance.id === state.instanceFilter);

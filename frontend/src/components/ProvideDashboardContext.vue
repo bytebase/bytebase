@@ -4,7 +4,6 @@
 
 <script lang="ts">
 import {
-  useEnvironmentStore,
   useEnvironmentV1Store,
   useMemberStore,
   useRoleStore,
@@ -33,7 +32,6 @@ export default defineComponent({
       // We also need this to render the proper inbox and activity entry.
       usePrincipalStore().fetchPrincipalList(),
       useUserStore().fetchUserList(),
-      useEnvironmentStore().fetchEnvironmentList(),
       useEnvironmentV1Store().fetchEnvironments(),
       // The default project hosts databases not explicitly assigned to other users project.
       useProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),
