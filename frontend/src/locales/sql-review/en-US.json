@@ -2,7 +2,8 @@
   "engine": {
     "mysql": "MySQL",
     "tidb": "TiDB",
-    "postgres": "PostgreSQL"
+    "postgres": "PostgreSQL",
+    "oracle": "Oracle"
   },
   "category": {
     "engine": "Engine",
@@ -163,6 +164,23 @@
         }
       }
     },
+    "naming-table-no-keyword": {
+      "title": "Prohibit using keywords as table names",
+      "description": ""
+    },
+    "naming-identifier-no-keyword": {
+      "title": "Prohibit using keywords as identifiers",
+      "description": ""
+    },
+    "naming-identifier-case": {
+      "title": "Enforce identifier case",
+      "description": "",
+      "component": {
+        "case": {
+          "title": "Case"
+        }
+      }
+    },
     "column-required": {
       "title": "Enforce the inclusion of specific columns in a table",
       "description": "Some common columns are helpful for better application maintenance. For example, adding a business-independent \"ID\" column as the primary key avoids primary key conflicts caused by business changes (such as business mergers), and in some scenarios can also bring better data insertion performance. Suggested error level: Warning",
@@ -228,6 +246,15 @@
     "column-maximum-character-length": {
       "title": "Restrict the length of \"CHAR\" data type",
       "description": "\"CHAR\" is a fixed-length type. For example, the CHAR(20) column will occupy 20 character spaces even if only one character is stored, causing waste. When the string is too long and the length is not fixed, consider using VARCHAR for MySQL and using TEXT for PostgreSQL. Suggestion error level: Error",
+      "component": {
+        "number": {
+          "title": "Maximum length"
+        }
+      }
+    },
+    "column-maximum-varchar-length": {
+      "title": "Restrict the length of \"VARCHAR\" data type",
+      "description": "",
       "component": {
         "number": {
           "title": "Maximum length"
