@@ -194,10 +194,10 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProje
 		keys = append(keys, role)
 	}
 	sort.Slice(keys, func(i, j int) bool {
-		if string(keys[i].role) != string(keys[j].role) {
+		if string(keys[i].role) < string(keys[j].role) {
 			return true
 		}
-		if string(keys[i].role) == string(keys[j].role) && keys[i].rawCondition != keys[j].rawCondition {
+		if string(keys[i].role) == string(keys[j].role) && keys[i].rawCondition < keys[j].rawCondition {
 			return true
 		}
 		return false
