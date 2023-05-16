@@ -245,7 +245,12 @@
     "collapse": "Collapse",
     "select": "Select",
     "optional": "Optional",
-    "reason": "Reason"
+    "reason": "Reason",
+    "date": {
+      "days": "{days} days",
+      "months": "{months} months",
+      "years": "{years} year"
+    }
   },
   "error-page": {
     "go-back-home": "Go back home"

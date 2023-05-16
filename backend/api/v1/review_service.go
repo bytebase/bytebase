@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -28,10 +29,11 @@ import (
 // ReviewService implements the review service.
 type ReviewService struct {
 	v1pb.UnimplementedReviewServiceServer
-	store           *store.Store
-	activityManager *activity.Manager
-	taskScheduler   *taskrun.Scheduler
-	stateCfg        *state.State
+	store              *store.Store
+	activityManager    *activity.Manager
+	taskScheduler      *taskrun.Scheduler
+	taskCheckScheduler *taskcheck.Scheduler
+	stateCfg           *state.State
 }
 
 // NewReviewService creates a new ReviewService.
@@ -297,6 +299,12 @@ func (s *ReviewService) UpdateReview(ctx context.Context, request *v1pb.UpdateRe
 			}
 			payloadStr := string(payloadBytes)
 			patch.Payload = &payloadStr
+
+			if issue.PipelineUID != nil {
+				if err := s.taskCheckScheduler.SchedulePipelineTaskCheckReport(ctx, *issue.PipelineUID); err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to schedule pipeline task check report, error: %v", err)
+				}
+			}
 		}
 	}
 
