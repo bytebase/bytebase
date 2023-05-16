@@ -193,7 +193,7 @@ const handleProjectSelect = async (projectId: ProjectId) => {
   }
 };
 
-const handleEnvironmentSelect = (environmentId: EnvironmentId) => {
+const handleEnvironmentSelect = (environmentId: string) => {
   state.environmentId = environmentId;
   const database = databaseStore.getDatabaseById(
     state.databaseId || UNKNOWN_ID
@@ -209,7 +209,7 @@ const handleDatabaseSelect = (databaseId: DatabaseId) => {
     state.databaseId || UNKNOWN_ID
   );
   if (database) {
-    state.environmentId = database.instance.environment.id;
+    state.environmentId = String(database.instance.environment.id)
     handleProjectSelect(database.projectId);
   }
 };
