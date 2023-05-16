@@ -486,10 +486,6 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 			visibility,
 			source,
 			type,
-<<<<<<< HEAD
-=======
-			payload,
->>>>>>> be87ad9aaf2403c3def5ff4ffe07d33991d196e0
 			LENGTH(statement)
 		FROM sheet
 		WHERE %s`, statementField, strings.Join(where, " AND ")),
@@ -777,10 +773,6 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *api.SheetFind, currentPr
 			sheet.visibility,
 			sheet.source,
 			sheet.type,
-<<<<<<< HEAD
-=======
-			sheet.payload,
->>>>>>> be87ad9aaf2403c3def5ff4ffe07d33991d196e0
 			LENGTH(sheet.statement),
 			COALESCE(sheet_organizer.starred, FALSE),
 			COALESCE(sheet_organizer.pinned, FALSE)
