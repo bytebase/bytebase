@@ -13,12 +13,11 @@
       }"
     >
       <div class="bb-grid-cell">
-        <router-link :to="`/environment/${environment.uid}`">
-          {{ environmentTitleV1(environment) }}
-          <ProductionEnvironmentIcon
-            :tier="environmentTierToJSON(environment.tier)"
-          />
-        </router-link>
+        <EnvironmentV1Name
+          :environment="environment"
+          :link="true"
+          :plain="true"
+        />
       </div>
       <div class="bb-grid-cell">
         <template v-if="review">
@@ -75,16 +74,16 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
 import { BBButtonConfirm, BBCheckbox, BBGrid, BBGridColumn } from "@/bbkit";
-import { pushNotification, useCurrentUser, useSQLReviewStore } from "@/store";
+import {
+  pushNotification,
+  useCurrentUser,
+  useSQLReviewStore,
+  useEnvironmentV1List,
+} from "@/store";
 import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
 import { SQLReviewPolicy } from "@/types";
-import ProductionEnvironmentIcon from "../Environment/ProductionEnvironmentIcon.vue";
-import {
-  Environment,
-  environmentTierToJSON,
-} from "@/types/proto/v1/environment_service";
-import { useEnvironmentList } from "@/store/modules/v1/environment";
-import { environmentTitleV1 } from "@/utils";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentV1Name } from "@/components/v2";
 
 type EnvironmentReviewPolicy = {
   environment: Environment;
@@ -132,7 +131,7 @@ const hasPermission = computed(() => {
   );
 });
 
-const environmentList = useEnvironmentList();
+const environmentList = useEnvironmentV1List();
 const reviewPolicyList = computed(() => sqlReviewStore.reviewPolicyList);
 
 const combinedList = computed(() => {

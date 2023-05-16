@@ -7,7 +7,7 @@ import { Database, MaybeRef } from "@/types";
 import { useProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
-import { UserRole } from "@/types/proto/v1/auth_service";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -30,6 +30,18 @@ export const useProjectIamPolicyStore = defineStore(
         });
       requestCache.set(project, request);
       return request;
+    };
+
+    const batchFetchIamPolicy = async (projectList: string[]) => {
+      const response = await projectServiceClient.batchGetIamPolicy({
+        scope: "projects/-",
+        names: projectList,
+      });
+      response.policyResults.forEach(({ policy, project }) => {
+        if (policy) {
+          policyMap.value.set(project, policy);
+        }
+      });
     };
 
     const updateProjectIamPolicy = async (
@@ -61,11 +73,23 @@ export const useProjectIamPolicyStore = defineStore(
       return getProjectIamPolicy(project);
     };
 
+    const batchGetOrFetchProjectIamPolicy = async (projectList: string[]) => {
+      // BatchFetch policies that missing in the local map.
+      const missingProjectList = projectList.filter(
+        (project) => !policyMap.value.has(project)
+      );
+      if (missingProjectList.length > 0) {
+        await batchFetchIamPolicy(missingProjectList);
+      }
+      return projectList.map(getProjectIamPolicy);
+    };
+
     return {
       policyMap,
       getProjectIamPolicy,
       fetchProjectIamPolicy,
       getOrFetchProjectIamPolicy,
+      batchGetOrFetchProjectIamPolicy,
       updateProjectIamPolicy,
     };
   }
@@ -95,22 +119,48 @@ export const useCurrentUserIamPolicy = () => {
   const projectStore = useProjectV1Store();
   const currentUser = useCurrentUserV1();
 
-  watchEffect(async () => {
-    for (const project of projectStore.projectList) {
-      await iamPolicyStore.getOrFetchProjectIamPolicy(project.name);
-    }
+  watchEffect(() => {
+    // Fetch all project iam policies.
+    Promise.all(
+      projectStore.projectList.map((project) =>
+        iamPolicyStore.getOrFetchProjectIamPolicy(project.name)
+      )
+    );
   });
 
-  const isWorkspaceOwner = computed(
-    () => currentUser.value.userRole === UserRole.OWNER
+  // hasWorkspaceSuperPrivilege checks whether the current user has the super privilege to access all databases. AKA. Owners and DBAs
+  const hasWorkspaceSuperPrivilege = hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-access-control",
+    currentUser.value.userRole
   );
 
-  const allowToChangeDatabaseOfProject = (projectName: string) => {
-    if (isWorkspaceOwner.value) {
+  const isMemberOfProject = (projectName: string) => {
+    if (hasWorkspaceSuperPrivilege) {
       return true;
     }
 
     const policy = iamPolicyStore.policyMap.get(projectName);
+    if (!policy) {
+      return false;
+    }
+    for (const binding of policy.bindings) {
+      if (
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const allowToChangeDatabaseOfProject = (projectName: string) => {
+    if (hasWorkspaceSuperPrivilege) {
+      return true;
+    }
+
+    const policy = iamPolicyStore.getProjectIamPolicy(projectName);
     if (!policy) {
       return false;
     }
@@ -128,15 +178,14 @@ export const useCurrentUserIamPolicy = () => {
     return false;
   };
 
-  const allowToQueryDatabase = async (database: Database) => {
-    if (isWorkspaceOwner.value) {
+  const allowToQueryDatabase = (database: Database) => {
+    if (hasWorkspaceSuperPrivilege) {
       return true;
     }
 
-    const policy = await iamPolicyStore.getOrFetchProjectIamPolicy(
+    const policy = iamPolicyStore.getProjectIamPolicy(
       `projects/${database.project.resourceId}`
     );
-    console.log("!", policy, database.project.resourceId);
     if (!policy) {
       return false;
     }
@@ -157,9 +206,11 @@ export const useCurrentUserIamPolicy = () => {
       ) {
         const expressionList = binding.condition?.expression.split(" && ");
         if (expressionList && expressionList.length > 0) {
+          let hasDatabaseField = false;
           for (const expression of expressionList) {
             const fields = expression.split(" ");
             if (fields[0] === "resource.database") {
+              hasDatabaseField = true;
               for (const url of JSON.parse(fields[2])) {
                 const value = url.split("/");
                 const instanceName = value[1] || "";
@@ -173,6 +224,9 @@ export const useCurrentUserIamPolicy = () => {
               }
             }
           }
+          if (!hasDatabaseField) {
+            return true;
+          }
         } else {
           return true;
         }
@@ -182,6 +236,7 @@ export const useCurrentUserIamPolicy = () => {
   };
 
   return {
+    isMemberOfProject,
     allowToChangeDatabaseOfProject,
     allowToQueryDatabase,
   };

@@ -1835,6 +1835,7 @@
     "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
     "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
+    "upgrade-now": "现在升级",
     "update": {
       "success": {
         "title": "证书更新成功",
@@ -1844,6 +1845,12 @@
         "title": "证书更新失败",
         "description": "请检查证书是否有效"
       }
+    },
+    "plan-features": "{plan}功能",
+    "overuse-warning": "{neededPlan}在{currentPlan}可能受限，现在升级以确保正常使用。",
+    "overuse-modal": {
+      "description": "您正在使用当前 {plan} 不包含的功能。立即升级避免影响使用。",
+      "instance-count-exceeds": "实例数量超出了限制 {count}"
     },
     "features": {
       "bb-feature-task-schedule-time": {

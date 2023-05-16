@@ -150,13 +150,16 @@ const showExportButton = computed(() => {
   // Don't show export button when issue is closed or done.
   if (issue.value.status !== "OPEN") return false;
 
-  const payload = (issue.value.payload as any)
+  const issuePayload = (issue.value.payload as any)
     .grantRequest as GrantRequestPayload;
+  if (
+    issuePayload.role !== "roles/EXPORTER" ||
+    currentUser.value.id !== issue.value.creator.id
+  ) {
+    return false;
+  }
 
-  return (
-    currentUser.value.id === issue.value.creator.id &&
-    payload.role === "roles/EXPORTER"
-  );
+  return true;
 });
 
 const issueTaskStatus = () => {

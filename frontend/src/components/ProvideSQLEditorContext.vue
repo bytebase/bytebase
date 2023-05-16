@@ -17,6 +17,7 @@ import {
   pushNotification,
   useConnectionTreeStore,
   useSettingStore,
+  useProjectV1Store,
 } from "@/store";
 import {
   Connection,
@@ -366,6 +367,8 @@ const syncURLWithConnection = () => {
 onMounted(async () => {
   if (connectionTreeStore.tree.state === ConnectionTreeState.UNSET) {
     connectionTreeStore.tree.state = ConnectionTreeState.LOADING;
+    // Initial project list state for iam policy.
+    await useProjectV1Store().fetchProjectList();
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
     connectionTreeStore.tree.state = ConnectionTreeState.LOADED;

@@ -1,4 +1,5 @@
 <template>
+  <BannerUpgradeSubscription />
   <template v-if="shouldShowDemoBanner">
     <BannerDemo />
   </template>
@@ -34,6 +35,7 @@ import BannerDemo from "@/views/BannerDemo.vue";
 import BannerDebug from "@/views/BannerDebug.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
+import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
 
 const actuatorStore = useActuatorStore();
 const currentUser = useCurrentUser();

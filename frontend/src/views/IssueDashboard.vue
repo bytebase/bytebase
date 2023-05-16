@@ -3,7 +3,7 @@
     <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
-        :environment="selectedEnvironment?.id ?? UNKNOWN_ID"
+        :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
         @update:environment="changeEnvironmentId($event)"
       />
       <div class="flex flex-row space-x-4">
@@ -98,8 +98,6 @@ import {
 } from "@/components/v2";
 import { IssueTable } from "../components/Issue";
 import {
-  type Environment,
-  type EnvironmentId,
   type Issue,
   type PrincipalId,
   type ProjectId,
@@ -113,10 +111,11 @@ import {
 } from "../utils";
 import {
   useCurrentUser,
-  useEnvironmentStore,
+  useEnvironmentV1Store,
   useProjectV1Store,
 } from "@/store";
 import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 interface LocalState {
   searchText: string;
@@ -127,7 +126,7 @@ const route = useRoute();
 
 const currentUser = useCurrentUser();
 const projectV1Store = useProjectV1Store();
-const environmentStore = useEnvironmentStore();
+const environmentV1Store = useEnvironmentV1Store();
 
 const statusList = computed((): string[] =>
   route.query.status ? (route.query.status as string).split(",") : []
@@ -188,7 +187,7 @@ const selectedPrincipalId = computed((): PrincipalId => {
 const selectedEnvironment = computed((): Environment | undefined => {
   const { environment } = route.query;
   return environment
-    ? environmentStore.getEnvironmentById(parseInt(environment as string, 10))
+    ? environmentV1Store.getEnvironmentByUID(environment as string)
     : undefined;
 });
 
@@ -202,7 +201,10 @@ const filter = (issue: Issue) => {
     if (!isDatabaseRelatedIssueType(issue.type)) {
       return false;
     }
-    if (activeEnvironment(issue.pipeline).id !== selectedEnvironment.value.id) {
+    if (
+      String(activeEnvironment(issue.pipeline).id) !==
+      selectedEnvironment.value.uid
+    ) {
       return false;
     }
   }
@@ -215,8 +217,8 @@ const filter = (issue: Issue) => {
   return true;
 };
 
-const changeEnvironmentId = (environment: EnvironmentId | undefined) => {
-  if (environment && environment !== UNKNOWN_ID) {
+const changeEnvironmentId = (environment: string | undefined) => {
+  if (environment && environment !== String(UNKNOWN_ID)) {
     router.replace({
       name: "workspace.issue",
       query: {

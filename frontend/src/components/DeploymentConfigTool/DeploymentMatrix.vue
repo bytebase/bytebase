@@ -37,10 +37,11 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { Environment, Database, LabelKeyType } from "@/types";
+import { Database, LabelKeyType } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import { filterDatabaseByKeyword } from "@/utils";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 const props = withDefaults(
   defineProps<{

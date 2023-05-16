@@ -307,50 +307,6 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								)
 								return
 							}
-
-							issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-							if err != nil {
-								log.Error("failed to getIssueByPipelineID", zap.Int("pipelineID", task.PipelineID), zap.Error(err))
-								return
-							}
-							// The task has finished, and we may move to a new stage.
-							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
-							if issue != nil && issue.PipelineUID != nil {
-								stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
-								if err != nil {
-									return
-								}
-								activeStage := utils.GetActiveStage(stages)
-								if activeStage != nil && activeStage.ID != task.StageID {
-									environmentID := activeStage.EnvironmentID
-									ok, err := s.CanPrincipalBeAssignee(ctx, issue.Assignee.ID, environmentID, issue.Project.UID, issue.Type)
-									if err != nil {
-										log.Error("failed to check if the current assignee still fits in the new assignee group", zap.Error(err))
-										return
-									}
-									if !ok {
-										// reassign the issue to a new assignee if the current one doesn't fit.
-										assignee, err := s.GetDefaultAssignee(ctx, environmentID, issue.Project.UID, issue.Type)
-										if err != nil {
-											log.Error("failed to get a default assignee", zap.Error(err))
-											return
-										}
-										if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Assignee: assignee}, api.SystemBotID); err != nil {
-											log.Error("failed to update the issue assignee", zap.Error(err))
-											return
-										}
-									}
-								}
-
-								s.metricReporter.Report(ctx, &metric.Metric{
-									Name:  metricAPI.TaskStatusMetricName,
-									Value: 1,
-									Labels: map[string]any{
-										"type":  task.Type,
-										"value": taskStatusPatch.Status,
-									},
-								})
-							}
 							return
 						}
 					}(ctx, task, executor)
@@ -1243,9 +1199,18 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMes
 }
 
 func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueMessage, taskPatched *store.TaskMessage) error {
+	s.metricReporter.Report(ctx, &metric.Metric{
+		Name:  metricAPI.TaskStatusMetricName,
+		Value: 1,
+		Labels: map[string]any{
+			"type":  taskPatched.Type,
+			"value": taskPatched.Status,
+		},
+	})
+
 	stages, err := s.store.ListStageV2(ctx, taskPatched.PipelineID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to list stages")
 	}
 	var taskStage, nextStage *store.StageMessage
 	for i, stage := range stages {
@@ -1261,19 +1226,47 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 		return errors.New("failed to find corresponding stage of the task in the issue pipeline")
 	}
 
+	if !taskStage.Active && nextStage != nil {
+		// Every task in this stage has finished, we are moving to the next stage.
+		// The current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
+		func() {
+			environmentID := nextStage.EnvironmentID
+			ok, err := s.CanPrincipalBeAssignee(ctx, issue.Assignee.ID, environmentID, issue.Project.UID, issue.Type)
+			if err != nil {
+				log.Error("failed to check if the current assignee still fits in the new assignee group", zap.Error(err))
+				return
+			}
+			if !ok {
+				// reassign the issue to a new assignee if the current one doesn't fit.
+				assignee, err := s.GetDefaultAssignee(ctx, environmentID, issue.Project.UID, issue.Type)
+				if err != nil {
+					log.Error("failed to get a default assignee", zap.Error(err))
+					return
+				}
+				if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Assignee: assignee}, api.SystemBotID); err != nil {
+					log.Error("failed to update the issue assignee", zap.Error(err))
+					return
+				}
+			}
+		}()
+	}
+	if !taskStage.Active && nextStage == nil {
+		// Every task in the pipeline has finished.
+		// Resolve the issue automatically for the user.
+		if err := s.ChangeIssueStatus(ctx, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+			log.Error("failed to change the issue status to done automatically after completing every task", zap.Error(err))
+		}
+	}
+
 	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &taskPatched.PipelineID, StageID: &taskPatched.StageID})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to list tasks")
 	}
 	stageTaskHasPendingApproval := false
 	stageTaskAllTerminated := true
-	stageTaskAllDone := true
 	for _, task := range tasks {
 		if task.Status == api.TaskPendingApproval {
 			stageTaskHasPendingApproval = true
-		}
-		if task.Status != api.TaskDone {
-			stageTaskAllDone = false
 		}
 		if !terminatedTaskStatus[task.Status] {
 			stageTaskAllTerminated = false
@@ -1291,54 +1284,64 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 	// every task in the stage terminated
 	// create "stage ends" activity.
 	if stageTaskAllTerminated {
-		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
-			StageID:               taskStage.ID,
-			StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
-			IssueName:             issue.Title,
-			StageName:             taskStage.Name,
-		}
-		bytes, err := json.Marshal(createActivityPayload)
-		if err != nil {
-			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
-		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: *issue.PipelineUID,
-			Type:        api.ActivityPipelineStageStatusUpdate,
-			Level:       api.ActivityInfo,
-			Payload:     string(bytes),
-		}
-		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-			Issue: issue,
-		}); err != nil {
-			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
+		if err := func() error {
+			createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+				StageID:               taskStage.ID,
+				StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
+				IssueName:             issue.Title,
+				StageName:             taskStage.Name,
+			}
+			bytes, err := json.Marshal(createActivityPayload)
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
+			}
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   api.SystemBotID,
+				ContainerID: *issue.PipelineUID,
+				Type:        api.ActivityPipelineStageStatusUpdate,
+				Level:       api.ActivityInfo,
+				Payload:     string(bytes),
+			}
+			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+				Issue: issue,
+			}); err != nil {
+				return errors.Wrap(err, "failed to create activity")
+			}
+			return nil
+		}(); err != nil {
+			log.Error("failed to create ActivityPipelineStageStatusUpdate activity", zap.Error(err))
 		}
 	}
 
 	// every task in the stage completes and this is not the last stage.
 	// create "stage begins" activity.
-	if stageTaskAllDone && nextStage != nil {
-		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
-			StageID:               nextStage.ID,
-			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
-			IssueName:             issue.Title,
-			StageName:             nextStage.Name,
-		}
-		bytes, err := json.Marshal(createActivityPayload)
-		if err != nil {
-			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
-		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   api.SystemBotID,
-			ContainerID: *issue.PipelineUID,
-			Type:        api.ActivityPipelineStageStatusUpdate,
-			Level:       api.ActivityInfo,
-			Payload:     string(bytes),
-		}
-		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-			Issue: issue,
-		}); err != nil {
-			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
+	if !taskStage.Active && nextStage != nil {
+		if err := func() error {
+			createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+				StageID:               nextStage.ID,
+				StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
+				IssueName:             issue.Title,
+				StageName:             nextStage.Name,
+			}
+			bytes, err := json.Marshal(createActivityPayload)
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
+			}
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   api.SystemBotID,
+				ContainerID: *issue.PipelineUID,
+				Type:        api.ActivityPipelineStageStatusUpdate,
+				Level:       api.ActivityInfo,
+				Payload:     string(bytes),
+			}
+			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+				Issue: issue,
+			}); err != nil {
+				return errors.Wrap(err, "failed to create activity")
+			}
+			return nil
+		}(); err != nil {
+			log.Error("failed to create ActivityPipelineStageStatusUpdate activity", zap.Error(err))
 		}
 	}
 
@@ -1347,7 +1350,7 @@ func (s *Scheduler) onTaskStatusPatched(ctx context.Context, issue *store.IssueM
 	if taskPatched.Status == api.TaskPending && issue.Project.Workflow == api.UIWorkflow && !stageTaskHasPendingApproval {
 		needAttention := false
 		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{NeedAttention: &needAttention}, api.SystemBotID); err != nil {
-			return errors.Wrapf(err, "failed to patch issue assigneeNeedAttention after finding out that there isn't any pendingApproval task in the stage")
+			log.Error("failed to patch issue assigneeNeedAttention after finding out that there isn't any pendingApproval task in the stage", zap.Error(err))
 		}
 	}
 

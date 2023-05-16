@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -29,14 +30,16 @@ type ReviewService struct {
 	v1pb.UnimplementedReviewServiceServer
 	store           *store.Store
 	activityManager *activity.Manager
+	taskScheduler   *taskrun.Scheduler
 	stateCfg        *state.State
 }
 
 // NewReviewService creates a new ReviewService.
-func NewReviewService(store *store.Store, activityManager *activity.Manager, stateCfg *state.State) *ReviewService {
+func NewReviewService(store *store.Store, activityManager *activity.Manager, taskScheduler *taskrun.Scheduler, stateCfg *state.State) *ReviewService {
 	return &ReviewService{
 		store:           store,
 		activityManager: activityManager,
+		taskScheduler:   taskScheduler,
 		stateCfg:        stateCfg,
 	}
 }
@@ -121,8 +124,13 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		PrincipalId: int32(principalID),
 	})
 
+	approved, err := utils.CheckApprovalApproved(payload.Approval)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the approval is approved, error: %v", err)
+	}
+
 	// Grant the privilege if the issue is approved.
-	if len(payload.Approval.Approvers) > 0 && issue.Type == api.IssueGrantRequest {
+	if approved && issue.Type == api.IssueGrantRequest {
 		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
 		if err != nil {
 			return nil, err

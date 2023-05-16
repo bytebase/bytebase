@@ -250,6 +250,29 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 	return convertToIamPolicy(iamPolicy), nil
 }
 
+// BatchGetIamPolicy returns the IAM policy for projects in batch.
+func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.BatchGetIamPolicyRequest) (*v1pb.BatchGetIamPolicyResponse, error) {
+	resp := &v1pb.BatchGetIamPolicyResponse{}
+	for _, name := range request.Names {
+		projectID, err := getProjectID(name)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+
+		iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+			ProjectID: &projectID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		resp.PolicyResults = append(resp.PolicyResults, &v1pb.BatchGetIamPolicyResponse_PolicyResult{
+			Project: name,
+			Policy:  convertToIamPolicy(iamPolicy),
+		})
+	}
+	return resp, nil
+}
+
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
 	projectID, err := getProjectID(request.Project)
@@ -1196,12 +1219,8 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 		if len(binding.Members) == 0 {
 			return errors.Errorf("Each IAM binding must have at least one member")
 		}
-		// We have not merge the binding by the same role yet, so the roles in each binding must be unique.
-		if _, ok := projectRoleMap[binding.Role]; ok {
-			return errors.Errorf("Each IAM binding must have a unique role")
-		}
 
-		// Users with each role must be unique.
+		// Users within each binding must be unique.
 		userMap := make(map[string]bool)
 		for _, member := range binding.Members {
 			if _, ok := userMap[member]; ok {

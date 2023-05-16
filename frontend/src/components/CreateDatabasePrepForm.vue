@@ -280,6 +280,7 @@ import {
   INTERNAL_RDS_INSTANCE_USER_LIST,
 } from "@/types/InstanceUser";
 import {
+  extractEnvironmentResourceName,
   hasWorkspacePermission,
   instanceHasCollationAndCharacterSet,
   instanceHasCreateDatabase,
@@ -288,7 +289,7 @@ import {
 import {
   hasFeature,
   useCurrentUser,
-  useEnvironmentStore,
+  useEnvironmentV1Store,
   useInstanceStore,
   useIssueStore,
   useProjectV1Store,
@@ -612,9 +613,16 @@ export default defineComponent({
       const key = "bb.environment";
       const index = labelList.findIndex((label) => label.key === key);
       if (envId) {
-        const env = useEnvironmentStore().getEnvironmentById(envId);
-        if (index >= 0) labelList[index].value = env.resourceId;
-        else labelList.unshift({ key, value: env.resourceId });
+        const env = useEnvironmentV1Store().getEnvironmentByUID(envId);
+        const resourceId = extractEnvironmentResourceName(env.name);
+        if (index >= 0) {
+          labelList[index].value = resourceId;
+        } else {
+          labelList.unshift({
+            key,
+            value: resourceId,
+          });
+        }
       } else {
         if (index >= 0) labelList.splice(index, 1);
       }

@@ -1,9 +1,9 @@
-import { hasFeature } from "@/store";
+import { hasFeature, useCurrentUserIamPolicy } from "@/store";
 import type { Database, Instance, Principal } from "@/types";
 import { hasWorkspacePermission } from "./role";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
 import { State } from "@/types/proto/v1/common";
-import { isMemberOfProject } from ".";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 
 export const isInstanceAccessible = (instance: Instance, user: Principal) => {
   if (!hasFeature("bb.feature.access-control")) {
@@ -25,7 +25,7 @@ export const isInstanceAccessible = (instance: Instance, user: Principal) => {
 
   // See if the instance is in a production environment
   const { environment } = instance;
-  if (environment.tier === "UNPROTECTED") {
+  if (environment.tier === EnvironmentTier.UNPROTECTED) {
     return true;
   }
 
@@ -37,10 +37,6 @@ export const isDatabaseAccessible = (
   policyList: Policy[],
   user: Principal
 ) => {
-  if (!isMemberOfProject(database.project, user)) {
-    return false;
-  }
-
   if (!hasFeature("bb.feature.access-control")) {
     // The current plan doesn't have access control feature.
     // Fallback to true.
@@ -59,7 +55,7 @@ export const isDatabaseAccessible = (
   }
 
   const { environment } = database.instance;
-  if (environment.tier === "UNPROTECTED") {
+  if (environment.tier === EnvironmentTier.UNPROTECTED) {
     return true;
   }
 
@@ -75,6 +71,11 @@ export const isDatabaseAccessible = (
     // The database is in the allowed list
     return true;
   }
+  const currentUserIamPolicy = useCurrentUserIamPolicy();
+  if (currentUserIamPolicy.allowToQueryDatabase(database)) {
+    return true;
+  }
+
   // denied otherwise
   return false;
 };

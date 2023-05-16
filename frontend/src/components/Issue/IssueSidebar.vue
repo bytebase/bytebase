@@ -209,13 +209,11 @@
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.environment") }}
       </h2>
-      <router-link
-        :to="`/environment/${environmentSlug(environment)}`"
-        class="col-span-2 text-sm font-medium text-main hover:underline flex items-center"
-      >
-        {{ environmentName(environment) }}
-        <ProductionEnvironmentIcon class="ml-1" :environment="environment" />
-      </router-link>
+      <EnvironmentV1Name
+        :environment="environment"
+        :link="true"
+        class="col-span-2 !text-sm !font-medium !text-main !hover:underline flex items-center"
+      />
 
       <template v-for="label in visibleLabelList" :key="label.key">
         <h2
@@ -309,10 +307,10 @@ import InstanceEngineIcon from "../InstanceEngineIcon.vue";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import MemberSelect from "../MemberSelect.vue";
 import FeatureModal from "../FeatureModal.vue";
+import { EnvironmentV1Name } from "@/components/v2";
 import { InputField } from "@/plugins";
 import {
   Database,
-  Environment,
   Project,
   Issue,
   IssueCreate,
@@ -338,7 +336,7 @@ import {
   hasFeature,
   useCurrentUser,
   useDatabaseStore,
-  useEnvironmentStore,
+  useEnvironmentV1Store,
   useProjectStore,
 } from "@/store";
 import {
@@ -348,8 +346,8 @@ import {
   useExtraIssueLogic,
   useIssueLogic,
 } from "./logic";
-import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 dayjs.extend(isSameOrAfter);
 
@@ -430,10 +428,11 @@ const databaseName = computed((): string | undefined => {
 const environment = computed((): Environment => {
   if (create.value) {
     const stage = selectedStage.value as StageCreate;
-    return useEnvironmentStore().getEnvironmentById(stage.environmentId);
+    return useEnvironmentV1Store().getEnvironmentByUID(stage.environmentId);
   }
   const stage = selectedStage.value as Stage;
-  return stage.environment;
+
+  return useEnvironmentV1Store().getEnvironmentByUID(stage.environment.id);
 });
 
 const project = computed((): Project => {

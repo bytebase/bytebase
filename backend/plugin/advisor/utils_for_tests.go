@@ -377,6 +377,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 		SchemaRuleStatementAddCheckNotValid,
 		SchemaRuleStatementDisallowAddNotNull,
 		SchemaRuleIndexTypeNoBlob,
+		SchemaRuleIdentifierNoKeyword,
 		SchemaRuleTableNameNoKeyword:
 	case SchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(NamingRulePayload{

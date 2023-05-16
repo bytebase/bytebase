@@ -319,13 +319,7 @@ import { Status } from "nice-grpc-common";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
-import type {
-  EnvironmentCreate,
-  EnvironmentPatch,
-  ResourceId,
-  SQLReviewPolicy,
-  ValidatedMessage,
-} from "../types";
+import type { ResourceId, SQLReviewPolicy, ValidatedMessage } from "../types";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { getErrorCode } from "@/utils/grpcweb";
@@ -334,7 +328,7 @@ import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
 import {
   pushNotification,
   useCurrentUser,
-  useEnvironmentList,
+  useEnvironmentV1List,
   useSQLReviewStore,
 } from "@/store";
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
@@ -352,7 +346,7 @@ import {
 import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
-  environment: Environment | EnvironmentCreate;
+  environment: Environment;
   approvalPolicy: Policy;
   backupPolicy: Policy;
   environmentTier: EnvironmentTier;
@@ -367,7 +361,7 @@ const props = defineProps({
   },
   environment: {
     required: true,
-    type: Object as PropType<Environment | EnvironmentCreate>,
+    type: Object as PropType<Environment>,
   },
   approvalPolicy: {
     required: true,
@@ -379,7 +373,7 @@ const props = defineProps({
   },
   environmentTier: {
     required: true,
-    type: Object as PropType<EnvironmentTier>,
+    type: Number as PropType<EnvironmentTier>,
   },
 });
 
@@ -453,7 +447,7 @@ const onSQLReviewPolicyClick = () => {
 
 watch(
   () => props.environment,
-  (cur: Environment | EnvironmentCreate) => {
+  (cur) => {
     state.environment = cloneDeep(cur);
   }
 );
@@ -481,7 +475,7 @@ watch(
 
 const currentUser = useCurrentUser();
 
-const environmentList = useEnvironmentList();
+const environmentList = useEnvironmentV1List();
 
 const hasPermission = computed(() => {
   return hasWorkspacePermission(
@@ -594,12 +588,12 @@ const createEnvironment = () => {
 };
 
 const updateEnvironment = () => {
-  const env = props.environment as Environment;
+  const env = props.environment;
   if (
-    state.environment.title != env.title ||
-    state.environmentTier != env.tier
+    state.environment.title !== env.title ||
+    state.environmentTier !== env.tier
   ) {
-    const patchedEnvironment: EnvironmentPatch = {
+    const patchedEnvironment = {
       title: state.environment.title,
       tier: state.environmentTier,
     };

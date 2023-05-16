@@ -133,27 +133,24 @@ func reportStatementTypeForMySQL(statement, charset, collation string) ([]api.Ta
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
 		if err != nil {
-			// nolint:nilerr
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusError,
-					Namespace: api.AdvisorNamespace,
-					Code:      advisor.StatementSyntaxError.Int(),
-					Title:     "Syntax error",
-					Content:   err.Error(),
-				},
-			}, nil
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.AdvisorNamespace,
+				Code:      advisor.StatementSyntaxError.Int(),
+				Title:     "Syntax error",
+				Content:   err.Error(),
+			})
+			continue
 		}
 		if len(root) != 1 {
-			return []api.TaskCheckResult{
-				{
-					Status:    api.TaskCheckStatusError,
-					Namespace: api.BBNamespace,
-					Code:      common.Internal.Int(),
-					Title:     "Failed to report statement type",
-					Content:   "Expect to get one node from parser",
-				},
-			}, nil
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.Internal.Int(),
+				Title:     "Failed to report statement type",
+				Content:   "Expect to get one node from parser",
+			})
+			continue
 		}
 		sqlType := getStatementTypeFromTidbAstNode(root[0])
 		result = append(result, api.TaskCheckResult{

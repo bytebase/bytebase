@@ -316,7 +316,7 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 			type
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, octet_length(statement)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement)
 	`, common.MaxSheetSize)
 	var sheetRaw sheetRaw
 	databaseID := sql.NullInt32{}
@@ -391,7 +391,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetR
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, octet_length(statement)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement)
 	`, len(args), common.MaxSheetSize),
 		args...,
 	).Scan(
@@ -486,7 +486,7 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 			visibility,
 			source,
 			type,
-			octet_length(statement)
+			LENGTH(statement)
 		FROM sheet
 		WHERE %s`, statementField, strings.Join(where, " AND ")),
 		args...,
@@ -774,7 +774,7 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *api.SheetFind, currentPr
 			sheet.visibility,
 			sheet.source,
 			sheet.type,
-			octet_length(sheet.statement),
+			LENGTH(sheet.statement),
 			COALESCE(sheet_organizer.starred, FALSE),
 			COALESCE(sheet_organizer.pinned, FALSE)
 		FROM sheet
