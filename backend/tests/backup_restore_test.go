@@ -24,6 +24,7 @@ import (
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"go.uber.org/zap"
 
@@ -41,7 +42,7 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	project, mysqlDB, database, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, mysqlDB, database, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	metadata, err := ctl.getLatestSchemaMetadata(database.ID)
@@ -64,12 +65,12 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	a.NoError(err)
 
 	// Restore stage.
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
 	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -83,7 +84,7 @@ func TestRetentionPolicy(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	_, _, database, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, _, _, database, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	metaDB, err := sql.Open("pgx", ctl.profile.PgURL)
@@ -115,7 +116,7 @@ func TestPITRGeneral(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	project, mysqlDB, database, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, mysqlDB, database, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
@@ -135,7 +136,7 @@ func TestPITRGeneral(t *testing.T) {
 	a.NoError(err)
 
 	// Restore stage.
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -144,7 +145,7 @@ func TestPITRGeneral(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -158,7 +159,7 @@ func TestPITRDropDatabase(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	project, mysqlDB, database, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, mysqlDB, database, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
@@ -188,7 +189,7 @@ func TestPITRDropDatabase(t *testing.T) {
 	a.NoError(err)
 
 	// Restore stage.
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -196,7 +197,7 @@ func TestPITRDropDatabase(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -210,7 +211,7 @@ func TestPITRTwice(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	project, mysqlDB, database, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, mysqlDB, database, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	log.Debug("Creating issue for the first PITR.")
@@ -225,7 +226,7 @@ func TestPITRTwice(t *testing.T) {
 	a.NoError(err)
 
 	// Restore stage.
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -234,7 +235,7 @@ func TestPITRTwice(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -265,7 +266,7 @@ func TestPITRTwice(t *testing.T) {
 	a.NoError(err)
 
 	// Restore stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(issue2.ID)
+	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue2.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -274,7 +275,7 @@ func TestPITRTwice(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(issue2.ID)
+	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue2.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -290,7 +291,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	project, sourceMySQLDB, database, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, sourceMySQLDB, database, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	dstPort := getTestPort()
@@ -353,12 +354,12 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	a.NoError(err)
 
 	// Create database task
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
 	// Restore task
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err = ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -378,7 +379,7 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	targetTs := time.Now().Unix()
-	project, _, database, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	ctx, project, _, database, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	issue, err := createPITRIssue(ctl, project, api.PITRContext{
@@ -387,7 +388,7 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 	})
 	a.NoError(err)
 
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+	status, err := ctl.waitIssueNextTaskWithTaskApproval(ctx, issue.ID)
 	a.Error(err)
 	a.Equal(api.TaskFailed, status)
 }
@@ -406,11 +407,11 @@ func createPITRIssue(ctl *controller, project *api.Project, pitrContext api.PITR
 	})
 }
 
-func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.Project, *sql.DB, *api.Database, *api.Backup, int, func()) {
+func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (context.Context, *api.Project, *sql.DB, *api.Database, *api.Backup, int, func()) {
 	a := require.New(t)
 
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -431,12 +432,16 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	policy := api.BackupPlanPolicy{Schedule: api.BackupPlanPolicyScheduleUnset}
-	buf, err := json.Marshal(policy)
-	a.NoError(err)
-	str := string(buf)
-	_, err = ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeBackupPlan, api.PolicyUpsert{
-		Payload: &str,
+	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+		Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_BACKUP_PLAN,
+			Policy: &v1pb.Policy_BackupPlanPolicy{
+				BackupPlanPolicy: &v1pb.BackupPlanPolicy{
+					Schedule: v1pb.BackupPlanSchedule_UNSET,
+				},
+			},
+		},
 	})
 	a.NoError(err)
 
@@ -457,7 +462,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabase(project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, project, instance, databaseName, "", nil)
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
@@ -485,7 +490,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	err = ctl.waitBackup(database.ID, backup.ID)
 	a.NoError(err)
 
-	return project, mysqlDB, database, backup, mysqlPort, func() {
+	return ctx, project, mysqlDB, database, backup, mysqlPort, func() {
 		a.NoError(ctl.Close(ctx))
 		stopInstance()
 		a.NoError(mysqlDB.Close())

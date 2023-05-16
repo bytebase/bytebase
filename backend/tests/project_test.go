@@ -21,7 +21,7 @@ func TestArchiveProject(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -57,7 +57,7 @@ func TestArchiveProject(t *testing.T) {
 		a.NoError(err)
 
 		databaseName := "db1"
-		err = ctl.createDatabase(project, instance, databaseName, "", nil)
+		err = ctl.createDatabase(ctx, project, instance, databaseName, "", nil)
 		a.NoError(err)
 
 		status := string(api.Archived)
