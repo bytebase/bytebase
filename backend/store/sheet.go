@@ -898,6 +898,7 @@ func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*Sheet
 	return &sheet, nil
 }
 
+// PatchSheetMessage is the message to patch a sheet.
 type PatchSheetMessage struct {
 	ID         int
 	UpdaterID  int
@@ -906,6 +907,7 @@ type PatchSheetMessage struct {
 	Visibility *string
 }
 
+// PatchSheetV2 updates a sheet.
 func (s *Store) PatchSheetV2(ctx context.Context, patch *PatchSheetMessage) (*SheetMessage, error) {
 	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.Name; v != nil {
