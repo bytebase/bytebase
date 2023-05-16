@@ -31,7 +31,67 @@ func NewSheetService(store *store.Store) *SheetService {
 
 // CreateSheet creates a new sheet.
 func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateSheetRequest) (*v1pb.Sheet, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateSheet not implemented")
+	if request.Sheet == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "sheet must be set")
+	}
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+
+	projectResourceID, err := getProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
+	}
+
+	var databaseUID *int
+	if request.Sheet.Database != "" {
+		instanceResourceID, databaseName, err := getInstanceDatabaseID(request.Sheet.Database)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+			ResourceID: &instanceResourceID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get instance with resource id %q, err: %s", instanceResourceID, err.Error()))
+		}
+		if instance == nil {
+			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("instance with resource id %q not found", instanceResourceID))
+		}
+
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			ProjectID:    &projectResourceID,
+			InstanceID:   &instanceResourceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get database with name %q, err: %s", databaseName, err.Error()))
+		}
+		if database == nil {
+			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("database with name %q not found in project %q instance %q", databaseName, projectResourceID, instanceResourceID))
+		}
+		databaseUID = &database.UID
+	}
+	storeSheetCreate, err := convertToStoreSheetMessage(project.UID, databaseUID, currentPrincipalID, request.Sheet)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert sheet: %v", err))
+	}
+	sheet, err := s.store.CreateSheetV2(ctx, storeSheetCreate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to create sheet: %v", err))
+	}
+	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert sheet: %v", err))
+	}
+	return v1pbSheet, nil
 }
 
 // GetSheet returns the requested sheet, cutoff the content if the content is too long and the `raw` flag in request is false.
@@ -65,7 +125,7 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetIntID))
 	}
 
-	v1pbSheet, err := s.convertToAPISheetMessage(ctx, projectResourceID, sheet)
+	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert sheet: %v", err))
 	}
@@ -154,7 +214,7 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 
 	var v1pbSheets []*v1pb.Sheet
 	for _, sheet := range sheetList {
-		v1pbSheet, err := s.convertToAPISheetMessage(ctx, projectResourceID, sheet)
+		v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert sheet: %v", err))
 		}
@@ -177,7 +237,7 @@ func (_ *SheetService) SyncSheets(context.Context, *v1pb.SyncSheetsRequest) (*em
 	return nil, status.Errorf(codes.Unimplemented, "method SyncSheets not implemented")
 }
 
-func (s *SheetService) convertToAPISheetMessage(ctx context.Context, projectResourceID string, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
+func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
 	databaseParent := ""
 	if sheet.DatabaseID != nil {
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -223,11 +283,21 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, projectReso
 	default:
 	}
 
+	creator, err := s.store.GetUserByID(ctx, sheet.CreatorID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
+	}
+
+	project, err := s.store.GetProjectByID(ctx, sheet.ProjectUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project: %v", err))
+	}
+
 	return &v1pb.Sheet{
-		Name:        fmt.Sprintf("%s%s/%s%d", projectNamePrefix, projectResourceID, sheetIDPrefix, sheet.UID),
+		Name:        fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, sheetIDPrefix, sheet.UID),
 		Database:    databaseParent,
 		Title:       sheet.Name,
-		Creator:     getUserIdentifier(sheet.Creator.Email),
+		Creator:     getUserIdentifier(creator.Email),
 		CreateTime:  timestamppb.New(sheet.CreatedTime),
 		UpdateTime:  timestamppb.New(sheet.UpdatedTime),
 		Content:     []byte(sheet.Statement),
@@ -236,5 +306,58 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, projectReso
 		Source:      source,
 		Type:        tp,
 		Starred:     sheet.Starred,
+	}, nil
+}
+
+func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
+	var visibility api.SheetVisibility
+	switch sheet.Visibility {
+	case v1pb.Sheet_VISIBILITY_UNSPECIFIED:
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", sheet.Visibility))
+	case v1pb.Sheet_VISIBILITY_PUBLIC:
+		visibility = api.PublicSheet
+	case v1pb.Sheet_VISIBILITY_PROJECT:
+		visibility = api.ProjectSheet
+	case v1pb.Sheet_VISIBILITY_PRIVATE:
+		visibility = api.PrivateSheet
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", sheet.Visibility))
+	}
+	var source api.SheetSource
+	switch sheet.Source {
+	case v1pb.Sheet_SOURCE_UNSPECIFIED:
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source %q", sheet.Source))
+	case v1pb.Sheet_SOURCE_BYTEBASE:
+		source = api.SheetFromBytebase
+	case v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT:
+		source = api.SheetFromBytebaseArtifact
+	case v1pb.Sheet_SOURCE_GITLAB:
+		source = api.SheetFromGitLab
+	case v1pb.Sheet_SOURCE_GITHUB:
+		source = api.SheetFromGitHub
+	case v1pb.Sheet_SOURCE_BITBUCKET:
+		source = api.SheetFromBitbucket
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source %q", sheet.Source))
+	}
+	var tp api.SheetType
+	switch sheet.Type {
+	case v1pb.Sheet_TYPE_UNSPECIFIED:
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid type %q", sheet.Type))
+	case v1pb.Sheet_TYPE_SQL:
+		tp = api.SheetForSQL
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid type %q", sheet.Type))
+	}
+
+	return &store.SheetMessage{
+		ProjectUID: projectUID,
+		DatabaseID: databaseUID,
+		CreatorID:  creatorID,
+		Name:       sheet.Title,
+		Statement:  string(sheet.Content),
+		Visibility: visibility,
+		Source:     source,
+		Type:       tp,
 	}, nil
 }
