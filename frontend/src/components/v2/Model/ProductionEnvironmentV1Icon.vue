@@ -28,7 +28,7 @@ import {
 } from "@/types/proto/v1/environment_service";
 
 export default defineComponent({
-  name: "ProductionEnvironmentIcon",
+  name: "ProductionEnvironmentV1Icon",
   inheritAttrs: false,
   props: {
     environment: {

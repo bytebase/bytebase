@@ -147,11 +147,14 @@ import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
 import { Database } from "../types";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
-import { validateDeploymentConfigV1 } from "../utils";
+import {
+  extractEnvironmentResourceName,
+  validateDeploymentConfigV1,
+} from "../utils";
 import {
   pushNotification,
   useDeploymentConfigV1Store,
-  useEnvironmentList,
+  useEnvironmentV1List,
   useProjectV1Store,
 } from "@/store";
 import {
@@ -208,7 +211,7 @@ const allowUpdateDeploymentConfig = computed((): boolean => {
   return true;
 });
 
-const environmentList = useEnvironmentList();
+const environmentList = useEnvironmentV1List();
 
 const resetStates = async () => {
   await nextTick(); // Waiting for all watchers done
@@ -239,7 +242,8 @@ const addStage = () => {
     values: [],
   };
   if (environmentList.value.length > 0) {
-    rule.values.push(environmentList.value[0].resourceId);
+    const name = extractEnvironmentResourceName(environmentList.value[0].name);
+    rule.values.push(name);
   }
 
   state.deployment.schedule?.deployments.push({

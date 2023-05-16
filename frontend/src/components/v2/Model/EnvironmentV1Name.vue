@@ -3,7 +3,7 @@
     :is="link ? 'router-link' : tag"
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
-    :class="link && 'normal-link'"
+    :class="link && !plain && 'normal-link'"
   >
     <span>{{ environmentV1Name(environment) }}</span>
     <ProductionEnvironmentV1Icon
@@ -25,10 +25,12 @@ const props = withDefaults(
     environment: Environment;
     tag?: string;
     link?: boolean;
+    plain?: boolean;
   }>(),
   {
     tag: "span",
     link: true,
+    plain: false,
   }
 );
 

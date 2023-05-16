@@ -32,8 +32,8 @@ import {
 const getEnvironmentById = async (
   environmentId: IdType
 ): Promise<Environment> => {
-  const environmentStore = useEnvironmentV1Store();
-  const environment = await environmentStore.getOrFetchEnvironmentByName(
+  const environmentV1Store = useEnvironmentV1Store();
+  const environment = await environmentV1Store.getOrFetchEnvironmentByName(
     `${environmentNamePrefix}${environmentId}`
   );
   return environment;

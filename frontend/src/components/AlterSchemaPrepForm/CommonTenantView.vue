@@ -29,12 +29,13 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { Database, Environment, Project, ProjectId } from "../../types";
+import { Database, Project, ProjectId } from "../../types";
 import ProjectSelect, { Mode as ProjectMode } from "../ProjectSelect.vue";
 import ProjectTenantView, {
   State as ProjectTenantState,
 } from "./ProjectTenantView.vue";
 import { useProjectStore } from "@/store";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 export type State = ProjectTenantState & {
   tenantProjectId: ProjectId | undefined;

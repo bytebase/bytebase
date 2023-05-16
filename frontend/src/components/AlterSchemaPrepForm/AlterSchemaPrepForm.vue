@@ -226,13 +226,13 @@ import {
   allowUsingSchemaEditor,
   instanceHasAlterSchema,
   filterDatabaseByKeyword,
-  sortDatabaseList,
+  sortDatabaseListByEnvironmentV1,
 } from "@/utils";
 import {
   hasFeature,
   useCurrentUser,
   useDatabaseStore,
-  useEnvironmentList,
+  useEnvironmentV1List,
   useProjectStore,
 } from "@/store";
 import ProjectStandardView, {
@@ -317,7 +317,7 @@ if (isTenantProject.value) {
   state.alterType = "TENANT";
 }
 
-const environmentList = useEnvironmentList(["NORMAL"]);
+const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
 const databaseList = computed(() => {
   const databaseStore = useDatabaseStore();
@@ -340,7 +340,10 @@ const databaseList = computed(() => {
     ])
   );
 
-  return sortDatabaseList(cloneDeep(list), environmentList.value);
+  return sortDatabaseListByEnvironmentV1(
+    cloneDeep(list),
+    environmentList.value
+  );
 });
 
 const schemaDatabaseList = computed(() => {

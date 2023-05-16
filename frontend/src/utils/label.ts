@@ -1,5 +1,5 @@
-import { useEnvironmentStore } from "@/store";
 import { countBy, groupBy, uniq, uniqBy } from "lodash-es";
+import { useEnvironmentV1Store } from "@/store";
 import {
   Database,
   DatabaseLabel,
@@ -7,6 +7,7 @@ import {
   LabelKeyType,
   LabelValueType,
 } from "../types";
+import { extractEnvironmentResourceName } from "./v1";
 
 export const MAX_LABEL_VALUE_LENGTH = 63;
 
@@ -152,8 +153,10 @@ export const getLabelValuesFromDatabaseList = (
   withEmptyValue = false
 ): string[] => {
   if (key === "bb.environment") {
-    const environmentList = useEnvironmentStore().getEnvironmentList();
-    return environmentList.map((env) => env.resourceId);
+    const environmentList = useEnvironmentV1Store().getEnvironmentList();
+    return environmentList.map((env) =>
+      extractEnvironmentResourceName(env.name)
+    );
   }
 
   const labelList = databaseList.flatMap((db) =>
