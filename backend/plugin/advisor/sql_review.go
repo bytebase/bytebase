@@ -59,6 +59,8 @@ const (
 	SchemaRuleTableNameNoKeyword SQLReviewRuleType = "naming.table.no-keyword"
 	// SchemaRuleIdentifierNoKeyword enforce the identifier not to use keyword.
 	SchemaRuleIdentifierNoKeyword SQLReviewRuleType = "naming.identifier.no-keyword"
+	// SchemaRuleIdentifierCase enforce the identifier case.
+	SchemaRuleIdentifierCase SQLReviewRuleType = "naming.identifier.case"
 
 	// SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 	SchemaRuleStatementNoSelectAll SQLReviewRuleType = "statement.select.no-select-all"
@@ -279,6 +281,10 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
+	case SchemaRuleIdentifierCase:
+		if _, err := UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -308,6 +314,22 @@ type CommentConventionRulePayload struct {
 // NumberTypeRulePayload is the number type payload.
 type NumberTypeRulePayload struct {
 	Number int `json:"number"`
+}
+
+// NamingCase is the naming case for naming rule.
+type NamingCase string
+
+const (
+	// NamingCaseLower is the lower case for naming rule.
+	NamingCaseLower NamingCase = "LOWER"
+	// NamingCaseUpper is the upper case for naming rule.
+	NamingCaseUpper NamingCase = "UPPER"
+)
+
+// NamingCaseRulePayload is the payload for naming case rule.
+type NamingCaseRulePayload struct {
+	// Case is the naming case for naming rule.
+	Case NamingCase `json:"case"`
 }
 
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
@@ -436,6 +458,21 @@ func UnmarshalStringArrayTypeRulePayload(payload string) (*StringArrayTypeRulePa
 		return nil, errors.Wrapf(err, "failed to unmarshal string array rule payload %q", payload)
 	}
 	return &trr, nil
+}
+
+// UnmarshalNamingCaseRulePayload will unmarshal payload to NamingCaseRulePayload.
+func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, error) {
+	var ncr NamingCaseRulePayload
+	if err := json.Unmarshal([]byte(payload), &ncr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal naming case rule payload %q", payload)
+	}
+	switch ncr.Case {
+	case NamingCaseLower:
+	case NamingCaseUpper:
+	default:
+		return nil, errors.Errorf("invalid naming case %s", ncr.Case)
+	}
+	return &ncr, nil
 }
 
 // SQLReviewCheckContext is the context for SQL review check.
@@ -857,6 +894,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 	case SchemaRuleIdentifierNoKeyword:
 		if engine == db.Oracle {
 			return OracleIdentifierNamingNoKeyword, nil
+		}
+	case SchemaRuleIdentifierCase:
+		if engine == db.Oracle {
+			return OracleIdentifierCase, nil
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
