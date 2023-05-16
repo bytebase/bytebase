@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,7 +21,7 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	"github.com/google/uuid"
 	"github.com/gosimple/slug"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo-contrib/prometheus"
@@ -38,6 +39,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	v1 "github.com/bytebase/bytebase/backend/api/v1"
@@ -131,6 +134,7 @@ const (
 	webhookAPIPrefix = "/hook"
 	// openAPIPrefix is the API prefix for Bytebase OpenAPI.
 	openAPIPrefix = "/v1"
+	maxStacksize  = 8 * 1024
 )
 
 // Server is the Bytebase server.
@@ -534,8 +538,16 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, s.licenseService, profile.Mode)
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
+	onPanic := func(p any) error {
+		stack := make([]byte, maxStacksize)
+		stack = stack[:runtime.Stack(stack, true)]
+		// keep a multiline stack
+		log.Error("v1 server panic error", zap.Error(errors.Errorf("error: %v\n%s", p, stack)))
+		return status.Errorf(codes.Unknown, "error: %v", p)
+	}
+	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	s.grpcServer = grpc.NewServer(
-		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor),
+		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor, recoveryUnaryInterceptor),
 	)
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.licenseService, s.MetricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
@@ -587,7 +599,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(auth.GatewayResponseModifier))
+	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(auth.GatewayResponseModifier))
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
