@@ -1176,10 +1176,6 @@ func validateIAMPolicy(policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
 	return validateBindings(policy.Bindings, roles)
 }
 
-func getUserEmailFromIdentifier(ident string) string {
-	return strings.TrimPrefix(ident, "user:")
-}
-
 func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 	if len(bindings) == 0 {
 		return errors.Errorf("IAM Binding is required")

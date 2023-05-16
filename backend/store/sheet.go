@@ -446,13 +446,17 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 	}
 
 	// Domain fields
-	if v := find.Visibility; v != nil {
-		where, args = append(where, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
+	visibilitiesWhere := []string{}
+	for _, v := range find.Visibilities {
+		visibilitiesWhere, args = append(visibilitiesWhere, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, v)
+	}
+	if len(visibilitiesWhere) > 0 {
+		where = append(where, fmt.Sprintf("(%s)", strings.Join(visibilitiesWhere, " OR ")))
 	}
 	if v := find.PrincipalID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
-	if v := find.OrganizerPrincipalID; v != nil {
+	if v := find.OrganizerPrincipalIDStarred; v != nil {
 		// For now, we only need the starred sheets.
 		where, args = append(where, fmt.Sprintf("id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
 	}
@@ -708,6 +712,9 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *api.SheetFind, currentPr
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.ExcludedCreatorID; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.creator_id != $%d", len(args)+1)), append(args, *v)
+	}
 
 	// Related fields
 	if v := find.ProjectID; v != nil {
@@ -718,16 +725,23 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *api.SheetFind, currentPr
 	}
 
 	// Domain fields
-	if v := find.Visibility; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.visibility = $%d", len(args)+1)), append(args, *v)
+	visibilitiesWhere := []string{}
+	for _, v := range find.Visibilities {
+		visibilitiesWhere, args = append(visibilitiesWhere, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, v)
+	}
+	if len(visibilitiesWhere) > 0 {
+		where = append(where, fmt.Sprintf("(%s)", strings.Join(visibilitiesWhere, " OR ")))
 	}
 	if v := find.PrincipalID; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
-	if v := find.OrganizerPrincipalID; v != nil {
-		// For now, we only need the starred sheets.
+	if v := find.OrganizerPrincipalIDStarred; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
 	}
+	if v := find.OrganizerPrincipalIDNotStarred; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = false)", len(args)+1)), append(args, *v)
+	}
+
 	if v := find.Source; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.source = $%d", len(args)+1)), append(args, *v)
 	}

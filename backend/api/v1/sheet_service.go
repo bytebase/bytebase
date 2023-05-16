@@ -72,8 +72,97 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 	return v1pbSheet, nil
 }
 
-func (_ *SheetService) SearchSheets(context.Context, *v1pb.SearchSheetsRequest) (*v1pb.SearchSheetsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SearchSheets not implemented")
+// SearchSheets returns a list of sheets based on the search filters.
+func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchSheetsRequest) (*v1pb.SearchSheetsResponse, error) {
+	projectResourceID, err := getProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+
+	sheetFind := &api.SheetFind{}
+	if projectResourceID != "-" {
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectResourceID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+		}
+		sheetFind.ProjectID = &project.UID
+	}
+
+	// TODO(zp): It is difficult to find all the sheets visible to a principal atomically
+	// without adding a new store layer method, which has two parts:
+	// 1. creator = principal && visibility in (PROJECT, PUBLIC, PRIVATE)
+	// 2. creator ! = principal && visibility in (PROJECT, PUBLIC)
+	// So we don't allow empty filter for now.
+	if request.Filter == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "filter should not be empty")
+	}
+
+	specs, err := parseFilter(request.Filter)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	for _, spec := range specs {
+		switch spec.key {
+		case "creator":
+			creatorEmail := getUserEmailFromIdentifier(spec.value)
+			if creatorEmail == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
+			}
+			user, err := s.store.GetUser(ctx, &store.FindUserMessage{
+				Email: &creatorEmail,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get user: %s", err.Error()))
+			}
+			if user == nil {
+				return nil, status.Errorf(codes.NotFound, fmt.Sprintf("user with email %s not found", creatorEmail))
+			}
+			switch spec.operator {
+			case comparatorTypeEqual:
+				sheetFind.CreatorID = &user.ID
+				sheetFind.Visibilities = []api.SheetVisibility{api.ProjectSheet, api.PublicSheet, api.PrivateSheet}
+			case comparatorTypeNotEqual:
+				sheetFind.ExcludedCreatorID = &user.ID
+				sheetFind.Visibilities = []api.SheetVisibility{api.ProjectSheet, api.PublicSheet}
+				sheetFind.PrincipalID = &user.ID
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for creator", spec.operator))
+			}
+		case "starred":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for starred", spec.operator))
+			}
+			switch spec.value {
+			case "true":
+				sheetFind.OrganizerPrincipalIDStarred = &currentPrincipalID
+			case "false":
+				sheetFind.OrganizerPrincipalIDNotStarred = &currentPrincipalID
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for starred", spec.value))
+			}
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid filter key %q", spec.key))
+		}
+	}
+	sheetList, err := s.store.ListSheetsV2(ctx, sheetFind, currentPrincipalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to list sheets: %v", err))
+	}
+
+	var v1pbSheets []*v1pb.Sheet
+	for _, sheet := range sheetList {
+		v1pbSheet, err := s.convertToAPISheetMessage(ctx, projectResourceID, sheet)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert sheet: %v", err))
+		}
+		v1pbSheets = append(v1pbSheets, v1pbSheet)
+	}
+	return &v1pb.SearchSheetsResponse{
+		Sheets: v1pbSheets,
+	}, nil
 }
 
 func (_ *SheetService) UpdateSheet(context.Context, *v1pb.UpdateSheetRequest) (*v1pb.Sheet, error) {
