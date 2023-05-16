@@ -268,7 +268,9 @@ const handleSourceDatabaseSelect = async (databaseId: DatabaseId) => {
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
     if (database) {
       state.projectId = database.projectId;
-      state.sourceSchema.environmentId = String(database.instance.environment.id);
+      state.sourceSchema.environmentId = String(
+        database.instance.environment.id
+      );
       state.sourceSchema.databaseId = databaseId;
     }
   }
