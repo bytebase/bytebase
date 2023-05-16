@@ -39,6 +39,7 @@ import {
   EnvironmentId,
   EngineType,
   DatabaseSyncStatus,
+  DEFAULT_PROJECT_ID,
 } from "../types";
 
 interface LocalState {
@@ -156,6 +157,10 @@ export default defineComponent({
           );
         });
       }
+
+      list = list.filter((database: Database) => {
+        return database.project.id !== DEFAULT_PROJECT_ID;
+      });
 
       return list;
     });
