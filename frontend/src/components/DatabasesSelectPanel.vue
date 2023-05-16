@@ -211,7 +211,7 @@ const toggleAllDatabasesSelectionForEnvironment = (
   on: boolean
 ) => {
   databaseList
-    .filter((db) => db.instance.environment.id === environment.uid)
+    .filter((db) => String(db.instance.environment.id) === environment.uid)
     .forEach((db) => toggleDatabaseSelected(db.id, on));
 };
 
@@ -221,7 +221,7 @@ const getAllSelectionStateForEnvironment = (
 ): { checked: boolean; indeterminate: boolean } => {
   const set = new Set(
     state.selectedDatabaseList
-      .filter((db) => db.instance.environment.id === environment.uid)
+      .filter((db) => String(db.instance.environment.id) === environment.uid)
       .map((db) => db.id)
   );
   const checked = databaseList.every((db) => set.has(db.id));
@@ -239,7 +239,7 @@ const getSelectionStateSummaryForEnvironment = (
 ) => {
   const set = new Set(
     state.selectedDatabaseList
-      .filter((db) => db.instance.environment.id === environment.uid)
+      .filter((db) => String(db.instance.environment.id) === environment.uid)
       .map((db) => db.id)
   );
   const selected = databaseList.filter((db) => set.has(db.id)).length;
