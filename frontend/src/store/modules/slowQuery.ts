@@ -19,7 +19,6 @@ export const useSlowQueryStore = defineStore("slow-query", () => {
   const fetchSlowQueryLogList = async (
     request: Partial<ListSlowQueriesRequest> = {}
   ) => {
-    console.log(JSON.stringify(request, null, '  '))
     try {
       const response = await databaseServiceClient.listSlowQueries(request);
       const composedLogList = await composeSlowQueryLogDatabase(
