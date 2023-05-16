@@ -190,7 +190,7 @@
 import { reactive, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { activeEnvironment, isDatabaseRelatedIssueType } from "../utils";
-import { UNKNOWN_ID, Issue, planTypeToString, EnvironmentId } from "../types";
+import { UNKNOWN_ID, Issue, planTypeToString } from "../types";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import {
   useCurrentUser,
