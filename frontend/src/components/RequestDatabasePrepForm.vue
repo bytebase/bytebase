@@ -83,7 +83,7 @@
               <DatabaseSelect
                 :selected-id="state.databaseId as number"
                 :mode="'ENVIRONMENT'"
-                :environmentId="state.environmentId"
+                :environment-id="state.environmentId"
                 @select-database-id="
                   (databaseId) => {
                     state.databaseId = databaseId;
