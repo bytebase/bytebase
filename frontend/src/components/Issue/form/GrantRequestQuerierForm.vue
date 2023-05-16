@@ -2,8 +2,8 @@
   <div
     class="w-full mx-auto flex flex-col justify-start items-start space-y-4 my-8 gap-4"
   >
-    <div v-if="create" class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center">
+    <div v-if="create" class="w-full flex flex-row justify-start items-start">
+      <span class="flex w-40 items-center textlabel !leading-6 mt-2">
         {{ $t("common.project") }}
         <RequiredStar />
       </span>
@@ -15,33 +15,52 @@
       />
     </div>
     <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center">
+      <span class="flex w-40 items-center textlabel !leading-6">
         {{ $t("common.databases") }}
         <RequiredStar />
       </span>
       <div v-if="create">
         <NRadioGroup
           v-model:value="state.allDatabases"
-          class="w-full !flex flex-row justify-start items-center gap-4"
+          class="w-full !flex flex-row justify-start items-start gap-4"
           name="radiogroup"
         >
           <NRadio
+            class="!leading-6"
             :value="true"
             :label="$t('issue.grant-request.all-databases')"
           />
-          <div>
+          <div class="flex flex-row justify-start flex-wrap">
             <NRadio
+              class="!leading-6"
               :value="false"
               :disabled="!state.projectId"
               :label="$t('issue.grant-request.manually-select')"
+              @click="handleManullySelectClick"
             />
             <button
               v-if="state.projectId"
-              class="ml-2 normal-link disabled:cursor-not-allowed"
+              class="ml-2 normal-link h-6 disabled:cursor-not-allowed"
               @click="state.showSelectDatabasePanel = true"
             >
               {{ $t("common.select") }}
             </button>
+            <div
+              v-if="selectedDatabaseList.length > 0"
+              class="ml-6 flex flex-row justify-start items-start gap-4"
+            >
+              <div
+                v-for="database in selectedDatabaseList"
+                :key="database.id"
+                class="flex flex-row justify-start items-center"
+              >
+                <InstanceEngineIcon
+                  class="mr-1"
+                  :instance="database.instance"
+                />
+                {{ database.name }}
+              </div>
+            </div>
           </div>
         </NRadioGroup>
       </div>
@@ -60,8 +79,8 @@
         </div>
       </div>
     </div>
-    <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-start">
+    <div class="w-full flex flex-row justify-start items-start">
+      <span class="flex w-40 items-start textlabel !leading-6">
         {{
           create
             ? $t("issue.grant-request.expire-days")
@@ -72,26 +91,28 @@
       <div v-if="create">
         <NRadioGroup
           v-model:value="state.expireDays"
-          class="!grid grid-cols-4 gap-2"
+          class="!grid grid-cols-4 gap-x-4 gap-y-4"
           name="radiogroup"
         >
-          <NRadio
+          <div
             v-for="day in expireDaysOptions"
             :key="day.value"
-            :value="day.value"
-            :label="day.label"
-          />
+            class="col-span-1 flex flex-row justify-start items-center"
+          >
+            <NRadio :value="day.value" :label="day.label" />
+          </div>
           <div class="col-span-2 flex flex-row justify-start items-center">
             <NRadio :value="-1" :label="$t('issue.grant-request.customize')" />
             <NInputNumber
               v-model:value="state.customDays"
+              class="!w-24 ml-2"
               :disabled="state.expireDays !== -1"
-              size="small"
               :min="1"
-              :max="365"
-              :step="1"
-              class="!w-24"
-            />
+              :show-button="false"
+              :placeholder="''"
+            >
+              <template #suffix>{{ $t("common.date.days") }}</template>
+            </NInputNumber>
           </div>
         </NRadioGroup>
       </div>
@@ -114,6 +135,7 @@
 import { head } from "lodash-es";
 import { NRadioGroup, NRadio, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useIssueLogic } from "../logic";
 import {
   DatabaseId,
@@ -125,11 +147,11 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { getProjectMemberList, parseExpiredTimeString } from "@/utils";
-import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
 import { useDatabaseStore } from "@/store";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import RequiredStar from "@/components/RequiredStar.vue";
+import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
 
 interface LocalState {
   showSelectDatabasePanel: boolean;
@@ -143,33 +165,7 @@ interface LocalState {
   expiredAt: string;
 }
 
-const expireDaysOptions = [
-  {
-    value: 7,
-    label: "7 days",
-  },
-  {
-    value: 30,
-    label: "30 days",
-  },
-  {
-    value: 60,
-    label: "60 days",
-  },
-  {
-    value: 90,
-    label: "90 days",
-  },
-  {
-    value: 180,
-    label: "6 months",
-  },
-  {
-    value: 365,
-    label: "1 year",
-  },
-];
-
+const { t } = useI18n();
 const { create, issue } = useIssueLogic();
 const databaseStore = useDatabaseStore();
 const instanceV1Store = useInstanceV1Store();
@@ -192,6 +188,33 @@ const selectedDatabaseList = computed(() => {
     return databaseStore.getDatabaseById(id);
   });
 });
+
+const expireDaysOptions = computed(() => [
+  {
+    value: 7,
+    label: t("common.date.days", { days: 7 }),
+  },
+  {
+    value: 30,
+    label: t("common.date.days", { days: 30 }),
+  },
+  {
+    value: 60,
+    label: t("common.date.days", { days: 60 }),
+  },
+  {
+    value: 90,
+    label: t("common.date.days", { days: 90 }),
+  },
+  {
+    value: 180,
+    label: t("common.date.months", { months: 6 }),
+  },
+  {
+    value: 365,
+    label: t("common.date.years", { years: 1 }),
+  },
+]);
 
 onMounted(() => {
   if (create.value) {
@@ -217,6 +240,16 @@ const handleProjectSelect = async (projectId: ProjectId) => {
   );
   if (projectOwner) {
     (issue.value as IssueCreate).assigneeId = projectOwner.principal.id;
+  }
+  state.selectedDatabaseIdList = state.selectedDatabaseIdList.filter((id) => {
+    const database = databaseStore.getDatabaseById(id);
+    return database.project.id === projectId;
+  });
+};
+
+const handleManullySelectClick = () => {
+  if (state.selectedDatabaseIdList.length === 0) {
+    state.showSelectDatabasePanel = true;
   }
 };
 
