@@ -191,9 +191,9 @@ func TestParseFilter(t *testing.T) {
 			input: `resource="environments/e1/instances/i2"`,
 			want: []expression{
 				{
-					key:        "resource",
-					comparator: comparatorTypeEqual,
-					value:      "environments/e1/instances/i2",
+					key:      "resource",
+					operator: comparatorTypeEqual,
+					value:    "environments/e1/instances/i2",
 				},
 			},
 		},
@@ -201,19 +201,19 @@ func TestParseFilter(t *testing.T) {
 			input: `project = "p1" && start_time>="2020-01-01T00:00:00Z" && start_time<2020-01-02T00:00:00Z`,
 			want: []expression{
 				{
-					key:        "project",
-					comparator: comparatorTypeEqual,
-					value:      "p1",
+					key:      "project",
+					operator: comparatorTypeEqual,
+					value:    "p1",
 				},
 				{
-					key:        "start_time",
-					comparator: comparatorTypeGreaterEqual,
-					value:      "2020-01-01T00:00:00Z",
+					key:      "start_time",
+					operator: comparatorTypeGreaterEqual,
+					value:    "2020-01-01T00:00:00Z",
 				},
 				{
-					key:        "start_time",
-					comparator: comparatorTypeLess,
-					value:      "2020-01-02T00:00:00Z",
+					key:      "start_time",
+					operator: comparatorTypeLess,
+					value:    "2020-01-02T00:00:00Z",
 				},
 			},
 		},

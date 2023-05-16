@@ -889,12 +889,6 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 	}, nil
 }
 
-// getUserIdentifier returns the user identifier.
-// See more details in project_service.proto.
-func getUserIdentifier(email string) string {
-	return "user:" + email
-}
-
 func convertToProjectRole(role api.Role) string {
 	return fmt.Sprintf("%s%s", rolePrefix, role)
 }
@@ -1203,10 +1197,6 @@ func validateIAMPolicy(policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
 		return errors.Errorf("IAM Policy is required")
 	}
 	return validateBindings(policy.Bindings, roles)
-}
-
-func getUserEmailFromIdentifier(ident string) string {
-	return strings.TrimPrefix(ident, "user:")
 }
 
 func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
