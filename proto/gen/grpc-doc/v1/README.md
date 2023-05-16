@@ -5748,6 +5748,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource of the sheet. Foramt: projects/{project} |
+| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = user:{email}`, `creator != user:{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of sheets to return. The service may return fewer than this value. If unspecified, at most 50 sheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchSheets` call. Provide this to retrieve the subsequent page.
 
@@ -5767,7 +5768,6 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sheets | [Sheet](#bytebase-v1-Sheet) | repeated | The sheets that matched the search criteria. |
-| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = user:{email}`, `creator != user:{email}` - `starred = true`, `starred = false`. |
 | next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
@@ -5790,7 +5790,7 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the sheet. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the sheet. |
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
-| content_size | [bytes](#bytes) |  | content_size is the full size of the content, may not match the size of the `content` field. |
+| content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
 | visibility | [Sheet.Visibility](#bytebase-v1-Sheet-Visibility) |  |  |
 | source | [Sheet.Source](#bytebase-v1-Sheet-Source) |  | The source of the sheet. |
 | type | [Sheet.Type](#bytebase-v1-Sheet-Type) |  | The type of the sheet. |
@@ -5829,7 +5829,7 @@ Format: projects/{project} |
 | sheet | [Sheet](#bytebase-v1-Sheet) |  | The sheet to update.
 
 The sheet&#39;s `name` field is used to identify the sheet to update. Format: projects/{project}/sheets/{sheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet. (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`) |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet. (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`) Only support update the following fields for now: - `title` - `statement` - `starred` - `visibility` |
 
 
 

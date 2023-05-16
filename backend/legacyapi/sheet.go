@@ -130,9 +130,14 @@ type SheetFind struct {
 
 	// Standard fields
 	RowStatus *RowStatus
+
 	// Used to find the creator's sheet list.
 	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
+	// It does not make sense to set both `CreatorID` and `ExcludedCreatorID`.
 	CreatorID *int
+	// Used to find the sheets that are not created by the creator.
+	ExcludedCreatorID *int
+
 	// LoadFull is used if we want to load the full sheet.
 	LoadFull bool
 
@@ -141,14 +146,15 @@ type SheetFind struct {
 	DatabaseID *int
 
 	// Domain fields
-	Name       *string
-	Visibility *SheetVisibility
-	Source     *SheetSource
-	Type       *SheetType
-	Payload    *string
-	// Used to find starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
+	Name         *string
+	Visibilities []SheetVisibility
+	Source       *SheetSource
+	Type         *SheetType
+	Payload      *string
+	// Used to find (un)starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
 	// For now, we only need the starred sheets.
-	OrganizerPrincipalID *int
+	OrganizerPrincipalIDStarred    *int
+	OrganizerPrincipalIDNotStarred *int
 	// Used to find a sheet list from projects containing PrincipalID as an active member.
 	// When finding a shared PROJECT/PUBLIC sheets, this value should be present.
 	PrincipalID *int

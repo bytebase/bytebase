@@ -117,25 +117,14 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			PrincipalID: &currentPrincipalID,
 		}
 
-		var sheetList []*api.Sheet
-		projectSheetVisibility := api.ProjectSheet
-		sheetFind.Visibility = &projectSheetVisibility
+		sheetFind.Visibilities = append(sheetFind.Visibilities, api.ProjectSheet, api.PublicSheet)
 		projectSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared project sheet list").SetInternal(err)
 		}
-		sheetList = append(sheetList, projectSheetList...)
-
-		publicSheetVisibility := api.PublicSheet
-		sheetFind.Visibility = &publicSheetVisibility
-		publicSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared public sheet list").SetInternal(err)
-		}
-		sheetList = append(sheetList, publicSheetList...)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, sheetList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, projectSheetList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal shared sheet list response").SetInternal(err)
 		}
 		return nil
@@ -147,7 +136,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		sheetFind := api.SheetFind{
-			OrganizerPrincipalID: &currentPrincipalID,
+			OrganizerPrincipalIDStarred: &currentPrincipalID,
 		}
 
 		starredSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)

@@ -13,7 +13,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-type comparatorType string
+type operatorType string
 
 const (
 	projectNamePrefix            = "projects/"
@@ -33,6 +33,7 @@ const (
 	rolePrefix                   = "roles/"
 	secretNamePrefix             = "secrets/"
 	webhookIDPrefix              = "webhooks/"
+	sheetIDPrefix                = "sheets/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -41,12 +42,12 @@ const (
 
 	setupExternalURLError = "external URL isn't setup yet, see https://www.bytebase.com/docs/get-started/install/external-url"
 
-	comparatorTypeEqual        comparatorType = "="
-	comparatorTypeLess         comparatorType = "<"
-	comparatorTypeLessEqual    comparatorType = "<="
-	comparatorTypeGreater      comparatorType = ">"
-	comparatorTypeGreaterEqual comparatorType = ">="
-	comparatorTypeNotEqual     comparatorType = "!="
+	comparatorTypeEqual        operatorType = "="
+	comparatorTypeLess         operatorType = "<"
+	comparatorTypeLessEqual    operatorType = "<="
+	comparatorTypeGreater      operatorType = ">"
+	comparatorTypeGreaterEqual operatorType = ">="
+	comparatorTypeNotEqual     operatorType = "!="
 )
 
 var (
@@ -235,6 +236,14 @@ func getRoleID(name string) (string, error) {
 	return tokens[0], nil
 }
 
+func getProjectResourceIDSheetID(name string) (string, string, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, sheetIDPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
 func trimSuffix(name, suffix string) (string, error) {
 	if !strings.HasSuffix(name, suffix) {
 		return "", errors.Errorf("invalid request %q with suffix %q", name, suffix)
@@ -368,9 +377,9 @@ func parseOrderBy(orderBy string) ([]orderByKey, error) {
 }
 
 type expression struct {
-	key        string
-	comparator comparatorType
-	value      string
+	key      string
+	operator operatorType
+	value    string
 }
 
 // parseFilter will parse the simple filter.
@@ -430,13 +439,13 @@ func parseExpression(expr string) (expression, error) {
 	}
 
 	return expression{
-		key:        words[0],
-		comparator: comparator,
-		value:      words[2],
+		key:      words[0],
+		operator: comparator,
+		value:    words[2],
 	}, nil
 }
 
-func getComparatorType(op string) (comparatorType, error) {
+func getComparatorType(op string) (operatorType, error) {
 	switch op {
 	case "=":
 		return comparatorTypeEqual, nil
@@ -571,4 +580,14 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.OceanBase
 	}
 	return db.UnknownType
+}
+
+// getUserIdentifier returns the user identifier.
+// See more details in project_service.proto.
+func getUserIdentifier(email string) string {
+	return "user:" + email
+}
+
+func getUserEmailFromIdentifier(ident string) string {
+	return strings.TrimPrefix(ident, "user:")
 }
