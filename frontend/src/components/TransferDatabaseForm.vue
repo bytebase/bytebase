@@ -48,7 +48,6 @@ import {
   buildDatabaseNameRegExpByTemplate,
   filterDatabaseByKeyword,
   PRESET_LABEL_KEY_PLACEHOLDERS,
-  sortDatabaseList,
   sortDatabaseListByEnvironmentV1,
   useWorkspacePermission,
 } from "../utils";
