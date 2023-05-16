@@ -75,6 +75,27 @@ var (
 	testEmailFs embed.FS
 )
 
+// ListSettings lists all settings.
+func (s *SettingService) ListSettings(ctx context.Context, request *v1pb.ListSettingsRequest) (*v1pb.ListSettingsResponse, error) {
+	settings, err := s.store.ListSettingV2(ctx, &store.FindSettingMessage{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list settings: %v", err)
+	}
+
+	response := &v1pb.ListSettingsResponse{}
+	for _, setting := range settings {
+		if !settingInWhitelist(setting.Name) {
+			continue
+		}
+		settingMessage, err := convertToSettingMessage(setting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
+		}
+		response.Settings = append(response.Settings, settingMessage)
+	}
+	return response, nil
+}
+
 // GetSetting gets the setting by name.
 func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettingRequest) (*v1pb.Setting, error) {
 	settingName, err := getSettingName(request.Name)
@@ -85,6 +106,10 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 		return nil, status.Errorf(codes.InvalidArgument, "setting name is empty")
 	}
 	apiSettingName := api.SettingName(settingName)
+	if !settingInWhitelist(apiSettingName) {
+		return nil, status.Errorf(codes.InvalidArgument, "setting is not available")
+	}
+
 	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
 		Name: &apiSettingName,
 	})
@@ -95,21 +120,11 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 		return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
 	}
 	// Only return whitelisted setting.
-	for _, whitelist := range whitelistSettings {
-		if setting.Name == whitelist {
-			settingMessage, err := convertToSettingMessage(setting)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
-			}
-			strippedSettingMessage, err := stripSensitiveData(settingMessage)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to strip sensitive data: %v", err)
-			}
-			return strippedSettingMessage, nil
-		}
+	settingMessage, err := convertToSettingMessage(setting)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
-
-	return nil, status.Errorf(codes.InvalidArgument, "setting %s is not whitelisted", settingName)
+	return settingMessage, nil
 }
 
 // SetSetting set the setting by name.
@@ -304,11 +319,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
-	strippedSettingMessage, err := stripSensitiveData(settingMessage)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to strip sensitive data: %v", err)
-	}
-	return strippedSettingMessage, nil
+	return settingMessage, nil
 }
 
 func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, error) {
@@ -319,7 +330,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
 		}
-		return &v1pb.Setting{
+		return stripSensitiveData(&v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_SmtpMailDeliverySettingValue{
@@ -337,7 +348,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 					},
 				},
 			},
-		}, nil
+		})
 	case api.SettingAppIM:
 		apiValue := new(api.SettingAppIMValue)
 		if err := json.Unmarshal([]byte(setting.Value), apiValue); err != nil {
@@ -408,6 +419,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 			},
 		}, nil
 	}
+
 }
 
 func convertToIMType(imType v1pb.AppIMSetting_IMType) (api.IMType, error) {
@@ -428,6 +440,15 @@ func convertV1IMType(imType api.IMType) v1pb.AppIMSetting_IMType {
 	default:
 		return v1pb.AppIMSetting_IM_TYPE_UNSPECIFIED
 	}
+}
+
+func settingInWhitelist(name api.SettingName) bool {
+	for _, whitelist := range whitelistSettings {
+		if name == whitelist {
+			return true
+		}
+	}
+	return false
 }
 
 func validateApprovalTemplate(template *storepb.ApprovalTemplate) error {

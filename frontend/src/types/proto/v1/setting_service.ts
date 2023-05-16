@@ -8,6 +8,34 @@ import { PlanType, planTypeFromJSON, planTypeToJSON } from "./subscription_servi
 
 export const protobufPackage = "bytebase.v1";
 
+export interface ListSettingsRequest {
+  /**
+   * The maximum number of settings to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 settings will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListSettings` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListSettings` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListSettingsResponse {
+  /** The settings from the specified request. */
+  settings: Setting[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
 /** The request message for getting a setting. */
 export interface GetSettingRequest {
   /** The resource name of the setting. */
@@ -269,6 +297,152 @@ export interface WorkspaceTrialSetting {
   orgName: string;
   plan: PlanType;
 }
+
+function createBaseListSettingsRequest(): ListSettingsRequest {
+  return { pageSize: 0, pageToken: "" };
+}
+
+export const ListSettingsRequest = {
+  encode(message: ListSettingsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.pageSize !== 0) {
+      writer.uint32(8).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(18).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSettingsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListSettingsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListSettingsRequest {
+    return {
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListSettingsRequest): unknown {
+    const obj: any = {};
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListSettingsRequest>): ListSettingsRequest {
+    return ListSettingsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListSettingsRequest>): ListSettingsRequest {
+    const message = createBaseListSettingsRequest();
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListSettingsResponse(): ListSettingsResponse {
+  return { settings: [], nextPageToken: "" };
+}
+
+export const ListSettingsResponse = {
+  encode(message: ListSettingsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.settings) {
+      Setting.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSettingsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListSettingsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.settings.push(Setting.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListSettingsResponse {
+    return {
+      settings: Array.isArray(object?.settings) ? object.settings.map((e: any) => Setting.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListSettingsResponse): unknown {
+    const obj: any = {};
+    if (message.settings) {
+      obj.settings = message.settings.map((e) => e ? Setting.toJSON(e) : undefined);
+    } else {
+      obj.settings = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListSettingsResponse>): ListSettingsResponse {
+    return ListSettingsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListSettingsResponse>): ListSettingsResponse {
+    const message = createBaseListSettingsResponse();
+    message.settings = object.settings?.map((e) => Setting.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
 
 function createBaseGetSettingRequest(): GetSettingRequest {
   return { name: "" };
@@ -1530,6 +1704,19 @@ export const SettingServiceDefinition = {
   name: "SettingService",
   fullName: "bytebase.v1.SettingService",
   methods: {
+    listSettings: {
+      name: "ListSettings",
+      requestType: ListSettingsRequest,
+      requestStream: false,
+      responseType: ListSettingsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [new Uint8Array([14, 18, 12, 47, 118, 49, 47, 115, 101, 116, 116, 105, 110, 103, 115])],
+        },
+      },
+    },
     getSetting: {
       name: "GetSetting",
       requestType: GetSettingRequest,
@@ -1630,11 +1817,19 @@ export const SettingServiceDefinition = {
 } as const;
 
 export interface SettingServiceImplementation<CallContextExt = {}> {
+  listSettings(
+    request: ListSettingsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListSettingsResponse>>;
   getSetting(request: GetSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
   setSetting(request: SetSettingRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Setting>>;
 }
 
 export interface SettingServiceClient<CallOptionsExt = {}> {
+  listSettings(
+    request: DeepPartial<ListSettingsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListSettingsResponse>;
   getSetting(request: DeepPartial<GetSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
   setSetting(request: DeepPartial<SetSettingRequest>, options?: CallOptions & CallOptionsExt): Promise<Setting>;
 }

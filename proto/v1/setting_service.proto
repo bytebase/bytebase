@@ -13,6 +13,13 @@ import "v1/subscription_service.proto";
 option go_package = "generated-go/v1";
 
 service SettingService {
+  rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse) {
+    option (google.api.http) = {
+      get: "/v1/settings"
+    };
+    option (google.api.method_signature) = "";
+  }
+
   rpc GetSetting(GetSettingRequest) returns (Setting) {
     option (google.api.http) = {get: "/v1/{name=settings/*}"};
     option (google.api.method_signature) = "name";
@@ -26,6 +33,29 @@ service SettingService {
   }
 }
 
+message ListSettingsRequest {
+  // The maximum number of settings to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 settings will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListSettings` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListSettings` must match
+  // the call that provided the page token.
+  string page_token = 2;
+}
+
+message ListSettingsResponse {
+  // The settings from the specified request.
+  repeated Setting settings = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
 // The request message for getting a setting.
 message GetSettingRequest {
   // The resource name of the setting.
