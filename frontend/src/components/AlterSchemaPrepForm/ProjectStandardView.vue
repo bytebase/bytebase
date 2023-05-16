@@ -122,9 +122,9 @@
   </template>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import { defineComponent, PropType, computed } from "vue";
+import { PropType, computed } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
 
 import { Database, DatabaseId, Project } from "../../types";
@@ -138,136 +138,118 @@ export type State = {
   selectedDatabaseIdListForEnvironment: Map<string, DatabaseId[]>;
 };
 
-export default defineComponent({
-  name: "ProjectStandardView",
-  components: {
-    NCollapse,
-    NCollapseItem,
+const props = defineProps({
+  state: {
+    type: Object as PropType<State>,
+    required: true,
   },
-  props: {
-    state: {
-      type: Object as PropType<State>,
-      required: true,
-    },
-    project: {
-      type: Object as PropType<Project>,
-      default: undefined,
-    },
-    databaseList: {
-      type: Array as PropType<Database[]>,
-      required: true,
-    },
-    environmentList: {
-      type: Array as PropType<Environment[]>,
-      required: true,
-    },
+  project: {
+    type: Object as PropType<Project>,
+    default: undefined,
   },
-  emits: ["select-database"],
-  setup(props, { emit }) {
-    const databaseListGroupByEnvironment = computed(() => {
-      const listByEnv = props.environmentList.map((environment) => {
-        const databaseList = props.databaseList.filter(
-          (db) => String(db.instance.environment.id) === environment.uid
-        );
-        return {
-          environment,
-          databaseList,
-        };
-      });
-
-      return listByEnv.filter((group) => group.databaseList.length > 0);
-    });
-
-    const toggleDatabaseIdForEnvironment = (
-      databaseId: DatabaseId,
-      environmentId: string,
-      selected: boolean
-    ) => {
-      const map = props.state.selectedDatabaseIdListForEnvironment;
-      const list = map.get(environmentId) || [];
-      const index = list.indexOf(databaseId);
-      if (selected) {
-        // push the databaseId in if needed
-        if (index < 0) {
-          list.push(databaseId);
-        }
-      } else {
-        // remove the databaseId if exists
-        if (index >= 0) {
-          list.splice(index, 1);
-        }
-      }
-      // Set or remove the list to the map
-      if (list.length > 0) {
-        map.set(environmentId, list);
-      } else {
-        map.delete(environmentId);
-      }
-    };
-
-    const isDatabaseSelectedForEnvironment = (
-      databaseId: DatabaseId,
-      environmentId: string
-    ) => {
-      const map = props.state.selectedDatabaseIdListForEnvironment;
-      const list = map.get(environmentId) || [];
-      return list.includes(databaseId);
-    };
-
-    const getAllSelectionStateForEnvironment = (
-      environment: Environment,
-      databaseList: Database[]
-    ): { checked: boolean; indeterminate: boolean } => {
-      const set = new Set(
-        props.state.selectedDatabaseIdListForEnvironment.get(environment.uid) ??
-          []
-      );
-      const checked = databaseList.every((db) => set.has(db.id));
-      const indeterminate =
-        !checked && databaseList.some((db) => set.has(db.id));
-
-      return {
-        checked,
-        indeterminate,
-      };
-    };
-
-    const toggleAllDatabasesSelectionForEnvironment = (
-      environment: Environment,
-      databaseList: Database[],
-      on: boolean
-    ) => {
-      databaseList.forEach((db) =>
-        toggleDatabaseIdForEnvironment(db.id, environment.uid, on)
-      );
-    };
-
-    const selectDatabase = (db: Database) => {
-      emit("select-database", db);
-    };
-
-    const getSelectionStateSummaryForEnvironment = (
-      environment: Environment,
-      databaseList: Database[]
-    ) => {
-      const set = new Set(
-        props.state.selectedDatabaseIdListForEnvironment.get(environment.uid)
-      );
-      const selected = databaseList.filter((db) => set.has(db.id)).length;
-      const total = databaseList.length;
-
-      return { selected, total };
-    };
-
-    return {
-      databaseListGroupByEnvironment,
-      toggleDatabaseIdForEnvironment,
-      isDatabaseSelectedForEnvironment,
-      getAllSelectionStateForEnvironment,
-      toggleAllDatabasesSelectionForEnvironment,
-      selectDatabase,
-      getSelectionStateSummaryForEnvironment,
-    };
+  databaseList: {
+    type: Array as PropType<Database[]>,
+    required: true,
+  },
+  environmentList: {
+    type: Array as PropType<Environment[]>,
+    required: true,
   },
 });
+const emit = defineEmits<{
+  (event: "select-database", db: Database): void;
+}>();
+
+const databaseListGroupByEnvironment = computed(() => {
+  const listByEnv = props.environmentList.map((environment) => {
+    const databaseList = props.databaseList.filter(
+      (db) => String(db.instance.environment.id) === environment.uid
+    );
+    return {
+      environment,
+      databaseList,
+    };
+  });
+
+  return listByEnv.filter((group) => group.databaseList.length > 0);
+});
+
+const toggleDatabaseIdForEnvironment = (
+  databaseId: DatabaseId,
+  environmentId: string,
+  selected: boolean
+) => {
+  const map = props.state.selectedDatabaseIdListForEnvironment;
+  const list = map.get(environmentId) || [];
+  const index = list.indexOf(databaseId);
+  if (selected) {
+    // push the databaseId in if needed
+    if (index < 0) {
+      list.push(databaseId);
+    }
+  } else {
+    // remove the databaseId if exists
+    if (index >= 0) {
+      list.splice(index, 1);
+    }
+  }
+  // Set or remove the list to the map
+  if (list.length > 0) {
+    map.set(environmentId, list);
+  } else {
+    map.delete(environmentId);
+  }
+};
+
+const isDatabaseSelectedForEnvironment = (
+  databaseId: DatabaseId,
+  environmentId: string
+) => {
+  const map = props.state.selectedDatabaseIdListForEnvironment;
+  const list = map.get(environmentId) || [];
+  return list.includes(databaseId);
+};
+
+const getAllSelectionStateForEnvironment = (
+  environment: Environment,
+  databaseList: Database[]
+): { checked: boolean; indeterminate: boolean } => {
+  const set = new Set(
+    props.state.selectedDatabaseIdListForEnvironment.get(environment.uid) ?? []
+  );
+  const checked = databaseList.every((db) => set.has(db.id));
+  const indeterminate = !checked && databaseList.some((db) => set.has(db.id));
+
+  return {
+    checked,
+    indeterminate,
+  };
+};
+
+const toggleAllDatabasesSelectionForEnvironment = (
+  environment: Environment,
+  databaseList: Database[],
+  on: boolean
+) => {
+  databaseList.forEach((db) =>
+    toggleDatabaseIdForEnvironment(db.id, environment.uid, on)
+  );
+};
+
+const selectDatabase = (db: Database) => {
+  emit("select-database", db);
+};
+
+const getSelectionStateSummaryForEnvironment = (
+  environment: Environment,
+  databaseList: Database[]
+) => {
+  const set = new Set(
+    props.state.selectedDatabaseIdListForEnvironment.get(environment.uid)
+  );
+  const selected = databaseList.filter((db) => set.has(db.id)).length;
+  const total = databaseList.length;
+
+  return { selected, total };
+};
 </script>
