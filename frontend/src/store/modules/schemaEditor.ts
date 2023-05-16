@@ -165,12 +165,15 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
       }
       return databaseList;
     },
-    async fetchSchemaListByDatabaseId(databaseId: DatabaseId) {
+    async fetchSchemaListByDatabaseId(
+      databaseId: DatabaseId,
+      skipCache = false
+    ) {
       const database = useDatabaseStore().getDatabaseById(databaseId);
       const schemaMetadataList =
         await useDBSchemaStore().getOrFetchSchemaListByDatabaseId(
           databaseId,
-          true
+          skipCache
         );
       const schemaList = convertSchemaMetadataList(schemaMetadataList);
       if (schemaList.length === 0 && database.instance.engine === "MYSQL") {
