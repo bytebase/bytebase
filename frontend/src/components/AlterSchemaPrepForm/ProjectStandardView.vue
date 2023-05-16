@@ -15,7 +15,7 @@
     <NCollapse
       arrow-placement="left"
       :default-expanded-names="
-        databaseListGroupByEnvironment.map((group) => group.environment.id)
+        databaseListGroupByEnvironment.map((group) => group.environment.uid)
       "
     >
       <NCollapseItem
@@ -23,8 +23,8 @@
           environment,
           databaseList: databaseListInEnvironment,
         } in databaseListGroupByEnvironment"
-        :key="environment.id"
-        :name="environment.id"
+        :key="environment.uid"
+        :name="environment.uid"
       >
         <template #header>
           <label class="flex items-center gap-x-2" @click.stop="">
@@ -46,11 +46,7 @@
                 )
               "
             />
-            <div>{{ environment.name }}</div>
-            <ProductionEnvironmentIcon
-              class="w-4 h-4 -ml-1"
-              :environment="environment"
-            />
+            <EnvironmentV1Name :environment="environment" :link="false" />
           </label>
         </template>
 
@@ -88,10 +84,10 @@
                   :checked="
                     isDatabaseSelectedForEnvironment(
                       database.id,
-                      environment.id
+                      environment.uid
                     )
                   "
-                  @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.id, e.target.checked)"
+                  @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.uid, e.target.checked)"
                 />
                 <span
                   class="font-medium ml-2 text-main"
@@ -131,19 +127,15 @@
 import { defineComponent, PropType, computed } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
 
-import {
-  Database,
-  DatabaseId,
-  Environment,
-  EnvironmentId,
-  Project,
-} from "../../types";
+import { Database, DatabaseId, Project } from "../../types";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentV1Name } from "@/components/v2";
 
 export type AlterType = "SINGLE_DB" | "MULTI_DB" | "TENANT";
 
 export type State = {
   alterType: AlterType;
-  selectedDatabaseIdListForEnvironment: Map<EnvironmentId, DatabaseId[]>;
+  selectedDatabaseIdListForEnvironment: Map<string, DatabaseId[]>;
 };
 
 export default defineComponent({
@@ -175,7 +167,7 @@ export default defineComponent({
     const databaseListGroupByEnvironment = computed(() => {
       const listByEnv = props.environmentList.map((environment) => {
         const databaseList = props.databaseList.filter(
-          (db) => db.instance.environment.id === environment.id
+          (db) => String(db.instance.environment.id) === environment.uid
         );
         return {
           environment,
@@ -188,7 +180,7 @@ export default defineComponent({
 
     const toggleDatabaseIdForEnvironment = (
       databaseId: DatabaseId,
-      environmentId: EnvironmentId,
+      environmentId: string,
       selected: boolean
     ) => {
       const map = props.state.selectedDatabaseIdListForEnvironment;
@@ -215,7 +207,7 @@ export default defineComponent({
 
     const isDatabaseSelectedForEnvironment = (
       databaseId: DatabaseId,
-      environmentId: EnvironmentId
+      environmentId: string
     ) => {
       const map = props.state.selectedDatabaseIdListForEnvironment;
       const list = map.get(environmentId) || [];
@@ -227,7 +219,7 @@ export default defineComponent({
       databaseList: Database[]
     ): { checked: boolean; indeterminate: boolean } => {
       const set = new Set(
-        props.state.selectedDatabaseIdListForEnvironment.get(environment.id) ??
+        props.state.selectedDatabaseIdListForEnvironment.get(environment.uid) ??
           []
       );
       const checked = databaseList.every((db) => set.has(db.id));
@@ -246,7 +238,7 @@ export default defineComponent({
       on: boolean
     ) => {
       databaseList.forEach((db) =>
-        toggleDatabaseIdForEnvironment(db.id, environment.id, on)
+        toggleDatabaseIdForEnvironment(db.id, environment.uid, on)
       );
     };
 
@@ -259,7 +251,7 @@ export default defineComponent({
       databaseList: Database[]
     ) => {
       const set = new Set(
-        props.state.selectedDatabaseIdListForEnvironment.get(environment.id)
+        props.state.selectedDatabaseIdListForEnvironment.get(environment.uid)
       );
       const selected = databaseList.filter((db) => set.has(db.id)).length;
       const total = databaseList.length;

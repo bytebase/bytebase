@@ -10,7 +10,7 @@ import {
   Pipeline,
   Environment,
 } from "@/types";
-import { useEnvironmentStore } from "./environment";
+import { useLegacyEnvironmentStore } from "./environment";
 import { useTaskStore } from "./task";
 
 function convertPartial(
@@ -40,14 +40,14 @@ function convertPartial(
     }
   }
 
-  const environmentStore = useEnvironmentStore();
+  const legacyEnvironmentStore = useLegacyEnvironmentStore();
   for (const item of includedList || []) {
     if (
       item.type == "environment" &&
       (stage.relationships!.environment.data as ResourceIdentifier).id ==
         item.id
     ) {
-      environment = environmentStore.convert(item, includedList);
+      environment = legacyEnvironmentStore.convert(item, includedList);
     }
   }
 

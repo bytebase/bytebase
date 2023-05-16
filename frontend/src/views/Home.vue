@@ -3,7 +3,7 @@
     <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
-        :environment="selectedEnvironment?.id ?? UNKNOWN_ID"
+        :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
         @update:environment="changeEnvironmentId"
       />
       <SearchBox
@@ -194,7 +194,7 @@ import { UNKNOWN_ID, Issue, planTypeToString, EnvironmentId } from "../types";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import {
   useCurrentUser,
-  useEnvironmentStore,
+  useEnvironmentV1Store,
   useSubscriptionStore,
   useOnboardingStateStore,
   featureToRef,
@@ -213,7 +213,7 @@ interface LocalState {
 const OPEN_ISSUE_LIST_PAGE_SIZE = 10;
 const MAX_CLOSED_ISSUE = 5;
 
-const environmentStore = useEnvironmentStore();
+const environmentV1Store = useEnvironmentV1Store();
 const subscriptionStore = useSubscriptionStore();
 const onboardingStateStore = useOnboardingStateStore();
 const router = useRouter();
@@ -244,19 +244,24 @@ const planImage = computed(() => {
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
   return environment
-    ? environmentStore.getEnvironmentById(parseInt(environment as string, 10))
+    ? environmentV1Store.getEnvironmentByUID(
+        parseInt(environment as string, 10)
+      )
     : undefined;
 });
 
 const keywordAndEnvironmentFilter = (issue: Issue) => {
   if (
     selectedEnvironment.value &&
-    selectedEnvironment.value.id !== UNKNOWN_ID
+    selectedEnvironment.value.uid !== String(UNKNOWN_ID)
   ) {
     if (!isDatabaseRelatedIssueType(issue.type)) {
       return false;
     }
-    if (activeEnvironment(issue.pipeline).id !== selectedEnvironment.value.id) {
+    if (
+      String(activeEnvironment(issue.pipeline).id) !==
+      selectedEnvironment.value.uid
+    ) {
       return false;
     }
   }
@@ -269,8 +274,8 @@ const keywordAndEnvironmentFilter = (issue: Issue) => {
   return true;
 };
 
-const changeEnvironmentId = (environment: EnvironmentId | undefined) => {
-  if (environment && environment !== UNKNOWN_ID) {
+const changeEnvironmentId = (environment: string | undefined) => {
+  if (environment && environment !== String(UNKNOWN_ID)) {
     router.replace({
       name: "workspace.home",
       query: {

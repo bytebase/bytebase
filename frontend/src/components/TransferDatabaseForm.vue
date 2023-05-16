@@ -49,13 +49,14 @@ import {
   filterDatabaseByKeyword,
   PRESET_LABEL_KEY_PLACEHOLDERS,
   sortDatabaseList,
+  sortDatabaseListByEnvironmentV1,
   useWorkspacePermission,
 } from "../utils";
 import {
   pushNotification,
   useCurrentUser,
   useDatabaseStore,
-  useEnvironmentList,
+  useEnvironmentV1List,
   useProjectStore,
 } from "@/store";
 
@@ -105,7 +106,7 @@ const prepare = async () => {
 
 onBeforeMount(prepare);
 
-const environmentList = useEnvironmentList(["NORMAL"]);
+const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
 const rawDatabaseList = computed(() => {
   if (state.transferSource == "DEFAULT") {
@@ -140,7 +141,7 @@ const filteredDatabaseList = computed(() => {
     list = list.filter((db) => db.instance.id === state.instanceFilter?.id);
   }
 
-  return sortDatabaseList(list, environmentList.value);
+  return sortDatabaseListByEnvironmentV1(list, environmentList.value);
 });
 
 const transferDatabase = async (databaseList: Database[]) => {

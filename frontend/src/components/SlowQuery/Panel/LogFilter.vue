@@ -10,7 +10,7 @@
         <EnvironmentTabFilter
           v-if="filterTypes.includes('environment')"
           class="flex-1"
-          :environment="params.environment?.id ?? UNKNOWN_ID"
+          :environment="params.environment?.uid ?? String(UNKNOWN_ID)"
           :include-all="true"
           :disabled="loading"
           @update:environment="changeEnvironmentId"
@@ -35,7 +35,7 @@
         <InstanceSelect
           v-if="filterTypes.includes('instance')"
           :instance="params.instance?.id ?? UNKNOWN_ID"
-          :environment="params.environment?.id"
+          :environment="params.environment?.uid"
           :include-all="true"
           :filter="instanceFilter"
           :disabled="loading"
@@ -44,7 +44,7 @@
         <DatabaseSelect
           v-if="filterTypes.includes('database')"
           :database="params.database?.id ?? UNKNOWN_ID"
-          :environment="params.environment?.id"
+          :environment="params.environment?.uid"
           :instance="params.instance?.id"
           :project="params.project?.id"
           :include-all="true"
@@ -106,7 +106,7 @@ import {
 import {
   useCurrentUser,
   useDatabaseStore,
-  useEnvironmentStore,
+  useEnvironmentV1Store,
   useInstanceStore,
   useProjectStore,
   useSlowQueryPolicyList,
@@ -141,7 +141,7 @@ const canVisitDefaultProject = computed(() => {
 });
 
 const changeEnvironmentId = (id: EnvironmentId) => {
-  const environment = useEnvironmentStore().getEnvironmentById(id);
+  const environment = useEnvironmentV1Store().getEnvironmentByUID(id);
   update({ environment });
 };
 const changeInstanceId = (id: InstanceId | undefined) => {
@@ -213,7 +213,7 @@ const instanceFilter = (instance: Instance) => {
   if (!policy) {
     return false;
   }
-  return policy.slowQueryPolicy?.active;
+  return !!policy.slowQueryPolicy?.active;
 };
 
 const isDateDisabled = (date: number) => {

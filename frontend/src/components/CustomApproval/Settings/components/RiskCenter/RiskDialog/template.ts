@@ -2,10 +2,11 @@ import { computed } from "vue";
 import { first, last } from "lodash-es";
 
 import { ConditionGroupExpr, wrapAsGroup } from "@/plugins/cel";
-import { useEnvironmentList } from "@/store";
+import { useEnvironmentV1List } from "@/store";
 import { PresetRiskLevel } from "@/types";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { t, te } from "@/plugins/i18n";
+import { extractEnvironmentResourceName } from "@/utils";
 
 /*
 
@@ -34,7 +35,7 @@ export type RuleTemplate = {
 };
 
 export const useRuleTemplates = () => {
-  const environmentList = useEnvironmentList();
+  const environmentList = useEnvironmentV1List();
   const dev = computed(() => first(environmentList.value));
   const prod = computed(() => last(environmentList.value));
 
@@ -46,7 +47,10 @@ export const useRuleTemplates = () => {
         key: "environment-prod-high",
         expr: wrapAsGroup({
           operator: "_==_",
-          args: ["environment_id", prod.value.resourceId],
+          args: [
+            "environment_id",
+            extractEnvironmentResourceName(prod.value.name),
+          ],
         }),
         level: PresetRiskLevel.HIGH,
         source: Risk_Source.SOURCE_UNSPECIFIED,
@@ -58,7 +62,10 @@ export const useRuleTemplates = () => {
         key: "environment-dev-low",
         expr: wrapAsGroup({
           operator: "_==_",
-          args: ["environment_id", dev.value.resourceId],
+          args: [
+            "environment_id",
+            extractEnvironmentResourceName(dev.value.name),
+          ],
         }),
         level: PresetRiskLevel.LOW,
         source: Risk_Source.SOURCE_UNSPECIFIED,
@@ -74,7 +81,10 @@ export const useRuleTemplates = () => {
           args: [
             {
               operator: "_==_",
-              args: ["environment_id", prod.value.resourceId],
+              args: [
+                "environment_id",
+                extractEnvironmentResourceName(prod.value.name),
+              ],
             },
             {
               operator: "_>_",
@@ -98,7 +108,10 @@ export const useRuleTemplates = () => {
         key: "create-database-in-environment-prod-moderate",
         expr: wrapAsGroup({
           operator: "_==_",
-          args: ["environment_id", prod.value.resourceId],
+          args: [
+            "environment_id",
+            extractEnvironmentResourceName(prod.value.name),
+          ],
         }),
         level: PresetRiskLevel.MODERATE,
         source: Risk_Source.CREATE_DATABASE,

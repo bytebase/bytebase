@@ -5,12 +5,11 @@
         <label for="project" class="textlabel">
           Project <span style="color: red">*</span>
         </label>
-        <!-- eslint-disable vue/attribute-hyphenation -->
         <ProjectSelect
           id="project"
           class="mt-1"
           name="project"
-          :selectedId="state.projectId"
+          :selected-id="state.projectId as number"
           @select-project-id="
             (projectId) => {
               state.projectId = projectId;
@@ -23,12 +22,11 @@
         <label for="environment" class="textlabel">
           Environment <span style="color: red">*</span>
         </label>
-        <!-- eslint-disable vue/attribute-hyphenation -->
         <EnvironmentSelect
           id="environment"
           class="mt-1 w-full"
           name="environment"
-          :selectedId="state.environmentId"
+          :selected-id="state.environmentId"
           @select-environment-id="
             (environmentId) => {
               state.environmentId = environmentId;
@@ -78,13 +76,12 @@
               :required="true"
               :value="state.databaseName"
               :placeholder="'New database name'"
-              @end-editing="(text) => (state.databaseName = text)"
+              @end-editing="(text: string) => (state.databaseName = text)"
               @input="state.databaseName = $event.target.value"
             />
             <div v-else class="flex flex-row space-x-4">
-              <!-- eslint-disable vue/attribute-hyphenation -->
               <DatabaseSelect
-                :selectedId="state.databaseId"
+                :selected-id="state.databaseId as number"
                 :mode="'ENVIRONMENT'"
                 :environmentId="state.environmentId"
                 @select-database-id="
@@ -97,7 +94,7 @@
                 :label="'Read only'"
                 :value="state.readonly"
                 @toggle="
-                  (on) => {
+                  (on: boolean) => {
                     state.readonly = on;
                   }
                 "
@@ -140,12 +137,16 @@ import isEmpty from "lodash-es/isEmpty";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { DatabaseId, EnvironmentId, ProjectId, UNKNOWN_ID } from "../types";
+import { DatabaseId, ProjectId, UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
-import { useCurrentUser, useDatabaseStore, useEnvironmentStore } from "@/store";
+import {
+  useCurrentUser,
+  useDatabaseStore,
+  useEnvironmentV1Store,
+} from "@/store";
 
 interface LocalState {
-  environmentId: EnvironmentId;
+  environmentId: string;
   projectId: ProjectId;
   // Radio button only accept string value
   create: "ON" | "OFF";
@@ -179,7 +180,7 @@ export default defineComponent({
     });
 
     const state = reactive<LocalState>({
-      environmentId: UNKNOWN_ID,
+      environmentId: String(UNKNOWN_ID),
       projectId: UNKNOWN_ID,
       create: "ON",
       databaseName: "",
@@ -206,7 +207,7 @@ export default defineComponent({
 
     const allowRequest = computed(() => {
       return (
-        state.environmentId != UNKNOWN_ID &&
+        state.environmentId !== String(UNKNOWN_ID) &&
         state.projectId != UNKNOWN_ID &&
         ((state.create == "ON" && !isEmpty(state.databaseName)) ||
           (state.create == "OFF" && state.databaseId != UNKNOWN_ID)) &&
@@ -221,7 +222,7 @@ export default defineComponent({
     const request = () => {
       emit("dismiss");
 
-      const environment = useEnvironmentStore().getEnvironmentById(
+      const environment = useEnvironmentV1Store().getEnvironmentByUID(
         state.environmentId
       );
       if (state.create == "ON") {
