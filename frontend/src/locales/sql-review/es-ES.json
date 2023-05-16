@@ -2,7 +2,8 @@
   "engine": {
     "mysql": "MySQL",
     "tidb": "TiDB",
-    "postgres": "PostgreSQL"
+    "postgres": "PostgreSQL",
+    "oracle": "Oracle"
   },
   "category": {
     "engine": "Motor",
@@ -163,6 +164,24 @@
         }
       }
     },
+    "naming-table-no-keyword": {
+      "title": "Prohibir el uso de palabras clave como nombres de tablas",
+      "description": ""
+    },
+    "naming-identifier-no-keyword": {
+      "title": "Prohibir el uso de palabras clave como identificadores",
+      "description": ""
+    },
+    "naming-identifier-case": {
+      "title": "Hacer cumplir el caso del identificador",
+      "description": "",
+      "component": {
+        "case": {
+          "title": "Capitalización"
+        }
+      }
+    },
+
     "column-required": {
       "title": "Imponer la inclusión de columnas específicas en una tabla",
       "description": "Algunas columnas comunes son útiles para el mantenimiento de la aplicación. Por ejemplo, agregar una columna de \"ID\" independiente del negocio como clave primaria evita conflictos de clave primaria causados por cambios en el negocio (como fusiones de negocios) y en algunos escenarios también puede mejorar el rendimiento de inserción de datos. Nivel de error sugerido: Advertencia",
@@ -228,6 +247,15 @@
     "column-maximum-character-length": {
       "title": "Restringir la longitud del tipo de dato \"CHAR\"",
       "description": "\"CHAR\" es un tipo de longitud fija. Por ejemplo, la columna CHAR(20) ocupará 20 espacios de caracteres aunque solo se almacene un carácter, lo que causa desperdicio. Cuando la cadena sea demasiado larga y la longitud no sea fija, se debe considerar el uso de VARCHAR para MySQL y el uso de TEXT para PostgreSQL. Nivel de error sugerido: Error",
+      "component": {
+        "number": {
+          "title": "Longitud máxima"
+        }
+      }
+    },
+    "column-maximum-varchar-length": {
+      "title": "Restringir la longitud del tipo de dato \"VARCHAR\"",
+      "description": "",
       "component": {
         "number": {
           "title": "Longitud máxima"
