@@ -172,10 +172,12 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		}
 		if !updated {
 			role := api.Role(strings.TrimPrefix(payload.GrantRequest.Role, "roles/"))
+			condition := payload.GrantRequest.Condition
+			condition.Description = fmt.Sprintf("#%d", issue.UID)
 			policy.Bindings = append(policy.Bindings, &store.PolicyBinding{
 				Role:      role,
 				Members:   []*store.UserMessage{newUser},
-				Condition: payload.GrantRequest.Condition,
+				Condition: condition,
 			})
 		}
 		if _, err := s.store.SetProjectIAMPolicy(ctx, policy, api.SystemBotID, issue.Project.UID); err != nil {
