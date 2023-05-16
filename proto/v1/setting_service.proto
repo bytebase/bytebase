@@ -121,7 +121,7 @@ message SMTPMailDeliverySettingValue {
 message AppIMSetting {
   enum IMType {
     IM_TYPE_UNSPECIFIED = 0;
-    IM_TYPE_FEISHU = 1;
+    FEISHU = 1;
   }
   IMType im_type = 1;
 

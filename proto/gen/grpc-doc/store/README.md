@@ -1027,8 +1027,8 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| IM_UNSPECIFIED | 0 |  |
-| IM_FEISHU | 1 |  |
+| IM_TYPE_UNSPECIFIED | 0 |  |
+| FEISHU | 1 |  |
 
 
 

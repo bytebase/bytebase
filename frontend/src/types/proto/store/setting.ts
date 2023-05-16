@@ -162,19 +162,19 @@ export interface AppIMSetting {
 }
 
 export enum AppIMSetting_IMType {
-  IM_UNSPECIFIED = 0,
-  IM_FEISHU = 1,
+  IM_TYPE_UNSPECIFIED = 0,
+  FEISHU = 1,
   UNRECOGNIZED = -1,
 }
 
 export function appIMSetting_IMTypeFromJSON(object: any): AppIMSetting_IMType {
   switch (object) {
     case 0:
-    case "IM_UNSPECIFIED":
-      return AppIMSetting_IMType.IM_UNSPECIFIED;
+    case "IM_TYPE_UNSPECIFIED":
+      return AppIMSetting_IMType.IM_TYPE_UNSPECIFIED;
     case 1:
-    case "IM_FEISHU":
-      return AppIMSetting_IMType.IM_FEISHU;
+    case "FEISHU":
+      return AppIMSetting_IMType.FEISHU;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -184,10 +184,10 @@ export function appIMSetting_IMTypeFromJSON(object: any): AppIMSetting_IMType {
 
 export function appIMSetting_IMTypeToJSON(object: AppIMSetting_IMType): string {
   switch (object) {
-    case AppIMSetting_IMType.IM_UNSPECIFIED:
-      return "IM_UNSPECIFIED";
-    case AppIMSetting_IMType.IM_FEISHU:
-      return "IM_FEISHU";
+    case AppIMSetting_IMType.IM_TYPE_UNSPECIFIED:
+      return "IM_TYPE_UNSPECIFIED";
+    case AppIMSetting_IMType.FEISHU:
+      return "FEISHU";
     case AppIMSetting_IMType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

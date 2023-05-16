@@ -239,7 +239,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v for %s", err, apiSettingName)
 		}
-		if payload.ImType != storepb.AppIMSetting_IM_FEISHU {
+		if payload.ImType != storepb.AppIMSetting_FEISHU {
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unknown IM Type %s", payload.ImType))
 		}
 		if payload.ExternalApproval.Enabled {
