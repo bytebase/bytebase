@@ -115,7 +115,6 @@ import { computed, onMounted, reactive, watch } from "vue";
 import { useIssueLogic } from "../logic";
 import {
   DatabaseId,
-  EnvironmentId,
   GrantRequestContext,
   GrantRequestPayload,
   Issue,
@@ -135,7 +134,7 @@ import RequiredStar from "@/components/RequiredStar.vue";
 interface LocalState {
   // For creating
   projectId?: ProjectId;
-  environmentId?: EnvironmentId;
+  environmentId?: string;
   databaseId?: DatabaseId;
   maxRowCount: number;
   exportFormat: "CSV" | "JSON";
@@ -194,7 +193,7 @@ const handleProjectSelect = async (projectId: ProjectId) => {
   }
 };
 
-const handleEnvironmentSelect = (environmentId: EnvironmentId) => {
+const handleEnvironmentSelect = (environmentId: string) => {
   state.environmentId = environmentId;
   const database = databaseStore.getDatabaseById(
     state.databaseId || UNKNOWN_ID
@@ -210,7 +209,7 @@ const handleDatabaseSelect = (databaseId: DatabaseId) => {
     state.databaseId || UNKNOWN_ID
   );
   if (database) {
-    state.environmentId = database.instance.environment.id;
+    state.environmentId = String(database.instance.environment.id);
     handleProjectSelect(database.projectId);
   }
 };

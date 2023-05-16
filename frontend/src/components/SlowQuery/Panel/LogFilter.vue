@@ -97,7 +97,6 @@ import dayjs from "dayjs";
 
 import {
   type DatabaseId,
-  type EnvironmentId,
   type InstanceId,
   type ProjectId,
   UNKNOWN_ID,
@@ -140,7 +139,7 @@ const canVisitDefaultProject = computed(() => {
   );
 });
 
-const changeEnvironmentId = (id: EnvironmentId) => {
+const changeEnvironmentId = (id: string) => {
   const environment = useEnvironmentV1Store().getEnvironmentByUID(id);
   update({ environment });
 };
