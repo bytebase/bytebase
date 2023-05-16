@@ -255,7 +255,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
 - Follow [Life of a Feature](https://github.com/bytebase/bytebase/blob/main/docs/life-of-a-feature.md).
 
-## Dev Environemnt Setup
+## Dev Environment Setup
 
 ### Prerequisites
 
