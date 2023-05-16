@@ -229,8 +229,47 @@ func (_ *SheetService) UpdateSheet(context.Context, *v1pb.UpdateSheetRequest) (*
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateSheet not implemented")
 }
 
-func (_ *SheetService) DeleteSheet(context.Context, *v1pb.DeleteSheetRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteSheet not implemented")
+// DeleteSheet deletes a sheet.
+func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteSheetRequest) (*emptypb.Empty, error) {
+	projectResourceID, sheetID, err := getProjectResourceIDSheetID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	sheetIDInt, err := strconv.Atoi(sheetID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s", sheetID))
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
+	}
+
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+
+	sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{
+		ID:        &sheetIDInt,
+		ProjectID: &project.UID,
+	}, currentPrincipalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+	}
+	if sheet == nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetIDInt))
+	}
+
+	if err := s.store.DeleteSheet(ctx, &api.SheetDelete{
+		ID:        sheetIDInt,
+		DeleterID: currentPrincipalID,
+	}); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete sheet: %v", err))
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 func (_ *SheetService) SyncSheets(context.Context, *v1pb.SyncSheetsRequest) (*emptypb.Empty, error) {
