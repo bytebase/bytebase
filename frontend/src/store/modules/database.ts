@@ -11,7 +11,6 @@ import {
   DataSource,
   empty,
   EMPTY_ID,
-  EnvironmentId,
   Instance,
   InstanceId,
   MaybeRef,
@@ -183,11 +182,11 @@ export const useDatabaseStore = defineStore("database", {
       }
       return list;
     },
-    getDatabaseListByEnvironmentId(environmentId: EnvironmentId): Database[] {
+    getDatabaseListByEnvironmentId(environmentId: string): Database[] {
       const list: Database[] = [];
       for (const [_, databaseList] of this.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
-          if (item.instance.environment.id == environmentId) {
+          if (String(item.instance.environment.id) === environmentId) {
             list.push(item);
           }
         });
@@ -330,7 +329,7 @@ export const useDatabaseStore = defineStore("database", {
 
       return databaseList;
     },
-    async fetchDatabaseListByEnvironmentId(environmentId: EnvironmentId) {
+    async fetchDatabaseListByEnvironmentId(environmentId: string) {
       // Don't fetch the data source info as the current user may not have access to the
       // database of this particular environment.
       const data = (

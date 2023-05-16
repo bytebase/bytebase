@@ -426,13 +426,11 @@ const databaseName = computed((): string | undefined => {
 });
 
 const environment = computed((): Environment => {
-  if (create.value) {
-    const stage = selectedStage.value as StageCreate;
-    return useEnvironmentV1Store().getEnvironmentByUID(stage.environmentId);
-  }
-  const stage = selectedStage.value as Stage;
+  const environmentId = create.value
+    ? (selectedStage.value as StageCreate).environmentId
+    : (selectedStage.value as Stage).environment.id;
 
-  return useEnvironmentV1Store().getEnvironmentByUID(stage.environment.id);
+  return useEnvironmentV1Store().getEnvironmentByUID(String(environmentId));
 });
 
 const project = computed((): Project => {
