@@ -71,10 +71,10 @@ export function sortInstanceListByEnvironmentV1(
   const environmentMap = keyBy(environmentList, (env) => env.uid);
 
   return list.sort((a, b) => {
-    let aEnvIndex = environmentMap[String(a.environment.id)]?.order ?? -1;
-    let bEnvIndex = environmentMap[String(b.environment.id)]?.order ?? -1;
+    const aEnvOrder = environmentMap[String(a.environment.id)]?.order ?? -1;
+    const bEnvOrder = environmentMap[String(b.environment.id)]?.order ?? -1;
 
-    return bEnvIndex - aEnvIndex;
+    return bEnvOrder - aEnvOrder;
   });
 }
 

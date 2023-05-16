@@ -72,12 +72,12 @@ export function sortDatabaseListByEnvironmentV1(
 ): Database[] {
   const environmentMap = keyBy(environmentList, (env) => env.uid);
   return list.sort((a: Database, b: Database) => {
-    let aEnvIndex =
+    const aEnvOrder =
       environmentMap[String(a.instance.environment.id)]?.order ?? -1;
-    let bEnvIndex =
+    const bEnvOrder =
       environmentMap[String(b.instance.environment.id)]?.order ?? -1;
 
-    return bEnvIndex - aEnvIndex;
+    return bEnvOrder - aEnvOrder;
   });
 }
 
