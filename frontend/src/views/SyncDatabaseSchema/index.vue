@@ -142,7 +142,6 @@ import {
 import {
   DatabaseId,
   EngineType,
-  EnvironmentId,
   MigrationHistory,
   MigrationType,
   ProjectId,
@@ -156,7 +155,7 @@ const SELECT_TARGET_DATABASE_LIST = 1;
 type Step = typeof SELECT_SOURCE_DATABASE | typeof SELECT_TARGET_DATABASE_LIST;
 
 interface SourceSchema {
-  environmentId?: EnvironmentId;
+  environmentId?: string;
   databaseId?: DatabaseId;
   migrationHistory?: MigrationHistory;
 }
@@ -257,7 +256,7 @@ const handleSourceProjectSelect = async (projectId: ProjectId) => {
   state.projectId = projectId;
 };
 
-const handleSourceEnvironmentSelect = async (environmentId: EnvironmentId) => {
+const handleSourceEnvironmentSelect = async (environmentId: string) => {
   if (environmentId !== state.sourceSchema.environmentId) {
     state.sourceSchema.databaseId = UNKNOWN_ID;
   }
@@ -269,7 +268,7 @@ const handleSourceDatabaseSelect = async (databaseId: DatabaseId) => {
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
     if (database) {
       state.projectId = database.projectId;
-      state.sourceSchema.environmentId = database.instance.environment.id;
+      state.sourceSchema.environmentId = String(database.instance.environment.id);
       state.sourceSchema.databaseId = databaseId;
     }
   }

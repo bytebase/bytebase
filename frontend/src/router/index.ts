@@ -573,7 +573,7 @@ const routes: Array<RouteRecordRaw> = [
                     const slug = route.params.sqlReviewPolicySlug as string;
                     return (
                       useSQLReviewStore().getReviewPolicyByEnvironmentUID(
-                        idFromSlug(slug)
+                        String(idFromSlug(slug))
                       )?.name ?? ""
                     );
                   },
@@ -653,7 +653,7 @@ const routes: Array<RouteRecordRaw> = [
               title: (route: RouteLocationNormalized) => {
                 const slug = route.params.environmentSlug as string;
                 return useEnvironmentV1Store().getEnvironmentByUID(
-                  idFromSlug(slug)
+                  String(idFromSlug(slug))
                 ).title;
               },
               allowBookmark: true,
@@ -1441,7 +1441,7 @@ router.beforeEach((to, from, next) => {
 
   if (environmentSlug) {
     useEnvironmentV1Store()
-      .getOrFetchEnvironmentByUID(idFromSlug(environmentSlug))
+      .getOrFetchEnvironmentByUID(String(idFromSlug(environmentSlug)))
       .then((env) => {
         // getEnvironmentById returns unknown("ENVIRONMENT") when it doesn't exist
         // so we need to check the id here
@@ -1595,7 +1595,7 @@ router.beforeEach((to, from, next) => {
 
   if (sqlReviewPolicySlug) {
     useSQLReviewStore()
-      .getOrFetchReviewPolicyByEnvironmentUID(idFromSlug(sqlReviewPolicySlug))
+      .getOrFetchReviewPolicyByEnvironmentUID(String(idFromSlug(sqlReviewPolicySlug)))
       .then(() => {
         next();
       })

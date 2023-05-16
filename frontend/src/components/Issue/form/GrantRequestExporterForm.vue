@@ -115,7 +115,6 @@ import { computed, onMounted, reactive, watch } from "vue";
 import { useIssueLogic } from "../logic";
 import {
   DatabaseId,
-  EnvironmentId,
   GrantRequestContext,
   GrantRequestPayload,
   Issue,
@@ -135,7 +134,7 @@ import RequiredStar from "@/components/RequiredStar.vue";
 interface LocalState {
   // For creating
   projectId?: ProjectId;
-  environmentId?: EnvironmentId;
+  environmentId?: string;
   databaseId?: DatabaseId;
   maxRowCount: number;
   exportFormat: "CSV" | "JSON";

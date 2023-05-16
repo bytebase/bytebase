@@ -36,7 +36,6 @@ import {
   Database,
   ProjectId,
   InstanceId,
-  EnvironmentId,
   EngineType,
   DatabaseSyncStatus,
   DEFAULT_PROJECT_ID,
@@ -58,8 +57,8 @@ export default defineComponent({
       type: String as PropType<"ALL" | "INSTANCE" | "ENVIRONMENT" | "USER">,
     },
     environmentId: {
-      type: Number as PropType<EnvironmentId>,
-      default: UNKNOWN_ID,
+      type: String,
+      default: String(UNKNOWN_ID),
     },
     instanceId: {
       type: Number as PropType<InstanceId>,
@@ -106,7 +105,7 @@ export default defineComponent({
         databaseStore.fetchDatabaseList();
       } else if (
         props.mode == "ENVIRONMENT" &&
-        props.environmentId != UNKNOWN_ID
+        props.environmentId !== String(UNKNOWN_ID)
       ) {
         databaseStore.fetchDatabaseListByEnvironmentId(props.environmentId);
       } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
@@ -124,7 +123,7 @@ export default defineComponent({
         list = databaseStore.getDatabaseList();
       } else if (
         props.mode == "ENVIRONMENT" &&
-        props.environmentId != UNKNOWN_ID
+        props.environmentId !== String(UNKNOWN_ID)
       ) {
         list = databaseStore.getDatabaseListByEnvironmentId(
           props.environmentId
@@ -147,10 +146,10 @@ export default defineComponent({
         });
       }
 
-      if (props.environmentId != UNKNOWN_ID || props.projectId != UNKNOWN_ID) {
+      if (props.environmentId !== String(UNKNOWN_ID) || props.projectId != UNKNOWN_ID) {
         list = list.filter((database: Database) => {
           return (
-            (props.environmentId == UNKNOWN_ID ||
+            (props.environmentId === String(UNKNOWN_ID) ||
               database.instance.environment.id == props.environmentId) &&
             (props.projectId == UNKNOWN_ID ||
               database.project.id == props.projectId)

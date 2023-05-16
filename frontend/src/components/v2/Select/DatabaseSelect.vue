@@ -22,7 +22,6 @@ import {
   DatabaseId,
   EngineType,
   EngineTypeList,
-  EnvironmentId,
   InstanceId,
   ProjectId,
   UNKNOWN_ID,
@@ -37,7 +36,7 @@ interface DatabaseSelectOption extends SelectOption {
 const props = withDefaults(
   defineProps<{
     database: DatabaseId | undefined;
-    environment?: EnvironmentId;
+    environment?: string;
     instance?: InstanceId;
     project?: ProjectId;
     allowedEngineTypeList?: readonly EngineType[];
@@ -73,7 +72,7 @@ const rawDatabaseList = computed(() => {
   const list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
 
   return list.filter((db) => {
-    if (props.environment && props.environment !== UNKNOWN_ID) {
+    if (props.environment && props.environment !== String(UNKNOWN_ID)) {
       if (db.instance.environment.id !== props.environment) return false;
     }
     if (props.instance && props.instance !== UNKNOWN_ID) {

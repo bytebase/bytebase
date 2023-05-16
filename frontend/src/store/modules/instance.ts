@@ -6,7 +6,6 @@ import {
   empty,
   EMPTY_ID,
   Environment,
-  EnvironmentId,
   Instance,
   InstanceCreate,
   InstanceId,
@@ -143,12 +142,12 @@ export const useInstanceStore = defineStore("instance", {
       });
     },
     getInstanceListByEnvironmentId(
-      environmentId: EnvironmentId,
+      environmentId: string,
       rowStatusList?: RowStatus[]
     ): Instance[] {
       const list = this.getInstanceList(rowStatusList);
       return list.filter((item: Instance) => {
-        return item.environment.id == environmentId;
+        return String(item.environment.id) === environmentId;
       });
     },
     getInstanceById(instanceId: InstanceId): Instance {

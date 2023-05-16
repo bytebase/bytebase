@@ -244,9 +244,7 @@ const planImage = computed(() => {
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
   return environment
-    ? environmentV1Store.getEnvironmentByUID(
-        parseInt(environment as string, 10)
-      )
+    ? environmentV1Store.getEnvironmentByUID(environment as string)
     : undefined;
 });
 

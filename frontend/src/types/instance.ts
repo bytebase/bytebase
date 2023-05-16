@@ -171,7 +171,7 @@ export type InstanceCreate = {
   resourceId: ResourceId;
 
   // Related fields
-  environmentId: EnvironmentId;
+  environmentId: number;
 
   // Domain specific fields
   name: string;
