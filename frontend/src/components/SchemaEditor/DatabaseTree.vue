@@ -292,25 +292,6 @@ onMounted(async () => {
     databaseTreeNodeList.push(databaseTreeNode);
   }
   treeDataRef.value = treeNodeList;
-
-  // When the user selects only one database, it is expanded by default.
-  if (databaseTreeNodeList.length === 1) {
-    const node = databaseTreeNodeList[0];
-    await loadSubTree(node);
-    const schemaList = await editorStore.fetchSchemaListByDatabaseId(
-      node.databaseId
-    );
-    expandedKeysRef.value.push(node.key);
-    const schema = head(schemaList);
-    if (schemaList.length === 1 && schema) {
-      expandedKeysRef.value.push(`s-${node.databaseId}-${schema.id}`);
-      editorStore.addTab({
-        id: generateUniqueTabId(),
-        type: SchemaEditorTabType.TabForDatabase,
-        databaseId: node.databaseId,
-      });
-    }
-  }
 });
 
 watch(
@@ -617,7 +598,8 @@ const loadSubTree = async (treeNode: TreeNode) => {
     databaseDataLoadedSet.value.add(databaseId);
     try {
       const schemaList = await editorStore.fetchSchemaListByDatabaseId(
-        databaseId
+        databaseId,
+        true
       );
       if (schemaList.length === 0) {
         treeNode.children = [];
