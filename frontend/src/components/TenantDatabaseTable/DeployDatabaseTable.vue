@@ -99,7 +99,7 @@
 <script lang="ts" setup>
 import { groupBy } from "lodash-es";
 import { computed, withDefaults } from "vue";
-import type { Database, Environment, LabelKeyType } from "../../types";
+import type { Database, LabelKeyType } from "../../types";
 import {
   hidePrefix,
   getLabelValue,
@@ -109,6 +109,7 @@ import {
 import { NPopover } from "naive-ui";
 import { DeploymentStage } from "../DeploymentConfigTool";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 const props = withDefaults(
   defineProps<{

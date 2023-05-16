@@ -1,4 +1,6 @@
 import { computed, unref } from "vue";
+import { keyBy } from "lodash-es";
+
 import {
   EngineType,
   Environment,
@@ -7,6 +9,7 @@ import {
   languageOfEngine,
   MaybeRef,
 } from "../types";
+import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 
 export const supportedEngineList = () => {
   const engines: EngineType[] = [
@@ -57,6 +60,21 @@ export function sortInstanceList(
       }
     }
     return bEnvIndex - aEnvIndex;
+  });
+}
+
+// Sort the list to put prod items first.
+export function sortInstanceListByEnvironmentV1(
+  list: Instance[],
+  environmentList: EnvironmentV1[]
+): Instance[] {
+  const environmentMap = keyBy(environmentList, (env) => env.uid);
+
+  return list.sort((a, b) => {
+    const aEnvOrder = environmentMap[String(a.environment.id)]?.order ?? -1;
+    const bEnvOrder = environmentMap[String(b.environment.id)]?.order ?? -1;
+
+    return bEnvOrder - aEnvOrder;
   });
 }
 

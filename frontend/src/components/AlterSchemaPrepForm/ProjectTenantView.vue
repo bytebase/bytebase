@@ -56,17 +56,12 @@
 import { computed, watchEffect, h } from "vue";
 import { Translation, useI18n } from "vue-i18n";
 import { RouterLink } from "vue-router";
-import type {
-  Database,
-  DatabaseId,
-  Environment,
-  LabelKeyType,
-  Project,
-} from "@/types";
+import type { Database, DatabaseId, LabelKeyType, Project } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import { getPipelineFromDeploymentScheduleV1, projectSlug } from "@/utils";
 import { useDeploymentConfigV1ByProject } from "@/store";
 import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 export type State = {
   selectedDatabaseIdListForTenantMode: Set<DatabaseId>;

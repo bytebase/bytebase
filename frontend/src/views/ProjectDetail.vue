@@ -57,7 +57,7 @@ import { cloneDeep } from "lodash-es";
 import { useRoute } from "vue-router";
 
 import { DEFAULT_PROJECT_ID } from "@/types";
-import { idFromSlug, sortDatabaseList } from "../utils";
+import { idFromSlug, sortDatabaseListByEnvironmentV1 } from "../utils";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
 import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
@@ -69,7 +69,7 @@ import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import {
   useDatabaseStore,
-  useEnvironmentList,
+  useEnvironmentV1List,
   useProjectStore,
   useProjectV1Store,
 } from "@/store";
@@ -116,7 +116,7 @@ export default defineComponent({
       return projectV1Store.getProjectByUID(idFromSlug(props.projectSlug));
     });
 
-    const environmentList = useEnvironmentList(["NORMAL"]);
+    const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
     const prepareDatabaseList = () => {
       databaseStore.fetchDatabaseListByProjectId(project.value.id);
@@ -130,7 +130,7 @@ export default defineComponent({
           .getDatabaseListByProjectId(project.value.id)
           .filter((db) => db.syncStatus === "OK")
       );
-      return sortDatabaseList(list, environmentList.value);
+      return sortDatabaseListByEnvironmentV1(list, environmentList.value);
     });
 
     const isTenantProject = computed(() => {

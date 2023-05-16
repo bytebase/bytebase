@@ -1,3 +1,5 @@
+import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
+import { keyBy } from "lodash-es";
 import type {
   Database,
   DataSourceType,
@@ -60,6 +62,22 @@ export function sortDatabaseList(
       }
     }
     return bEnvIndex - aEnvIndex;
+  });
+}
+
+// Sort the list to put prod items first.
+export function sortDatabaseListByEnvironmentV1(
+  list: Database[],
+  environmentList: EnvironmentV1[]
+): Database[] {
+  const environmentMap = keyBy(environmentList, (env) => env.uid);
+  return list.sort((a: Database, b: Database) => {
+    const aEnvOrder =
+      environmentMap[String(a.instance.environment.id)]?.order ?? -1;
+    const bEnvOrder =
+      environmentMap[String(b.instance.environment.id)]?.order ?? -1;
+
+    return bEnvOrder - aEnvOrder;
   });
 }
 

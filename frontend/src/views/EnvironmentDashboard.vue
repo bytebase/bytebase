@@ -12,13 +12,13 @@
       >
         <div class="flex items-center">
           {{ item.title }}
-          <ProductionEnvironmentIcon :environment="item.data!" class="ml-1" />
+          <ProductionEnvironmentV1Icon :environment="item.data!" class="ml-1" />
         </div>
       </template>
 
       <BBTabPanel
-        v-for="(item, index) in environmentList"
-        :key="item.id"
+        v-for="(env, index) in environmentList"
+        :key="env.uid"
         :active="index == state.selectedIndex"
       >
         <div v-if="state.reorder" class="flex justify-center pt-5">
@@ -40,7 +40,7 @@
         </div>
         <EnvironmentDetail
           v-else
-          :environment-slug="environmentSlug(item)"
+          :environment-slug="environmentV1Slug(env)"
           @archive="doArchive"
         />
       </BBTabPanel>
@@ -72,24 +72,23 @@
 <script lang="ts" setup>
 import { onMounted, computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
-import { arraySwap } from "../utils";
+import { arraySwap, environmentV1Slug } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import type { Environment, EnvironmentCreate } from "../types";
 import type { BBTabItem } from "../bbkit/types";
 import {
   useRegisterCommand,
   useUIStateStore,
   hasFeature,
-  useEnvironmentStore,
-  useEnvironmentList,
-} from "@/store";
-import ProductionEnvironmentIcon from "../components/Environment/ProductionEnvironmentIcon.vue";
-import {
   useEnvironmentV1Store,
   defaultEnvironmentTier,
-} from "@/store/modules/v1/environment";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+  useEnvironmentV1List,
+} from "@/store";
+import { ProductionEnvironmentV1Icon } from "@/components/v2";
+import {
+  Environment,
+  EnvironmentTier,
+} from "@/types/proto/v1/environment_service";
 import {
   usePolicyV1Store,
   defaultBackupSchedule,
@@ -102,6 +101,7 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
+import { emptyEnvironment } from "@/types";
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_APPROVAL_POLICY: Policy = getDefaultDeploymentApprovalPolicy(
@@ -126,7 +126,6 @@ interface LocalState {
     | "bb.feature.environment-tier-policy";
 }
 
-const environmentStore = useEnvironmentStore();
 const environmentV1Store = useEnvironmentV1Store();
 const uiStateStore = useUIStateStore();
 const policyV1Store = usePolicyV1Store();
@@ -144,8 +143,8 @@ const selectEnvironmentOnHash = () => {
     if (router.currentRoute.value.hash) {
       for (let i = 0; i < environmentList.value.length; i++) {
         if (
-          environmentList.value[i].id ===
-          parseInt(router.currentRoute.value.hash.slice(1), 10)
+          environmentList.value[i].uid ===
+          router.currentRoute.value.hash.slice(1)
         ) {
           selectEnvironment(i);
           break;
@@ -192,27 +191,24 @@ watch(
   }
 );
 
-const environmentList = useEnvironmentList();
+const environmentList = useEnvironmentV1List();
 
 const tabItemList = computed((): BBTabItem[] => {
   if (environmentList.value) {
     const list = state.reorder
       ? state.reorderedEnvironmentList
       : environmentList.value;
-    return list.map((item: Environment, index: number): BBTabItem => {
-      const title = `${index + 1}. ${item.name}`;
-      const id = item.id.toString();
+    return list.map((item, index: number): BBTabItem => {
+      const title = `${index + 1}. ${item.title}`;
+      const id = item.uid;
       return { title, id, data: item };
     });
   }
   return [];
 });
 
-const getEnvironmentCreate = (): EnvironmentCreate => {
-  return {
-    title: "",
-    name: "",
-  };
+const getEnvironmentCreate = () => {
+  return emptyEnvironment();
 };
 
 const createEnvironment = () => {
@@ -221,7 +217,7 @@ const createEnvironment = () => {
 };
 
 const doCreate = async (
-  newEnvironment: EnvironmentCreate,
+  newEnvironment: Environment,
   approvalPolicy: Policy,
   backupPolicy: Policy,
   environmentTier: EnvironmentTier
@@ -257,7 +253,7 @@ const doCreate = async (
   });
   // After creating with v1 store, we need to fetch the latest data in old store.
   // TODO(steven): using grpc store.
-  await environmentStore.fetchEnvironmentList();
+  await environmentV1Store.fetchEnvironments();
 
   const requests = [
     policyV1Store.upsertPolicy({
@@ -308,7 +304,7 @@ const reorderEnvironment = (sourceIndex: number, targetIndex: number) => {
 
 const orderChanged = computed(() => {
   for (let i = 0; i < state.reorderedEnvironmentList.length; i++) {
-    if (state.reorderedEnvironmentList[i].id != environmentList.value[i].id) {
+    if (state.reorderedEnvironmentList[i].uid != environmentList.value[i].uid) {
       return true;
     }
   }
@@ -320,7 +316,7 @@ const discardReorder = () => {
 };
 
 const doReorder = () => {
-  environmentStore
+  environmentV1Store
     .reorderEnvironmentList(state.reorderedEnvironmentList)
     .then(() => {
       stopReorder();
@@ -337,7 +333,7 @@ const selectEnvironment = (index: number) => {
   state.selectedIndex = index;
   router.replace({
     name: "workspace.environment",
-    hash: "#" + environmentList.value[index].id,
+    hash: "#" + environmentList.value[index].uid,
   });
 };
 </script>

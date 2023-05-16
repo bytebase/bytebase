@@ -24,10 +24,9 @@
           :can-remove="false"
           :link="`/environment/${reviewPolicy.environment.uid}`"
         >
-          {{ environmentTitleV1(reviewPolicy.environment) }}
-          <ProductionEnvironmentIcon
-            :tier="environmentTierToJSON(reviewPolicy.environment.tier)"
-            class="!text-current ml-1"
+          <EnvironmentV1Name
+            :environment="reviewPolicy.environment"
+            :link="false"
           />
         </BBBadge>
         <div
@@ -151,6 +150,8 @@
 import { computed, reactive, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { cloneDeep } from "lodash-es";
+
 import { idFromSlug, hasWorkspacePermission } from "@/utils";
 import {
   unknown,
@@ -178,11 +179,8 @@ import {
   useSQLRuleFilter,
   SQLRuleTable,
 } from "../components/SQLReview/components";
-import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
+import { EnvironmentV1Name } from "@/components/v2";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
-import { cloneDeep } from "lodash-es";
-import { environmentTierToJSON } from "@/types/proto/v1/environment_service";
-import { environmentTitleV1 } from "@/utils";
 
 const props = defineProps({
   sqlReviewPolicySlug: {

@@ -1,12 +1,13 @@
 import { defineStore } from "pinia";
 import { computed } from "vue";
+import { isEqual, isUndefined, orderBy } from "lodash-es";
+
 import { environmentServiceClient } from "@/grpcweb";
 import {
   Environment,
   EnvironmentTier,
 } from "@/types/proto/v1/environment_service";
 import { ResourceId, EnvironmentId } from "@/types";
-import { isEqual, isUndefined } from "lodash-es";
 import { State } from "@/types/proto/v1/common";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 
@@ -20,7 +21,11 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
   }),
   getters: {
     environmentList(state) {
-      return Array.from(state.environmentMapByName.values());
+      return orderBy(
+        Array.from(state.environmentMapByName.values()),
+        (env) => env.order,
+        "asc"
+      );
     },
   },
   actions: {
@@ -86,6 +91,23 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       });
       this.environmentMapByName.set(environment.name, environment);
       return environment;
+    },
+    async reorderEnvironmentList(orderedEnvironmentList: Environment[]) {
+      const updatedEnvironmentList = await Promise.all(
+        orderedEnvironmentList.map((environment, order) => {
+          return environmentServiceClient.updateEnvironment({
+            environment: {
+              ...environment,
+              order,
+            },
+            updateMask: ["order"],
+          });
+        })
+      );
+      updatedEnvironmentList.forEach((environment) => {
+        this.environmentMapByName.set(environment.name, environment);
+      });
+      return updatedEnvironmentList;
     },
     async getOrFetchEnvironmentByName(name: string) {
       const cachedData = this.environmentMapByName.get(name);

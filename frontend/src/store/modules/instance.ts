@@ -26,7 +26,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { InstanceUser } from "@/types/InstanceUser";
-import { useEnvironmentStore } from "./environment";
+import { useLegacyEnvironmentStore } from "./environment";
 import { useDataSourceStore } from "./dataSource";
 import { useSQLStore } from "./sql";
 
@@ -59,7 +59,7 @@ function convert(
     dataSourceList: [],
   };
 
-  const environmentStore = useEnvironmentStore();
+  const legacyEnvironmentStore = useLegacyEnvironmentStore();
   const dataSourceStore = useDataSourceStore();
   for (const item of includedList || []) {
     if (
@@ -67,7 +67,7 @@ function convert(
       (instance.relationships!.environment.data as ResourceIdentifier).id ==
         item.id
     ) {
-      environment = environmentStore.convert(item, includedList);
+      environment = legacyEnvironmentStore.convert(item, includedList);
     }
 
     if (
