@@ -1595,7 +1595,9 @@ router.beforeEach((to, from, next) => {
 
   if (sqlReviewPolicySlug) {
     useSQLReviewStore()
-      .getOrFetchReviewPolicyByEnvironmentUID(String(idFromSlug(sqlReviewPolicySlug)))
+      .getOrFetchReviewPolicyByEnvironmentUID(
+        String(idFromSlug(sqlReviewPolicySlug))
+      )
       .then(() => {
         next();
       })
