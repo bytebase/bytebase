@@ -52,11 +52,7 @@
                   )
                 "
               />
-              <div>{{ environment.name }}</div>
-              <ProductionEnvironmentIcon
-                class="w-4 h-4 -ml-1"
-                :environment="environment"
-              />
+              <EnvironmentV1Name :environment="environment" :link="false" />
             </label>
           </template>
 
