@@ -544,8 +544,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			}
 			// Only generate onboarding data after the first enduser signup.
 			if firstEndUser {
-				if err := s.generateOnboardingData(ctx, user.ID); err != nil {
-					return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
+				if profile.SampleDatabasePort != 0 {
+					if err := s.generateOnboardingData(ctx, user.ID); err != nil {
+						return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
+					}
 				}
 			}
 			return nil
