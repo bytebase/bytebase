@@ -338,14 +338,34 @@
   
     - [RolloutService](#bytebase-v1-RolloutService)
   
+- [v1/subscription_service.proto](#v1_subscription_service-proto)
+    - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
+    - [PatchSubscription](#bytebase-v1-PatchSubscription)
+    - [Subscription](#bytebase-v1-Subscription)
+    - [TrialSubscription](#bytebase-v1-TrialSubscription)
+    - [TrialSubscriptionRequest](#bytebase-v1-TrialSubscriptionRequest)
+    - [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest)
+  
+    - [PlanType](#bytebase-v1-PlanType)
+  
+    - [SubscriptionService](#bytebase-v1-SubscriptionService)
+  
 - [v1/setting_service.proto](#v1_setting_service-proto)
+    - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
+    - [AppIMSetting](#bytebase-v1-AppIMSetting)
+    - [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
     - [Value](#bytebase-v1-Value)
+    - [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting)
+    - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
+    - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
+    - [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting)
   
+    - [AppIMSetting.IMType](#bytebase-v1-AppIMSetting-IMType)
     - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
     - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
   
@@ -372,18 +392,6 @@
     - [PrettyResponse](#bytebase-v1-PrettyResponse)
   
     - [SQLService](#bytebase-v1-SQLService)
-  
-- [v1/subscription_service.proto](#v1_subscription_service-proto)
-    - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
-    - [PatchSubscription](#bytebase-v1-PatchSubscription)
-    - [Subscription](#bytebase-v1-Subscription)
-    - [TrialSubscription](#bytebase-v1-TrialSubscription)
-    - [TrialSubscriptionRequest](#bytebase-v1-TrialSubscriptionRequest)
-    - [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest)
-  
-    - [PlanType](#bytebase-v1-PlanType)
-  
-    - [SubscriptionService](#bytebase-v1-SubscriptionService)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -5206,10 +5214,195 @@ The plan&#39;s `name` field is used to identify the plan to update. Format: proj
 
 
 
+<a name="v1_subscription_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/subscription_service.proto
+
+
+
+<a name="bytebase-v1-GetSubscriptionRequest"></a>
+
+### GetSubscriptionRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-PatchSubscription"></a>
+
+### PatchSubscription
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| license | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Subscription"></a>
+
+### Subscription
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance_count | [int32](#int32) |  |  |
+| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| started_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
+| trialing | [bool](#bool) |  |  |
+| org_id | [string](#string) |  |  |
+| org_name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TrialSubscription"></a>
+
+### TrialSubscription
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
+| days | [int32](#int32) |  |  |
+| instance_count | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TrialSubscriptionRequest"></a>
+
+### TrialSubscriptionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| trial | [TrialSubscription](#bytebase-v1-TrialSubscription) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSubscriptionRequest"></a>
+
+### UpdateSubscriptionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| patch | [PatchSubscription](#bytebase-v1-PatchSubscription) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-PlanType"></a>
+
+### PlanType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PLAN_TYPE_UNSPECIFIED | 0 |  |
+| FREE | 1 |  |
+| TEAM | 2 |  |
+| ENTERPRISE | 3 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-SubscriptionService"></a>
+
+### SubscriptionService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
+| UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
+| TrialSubscription | [TrialSubscriptionRequest](#bytebase-v1-TrialSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
+
+ 
+
+
+
 <a name="v1_setting_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
 ## v1/setting_service.proto
+
+
+
+<a name="bytebase-v1-AgentPluginSetting"></a>
+
+### AgentPluginSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| url | [string](#string) |  | The URL for the agent API. |
+| token | [string](#string) |  | The token for the agent. |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting"></a>
+
+### AppIMSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| im_type | [AppIMSetting.IMType](#bytebase-v1-AppIMSetting-IMType) |  |  |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+| external_approval | [AppIMSetting.ExternalApproval](#bytebase-v1-AppIMSetting-ExternalApproval) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-ExternalApproval"></a>
+
+### AppIMSetting.ExternalApproval
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| approval_definition_id | [string](#string) |  |  |
+
+
+
 
 
 
@@ -5312,12 +5505,100 @@ The data in setting value.
 | ----- | ---- | ----- | ----------- |
 | string_value | [string](#string) |  | Defines this value as being a string value. |
 | smtp_mail_delivery_setting_value | [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue) |  |  |
+| app_im_setting_value | [AppIMSetting](#bytebase-v1-AppIMSetting) |  |  |
+| agent_plugin_setting_value | [AgentPluginSetting](#bytebase-v1-AgentPluginSetting) |  |  |
+| workspace_profile_setting_value | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  |  |
+| workspace_approval_setting_value | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
+| workspace_trial_setting_value | [WorkspaceTrialSetting](#bytebase-v1-WorkspaceTrialSetting) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-WorkspaceApprovalSetting"></a>
+
+### WorkspaceApprovalSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-WorkspaceApprovalSetting-Rule"></a>
+
+### WorkspaceApprovalSetting.Rule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
+| template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-WorkspaceProfileSetting"></a>
+
+### WorkspaceProfileSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| external_url | [string](#string) |  | The URL user visits Bytebase.
+
+The external URL is used for: 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend. 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend. |
+| disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
+| require_2fa | [bool](#bool) |  | Require 2FA for all users. |
+| outbound_ip_list | [string](#string) | repeated | outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. |
+
+
+
+
+
+
+<a name="bytebase-v1-WorkspaceTrialSetting"></a>
+
+### WorkspaceTrialSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance_count | [int32](#int32) |  |  |
+| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| issued_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| subject | [string](#string) |  |  |
+| org_name | [string](#string) |  |  |
+| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
 
 
 
 
 
  
+
+
+<a name="bytebase-v1-AppIMSetting-IMType"></a>
+
+### AppIMSetting.IMType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| IM_UNSPECIFIED | 0 |  |
+| IM_FEISHU | 1 |  |
+
 
 
 <a name="bytebase-v1-SMTPMailDeliverySettingValue-Authentication"></a>
@@ -5638,141 +5919,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
-
- 
-
-
-
-<a name="v1_subscription_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/subscription_service.proto
-
-
-
-<a name="bytebase-v1-GetSubscriptionRequest"></a>
-
-### GetSubscriptionRequest
-
-
-
-
-
-
-
-<a name="bytebase-v1-PatchSubscription"></a>
-
-### PatchSubscription
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| license | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Subscription"></a>
-
-### Subscription
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instance_count | [int32](#int32) |  |  |
-| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| started_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
-| trialing | [bool](#bool) |  |  |
-| org_id | [string](#string) |  |  |
-| org_name | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TrialSubscription"></a>
-
-### TrialSubscription
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
-| days | [int32](#int32) |  |  |
-| instance_count | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TrialSubscriptionRequest"></a>
-
-### TrialSubscriptionRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| trial | [TrialSubscription](#bytebase-v1-TrialSubscription) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateSubscriptionRequest"></a>
-
-### UpdateSubscriptionRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| patch | [PatchSubscription](#bytebase-v1-PatchSubscription) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-PlanType"></a>
-
-### PlanType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PLAN_TYPE_UNSPECIFIED | 0 |  |
-| FREE | 1 |  |
-| TEAM | 2 |  |
-| ENTERPRISE | 3 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-SubscriptionService"></a>
-
-### SubscriptionService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
-| UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
-| TrialSubscription | [TrialSubscriptionRequest](#bytebase-v1-TrialSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
 
  
 

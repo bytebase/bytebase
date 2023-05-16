@@ -79,3 +79,21 @@ message SMTPMailDeliverySetting {
   // The sender email address.
   string from = 10;
 }
+
+message AppIMSetting {
+  enum IMType {
+    IM_UNSPECIFIED = 0;
+    IM_FEISHU = 1;
+  }
+  IMType im_type = 1;
+
+  string app_id = 2;
+
+  string app_secret = 3;
+
+  message ExternalApproval {
+    bool enabled = 1;
+    string approval_definition_id = 2;
+  }
+  ExternalApproval external_approval = 4;
+}
