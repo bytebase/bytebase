@@ -94,6 +94,7 @@ message SearchSheetsRequest {
   // Format: only support the following spec for now:
   // - `creator = user:{email}`, `creator != user:{email}`
   // - `starred = true`, `starred = false`.
+  // Not support empty filter for now.
   string filter = 2;
 
   // Not used. The maximum number of sheets to return. The service may return fewer than

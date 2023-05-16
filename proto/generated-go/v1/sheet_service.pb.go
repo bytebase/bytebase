@@ -427,6 +427,7 @@ type SearchSheetsRequest struct {
 	// Format: only support the following spec for now:
 	// - `creator = user:{email}`, `creator != user:{email}`
 	// - `starred = true`, `starred = false`.
+	// Not support empty filter for now.
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Not used. The maximum number of sheets to return. The service may return fewer than
 	// this value.
