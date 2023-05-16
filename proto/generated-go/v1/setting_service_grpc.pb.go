@@ -19,14 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SettingService_GetSetting_FullMethodName = "/bytebase.v1.SettingService/GetSetting"
-	SettingService_SetSetting_FullMethodName = "/bytebase.v1.SettingService/SetSetting"
+	SettingService_ListSettings_FullMethodName = "/bytebase.v1.SettingService/ListSettings"
+	SettingService_GetSetting_FullMethodName   = "/bytebase.v1.SettingService/GetSetting"
+	SettingService_SetSetting_FullMethodName   = "/bytebase.v1.SettingService/SetSetting"
 )
 
 // SettingServiceClient is the client API for SettingService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SettingServiceClient interface {
+	ListSettings(ctx context.Context, in *ListSettingsRequest, opts ...grpc.CallOption) (*ListSettingsResponse, error)
 	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*Setting, error)
 	SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*Setting, error)
 }
@@ -37,6 +39,15 @@ type settingServiceClient struct {
 
 func NewSettingServiceClient(cc grpc.ClientConnInterface) SettingServiceClient {
 	return &settingServiceClient{cc}
+}
+
+func (c *settingServiceClient) ListSettings(ctx context.Context, in *ListSettingsRequest, opts ...grpc.CallOption) (*ListSettingsResponse, error) {
+	out := new(ListSettingsResponse)
+	err := c.cc.Invoke(ctx, SettingService_ListSettings_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *settingServiceClient) GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*Setting, error) {
@@ -61,6 +72,7 @@ func (c *settingServiceClient) SetSetting(ctx context.Context, in *SetSettingReq
 // All implementations must embed UnimplementedSettingServiceServer
 // for forward compatibility
 type SettingServiceServer interface {
+	ListSettings(context.Context, *ListSettingsRequest) (*ListSettingsResponse, error)
 	GetSetting(context.Context, *GetSettingRequest) (*Setting, error)
 	SetSetting(context.Context, *SetSettingRequest) (*Setting, error)
 	mustEmbedUnimplementedSettingServiceServer()
@@ -70,6 +82,9 @@ type SettingServiceServer interface {
 type UnimplementedSettingServiceServer struct {
 }
 
+func (UnimplementedSettingServiceServer) ListSettings(context.Context, *ListSettingsRequest) (*ListSettingsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListSettings not implemented")
+}
 func (UnimplementedSettingServiceServer) GetSetting(context.Context, *GetSettingRequest) (*Setting, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSetting not implemented")
 }
@@ -87,6 +102,24 @@ type UnsafeSettingServiceServer interface {
 
 func RegisterSettingServiceServer(s grpc.ServiceRegistrar, srv SettingServiceServer) {
 	s.RegisterService(&SettingService_ServiceDesc, srv)
+}
+
+func _SettingService_ListSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).ListSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_ListSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).ListSettings(ctx, req.(*ListSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _SettingService_GetSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -132,6 +165,10 @@ var SettingService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bytebase.v1.SettingService",
 	HandlerType: (*SettingServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListSettings",
+			Handler:    _SettingService_ListSettings_Handler,
+		},
 		{
 			MethodName: "GetSetting",
 			Handler:    _SettingService_GetSetting_Handler,
