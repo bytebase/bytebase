@@ -1,11 +1,7 @@
 import { DataSource } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import {
-  InstanceId,
-  MigrationHistoryId,
-  ResourceId,
-} from "./id";
+import { InstanceId, MigrationHistoryId, ResourceId } from "./id";
 import { Engine } from "./proto/v1/common";
 import { VCSPushEvent } from "./vcs";
 

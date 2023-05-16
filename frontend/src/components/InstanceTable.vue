@@ -45,7 +45,7 @@ import { EnvironmentName } from "@/components/v2";
 
 export default defineComponent({
   name: "InstanceTable",
-  components: { InstanceEngineIcon },
+  components: { InstanceEngineIcon, EnvironmentName },
   props: {
     instanceList: {
       required: true,
