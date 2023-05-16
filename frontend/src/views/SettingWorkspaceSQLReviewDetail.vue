@@ -231,7 +231,7 @@ const hasPermission = computed(() => {
 const reviewPolicy = computed((): SQLReviewPolicy => {
   return (
     store.getReviewPolicyByEnvironmentUID(
-      idFromSlug(props.sqlReviewPolicySlug)
+      String(idFromSlug(props.sqlReviewPolicySlug))
     ) || (unknown("SQL_REVIEW") as SQLReviewPolicy)
   );
 });

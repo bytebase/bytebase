@@ -221,7 +221,7 @@ export default defineComponent({
     });
 
     const environmentId = computed(() => {
-      return activeEnvironment(props.issue.pipeline).id;
+      return String(activeEnvironment(props.issue.pipeline).id);
     });
 
     // Code block below will raise an eslint ERROR.

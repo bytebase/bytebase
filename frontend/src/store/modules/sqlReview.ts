@@ -1,7 +1,6 @@
 import { pullAt } from "lodash-es";
 import {
   PolicyId,
-  EnvironmentId,
   RowStatus,
   SchemaPolicyRule,
   SQLReviewPolicy,
@@ -255,7 +254,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
     },
     getReviewPolicyByEnvironmentUID(
-      environmentUID: EnvironmentId
+      environmentUID: string
     ): SQLReviewPolicy | undefined {
       return this.reviewPolicyList.find(
         (g) => g.environment.uid == environmentUID
@@ -281,7 +280,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       return reviewPolicyList;
     },
     async getOrFetchReviewPolicyByEnvironmentUID(
-      environmentUID: EnvironmentId
+      environmentUID: string
     ): Promise<SQLReviewPolicy | undefined> {
       const environment = await getEnvironmentById(environmentUID);
       const policyStore = usePolicyV1Store();
@@ -312,7 +311,7 @@ export const useSQLReviewPolicyList = () => {
 };
 
 export const useReviewPolicyByEnvironmentId = (
-  environmentId: MaybeRef<EnvironmentId>
+  environmentId: MaybeRef<string>
 ) => {
   const store = useSQLReviewStore();
   watchEffect(() => {
