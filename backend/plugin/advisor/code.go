@@ -54,6 +54,8 @@ const (
 	NamingAutoIncrementColumnConventionMismatch Code = 307
 	// 308 name is keyword identifier advisor error code.
 	NameIsKeywordIdentifier Code = 308
+	// 309 naming case mismatch advisor error code.
+	NamingCaseMismatch Code = 309
 
 	// 401 ~ 499 column error code.
 	NoRequiredColumn                           Code = 401
