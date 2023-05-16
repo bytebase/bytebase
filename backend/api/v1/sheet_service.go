@@ -225,8 +225,86 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 	}, nil
 }
 
-func (_ *SheetService) UpdateSheet(context.Context, *v1pb.UpdateSheetRequest) (*v1pb.Sheet, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateSheet not implemented")
+func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateSheetRequest) (*v1pb.Sheet, error) {
+	if request.Sheet == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "sheet cannot be empty")
+	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update mask cannot be empty")
+	}
+	if request.Sheet.Name == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "sheet name cannot be empty")
+	}
+
+	projectResourceID, sheetID, err := getProjectResourceIDSheetID(request.Sheet.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	sheetIntID, err := strconv.Atoi(sheetID)
+	if err != nil || sheetIntID <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+	}
+
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{
+		ID:        &sheetIntID,
+		ProjectID: &project.UID,
+	}, currentPrincipalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+	}
+	if sheet == nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetIntID))
+	}
+
+	sheetPatch := &store.PatchSheetMessage{
+		ID:        sheet.UID,
+		UpdaterID: currentPrincipalID,
+	}
+
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "title":
+			sheetPatch.Name = &request.Sheet.Title
+		case "content":
+			statement := string(request.Sheet.Content)
+			sheetPatch.Statement = &statement
+		case "starred":
+			if _, err := s.store.UpsertSheetOrganizer(ctx, &api.SheetOrganizerUpsert{
+				SheetID:     sheet.UID,
+				PrincipalID: currentPrincipalID,
+				Starred:     request.Sheet.Starred,
+			}); err != nil {
+				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update sheet organizer: %v", err))
+			}
+		case "visibility":
+			visibility, err := convertToLegacyAPISheetVisibility(request.Sheet.Visibility)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", request.Sheet.Visibility))
+			}
+			stringVisibility := string(visibility)
+			sheetPatch.Visibility = &stringVisibility
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
+		}
+	}
+	storeSheet, err := s.store.PatchSheetV2(ctx, sheetPatch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update sheet: %v", err))
+	}
+	v1pbSheet, err := s.convertToAPISheetMessage(ctx, storeSheet)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to convert sheet: %v", err))
+	}
+
+	return v1pbSheet, nil
 }
 
 // DeleteSheet deletes a sheet.
@@ -349,18 +427,9 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 }
 
 func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
-	var visibility api.SheetVisibility
-	switch sheet.Visibility {
-	case v1pb.Sheet_VISIBILITY_UNSPECIFIED:
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", sheet.Visibility))
-	case v1pb.Sheet_VISIBILITY_PUBLIC:
-		visibility = api.PublicSheet
-	case v1pb.Sheet_VISIBILITY_PROJECT:
-		visibility = api.ProjectSheet
-	case v1pb.Sheet_VISIBILITY_PRIVATE:
-		visibility = api.PrivateSheet
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", sheet.Visibility))
+	visibility, err := convertToLegacyAPISheetVisibility(sheet.Visibility)
+	if err != nil {
+		return nil, err
 	}
 	var source api.SheetSource
 	switch sheet.Source {
@@ -399,4 +468,19 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		Source:     source,
 		Type:       tp,
 	}, nil
+}
+
+func convertToLegacyAPISheetVisibility(visibility v1pb.Sheet_Visibility) (api.SheetVisibility, error) {
+	switch visibility {
+	case v1pb.Sheet_VISIBILITY_UNSPECIFIED:
+		return api.SheetVisibility(""), status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", visibility))
+	case v1pb.Sheet_VISIBILITY_PUBLIC:
+		return api.PublicSheet, nil
+	case v1pb.Sheet_VISIBILITY_PROJECT:
+		return api.ProjectSheet, nil
+	case v1pb.Sheet_VISIBILITY_PRIVATE:
+		return api.PrivateSheet, nil
+	default:
+		return api.SheetVisibility(""), status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", visibility))
+	}
 }

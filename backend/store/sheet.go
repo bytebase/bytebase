@@ -897,3 +897,74 @@ func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*Sheet
 
 	return &sheet, nil
 }
+
+type PatchSheetMessage struct {
+	ID         int
+	UpdaterID  int
+	Name       *string
+	Statement  *string
+	Visibility *string
+}
+
+func (s *Store) PatchSheetV2(ctx context.Context, patch *PatchSheetMessage) (*SheetMessage, error) {
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Statement; v != nil {
+		set, args = append(set, fmt.Sprintf("statement = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Visibility; v != nil {
+		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
+	}
+
+	args = append(args, patch.ID)
+
+	var sheet SheetMessage
+	databaseID := sql.NullInt32{}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+		UPDATE sheet
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement)
+	`, len(args), common.MaxSheetSize),
+		args...,
+	).Scan(
+		&sheet.UID,
+		&sheet.rowStatus,
+		&sheet.CreatorID,
+		&sheet.createdTs,
+		&sheet.UpdaterID,
+		&sheet.updatedTs,
+		&sheet.ProjectUID,
+		&databaseID,
+		&sheet.Name,
+		&sheet.Statement,
+		&sheet.Visibility,
+		&sheet.Source,
+		&sheet.Type,
+		&sheet.Size,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("sheet ID not found: %d", patch.ID)}
+		}
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	s.sheetStatementCache.Invalidate(patch.ID)
+
+	if databaseID.Valid {
+		value := int(databaseID.Int32)
+		sheet.DatabaseID = &value
+	}
+	sheet.CreatedTime = time.Unix(sheet.createdTs, 0)
+	sheet.UpdatedTime = time.Unix(sheet.updatedTs, 0)
+	return &sheet, nil
+}

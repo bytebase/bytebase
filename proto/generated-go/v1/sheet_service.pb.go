@@ -317,6 +317,11 @@ type UpdateSheetRequest struct {
 	// The list of fields to be updated.
 	// Fields are specified relative to the sheet.
 	// (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
+	// Only support update the following fields for now:
+	// - `title`
+	// - `statement`
+	// - `starred`
+	// - `visibility`
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 }
 
