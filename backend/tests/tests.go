@@ -191,7 +191,7 @@ var (
 
 	// Shared external PG server variables.
 	externalPgUser     = "bbexternal"
-	externalPgPort     = 21113
+	externalPgPort     = time.Now().Second()*500 + 10113
 	externalPgBinDir   string
 	externalPgDataDir  string
 	nextDatabaseNumber = 20210113
