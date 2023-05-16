@@ -60,12 +60,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, ref, watchEffect } from "vue";
-import {
-  Database,
-  Environment,
-  LabelKeyType,
-  LabelValueType,
-} from "../../types";
+import { Database, LabelKeyType, LabelValueType } from "../../types";
 import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";
 import { groupBy, last } from "lodash-es";
 import {
@@ -74,6 +69,7 @@ import {
   getLabelValuesFromDatabaseList,
   LABEL_VALUE_EMPTY,
 } from "../../utils";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 type DatabaseMatrix = {
   labelValue: LabelValueType;

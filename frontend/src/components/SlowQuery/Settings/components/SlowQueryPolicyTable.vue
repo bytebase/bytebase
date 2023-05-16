@@ -8,11 +8,14 @@
   >
     <template #item="{ item }: { item: ComposedSlowQueryPolicy }">
       <div class="bb-grid-cell">
-        <InstanceName :instance="item.instance" />
+        <InstanceName :instance="item.instance" :link="false" />
       </div>
 
       <div class="bb-grid-cell">
-        <EnvironmentName :environment="item.instance.environment" />
+        <EnvironmentName
+          :environment="item.instance.environment"
+          :link="false"
+        />
       </div>
       <div class="bb-grid-cell">
         <SpinnerSwitch

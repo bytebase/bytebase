@@ -1,9 +1,6 @@
 import { RemovableRef } from "@vueuse/core";
 import {
-  EnvironmentId,
   MigrationHistoryId,
-  Policy,
-  PolicyType,
   QueryHistory,
   Sheet,
   OnboardingGuideType,
@@ -14,7 +11,6 @@ import { Bookmark } from "./bookmark";
 import { Command } from "./common";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
-import { Environment } from "./environment";
 import {
   CommandId,
   DatabaseId,
@@ -98,16 +94,8 @@ export interface StageState {}
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface TaskState {}
 
-export interface PolicyState {
-  policyMapByEnvironmentId: Map<EnvironmentId, Map<PolicyType, Policy>>;
-}
-
 export interface ProjectState {
   projectById: Map<ProjectId, Project>;
-}
-
-export interface EnvironmentState {
-  environmentList: Environment[];
 }
 
 export interface InstanceState {

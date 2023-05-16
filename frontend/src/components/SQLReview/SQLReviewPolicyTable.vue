@@ -13,12 +13,11 @@
       }"
     >
       <div class="bb-grid-cell">
-        <router-link :to="`/environment/${environment.uid}`">
-          {{ environmentTitleV1(environment) }}
-          <ProductionEnvironmentIcon
-            :tier="environmentTierToJSON(environment.tier)"
-          />
-        </router-link>
+        <EnvironmentV1Name
+          :environment="environment"
+          :link="true"
+          :plain="true"
+        />
       </div>
       <div class="bb-grid-cell">
         <template v-if="review">
@@ -83,12 +82,8 @@ import {
 } from "@/store";
 import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
 import { SQLReviewPolicy } from "@/types";
-import ProductionEnvironmentIcon from "../Environment/ProductionEnvironmentIcon.vue";
-import {
-  Environment,
-  environmentTierToJSON,
-} from "@/types/proto/v1/environment_service";
-import { environmentTitleV1 } from "@/utils";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentV1Name } from "@/components/v2";
 
 type EnvironmentReviewPolicy = {
   environment: Environment;
