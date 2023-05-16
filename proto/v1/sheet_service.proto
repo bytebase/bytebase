@@ -76,6 +76,11 @@ message UpdateSheetRequest {
   // The list of fields to be updated.
   // Fields are specified relative to the sheet.
   // (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
+  // Only support update the following fields for now:
+  // - `title`
+  // - `statement`
+  // - `starred`
+  // - `visibility`
   google.protobuf.FieldMask update_mask = 2;
 }
 
@@ -90,33 +95,34 @@ message SearchSheetsRequest {
   // Foramt: projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
+  // To filter the search result.
+  // Format: only support the following spec for now:
+  // - `creator = user:{email}`, `creator != user:{email}`
+  // - `starred = true`, `starred = false`.
+  // Not support empty filter for now.
+  string filter = 2;
+
   // Not used. The maximum number of sheets to return. The service may return fewer than
   // this value.
   // If unspecified, at most 50 sheets will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
+  int32 page_size = 3;
 
   // Not used. A page token, received from a previous `SearchSheets` call.
   // Provide this to retrieve the subsequent page.
   //
   // When paginating, all other parameters provided to `SearchSheets` must match
   // the call that provided the page token.
-  string page_token = 3;
+  string page_token = 4;
 }
 
 message SearchSheetsResponse {
   // The sheets that matched the search criteria.
   repeated Sheet sheets = 1;
 
-  // To filter the search result.
-  // Format: only support the following spec for now:
-  // - `creator = user:{email}`, `creator != user:{email}`
-  // - `starred = true`, `starred = false`.
-  string filter = 2;
-
   // Not used. A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 3;
+  string next_page_token = 2;
 }
 
 message SyncSheetsRequest {
@@ -159,7 +165,7 @@ message Sheet {
   bytes content = 7 [(google.api.field_behavior) = REQUIRED];
 
   // content_size is the full size of the content, may not match the size of the `content` field.
-  bytes content_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 content_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum Visibility {
     VISIBILITY_UNSPECIFIED = 0;

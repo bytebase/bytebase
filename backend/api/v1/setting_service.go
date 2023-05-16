@@ -3,6 +3,7 @@ package v1
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/store"
@@ -34,15 +36,23 @@ type SettingService struct {
 	profile        *config.Profile
 	licenseService enterpriseAPI.LicenseService
 	stateCfg       *state.State
+	feishuProvider *feishu.Provider
 }
 
 // NewSettingService creates a new setting service.
-func NewSettingService(store *store.Store, profile *config.Profile, licenseService enterpriseAPI.LicenseService, stateCfg *state.State) *SettingService {
+func NewSettingService(
+	store *store.Store,
+	profile *config.Profile,
+	licenseService enterpriseAPI.LicenseService,
+	stateCfg *state.State,
+	feishuProvider *feishu.Provider,
+) *SettingService {
 	return &SettingService{
 		store:          store,
 		profile:        profile,
 		licenseService: licenseService,
 		stateCfg:       stateCfg,
+		feishuProvider: feishuProvider,
 	}
 }
 
@@ -55,6 +65,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingPluginOpenAIEndpoint,
 	api.SettingWorkspaceApproval,
 	api.SettingWorkspaceMailDelivery,
+	api.SettingWorkspaceProfile,
 }
 
 var (
@@ -63,6 +74,27 @@ var (
 	//go:embed mail_templates/testmail/statics/banner.png
 	testEmailFs embed.FS
 )
+
+// ListSettings lists all settings.
+func (s *SettingService) ListSettings(ctx context.Context, _ *v1pb.ListSettingsRequest) (*v1pb.ListSettingsResponse, error) {
+	settings, err := s.store.ListSettingV2(ctx, &store.FindSettingMessage{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list settings: %v", err)
+	}
+
+	response := &v1pb.ListSettingsResponse{}
+	for _, setting := range settings {
+		if !settingInWhitelist(setting.Name) {
+			continue
+		}
+		settingMessage, err := convertToSettingMessage(setting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
+		}
+		response.Settings = append(response.Settings, settingMessage)
+	}
+	return response, nil
+}
 
 // GetSetting gets the setting by name.
 func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettingRequest) (*v1pb.Setting, error) {
@@ -74,6 +106,10 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 		return nil, status.Errorf(codes.InvalidArgument, "setting name is empty")
 	}
 	apiSettingName := api.SettingName(settingName)
+	if !settingInWhitelist(apiSettingName) {
+		return nil, status.Errorf(codes.InvalidArgument, "setting is not available")
+	}
+
 	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
 		Name: &apiSettingName,
 	})
@@ -84,21 +120,11 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 		return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
 	}
 	// Only return whitelisted setting.
-	for _, whitelist := range whitelistSettings {
-		if setting.Name == whitelist {
-			settingMessage, err := convertToSettingMessage(setting)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
-			}
-			strippedSettingMessage, err := stripSensitiveData(settingMessage)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to strip sensitive data: %v", err)
-			}
-			return strippedSettingMessage, nil
-		}
+	settingMessage, err := convertToSettingMessage(setting)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
-
-	return nil, status.Errorf(codes.InvalidArgument, "setting %s is not whitelisted", settingName)
+	return settingMessage, nil
 }
 
 // SetSetting set the setting by name.
@@ -118,10 +144,10 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	var storeSettingValue string
 	switch apiSettingName {
 	case api.SettingWorkspaceProfile:
-		settingValue := request.Setting.Value.GetStringValue()
+		settingValue := request.Setting.Value.GetWorkspaceProfileSettingValue().String()
 		payload := new(storepb.WorkspaceProfileSetting)
 		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v for %s", err, apiSettingName)
 		}
 		if payload.ExternalUrl != "" {
 			externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
@@ -130,17 +156,12 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			}
 			payload.ExternalUrl = externalURL
 		}
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting value: %v", err)
-		}
-		storeSettingValue = string(bytes)
-
+		storeSettingValue = payload.String()
 	case api.SettingWorkspaceApproval:
 		if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
 			return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
 		}
-		settingValue := request.Setting.Value.GetStringValue()
+		settingValue := request.Setting.Value.GetWorkspaceApprovalSettingValue().String()
 		payload := new(storepb.WorkspaceApprovalSetting)
 		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
@@ -216,6 +237,73 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting value: %v", err)
 		}
 		storeSettingValue = string(bytes)
+	case api.SettingBrandingLogo:
+		if !s.licenseService.IsFeatureEnabled(api.FeatureBranding) {
+			return nil, status.Errorf(codes.PermissionDenied, api.FeatureBranding.AccessErrorMessage())
+		}
+		storeSettingValue = request.Setting.Value.GetStringValue()
+	case api.SettingPluginAgent:
+		settingValue := request.Setting.Value.GetAgentPluginSettingValue().String()
+		payload := new(storepb.AgentPluginSetting)
+		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v for %s", err, apiSettingName)
+		}
+		storeSettingValue = payload.String()
+	case api.SettingAppIM:
+		settingValue := request.Setting.Value.GetAppImSettingValue()
+		imType, err := convertToIMType(settingValue.ImType)
+		if err != nil {
+			return nil, err
+		}
+		payload := &api.SettingAppIMValue{
+			IMType:    imType,
+			AppID:     settingValue.AppId,
+			AppSecret: settingValue.AppSecret,
+			ExternalApproval: api.ExternalApproval{
+				Enabled:              settingValue.ExternalApproval.Enabled,
+				ApprovalDefinitionID: settingValue.ExternalApproval.ApprovalDefinitionId,
+			},
+		}
+		if payload.IMType != api.IMTypeFeishu {
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unknown IM Type %s", payload.IMType))
+		}
+		if payload.ExternalApproval.Enabled {
+			if !s.licenseService.IsFeatureEnabled(api.FeatureIMApproval) {
+				return nil, status.Errorf(codes.PermissionDenied, api.FeatureIMApproval.AccessErrorMessage())
+			}
+
+			if payload.AppID == "" || payload.AppSecret == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "application ID and secret cannot be empty")
+			}
+
+			p := s.feishuProvider
+			// clear token cache so that we won't use the previous token.
+			p.ClearTokenCache()
+
+			// check bot info
+			if _, err := p.GetBotID(ctx, feishu.TokenCtx{
+				AppID:     payload.AppID,
+				AppSecret: payload.AppSecret,
+			}); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get bot id. Hint: check if bot is enabled")
+			}
+
+			// create approval definition
+			approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
+				AppID:     payload.AppID,
+				AppSecret: payload.AppSecret,
+			}, "")
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to create approval definition: %v", err)
+			}
+			payload.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
+		}
+
+		s, err := json.Marshal(payload)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal approval setting: %v", err)
+		}
+		storeSettingValue = string(s)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
@@ -231,22 +319,19 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
-	strippedSettingMessage, err := stripSensitiveData(settingMessage)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to strip sensitive data: %v", err)
-	}
-	return strippedSettingMessage, nil
+	return settingMessage, nil
 }
 
 func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, error) {
+	settingName := fmt.Sprintf("%s%s", settingNamePrefix, setting.Name)
 	switch setting.Name {
 	case api.SettingWorkspaceMailDelivery:
 		storeValue := new(storepb.SMTPMailDeliverySetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
 		}
-		return &v1pb.Setting{
-			Name: settingNamePrefix + string(setting.Name),
+		return stripSensitiveData(&v1pb.Setting{
+			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_SmtpMailDeliverySettingValue{
 					SmtpMailDeliverySettingValue: &v1pb.SMTPMailDeliverySettingValue{
@@ -263,10 +348,70 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 					},
 				},
 			},
+		})
+	case api.SettingAppIM:
+		apiValue := new(api.SettingAppIMValue)
+		if err := json.Unmarshal([]byte(setting.Value), apiValue); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_AppImSettingValue{
+					AppImSettingValue: &v1pb.AppIMSetting{
+						ImType:    convertV1IMType(apiValue.IMType),
+						AppId:     apiValue.AppID,
+						AppSecret: apiValue.AppSecret,
+						ExternalApproval: &v1pb.AppIMSetting_ExternalApproval{
+							Enabled:              apiValue.ExternalApproval.Enabled,
+							ApprovalDefinitionId: apiValue.ExternalApproval.ApprovalDefinitionID,
+						},
+					},
+				},
+			},
+		}, nil
+	case api.SettingPluginAgent:
+		v1Value := new(v1pb.AgentPluginSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_AgentPluginSettingValue{
+					AgentPluginSettingValue: v1Value,
+				},
+			},
+		}, nil
+	case api.SettingWorkspaceProfile:
+		v1Value := new(v1pb.WorkspaceProfileSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_WorkspaceProfileSettingValue{
+					WorkspaceProfileSettingValue: v1Value,
+				},
+			},
+		}, nil
+	case api.SettingWorkspaceApproval:
+		v1Value := new(v1pb.WorkspaceApprovalSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_WorkspaceApprovalSettingValue{
+					WorkspaceApprovalSettingValue: v1Value,
+				},
+			},
 		}, nil
 	default:
 		return &v1pb.Setting{
-			Name: settingNamePrefix + string(setting.Name),
+			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_StringValue{
 					StringValue: setting.Value,
@@ -274,6 +419,35 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 			},
 		}, nil
 	}
+}
+
+func convertToIMType(imType v1pb.AppIMSetting_IMType) (api.IMType, error) {
+	var resp api.IMType
+	switch imType {
+	case v1pb.AppIMSetting_FEISHU:
+		resp = api.IMTypeFeishu
+	default:
+		return resp, status.Errorf(codes.InvalidArgument, "unknown im type %v", imType.String())
+	}
+	return resp, nil
+}
+
+func convertV1IMType(imType api.IMType) v1pb.AppIMSetting_IMType {
+	switch imType {
+	case api.IMTypeFeishu:
+		return v1pb.AppIMSetting_FEISHU
+	default:
+		return v1pb.AppIMSetting_IM_TYPE_UNSPECIFIED
+	}
+}
+
+func settingInWhitelist(name api.SettingName) bool {
+	for _, whitelist := range whitelistSettings {
+		if name == whitelist {
+			return true
+		}
+	}
+	return false
 }
 
 func validateApprovalTemplate(template *storepb.ApprovalTemplate) error {

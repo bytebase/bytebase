@@ -22,7 +22,6 @@ import { useI18n } from "vue-i18n";
 import { useInstanceList, useInstanceStore } from "@/store";
 import {
   InstanceId,
-  EnvironmentId,
   Instance,
   EngineType,
   unknown,
@@ -39,7 +38,7 @@ interface InstanceSelectOption extends SelectOption {
 const props = withDefaults(
   defineProps<{
     instance: InstanceId | undefined;
-    environment?: EnvironmentId;
+    environment?: string;
     allowedEngineTypeList?: readonly EngineType[];
     includeAll?: boolean;
     includeArchived?: boolean;
@@ -66,7 +65,7 @@ useInstanceList();
 
 const rawInstanceList = computed(() => {
   let list: Instance[] = [];
-  if (props.environment && props.environment !== UNKNOWN_ID) {
+  if (props.environment && props.environment !== String(UNKNOWN_ID)) {
     list = instanceStore.getInstanceListByEnvironmentId(props.environment, [
       "NORMAL",
       "ARCHIVED",

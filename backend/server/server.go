@@ -107,6 +107,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	// Register postgresql advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
+	// Register oracle advisor.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
 
 	// Register mysql differ driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/mysql"
@@ -262,14 +264,16 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Start a Postgres sample server. This is used for onboarding users without requiring them to
 	// configure an external instance.
-	log.Info("-----Sample Postgres Instance BEGIN-----")
-	sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir)
-	log.Info(fmt.Sprintf("sampleDatabasePort=%d", profile.SampleDatabasePort))
-	log.Info(fmt.Sprintf("sampleDataDir=%s", sampleDataDir))
-	if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
-		return nil, err
+	if profile.SampleDatabasePort != 0 {
+		log.Info("-----Sample Postgres Instance BEGIN-----")
+		sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir)
+		log.Info(fmt.Sprintf("sampleDatabasePort=%d", profile.SampleDatabasePort))
+		log.Info(fmt.Sprintf("sampleDataDir=%s", sampleDataDir))
+		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
+			return nil, err
+		}
+		log.Info("-----Sample Postgres Instance END-----")
 	}
-	log.Info("-----Sample Postgres Instance END-----")
 
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
@@ -540,8 +544,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			}
 			// Only generate onboarding data after the first enduser signup.
 			if firstEndUser {
-				if err := s.generateOnboardingData(ctx, user.ID); err != nil {
-					return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
+				if profile.SampleDatabasePort != 0 {
+					if err := s.generateOnboardingData(ctx, user.ID); err != nil {
+						return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
+					}
 				}
 			}
 			return nil
@@ -565,13 +571,14 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))
-	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile, s.licenseService, s.stateCfg))
+	v1pb.RegisterSettingServiceServer(s.grpcServer, v1.NewSettingService(s.store, &s.profile, s.licenseService, s.stateCfg, s.feishuProvider))
 	v1pb.RegisterAnomalyServiceServer(s.grpcServer, v1.NewAnomalyService(s.store))
 	v1pb.RegisterSQLServiceServer(s.grpcServer, v1.NewSQLService())
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
 	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store, s.ActivityManager, s.TaskScheduler, s.stateCfg))
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
+	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -624,6 +631,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
@@ -909,8 +919,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown postgres sample instance.
-	if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir)); err != nil {
-		log.Error("Failed to stop postgres sample instance", zap.Error(err))
+	if s.profile.SampleDatabasePort != 0 {
+		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir)); err != nil {
+			log.Error("Failed to stop postgres sample instance", zap.Error(err))
+		}
 	}
 
 	// Shutdown postgres server if embed.

@@ -1,12 +1,7 @@
 import { DataSource } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import {
-  EnvironmentId,
-  InstanceId,
-  MigrationHistoryId,
-  ResourceId,
-} from "./id";
+import { InstanceId, MigrationHistoryId, ResourceId } from "./id";
 import { Engine } from "./proto/v1/common";
 import { VCSPushEvent } from "./vcs";
 
@@ -171,7 +166,7 @@ export type InstanceCreate = {
   resourceId: ResourceId;
 
   // Related fields
-  environmentId: EnvironmentId;
+  environmentId: number;
 
   // Domain specific fields
   name: string;

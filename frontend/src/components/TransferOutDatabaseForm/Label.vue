@@ -33,7 +33,7 @@ const props = defineProps<{
 }>();
 
 const id = computed(() => {
-  return parseInt(props.option.value.split("-").pop()!, 10);
+  return props.option.value.split("-").pop()!;
 });
 
 const environment = computed(() => {

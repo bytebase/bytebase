@@ -39,14 +39,10 @@ export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   }
 
   const activeEnvironment = computed(() => {
-    if (create.value) {
-      // When creating an issue, activeEnvironmentId is the first stage's environmentId
-      const stage = (issue.value as IssueCreate).pipeline!.stageList[0];
-      return useEnvironmentV1Store().getEnvironmentByUID(stage.environmentId);
-    }
-
-    const stage = activeStageOfPipeline(issue.value.pipeline as Pipeline);
-    return useEnvironmentV1Store().getEnvironmentByUID(stage.environment.id);
+    const environmentId = create.value
+      ? (issue.value as IssueCreate).pipeline!.stageList[0].environmentId
+      : activeStageOfPipeline(issue.value.pipeline as Pipeline).id;
+    return useEnvironmentV1Store().getEnvironmentByUID(String(environmentId));
   });
 
   const activeEnvironmentApprovalPolicy = usePolicyByParentAndType(

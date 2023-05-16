@@ -32,7 +32,7 @@ export default defineComponent({
       default: undefined,
     },
     environmentId: {
-      type: [String, Number] as PropType<IdType>,
+      type: String,
       default: undefined,
     },
     filter: {

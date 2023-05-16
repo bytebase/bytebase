@@ -27,10 +27,9 @@ func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller
 	projects, err := ctl.getProjects()
 	a.NoError(err)
 
-	// Default + Sample project.
-	a.Equal(2, len(projects))
+	// Default.
+	a.Equal(1, len(projects))
 	a.Equal("Default", projects[0].Name)
-	a.Equal("Sample Project", projects[1].Name)
 
 	err = ctl.Close(ctx)
 	a.NoError(err)

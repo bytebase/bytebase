@@ -134,14 +134,14 @@ import { computed, PropType, reactive, watch } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
 
 import { type BBGridColumn, BBGrid } from "@/bbkit";
-import { Database, DatabaseId, EnvironmentId } from "@/types";
+import { Database, DatabaseId } from "@/types";
 import { TransferSource } from "./utils";
 import { useDatabaseStore, useEnvironmentV1List } from "@/store";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { ProductionEnvironmentV1Icon } from "../v2";
 
 type LocalState = {
-  selectedDatabaseIdListForEnvironment: Map<EnvironmentId, Set<DatabaseId>>;
+  selectedDatabaseIdListForEnvironment: Map<string, Set<DatabaseId>>;
 };
 
 const props = defineProps({
@@ -218,7 +218,7 @@ const combinedSelectedDatabaseIdList = computed(() => {
 
 const isDatabaseSelectedForEnvironment = (
   databaseId: DatabaseId,
-  environmentId: EnvironmentId
+  environmentId: string
 ) => {
   const map = state.selectedDatabaseIdListForEnvironment;
   const set = map.get(environmentId) || new Set();
@@ -227,7 +227,7 @@ const isDatabaseSelectedForEnvironment = (
 
 const toggleDatabaseIdForEnvironment = (
   databaseId: DatabaseId,
-  environmentId: EnvironmentId,
+  environmentId: string,
   selected: boolean
 ) => {
   const map = state.selectedDatabaseIdListForEnvironment;
@@ -282,8 +282,8 @@ const getSelectionStateSummaryForEnvironment = (
 const handleClickRow = (db: Database) => {
   toggleDatabaseIdForEnvironment(
     db.id,
-    db.instance.environment.id,
-    !isDatabaseSelectedForEnvironment(db.id, db.instance.environment.id)
+    String(db.instance.environment.id),
+    !isDatabaseSelectedForEnvironment(db.id, String(db.instance.environment.id))
   );
 };
 

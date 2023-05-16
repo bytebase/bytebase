@@ -109,7 +109,7 @@ const { t } = useI18n();
 
 const state = reactive<LocalState>({
   environment: environmentV1Store.getEnvironmentByUID(
-    idFromSlug(props.environmentSlug)
+    String(idFromSlug(props.environmentSlug))
   ),
   showArchiveModal: false,
   showDisableAutoBackupModal: false,
