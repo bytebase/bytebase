@@ -146,7 +146,10 @@ export default defineComponent({
         });
       }
 
-      if (props.environmentId !== String(UNKNOWN_ID) || props.projectId != UNKNOWN_ID) {
+      if (
+        props.environmentId !== String(UNKNOWN_ID) ||
+        props.projectId != UNKNOWN_ID
+      ) {
         list = list.filter((database: Database) => {
           return (
             (props.environmentId === String(UNKNOWN_ID) ||
