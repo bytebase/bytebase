@@ -76,7 +76,7 @@ var (
 )
 
 // ListSettings lists all settings.
-func (s *SettingService) ListSettings(ctx context.Context, request *v1pb.ListSettingsRequest) (*v1pb.ListSettingsResponse, error) {
+func (s *SettingService) ListSettings(ctx context.Context, _ *v1pb.ListSettingsRequest) (*v1pb.ListSettingsResponse, error) {
 	settings, err := s.store.ListSettingV2(ctx, &store.FindSettingMessage{})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list settings: %v", err)
@@ -419,7 +419,6 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 			},
 		}, nil
 	}
-
 }
 
 func convertToIMType(imType v1pb.AppIMSetting_IMType) (api.IMType, error) {
