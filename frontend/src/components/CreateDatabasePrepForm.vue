@@ -257,7 +257,6 @@ import ProjectSelect from "../components/ProjectSelect.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import {
-  EnvironmentId,
   InstanceId,
   ProjectId,
   IssueCreate,
@@ -297,7 +296,7 @@ import {
 
 interface LocalState {
   projectId?: ProjectId;
-  environmentId?: EnvironmentId;
+  environmentId?: string;
   instanceId?: InstanceId;
   instanceUserId?: InstanceUserId;
   labelList: DatabaseLabel[];
@@ -328,7 +327,7 @@ export default defineComponent({
       default: undefined,
     },
     environmentId: {
-      type: Number as PropType<EnvironmentId>,
+      type: String,
       default: undefined,
     },
     instanceId: {
@@ -485,7 +484,7 @@ export default defineComponent({
       state.projectId = projectId;
     };
 
-    const selectEnvironment = (environmentId: EnvironmentId) => {
+    const selectEnvironment = (environmentId: string) => {
       state.environmentId = environmentId;
     };
 

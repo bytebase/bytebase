@@ -131,7 +131,7 @@
     @close="state.showCreateDatabaseModal = false"
   >
     <CreateDatabasePrepForm
-      :environment-id="instance.environment.id"
+      :environment-id="String(instance.environment.id)"
       :instance-id="instance.id"
       @dismiss="state.showCreateDatabaseModal = false"
     />

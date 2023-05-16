@@ -658,7 +658,7 @@ interface BasicInformation {
   name: string;
   engine: EngineType;
   externalLink?: string;
-  environmentId: number;
+  environmentId: string;
 }
 
 interface LocalState {
@@ -695,7 +695,7 @@ const basicInformation = ref<BasicInformation>({
   rowStatus: props.instance?.rowStatus || "NORMAL",
   name: props.instance?.name || t("instance.new-instance"),
   engine: props.instance?.engine || "MYSQL",
-  environmentId: (props.instance?.environment.id || UNKNOWN_ID) as number,
+  environmentId: String(props.instance?.environment.id || UNKNOWN_ID),
 });
 
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
@@ -1210,7 +1210,7 @@ const updateInstanceState = async () => {
     rowStatus: instance.rowStatus,
     name: instance.name,
     engine: instance.engine,
-    environmentId: instance.environment.id as number,
+    environmentId: String(instance.environment.id),
   };
   adminDataSource.value = {
     ...cloneDeep(instance.dataSourceList.find((ds) => ds.type === "ADMIN")!),
@@ -1277,7 +1277,7 @@ const doCreate = async () => {
     name: basicInformation.value.name.trim(),
     engine: basicInformation.value.engine,
     externalLink: basicInformation.value.externalLink,
-    environmentId: basicInformation.value.environmentId,
+    environmentId: parseInt(basicInformation.value.environmentId, 10),
     host: adminDataSource.value.host,
     port: adminDataSource.value.port,
     database: adminDataSource.value.database,
@@ -1605,7 +1605,7 @@ const getInstanceStateData = () => {
       rowStatus: props.instance?.rowStatus || "NORMAL",
       name: props.instance?.name || t("instance.new-instance"),
       engine: props.instance?.engine || "MYSQL",
-      environmentId: (props.instance?.environment.id || UNKNOWN_ID) as number,
+      environmentId: String(props.instance?.environment.id || UNKNOWN_ID),
     },
     adminDataSource: {
       ...(getDataSourceWithType("ADMIN") || unknown("DATA_SOURCE")),
