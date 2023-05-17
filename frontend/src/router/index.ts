@@ -815,7 +815,7 @@ const routes: Array<RouteRecordRaw> = [
                     const projectV1 = useProjectV1Store().getProjectByUID(
                       String(projectId)
                     );
-                    return projectV1.title
+                    return projectV1.title;
                   },
                   allowBookmark: true,
                 },
