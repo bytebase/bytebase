@@ -8,7 +8,6 @@ import {
   useMemberStore,
   useRoleStore,
   usePrincipalStore,
-  useSettingStore,
   useUIStateStore,
   useLegacyProjectStore,
   useDebugStore,
@@ -16,12 +15,13 @@ import {
 } from "@/store";
 import { defineComponent } from "vue";
 import { DEFAULT_PROJECT_ID } from "../types";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 export default defineComponent({
   name: "ProvideDashboardContext",
   async setup() {
     await Promise.all([
-      useSettingStore().fetchSetting(),
+      useSettingV1Store().fetchSettingList(),
       // Fetch so MemberSelect can have the data.
       useMemberStore().fetchMemberList(),
       useRoleStore().fetchRoleList(),

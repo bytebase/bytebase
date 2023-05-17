@@ -26,12 +26,9 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useSettingStore } from "@/store";
-
-const settingStore = useSettingStore();
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 const customBrandingLogo = computed((): string | undefined => {
-  const brandingLogoSetting = settingStore.getSettingByName("bb.branding.logo");
-  return brandingLogoSetting?.value;
+  return useSettingV1Store().brandingLogo;
 });
 </script>
