@@ -614,7 +614,6 @@ import {
   useDatabaseStore,
   useDataSourceStore,
   useInstanceStore,
-  useSettingStore,
   useActuatorStore,
   useSQLStore,
 } from "@/store";
@@ -632,6 +631,7 @@ import {
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 const props = defineProps({
   instance: {
@@ -677,7 +677,7 @@ const instanceV1Store = useInstanceV1Store();
 const dataSourceStore = useDataSourceStore();
 const currentUser = useCurrentUser();
 const sqlStore = useSQLStore();
-const settingStore = useSettingStore();
+const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorStore();
 
 const state = reactive<LocalState>({
@@ -753,7 +753,7 @@ onMounted(async () => {
     adminDataSource.value.options.srv = false;
     adminDataSource.value.options.authenticationDatabase = "";
   }
-  await settingStore.fetchSetting();
+  await settingV1Store.fetchSettingList();
 });
 
 watch(
@@ -775,10 +775,10 @@ const engineList = computed(() => {
 });
 
 const outboundIpList = computed(() => {
-  if (!settingStore.workspaceSetting) {
+  if (!settingV1Store.workspaceProfileSetting) {
     return "";
   }
-  return settingStore.workspaceSetting.outboundIpList.join(",");
+  return settingV1Store.workspaceProfileSetting.outboundIpList.join(",");
 });
 
 const EngineIconPath = {

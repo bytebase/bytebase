@@ -94,12 +94,8 @@
 import { computed, reactive, watchEffect } from "vue";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
-import {
-  featureToRef,
-  pushNotification,
-  useCurrentUser,
-  useSettingStore,
-} from "@/store";
+import { featureToRef, pushNotification, useCurrentUser } from "@/store";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 interface LocalState {
   displayName?: string;
@@ -121,7 +117,7 @@ const convertFileToBase64 = (file: File) =>
     reader.onerror = (error) => reject(error);
   });
 
-const settingStore = useSettingStore();
+const settingV1Store = useSettingV1Store();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
@@ -133,9 +129,7 @@ const state = reactive<LocalState>({
 });
 
 watchEffect(() => {
-  const brandingLogoSetting =
-    settingStore.getSettingByName("bb.branding.logo")!;
-  state.logoUrl = brandingLogoSetting.value;
+  state.logoUrl = settingV1Store.brandingLogo;
 });
 
 const currentUser = useCurrentUser();
@@ -175,13 +169,15 @@ const uploadLogo = async () => {
 
   try {
     const fileInBase64 = await convertFileToBase64(state.logoFile);
-    const setting = await settingStore.updateSettingByName({
+    const setting = await settingV1Store.upsertSetting({
       name: "bb.branding.logo",
-      value: fileInBase64,
+      value: {
+        stringValue: fileInBase64,
+      },
     });
 
     state.logoFile = null;
-    state.logoUrl = setting.value;
+    state.logoUrl = setting.value?.stringValue;
 
     pushNotification({
       module: "bytebase",

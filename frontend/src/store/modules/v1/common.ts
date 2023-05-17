@@ -13,6 +13,7 @@ export const instanceNamePrefix = "instances/";
 export const databaseNamePrefix = "databases/";
 export const idpNamePrefix = "idps/";
 export const policyNamePrefix = "policies/";
+export const settingNamePrefix = "settings/";
 
 export const getNameParentTokens = (
   name: string,
