@@ -306,7 +306,7 @@ import { kebabCase } from "lodash-es";
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { ProjectId, QuickActionType } from "../types";
+import { QuickActionType } from "../types";
 import { idFromSlug, isDev } from "../utils";
 import {
   useCommandStore,
@@ -357,10 +357,10 @@ const state = reactive<LocalState>({
   quickActionType: "quickaction.bb.instance.create",
 });
 
-const projectId = computed((): ProjectId | undefined => {
+const projectId = computed((): string | undefined => {
   if (router.currentRoute.value.name == "workspace.project.detail") {
     const parts = router.currentRoute.value.path.split("/");
-    return idFromSlug(parts[parts.length - 1]);
+    return String(idFromSlug(parts[parts.length - 1]));
   }
   return undefined;
 });

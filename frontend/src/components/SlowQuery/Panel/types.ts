@@ -1,7 +1,8 @@
 import dayjs from "dayjs";
-import { Instance, Database, Project, UNKNOWN_ID } from "@/types";
+import { Instance, Database, UNKNOWN_ID } from "@/types";
 import { ListSlowQueriesRequest } from "@/types/proto/v1/database_service";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { Project } from "@/types/proto/v1/project_service";
 
 export type SlowQueryFilterParams = {
   project: Project | undefined; // undefined to "All"
@@ -52,7 +53,7 @@ export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
   }
 
   if (project) {
-    query.push(`project = "projects/${project.resourceId}"`);
+    query.push(`project = "${project.name}"`);
   }
   if (fromTime) {
     const start = dayjs(fromTime).toISOString();

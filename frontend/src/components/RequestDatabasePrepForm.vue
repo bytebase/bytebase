@@ -9,7 +9,7 @@
           id="project"
           class="mt-1"
           name="project"
-          :selected-id="state.projectId as number"
+          :selected-id="state.projectId"
           @select-project-id="
             (projectId) => {
               state.projectId = projectId;
@@ -137,7 +137,7 @@ import isEmpty from "lodash-es/isEmpty";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { DatabaseId, ProjectId, UNKNOWN_ID } from "../types";
+import { DatabaseId, UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
 import {
   useCurrentUser,
@@ -147,7 +147,7 @@ import {
 
 interface LocalState {
   environmentId: string;
-  projectId: ProjectId;
+  projectId: string;
   // Radio button only accept string value
   create: "ON" | "OFF";
   databaseName: string;
@@ -181,7 +181,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       environmentId: String(UNKNOWN_ID),
-      projectId: UNKNOWN_ID,
+      projectId: String(UNKNOWN_ID),
       create: "ON",
       databaseName: "",
       databaseId: UNKNOWN_ID,
@@ -208,7 +208,7 @@ export default defineComponent({
     const allowRequest = computed(() => {
       return (
         state.environmentId !== String(UNKNOWN_ID) &&
-        state.projectId != UNKNOWN_ID &&
+        state.projectId !== String(UNKNOWN_ID) &&
         ((state.create == "ON" && !isEmpty(state.databaseName)) ||
           (state.create == "OFF" && state.databaseId != UNKNOWN_ID)) &&
         !alreadyGranted.value

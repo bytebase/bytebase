@@ -277,7 +277,7 @@ import { useI18n } from "vue-i18n";
 import {
   hasFeature,
   pushNotification,
-  useProjectStore,
+  useLegacyProjectStore,
   useRepositoryStore,
 } from "@/store";
 
@@ -314,7 +314,7 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
     const repositoryStore = useRepositoryStore();
-    const projectStore = useProjectStore();
+    const projectStore = useLegacyProjectStore();
     const state = reactive<LocalState>({
       repositoryConfig: {
         baseDirectory: props.repository.baseDirectory,
@@ -501,7 +501,7 @@ export default defineComponent({
         const projectPatch: ProjectPatch = {
           schemaChangeType: state.schemaChangeType,
         };
-        await useProjectStore().patchProject({
+        await useLegacyProjectStore().patchProject({
           projectId: props.project.id,
           projectPatch,
         });

@@ -113,7 +113,7 @@
     <template #1>
       <SelectTargetDatabasesView
         ref="targetDatabaseViewRef"
-        :project-id="state.projectId as ProjectId"
+        :project-id="state.projectId!"
         :source-schema="state.sourceSchema as any"
       />
     </template>
@@ -137,14 +137,13 @@ import {
   hasFeature,
   useDatabaseStore,
   useInstanceStore,
-  useProjectStore,
+  useProjectV1Store,
 } from "@/store";
 import {
   DatabaseId,
   EngineType,
   MigrationHistory,
   MigrationType,
-  ProjectId,
   UNKNOWN_ID,
 } from "@/types";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
@@ -162,7 +161,7 @@ interface SourceSchema {
 
 interface LocalState {
   currentStep: Step;
-  projectId?: ProjectId;
+  projectId?: string;
   sourceSchema: SourceSchema;
   showFeatureModal: boolean;
 }
@@ -177,7 +176,7 @@ const allowedMigrationTypeList: MigrationType[] = [
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
-const projectStore = useProjectStore();
+const projectStore = useProjectV1Store();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 const targetDatabaseViewRef =
@@ -249,7 +248,7 @@ const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
   return list;
 };
 
-const handleSourceProjectSelect = async (projectId: ProjectId) => {
+const handleSourceProjectSelect = async (projectId: string) => {
   if (projectId !== state.projectId) {
     state.sourceSchema.databaseId = UNKNOWN_ID;
   }
@@ -267,7 +266,7 @@ const handleSourceDatabaseSelect = async (databaseId: DatabaseId) => {
   if (isValidId(databaseId)) {
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
     if (database) {
-      state.projectId = database.projectId;
+      state.projectId = String(database.projectId);
       state.sourceSchema.environmentId = String(
         database.instance.environment.id
       );
@@ -336,11 +335,11 @@ const tryFinishSetup = async () => {
   const databaseIdList = targetDatabaseDiffList.map((item) => item.id);
   const statementList = targetDatabaseDiffList.map((item) => item.diff);
 
-  const project = await projectStore.getOrFetchProjectById(state.projectId!);
+  const project = await projectStore.getOrFetchProjectByUID(state.projectId!);
 
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: project.id,
+    project: project.uid,
     mode: "normal",
     ghost: undefined,
   };

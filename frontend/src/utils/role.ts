@@ -1,5 +1,5 @@
 import { computed, unref } from "vue";
-import { MaybeRef, ProjectRoleType, RoleType } from "../types";
+import { MaybeRef, PresetRoleType, ProjectRoleType, RoleType } from "../types";
 import { hasFeature, useCurrentUser, useRoleStore } from "@/store";
 import { t } from "@/plugins/i18n";
 import { UserRole } from "@/types/proto/v1/auth_service";
@@ -205,10 +205,10 @@ export const extractRoleResourceName = (resourceId: string): string => {
 
 export const displayRoleTitle = (role: string): string => {
   // Use i18n-defined readable titles for system roles
-  if (role === "roles/OWNER") return t("common.role.owner");
-  if (role === "roles/DEVELOPER") return t("common.role.developer");
-  if (role === "roles/EXPORTER") return t("common.role.exporter");
-  if (role === "roles/QUERIER") return t("common.role.querier");
+  if (role === PresetRoleType.OWNER) return t("common.role.owner");
+  if (role === PresetRoleType.DEVELOPER) return t("common.role.developer");
+  if (role === PresetRoleType.EXPORTER) return t("common.role.exporter");
+  if (role === PresetRoleType.QUERIER) return t("common.role.querier");
   // Use role.title if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
   // Fallback to extracted resource name otherwise

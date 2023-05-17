@@ -3,8 +3,8 @@ import { defineStore } from "pinia";
 
 import { IamPolicy } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
-import { Database, MaybeRef } from "@/types";
-import { useProjectStore } from "../project";
+import { Database, MaybeRef, PresetRoleType } from "@/types";
+import { useLegacyProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
 import { hasWorkspacePermissionV1 } from "@/utils";
@@ -54,12 +54,14 @@ export const useProjectIamPolicyStore = defineStore(
       });
       policyMap.value.set(project, updated);
 
-      // legacy project API support
-      // re-fetch the legacy project entity to refresh its `memberList`
       const projectEntity = await useProjectV1Store().getOrFetchProjectByName(
         project
       );
-      await useProjectStore().fetchProjectById(parseInt(projectEntity.uid, 10));
+      // legacy project API support
+      // re-fetch the legacy project entity to refresh its `memberList`
+      await useLegacyProjectStore().fetchProjectById(
+        parseInt(projectEntity.uid, 10)
+      );
     };
 
     const getProjectIamPolicy = (project: string) => {
@@ -166,8 +168,8 @@ export const useCurrentUserIamPolicy = () => {
     }
     for (const binding of policy.bindings) {
       if (
-        (binding.role === "roles/OWNER" ||
-          binding.role === "roles/DEVELOPER") &&
+        (binding.role === PresetRoleType.OWNER ||
+          binding.role === PresetRoleType.DEVELOPER) &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )
@@ -191,7 +193,7 @@ export const useCurrentUserIamPolicy = () => {
     }
     for (const binding of policy.bindings) {
       if (
-        binding.role === "roles/OWNER" &&
+        binding.role === PresetRoleType.OWNER &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )
@@ -199,7 +201,7 @@ export const useCurrentUserIamPolicy = () => {
         return true;
       }
       if (
-        binding.role === "roles/QUERIER" &&
+        binding.role === PresetRoleType.QUERIER &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )

@@ -127,9 +127,10 @@
 import { PropType, computed } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
 
-import { Database, DatabaseId, Project } from "../../types";
+import { Database, DatabaseId } from "../../types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from "@/components/v2";
+import { Project } from "@/types/proto/v1/project_service";
 
 export type AlterType = "SINGLE_DB" | "MULTI_DB" | "TENANT";
 

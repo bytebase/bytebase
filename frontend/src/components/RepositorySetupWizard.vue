@@ -147,7 +147,7 @@ import {
 } from "../types";
 import { projectSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useProjectStore, useRepositoryStore, hasFeature } from "@/store";
+import { useLegacyProjectStore, useRepositoryStore, hasFeature } from "@/store";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
@@ -319,7 +319,7 @@ export default defineComponent({
           const projectPatch: ProjectPatch = {
             schemaChangeType: state.config.schemaChangeType,
           };
-          await useProjectStore().patchProject({
+          await useLegacyProjectStore().patchProject({
             projectId: props.project.id,
             projectPatch,
           });

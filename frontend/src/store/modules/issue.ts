@@ -27,7 +27,7 @@ import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 import { usePipelineStore } from "./pipeline";
-import { useProjectStore } from "./project";
+import { useLegacyProjectStore } from "./project";
 import { convertEntityList } from "./utils";
 
 function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
@@ -59,7 +59,7 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
   } catch {
     result.payload = {};
   }
-  const projectStore = useProjectStore();
+  const projectStore = useLegacyProjectStore();
 
   // Compose issue pipeline.
   if (isDatabaseRelatedIssueType(result.type)) {
