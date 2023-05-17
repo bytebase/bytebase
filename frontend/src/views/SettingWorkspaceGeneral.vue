@@ -16,12 +16,13 @@ import {
   NetworkSetting,
   AIAugmentationSetting,
 } from "@/components/GeneralSetting";
-import { useActuatorStore, useSettingStore } from "@/store";
+import { useActuatorStore } from "@/store";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 const actuatorStore = useActuatorStore();
 
 onMounted(async () => {
-  await useSettingStore().fetchSetting();
+  await useSettingV1Store().fetchSettingList();
 });
 const { isSaaSMode } = storeToRefs(actuatorStore);
 </script>
