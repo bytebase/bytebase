@@ -76,7 +76,7 @@ import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigP
 import {
   useDatabaseStore,
   useEnvironmentV1List,
-  useProjectStore,
+  useLegacyProjectStore,
   useProjectV1Store,
 } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
@@ -111,7 +111,7 @@ export default defineComponent({
   setup(props) {
     const route = useRoute();
     const databaseStore = useDatabaseStore();
-    const projectStore = useProjectStore();
+    const projectStore = useLegacyProjectStore();
     const projectV1Store = useProjectV1Store();
 
     const hash = computed(() => route.hash.replace(/^#?/, ""));

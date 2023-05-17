@@ -23,7 +23,7 @@ import {
 } from "@/types";
 import { useDataSourceStore } from "./dataSource";
 import { useInstanceStore } from "./instance";
-import { useProjectStore } from "./project";
+import { useLegacyProjectStore } from "./project";
 import { isMemberOfProject } from "@/utils";
 
 function convert(
@@ -54,7 +54,7 @@ function convert(
   }
 
   const instanceStore = useInstanceStore();
-  const projectStore = useProjectStore();
+  const projectStore = useLegacyProjectStore();
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = instanceStore.convert(item, includedList);

@@ -39,7 +39,7 @@ import {
   useVCSStore,
   useDataSourceStore,
   useSQLReviewStore,
-  useProjectStore,
+  useLegacyProjectStore,
   useSheetStore,
   useAuthStore,
   useActuatorStore,
@@ -692,7 +692,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
-                const project = useProjectStore().getProjectById(
+                const project = useLegacyProjectStore().getProjectById(
                   idFromSlug(slug)
                 );
 
@@ -812,7 +812,7 @@ const routes: Array<RouteRecordRaw> = [
                     if (projectId === DEFAULT_PROJECT_ID) {
                       return t("database.unassigned-databases");
                     }
-                    return useProjectStore().getProjectById(projectId).name;
+                    return useLegacyProjectStore().getProjectById(projectId).name;
                   },
                   allowBookmark: true,
                 },
@@ -1136,7 +1136,7 @@ router.beforeEach((to, from, next) => {
   const dbSchemaStore = useDBSchemaStore();
   const instanceStore = useInstanceStore();
   const routerStore = useRouterStore();
-  const projectStore = useProjectStore();
+  const projectStore = useLegacyProjectStore();
   const projectV1Store = useProjectV1Store();
   const projectWebhookV1Store = useProjectWebhookV1Store();
 

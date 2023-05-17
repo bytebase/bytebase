@@ -4,7 +4,7 @@ import { defineStore } from "pinia";
 import { IamPolicy } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
 import { Database, MaybeRef, PresetRoleType } from "@/types";
-import { useProjectStore } from "../project";
+import { useLegacyProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
 import { hasWorkspacePermissionV1 } from "@/utils";
@@ -59,7 +59,7 @@ export const useProjectIamPolicyStore = defineStore(
       );
       // legacy project API support
       // re-fetch the legacy project entity to refresh its `memberList`
-      await useProjectStore().fetchProjectById(parseInt(projectEntity.uid, 10));
+      await useLegacyProjectStore().fetchProjectById(parseInt(projectEntity.uid, 10));
     };
 
     const getProjectIamPolicy = (project: string) => {

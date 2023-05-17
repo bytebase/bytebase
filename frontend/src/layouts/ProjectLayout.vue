@@ -56,7 +56,7 @@ import { Project, DEFAULT_PROJECT_ID } from "../types";
 import {
   useCurrentUser,
   useCurrentUserIamPolicy,
-  useProjectStore,
+  useLegacyProjectStore,
 } from "@/store";
 
 type ProjectTabItem = {
@@ -88,7 +88,7 @@ export default defineComponent({
     const { t } = useI18n();
 
     const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
+    const projectStore = useLegacyProjectStore();
 
     const project = computed((): Project => {
       return projectStore.getProjectById(idFromSlug(props.projectSlug));
