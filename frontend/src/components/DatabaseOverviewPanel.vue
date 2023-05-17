@@ -233,10 +233,7 @@
 <script lang="ts" setup>
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { computed, reactive, watchEffect, PropType } from "vue";
-import {
-  hasWorkspacePermission,
-  roleListInProjectV1,
-} from "../utils";
+import { hasWorkspacePermission, roleListInProjectV1 } from "../utils";
 import {
   Anomaly,
   Database,
