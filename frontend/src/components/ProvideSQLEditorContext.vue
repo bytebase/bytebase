@@ -201,7 +201,7 @@ const prepareSheet = async () => {
     }
     return false;
   }
-  if (!isSheetReadable(sheet, currentUser.value)) {
+  if (!isSheetReadable(sheet)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",

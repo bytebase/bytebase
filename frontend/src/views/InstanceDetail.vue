@@ -149,7 +149,7 @@ import {
   idFromSlug,
   hasWorkspacePermission,
   instanceHasCreateDatabase,
-  isMemberOfProject,
+  isMemberOfProjectV1,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
@@ -175,6 +175,8 @@ import {
   useSubscriptionStore,
   useSQLStore,
   useDBSchemaStore,
+  useProjectV1Store,
+  useCurrentUserV1,
 } from "@/store";
 
 const DATABASE_TAB = 0;
@@ -202,6 +204,7 @@ const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 
 const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const sqlStore = useSQLStore();
 
 const state = reactive<LocalState>({
@@ -307,7 +310,10 @@ const databaseList = computed(() => {
   // databases not meeting this criteria and we need to filter out them.
   const filteredList: Database[] = [];
   for (const database of list) {
-    if (isMemberOfProject(database.project, currentUser.value)) {
+    const projectV1 = useProjectV1Store().getProjectByUID(
+      String(database.project.id)
+    );
+    if (isMemberOfProjectV1(projectV1.iamPolicy, currentUserV1.value)) {
       filteredList.push(database);
     }
   }
