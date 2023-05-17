@@ -109,11 +109,9 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test SQL Review Project",
-		Key:        "TestSQLReview",
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -160,16 +158,16 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Nil(databases)
 
-	err = ctl.createDatabase(ctx, project, instance, databaseName, "bytebase", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil)
 	a.NoError(err)
 
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -188,7 +186,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	for i, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, project.ID, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
@@ -213,7 +211,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, project.ID, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 
 	// delete the SQL review policy
@@ -222,7 +220,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, project.ID, statements[0], false)
+	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 
@@ -304,11 +302,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test SQL Review Project",
-		Key:        "TestSQLReview",
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -355,7 +351,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Nil(databases)
@@ -365,11 +361,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Nil(databases)
 
-	err = ctl.createDatabase(ctx, project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -388,7 +384,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	for i, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, project.ID, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
@@ -419,14 +415,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		`INSERT INTO test(id, name) VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');`,
 	}
 	for _, stmt := range initialStmts {
-		createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, project.ID, stmt, true /* wait */)
+		createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, stmt, true /* wait */)
 	}
 	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	origin, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
 	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]],[false]]", origin)
-	createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, project.ID, dmlSQL, false /* wait */)
+	createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, dmlSQL, false /* wait */)
 	finial, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
 	a.Equal(origin, finial)
@@ -447,7 +443,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, project.ID, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 

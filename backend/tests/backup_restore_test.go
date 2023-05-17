@@ -293,6 +293,8 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	ctl := &controller{}
 	ctx, project, sourceMySQLDB, database, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
+	projectUID, err := strconv.Atoi(project.Uid)
+	a.NoError(err)
 
 	dstPort := getTestPort()
 	dstStopFn := resourcemysql.SetupTestInstance(t, dstPort, mysqlBinDir)
@@ -345,7 +347,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	a.NoError(err)
 
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("Restore database %s to the time %d", database.Name, targetTs),
 		Type:          api.IssueDatabaseRestorePITR,
 		AssigneeID:    api.SystemBotID,
@@ -393,13 +395,17 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 	a.Equal(api.TaskFailed, status)
 }
 
-func createPITRIssue(ctl *controller, project *api.Project, pitrContext api.PITRContext) (*api.Issue, error) {
+func createPITRIssue(ctl *controller, project *v1pb.Project, pitrContext api.PITRContext) (*api.Issue, error) {
+	projectUID, err := strconv.Atoi(project.Uid)
+	if err != nil {
+		return nil, err
+	}
 	pitrIssueCtx, err := json.Marshal(&pitrContext)
 	if err != nil {
 		return nil, err
 	}
 	return ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("Restore database %d", pitrContext.DatabaseID),
 		Type:          api.IssueDatabaseRestorePITR,
 		AssigneeID:    api.SystemBotID,
@@ -407,7 +413,7 @@ func createPITRIssue(ctl *controller, project *api.Project, pitrContext api.PITR
 	})
 }
 
-func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (context.Context, *api.Project, *sql.DB, *api.Database, *api.Backup, int, func()) {
+func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (context.Context, *v1pb.Project, *sql.DB, *api.Database, *api.Backup, int, func()) {
 	a := require.New(t)
 
 	dataDir := t.TempDir()
@@ -419,12 +425,9 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	err = ctl.setLicense()
 	a.NoError(err)
 
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "PITRTest",
-		Key:        "PTT",
-		TenantMode: api.TenantModeDisabled,
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -462,7 +465,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabase(ctx, project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
