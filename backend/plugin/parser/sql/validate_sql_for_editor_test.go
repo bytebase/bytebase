@@ -16,6 +16,10 @@ type testData struct {
 func TestValidateSQLForPG(t *testing.T) {
 	tests := []testData{
 		{
+			sql: `select* from t`,
+			ans: true,
+		},
+		{
 			sql: `explain select * from t;`,
 			ans: true,
 		},
@@ -86,6 +90,10 @@ func TestValidateSQLForPG(t *testing.T) {
 func TestValidateSQLForMySQL(t *testing.T) {
 	tests := []testData{
 		{
+			sql: `select* from t`,
+			ans: true,
+		},
+		{
 			sql: `explain select * from t;`,
 			ans: true,
 		},
@@ -149,6 +157,10 @@ func TestValidateSQLForMySQL(t *testing.T) {
 
 func TestValidateSQLForStandard(t *testing.T) {
 	tests := []testData{
+		{
+			sql: `select* from t`,
+			ans: true,
+		},
 		{
 			sql: `explain select * from t;`,
 			ans: true,
