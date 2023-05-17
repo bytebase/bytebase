@@ -15,7 +15,7 @@ import {
   VCS,
   VCSId,
 } from "@/types";
-import { useProjectStore } from "./project";
+import { useLegacyProjectStore } from "./project";
 import { useVCSStore } from "./vcs";
 
 function convert(
@@ -33,7 +33,7 @@ function convert(
   project.id = parseInt(projectId);
 
   const vcsStore = useVCSStore();
-  const projectStore = useProjectStore();
+  const projectStore = useLegacyProjectStore();
   for (const item of includedList || []) {
     if (item.type == "vcs" && item.id == vcsId) {
       vcs = vcsStore.convert(item, includedList || []);
@@ -127,7 +127,7 @@ export const useRepositoryStore = defineStore("repository", {
       });
 
       // Refetch the project as the project workflow type has been updated to "VCS"
-      useProjectStore().fetchProjectById(projectId);
+      useLegacyProjectStore().fetchProjectById(projectId);
 
       return createdRepository;
     },
@@ -196,7 +196,7 @@ export const useRepositoryStore = defineStore("repository", {
       this.removeRepositoryByProjectId(projectId);
 
       // Refetch the project as the project workflow type has been updated to "UI"
-      useProjectStore().fetchProjectById(projectId);
+      useLegacyProjectStore().fetchProjectById(projectId);
     },
     async createSQLReviewCI({
       projectId,

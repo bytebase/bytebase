@@ -10,7 +10,7 @@ import {
   usePrincipalStore,
   useSettingStore,
   useUIStateStore,
-  useProjectStore,
+  useLegacyProjectStore,
   useDebugStore,
   useUserStore,
 } from "@/store";
@@ -34,8 +34,8 @@ export default defineComponent({
       useUserStore().fetchUserList(),
       useEnvironmentV1Store().fetchEnvironments(),
       // The default project hosts databases not explicitly assigned to other users project.
-      useProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),
-      useProjectStore().fetchAllProjectList(), // TODO(Jim): For legacy API support only. Remove this after refactored
+      useLegacyProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),
+      useLegacyProjectStore().fetchAllProjectList(), // TODO(Jim): For legacy API support only. Remove this after refactored
       useUIStateStore().restoreState(),
       useDebugStore().fetchDebug(),
     ]);

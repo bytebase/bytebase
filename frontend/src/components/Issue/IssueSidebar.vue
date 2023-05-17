@@ -91,7 +91,7 @@
         </h2>
         <div class="col-span-2">
           <StageSelect
-            :pipeline="(issue as Issue).pipeline"
+            :pipeline="(issue as Issue).pipeline!"
             :selected-id="(selectedStage as Stage).id as number"
             @select-stage-id="(stageId) => selectStageOrTask(stageId)"
           />
@@ -104,7 +104,7 @@
         </h2>
         <div class="col-span-2">
           <TaskSelect
-            :pipeline="(issue as Issue).pipeline"
+            :pipeline="(issue as Issue).pipeline!"
             :stage="(selectedStage as Stage)"
             :selected-id="(selectedTask as Task).id"
             @select-task-id="(taskId) => selectTaskId(taskId)"
@@ -233,12 +233,12 @@
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.project") }}
       </h2>
-      <router-link
-        :to="`/project/${projectSlug(project)}`"
+      <ProjectV1Name
+        :project="project"
+        :link="true"
+        :plain="true"
         class="col-span-2 text-sm font-medium text-main hover:underline"
-      >
-        {{ projectName(project) }}
-      </router-link>
+      />
 
       <template v-if="!create">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -311,7 +311,6 @@ import { EnvironmentV1Name } from "@/components/v2";
 import { InputField } from "@/plugins";
 import {
   Database,
-  Project,
   Issue,
   IssueCreate,
   Task,
@@ -337,7 +336,8 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentV1Store,
-  useProjectStore,
+  useProjectV1Store,
+  useUserStore,
 } from "@/store";
 import {
   allowUserToBeAssignee,
@@ -348,6 +348,8 @@ import {
 } from "./logic";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { ProjectV1Name } from "@/components/v2";
+import { User } from "@/types/proto/v1/auth_service";
 
 dayjs.extend(isSameOrAfter);
 
@@ -368,7 +370,7 @@ const props = defineProps({
 });
 
 const router = useRouter();
-const projectStore = useProjectStore();
+const projectV1Store = useProjectV1Store();
 
 const {
   create,
@@ -433,11 +435,11 @@ const environment = computed((): Environment => {
   return useEnvironmentV1Store().getEnvironmentByUID(String(environmentId));
 });
 
-const project = computed((): Project => {
-  if (create.value) {
-    return projectStore.getProjectById((issue.value as IssueCreate).projectId);
-  }
-  return (issue.value as Issue).project;
+const project = computed(() => {
+  const projectUID = create.value
+    ? (issue.value as IssueCreate).projectId
+    : (issue.value as Issue).project.id;
+  return projectV1Store.getProjectByUID(String(projectUID));
 });
 
 const assigneeId = computed(() => {
@@ -460,7 +462,7 @@ const visibleLabelList = computed((): DatabaseLabel[] => {
 
 const showStageSelect = computed((): boolean => {
   return (
-    !create.value && allTaskList((issue.value as Issue).pipeline).length > 1
+    !create.value && allTaskList((issue.value as Issue).pipeline!).length > 1
   );
 });
 
@@ -605,9 +607,12 @@ const selectTaskId = (taskId: TaskId) => {
 };
 const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
 const filterPrincipal = (principal: Principal): boolean => {
+  const user =
+    useUserStore().getUserByName(`users/${principal.id}`) ?? User.fromJSON({});
   return allowUserToBeAssignee(
-    principal,
+    user,
     project.value,
+    project.value.iamPolicy,
     rollOutPolicy.value.policy,
     rollOutPolicy.value.assigneeGroup
   );

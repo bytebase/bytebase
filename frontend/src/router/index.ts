@@ -39,7 +39,7 @@ import {
   useVCSStore,
   useDataSourceStore,
   useSQLReviewStore,
-  useProjectStore,
+  useLegacyProjectStore,
   useSheetStore,
   useAuthStore,
   useActuatorStore,
@@ -692,7 +692,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
-                const project = useProjectStore().getProjectById(
+                const project = useLegacyProjectStore().getProjectById(
                   idFromSlug(slug)
                 );
 
@@ -812,7 +812,10 @@ const routes: Array<RouteRecordRaw> = [
                     if (projectId === DEFAULT_PROJECT_ID) {
                       return t("database.unassigned-databases");
                     }
-                    return useProjectStore().getProjectById(projectId).name;
+                    const projectV1 = useProjectV1Store().getProjectByUID(
+                      String(projectId)
+                    );
+                    return projectV1.title;
                   },
                   allowBookmark: true,
                 },
@@ -837,7 +840,7 @@ const routes: Array<RouteRecordRaw> = [
                     const projectWebhookSlug = route.params
                       .projectWebhookSlug as string;
                     const project = useProjectV1Store().getProjectByUID(
-                      idFromSlug(projectSlug)
+                      String(idFromSlug(projectSlug))
                     );
                     const webhook =
                       useProjectWebhookV1Store().getProjectWebhookFromProjectById(
@@ -1136,7 +1139,7 @@ router.beforeEach((to, from, next) => {
   const dbSchemaStore = useDBSchemaStore();
   const instanceStore = useInstanceStore();
   const routerStore = useRouterStore();
-  const projectStore = useProjectStore();
+  const projectStore = useLegacyProjectStore();
   const projectV1Store = useProjectV1Store();
   const projectWebhookV1Store = useProjectWebhookV1Store();
 
@@ -1464,7 +1467,9 @@ router.beforeEach((to, from, next) => {
   if (projectSlug) {
     projectStore
       .fetchProjectById(idFromSlug(projectSlug))
-      .then(() => projectV1Store.fetchProjectByUID(idFromSlug(projectSlug)))
+      .then(() =>
+        projectV1Store.fetchProjectByUID(String(idFromSlug(projectSlug)))
+      )
       .then((project) => {
         if (!projectWebhookSlug) {
           next();

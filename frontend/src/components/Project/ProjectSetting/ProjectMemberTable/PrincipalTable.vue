@@ -83,7 +83,7 @@ import {
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
-import { ComposedPrincipal, ProjectRoleType } from "@/types";
+import { ComposedPrincipal, PresetRoleType } from "@/types";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import { IamPolicy, Project } from "@/types/proto/v1/project_service";
 import {
@@ -115,7 +115,6 @@ const props = defineProps<{
   composedPrincipalList: ComposedPrincipal[];
 }>();
 
-const ROLE_OWNER = "roles/OWNER";
 const { t } = useI18n();
 const hasRBACFeature = featureToRef("bb.feature.rbac");
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
@@ -178,14 +177,14 @@ const allowAdmin = computed(() => {
 // To prevent user accidentally removing roles and lock the project permanently, we take following measures:
 // 1. Disallow removing the last OWNER.
 // 2. Allow workspace roles who can manage project. This helps when the project OWNER is no longer available.
-const allowRemoveRole = (role: ProjectRoleType) => {
+const allowRemoveRole = (role: string) => {
   if (props.project.state === State.DELETED) {
     return false;
   }
 
-  if (role === ROLE_OWNER) {
+  if (role === PresetRoleType.OWNER) {
     const binding = props.iamPolicy.bindings.find(
-      (binding) => binding.role === ROLE_OWNER
+      (binding) => binding.role === PresetRoleType.OWNER
     );
     const members = (binding?.members || [])
       .map((userIdentifier) => {
@@ -239,8 +238,8 @@ const getRoleOptions = (item: ComposedPrincipal) => {
   if (hasCustomRoleFeature.value) {
     roleList = useRoleStore().roleList.filter((role) => {
       return (
-        role.name !== "roles/EXPORTER" &&
-        role.name !== "roles/QUERIER" &&
+        role.name !== PresetRoleType.EXPORTER &&
+        role.name !== PresetRoleType.QUERIER &&
         !item.roleList.includes(role.name)
       );
     });
@@ -268,9 +267,9 @@ const allowRemovePrincipal = (item: ComposedPrincipal) => {
     return false;
   }
 
-  if (item.roleList.includes(ROLE_OWNER)) {
+  if (item.roleList.includes(PresetRoleType.OWNER)) {
     const binding = props.iamPolicy.bindings.find(
-      (binding) => binding.role === ROLE_OWNER
+      (binding) => binding.role === PresetRoleType.OWNER
     );
     const members = (binding?.members || [])
       .map((userIdentifier) => {

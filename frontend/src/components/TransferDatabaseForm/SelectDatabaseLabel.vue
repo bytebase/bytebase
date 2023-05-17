@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="targetProject.tenantMode === 'TENANT'"
+    v-if="targetProject.tenantMode === TenantMode.TENANT_MODE_ENABLED"
     class="space-y-4 flex flex-col justify-center items-center"
     v-bind="$attrs"
   >
@@ -44,7 +44,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect, watch } from "vue";
+import { computed, reactive, toRef, watch } from "vue";
 import { capitalize, cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import type {
@@ -52,8 +52,6 @@ import type {
   DatabaseLabel,
   LabelKeyType,
   LabelValueType,
-  Project,
-  ProjectId,
 } from "@/types";
 import {
   buildDatabaseNameRegExpByTemplate,
@@ -62,11 +60,12 @@ import {
   PRESET_LABEL_KEYS,
   PRESET_LABEL_KEY_PLACEHOLDERS,
 } from "@/utils";
-import { useProjectStore } from "@/store";
+import { useProjectV1ByUID } from "@/store";
+import { TenantMode } from "@/types/proto/v1/project_service";
 
 const props = defineProps<{
   database: Database;
-  targetProjectId: ProjectId;
+  targetProjectId: string;
 }>();
 
 const emit = defineEmits<{
@@ -77,19 +76,11 @@ const state = reactive({
   databaseLabelList: cloneDeep(props.database.labels),
 });
 
-const projectStore = useProjectStore();
-
 const { t } = useI18n();
 
-const targetProject = computed(() => {
-  return projectStore.getProjectById(props.targetProjectId) as Project;
-});
-
-const prepare = () => {
-  projectStore.fetchProjectById(props.targetProjectId);
-};
-
-watchEffect(prepare);
+const { project: targetProject } = useProjectV1ByUID(
+  toRef(props, "targetProjectId")
+);
 
 const requiredLabelList = computed((): string[] => {
   const project = targetProject.value;

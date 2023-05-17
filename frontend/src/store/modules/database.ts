@@ -16,7 +16,6 @@ import {
   MaybeRef,
   PrincipalId,
   Project,
-  ProjectId,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -24,7 +23,7 @@ import {
 } from "@/types";
 import { useDataSourceStore } from "./dataSource";
 import { useInstanceStore } from "./instance";
-import { useProjectStore } from "./project";
+import { useLegacyProjectStore } from "./project";
 import { isMemberOfProject } from "@/utils";
 
 function convert(
@@ -55,7 +54,7 @@ function convert(
   }
 
   const instanceStore = useInstanceStore();
-  const projectStore = useProjectStore();
+  const projectStore = useLegacyProjectStore();
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = instanceStore.convert(item, includedList);
@@ -193,8 +192,8 @@ export const useDatabaseStore = defineStore("database", {
       }
       return list;
     },
-    getDatabaseListByProjectId(projectId: ProjectId): Database[] {
-      return this.databaseListByProjectId.get(projectId) || [];
+    getDatabaseListByProjectId(projectId: string): Database[] {
+      return this.databaseListByProjectId.get(parseInt(projectId, 10)) || [];
     },
     getDatabaseById(databaseId: DatabaseId, instanceId?: InstanceId): Database {
       if (databaseId == EMPTY_ID) {
@@ -223,7 +222,7 @@ export const useDatabaseStore = defineStore("database", {
       projectId,
     }: {
       databaseList: Database[];
-      projectId: ProjectId;
+      projectId: string;
     }) {
       this.databaseListByProjectId.set(projectId, databaseList);
     },
@@ -320,7 +319,7 @@ export const useDatabaseStore = defineStore("database", {
 
       return databaseList[0];
     },
-    async fetchDatabaseListByProjectId(projectId: ProjectId) {
+    async fetchDatabaseListByProjectId(projectId: string) {
       const databaseList = await this.fetchDatabaseList({
         projectId,
       });
@@ -381,10 +380,10 @@ export const useDatabaseStore = defineStore("database", {
       labels,
     }: {
       databaseId: DatabaseId;
-      projectId: ProjectId;
+      projectId: string;
       labels?: DatabaseLabel[];
     }) {
-      const attributes: any = { projectId };
+      const attributes: any = { projectId: Number(projectId) };
       if (labels) {
         attributes.labels = JSON.stringify(labels);
       }

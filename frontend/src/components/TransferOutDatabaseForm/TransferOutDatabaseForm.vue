@@ -5,7 +5,7 @@
         <label class="textlabel">
           {{ $t("database.transfer.source-project") }}
         </label>
-        <ProjectName :project="sourceProject" :link="false" />
+        <ProjectV1Name :project="sourceProject" :link="false" />
       </div>
       <div class="flex items-center gap-x-2">
         <label class="textlabel">
@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref } from "vue";
+import { computed, h, ref, toRef } from "vue";
 import {
   NTransfer,
   NTree,
@@ -54,25 +54,31 @@ import {
   NButton,
 } from "naive-ui";
 
-import { Database, IdType, Project, ProjectId, UNKNOWN_ID } from "@/types";
-import { pushNotification, useDatabaseStore, useProjectStore } from "@/store";
-import { ProjectName, ProjectSelect } from "../v2";
+import { Database, UNKNOWN_ID } from "@/types";
+import {
+  pushNotification,
+  useDatabaseStore,
+  useProjectV1ByUID,
+  useProjectV1Store,
+} from "@/store";
+import { ProjectV1Name, ProjectSelect } from "../v2";
 import Label from "./Label.vue";
 import {
   DatabaseTreeOption,
   flattenTreeOptions,
   mapTreeOptions,
 } from "./common";
+import { Project } from "@/types/proto/v1/project_service";
 
 const props = defineProps<{
-  projectId: ProjectId;
+  projectId: string;
 }>();
 
 const emit = defineEmits<{
   (e: "dismiss"): void;
 }>();
 
-const projectStore = useProjectStore();
+const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseStore();
 const loading = ref(false);
 const transfer = ref<InstanceType<typeof NTransfer>>();
@@ -90,16 +96,14 @@ const selectedDatabaseList = computed(() => {
       return databaseStore.getDatabaseById(id);
     });
 });
-const targetProjectId = ref<IdType>();
+const targetProjectId = ref<string>();
 const targetProject = computed(() => {
   const id = targetProjectId.value;
-  if (!id || id === UNKNOWN_ID) return undefined;
-  return projectStore.getProjectById(id);
+  if (!id || id === String(UNKNOWN_ID)) return undefined;
+  return projectStore.getProjectByUID(id);
 });
 
-const sourceProject = computed(() => {
-  return useProjectStore().getProjectById(props.projectId);
-});
+const { project: sourceProject } = useProjectV1ByUID(toRef(props, "projectId"));
 
 const allowTransfer = computed(() => {
   if (!targetProject.value) return false;
@@ -175,7 +179,7 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
 };
 
 const filterTargetProject = (project: Project) => {
-  return project.id !== props.projectId;
+  return project.uid !== props.projectId;
 };
 
 const doTransfer = async () => {
@@ -185,7 +189,7 @@ const doTransfer = async () => {
   const transferOneDatabase = (database: Database) => {
     return databaseStore.transferProject({
       databaseId: database.id,
-      projectId: target.id,
+      projectId: target.uid,
     });
   };
 
@@ -196,8 +200,8 @@ const doTransfer = async () => {
     const requests = databaseList.map((db) => {
       transferOneDatabase(db);
     });
-    await new Promise((resolve) => setTimeout(resolve, 2000));
     await Promise.all(requests);
+
     const displayDatabaseName =
       databaseList.length > 1
         ? `${databaseList.length} databases`
@@ -206,7 +210,7 @@ const doTransfer = async () => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: `Successfully transferred ${displayDatabaseName} to project '${target.name}'.`,
+      title: `Successfully transferred ${displayDatabaseName} to project '${target.title}'.`,
     });
     emit("dismiss");
   } finally {

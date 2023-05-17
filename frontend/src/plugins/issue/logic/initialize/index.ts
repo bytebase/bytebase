@@ -114,7 +114,7 @@ const prepareDatabaseListForIssueCreation = async (query: LocationQuery) => {
   if (query.project) {
     // If we found query.project, we can directly fetchDatabaseListByProjectId
     const projectId = query.project as string;
-    await databaseStore.fetchDatabaseListByProjectId(parseInt(projectId, 10));
+    await databaseStore.fetchDatabaseListByProjectId(projectId);
   } else if (query.databaseList) {
     // Otherwise, we don't have the projectId (very rare to see, theoretically)
     // so we need to fetch the first database in databaseList by id,
@@ -129,7 +129,9 @@ const prepareDatabaseListForIssueCreation = async (query: LocationQuery) => {
       if (databaseIdList.length > 1) {
         // If we have more than one databases in the list
         // fetch the rest of databases by projectId
-        await databaseStore.fetchDatabaseListByProjectId(firstDB.project.id);
+        await databaseStore.fetchDatabaseListByProjectId(
+          String(firstDB.project.id)
+        );
       }
     }
   }

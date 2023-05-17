@@ -4,7 +4,6 @@ import { isEmpty } from "lodash-es";
 import {
   Issue,
   IssueCreate,
-  Project,
   Stage,
   StageCreate,
   StageId,
@@ -28,11 +27,12 @@ import {
 import {
   useDatabaseStore,
   useIssueStore,
-  useProjectStore,
+  useProjectV1Store,
   useSheetStore,
 } from "@/store";
 import { flattenTaskList, TaskTypeWithStatement } from "./common";
 import { maybeCreateBackTraceComments } from "../rollback/common";
+import { TenantMode } from "@/types/proto/v1/project_service";
 
 export const useBaseIssueLogic = (params: {
   create: Ref<boolean>;
@@ -42,17 +42,15 @@ export const useBaseIssueLogic = (params: {
   const route = useRoute();
   const router = useRouter();
   const issueStore = useIssueStore();
-  const projectStore = useProjectStore();
+  const projectV1Store = useProjectV1Store();
   const databaseStore = useDatabaseStore();
   const sheetStore = useSheetStore();
 
-  const project = computed((): Project => {
-    if (create.value) {
-      return projectStore.getProjectById(
-        (issue.value as IssueCreate).projectId
-      );
-    }
-    return (issue.value as Issue).project;
+  const project = computed(() => {
+    const projectUID = create.value
+      ? (issue.value as IssueCreate).projectId
+      : (issue.value as Issue).project.id;
+    return projectV1Store.getProjectByUID(String(projectUID));
   });
 
   const createIssue = async (issue: IssueCreate) => {
@@ -82,7 +80,7 @@ export const useBaseIssueLogic = (params: {
         return issue.value.pipeline!.stageList[index];
       }
       const stageId = idFromSlug(stageSlug);
-      const stageList = (issue.value as Issue).pipeline.stageList;
+      const stageList = (issue.value as Issue).pipeline!.stageList;
       for (const stage of stageList) {
         if (stage.id == stageId) {
           return stage;
@@ -90,7 +88,7 @@ export const useBaseIssueLogic = (params: {
       }
     } else if (!create.value && taskSlug) {
       const taskId = idFromSlug(taskSlug);
-      const stageList = (issue.value as Issue).pipeline.stageList;
+      const stageList = (issue.value as Issue).pipeline!.stageList;
       for (const stage of stageList) {
         for (const task of stage.taskList) {
           if (task.id == taskId) {
@@ -102,7 +100,7 @@ export const useBaseIssueLogic = (params: {
     if (create.value) {
       return issue.value.pipeline!.stageList[0];
     }
-    return activeStage((issue.value as Issue).pipeline);
+    return activeStage((issue.value as Issue).pipeline!);
   });
 
   const selectStageOrTask = (
@@ -178,7 +176,8 @@ export const useBaseIssueLogic = (params: {
   const isTenantMode = computed((): boolean => {
     // To sync databases schema in tenant mode, we use normal project logic to create issue.
     if (create.value && route.query.mode !== "tenant") return false;
-    if (project.value.tenantMode !== "TENANT") return false;
+    if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED)
+      return false;
 
     // We support single database migration in tenant mode projects.
     // So a pipeline should be tenant mode when it contains more
@@ -285,7 +284,7 @@ export const useBaseIssueLogic = (params: {
             taskItem.sheetId = sheetId;
           } else {
             const newSheet = await sheetStore.createSheet({
-              projectId: project.value.id,
+              projectId: project.value.uid,
               databaseId: taskItem.databaseId,
               name: uuidv4(),
               statement,

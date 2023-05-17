@@ -24,6 +24,7 @@ import {
 import { useCustomApprovalContext } from "../context";
 import { approvalNodeGroupValueText, approvalNodeRoleText } from "@/utils";
 import { useRoleStore } from "@/store";
+import { isCustomRole } from "@/types";
 
 interface ApprovalNodeSelectOption extends SelectOption {
   value: ApprovalNode_GroupValue | string | undefined;
@@ -59,13 +60,7 @@ const options = computed(() => {
   }));
 
   const customRoleNodes = roleList.value
-    .filter(
-      (role) =>
-        role.name !== "roles/OWNER" &&
-        role.name !== "roles/DEVELOPER" &&
-        role.name !== "roles/EXPORTER" &&
-        role.name !== "roles/QUERIER"
-    )
+    .filter((role) => isCustomRole(role.name))
     .map<ApprovalNodeSelectOption>((role) => ({
       node: {
         type: ApprovalNode_Type.ANY_IN_GROUP,

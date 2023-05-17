@@ -97,12 +97,7 @@ import {
   SearchBox,
 } from "@/components/v2";
 import { IssueTable } from "../components/Issue";
-import {
-  type Issue,
-  type PrincipalId,
-  type ProjectId,
-  UNKNOWN_ID,
-} from "../types";
+import { type Issue, type PrincipalId, UNKNOWN_ID } from "../types";
 import {
   activeEnvironment,
   hasWorkspacePermission,
@@ -191,9 +186,9 @@ const selectedEnvironment = computed((): Environment | undefined => {
     : undefined;
 });
 
-const selectedProjectId = computed((): ProjectId | undefined => {
+const selectedProjectId = computed((): string | undefined => {
   const { project } = route.query;
-  return project ? parseInt(project as string, 10) : undefined;
+  return project ? (project as string) : undefined;
 });
 
 const filter = (issue: Issue) => {

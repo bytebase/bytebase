@@ -188,13 +188,12 @@
           {{ $t("common.assignee") }} <span class="text-red-600">*</span>
         </label>
         <!-- DBA and Owner always have all access, so we only need to grant to developer -->
-        <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           id="user"
           class="mt-1 w-full"
           name="user"
           :allowed-role-list="['OWNER', 'DBA']"
-          :selectedId="state.assigneeId"
+          :selected-id="state.assigneeId as number"
           :placeholder="'Select assignee'"
           @select-principal-id="selectAssignee"
         />
@@ -258,7 +257,6 @@ import MemberSelect from "../components/MemberSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import {
   InstanceId,
-  ProjectId,
   IssueCreate,
   SYSTEM_BOT_ID,
   PrincipalId,
@@ -295,7 +293,7 @@ import {
 } from "@/store";
 
 interface LocalState {
-  projectId?: ProjectId;
+  projectId?: string;
   environmentId?: string;
   instanceId?: InstanceId;
   instanceUserId?: InstanceUserId;
@@ -323,7 +321,7 @@ export default defineComponent({
   },
   props: {
     projectId: {
-      type: Number as PropType<ProjectId>,
+      type: String,
       default: undefined,
     },
     environmentId: {
@@ -386,7 +384,9 @@ export default defineComponent({
     });
 
     const project = computed(() => {
-      return projectV1Store.getProjectByUID(state.projectId ?? UNKNOWN_ID);
+      return projectV1Store.getProjectByUID(
+        state.projectId ?? String(UNKNOWN_ID)
+      );
     });
 
     const isReservedName = computed(() => {
@@ -480,7 +480,7 @@ export default defineComponent({
       labels: toRef(state, "labelList"),
     });
 
-    const selectProject = (projectId: ProjectId) => {
+    const selectProject = (projectId: string) => {
       state.projectId = projectId;
     };
 
@@ -565,7 +565,7 @@ export default defineComponent({
           type: "bb.issue.database.restore.pitr",
           description: `Creating database '${databaseName}' from backup '${props.backup.name}'`,
           assigneeId: state.assigneeId!,
-          projectId: state.projectId!,
+          projectId: parseInt(state.projectId!, 10),
           pipeline: {
             stageList: [],
             name: "",
@@ -580,7 +580,7 @@ export default defineComponent({
           type: "bb.issue.database.create",
           description: "",
           assigneeId: state.assigneeId!,
-          projectId: state.projectId!,
+          projectId: parseInt(state.projectId!, 10),
           pipeline: {
             stageList: [],
             name: "",

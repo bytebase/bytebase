@@ -103,6 +103,7 @@ import {
   Issue,
   VCSPushEvent,
   GrantRequestPayload,
+  PresetRoleType,
 } from "@/types";
 import { useCurrentUser } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
@@ -153,7 +154,7 @@ const showExportButton = computed(() => {
   const issuePayload = (issue.value.payload as any)
     .grantRequest as GrantRequestPayload;
   if (
-    issuePayload.role !== "roles/EXPORTER" ||
+    issuePayload.role !== PresetRoleType.EXPORTER ||
     currentUser.value.id !== issue.value.creator.id
   ) {
     return false;
@@ -162,14 +163,14 @@ const showExportButton = computed(() => {
   return true;
 });
 
-const issueTaskStatus = () => {
+const issueTaskStatus = computed(() => {
   // For grant request issue, we always show the status as "PENDING_APPROVAL" as task status.
   if (!isDatabaseRelatedIssueType(issue.value.type)) {
     return "PENDING_APPROVAL";
   }
 
-  return activeTask(issue.value.pipeline).status;
-};
+  return activeTask(issue.value.pipeline!).status;
+});
 
 watch(
   () => issue.value,
@@ -180,11 +181,11 @@ watch(
 
 const pushEvent = computed((): VCSPushEvent | undefined => {
   if (issue.value.type == "bb.issue.database.schema.update") {
-    const payload = activeTask(issue.value.pipeline)
+    const payload = activeTask(issue.value.pipeline!)
       .payload as TaskDatabaseSchemaUpdatePayload;
     return payload?.pushEvent;
   } else if (issue.value.type == "bb.issue.database.data.update") {
-    const payload = activeTask(issue.value.pipeline)
+    const payload = activeTask(issue.value.pipeline!)
       .payload as TaskDatabaseDataUpdatePayload;
     return payload?.pushEvent;
   }

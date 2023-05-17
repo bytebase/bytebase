@@ -147,7 +147,7 @@ export type Issue = {
 
 export type IssueCreate = {
   // Related fields
-  projectId: ProjectId;
+  projectId: number;
   pipeline?: PipelineCreate;
 
   // Domain specific fields

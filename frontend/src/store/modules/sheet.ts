@@ -21,7 +21,7 @@ import {
 import { getPrincipalFromIncludedList } from "./principal";
 import { useCurrentUser } from "./auth";
 import { useDatabaseStore } from "./database";
-import { useProjectStore } from "./project";
+import { useLegacyProjectStore } from "./project";
 import { useTabStore } from "./tab";
 import { getDefaultSheetPayloadWithSource, isSheetWritable } from "@/utils";
 
@@ -53,7 +53,7 @@ function convertSheet(
   const databaseId = sheet.attributes.databaseId || UNKNOWN_ID;
 
   const databaseStore = useDatabaseStore();
-  const projectStore = useProjectStore();
+  const projectStore = useLegacyProjectStore();
   for (const item of includedList || []) {
     if (item.type == "project" && Number(item.id) === Number(projectId)) {
       project = projectStore.convert(item, includedList);

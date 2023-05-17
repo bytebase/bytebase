@@ -5,7 +5,7 @@
     </div>
     <div class="flex items-center justify-between">
       <div class="radio-set-row">
-        <template v-if="project.id !== DEFAULT_PROJECT_ID">
+        <template v-if="project.uid !== String(DEFAULT_PROJECT_ID)">
           <label class="radio">
             <input
               v-model="state.transferSource"
@@ -55,7 +55,6 @@ import { NInputGroup } from "naive-ui";
 
 import { TransferSource } from "./utils";
 import {
-  type Project,
   type Instance,
   DEFAULT_PROJECT_ID,
   UNKNOWN_ID,
@@ -64,6 +63,7 @@ import {
 } from "@/types";
 import { InstanceSelect, SearchBox } from "@/components/v2";
 import { useInstanceStore } from "@/store";
+import { Project } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   transferSource: TransferSource;

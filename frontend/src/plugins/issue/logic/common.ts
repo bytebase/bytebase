@@ -1,8 +1,9 @@
 import { Ref } from "vue";
 import { useRoute } from "vue-router";
-import { useDatabaseStore, useProjectStore } from "@/store";
-import { Database, Project, unknown, UNKNOWN_ID } from "@/types";
+import { useDatabaseStore, useProjectV1Store } from "@/store";
+import { Database, unknownProject, UNKNOWN_ID } from "@/types";
 import { IssueTemplate } from "@/plugins";
+import { Project } from "@/types/proto/v1/project_service";
 
 // validateOnly: true doesn't support empty SQL
 // so we use a fake sql to validate and then set it back to empty if needed
@@ -22,13 +23,13 @@ export const findProject = async (
   const { route } = context;
 
   const projectId = route.query.project
-    ? parseInt(route.query.project as string)
-    : UNKNOWN_ID;
-  let project = unknown("PROJECT");
+    ? (route.query.project as string)
+    : String(UNKNOWN_ID);
+  let project = unknownProject();
 
-  if (projectId !== UNKNOWN_ID) {
-    const projectStore = useProjectStore();
-    project = await projectStore.fetchProjectById(projectId);
+  if (projectId !== String(UNKNOWN_ID)) {
+    const projectStore = useProjectV1Store();
+    project = await projectStore.getOrFetchProjectByUID(projectId);
   }
 
   return project;

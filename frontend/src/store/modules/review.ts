@@ -2,18 +2,19 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { uniq, uniqBy } from "lodash-es";
 
-import { Issue, ProjectRoleTypeDeveloper, ProjectRoleTypeOwner } from "@/types";
+import { Issue, PresetRoleType } from "@/types";
 import {
   Review,
   ApprovalStep,
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/review_service";
-import { extractUserEmail, useUserStore } from "./user";
+import { convertUserToPrincipal, extractUserEmail, useUserStore } from "./user";
 import { useMemberStore } from "./member";
 import { reviewServiceClient } from "@/grpcweb";
-import { User } from "@/types/proto/v1/auth_service";
-import { extractRoleResourceName } from "@/utils";
+import { User, UserType } from "@/types/proto/v1/auth_service";
+import { memberListInProjectV1 } from "@/utils";
+import { useProjectV1Store } from "./v1";
 
 const reviewName = (issue: Issue) => {
   return `projects/${issue.project.id}/reviews/${issue.id}`;
@@ -103,9 +104,13 @@ export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
   const workspaceMemberList = memberStore.memberList.filter(
     (member) => member.principal.type === "END_USER"
   );
-  const projectMemberList = issue.project.memberList.filter(
-    (member) => member.principal.type === "END_USER"
-  );
+  const project = useProjectV1Store().getProjectByUID(String(issue.project.id));
+  const projectMemberList = memberListInProjectV1(project, project.iamPolicy)
+    .filter((member) => member.user.userType === UserType.USER)
+    .map((member) => ({
+      ...member,
+      principal: convertUserToPrincipal(member.user),
+    }));
 
   const candidates = step.nodes.flatMap((node) => {
     const {
@@ -118,12 +123,14 @@ export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
     const candidatesForSystemRoles = (groupValue: ApprovalNode_GroupValue) => {
       if (groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER) {
         return projectMemberList
-          .filter((member) => member.role === ProjectRoleTypeDeveloper)
+          .filter((member) =>
+            member.roleList.includes(PresetRoleType.DEVELOPER)
+          )
           .map((member) => member.principal);
       }
       if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
         return projectMemberList
-          .filter((member) => member.role === ProjectRoleTypeOwner)
+          .filter((member) => member.roleList.includes(PresetRoleType.OWNER))
           .map((member) => member.principal);
       }
       if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {
@@ -139,10 +146,14 @@ export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
       return [];
     };
     const candidatesForCustomRoles = (role: string) => {
-      const roleName = extractRoleResourceName(role);
-      return issue.project.memberList
-        .filter((member) => member.role === roleName)
-        .map((member) => member.principal);
+      const project = useProjectV1Store().getProjectByUID(
+        String(issue.project.id)
+      );
+      const memberList = memberListInProjectV1(project, project.iamPolicy);
+      return memberList
+        .filter((member) => member.user.userType === UserType.USER)
+        .filter((member) => member.roleList.includes(role))
+        .map((member) => convertUserToPrincipal(member.user));
     };
 
     if (groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
