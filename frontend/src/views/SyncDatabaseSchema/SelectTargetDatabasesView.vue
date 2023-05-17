@@ -7,7 +7,7 @@
           <span>{{ $t("common.project") }} - </span>
           <a
             class="normal-link inline-flex items-center"
-            :href="`/project/${projectSlug(project)}`"
+            :href="`/project/${projectV1Slug(project)}`"
             >{{ project.name }}</a
           >
         </div>
@@ -204,23 +204,30 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import axios from "axios";
 import { head, isEqual } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { PropType, computed, onMounted, reactive, ref, watch } from "vue";
+import {
+  PropType,
+  computed,
+  onMounted,
+  reactive,
+  ref,
+  toRef,
+  watch,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useDatabaseStore,
   useEnvironmentV1Store,
-  useProjectStore,
+  useProjectV1ByUID,
 } from "@/store";
 import {
   Database,
   DatabaseId,
   EngineType,
   MigrationHistory,
-  ProjectId,
   UNKNOWN_ID,
 } from "@/types";
-import { migrationHistorySlug } from "@/utils";
+import { migrationHistorySlug, projectV1Slug } from "@/utils";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 import DiffViewPanel from "./DiffViewPanel.vue";
@@ -241,7 +248,7 @@ interface LocalState {
 
 const props = defineProps({
   projectId: {
-    type: Number as PropType<ProjectId>,
+    type: String,
     required: true,
   },
   sourceSchema: {
@@ -251,7 +258,6 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const projectStore = useProjectStore();
 const environmentV1Store = useEnvironmentV1Store();
 const databaseStore = useDatabaseStore();
 const diffViewerRef = ref<HTMLDivElement>();
@@ -273,9 +279,7 @@ const databaseDiffCache = reactive<
   >
 >({});
 
-const project = computed(() => {
-  return projectStore.getProjectById(props.projectId);
-});
+const { project } = useProjectV1ByUID(toRef(props, "projectId"));
 const environment = computed(() => {
   return environmentV1Store.getEnvironmentByUID(
     props.sourceSchema.environmentId

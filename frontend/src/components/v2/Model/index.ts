@@ -5,6 +5,7 @@ import EnvironmentV1Name from "./EnvironmentV1Name.vue";
 import EnvironmentV1Table from "./EnvironmentV1Table.vue";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 import ProjectName from "./ProjectName.vue";
+import ProjectV1Name from "./ProjectV1Name.vue";
 import ProjectV1Table from "./ProjectV1Table.vue";
 
 export {
@@ -15,5 +16,6 @@ export {
   EnvironmentV1Table,
   ProductionEnvironmentV1Icon,
   ProjectName,
+  ProjectV1Name,
   ProjectV1Table,
 };

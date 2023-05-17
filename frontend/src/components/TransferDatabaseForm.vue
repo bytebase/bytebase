@@ -29,7 +29,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeMount, PropType, reactive, watch } from "vue";
+import { computed, onBeforeMount, reactive } from "vue";
 import { cloneDeep } from "lodash-es";
 import {
   TransferMultipleDatabaseForm,
@@ -38,7 +38,6 @@ import {
 } from "@/components/TransferDatabaseForm";
 import {
   Database,
-  ProjectId,
   DEFAULT_PROJECT_ID,
   DatabaseLabel,
   Instance,
@@ -56,8 +55,9 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentV1List,
-  useProjectStore,
+  useProjectV1ByUID,
 } from "@/store";
+import { toRef } from "vue";
 
 interface LocalState {
   transferSource: TransferSource;
@@ -69,7 +69,7 @@ interface LocalState {
 const props = defineProps({
   projectId: {
     required: true,
-    type: Number as PropType<ProjectId>,
+    type: String,
   },
 });
 
@@ -78,11 +78,11 @@ const emit = defineEmits<{
 }>();
 
 const databaseStore = useDatabaseStore();
-const projectStore = useProjectStore();
 const currentUser = useCurrentUser();
 
 const state = reactive<LocalState>({
-  transferSource: props.projectId === DEFAULT_PROJECT_ID ? "OTHER" : "DEFAULT",
+  transferSource:
+    props.projectId === String(DEFAULT_PROJECT_ID) ? "OTHER" : "DEFAULT",
   instanceFilter: undefined,
   searchText: "",
   loading: false,
@@ -90,17 +90,10 @@ const state = reactive<LocalState>({
 const hasWorkspaceManageDatabasePermission = useWorkspacePermission(
   "bb.permission.workspace.manage-database"
 );
-const project = computed(() => projectStore.getProjectById(props.projectId));
-
-// Fetch project entity when initialize and props.projectId changes.
-watch(
-  () => props.projectId,
-  () => projectStore.fetchProjectById(props.projectId),
-  { immediate: true }
-);
+const { project } = useProjectV1ByUID(toRef(props, "projectId"));
 
 const prepare = async () => {
-  await databaseStore.fetchDatabaseListByProjectId(DEFAULT_PROJECT_ID);
+  await databaseStore.fetchDatabaseListByProjectId(String(DEFAULT_PROJECT_ID));
 };
 
 onBeforeMount(prepare);
@@ -110,7 +103,7 @@ const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 const rawDatabaseList = computed(() => {
   if (state.transferSource == "DEFAULT") {
     return cloneDeep(
-      databaseStore.getDatabaseListByProjectId(DEFAULT_PROJECT_ID)
+      databaseStore.getDatabaseListByProjectId(String(DEFAULT_PROJECT_ID))
     );
   } else {
     const list = hasWorkspaceManageDatabasePermission.value
@@ -118,8 +111,8 @@ const rawDatabaseList = computed(() => {
       : databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
     return cloneDeep(list).filter(
       (item: Database) =>
-        item.project.id !== props.projectId &&
-        item.project.id !== DEFAULT_PROJECT_ID
+        String(item.project.id) !== props.projectId &&
+        String(item.project.id) !== String(DEFAULT_PROJECT_ID)
     );
   }
 });
@@ -170,7 +163,7 @@ const transferDatabase = async (databaseList: Database[]) => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: `Successfully transferred ${displayDatabaseName} to project '${project.value.name}'.`,
+      title: `Successfully transferred ${displayDatabaseName} to project '${project.value.title}'.`,
     });
     emit("dismiss");
   } finally {

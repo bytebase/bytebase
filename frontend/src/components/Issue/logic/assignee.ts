@@ -5,14 +5,13 @@ import {
   IssueType,
   Pipeline,
   Principal,
-  Project,
   SYSTEM_BOT_ID,
 } from "@/types";
 import { useIssueLogic } from ".";
 import {
   hasWorkspacePermission,
   isDatabaseRelatedIssueType,
-  isOwnerOfProject,
+  isOwnerOfProjectV1,
 } from "@/utils";
 import {
   Policy,
@@ -25,7 +24,9 @@ import {
   usePolicyByParentAndType,
   defaultApprovalStrategy,
 } from "@/store/modules/v1/policy";
-import { useEnvironmentV1Store } from "@/store";
+import { convertUserToPrincipal, useEnvironmentV1Store } from "@/store";
+import { IamPolicy, Project } from "@/types/proto/v1/project_service";
+import { User } from "@/types/proto/v1/auth_service";
 
 export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   const { create, issue, activeStageOfPipeline } = useIssueLogic();
@@ -54,7 +55,6 @@ export const useCurrentRollOutPolicyForActiveEnvironment = () => {
 
   return computed(() => {
     const policy = activeEnvironmentApprovalPolicy.value;
-    console.log("policy", policy);
     return extractRollOutPolicyValue(policy, issue.value.type);
   });
 };
@@ -103,14 +103,15 @@ export const extractRollOutPolicyValue = (
 };
 
 export const allowUserToBeAssignee = (
-  user: Principal,
+  user: User,
   project: Project,
+  projectIamPolicy: IamPolicy,
   policy: ApprovalStrategy,
   assigneeGroup: ApprovalGroup | undefined
 ): boolean => {
   const hasWorkspaceIssueManagementPermission = hasWorkspacePermission(
     "bb.permission.workspace.manage-issue",
-    user.role
+    convertUserToPrincipal(user).role
   );
 
   if (policy === ApprovalStrategy.AUTOMATIC) {
@@ -125,7 +126,7 @@ export const allowUserToBeAssignee = (
 
   if (assigneeGroup === ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER) {
     // Project owner
-    return isOwnerOfProject(project, user);
+    return isOwnerOfProjectV1(projectIamPolicy, user);
   }
 
   console.assert(false, "should never reach this line");

@@ -26,7 +26,7 @@
       <NInputGroup class="flex-1">
         <ProjectSelect
           v-if="filterTypes.includes('project')"
-          :project="params.project?.id ?? UNKNOWN_ID"
+          :project="params.project?.uid ?? String(UNKNOWN_ID)"
           :include-default-project="canVisitDefaultProject"
           :include-all="true"
           :disabled="loading"
@@ -46,7 +46,7 @@
           :database="params.database?.id ?? UNKNOWN_ID"
           :environment="params.environment?.uid"
           :instance="params.instance?.id"
-          :project="params.project?.id"
+          :project="params.project?.uid"
           :include-all="true"
           :filter="(db) => instanceFilter(db.instance)"
           :disabled="loading"
@@ -98,7 +98,6 @@ import dayjs from "dayjs";
 import {
   type DatabaseId,
   type InstanceId,
-  type ProjectId,
   UNKNOWN_ID,
   Instance,
 } from "@/types";
@@ -107,7 +106,7 @@ import {
   useDatabaseStore,
   useEnvironmentV1Store,
   useInstanceStore,
-  useProjectStore,
+  useProjectV1Store,
   useSlowQueryPolicyList,
 } from "@/store";
 import { hasWorkspacePermission, instanceSupportSlowQuery } from "@/utils";
@@ -159,9 +158,9 @@ const changeDatabaseId = (id: DatabaseId | undefined) => {
   }
   update({ database: undefined });
 };
-const changeProjectId = (id: ProjectId | undefined) => {
-  if (id && id !== UNKNOWN_ID) {
-    const project = useProjectStore().getProjectById(id);
+const changeProjectId = (id: string | undefined) => {
+  if (id && id !== String(UNKNOWN_ID)) {
+    const project = useProjectV1Store().getProjectByUID(id);
     update({ project });
     return;
   }

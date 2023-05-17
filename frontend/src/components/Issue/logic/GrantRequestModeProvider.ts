@@ -1,7 +1,7 @@
 import { cloneDeep } from "lodash-es";
 import { defineComponent, onMounted } from "vue";
 import { GrantRequestContext, IssueCreate } from "@/types";
-import { useCurrentUserV1, useDatabaseStore, useProjectStore } from "@/store";
+import { useCurrentUserV1, useDatabaseStore, useProjectV1Store } from "@/store";
 import { provideIssueLogic, useCommonLogic, useIssueLogic } from "./index";
 
 export default defineComponent({
@@ -11,7 +11,7 @@ export default defineComponent({
     const databaseStore = useDatabaseStore();
 
     onMounted(() => {
-      useProjectStore().fetchAllProjectList();
+      useProjectV1Store().fetchProjectList();
     });
 
     const doCreate = async () => {

@@ -132,7 +132,7 @@ import {
   NDrawerContent,
 } from "naive-ui";
 import { useDatabaseStore, useEnvironmentV1Store } from "@/store";
-import { Database, DatabaseId, ProjectId } from "@/types";
+import { Database, DatabaseId } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from "@/components/v2";
 
@@ -143,7 +143,7 @@ type LocalState = {
 
 const props = defineProps({
   projectId: {
-    type: Number as PropType<ProjectId>,
+    type: String,
     required: true,
   },
   environmentId: {
@@ -180,9 +180,9 @@ const sourceDatabase = computed(() => {
 
 const databaseListGroupByEnvironment = computed(() => {
   const databaseList =
-    databaseStore.databaseListByProjectId
-      .get(props.projectId)
-      ?.filter((db) => db.name.includes(state.searchText))
+    databaseStore
+      .getDatabaseListByProjectId(props.projectId)
+      .filter((db) => db.name.includes(state.searchText))
       .filter(
         (db) => db.instance.engine === sourceDatabase.value.instance.engine
       ) || [];

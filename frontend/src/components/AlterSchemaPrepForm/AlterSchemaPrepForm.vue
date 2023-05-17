@@ -219,8 +219,9 @@ import { useRouter } from "vue-router";
 import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
+
 import DatabaseTable from "../DatabaseTable.vue";
-import { Database, DatabaseId, Project, ProjectId, UNKNOWN_ID } from "@/types";
+import { Database, DatabaseId, UNKNOWN_ID } from "@/types";
 import {
   allowGhostMigration,
   allowUsingSchemaEditor,
@@ -233,7 +234,7 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentV1List,
-  useProjectStore,
+  useProjectV1Store,
 } from "@/store";
 import ProjectStandardView, {
   State as ProjectStandardState,
@@ -244,6 +245,7 @@ import ProjectTenantView, {
 import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
 import GhostDialog from "./GhostDialog.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
+import { Project, TenantMode } from "@/types/proto/v1/project_service";
 
 type LocalState = ProjectStandardState &
   ProjectTenantState & {
@@ -256,7 +258,7 @@ type LocalState = ProjectStandardState &
 
 const props = defineProps({
   projectId: {
-    type: Number as PropType<ProjectId>,
+    type: String,
     default: undefined,
   },
   type: {
@@ -272,7 +274,7 @@ const emit = defineEmits(["dismiss"]);
 const router = useRouter();
 
 const currentUser = useCurrentUser();
-const projectStore = useProjectStore();
+const projectV1Store = useProjectV1Store();
 
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const schemaEditorContext = ref<{
@@ -289,7 +291,7 @@ useEventListener(window, "keydown", (e) => {
 
 const state = reactive<LocalState>({
   project: props.projectId
-    ? projectStore.getProjectById(props.projectId)
+    ? projectV1Store.getProjectByUID(props.projectId)
     : undefined,
   alterType: "MULTI_DB",
   selectedDatabaseIdListForEnvironment: new Map(),
@@ -308,7 +310,7 @@ const isAlterSchema = computed((): boolean => {
 });
 
 const isTenantProject = computed((): boolean => {
-  return state.project?.tenantMode === "TENANT";
+  return state.project?.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
 if (isTenantProject.value) {
@@ -531,18 +533,18 @@ const generateTenant = async () => {
   const projectId = props.projectId;
   if (!projectId) return;
 
-  const project = projectStore.getProjectById(projectId) as Project;
+  const project = projectV1Store.getProjectByUID(projectId);
 
-  if (project.id === UNKNOWN_ID) return;
+  if (project.uid === String(UNKNOWN_ID)) return;
 
   const query: Record<string, any> = {
     template: props.type,
-    project: project.id,
+    project: project.uid,
     mode: "tenant",
   };
   if (state.alterType === "TENANT") {
     const databaseList = useDatabaseStore().getDatabaseListByProjectId(
-      project.id
+      project.uid
     );
     if (isAlterSchema.value && allowUsingSchemaEditor(databaseList)) {
       schemaEditorContext.value.databaseIdList = databaseList

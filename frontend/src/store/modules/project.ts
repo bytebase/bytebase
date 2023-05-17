@@ -81,7 +81,7 @@ function convertMember(
   };
 }
 
-export const useProjectStore = defineStore("project", {
+export const useLegacyProjectStore = defineStore("project_legacy", {
   state: (): ProjectState => ({
     projectById: new Map(),
   }),

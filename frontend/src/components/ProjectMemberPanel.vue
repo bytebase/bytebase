@@ -90,9 +90,9 @@ import { ProjectMemberTable } from "../components/Project/ProjectSetting";
 import {
   ComposedPrincipal,
   DEFAULT_PROJECT_ID,
+  PresetRoleType,
   Principal,
   PrincipalId,
-  ProjectRoleType,
   UNKNOWN_ID,
 } from "../types";
 import { PrincipalSelect, ProjectRolesSelect } from "./v2";
@@ -118,7 +118,7 @@ import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
   principalId: PrincipalId | undefined;
-  roleList: ProjectRoleType[];
+  roleList: string[];
   adding: boolean;
   showInactiveMemberList: boolean;
 }
@@ -130,7 +130,6 @@ const props = defineProps({
   },
 });
 
-const ROLE_OWNER = "roles/OWNER";
 const { t } = useI18n();
 const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
@@ -218,7 +217,7 @@ const composedPrincipalList = computed(() => {
   return orderBy(
     composedPrincipalList,
     [
-      (item) => (item.roleList.includes(ROLE_OWNER) ? 0 : 1),
+      (item) => (item.roleList.includes(PresetRoleType.OWNER) ? 0 : 1),
       (item) => item.principal.id,
     ],
     ["asc", "asc"]
