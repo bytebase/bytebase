@@ -2,7 +2,6 @@ import { hasFeature, useCurrentUserIamPolicy } from "@/store";
 import type { Database, Instance, Principal } from "@/types";
 import { hasWorkspacePermission } from "./role";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
-import { State } from "@/types/proto/v1/common";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 
 export const isInstanceAccessible = (instance: Instance, user: Principal) => {
@@ -60,11 +59,11 @@ export const isDatabaseAccessible = (
   }
 
   const policy = policyList.find((policy) => {
-    const { type, resourceUid, state } = policy;
+    const { type, resourceUid, enforce } = policy;
     return (
       type === PolicyType.ACCESS_CONTROL &&
       resourceUid === `${database.id}` &&
-      state === State.ACTIVE
+      enforce
     );
   });
   if (policy) {
