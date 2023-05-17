@@ -382,14 +382,14 @@ const onEdit = () => {
 const onArchive = () => {
   store.updateReviewPolicy({
     id: reviewPolicy.value.id,
-    rowStatus: "ARCHIVED",
+    enforce: false,
   });
 };
 
 const onRestore = () => {
   store.updateReviewPolicy({
     id: reviewPolicy.value.id,
-    rowStatus: "NORMAL",
+    enforce: true,
   });
 };
 

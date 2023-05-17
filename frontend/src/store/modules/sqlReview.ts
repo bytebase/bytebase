@@ -13,7 +13,7 @@ import { defineStore } from "pinia";
 import { usePolicyV1Store } from "./v1/policy";
 import { useEnvironmentV1Store } from "./v1/environment";
 import { computed, unref, watchEffect } from "vue";
-import { State, Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/v1/common";
 import {
   PolicyType,
   Policy,
@@ -73,7 +73,7 @@ const convertToSQLReviewPolicy = async (
     name: policy.sqlReviewPolicy.name,
     environment,
     ruleList,
-    rowStatus: policy.state == State.ACTIVE ? "NORMAL" : "ARCHIVED",
+    rowStatus: policy.enforce ? "NORMAL" : "ARCHIVED",
   };
 };
 
@@ -192,12 +192,12 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     async updateReviewPolicy({
       id,
       name,
-      rowStatus,
+      enforce,
       ruleList,
     }: {
       id: PolicyId;
       name?: string;
-      rowStatus?: RowStatus;
+      enforce?: boolean;
       ruleList?: SchemaPolicyRule[];
     }) {
       const index = this.reviewPolicyList.findIndex((g) => g.id === id);
@@ -216,9 +216,9 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
 
       const updateMask: string[] = [];
-      if (rowStatus) {
-        updateMask.push("state");
-        policy.state = rowStatus === "ARCHIVED" ? State.DELETED : State.ACTIVE;
+      if (enforce !== undefined) {
+        updateMask.push("enforce");
+        policy.enforce = enforce;
       }
       if (name && ruleList) {
         updateMask.push("payload");

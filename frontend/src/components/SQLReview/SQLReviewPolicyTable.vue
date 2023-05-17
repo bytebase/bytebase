@@ -149,7 +149,7 @@ const combinedList = computed(() => {
 const toggleReviewEnabled = async (review: SQLReviewPolicy, on: boolean) => {
   await sqlReviewStore.updateReviewPolicy({
     id: review.id,
-    rowStatus: on ? "NORMAL" : "ARCHIVED",
+    enforce: on,
   });
 };
 
