@@ -812,7 +812,10 @@ const routes: Array<RouteRecordRaw> = [
                     if (projectId === DEFAULT_PROJECT_ID) {
                       return t("database.unassigned-databases");
                     }
-                    return useLegacyProjectStore().getProjectById(projectId).name;
+                    const projectV1 = useProjectV1Store().getProjectByUID(
+                      String(projectId)
+                    );
+                    return projectV1.title
                   },
                   allowBookmark: true,
                 },

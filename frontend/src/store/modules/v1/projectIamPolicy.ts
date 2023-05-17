@@ -59,7 +59,9 @@ export const useProjectIamPolicyStore = defineStore(
       );
       // legacy project API support
       // re-fetch the legacy project entity to refresh its `memberList`
-      await useLegacyProjectStore().fetchProjectById(parseInt(projectEntity.uid, 10));
+      await useLegacyProjectStore().fetchProjectById(
+        parseInt(projectEntity.uid, 10)
+      );
     };
 
     const getProjectIamPolicy = (project: string) => {
