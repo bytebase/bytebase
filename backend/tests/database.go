@@ -19,7 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-func (ctl *controller) createDatabase(ctx context.Context, project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
+func (ctl *controller) createDatabase(ctx context.Context, projectUID int, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
 	labels, err := marshalLabels(labelMap, instance.Environment.ResourceID)
 	if err != nil {
 		return err
@@ -41,7 +41,7 @@ func (ctl *controller) createDatabase(ctx context.Context, project *api.Project,
 		return errors.Wrap(err, "failed to construct database creation issue CreateContext payload")
 	}
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("create database %q", databaseName),
 		Type:          api.IssueDatabaseCreate,
 		Description:   fmt.Sprintf("This creates a database %q.", databaseName),
@@ -74,7 +74,7 @@ func (ctl *controller) createDatabase(ctx context.Context, project *api.Project,
 }
 
 // cloneDatabaseFromBackup clones the database from an existing backup.
-func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, project *api.Project, instance *api.Instance, databaseName string, backup *api.Backup, labelMap map[string]string) error {
+func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, projectUID int, instance *api.Instance, databaseName string, backup *api.Backup, labelMap map[string]string) error {
 	labels, err := marshalLabels(labelMap, instance.Environment.ResourceID)
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, project *api
 		return errors.Wrap(err, "failed to construct database creation issue CreateContext payload")
 	}
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("create database %q from backup %q", databaseName, backup.Name),
 		Type:          api.IssueDatabaseCreate,
 		Description:   fmt.Sprintf("This creates a database %q from backup %q.", databaseName, backup.Name),

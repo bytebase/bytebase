@@ -166,6 +166,7 @@ type controller struct {
 	grpcConn               *grpc.ClientConn
 	reviewServiceClient    v1pb.ReviewServiceClient
 	orgPolicyServiceClient v1pb.OrgPolicyServiceClient
+	projectServiceClient   v1pb.ProjectServiceClient
 
 	cookie             string
 	grpcMDAccessToken  string
@@ -425,6 +426,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.grpcConn = grpcConn
 	ctl.reviewServiceClient = v1pb.NewReviewServiceClient(ctl.grpcConn)
 	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
+	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
