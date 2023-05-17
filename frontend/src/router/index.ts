@@ -837,7 +837,7 @@ const routes: Array<RouteRecordRaw> = [
                     const projectWebhookSlug = route.params
                       .projectWebhookSlug as string;
                     const project = useProjectV1Store().getProjectByUID(
-                      idFromSlug(projectSlug)
+                      String(idFromSlug(projectSlug))
                     );
                     const webhook =
                       useProjectWebhookV1Store().getProjectWebhookFromProjectById(
@@ -1464,7 +1464,9 @@ router.beforeEach((to, from, next) => {
   if (projectSlug) {
     projectStore
       .fetchProjectById(idFromSlug(projectSlug))
-      .then(() => projectV1Store.fetchProjectByUID(idFromSlug(projectSlug)))
+      .then(() =>
+        projectV1Store.fetchProjectByUID(String(idFromSlug(projectSlug)))
+      )
       .then((project) => {
         if (!projectWebhookSlug) {
           next();

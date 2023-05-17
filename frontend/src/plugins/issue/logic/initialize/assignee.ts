@@ -1,6 +1,11 @@
 import { IssueCreate, ProjectRoleTypeOwner } from "@/types";
-import { useInstanceStore, useMemberStore, useProjectStore } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import {
+  convertUserToPrincipal,
+  useInstanceStore,
+  useMemberStore,
+  useProjectV1Store,
+} from "@/store";
+import { hasWorkspacePermission, memberListInProjectV1 } from "@/utils";
 import { extractRollOutPolicyValue } from "@/components/Issue/logic";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
@@ -49,30 +54,33 @@ export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
   }
 };
 
-// Since we are assigning a project owner, we try to find a more didicated project owner wearing a
+// Since we are assigning a project owner, we try to find a more dedicated project owner wearing a
 // developer hat to offload DBA workload, thus the searching order is:
 // 1. Project owner who is a workspace Developer.
 // 2. Project owner who is not a workspace Developer.
 const assignToProjectOwner = (issueCreate: IssueCreate) => {
-  const project = useProjectStore().getProjectById(issueCreate.projectId);
-  const projectOwnerList = project.memberList.filter(
-    (member) => member.role === ProjectRoleTypeOwner
-  );
+  const project = useProjectV1Store().getProjectByUID(String(issueCreate.projectId));
+  const memberList = memberListInProjectV1(project, project.iamPolicy);
+  const projectOwnerList = memberList.filter((member) => {
+    member.roleList.includes("roles/OWNER");
+  });
 
   const workspaceMemberList = useMemberStore().memberList;
 
-  for (const po of projectOwnerList) {
-    const principalId = po.id.split("/").pop();
+  for (const member of projectOwnerList) {
+    const principal = convertUserToPrincipal(member.user);
+    const principalId = String(principal.id);
     for (const wm of workspaceMemberList) {
-      if (wm.id == principalId && wm.role == "DEVELOPER") {
+      if (String(wm.id) === principalId && wm.role == "DEVELOPER") {
         issueCreate.assigneeId = wm.id;
         return;
       }
     }
   }
 
-  for (const po of projectOwnerList) {
-    const principalId = po.id.split("/").pop();
+  for (const member of projectOwnerList) {
+    const principal = convertUserToPrincipal(member.user);
+    const principalId = String(principal.id);
     for (const wm of workspaceMemberList) {
       if (wm.id == principalId) {
         issueCreate.assigneeId = wm.id;

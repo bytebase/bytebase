@@ -8,13 +8,13 @@ import {
   useDatabaseStore,
   useEnvironmentV1Store,
   useInstanceStore,
-  useProjectStore,
+  useProjectV1Store,
 } from "@/store";
 
 export const wrapQueryFromFilterParams = (params: SlowQueryFilterParams) => {
   const query: Record<string, any> = {};
-  if (params.project && params.project.id !== UNKNOWN_ID) {
-    query.project = params.project.id;
+  if (params.project && params.project.uid !== String(UNKNOWN_ID)) {
+    query.project = params.project.uid;
   }
   if (params.environment && params.environment.uid !== String(UNKNOWN_ID)) {
     query.environment = params.environment.uid;
@@ -54,9 +54,9 @@ export const extractSlowQueryLogFilterFromQuery = async (
     }
   }
   if (query.project) {
-    const id = parseInt(query.project as string, 10) ?? UNKNOWN_ID;
-    const project = await useProjectStore().getOrFetchProjectById(id);
-    if (project && project.id !== UNKNOWN_ID) {
+    const id = (query.project as string) ?? String(UNKNOWN_ID);
+    const project = await useProjectV1Store().getOrFetchProjectByUID(id);
+    if (project && project.uid !== String(UNKNOWN_ID)) {
       params.project = project;
     }
   }

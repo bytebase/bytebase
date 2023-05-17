@@ -34,7 +34,6 @@ import {
 import {
   UNKNOWN_ID,
   Database,
-  ProjectId,
   InstanceId,
   EngineType,
   DatabaseSyncStatus,
@@ -65,8 +64,8 @@ export default defineComponent({
       default: UNKNOWN_ID,
     },
     projectId: {
-      type: Number as PropType<ProjectId>,
-      default: UNKNOWN_ID,
+      type: String,
+      default: String(UNKNOWN_ID),
     },
     engineTypeList: {
       type: Array as PropType<EngineType[]>,
@@ -148,13 +147,13 @@ export default defineComponent({
 
       if (
         props.environmentId !== String(UNKNOWN_ID) ||
-        props.projectId != UNKNOWN_ID
+        props.projectId !== String(UNKNOWN_ID)
       ) {
         list = list.filter((database: Database) => {
           return (
             (props.environmentId === String(UNKNOWN_ID) ||
               database.instance.environment.id == props.environmentId) &&
-            (props.projectId == UNKNOWN_ID ||
+            (props.projectId === String(UNKNOWN_ID) ||
               database.project.id == props.projectId)
           );
         });

@@ -51,7 +51,7 @@
         </div>
         <div>
           <n-button
-            v-if="selectedProject?.workflowType === 'VCS'"
+            v-if="selectedProject?.workflow === Workflow.VCS"
             @click="handleSyncSheetFromVCS"
           >
             <heroicons-outline:refresh
@@ -95,7 +95,9 @@ import { t } from "@/plugins/i18n";
 import {
   hasFeature,
   useCurrentUser,
-  useProjectStore,
+  useCurrentUserV1,
+  useProjectV1ListByCurrentUser,
+  useProjectV1Store,
   useSheetStore,
 } from "@/store";
 import { Sheet } from "@/types";
@@ -105,6 +107,7 @@ import {
   SheetTable,
   SheetViewModeList,
 } from "./sql-editor/Sheet";
+import { Workflow } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   isLoading: boolean;
@@ -120,7 +123,8 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 const currentUser = useCurrentUser();
-const projectStore = useProjectStore();
+const currentUserV1 = useCurrentUserV1();
+const projectV1Store = useProjectV1Store();
 const sheetStore = useSheetStore();
 
 const projectSelectorValue = ref("");
@@ -146,37 +150,30 @@ const navigationList = computed(() => {
 });
 
 const shownSheetList = computed(() => {
-  return state.sheetList
-    .filter((sheet) => {
-      let t = true;
+  let list = [...state.sheetList];
+  const projectId = projectSelectorValue.value;
+  if (projectId !== "") {
+    list = list.filter((sheet) => String(sheet.project.id) === projectId);
+  }
 
-      if (
-        projectSelectorValue.value !== "" &&
-        projectSelectorValue.value !== sheet.project.resourceId
-      ) {
-        t = false;
-      }
-      if (sheetSearchValue.value !== "") {
-        if (
-          !sheet.name.includes(sheetSearchValue.value) &&
-          !sheet.statement.includes(sheetSearchValue.value)
-        ) {
-          t = false;
-        }
-      }
+  const keyword = sheetSearchValue.value.trim().toLowerCase();
+  if (keyword) {
+    list = list.filter((sheet) => {
+      return (
+        sheet.name.toLowerCase().includes(keyword) ||
+        sheet.statement.toLowerCase().includes(keyword)
+      );
+    });
+  }
 
-      return t;
-    })
-    .sort((a, b) => b.updatedTs - a.updatedTs);
+  return list.sort((a, b) => b.updatedTs - a.updatedTs);
 });
 
-const projectList = computed(() => {
-  return projectStore.getProjectListByUser(currentUser.value.id);
-});
+const { projectList } = useProjectV1ListByCurrentUser(false /* !showDeleted */);
 
 const selectedProject = computed(() => {
   for (const project of projectList.value) {
-    if (project.resourceId === projectSelectorValue.value) {
+    if (project.uid === projectSelectorValue.value) {
       return project;
     }
   }
@@ -193,8 +190,8 @@ const projectSelectOptions = computed(() => {
   ].concat(
     projectList.value.map((project) => {
       return {
-        label: project.name,
-        value: project.resourceId,
+        label: project.title,
+        value: project.uid,
       };
     })
   );
@@ -230,9 +227,6 @@ const fetchSheetData = async () => {
 };
 
 onMounted(async () => {
-  await projectStore.fetchProjectListByUser({
-    userId: currentUser.value.id,
-  });
   await fetchSheetData();
   state.isLoading = false;
 });
@@ -257,12 +251,12 @@ const handleSyncSheetFromVCS = () => {
 
   if (
     selectedProject.value === null ||
-    selectedProject.value.workflowType !== "VCS"
+    selectedProject.value.workflow !== Workflow.VCS
   ) {
     return;
   }
 
-  const selectedProjectId = selectedProject.value.id;
+  const selectedProjectId = selectedProject.value.uid;
   const dialogInstance = dialog.create({
     title: t("sheet.hint-tips.confirm-to-sync-sheet"),
     type: "info",

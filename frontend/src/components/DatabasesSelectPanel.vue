@@ -132,7 +132,7 @@ import {
 } from "naive-ui";
 import { computed, reactive, PropType } from "vue";
 import { useDatabaseStore, useEnvironmentV1Store } from "@/store";
-import { Database, DatabaseId, ProjectId } from "@/types";
+import { Database, DatabaseId } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 
 type LocalState = {
@@ -142,7 +142,7 @@ type LocalState = {
 
 const props = defineProps({
   projectId: {
-    type: Number as PropType<ProjectId>,
+    type: String,
     required: true,
   },
   selectedDatabaseIdList: {
@@ -167,9 +167,9 @@ const state = reactive<LocalState>({
 
 const databaseListGroupByEnvironment = computed(() => {
   const databaseList =
-    databaseStore.databaseListByProjectId
-      .get(props.projectId)
-      ?.filter((db) => db.name.includes(state.searchText)) || [];
+    databaseStore
+      .getDatabaseListByProjectId(props.projectId)
+      .filter((db) => db.name.includes(state.searchText)) || [];
   const listByEnv = environmentV1Store.environmentList.map((environment) => {
     const list = databaseList.filter(
       (db) => String(db.instance.environment.id) === environment.uid

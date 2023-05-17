@@ -102,7 +102,7 @@ export const usePITRLogic = (database: Ref<Database>) => {
       type: "bb.issue.database.restore.pitr",
       description: "",
       assigneeId: currentUser.value.id,
-      projectId: database.value.project.id,
+      projectId: Number(database.value.project.id),
       payload: {},
       createContext,
       ...params,

@@ -1,7 +1,7 @@
 import { computed, Ref } from "vue";
-import { Issue, IssueCreate, Project, Task, TaskStatus } from "@/types";
+import { Issue, IssueCreate, Task, TaskStatus } from "@/types";
 import { useRouter } from "vue-router";
-import { useIssueStore, useProjectStore } from "@/store";
+import { useIssueStore, useProjectV1Store } from "@/store";
 import { issueSlug } from "@/utils";
 import { maybeCreateBackTraceComments } from "../rollback/common";
 
@@ -12,15 +12,13 @@ export const useGrantRequestIssueLogic = (params: {
   const { create, issue } = params;
   const router = useRouter();
   const issueStore = useIssueStore();
-  const projectStore = useProjectStore();
+  const projectV1Store = useProjectV1Store();
 
-  const project = computed((): Project => {
-    if (create.value) {
-      return projectStore.getProjectById(
-        (issue.value as IssueCreate).projectId
-      );
-    }
-    return (issue.value as Issue).project;
+  const project = computed(() => {
+    const projectUID = create.value
+      ? (issue.value as IssueCreate).projectId
+      : (issue.value as Issue).project.id;
+    return projectV1Store.getProjectByUID(String(projectUID));
   });
 
   const createIssue = async (issue: IssueCreate) => {

@@ -32,7 +32,7 @@ export default defineComponent({
     const projectV1Store = useProjectV1Store();
 
     const project = computed(() => {
-      return projectV1Store.getProjectByUID(idFromSlug(props.projectSlug));
+      return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));
     });
 
     const defaultNewWebhook = emptyProjectWebhook();

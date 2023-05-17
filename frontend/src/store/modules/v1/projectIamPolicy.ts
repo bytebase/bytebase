@@ -54,11 +54,11 @@ export const useProjectIamPolicyStore = defineStore(
       });
       policyMap.value.set(project, updated);
 
-      // legacy project API support
-      // re-fetch the legacy project entity to refresh its `memberList`
       const projectEntity = await useProjectV1Store().getOrFetchProjectByName(
         project
       );
+      // legacy project API support
+      // re-fetch the legacy project entity to refresh its `memberList`
       await useProjectStore().fetchProjectById(parseInt(projectEntity.uid, 10));
     };
 

@@ -29,7 +29,7 @@
         />
         <DatabaseSelect
           class="!w-128"
-          :selected-id="(state.databaseId as DatabaseId)"
+          :selected-id="state.databaseId"
           :mode="'ALL'"
           :environment-id="state.environmentId"
           :project-id="state.projectId"
@@ -119,13 +119,16 @@ import {
   GrantRequestPayload,
   Issue,
   IssueCreate,
-  ProjectId,
   SQLDialect,
   UNKNOWN_ID,
   dialectOfEngine,
 } from "@/types";
-import { getProjectMemberList } from "@/utils";
-import { useDatabaseStore } from "@/store";
+import { memberListInProjectV1 } from "@/utils";
+import {
+  convertUserToPrincipal,
+  useDatabaseStore,
+  useProjectV1Store,
+} from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
@@ -133,7 +136,7 @@ import RequiredStar from "@/components/RequiredStar.vue";
 
 interface LocalState {
   // For creating
-  projectId?: ProjectId;
+  projectId?: string;
   environmentId?: string;
   databaseId?: DatabaseId;
   maxRowCount: number;
@@ -168,28 +171,31 @@ const dialect = computed((): SQLDialect => {
 
 onMounted(() => {
   if (create.value) {
-    const projectId = (issue.value as IssueCreate).projectId;
-    if (projectId && projectId !== UNKNOWN_ID) {
+    const projectId = String((issue.value as IssueCreate).projectId);
+    if (projectId && projectId !== String(UNKNOWN_ID)) {
       handleProjectSelect(projectId);
     }
   }
 });
 
-const handleProjectSelect = async (projectId: ProjectId) => {
+const handleProjectSelect = async (projectId: string) => {
   if (!create.value) {
     return;
   }
 
+  const issueCreate = issue.value as IssueCreate;
   state.projectId = projectId;
-  (issue.value as IssueCreate).projectId = projectId;
+  issueCreate.projectId = parseInt(projectId, 10);
   // update issue assignee
-  const projectOwner = head(
-    (await getProjectMemberList(projectId)).filter(
-      (member) => !member.roleList.includes("OWNER")
-    )
+  const project = await useProjectV1Store().getOrFetchProjectByUID(projectId);
+  const memberList = memberListInProjectV1(project, project.iamPolicy);
+  const ownerList = memberList.filter((member) =>
+    member.roleList.includes("roles/OWNER")
   );
+  const projectOwner = head(ownerList);
   if (projectOwner) {
-    (issue.value as IssueCreate).assigneeId = projectOwner.principal.id;
+    const ownerPrincipal = convertUserToPrincipal(projectOwner.user);
+    issueCreate.assigneeId = ownerPrincipal.id;
   }
 };
 
@@ -198,7 +204,12 @@ const handleEnvironmentSelect = (environmentId: string) => {
   const database = databaseStore.getDatabaseById(
     state.databaseId || UNKNOWN_ID
   );
-  if (database && database.instance.environment.id !== state.environmentId) {
+  // Unselect database if it doesn't belong to the newly selected environment.
+  if (
+    database &&
+    String(database.id) !== String(UNKNOWN_ID) &&
+    String(database.instance.environment.id) !== state.environmentId
+  ) {
     state.databaseId = undefined;
   }
 };
@@ -208,9 +219,12 @@ const handleDatabaseSelect = (databaseId: DatabaseId) => {
   const database = databaseStore.getDatabaseById(
     state.databaseId || UNKNOWN_ID
   );
-  if (database) {
+  if (
+    database &&
+    String(database.id) !== String(UNKNOWN_ID)
+  ) {
     state.environmentId = String(database.instance.environment.id);
-    handleProjectSelect(database.projectId);
+    handleProjectSelect(String(database.projectId));
   }
 };
 

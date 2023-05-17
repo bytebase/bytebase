@@ -11,7 +11,7 @@
           <template #go>
             <router-link
               :to="{
-                path: `/project/${projectSlug(project)}`,
+                path: `/project/${projectV1Slug(project)}`,
                 hash: '#deployment-config',
               }"
               active-class=""
@@ -56,12 +56,13 @@
 import { computed, watchEffect, h } from "vue";
 import { Translation, useI18n } from "vue-i18n";
 import { RouterLink } from "vue-router";
-import type { Database, DatabaseId, LabelKeyType, Project } from "@/types";
+import type { Database, DatabaseId, LabelKeyType } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
-import { getPipelineFromDeploymentScheduleV1, projectSlug } from "@/utils";
+import { getPipelineFromDeploymentScheduleV1, projectV1Slug } from "@/utils";
 import { useDeploymentConfigV1ByProject } from "@/store";
 import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { Project } from "@/types/proto/v1/project_service";
 
 export type State = {
   selectedDatabaseIdListForTenantMode: Set<DatabaseId>;
@@ -84,7 +85,7 @@ const { t } = useI18n();
 
 const { deploymentConfig, ready } = useDeploymentConfigV1ByProject(
   computed(() => {
-    return `projects/${props.project?.resourceId ?? -1}`;
+    return props.project?.name ?? "projects/-1";
   })
 );
 
@@ -118,7 +119,7 @@ useOverrideSubtitle(() => {
           RouterLink,
           {
             to: {
-              path: `/project/${projectSlug(props.project!)}`,
+              path: `/project/${projectV1Slug(props.project!)}`,
               hash: "#databases",
             },
             activeClass: "",

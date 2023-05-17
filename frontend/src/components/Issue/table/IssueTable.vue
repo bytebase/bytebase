@@ -291,7 +291,7 @@ const issueTaskStatus = (issue: Issue) => {
     return "PENDING_APPROVAL";
   }
 
-  return activeTask(issue.pipeline).status;
+  return activeTask(issue.pipeline!).status;
 };
 
 const activeEnvironmentName = function (issue: Issue) {
@@ -309,11 +309,11 @@ const taskStepList = function (issue: Issue): BBStep[] {
     ];
   }
 
-  return issue.pipeline.stageList.map((stage) => {
+  return issue.pipeline!.stageList.map((stage) => {
     const task = activeTaskInStage(stage);
     let status: BBStepStatus = task.status;
     if (status == "PENDING" || status == "PENDING_APPROVAL") {
-      if (activeTask(issue.pipeline).id == task.id) {
+      if (activeTask(issue.pipeline!).id == task.id) {
         status =
           status == "PENDING" ? "PENDING_ACTIVE" : "PENDING_APPROVAL_ACTIVE";
       }
@@ -390,7 +390,7 @@ const clickIssue = (_: number, row: number, e: MouseEvent) => {
 
 const clickIssueStep = (issue: Issue, step: BBStep) => {
   const task = step.payload as Task;
-  const stageIndex = issue.pipeline.stageList.findIndex((item) => {
+  const stageIndex = issue.pipeline!.stageList.findIndex((item) => {
     return item.id == task.stage.id;
   });
 

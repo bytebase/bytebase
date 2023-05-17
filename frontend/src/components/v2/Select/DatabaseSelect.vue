@@ -23,7 +23,6 @@ import {
   EngineType,
   EngineTypeList,
   InstanceId,
-  ProjectId,
   UNKNOWN_ID,
   unknown,
 } from "@/types";
@@ -38,7 +37,7 @@ const props = withDefaults(
     database: DatabaseId | undefined;
     environment?: string;
     instance?: InstanceId;
-    project?: ProjectId;
+    project?: string;
     allowedEngineTypeList?: readonly EngineType[];
     includeAll?: boolean;
     autoReset?: boolean;
@@ -78,8 +77,8 @@ const rawDatabaseList = computed(() => {
     if (props.instance && props.instance !== UNKNOWN_ID) {
       if (db.instance.id !== props.instance) return false;
     }
-    if (props.project && props.project !== UNKNOWN_ID) {
-      if (db.project.id !== props.project) return false;
+    if (props.project && props.project !== String(UNKNOWN_ID)) {
+      if (String(db.project.id) !== props.project) return false;
     }
     if (!props.allowedEngineTypeList.includes(db.instance.engine)) return false;
 

@@ -26,7 +26,7 @@
           name="radiogroup"
         >
           <NRadio
-            class="!leading-6"
+            class="!leading-6 whitespace-nowrap"
             :value="true"
             :label="$t('issue.grant-request.all-databases')"
           />
@@ -36,7 +36,7 @@
               :value="false"
               :disabled="!state.projectId"
               :label="$t('issue.grant-request.manually-select')"
-              @click="handleManullySelectClick"
+              @click="handleManuallySelectClick"
             />
             <button
               v-if="state.projectId"
@@ -143,11 +143,17 @@ import {
   GrantRequestPayload,
   Issue,
   IssueCreate,
-  ProjectId,
   UNKNOWN_ID,
 } from "@/types";
-import { getProjectMemberList, parseExpiredTimeString } from "@/utils";
-import { useDatabaseStore } from "@/store";
+import {
+  memberListInProjectV1,
+  parseExpiredTimeString,
+} from "@/utils";
+import {
+  convertUserToPrincipal,
+  useDatabaseStore,
+  useProjectV1Store,
+} from "@/store";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import RequiredStar from "@/components/RequiredStar.vue";
@@ -156,7 +162,7 @@ import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
 interface LocalState {
   showSelectDatabasePanel: boolean;
   // For creating
-  projectId?: ProjectId;
+  projectId?: string;
   allDatabases: boolean;
   selectedDatabaseIdList: DatabaseId[];
   expireDays: number;
@@ -218,36 +224,39 @@ const expireDaysOptions = computed(() => [
 
 onMounted(() => {
   if (create.value) {
-    const projectId = (issue.value as IssueCreate).projectId;
-    if (projectId && projectId !== UNKNOWN_ID) {
+    const projectId = String((issue.value as IssueCreate).projectId);
+    if (projectId && projectId !== String(UNKNOWN_ID)) {
       handleProjectSelect(projectId);
     }
   }
 });
 
-const handleProjectSelect = async (projectId: ProjectId) => {
+const handleProjectSelect = async (projectId: string) => {
   if (!create.value) {
     return;
   }
 
   state.projectId = projectId;
-  (issue.value as IssueCreate).projectId = projectId;
+  (issue.value as IssueCreate).projectId = parseInt(projectId, 10);
   // update issue assignee
-  const projectOwner = head(
-    (await getProjectMemberList(projectId)).filter(
-      (member) => !member.roleList.includes("OWNER")
-    )
+
+  const project = await useProjectV1Store().getOrFetchProjectByUID(projectId);
+  const memberList = memberListInProjectV1(project, project.iamPolicy);
+  const ownerList = memberList.filter((member) =>
+    member.roleList.includes("roles/OWNER")
   );
+  const projectOwner = head(ownerList);
   if (projectOwner) {
-    (issue.value as IssueCreate).assigneeId = projectOwner.principal.id;
+    const ownerPrincipal = convertUserToPrincipal(projectOwner.user);
+    (issue.value as IssueCreate).assigneeId = ownerPrincipal.id;
   }
   state.selectedDatabaseIdList = state.selectedDatabaseIdList.filter((id) => {
     const database = databaseStore.getDatabaseById(id);
-    return database.project.id === projectId;
+    return String(database.project.id) === projectId;
   });
 };
 
-const handleManullySelectClick = () => {
+const handleManuallySelectClick = () => {
   if (state.selectedDatabaseIdList.length === 0) {
     state.showSelectDatabasePanel = true;
   }

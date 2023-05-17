@@ -193,8 +193,8 @@ export const useDatabaseStore = defineStore("database", {
       }
       return list;
     },
-    getDatabaseListByProjectId(projectId: ProjectId): Database[] {
-      return this.databaseListByProjectId.get(projectId) || [];
+    getDatabaseListByProjectId(projectId: string): Database[] {
+      return this.databaseListByProjectId.get(parseInt(projectId, 10)) || [];
     },
     getDatabaseById(databaseId: DatabaseId, instanceId?: InstanceId): Database {
       if (databaseId == EMPTY_ID) {
@@ -223,7 +223,7 @@ export const useDatabaseStore = defineStore("database", {
       projectId,
     }: {
       databaseList: Database[];
-      projectId: ProjectId;
+      projectId: string;
     }) {
       this.databaseListByProjectId.set(projectId, databaseList);
     },
@@ -320,7 +320,7 @@ export const useDatabaseStore = defineStore("database", {
 
       return databaseList[0];
     },
-    async fetchDatabaseListByProjectId(projectId: ProjectId) {
+    async fetchDatabaseListByProjectId(projectId: string) {
       const databaseList = await this.fetchDatabaseList({
         projectId,
       });
@@ -381,10 +381,10 @@ export const useDatabaseStore = defineStore("database", {
       labels,
     }: {
       databaseId: DatabaseId;
-      projectId: ProjectId;
+      projectId: string;
       labels?: DatabaseLabel[];
     }) {
-      const attributes: any = { projectId };
+      const attributes: any = { projectId: Number(projectId) };
       if (labels) {
         attributes.labels = JSON.stringify(labels);
       }

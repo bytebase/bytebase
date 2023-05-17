@@ -12,7 +12,7 @@
         name="project"
         :mode="ProjectMode.Tenant"
         :selected-id="props.state.tenantProjectId"
-        @select-project-id="(id: number) => props.state.tenantProjectId = id"
+        @select-project-id="(id: string) => props.state.tenantProjectId = id"
       />
     </div>
   </div>
@@ -29,16 +29,16 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { Database, Project, ProjectId } from "../../types";
+import { Database, UNKNOWN_ID } from "../../types";
 import ProjectSelect, { Mode as ProjectMode } from "../ProjectSelect.vue";
 import ProjectTenantView, {
   State as ProjectTenantState,
 } from "./ProjectTenantView.vue";
-import { useProjectStore } from "@/store";
+import { useProjectV1ByUID } from "@/store";
 import { Environment } from "@/types/proto/v1/environment_service";
 
 export type State = ProjectTenantState & {
-  tenantProjectId: ProjectId | undefined;
+  tenantProjectId: string | undefined;
 };
 
 const props = defineProps<{
@@ -51,13 +51,11 @@ defineEmits<{
   (event: "dismiss"): void;
 }>();
 
-const projectStore = useProjectStore();
-
-const project = computed(() => {
-  return projectStore.getProjectById(
-    props.state.tenantProjectId as number
-  ) as Project;
-});
+const { project } = useProjectV1ByUID(
+  computed(() => {
+    return props.state.tenantProjectId ?? String(UNKNOWN_ID);
+  })
+);
 
 const filteredDatabaseList = computed(() => {
   if (!props.state.tenantProjectId) return [];

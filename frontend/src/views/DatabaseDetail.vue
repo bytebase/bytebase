@@ -202,7 +202,7 @@
             name="project"
             :allowed-role-list="['OWNER']"
             :include-default-project="allowTransferToDefaultProject"
-            :selected-id="state.editingProjectId as number"
+            :selected-id="state.editingProjectId"
             @select-project-id="
               (projectId) => {
                 state.editingProjectId = projectId;
@@ -333,7 +333,6 @@ import {
   hasPermissionInProject,
 } from "@/utils";
 import {
-  ProjectId,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   Database,
@@ -365,7 +364,7 @@ interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
   showSchemaEditorModal: boolean;
-  editingProjectId: ProjectId;
+  editingProjectId: string;
   selectedIndex: number;
   syncingSchema: boolean;
   showSchemaDiagram: boolean;
@@ -403,7 +402,7 @@ const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
   showSchemaEditorModal: false,
-  editingProjectId: UNKNOWN_ID,
+  editingProjectId: String(UNKNOWN_ID),
   selectedIndex: 0,
   syncingSchema: false,
   showSchemaDiagram: false,
@@ -591,7 +590,7 @@ const tabItemList = computed((): BBTabFilterItem[] => {
 });
 
 const tryTransferProject = () => {
-  state.editingProjectId = database.value.project.id;
+  state.editingProjectId = String(database.value.project.id);
   state.showTransferDatabaseModal = true;
 };
 
@@ -672,7 +671,7 @@ const createMigration = async (
   });
 };
 
-const updateProject = (newProjectId: ProjectId, labels?: DatabaseLabel[]) => {
+const updateProject = (newProjectId: string, labels?: DatabaseLabel[]) => {
   databaseStore
     .transferProject({
       databaseId: database.value.id,
@@ -728,7 +727,7 @@ const selectDatabaseTabOnHash = () => {
 };
 
 const handleGotoSQLEditorFailed = () => {
-  state.editingProjectId = database.value.project.id;
+  state.editingProjectId = String(database.value.project.id);
   state.showIncorrectProjectModal = true;
 };
 

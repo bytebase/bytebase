@@ -18,21 +18,25 @@
 import { computed, watch, watchEffect, h } from "vue";
 import { NSelect, SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { uniqBy } from "lodash-es";
+import { intersection, uniqBy } from "lodash-es";
 import UserIcon from "~icons/heroicons-outline/user";
 
-import { useMemberStore, usePrincipalStore, useProjectStore } from "@/store";
+import {
+  convertUserToPrincipal,
+  useMemberStore,
+  usePrincipalStore,
+  useProjectV1Store,
+} from "@/store";
 import {
   Principal,
   PrincipalId,
-  ProjectId,
-  ProjectRoleType,
   RoleType,
   SYSTEM_BOT_ID,
   UNKNOWN_ID,
   unknown,
 } from "@/types";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
+import { extractRoleResourceName, memberListInProjectV1 } from "@/utils";
 
 interface PrincipalSelectOption extends SelectOption {
   value: PrincipalId;
@@ -42,13 +46,13 @@ interface PrincipalSelectOption extends SelectOption {
 const props = withDefaults(
   defineProps<{
     principal: PrincipalId | undefined;
-    project?: ProjectId;
+    project?: string;
     includeAll?: boolean;
     includeSystemBot?: boolean;
     includeServiceAccount?: boolean;
     includeArchived?: boolean;
     allowedRoleList?: RoleType[];
-    allowedProjectMemberRoleList?: ProjectRoleType[];
+    allowedProjectMemberRoleList?: string[];
     autoReset?: boolean;
     filter?: (principal: Principal, index: number) => boolean;
   }>(),
@@ -70,13 +74,13 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const projectStore = useProjectStore();
+const projectV1Store = useProjectV1Store();
 const memberStore = useMemberStore();
 const principalStore = usePrincipalStore();
 
 const prepare = () => {
-  if (props.project && props.project !== UNKNOWN_ID) {
-    projectStore.getOrFetchProjectById(props.project);
+  if (props.project && String(props.project) !== String(UNKNOWN_ID)) {
+    projectV1Store.getOrFetchProjectByUID(props.project);
   } else {
     // Need not to fetch the entire member list since it's done in
     // root component
@@ -84,15 +88,22 @@ const prepare = () => {
 };
 watchEffect(prepare);
 
-const getPrincipalListFromProject = (project: ProjectId) => {
-  const principalList = projectStore
-    .getProjectById(project)
-    .memberList.filter((member) => {
-      return props.allowedProjectMemberRoleList.includes(member.role);
+const getPrincipalListFromProject = (projectUID: string) => {
+  const project = projectV1Store.getProjectByUID(projectUID);
+  const memberList = memberListInProjectV1(project, project.iamPolicy);
+  const filteredUserList = memberList
+    .filter((member) => {
+      const roleList = member.roleList.map(extractRoleResourceName);
+      return (
+        intersection(roleList, props.allowedProjectMemberRoleList).length > 0
+      );
     })
-    .map((member) => member.principal);
-  return uniqBy(principalList, (user) => user.id);
+    .map((member) => member.user);
+
+  const principalList = filteredUserList.map(convertUserToPrincipal);
+  return uniqBy(principalList, (principal) => principal.id);
 };
+
 const getPrincipalListFromWorkspace = () => {
   return memberStore.memberList
     .filter((member) => {
@@ -107,7 +118,7 @@ const getPrincipalListFromWorkspace = () => {
 
 const rawPrincipalList = computed(() => {
   const list =
-    props.project && props.project !== UNKNOWN_ID
+    props.project && props.project !== String(UNKNOWN_ID)
       ? getPrincipalListFromProject(props.project)
       : getPrincipalListFromWorkspace();
 

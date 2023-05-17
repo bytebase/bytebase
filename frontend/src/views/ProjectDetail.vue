@@ -23,26 +23,32 @@
     />
   </template>
   <template v-if="hash === 'slow-query'">
-    <ProjectSlowQueryPanel :project="project" />
+    <ProjectSlowQueryPanel :project="projectV1" />
   </template>
   <template v-if="hash === 'activity'">
     <ProjectActivityPanel id="activity" :project="projectV1" />
   </template>
-  <template v-if="project.id !== DEFAULT_PROJECT_ID && hash === 'gitops'">
+  <template
+    v-if="Number(project.id) !== DEFAULT_PROJECT_ID && hash === 'gitops'"
+  >
     <ProjectVersionControlPanel
       id="gitops"
       :project="project"
       :allow-edit="allowEdit"
     />
   </template>
-  <template v-if="project.id !== DEFAULT_PROJECT_ID && hash === 'webhook'">
+  <template
+    v-if="Number(project.id) !== DEFAULT_PROJECT_ID && hash === 'webhook'"
+  >
     <ProjectWebhookPanel
       id="webhook"
       :project="projectV1"
       :allow-edit="allowEdit"
     />
   </template>
-  <template v-if="project.id !== DEFAULT_PROJECT_ID && hash === 'setting'">
+  <template
+    v-if="Number(project.id) !== DEFAULT_PROJECT_ID && hash === 'setting'"
+  >
     <ProjectSettingPanel
       id="setting"
       :project="projectV1"
@@ -73,6 +79,7 @@ import {
   useProjectStore,
   useProjectV1Store,
 } from "@/store";
+import { TenantMode } from "@/types/proto/v1/project_service";
 
 export default defineComponent({
   name: "ProjectDetail",
@@ -113,13 +120,13 @@ export default defineComponent({
       return projectStore.getProjectById(idFromSlug(props.projectSlug));
     });
     const projectV1 = computed(() => {
-      return projectV1Store.getProjectByUID(idFromSlug(props.projectSlug));
+      return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));
     });
 
     const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
     const prepareDatabaseList = () => {
-      databaseStore.fetchDatabaseListByProjectId(project.value.id);
+      databaseStore.fetchDatabaseListByProjectId(String(project.value.id));
     };
 
     watchEffect(prepareDatabaseList);
@@ -127,14 +134,14 @@ export default defineComponent({
     const databaseList = computed(() => {
       const list = cloneDeep(
         databaseStore
-          .getDatabaseListByProjectId(project.value.id)
+          .getDatabaseListByProjectId(String(project.value.id))
           .filter((db) => db.syncStatus === "OK")
       );
       return sortDatabaseListByEnvironmentV1(list, environmentList.value);
     });
 
     const isTenantProject = computed(() => {
-      return project.value.tenantMode === "TENANT";
+      return projectV1.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
     });
 
     return {

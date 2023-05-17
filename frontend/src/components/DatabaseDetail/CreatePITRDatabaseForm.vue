@@ -9,7 +9,7 @@
       :disabled="true"
       :include-default-project="true"
       :selected-id="state.context.projectId"
-      @select-project-id="(id: number) => (state.context.projectId = id)"
+      @select-project-id="(id: string) => (state.context.projectId = id)"
     />
   </div>
 
@@ -59,7 +59,7 @@
       class="mt-1"
       :selected-id="state.context.environmentId"
       :disabled="true"
-      @select-environment-id="(id: number) => (state.context.environmentId = id)"
+      @select-environment-id="(id: string) => (state.context.environmentId = id)"
     />
   </div>
 
@@ -136,21 +136,21 @@ import {
   watch,
 } from "vue";
 import { cloneDeep, isEmpty } from "lodash-es";
-import {
-  Database,
-  Instance,
-  Project,
-  defaultCharset,
-  defaultCollation,
-} from "@/types";
+import { Database, Instance, defaultCharset, defaultCollation } from "@/types";
 import { CreatePITRDatabaseContext } from "./utils";
 import {
   DatabaseLabelForm,
   DatabaseNameTemplateTips,
   useDBNameTemplateInputState,
 } from "@/components/CreateDatabasePrepForm";
-import { useInstanceStore, useProjectStore, useDBSchemaStore } from "@/store";
+import {
+  useInstanceStore,
+  useProjectV1Store,
+  useDBSchemaStore,
+  useProjectV1ByUID,
+} from "@/store";
 import { isPITRAvailableOnInstance } from "@/plugins/pitr";
+import { TenantMode } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   context: CreatePITRDatabaseContext;
@@ -181,9 +181,9 @@ const extractLocalContextFromProps = (): CreatePITRDatabaseContext => {
     );
 
     return {
-      projectId: database.project.id,
+      projectId: String(database.project.id),
       instanceId: database.instance.id,
-      environmentId: database.instance.environment.id,
+      environmentId: String(database.instance.environment.id),
       databaseName: `${database.name}_recovery`, // looks like "my_db_recovery"
       characterSet: dbSchemaMetadata.characterSet,
       collation: dbSchemaMetadata.collation,
@@ -193,7 +193,7 @@ const extractLocalContextFromProps = (): CreatePITRDatabaseContext => {
 };
 
 const instanceStore = useInstanceStore();
-const projectStore = useProjectStore();
+const projectV1Store = useProjectV1Store();
 const dbSchemaStore = useDBSchemaStore();
 
 // Refresh the instance list
@@ -207,23 +207,21 @@ const state = reactive<LocalState>({
   context: extractLocalContextFromProps(),
 });
 
-const project = computed((): Project => {
-  return projectStore.getProjectById(state.context.projectId);
-});
+const { project } = useProjectV1ByUID(computed(() => state.context.projectId));
 
 const isReservedName = computed(() => {
   return state.context.databaseName.toLowerCase() == "bytebase";
 });
 
 const isTenantProject = computed((): boolean => {
-  return project.value.tenantMode === "TENANT";
+  return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
 // reference to <DatabaseLabelForm /> to call validate()
 const labelForm = ref<InstanceType<typeof DatabaseLabelForm> | null>(null);
 
 const isDbNameTemplateMode = computed((): boolean => {
-  if (project.value.tenantMode !== "TENANT") return false;
+  if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) return false;
   // true if dbNameTemplate is not empty
   return !!project.value.dbNameTemplate;
 });

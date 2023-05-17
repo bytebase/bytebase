@@ -38,15 +38,15 @@ import {
   IssueType,
   NORMAL_POLL_INTERVAL,
   MINIMUM_POLL_INTERVAL,
-  Project,
   unknown,
   UNKNOWN_ID,
   Issue,
+  unknownProject,
 } from "@/types";
 import {
   hasFeature,
   useIssueStore,
-  useProjectStore,
+  useProjectV1Store,
   useUIStateStore,
 } from "@/store";
 import {
@@ -60,6 +60,7 @@ import Emittery from "emittery";
 import { isDatabaseRelatedIssueType, isGrantRequestIssueType } from "@/utils";
 import DatabaseRelatedDetail from "@/components/Issue/layout/DatabaseRelatedDetail.vue";
 import GrantRequestDetail from "@/components/Issue/layout/GrantRequestDetail.vue";
+import { Project, TenantMode } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -128,7 +129,7 @@ watch(issueSlug, async () => {
   if (tenantIssueTypes.includes(type)) {
     const project = await findProject();
     if (
-      project.tenantMode === "TENANT" &&
+      project.tenantMode === TenantMode.TENANT_MODE_ENABLED &&
       !hasFeature("bb.feature.multi-tenancy")
     ) {
       state.showFeatureModal = true;
@@ -143,16 +144,14 @@ const onStatusChanged = (eager: boolean) => {
 
 const findProject = async (): Promise<Project> => {
   const projectId = route.query.project
-    ? parseInt(route.query.project as string)
-    : UNKNOWN_ID;
-  let project = unknown("PROJECT");
-
-  if (projectId !== UNKNOWN_ID) {
-    const projectStore = useProjectStore();
-    project = await projectStore.fetchProjectById(projectId);
+    ? (route.query.project as string)
+    : String(UNKNOWN_ID);
+  if (projectId !== String(UNKNOWN_ID)) {
+    const projectV1Store = useProjectV1Store();
+    const project = await projectV1Store.getOrFetchProjectByUID(projectId);
+    return project;
   }
-
-  return project;
+  return unknownProject();
 };
 
 const documentTitle = computed(() => {

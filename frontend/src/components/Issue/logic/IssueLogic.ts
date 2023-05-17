@@ -8,7 +8,6 @@ import {
   IssuePatch,
   IssueStatus,
   Pipeline,
-  Project,
   SheetId,
   Stage,
   StageCreate,
@@ -18,6 +17,7 @@ import {
   TaskPatch,
   TaskStatus,
 } from "@/types";
+import { Project } from "@/types/proto/v1/project_service";
 
 type IssueLogic = {
   // base params

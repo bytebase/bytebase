@@ -162,14 +162,14 @@ const showExportButton = computed(() => {
   return true;
 });
 
-const issueTaskStatus = () => {
+const issueTaskStatus = computed(() => {
   // For grant request issue, we always show the status as "PENDING_APPROVAL" as task status.
   if (!isDatabaseRelatedIssueType(issue.value.type)) {
     return "PENDING_APPROVAL";
   }
 
-  return activeTask(issue.value.pipeline).status;
-};
+  return activeTask(issue.value.pipeline!).status;
+});
 
 watch(
   () => issue.value,
@@ -180,11 +180,11 @@ watch(
 
 const pushEvent = computed((): VCSPushEvent | undefined => {
   if (issue.value.type == "bb.issue.database.schema.update") {
-    const payload = activeTask(issue.value.pipeline)
+    const payload = activeTask(issue.value.pipeline!)
       .payload as TaskDatabaseSchemaUpdatePayload;
     return payload?.pushEvent;
   } else if (issue.value.type == "bb.issue.database.data.update") {
-    const payload = activeTask(issue.value.pipeline)
+    const payload = activeTask(issue.value.pipeline!)
       .payload as TaskDatabaseDataUpdatePayload;
     return payload?.pushEvent;
   }
