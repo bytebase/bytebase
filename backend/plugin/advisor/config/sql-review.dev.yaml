@@ -93,7 +93,7 @@ ruleList:
   - type: naming.identifier.case
     level: WARNING
     payload:
-      case: "UPPER"
+      upper: true
   - type: column.required
     level: WARNING
     payload:
