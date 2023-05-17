@@ -9,10 +9,6 @@ import {
   UnrecognizedApprovalRule,
 } from "@/types";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import {
-  WorkspaceApprovalSetting,
-  WorkspaceApprovalSetting_Rule as ApprovalRule,
-} from "@/types/proto/store/setting";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import {
   LocalApprovalConfig,
@@ -38,6 +34,10 @@ import {
   SimpleExpr,
 } from "@/plugins/cel";
 import { displayRoleTitle } from "./role";
+import {
+  WorkspaceApprovalSetting,
+  WorkspaceApprovalSetting_Rule as ApprovalRule,
+} from "@/types/proto/v1/setting_service";
 
 export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
   const name = approvalNode_GroupValueToJSON(group);

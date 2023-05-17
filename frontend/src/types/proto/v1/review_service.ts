@@ -217,6 +217,7 @@ export interface ApprovalTemplate {
   flow?: ApprovalFlow;
   title: string;
   description: string;
+  creatorId: number;
 }
 
 export interface ApprovalFlow {
@@ -1199,7 +1200,7 @@ export const Review_Approver = {
 };
 
 function createBaseApprovalTemplate(): ApprovalTemplate {
-  return { flow: undefined, title: "", description: "" };
+  return { flow: undefined, title: "", description: "", creatorId: 0 };
 }
 
 export const ApprovalTemplate = {
@@ -1212,6 +1213,9 @@ export const ApprovalTemplate = {
     }
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
+    }
+    if (message.creatorId !== 0) {
+      writer.uint32(32).int32(message.creatorId);
     }
     return writer;
   },
@@ -1244,6 +1248,13 @@ export const ApprovalTemplate = {
 
           message.description = reader.string();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.creatorId = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1258,6 +1269,7 @@ export const ApprovalTemplate = {
       flow: isSet(object.flow) ? ApprovalFlow.fromJSON(object.flow) : undefined,
       title: isSet(object.title) ? String(object.title) : "",
       description: isSet(object.description) ? String(object.description) : "",
+      creatorId: isSet(object.creatorId) ? Number(object.creatorId) : 0,
     };
   },
 
@@ -1266,6 +1278,7 @@ export const ApprovalTemplate = {
     message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined && (obj.description = message.description);
+    message.creatorId !== undefined && (obj.creatorId = Math.round(message.creatorId));
     return obj;
   },
 
@@ -1280,6 +1293,7 @@ export const ApprovalTemplate = {
       : undefined;
     message.title = object.title ?? "";
     message.description = object.description ?? "";
+    message.creatorId = object.creatorId ?? 0;
     return message;
   },
 };

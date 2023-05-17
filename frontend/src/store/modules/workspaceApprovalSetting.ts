@@ -3,8 +3,10 @@ import { ref } from "vue";
 import { cloneDeep } from "lodash-es";
 
 import { settingServiceClient } from "@/grpcweb";
-import { WorkspaceApprovalSetting } from "@/types/proto/store/setting";
-import { Setting } from "@/types/proto/v1/setting_service";
+import {
+  Setting,
+  WorkspaceApprovalSetting,
+} from "@/types/proto/v1/setting_service";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import {
   resolveLocalApprovalConfig,
@@ -14,7 +16,6 @@ import {
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { useGracefulRequest } from "./utils";
 
-// TODO: migrate
 const SETTING_NAME = "settings/bb.workspace.approval";
 
 export const useWorkspaceApprovalSettingStore = defineStore(
@@ -27,13 +28,13 @@ export const useWorkspaceApprovalSettingStore = defineStore(
     });
 
     const setConfigSetting = (setting: Setting) => {
-      const _config = WorkspaceApprovalSetting.fromJSON(
-        JSON.parse(setting.value?.stringValue || "{}")
-      );
-      if (_config.rules.length === 0) {
-        _config.rules.push(...seedWorkspaceApprovalSetting());
+      const _config = setting.value?.workspaceApprovalSettingValue;
+      if (_config) {
+        if (_config.rules.length === 0) {
+          _config.rules.push(...seedWorkspaceApprovalSetting());
+        }
+        config.value = resolveLocalApprovalConfig(_config);
       }
-      config.value = resolveLocalApprovalConfig(_config);
     };
 
     const fetchConfig = async () => {
@@ -53,7 +54,7 @@ export const useWorkspaceApprovalSettingStore = defineStore(
         setting: {
           name: SETTING_NAME,
           value: {
-            stringValue: JSON.stringify(setting),
+            workspaceApprovalSettingValue: setting,
           },
         },
       });
