@@ -35,6 +35,21 @@ service RolloutService {
     };
     option (google.api.method_signature) = "plan,update_mask";
   }
+
+  rpc GetRollout(GetRolloutRequest) returns (Rollout) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListRolloutTaskRuns(ListPlansRequest) returns (ListPlansResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/rollouts"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc ListPlanCheckRuns(ListRolloutCheckRunsRequest) returns (PlanCheckRuns) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/planCheckRuns"};
+    option (google.api.method_signature) = "parent";
+  }
 }
 
 message GetPlanRequest {
@@ -79,6 +94,10 @@ message CreatePlanRequest {
 
   // The plan to create.
   Plan plan = 2 [(google.api.field_behavior) = REQUIRED];
+
+  bool create_review = 3;
+
+  bool create_rollout = 4;
 }
 
 message UpdatePlanRequest {
@@ -102,8 +121,252 @@ message Plan {
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 3;
-
   string description = 4;
 
   // TODO(d/xz): support spec with 1) deployment config, 2) user specified targets with stages/steps, 3) project groups in the future.
+  message Stage {
+    repeated Task tasks = 1;
+  }
+
+  message Task {
+    oneof config {
+      CreateDatabaseConfig create_database_config = 1;
+      ChangeDatabaseConfig change_database_config = 2;
+      PitrConfig pitr_config = 3;
+    }
+  }
+
+  repeated Stage stages = 5;
+
+  message CreateDatabaseConfig {
+    // The resource name of the instance on which the database is created.
+    // Format: instances/{instance}
+    string instance = 1;
+    // The name of the database to create.
+    string database = 2;
+    // table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
+    // For example, in MongoDB, it only creates the database when we first store data in that database.
+    string table = 3;
+    // character_set is the character set of the database.
+    string character_set = 4;
+    // collation is the collation of the database.
+    string collation = 5;
+    // cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>".
+    string cluster = 6;
+    // owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
+    string owner = 7;
+    // backup is the resource name of the backup.
+    // TODO: backup v1 API is not ready yet, write the format here when it's ready.
+    string backup = 8;
+    // labels of the database.
+    map<string, string> labels = 9;
+  }
+
+  message ChangeDatabaseConfig {
+    // The resource name of the target.
+    // Format: projects/{project}/logicalDatabases/{ldb1}.
+    // Format: projects/{project}/logicalTables/{ltb1}.
+    // Format: instances/{xxx}/databases/{db1}.
+    string target = 1;
+    // The resource name of the sheet.
+    // Format: sheets/{sheetId}
+    string sheet = 2; // {{ TABLE_NAME }} for logical tables.
+    // Type is the type of changing the database.
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      // Used for establishing schema baseline, this is used when
+      // 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
+      // 2. Had schema drift and need to re-establish the baseline.
+      BASELINE = 1;
+      // Used for DDL changes including CREATE DATABASE.
+      MIGRATE = 2;
+      // Used for schema changes via state-based schema migration including CREATE DATABASE.
+      MIGRATE_SDL = 3;
+      // Used for DDL changes using gh-ost.
+      MIGRATE_GHOST = 4;
+      // Used when restoring from a backup (the restored database branched from the original backup).
+      BRANCH = 5;
+      // Used for DML change.
+      DATA = 6;
+    }
+    Type type = 3;
+    // schema_version is parsed from VCS file name.
+    // It is automatically generated in the UI workflow.
+    string schema_version = 4;
+    // earliest_allowed_time the earliest execution time of the change.
+    google.protobuf.Timestamp earliest_allowed_time = 5;
+    // If RollbackEnabled, build the RollbackSheetID of the task.
+    bool rollback_enabled = 6;
+  }
+
+  message PitrConfig {
+    // The resource name of the database to restore.
+    string database = 1;
+    // create_database_config is present if the user wants to restore to a new database.
+    optional CreateDatabaseConfig create_database_config = 2;
+    // source determines how to restore the database.
+    // 1. from a backup
+    // 2. from a point in time
+    oneof source {
+      // TODO: format
+      // Restore from a backup.
+      string backup = 3;
+      // After the PITR operations, the database will be recovered to the state at this time.
+      google.protobuf.Timestamp point_in_time = 4;
+    }
+  }
+}
+
+// (type, database, sheet) uniquely identifies a plan check run.
+message PlanCheckRun {
+  string name = 1;
+
+  enum Type {
+
+
+  }
+  Type type = 2;
+
+  string database = 3;
+  string sheet = 4;
+
+}
+
+message GetRolloutRequest {}
+
+message Rollout {
+  // Stage, task.
+  // The name of the rollout.
+  // `rollout` is a system generated ID.
+  // Format: projects/{project}/rollouts/{rollout}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The plan that this rollout is based on.
+  // Format: projects/{project}/plans/{plan}
+  string plan = 3;
+
+  // The current status of the rollout.
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    // The rollout is in progress.
+    IN_PROGRESS = 1;
+    // The rollout is completed.
+    COMPLETED = 2;
+    // The rollout is failed.
+    FAILED = 3;
+  }
+  Status status = 4;
+
+  // stages and thus tasks of the rollout.
+  repeated Stage stages = 5;
+
+  // Digest is the digest of the tasks and the latest taskruns of rollout.
+  Digest digest = 6;
+
+  // Digest summarizes the tasks and the latest taskruns of rollout.
+  // We only take the latest taskrun of each task into account.
+  message Digest {
+    // The number of tasks in the rollout.
+    int32 total_tasks = 1;
+    // The number of the latest taskrun of each task in the rollout.
+    // i.e. the number of tasks that have taskruns.
+    int32 total_taskruns = 2;
+    // The number of the latest taskrun of each task whose status is DONE.
+    int32 completed_taskruns = 3;
+    // The number of the latest taskrun of each task whose status is FAILED.
+    int32 failed_taskruns = 4;
+    // The number of the latest taskrun of each task whose status is RUNNING.
+    int32 running_taskruns = 5;
+    // The number of the latest taskrun of each task whose status is CANCELED.
+    int32 canceled_taskruns = 6;
+    // The number of the latest taskrun of each task whose status is SKIPPED.
+    int32 skipped_taskruns = 7;
+  }
+}
+
+message Stage {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+  string name = 1;
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2;
+  // Fromat: environments/{environment}
+  string environment = 3;
+
+  string title = 4;
+  repeated Task tasks = 5;
+}
+
+message Task {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  string name = 1;
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2;
+  string title = 3;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    GENERAL = 1;
+    DATABASE_CREATE = 2;
+    DATABASE_SCHEMA_BASELINE = 3;
+    DATABASE_SCHEMA_UPDATE = 4;
+    DATABASE_SCHEMA_UPDATE_SDL = 5;
+    DATABASE_SCHEMA_UPDATE_GHOST_SYNC = 6;
+    DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER = 7;
+    DATABASE_DATA_UPDATE = 8;
+    DATABASE_BACKUP = 9;
+    DATABASE_RESTORE_PITR_RESTORE = 10;
+    DATABASE_RESTORE_PITR_CUTOVER = 11;
+  }
+  Type type = 6;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    PENDING_APPROVAL = 2;
+    RUNNING = 3;
+    DONE = 4;
+    FAILED = 5;
+    CANCELED = 6;
+  }
+  Status status = 7;
+
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  repeated string blocked_by_tasks = 8;
+
+  oneof payload {
+    CreateDatabase create_database = 8;
+    ChangeDatabase change_database = 9;
+    Pitr pitr = 10;
+  }
+}
+
+message TaskRun {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}
+  string name = 1;
+  string uid = 2;
+  string title = 3;
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    RUNNING = 1;
+    DONE = 2;
+    FAILED = 3;
+    CANCELED = 4;
+    SKIPPED = 5;
+  }
+  Status status = 4;
+  int64 code = 6;
+  string comment = 7;
+  // Attempt number of the run. 1 for the first run attempt.
+  int64 attempt = 8;
+
+  message Result {
+    string detail = 1;
+    // id of the instance change history
+    string migration = 2;
+    string version = 3;
+  }
+  Result result = 9;
 }
