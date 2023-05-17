@@ -1,6 +1,6 @@
 <template>
   <div v-if="showBanner" class="bg-gray-200 overflow-clip">
-    <div class="w-full scroll-animation">
+    <div class="w-full h-10 scroll-animation">
       <div
         class="mx-auto py-1 px-3 w-full flex flex-row items-center justify-center flex-wrap"
       >
