@@ -410,7 +410,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 		return nil, errors.Wrap(err, "failed to wait for healthz")
 	}
 
-	if err := ctl.Signup(); err != nil {
+	if err := ctl.Signup(); err != nil && !strings.Contains(err.Error(), "exist") {
 		return nil, err
 	}
 	if err := ctl.Login(); err != nil {
