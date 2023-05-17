@@ -60,7 +60,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -123,7 +123,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		default:
 			a.FailNow("unsupported db type")
 		}
-		err = ctl.createDatabase(project, instance, tt.databaseName, databaseOwner, nil)
+		err = ctl.createDatabase(ctx, project, instance, tt.databaseName, databaseOwner, nil)
 		a.NoError(err)
 
 		databases, err := ctl.getDatabases(api.DatabaseFind{
@@ -173,7 +173,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			CreateContext: string(createContext),
 		})
 		a.NoError(err)
-		status, err := ctl.waitIssuePipeline(issue.ID)
+		status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 

@@ -32,7 +32,7 @@ func TestTenant(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -110,11 +110,11 @@ func TestTenant(t *testing.T) {
 	// Create issues that create databases.
 	databaseName := "testTenantSchemaUpdate"
 	for i, testInstance := range testInstances {
-		err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(ctx, project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
-		err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(ctx, project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 
@@ -174,7 +174,7 @@ func TestTenant(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -285,7 +285,7 @@ func TestTenantVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -410,11 +410,11 @@ func TestTenantVCS(t *testing.T) {
 			// Create issues that create databases.
 			databaseName := "testTenantVCSSchemaUpdate"
 			for i, testInstance := range testInstances {
-				err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+				err := ctl.createDatabase(ctx, project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 				a.NoError(err)
 			}
 			for i, prodInstance := range prodInstances {
-				err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+				err := ctl.createDatabase(ctx, project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 				a.NoError(err)
 			}
 
@@ -463,7 +463,7 @@ func TestTenantVCS(t *testing.T) {
 			issue := issues[0]
 
 			// Test pipeline stage patch status.
-			status, err := ctl.waitIssuePipelineWithStageApproval(issue.ID)
+			status, err := ctl.waitIssuePipelineWithStageApproval(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 
@@ -507,7 +507,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -572,12 +572,12 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	baseDatabaseName := "testTenant"
 	for i := 0; i < testTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(ctx, project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(ctx, project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 
@@ -639,7 +639,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -737,7 +737,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -866,13 +866,13 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
+				err := ctl.createDatabase(ctx, project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
 				a.NoError(err)
 			}
 			for i, prodInstance := range prodInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
+				err := ctl.createDatabase(ctx, project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
 				a.NoError(err)
 			}
 
@@ -919,7 +919,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(issue.ID)
+			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 
@@ -1065,7 +1065,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -1188,7 +1188,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, testInstance, databaseName, "", nil /* labelMap */)
+				err := ctl.createDatabase(ctx, project, testInstance, databaseName, "", nil /* labelMap */)
 				a.NoError(err)
 			}
 
@@ -1229,7 +1229,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(issue.ID)
+			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 
@@ -1344,7 +1344,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -1467,7 +1467,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, testInstance, databaseName, "", nil /* labelMap */)
+				err := ctl.createDatabase(ctx, project, testInstance, databaseName, "", nil /* labelMap */)
 				require.NoError(t, err)
 			}
 
@@ -1507,7 +1507,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
 			require.NoError(t, err)
 			require.Len(t, issues, 1)
-			status, err := ctl.waitIssuePipeline(issues[0].ID)
+			status, err := ctl.waitIssuePipeline(ctx, issues[0].ID)
 			require.NoError(t, err)
 			require.Equal(t, api.TaskDone, status)
 
@@ -1539,7 +1539,7 @@ statement: |
 			// Get data update issues.
 			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
 			require.NoError(t, err)
-			status, err = ctl.waitIssuePipeline(issues[0].ID)
+			status, err = ctl.waitIssuePipeline(ctx, issues[0].ID)
 			require.NoError(t, err)
 			require.Equal(t, api.TaskDone, status)
 
