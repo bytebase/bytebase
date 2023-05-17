@@ -3,10 +3,7 @@ import { ref } from "vue";
 import { cloneDeep } from "lodash-es";
 
 import { settingServiceClient } from "@/grpcweb";
-import {
-  Setting,
-  WorkspaceApprovalSetting,
-} from "@/types/proto/v1/setting_service";
+import { Setting } from "@/types/proto/v1/setting_service";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import {
   resolveLocalApprovalConfig,
