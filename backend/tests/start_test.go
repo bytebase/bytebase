@@ -17,7 +17,7 @@ import (
 )
 
 func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller, dataDir string, readOnly bool) {
-	err := ctl.StartServer(ctx, &config{
+	ctx, err := ctl.StartServer(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 		readOnly:           readOnly,
@@ -42,16 +42,11 @@ func TestServerRestart(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	// Start server in non-readonly mode to init schema and register user.
-	err := ctl.StartServer(ctx, &config{
+	ctx, err := ctl.StartServer(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
-	err = ctl.Signup()
-	a.NoError(err)
-	err = ctl.Login()
-	a.NoError(err)
-
 	err = ctl.Close(ctx)
 	a.NoError(err)
 

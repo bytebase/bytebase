@@ -104,7 +104,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -147,7 +147,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabase(project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, project, instance, databaseName, "", nil)
 	a.NoError(err)
 	databases, err := ctl.getDatabases(api.DatabaseFind{
 		InstanceID: &instance.ID,
@@ -200,7 +200,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 	t.Logf("Issue %d created.", issue.ID)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 	a.Len(issue.Pipeline.StageList, 1)
@@ -278,7 +278,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 	t.Logf("Rollback issue %d created.", rollbackIssue.ID)
 
-	status, err = ctl.waitIssuePipeline(rollbackIssue.ID)
+	status, err = ctl.waitIssuePipeline(ctx, rollbackIssue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 	// Re-query the issue to get the updated task, which has the RollbackFromIssueID and RollbackFromTaskID fields.
@@ -319,7 +319,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -362,7 +362,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabase(project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, project, instance, databaseName, "", nil)
 	a.NoError(err)
 	databases, err := ctl.getDatabases(api.DatabaseFind{
 		InstanceID: &instance.ID,
@@ -415,7 +415,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	})
 	a.NoError(err)
 	t.Logf("Issue %d created.", issue.ID)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 	a.Len(issue.Pipeline.StageList, 1)
@@ -501,7 +501,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 	t.Logf("Rollback issue %d created.", rollbackIssue.ID)
 
-	status, err = ctl.waitIssuePipeline(rollbackIssue.ID)
+	status, err = ctl.waitIssuePipeline(ctx, rollbackIssue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 	// Re-query the issue to get the updated task, which has the RollbackFromIssueID and RollbackFromTaskID fields.
@@ -542,7 +542,7 @@ func TestRollbackCanceled(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -585,7 +585,7 @@ func TestRollbackCanceled(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabase(project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, project, instance, databaseName, "", nil)
 	a.NoError(err)
 	databases, err := ctl.getDatabases(api.DatabaseFind{
 		InstanceID: &instance.ID,
@@ -638,7 +638,7 @@ func TestRollbackCanceled(t *testing.T) {
 	})
 	a.NoError(err)
 	t.Logf("Issue %d created.", issue.ID)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 	a.Len(issue.Pipeline.StageList, 1)

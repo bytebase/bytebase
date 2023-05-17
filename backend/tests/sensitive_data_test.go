@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestSensitiveData(t *testing.T) {
@@ -42,7 +43,7 @@ func TestSensitiveData(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -108,7 +109,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 	a.Nil(databases)
 
-	err = ctl.createDatabase(project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, project, instance, databaseName, "", nil)
 	a.NoError(err)
 
 	databases, err = ctl.getDatabases(api.DatabaseFind{
@@ -150,30 +151,32 @@ func TestSensitiveData(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
 	// Create sensitive data policy.
-	policyPayload, err := json.Marshal(api.SensitiveDataPolicy{
-		SensitiveDataList: []api.SensitiveData{
-			{
-				Table:  tableName,
-				Column: "id",
-				Type:   api.SensitiveDataMaskTypeDefault,
-			},
-			{
-				Table:  tableName,
-				Column: "author",
-				Type:   api.SensitiveDataMaskTypeDefault,
+	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+		Parent: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.Name),
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_SENSITIVE_DATA,
+			Policy: &v1pb.Policy_SensitiveDataPolicy{
+				SensitiveDataPolicy: &v1pb.SensitiveDataPolicy{
+					SensitiveData: []*v1pb.SensitiveData{
+						{
+							Table:    tableName,
+							Column:   "id",
+							MaskType: v1pb.SensitiveDataMaskType_DEFAULT,
+						},
+						{
+							Table:    tableName,
+							Column:   "author",
+							MaskType: v1pb.SensitiveDataMaskType_DEFAULT,
+						},
+					},
+				},
 			},
 		},
-	})
-	a.NoError(err)
-	payloadString := string(policyPayload)
-
-	_, err = ctl.upsertPolicy(api.PolicyResourceTypeDatabase, database.ID, api.PolicyTypeSensitiveData, api.PolicyUpsert{
-		Payload: &payloadString,
 	})
 	a.NoError(err)
 
@@ -207,7 +210,7 @@ func TestSensitiveData(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err = ctl.waitIssuePipeline(issue.ID)
+	status, err = ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
