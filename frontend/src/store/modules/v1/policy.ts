@@ -12,7 +12,13 @@ import {
 import { MaybeRef, UNKNOWN_ID } from "@/types";
 import { useCurrentUser } from "../auth";
 import { State } from "@/types/proto/v1/common";
-import { policyNamePrefix } from "@/store/modules/v1/common";
+import {
+  policyNamePrefix,
+  projectNamePrefix,
+  environmentNamePrefix,
+  instanceNamePrefix,
+  databaseNamePrefix,
+} from "@/store/modules/v1/common";
 
 interface PolicyState {
   policyMapByName: Map<string, Policy>;
@@ -23,13 +29,13 @@ const getPolicyParentByResourceType = (
 ): string => {
   switch (resourceType) {
     case PolicyResourceType.PROJECT:
-      return "projects/-";
+      return `${projectNamePrefix}-`;
     case PolicyResourceType.ENVIRONMENT:
-      return "environments/-";
+      return `${environmentNamePrefix}-`;
     case PolicyResourceType.INSTANCE:
-      return "instances/-";
+      return `${instanceNamePrefix}-`;
     case PolicyResourceType.DATABASE:
-      return "instances/-/databases/-";
+      return `${instanceNamePrefix}-/${databaseNamePrefix}-`;
     default:
       return "";
   }

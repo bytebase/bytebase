@@ -14,6 +14,7 @@ import {
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { useGracefulRequest } from "./utils";
 
+// TODO: migrate
 const SETTING_NAME = "settings/bb.workspace.approval";
 
 export const useWorkspaceApprovalSettingStore = defineStore(

@@ -60,16 +60,17 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
-import { pushNotification, useCurrentUser, useSettingStore } from "@/store";
+import { pushNotification, useCurrentUser } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
 import { useI18n } from "vue-i18n";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 interface LocalState {
   externalUrl: string;
 }
 
 const { t } = useI18n();
-const settingStore = useSettingStore();
+const settingV1Store = useSettingV1Store();
 const currentUser = useCurrentUser();
 
 const state = reactive<LocalState>({
@@ -77,7 +78,7 @@ const state = reactive<LocalState>({
 });
 
 watchEffect(() => {
-  state.externalUrl = settingStore.workspaceSetting?.externalUrl ?? "";
+  state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";
 });
 
 const allowEdit = computed((): boolean => {
@@ -91,7 +92,7 @@ const allowSave = computed((): boolean => {
   return (
     allowEdit.value &&
     state.externalUrl !== "" &&
-    state.externalUrl !== settingStore.workspaceSetting?.externalUrl
+    state.externalUrl !== settingV1Store.workspaceProfileSetting?.externalUrl
   );
 });
 
@@ -103,7 +104,7 @@ const updateExternalUrl = async () => {
   if (!allowSave.value) {
     return;
   }
-  await settingStore.updateWorkspaceProfile({
+  await settingV1Store.updateWorkspaceProfile({
     externalUrl: state.externalUrl,
   });
   pushNotification({
@@ -112,6 +113,6 @@ const updateExternalUrl = async () => {
     title: t("settings.general.workspace.config-updated"),
   });
 
-  state.externalUrl = settingStore.workspaceSetting?.externalUrl ?? "";
+  state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";
 };
 </script>

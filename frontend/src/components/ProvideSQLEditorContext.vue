@@ -16,7 +16,6 @@ import {
   useInstanceStore,
   pushNotification,
   useConnectionTreeStore,
-  useSettingStore,
   useProjectV1Store,
 } from "@/store";
 import {
@@ -44,6 +43,7 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 const route = useRoute();
 const router = useRouter();
@@ -391,7 +391,7 @@ onMounted(async () => {
   await setConnectionFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();
   await useDebugStore().fetchDebug();
-  await useSettingStore().fetchSetting();
+  await useSettingV1Store().fetchSettingList();
 
   syncURLWithConnection();
 });

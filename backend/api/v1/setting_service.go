@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
@@ -144,10 +145,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	var storeSettingValue string
 	switch apiSettingName {
 	case api.SettingWorkspaceProfile:
-		settingValue := request.Setting.Value.GetWorkspaceProfileSettingValue().String()
 		payload := new(storepb.WorkspaceProfileSetting)
-		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v for %s", err, apiSettingName)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetWorkspaceProfileSettingValue(), payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", err, apiSettingName)
 		}
 		if payload.ExternalUrl != "" {
 			externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
@@ -156,15 +156,18 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			}
 			payload.ExternalUrl = externalURL
 		}
-		storeSettingValue = payload.String()
+		bytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
 	case api.SettingWorkspaceApproval:
 		if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
 			return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
 		}
-		settingValue := request.Setting.Value.GetWorkspaceApprovalSettingValue().String()
 		payload := new(storepb.WorkspaceApprovalSetting)
-		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetWorkspaceApprovalSettingValue(), payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", err, apiSettingName)
 		}
 		e, err := cel.NewEnv(approval.ApprovalFactors...)
 		if err != nil {
@@ -182,7 +185,11 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 				return nil, status.Errorf(codes.InvalidArgument, "invalid approval template: %v, err: %v", rule.Template, err)
 			}
 		}
-		storeSettingValue = settingValue
+		bytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
 	case api.SettingWorkspaceMailDelivery:
 		apiValue := request.Setting.Value.GetSmtpMailDeliverySettingValue()
 		// We will fill the password read from the store if it is not set.
@@ -198,7 +205,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			}
 			oldValue := new(storepb.SMTPMailDeliverySetting)
 			if err := protojson.Unmarshal([]byte(oldStoreSetting.Value), oldValue); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+				return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", err, apiSettingName)
 			}
 			apiValue.Password = &oldValue.Password
 		}
@@ -234,7 +241,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		bytes, err := protojson.Marshal(storeMailDeliveryValue)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal setting value: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting value for %s with error: %v", err, apiSettingName)
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingBrandingLogo:
@@ -243,12 +250,16 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	case api.SettingPluginAgent:
-		settingValue := request.Setting.Value.GetAgentPluginSettingValue().String()
 		payload := new(storepb.AgentPluginSetting)
-		if err := protojson.Unmarshal([]byte(settingValue), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v for %s", err, apiSettingName)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetAgentPluginSettingValue(), payload); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", err, apiSettingName)
 		}
-		storeSettingValue = payload.String()
+
+		bytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
 	case api.SettingAppIM:
 		settingValue := request.Setting.Value.GetAppImSettingValue()
 		imType, err := convertToIMType(settingValue.ImType)
@@ -322,13 +333,24 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	return settingMessage, nil
 }
 
+func convertV1PbToStorePb(inputPB, outputPB protoreflect.ProtoMessage) error {
+	bytes, err := protojson.Marshal(inputPB)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to marshal setting: %v", err)
+	}
+	if err := protojson.Unmarshal(bytes, outputPB); err != nil {
+		return status.Errorf(codes.Internal, "failed to unmarshal setting: %v", err)
+	}
+	return nil
+}
+
 func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, error) {
 	settingName := fmt.Sprintf("%s%s", settingNamePrefix, setting.Name)
 	switch setting.Name {
 	case api.SettingWorkspaceMailDelivery:
 		storeValue := new(storepb.SMTPMailDeliverySetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return stripSensitiveData(&v1pb.Setting{
 			Name: settingName,
@@ -351,8 +373,12 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 		})
 	case api.SettingAppIM:
 		apiValue := new(api.SettingAppIMValue)
-		if err := json.Unmarshal([]byte(setting.Value), apiValue); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+		stringValue := setting.Value
+		if stringValue == "" {
+			stringValue = "{}"
+		}
+		if err := json.Unmarshal([]byte(stringValue), apiValue); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -373,7 +399,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case api.SettingPluginAgent:
 		v1Value := new(v1pb.AgentPluginSetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -386,7 +412,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case api.SettingWorkspaceProfile:
 		v1Value := new(v1pb.WorkspaceProfileSetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -399,7 +425,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 	case api.SettingWorkspaceApproval:
 		v1Value := new(v1pb.WorkspaceApprovalSetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
 			Name: settingName,
