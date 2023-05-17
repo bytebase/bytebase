@@ -117,7 +117,6 @@ export const useSheetStore = defineStore("sheet", {
      *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
      */
     isReadOnly() {
-      const currentUser = useCurrentUser();
       const currentSheet = this.currentSheet as Sheet;
 
       // We don't have a selected sheet, we've got nothing to edit.
@@ -135,7 +134,7 @@ export const useSheetStore = defineStore("sheet", {
         return true;
       }
 
-      return !isSheetWritable(currentSheet, currentUser.value);
+      return !isSheetWritable(currentSheet);
     },
   },
 

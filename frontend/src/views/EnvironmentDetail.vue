@@ -203,7 +203,7 @@ const success = () => {
     module: "bytebase",
     style: "SUCCESS",
     title: t("environment.successfully-updated-environment", {
-      name: state.environment.name,
+      name: state.environment.title,
     }),
   });
 };

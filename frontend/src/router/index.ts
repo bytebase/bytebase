@@ -23,11 +23,11 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import {
-  hasPermissionInProject,
+  hasPermissionInProjectV1,
   hasWorkspacePermission,
   idFromSlug,
-  memberListInProject,
   migrationHistoryIdFromSlug,
+  roleListInProjectV1,
 } from "../utils";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -58,9 +58,11 @@ import {
   useProjectV1Store,
   useProjectWebhookV1Store,
   useEnvironmentV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { State } from "@/types/proto/v1/common";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -692,14 +694,15 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
-                const project = useLegacyProjectStore().getProjectById(
-                  idFromSlug(slug)
+                const project = useProjectV1Store().getProjectByUID(
+                  String(idFromSlug(slug))
                 );
 
-                if (project.rowStatus == "NORMAL") {
+                if (project.state === State.ACTIVE) {
                   const actionList: string[] = [];
 
                   const currentUser = useCurrentUser();
+                  const currentUserV1 = useCurrentUserV1();
                   let allowAlterSchemaOrChangeData = false;
                   let allowCreateDB = false;
                   let allowTransferDB = false;
@@ -715,24 +718,24 @@ const routes: Array<RouteRecordRaw> = [
                     allowTransferDB = true;
                     allowTransferOutDB = true;
                   } else {
-                    const memberList = memberListInProject(
-                      project,
-                      currentUser.value
+                    const roleList = roleListInProjectV1(
+                      project.iamPolicy,
+                      currentUserV1.value
                     );
-                    if (memberList.length > 0) {
-                      allowAlterSchemaOrChangeData = hasPermissionInProject(
-                        project,
-                        currentUser.value,
+                    if (roleList.length > 0) {
+                      allowAlterSchemaOrChangeData = hasPermissionInProjectV1(
+                        project.iamPolicy,
+                        currentUserV1.value,
                         "bb.permission.project.change-database"
                       );
-                      allowTransferDB = hasPermissionInProject(
-                        project,
-                        currentUser.value,
+                      allowTransferDB = hasPermissionInProjectV1(
+                        project.iamPolicy,
+                        currentUserV1.value,
                         "bb.permission.project.transfer-database"
                       );
-                      allowTransferOutDB = hasPermissionInProject(
-                        project,
-                        currentUser.value,
+                      allowTransferOutDB = hasPermissionInProjectV1(
+                        project.iamPolicy,
+                        currentUserV1.value,
                         "bb.permission.project.transfer-database"
                       );
 
@@ -747,15 +750,15 @@ const routes: Array<RouteRecordRaw> = [
                       } else {
                         // See RBAC otherwise.
                         // AKA yes if project owner.
-                        allowCreateDB = hasPermissionInProject(
-                          project,
-                          currentUser.value,
+                        allowCreateDB = hasPermissionInProjectV1(
+                          project.iamPolicy,
+                          currentUserV1.value,
                           "bb.permission.project.create-database"
                         );
                       }
                     }
                   }
-                  if (project.id === DEFAULT_PROJECT_ID) {
+                  if (project.uid === String(DEFAULT_PROJECT_ID)) {
                     allowAlterSchemaOrChangeData = false;
                   }
                   if (allowAlterSchemaOrChangeData) {
