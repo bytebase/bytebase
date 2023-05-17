@@ -76,6 +76,10 @@ func postgresValidateSQLForEditor(statement string) bool {
 		return true
 	}
 
+	if isSelect, _ := regexp.MatchString(`^SELECT\*\s+?`, formattedStr); isSelect {
+		return true
+	}
+
 	if isExplain, _ := regexp.MatchString(`^EXPLAIN\s+?`, formattedStr); isExplain {
 		if isExplainAnalyze, _ := regexp.MatchString(`^EXPLAIN\s+ANALYZE\s+?`, formattedStr); isExplainAnalyze {
 			return false
@@ -130,6 +134,10 @@ func keyExistsInJSONData(jsonData map[string]any, keyList []string) bool {
 func checkStatementWithoutQuotedTextAndComment(statement string) bool {
 	formattedStr := strings.ToUpper(strings.TrimSpace(statement))
 	if isSelect, _ := regexp.MatchString(`^SELECT\s+?`, formattedStr); isSelect {
+		return true
+	}
+
+	if isSelect, _ := regexp.MatchString(`^SELECT\*\s+?`, formattedStr); isSelect {
 		return true
 	}
 
