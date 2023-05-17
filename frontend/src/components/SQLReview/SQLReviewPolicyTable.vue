@@ -27,7 +27,7 @@
       <div class="bb-grid-cell justify-center">
         <BBCheckbox
           :disabled="!review || !hasPermission"
-          :value="review?.rowStatus === 'NORMAL'"
+          :value="review?.enforce"
           @toggle="toggleReviewEnabled(review!, $event)"
         />
       </div>

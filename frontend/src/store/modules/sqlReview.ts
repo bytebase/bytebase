@@ -1,7 +1,6 @@
 import { pullAt } from "lodash-es";
 import {
   PolicyId,
-  RowStatus,
   SchemaPolicyRule,
   SQLReviewPolicy,
   IdType,
@@ -73,7 +72,7 @@ const convertToSQLReviewPolicy = async (
     name: policy.sqlReviewPolicy.name,
     environment,
     ruleList,
-    rowStatus: policy.enforce ? "NORMAL" : "ARCHIVED",
+    enforce: policy.enforce,
   };
 };
 
