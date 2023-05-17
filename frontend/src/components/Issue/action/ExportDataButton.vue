@@ -94,7 +94,7 @@ const exportContext = computed(() => {
 onMounted(async () => {
   const payload = ((issue.value as Issue).payload as any)
     .grantRequest as GrantRequestPayload;
-  if (payload.role !== PresetRoleType.Exporter) {
+  if (payload.role !== PresetRoleType.EXPORTER) {
     throw "Only support EXPORTER role";
   }
   const expressionList = payload.condition.expression.split(" && ");

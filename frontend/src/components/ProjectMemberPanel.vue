@@ -217,7 +217,7 @@ const composedPrincipalList = computed(() => {
   return orderBy(
     composedPrincipalList,
     [
-      (item) => (item.roleList.includes(PresetRoleType.Owner) ? 0 : 1),
+      (item) => (item.roleList.includes(PresetRoleType.OWNER) ? 0 : 1),
       (item) => item.principal.id,
     ],
     ["asc", "asc"]

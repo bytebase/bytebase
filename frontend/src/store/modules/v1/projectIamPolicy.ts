@@ -166,8 +166,8 @@ export const useCurrentUserIamPolicy = () => {
     }
     for (const binding of policy.bindings) {
       if (
-        (binding.role === PresetRoleType.Owner ||
-          binding.role === PresetRoleType.Developer) &&
+        (binding.role === PresetRoleType.OWNER ||
+          binding.role === PresetRoleType.DEVELOPER) &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )
@@ -191,7 +191,7 @@ export const useCurrentUserIamPolicy = () => {
     }
     for (const binding of policy.bindings) {
       if (
-        binding.role === PresetRoleType.Owner &&
+        binding.role === PresetRoleType.OWNER &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )
@@ -199,7 +199,7 @@ export const useCurrentUserIamPolicy = () => {
         return true;
       }
       if (
-        binding.role === PresetRoleType.Querier &&
+        binding.role === PresetRoleType.QUERIER &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )

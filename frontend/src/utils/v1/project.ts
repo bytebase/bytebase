@@ -51,7 +51,7 @@ export const isMemberOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
 };
 
 export const isOwnerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
-  return roleListInProjectV1(iamPolicy, user).includes(PresetRoleType.Owner);
+  return roleListInProjectV1(iamPolicy, user).includes(PresetRoleType.OWNER);
 };
 
 export const memberListInProjectV1 = (
@@ -91,7 +91,7 @@ export const memberListInProjectV1 = (
   return orderBy(
     composedUserList,
     [
-      (item) => (item.roleList.includes(PresetRoleType.Owner) ? 0 : 1),
+      (item) => (item.roleList.includes(PresetRoleType.OWNER) ? 0 : 1),
       (item) => item.user.email,
     ],
     ["asc", "asc"]

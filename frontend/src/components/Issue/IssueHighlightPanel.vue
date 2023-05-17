@@ -154,7 +154,7 @@ const showExportButton = computed(() => {
   const issuePayload = (issue.value.payload as any)
     .grantRequest as GrantRequestPayload;
   if (
-    issuePayload.role !== PresetRoleType.Exporter ||
+    issuePayload.role !== PresetRoleType.EXPORTER ||
     currentUser.value.id !== issue.value.creator.id
   ) {
     return false;

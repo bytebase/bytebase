@@ -18,8 +18,8 @@ export const maybeBuildGrantRequestIssue = async (
     return undefined;
   }
   // We only allow to create grant request issue for exporter and querier roles.
-  const exporterRole = extractRoleResourceName(PresetRoleType.Exporter);
-  const querierRole = extractRoleResourceName(PresetRoleType.Querier);
+  const exporterRole = extractRoleResourceName(PresetRoleType.EXPORTER);
+  const querierRole = extractRoleResourceName(PresetRoleType.QUERIER);
   if (role !== exporterRole && role !== querierRole) {
     return undefined;
   }

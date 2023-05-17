@@ -1,15 +1,15 @@
 export const PresetRoleType = {
-  Owner: "roles/OWNER",
-  Developer: "roles/DEVELOPER",
-  Exporter: "roles/EXPORTER",
-  Querier: "roles/QUERIER",
+  OWNER: "roles/OWNER",
+  DEVELOPER: "roles/DEVELOPER",
+  EXPORTER: "roles/EXPORTER",
+  QUERIER: "roles/QUERIER",
 };
 
 export const PresetRoleTypeList = [
-  PresetRoleType.Owner,
-  PresetRoleType.Developer,
-  PresetRoleType.Exporter,
-  PresetRoleType.Querier,
+  PresetRoleType.OWNER,
+  PresetRoleType.DEVELOPER,
+  PresetRoleType.EXPORTER,
+  PresetRoleType.QUERIER,
 ];
 
 export const isCustomRole = (role: string) => {

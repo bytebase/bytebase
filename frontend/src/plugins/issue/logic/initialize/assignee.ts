@@ -64,7 +64,7 @@ const assignToProjectOwner = (issueCreate: IssueCreate) => {
   );
   const memberList = memberListInProjectV1(project, project.iamPolicy);
   const projectOwnerList = memberList.filter((member) => {
-    member.roleList.includes(PresetRoleType.Owner);
+    member.roleList.includes(PresetRoleType.OWNER);
   });
 
   const workspaceMemberList = useMemberStore().memberList;

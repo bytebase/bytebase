@@ -124,13 +124,13 @@ export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
       if (groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER) {
         return projectMemberList
           .filter((member) =>
-            member.roleList.includes(PresetRoleType.Developer)
+            member.roleList.includes(PresetRoleType.DEVELOPER)
           )
           .map((member) => member.principal);
       }
       if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
         return projectMemberList
-          .filter((member) => member.roleList.includes(PresetRoleType.Owner))
+          .filter((member) => member.roleList.includes(PresetRoleType.OWNER))
           .map((member) => member.principal);
       }
       if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {

@@ -182,9 +182,9 @@ const allowRemoveRole = (role: string) => {
     return false;
   }
 
-  if (role === PresetRoleType.Owner) {
+  if (role === PresetRoleType.OWNER) {
     const binding = props.iamPolicy.bindings.find(
-      (binding) => binding.role === PresetRoleType.Owner
+      (binding) => binding.role === PresetRoleType.OWNER
     );
     const members = (binding?.members || [])
       .map((userIdentifier) => {
@@ -238,8 +238,8 @@ const getRoleOptions = (item: ComposedPrincipal) => {
   if (hasCustomRoleFeature.value) {
     roleList = useRoleStore().roleList.filter((role) => {
       return (
-        role.name !== PresetRoleType.Exporter &&
-        role.name !== PresetRoleType.Querier &&
+        role.name !== PresetRoleType.EXPORTER &&
+        role.name !== PresetRoleType.QUERIER &&
         !item.roleList.includes(role.name)
       );
     });
@@ -267,9 +267,9 @@ const allowRemovePrincipal = (item: ComposedPrincipal) => {
     return false;
   }
 
-  if (item.roleList.includes(PresetRoleType.Owner)) {
+  if (item.roleList.includes(PresetRoleType.OWNER)) {
     const binding = props.iamPolicy.bindings.find(
-      (binding) => binding.role === PresetRoleType.Owner
+      (binding) => binding.role === PresetRoleType.OWNER
     );
     const members = (binding?.members || [])
       .map((userIdentifier) => {

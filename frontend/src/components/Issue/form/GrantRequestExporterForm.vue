@@ -191,7 +191,7 @@ const handleProjectSelect = async (projectId: string) => {
   const project = await useProjectV1Store().getOrFetchProjectByUID(projectId);
   const memberList = memberListInProjectV1(project, project.iamPolicy);
   const ownerList = memberList.filter((member) =>
-    member.roleList.includes(PresetRoleType.Owner)
+    member.roleList.includes(PresetRoleType.OWNER)
   );
   const projectOwner = head(ownerList);
   if (projectOwner) {
@@ -262,7 +262,7 @@ watch(
     if (!create.value) {
       const payload = ((issue.value as Issue).payload as any)
         .grantRequest as GrantRequestPayload;
-      if (payload.role !== PresetRoleType.Exporter) {
+      if (payload.role !== PresetRoleType.EXPORTER) {
         throw "Only support EXPORTER role";
       }
       const expressionList = payload.condition.expression.split(" && ");
