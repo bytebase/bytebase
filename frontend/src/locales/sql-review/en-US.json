@@ -176,8 +176,8 @@
       "title": "Enforce identifier case",
       "description": "",
       "component": {
-        "case": {
-          "title": "Case"
+        "upper": {
+          "title": "Upper case"
         }
       }
     },

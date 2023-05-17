@@ -44,7 +44,7 @@ func (*NamingIdentifierCaseAdvisor) Check(ctx advisor.Context, statement string)
 		level:         level,
 		title:         string(ctx.Rule.Type),
 		currentSchema: ctx.CurrentSchema,
-		namingCase:    payload.Case,
+		upper:         payload.Upper,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -60,7 +60,7 @@ type namingIdentifierCaseListener struct {
 	title         string
 	currentSchema string
 	adviceList    []advisor.Advice
-	namingCase    advisor.NamingCase
+	upper         bool
 }
 
 func (l *namingIdentifierCaseListener) generateAdvice() ([]advisor.Advice, error) {
@@ -78,24 +78,23 @@ func (l *namingIdentifierCaseListener) generateAdvice() ([]advisor.Advice, error
 // EnterId_expression is called when production id_expression is entered.
 func (l *namingIdentifierCaseListener) EnterId_expression(ctx *parser.Id_expressionContext) {
 	identifier := normalizeIDExpression(ctx)
-	switch l.namingCase {
-	case advisor.NamingCaseLower:
-		if identifier != strings.ToLower(identifier) {
-			l.adviceList = append(l.adviceList, advisor.Advice{
-				Status:  l.level,
-				Code:    advisor.NamingCaseMismatch,
-				Title:   l.title,
-				Content: fmt.Sprintf("Identifier %q should be lower case", identifier),
-				Line:    ctx.GetStart().GetLine(),
-			})
-		}
-	case advisor.NamingCaseUpper:
+	if l.upper {
 		if identifier != strings.ToUpper(identifier) {
 			l.adviceList = append(l.adviceList, advisor.Advice{
 				Status:  l.level,
 				Code:    advisor.NamingCaseMismatch,
 				Title:   l.title,
 				Content: fmt.Sprintf("Identifier %q should be upper case", identifier),
+				Line:    ctx.GetStart().GetLine(),
+			})
+		}
+	} else {
+		if identifier != strings.ToLower(identifier) {
+			l.adviceList = append(l.adviceList, advisor.Advice{
+				Status:  l.level,
+				Code:    advisor.NamingCaseMismatch,
+				Title:   l.title,
+				Content: fmt.Sprintf("Identifier %q should be lower case", identifier),
 				Line:    ctx.GetStart().GetLine(),
 			})
 		}

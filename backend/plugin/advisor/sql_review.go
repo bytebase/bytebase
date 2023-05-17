@@ -316,20 +316,10 @@ type NumberTypeRulePayload struct {
 	Number int `json:"number"`
 }
 
-// NamingCase is the naming case for naming rule.
-type NamingCase string
-
-const (
-	// NamingCaseLower is the lower case for naming rule.
-	NamingCaseLower NamingCase = "LOWER"
-	// NamingCaseUpper is the upper case for naming rule.
-	NamingCaseUpper NamingCase = "UPPER"
-)
-
 // NamingCaseRulePayload is the payload for naming case rule.
 type NamingCaseRulePayload struct {
-	// Case is the naming case for naming rule.
-	Case NamingCase `json:"case"`
+	// Upper is true means the case should be upper case, otherwise lower case.
+	Upper bool `json:"upper"`
 }
 
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
@@ -465,12 +455,6 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 	var ncr NamingCaseRulePayload
 	if err := json.Unmarshal([]byte(payload), &ncr); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal naming case rule payload %q", payload)
-	}
-	switch ncr.Case {
-	case NamingCaseLower:
-	case NamingCaseUpper:
-	default:
-		return nil, errors.Errorf("invalid naming case %s", ncr.Case)
 	}
 	return &ncr, nil
 }

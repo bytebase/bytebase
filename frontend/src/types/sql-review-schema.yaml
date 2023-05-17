@@ -300,13 +300,10 @@ ruleList:
     engineList:
       - ORACLE
     componentList:
-      - key: case
+      - key: upper
         payload:
-          type: STRING
-          default: UPPER
-          enumList:
-            - UPPER
-            - LOWER
+          type: BOOLEAN
+          default: true
   - type: column.required
     category: COLUMN
     engineList:

@@ -176,8 +176,8 @@
       "title": "Hacer cumplir el caso del identificador",
       "description": "",
       "component": {
-        "case": {
-          "title": "Capitalización"
+        "upper": {
+          "title": "Capital"
         }
       }
     },

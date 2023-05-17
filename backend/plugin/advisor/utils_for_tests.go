@@ -472,7 +472,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 		})
 	case SchemaRuleIdentifierCase:
 		payload, err = json.Marshal(NamingCaseRulePayload{
-			Case: NamingCaseUpper,
+			Upper: true,
 		})
 	default:
 		return "", errors.Errorf("unknown SQL review type for default payload: %s", ruleTp)
