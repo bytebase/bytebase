@@ -9,11 +9,10 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // createIssue creates an issue.
@@ -33,23 +32,6 @@ func (ctl *controller) createIssue(issueCreate api.IssueCreate) (*api.Issue, err
 		return nil, errors.Wrap(err, "fail to unmarshal post issue response")
 	}
 	return issue, nil
-}
-
-func (ctl *controller) getReview(name string) (*v1pb.Review, error) {
-	ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(
-		"Authorization",
-		fmt.Sprintf("Bearer %s", ctl.grpcMDAccessToken),
-	))
-
-	c := v1pb.NewReviewServiceClient(ctl.grpcConn)
-	review, err := c.GetReview(ctx, &v1pb.GetReviewRequest{
-		Name: name,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return review, nil
 }
 
 // getIssue gets the issue with given ID.
@@ -266,30 +248,30 @@ func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 }
 
 // waitIssueNextTaskWithTaskApproval waits for next task in pipeline to finish and approves it when necessary.
-func (ctl *controller) waitIssueNextTaskWithTaskApproval(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, true)
+func (ctl *controller) waitIssueNextTaskWithTaskApproval(ctx context.Context, id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineTaskImpl(ctx, id, ctl.approveIssueNext, true)
 }
 
 // waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, false)
+func (ctl *controller) waitIssuePipeline(ctx context.Context, id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineTaskImpl(ctx, id, ctl.approveIssueNext, false)
 }
 
 // waitIssuePipelineWithStageApproval waits for pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueTasksWithStageApproval, false)
+func (ctl *controller) waitIssuePipelineWithStageApproval(ctx context.Context, id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineTaskImpl(ctx, id, ctl.approveIssueTasksWithStageApproval, false)
 }
 
 // waitIssuePipelineWithNoApproval waits for pipeline to finish and do nothing when approvals are needed.
-func (ctl *controller) waitIssuePipelineWithNoApproval(id int) (api.TaskStatus, error) {
+func (ctl *controller) waitIssuePipelineWithNoApproval(ctx context.Context, id int) (api.TaskStatus, error) {
 	noop := func(*api.Issue) error {
 		return nil
 	}
-	return ctl.waitIssuePipelineTaskImpl(id, noop, false)
+	return ctl.waitIssuePipelineTaskImpl(ctx, id, noop, false)
 }
 
 // waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
+func (ctl *controller) waitIssuePipelineTaskImpl(ctx context.Context, id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
 	// Sleep for 1 second between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
 	time.Sleep(1 * time.Second)
 
@@ -305,7 +287,9 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 			return api.TaskFailed, err
 		}
 
-		review, err := ctl.getReview(fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID))
+		review, err := ctl.reviewServiceClient.GetReview(ctx, &v1.GetReviewRequest{
+			Name: fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID),
+		})
 		if err != nil {
 			return api.TaskFailed, err
 		}
