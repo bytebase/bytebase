@@ -1,9 +1,13 @@
 import { isUndefined, uniq } from "lodash-es";
 
-import { useSheetStore } from "@/store";
+import {
+  useCurrentUser,
+  useCurrentUserV1,
+  useProjectV1Store,
+  useSheetStore,
+} from "@/store";
 import {
   Issue,
-  Principal,
   Sheet,
   SheetId,
   SheetIssueBacktracePayload,
@@ -17,19 +21,22 @@ import {
   TaskDatabaseSchemaUpdateSDLPayload,
 } from "@/types";
 import {
-  hasPermissionInProject,
+  hasPermissionInProjectV1,
   hasWorkspacePermission,
-  isMemberOfProject,
+  isMemberOfProjectV1,
 } from "../utils";
 import { flattenTaskList } from "@/components/Issue/logic";
 
-export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
+export const isSheetReadable = (sheet: Sheet) => {
+  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
+
   // readable to
   // PRIVATE: the creator only
   // PROJECT: the creator and members in the project, workspace Owner and DBA
   // PUBLIC: everyone
 
-  if (sheet.creator.id === currentUser.id) {
+  if (sheet.creator.id === currentUser.value.id) {
     // Always readable to the creator
     return true;
   }
@@ -41,30 +48,36 @@ export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
     if (
       hasWorkspacePermission(
         "bb.permission.workspace.manage-project",
-        currentUser.role
+        currentUser.value.role
       )
     ) {
       return true;
     }
 
-    return isMemberOfProject(sheet.project, currentUser);
+    const projectV1 = useProjectV1Store().getProjectByUID(
+      String(sheet.project.id)
+    );
+    return isMemberOfProjectV1(projectV1.iamPolicy, currentUserV1.value);
   }
   // visibility === "PUBLIC"
   return true;
 };
 
-export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
+export const isSheetWritable = (sheet: Sheet) => {
   // If the sheet is linked to an issue, it's NOT writable
   if (getSheetIssueBacktracePayload(sheet)) {
     return false;
   }
+
+  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
 
   // writable to
   // PRIVATE: the creator only
   // PROJECT: the creator or project role can manage sheet, workspace Owner and DBA
   // PUBLIC: the creator only
 
-  if (sheet.creator.id === currentUser.id) {
+  if (sheet.creator.id === currentUser.value.id) {
     // Always writable to the creator
     return true;
   }
@@ -76,16 +89,19 @@ export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
     if (
       hasWorkspacePermission(
         "bb.permission.workspace.manage-project",
-        currentUser.role
+        currentUser.value.role
       )
     ) {
       return true;
     }
 
+    const projectV1 = useProjectV1Store().getProjectByUID(
+      String(sheet.project.id)
+    );
     const isCurrentUserProjectOwner = () => {
-      return hasPermissionInProject(
-        sheet.project,
-        currentUser,
+      return hasPermissionInProjectV1(
+        projectV1.iamPolicy,
+        currentUserV1.value,
         "bb.permission.project.manage-sheet"
       );
     };

@@ -19,7 +19,7 @@ import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
 import type { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
 import type { SheetViewMode } from "../types";
 import { getDefaultSheetPayloadWithSource, isSheetWritable } from "@/utils";
-import { useCurrentUser, useSheetStore } from "@/store";
+import { useSheetStore } from "@/store";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -31,7 +31,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUser();
 const sheetStore = useSheetStore();
 const dialog = useDialog();
 
@@ -51,7 +50,7 @@ const options = computed(() => {
     });
   }
 
-  const canDeleteSheet = isSheetWritable(sheet, currentUser.value);
+  const canDeleteSheet = isSheetWritable(sheet);
   if (view === "my") {
     if (canDeleteSheet) {
       options.push({

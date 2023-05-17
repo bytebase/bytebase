@@ -330,7 +330,7 @@ import {
   instanceHasBackupRestore,
   instanceHasAlterSchema,
   instanceSupportSlowQuery,
-  hasPermissionInProject,
+  hasPermissionInProjectV1,
 } from "@/utils";
 import {
   UNKNOWN_ID,
@@ -347,8 +347,10 @@ import {
   pushNotification,
   useCurrentUser,
   useCurrentUserIamPolicy,
+  useCurrentUserV1,
   useDatabaseStore,
   useDBSchemaStore,
+  useProjectV1ByUID,
   useSQLStore,
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
@@ -409,11 +411,17 @@ const state = reactive<LocalState>({
 });
 
 const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
 const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
 });
+const { project: projectV1 } = useProjectV1ByUID(
+  computed(() => {
+    return String(database.value.project.id);
+  })
+);
 
 const allowToChangeDatabase = computed(() => {
   return currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -460,9 +468,9 @@ const allowTransferProject = computed(() => {
   }
 
   if (
-    hasPermissionInProject(
-      database.value.project,
-      currentUser.value,
+    hasPermissionInProjectV1(
+      projectV1.value.iamPolicy,
+      currentUserV1.value,
       "bb.permission.project.transfer-database"
     )
   ) {
@@ -508,9 +516,9 @@ const allowAdmin = computed(() => {
   }
 
   if (
-    hasPermissionInProject(
-      database.value.project,
-      currentUser.value,
+    hasPermissionInProjectV1(
+      projectV1.value.iamPolicy,
+      currentUserV1.value,
       "bb.permission.project.admin-database"
     )
   ) {
@@ -540,9 +548,9 @@ const allowEdit = computed(() => {
   }
 
   if (
-    hasPermissionInProject(
-      database.value.project,
-      currentUser.value,
+    hasPermissionInProjectV1(
+      projectV1.value.iamPolicy,
+      currentUserV1.value,
       "bb.permission.project.change-database"
     )
   ) {

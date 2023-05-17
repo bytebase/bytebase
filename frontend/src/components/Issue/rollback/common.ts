@@ -16,7 +16,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
-  hasPermissionInProject,
+  hasPermissionInProjectV1,
   hasWorkspacePermission,
   isTaskCreate,
   isTaskSkipped,
@@ -26,8 +26,10 @@ import { flattenTaskList, useIssueLogic } from "../logic";
 import {
   useActivityStore,
   useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useIssueStore,
+  useProjectV1Store,
 } from "@/store";
 
 const MIN_ROLLBACK_SQL_MYSQL_VERSION = "5.7.0";
@@ -39,6 +41,7 @@ export type RollbackUIType =
 
 export const useRollbackLogic = () => {
   const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   const context = useIssueLogic();
   const {
     create,
@@ -114,10 +117,13 @@ export const useRollbackLogic = () => {
       return true;
     }
 
+    const projectV1 = useProjectV1Store().getProjectByUID(
+      String(issueEntity.project.id)
+    );
     if (
-      hasPermissionInProject(
-        issueEntity.project,
-        user,
+      hasPermissionInProjectV1(
+        projectV1.iamPolicy,
+        currentUserV1.value,
         "bb.permission.project.admin-database"
       )
     ) {
