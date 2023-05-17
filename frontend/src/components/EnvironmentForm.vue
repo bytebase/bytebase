@@ -634,7 +634,7 @@ const toggleSQLReviewPolicy = async (on: boolean) => {
   if (on === originalOn) return;
   await useSQLReviewStore().updateReviewPolicy({
     id: policy.id,
-    rowStatus: on ? "NORMAL" : "ARCHIVED",
+    enforce: on,
   });
   pushNotification({
     module: "bytebase",
