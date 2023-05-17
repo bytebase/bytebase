@@ -250,7 +250,8 @@
       "days": "{days} días",
       "months": "{months} meses",
       "years": "{years} años"
-    }
+    },
+    "expiration": "Expiración"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1436,6 +1437,7 @@
       "select-schema-change-type-sdl": "Migración basada en declaración de estado. Por ejemplo, CREATE TABLE",
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos.",
       "members": {
+        "edit": "Editar miembro - {member}",
         "view-by-principals": "Ver por principales",
         "view-by-roles": "Ver por roles",
         "cannot-remove-last-owner": "No se puede eliminar el último propietario de un proyecto",

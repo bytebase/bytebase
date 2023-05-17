@@ -84,7 +84,7 @@
 import { computed, PropType, reactive } from "vue";
 import { NButton, NCheckbox } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { cloneDeep, orderBy, uniq } from "lodash-es";
+import { cloneDeep, isEqual, orderBy, uniq, uniqWith } from "lodash-es";
 
 import { ProjectMemberTable } from "../components/Project/ProjectSetting";
 import {
@@ -202,9 +202,12 @@ const composedPrincipalList = computed(() => {
   const composedPrincipalList = composedUserList.map<ComposedPrincipal>(
     ({ email, member }) => {
       const resourceName = `user:${email}`;
-      const roleList = usersByRole
-        .filter((binding) => binding.users.has(resourceName))
-        .map((binding) => binding.role);
+      const roleList = uniqWith(
+        usersByRole
+          .filter((binding) => binding.users.has(resourceName))
+          .map((binding) => binding.role),
+        isEqual
+      );
       return {
         email,
         member,

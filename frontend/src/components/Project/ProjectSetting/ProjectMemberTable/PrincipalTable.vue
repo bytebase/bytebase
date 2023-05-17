@@ -24,12 +24,7 @@
         </div>
       </div>
       <div v-if="hasRBACFeature" class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
-        <NTag
-          v-for="role in item.roleList"
-          :key="role"
-          :closable="allowRemoveRole(role)"
-          @close="removeRole(item, role)"
-        >
+        <NTag v-for="role in item.roleList" :key="role">
           {{ displayRoleTitle(role) }}
         </NTag>
         <NPopselect
@@ -45,22 +40,9 @@
         </NPopselect>
       </div>
       <div class="bb-grid-cell">
-        <NTooltip v-if="allowAdmin" :disabled="allowRemovePrincipal(item)">
-          <template #trigger>
-            <NButton
-              tag="div"
-              text
-              :disabled="!allowRemovePrincipal(item)"
-              @click="removePrincipal(item)"
-            >
-              <heroicons-outline:trash class="w-4 h-4" />
-            </NButton>
-          </template>
-
-          <div>
-            {{ $t("project.settings.members.cannot-remove-last-owner") }}
-          </div>
-        </NTooltip>
+        <NButton v-if="allowAdmin" text @click="editingMember = item">
+          <heroicons-outline:pencil-square class="w-4 h-4" />
+        </NButton>
       </div>
     </template>
 
@@ -68,18 +50,18 @@
       <div class="p-2">-</div>
     </template>
   </BBGrid>
+
+  <ProjectMemberRolePanel
+    v-if="editingMember !== null"
+    :project="project"
+    :member="editingMember"
+    @close="editingMember = null"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import {
-  NButton,
-  NPopselect,
-  NTag,
-  NTooltip,
-  SelectOption,
-  useDialog,
-} from "naive-ui";
+import { computed, ref } from "vue";
+import { NButton, NPopselect, NTag, SelectOption } from "naive-ui";
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
@@ -93,18 +75,15 @@ import {
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useRoleStore,
-  useUserStore,
 } from "@/store";
 import {
   hasWorkspacePermission,
   displayRoleTitle,
   addRoleToProjectIamPolicy,
-  removeRoleFromProjectIamPolicy,
-  removeUserFromProjectIamPolicy,
   hasPermissionInProjectV1,
 } from "@/utils";
 import { State } from "@/types/proto/v1/common";
-import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
+import ProjectMemberRolePanel from "./ProjectMemberRolePanel.vue";
 
 export type ComposedPrincipalRow = BBGridRow<ComposedPrincipal>;
 
@@ -120,10 +99,9 @@ const hasRBACFeature = featureToRef("bb.feature.rbac");
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
-const userStore = useUserStore();
 const roleStore = useRoleStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
-const dialog = useDialog();
+const editingMember = ref<ComposedPrincipal | null>(null);
 
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
@@ -174,56 +152,6 @@ const allowAdmin = computed(() => {
   return false;
 });
 
-// To prevent user accidentally removing roles and lock the project permanently, we take following measures:
-// 1. Disallow removing the last OWNER.
-// 2. Allow workspace roles who can manage project. This helps when the project OWNER is no longer available.
-const allowRemoveRole = (role: string) => {
-  if (props.project.state === State.DELETED) {
-    return false;
-  }
-
-  if (role === PresetRoleType.OWNER) {
-    const binding = props.iamPolicy.bindings.find(
-      (binding) => binding.role === PresetRoleType.OWNER
-    );
-    const members = (binding?.members || [])
-      .map((userIdentifier) => {
-        const email = getUserEmailFromIdentifier(userIdentifier);
-        return userStore.getUserByEmail(email);
-      })
-      .filter((user) => user?.state === State.ACTIVE);
-    if (!binding || members.length === 1) {
-      return false;
-    }
-  }
-
-  return allowAdmin.value;
-};
-
-const removeRole = (item: ComposedPrincipal, role: string) => {
-  const title = t("project.settings.members.revoke-role-from-user", {
-    role: displayRoleTitle(role),
-    user: item.principal.name,
-  });
-  const d = dialog.error({
-    title,
-    content: t("common.cannot-undo-this-action"),
-    positiveText: t("common.revoke"),
-    negativeText: t("common.cancel"),
-    autoFocus: false,
-    onPositiveClick: async () => {
-      d.loading = true;
-      const user = `user:${item.email}`;
-      const policy = cloneDeep(props.iamPolicy);
-      removeRoleFromProjectIamPolicy(policy, user, role);
-      await projectIamPolicyStore.updateProjectIamPolicy(
-        projectResourceName.value,
-        policy
-      );
-    },
-  });
-};
-
 const allowAddRole = (item: ComposedPrincipal) => {
   if (!allowAdmin.value) return false;
   if (props.project.state === State.DELETED) {
@@ -260,50 +188,5 @@ const addRole = async (item: ComposedPrincipal, role: string) => {
     projectResourceName.value,
     policy
   );
-};
-
-const allowRemovePrincipal = (item: ComposedPrincipal) => {
-  if (props.project.state === State.DELETED) {
-    return false;
-  }
-
-  if (item.roleList.includes(PresetRoleType.OWNER)) {
-    const binding = props.iamPolicy.bindings.find(
-      (binding) => binding.role === PresetRoleType.OWNER
-    );
-    const members = (binding?.members || [])
-      .map((userIdentifier) => {
-        const email = getUserEmailFromIdentifier(userIdentifier);
-        return userStore.getUserByEmail(email);
-      })
-      .filter((user) => user?.state === State.ACTIVE);
-    if (!binding || members.length === 1) {
-      return false;
-    }
-  }
-
-  return allowAdmin.value;
-};
-
-const removePrincipal = (item: ComposedPrincipal) => {
-  const d = dialog.error({
-    title: t("project.settings.members.remove-user", {
-      user: item.principal.name,
-    }),
-    content: t("common.cannot-undo-this-action"),
-    positiveText: "Remove",
-    negativeText: "Cancel",
-    autoFocus: false,
-    onPositiveClick: async () => {
-      d.loading = true;
-      const user = `user:${item.email}`;
-      const policy = cloneDeep(props.iamPolicy);
-      removeUserFromProjectIamPolicy(policy, user);
-      await projectIamPolicyStore.updateProjectIamPolicy(
-        projectResourceName.value,
-        policy
-      );
-    },
-  });
 };
 </script>
