@@ -18,6 +18,7 @@ import (
 	// init() in pgx will register it's pgx driver.
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -203,9 +204,12 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	}
 
 	// disable the SQL review policy
-	// TODO(d): use disable policy instead.
-	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
-		Name: fmt.Sprintf("environments/%s/policies/%s", prodEnvironment.ResourceID, v1pb.PolicyType_SQL_REVIEW),
+	policy.Enforce = false
+	_, err = ctl.orgPolicyServiceClient.UpdatePolicy(ctx, &v1pb.UpdatePolicyRequest{
+		Policy: policy,
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{"enforce"},
+		},
 	})
 	a.NoError(err)
 
@@ -213,13 +217,10 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.Equal(noSQLReviewPolicy, result)
 
 	// delete the SQL review policy
-	// TODO(d): add it back later.
-	/*
-		_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
-			Name: fmt.Sprintf("environments/%s/policies/%s", prodEnvironment.ResourceID, v1pb.PolicyType_SQL_REVIEW),
-		})
-		a.NoError(err)
-	*/
+	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
+		Name: fmt.Sprintf("environments/%s/policies/%s", prodEnvironment.ResourceID, v1pb.PolicyType_SQL_REVIEW),
+	})
+	a.NoError(err)
 
 	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, project.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
@@ -431,20 +432,20 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.Equal(origin, finial)
 
 	// disable the SQL review policy
-	// TODO(d): use disable policy instead.
-	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
-		Name: fmt.Sprintf("environments/%s/policies/%s", prodEnvironment.ResourceID, v1pb.PolicyType_SQL_REVIEW),
+	policy.Enforce = false
+	_, err = ctl.orgPolicyServiceClient.UpdatePolicy(ctx, &v1pb.UpdatePolicyRequest{
+		Policy: policy,
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{"enforce"},
+		},
 	})
 	a.NoError(err)
 
 	// delete the SQL review policy
-	// TODO(d): add it back later.
-	/*
-		_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
-			Name: fmt.Sprintf("environments/%s/policies/%s", prodEnvironment.ResourceID, v1pb.PolicyType_SQL_REVIEW),
-		})
-		a.NoError(err)
-	*/
+	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
+		Name: fmt.Sprintf("environments/%s/policies/%s", prodEnvironment.ResourceID, v1pb.PolicyType_SQL_REVIEW),
+	})
+	a.NoError(err)
 
 	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, project.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
