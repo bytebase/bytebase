@@ -177,8 +177,8 @@
       "title": "强制字段名大小写",
       "description": "",
       "component": {
-        "case": {
-          "title": "大小写"
+        "upper": {
+          "title": "大写"
         }
       }
     },
