@@ -145,12 +145,6 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 			patch.Payload = &payloadStr
 		case "enforce":
 			patch.Enforce = &request.Policy.Enforce
-		case "state":
-			if request.Policy.State == v1pb.State_DELETED {
-				patch.Delete = &deletePatch
-			} else if request.Policy.State == v1pb.State_ACTIVE {
-				patch.Delete = &undeletePatch
-			}
 		}
 	}
 
@@ -538,7 +532,6 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 		Enforce:           policyMessage.Enforce,
 		ResourceType:      resourceType,
 		ResourceUid:       fmt.Sprintf("%d", policyMessage.ResourceUID),
-		State:             convertDeletedToState(policyMessage.Deleted),
 	}
 
 	pType := v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED
