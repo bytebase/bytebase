@@ -179,7 +179,7 @@ interface NumberLimitPayload {
 // The case rule payload.
 // Used by the backend.
 interface CasePayload {
-  case: string;
+  upper: boolean;
 }
 
 // The SchemaPolicyRule stores the rule configuration by users.
@@ -457,15 +457,15 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     case "naming.identifier.case":
-      if (!stringComponent) {
+      if (!booleanComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
       }
       return {
         ...res,
         componentList: [
           {
-            ...stringComponent,
-            payload: stringComponent.payload,
+            ...booleanComponent,
+            payload: booleanComponent.payload,
           },
         ],
       };
@@ -641,13 +641,13 @@ export const convertRuleTemplateToPolicyRule = (
         },
       };
     case "naming.identifier.case":
-      if (!stringPayload) {
+      if (!booleanPayload) {
         throw new Error(`Invalid rule ${rule.type}`);
       }
       return {
         ...base,
         payload: {
-          case: stringPayload.value ?? stringPayload.default,
+          upper: booleanPayload.value ?? booleanPayload.default,
         },
       };
     case "column.required":
