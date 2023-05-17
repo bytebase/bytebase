@@ -47,7 +47,7 @@ import { startCase } from "lodash-es";
 import {
   idFromSlug,
   hasWorkspacePermission,
-  hasPermissionInProject,
+  hasPermissionInProjectV1,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
@@ -56,7 +56,9 @@ import { Project, DEFAULT_PROJECT_ID } from "../types";
 import {
   useCurrentUser,
   useCurrentUserIamPolicy,
+  useCurrentUserV1,
   useLegacyProjectStore,
+  useProjectV1Store,
 } from "@/store";
 
 type ProjectTabItem = {
@@ -88,10 +90,17 @@ export default defineComponent({
     const { t } = useI18n();
 
     const currentUser = useCurrentUser();
-    const projectStore = useLegacyProjectStore();
+    const currentUserV1 = useCurrentUserV1();
+    const legacyProjectStore = useLegacyProjectStore();
+    const projectV1Store = useProjectV1Store();
 
     const project = computed((): Project => {
-      return projectStore.getProjectById(idFromSlug(props.projectSlug));
+      return legacyProjectStore.getProjectById(idFromSlug(props.projectSlug));
+    });
+    const projectV1 = computed(() => {
+      return projectV1Store.getProjectByUID(
+        String(idFromSlug(props.projectSlug))
+      );
     });
     const currentUserIamPolicy = useCurrentUserIamPolicy();
 
@@ -182,9 +191,9 @@ export default defineComponent({
       }
 
       if (
-        hasPermissionInProject(
-          project.value,
-          currentUser.value,
+        hasPermissionInProjectV1(
+          projectV1.value.iamPolicy,
+          currentUserV1.value,
           "bb.permission.project.manage-general"
         )
       ) {
