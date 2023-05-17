@@ -120,7 +120,9 @@ export default defineComponent({
       return projectStore.getProjectById(idFromSlug(props.projectSlug));
     });
     const projectV1 = computed(() => {
-      return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));
+      return projectV1Store.getProjectByUID(
+        String(idFromSlug(props.projectSlug))
+      );
     });
 
     const environmentList = useEnvironmentV1List(false /* !showDeleted */);

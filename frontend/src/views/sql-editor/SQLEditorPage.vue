@@ -200,7 +200,9 @@ const handleAlterSchema = async (params: {
   const { databaseId, schema, table } = params;
   const database = databaseStore.getDatabaseById(databaseId);
   if (allowUsingSchemaEditor([database])) {
-    await useProjectV1Store().getOrFetchProjectByUID(String(database.project.id));
+    await useProjectV1Store().getOrFetchProjectByUID(
+      String(database.project.id)
+    );
     // TODO: support open selected database tab directly in Schema Editor.
     alterSchemaState.databaseIdList = [databaseId];
     alterSchemaState.showModal = true;

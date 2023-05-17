@@ -143,11 +143,7 @@ import {
   DatabaseNameTemplateTips,
   useDBNameTemplateInputState,
 } from "@/components/CreateDatabasePrepForm";
-import {
-  useInstanceStore,
-  useDBSchemaStore,
-  useProjectV1ByUID,
-} from "@/store";
+import { useInstanceStore, useDBSchemaStore, useProjectV1ByUID } from "@/store";
 import { isPITRAvailableOnInstance } from "@/plugins/pitr";
 import { TenantMode } from "@/types/proto/v1/project_service";
 
