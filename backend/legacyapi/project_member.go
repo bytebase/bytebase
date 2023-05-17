@@ -4,30 +4,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 )
 
-// ProjectMember is the API message for project members.
-type ProjectMember struct {
-	ID string `jsonapi:"primary,projectMember"`
-
-	// Related fields
-	// Just returns ProjectID otherwise would cause circular dependency.
-	ProjectID int `jsonapi:"attr,projectId"`
-
-	// Domain specific fields
-	Role      string     `jsonapi:"attr,role"`
-	Principal *Principal `jsonapi:"relation,principal"`
-}
-
-// ProjectMemberCreate is the API message for creating a project member.
-type ProjectMemberCreate struct {
-	Role        common.ProjectRole `jsonapi:"attr,role"`
-	PrincipalID int                `jsonapi:"attr,principalId"`
-}
-
-// ProjectMemberPatch is the API message for patching a project member.
-type ProjectMemberPatch struct {
-	Role *string `jsonapi:"attr,role"`
-}
-
 // ProjectPermissionType is the type of a project permission.
 type ProjectPermissionType string
 

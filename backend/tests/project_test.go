@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,6 +14,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestArchiveProject(t *testing.T) {
@@ -48,33 +50,25 @@ func TestArchiveProject(t *testing.T) {
 	a.NoError(err)
 
 	t.Run("ArchiveProjectWithDatbase", func(t *testing.T) {
-		project, err := ctl.createProject(api.ProjectCreate{
-			ResourceID: generateRandomString("project", 10),
-			Name:       "ProjectWithDatabase",
-			Key:        "PWD",
-			TenantMode: api.TenantModeDisabled,
-		})
+		project, err := ctl.createProject(ctx)
+		a.NoError(err)
+		projectUID, err := strconv.Atoi(project.Uid)
 		a.NoError(err)
 
 		databaseName := "db1"
-		err = ctl.createDatabase(ctx, project, instance, databaseName, "", nil)
+		err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 		a.NoError(err)
 
-		status := string(api.Archived)
-		err = ctl.patchProject(api.ProjectPatch{
-			ID:        project.ID,
-			RowStatus: &status,
+		_, err = ctl.projectServiceClient.DeleteProject(ctx, &v1pb.DeleteProjectRequest{
+			Name: project.Name,
 		})
 		a.Error(err)
 	})
 
 	t.Run("ArchiveProjectWithOpenIssue", func(t *testing.T) {
-		project, err := ctl.createProject(api.ProjectCreate{
-			ResourceID: generateRandomString("project", 10),
-			Name:       "ProjectWithOpenIssue",
-			Key:        "PWO",
-			TenantMode: api.TenantModeDisabled,
-		})
+		project, err := ctl.createProject(ctx)
+		a.NoError(err)
+		projectUID, err := strconv.Atoi(project.Uid)
 		a.NoError(err)
 
 		databaseName := "fakedb"
@@ -90,7 +84,7 @@ func TestArchiveProject(t *testing.T) {
 		a.NoError(err)
 
 		_, err = ctl.createIssue(api.IssueCreate{
-			ProjectID:     project.ID,
+			ProjectID:     projectUID,
 			Name:          fmt.Sprintf("create database %q", databaseName),
 			Type:          api.IssueDatabaseCreate,
 			Description:   fmt.Sprintf("This creates a database %q.", databaseName),
@@ -99,11 +93,9 @@ func TestArchiveProject(t *testing.T) {
 		})
 		a.NoError(err)
 
-		status := string(api.Archived)
-		err = ctl.patchProject(api.ProjectPatch{
-			ID:        project.ID,
-			RowStatus: &status,
+		_, err = ctl.projectServiceClient.DeleteProject(ctx, &v1pb.DeleteProjectRequest{
+			Name: project.Name,
 		})
-		a.Error(err)
+		a.ErrorContains(err, "resolve all open issues before deleting the project")
 	})
 }

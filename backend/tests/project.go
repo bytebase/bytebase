@@ -2,6 +2,7 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -10,25 +11,20 @@ import (
 	"github.com/pkg/errors"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // createProject creates an project.
-func (ctl *controller) createProject(projectCreate api.ProjectCreate) (*api.Project, error) {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &projectCreate); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal project create")
-	}
-
-	body, err := ctl.post("/project", buf)
-	if err != nil {
-		return nil, err
-	}
-
-	project := new(api.Project)
-	if err = jsonapi.UnmarshalPayload(body, project); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal post project response")
-	}
-	return project, nil
+func (ctl *controller) createProject(ctx context.Context) (*v1pb.Project, error) {
+	projectID := generateRandomString("project", 10)
+	return ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+		Project: &v1pb.Project{
+			Name:  fmt.Sprintf("projects/%s", projectID),
+			Title: projectID,
+			Key:   projectID,
+		},
+		ProjectId: projectID,
+	})
 }
 
 // getProjects gets the projects.
@@ -51,20 +47,6 @@ func (ctl *controller) getProjects() ([]*api.Project, error) {
 		projects = append(projects, project)
 	}
 	return projects, nil
-}
-
-func (ctl *controller) patchProject(projectPatch api.ProjectPatch) error {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &projectPatch); err != nil {
-		return errors.Wrap(err, "failed to marshal project patch")
-	}
-
-	_, err := ctl.patch(fmt.Sprintf("/project/%d", projectPatch.ID), buf)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // createSQLReviewCI set up the SQL review CI.
