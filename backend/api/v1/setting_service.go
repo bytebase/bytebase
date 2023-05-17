@@ -423,9 +423,18 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 			},
 		}, nil
 	case api.SettingWorkspaceApproval:
-		v1Value := new(v1pb.WorkspaceApprovalSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		storeValue := new(storepb.WorkspaceApprovalSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
+		v1Value := &v1pb.WorkspaceApprovalSetting{}
+		for _, rule := range storeValue.Rules {
+			template := convertToApprovalTemplate(rule.Template)
+			template.CreatorName = fmt.Sprintf("%s%d", userNamePrefix, rule.Template.CreatorId)
+			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
+				Expression: rule.Expression,
+				Template:   template,
+			})
 		}
 		return &v1pb.Setting{
 			Name: settingName,
