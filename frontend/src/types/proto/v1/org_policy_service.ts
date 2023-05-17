@@ -4,7 +4,7 @@ import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { Engine, engineFromJSON, engineToJSON, State, stateFromJSON, stateToJSON } from "./common";
+import { Engine, engineFromJSON, engineToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
 
 export const protobufPackage = "bytebase.v1";
@@ -448,7 +448,6 @@ export interface Policy {
   resourceType: PolicyResourceType;
   /** The system-assigned, unique identifier for the resource. */
   resourceUid: string;
-  state: State;
 }
 
 export interface DeploymentApprovalPolicy {
@@ -988,7 +987,6 @@ function createBasePolicy(): Policy {
     enforce: false,
     resourceType: 0,
     resourceUid: "",
-    state: 0,
   };
 }
 
@@ -1032,9 +1030,6 @@ export const Policy = {
     }
     if (message.resourceUid !== "") {
       writer.uint32(114).string(message.resourceUid);
-    }
-    if (message.state !== 0) {
-      writer.uint32(120).int32(message.state);
     }
     return writer;
   },
@@ -1137,13 +1132,6 @@ export const Policy = {
 
           message.resourceUid = reader.string();
           continue;
-        case 15:
-          if (tag !== 120) {
-            break;
-          }
-
-          message.state = reader.int32() as any;
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1174,7 +1162,6 @@ export const Policy = {
       enforce: isSet(object.enforce) ? Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType) ? policyResourceTypeFromJSON(object.resourceType) : 0,
       resourceUid: isSet(object.resourceUid) ? String(object.resourceUid) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
     };
   },
 
@@ -1202,7 +1189,6 @@ export const Policy = {
     message.enforce !== undefined && (obj.enforce = message.enforce);
     message.resourceType !== undefined && (obj.resourceType = policyResourceTypeToJSON(message.resourceType));
     message.resourceUid !== undefined && (obj.resourceUid = message.resourceUid);
-    message.state !== undefined && (obj.state = stateToJSON(message.state));
     return obj;
   },
 
@@ -1238,7 +1224,6 @@ export const Policy = {
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? 0;
     message.resourceUid = object.resourceUid ?? "";
-    message.state = object.state ?? 0;
     return message;
   },
 };
