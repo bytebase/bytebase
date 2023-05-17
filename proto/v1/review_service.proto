@@ -179,7 +179,7 @@ message ApprovalTemplate {
   string description = 3;
   // The name of the creator.
   // Format: users/{user}. {user} is a system-generated unique ID.
-  string creator_name = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message ApprovalFlow {

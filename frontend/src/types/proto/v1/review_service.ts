@@ -221,7 +221,7 @@ export interface ApprovalTemplate {
    * The name of the creator.
    * Format: users/{user}. {user} is a system-generated unique ID.
    */
-  creatorName: string;
+  creator: string;
 }
 
 export interface ApprovalFlow {
@@ -1204,7 +1204,7 @@ export const Review_Approver = {
 };
 
 function createBaseApprovalTemplate(): ApprovalTemplate {
-  return { flow: undefined, title: "", description: "", creatorName: "" };
+  return { flow: undefined, title: "", description: "", creator: "" };
 }
 
 export const ApprovalTemplate = {
@@ -1218,8 +1218,8 @@ export const ApprovalTemplate = {
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
     }
-    if (message.creatorName !== "") {
-      writer.uint32(34).string(message.creatorName);
+    if (message.creator !== "") {
+      writer.uint32(34).string(message.creator);
     }
     return writer;
   },
@@ -1257,7 +1257,7 @@ export const ApprovalTemplate = {
             break;
           }
 
-          message.creatorName = reader.string();
+          message.creator = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1273,7 +1273,7 @@ export const ApprovalTemplate = {
       flow: isSet(object.flow) ? ApprovalFlow.fromJSON(object.flow) : undefined,
       title: isSet(object.title) ? String(object.title) : "",
       description: isSet(object.description) ? String(object.description) : "",
-      creatorName: isSet(object.creatorName) ? String(object.creatorName) : "",
+      creator: isSet(object.creator) ? String(object.creator) : "",
     };
   },
 
@@ -1282,7 +1282,7 @@ export const ApprovalTemplate = {
     message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined && (obj.description = message.description);
-    message.creatorName !== undefined && (obj.creatorName = message.creatorName);
+    message.creator !== undefined && (obj.creator = message.creator);
     return obj;
   },
 
@@ -1297,7 +1297,7 @@ export const ApprovalTemplate = {
       : undefined;
     message.title = object.title ?? "";
     message.description = object.description ?? "";
-    message.creatorName = object.creatorName ?? "";
+    message.creator = object.creator ?? "";
     return message;
   },
 };

@@ -430,7 +430,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 		v1Value := &v1pb.WorkspaceApprovalSetting{}
 		for _, rule := range storeValue.Rules {
 			template := convertToApprovalTemplate(rule.Template)
-			template.CreatorName = fmt.Sprintf("%s%d", userNamePrefix, rule.Template.CreatorId)
+			template.Creator = fmt.Sprintf("%s%d", userNamePrefix, rule.Template.CreatorId)
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
 				Expression: rule.Expression,
 				Template:   template,

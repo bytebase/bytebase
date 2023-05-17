@@ -317,7 +317,7 @@ export const seedWorkspaceApprovalSetting = () => {
 };
 
 export const creatorOfRule = (rule: LocalApprovalRule) => {
-  const creatorName = rule.template.creatorName ?? `${UNKNOWN_ID}`;
+  const creatorName = rule.template.creator ?? `${UNKNOWN_ID}`;
   if (creatorName === `${UNKNOWN_ID}`) return unknown("PRINCIPAL");
   const userId = getUserId(creatorName);
   return usePrincipalStore().principalById(userId);
