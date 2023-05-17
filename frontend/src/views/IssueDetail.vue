@@ -38,7 +38,6 @@ import {
   IssueType,
   NORMAL_POLL_INTERVAL,
   MINIMUM_POLL_INTERVAL,
-  unknown,
   UNKNOWN_ID,
   Issue,
   unknownProject,

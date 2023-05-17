@@ -94,10 +94,7 @@ import { t } from "@/plugins/i18n";
 
 import {
   hasFeature,
-  useCurrentUser,
-  useCurrentUserV1,
   useProjectV1ListByCurrentUser,
-  useProjectV1Store,
   useSheetStore,
 } from "@/store";
 import { Sheet } from "@/types";
@@ -122,9 +119,6 @@ const state = reactive<LocalState>({
   sheetList: [],
   showFeatureModal: false,
 });
-const currentUser = useCurrentUser();
-const currentUserV1 = useCurrentUserV1();
-const projectV1Store = useProjectV1Store();
 const sheetStore = useSheetStore();
 
 const projectSelectorValue = ref("");

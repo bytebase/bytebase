@@ -16,7 +16,6 @@ import {
   MaybeRef,
   PrincipalId,
   Project,
-  ProjectId,
   ResourceIdentifier,
   ResourceObject,
   unknown,

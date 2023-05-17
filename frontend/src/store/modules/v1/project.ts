@@ -5,7 +5,6 @@ import {
   ComposedProject,
   emptyProject,
   EMPTY_ID,
-  IdType,
   MaybeRef,
   ResourceId,
   unknownProject,
