@@ -22,7 +22,6 @@ import {
   useInstanceList,
   useIssueStore,
   useProjectV1List,
-  useProjectV1Store,
 } from "@/store";
 import GuideDialog from "@/plugins/demo/components/GuideDialog.vue";
 import CreateDatabaseGuideFinished from "./CreateDatabaseGuideFinished.vue";

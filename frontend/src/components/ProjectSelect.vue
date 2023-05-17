@@ -17,7 +17,7 @@
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import { UNKNOWN_ID, DEFAULT_PROJECT_ID, unknownProject } from "../types";
-import { useCurrentUser, useCurrentUserV1, useProjectV1Store } from "@/store";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { isMemberOfProjectV1, projectV1Name } from "@/utils";
 import { Project, TenantMode } from "@/types/proto/v1/project_service";
 import { State } from "@/types/proto/v1/common";
@@ -69,7 +69,6 @@ export default defineComponent({
       selectedProject: undefined,
     });
 
-    const currentUser = useCurrentUser();
     const currentUserV1 = useCurrentUserV1();
     const projectV1Store = useProjectV1Store();
 
@@ -128,7 +127,9 @@ export default defineComponent({
         return false;
       });
 
-      const defaultProject = projectV1Store.getProjectByUID(String(DEFAULT_PROJECT_ID));
+      const defaultProject = projectV1Store.getProjectByUID(
+        String(DEFAULT_PROJECT_ID)
+      );
       if (
         props.includeDefaultProject ||
         props.selectedId === String(DEFAULT_PROJECT_ID)

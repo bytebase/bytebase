@@ -103,6 +103,7 @@ import {
   Issue,
   VCSPushEvent,
   GrantRequestPayload,
+  PresetRoleType,
 } from "@/types";
 import { useCurrentUser } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
@@ -153,7 +154,7 @@ const showExportButton = computed(() => {
   const issuePayload = (issue.value.payload as any)
     .grantRequest as GrantRequestPayload;
   if (
-    issuePayload.role !== "roles/EXPORTER" ||
+    issuePayload.role !== PresetRoleType.Exporter ||
     currentUser.value.id !== issue.value.creator.id
   ) {
     return false;

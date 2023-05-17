@@ -143,12 +143,10 @@ import {
   GrantRequestPayload,
   Issue,
   IssueCreate,
+  PresetRoleType,
   UNKNOWN_ID,
 } from "@/types";
-import {
-  memberListInProjectV1,
-  parseExpiredTimeString,
-} from "@/utils";
+import { memberListInProjectV1, parseExpiredTimeString } from "@/utils";
 import {
   convertUserToPrincipal,
   useDatabaseStore,
@@ -243,7 +241,7 @@ const handleProjectSelect = async (projectId: string) => {
   const project = await useProjectV1Store().getOrFetchProjectByUID(projectId);
   const memberList = memberListInProjectV1(project, project.iamPolicy);
   const ownerList = memberList.filter((member) =>
-    member.roleList.includes("roles/OWNER")
+    member.roleList.includes(PresetRoleType.Owner)
   );
   const projectOwner = head(ownerList);
   if (projectOwner) {
@@ -296,7 +294,7 @@ watch(
     if (!create.value) {
       const payload = ((issue.value as Issue).payload as any)
         .grantRequest as GrantRequestPayload;
-      if (payload.role !== "roles/QUERIER") {
+      if (payload.role !== PresetRoleType.Querier) {
         throw "Only support QUERIER role";
       }
       const expressionList = payload.condition.expression.split(" && ");

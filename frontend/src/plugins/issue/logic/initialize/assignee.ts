@@ -1,4 +1,4 @@
-import { IssueCreate, ProjectRoleTypeOwner } from "@/types";
+import { IssueCreate, PresetRoleType } from "@/types";
 import {
   convertUserToPrincipal,
   useInstanceStore,
@@ -59,10 +59,12 @@ export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
 // 1. Project owner who is a workspace Developer.
 // 2. Project owner who is not a workspace Developer.
 const assignToProjectOwner = (issueCreate: IssueCreate) => {
-  const project = useProjectV1Store().getProjectByUID(String(issueCreate.projectId));
+  const project = useProjectV1Store().getProjectByUID(
+    String(issueCreate.projectId)
+  );
   const memberList = memberListInProjectV1(project, project.iamPolicy);
   const projectOwnerList = memberList.filter((member) => {
-    member.roleList.includes("roles/OWNER");
+    member.roleList.includes(PresetRoleType.Owner);
   });
 
   const workspaceMemberList = useMemberStore().memberList;

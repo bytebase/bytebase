@@ -29,7 +29,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeMount, PropType, reactive, watch } from "vue";
+import { computed, onBeforeMount, reactive } from "vue";
 import { cloneDeep } from "lodash-es";
 import {
   TransferMultipleDatabaseForm,

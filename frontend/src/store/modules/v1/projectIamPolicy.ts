@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 
 import { IamPolicy } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
-import { Database, MaybeRef } from "@/types";
+import { Database, MaybeRef, PresetRoleType } from "@/types";
 import { useProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
@@ -166,8 +166,8 @@ export const useCurrentUserIamPolicy = () => {
     }
     for (const binding of policy.bindings) {
       if (
-        (binding.role === "roles/OWNER" ||
-          binding.role === "roles/DEVELOPER") &&
+        (binding.role === PresetRoleType.Owner ||
+          binding.role === PresetRoleType.Developer) &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )
@@ -191,7 +191,7 @@ export const useCurrentUserIamPolicy = () => {
     }
     for (const binding of policy.bindings) {
       if (
-        binding.role === "roles/OWNER" &&
+        binding.role === PresetRoleType.Owner &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )
@@ -199,7 +199,7 @@ export const useCurrentUserIamPolicy = () => {
         return true;
       }
       if (
-        binding.role === "roles/QUERIER" &&
+        binding.role === PresetRoleType.Querier &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )

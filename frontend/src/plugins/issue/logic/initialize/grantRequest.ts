@@ -2,9 +2,9 @@ import {
   GrantRequestContext,
   IssueCreate,
   IssueType,
-  ProjectRoleTypeExporter,
-  ProjectRoleTypeQuerier,
+  PresetRoleType,
 } from "@/types";
+import { extractRoleResourceName } from "@/utils";
 import { BuildNewIssueContext } from "../common";
 import { IssueCreateHelper } from "./helper";
 
@@ -18,7 +18,9 @@ export const maybeBuildGrantRequestIssue = async (
     return undefined;
   }
   // We only allow to create grant request issue for exporter and querier roles.
-  if (role !== ProjectRoleTypeExporter && role !== ProjectRoleTypeQuerier) {
+  const exporterRole = extractRoleResourceName(PresetRoleType.Exporter);
+  const querierRole = extractRoleResourceName(PresetRoleType.Querier);
+  if (role !== exporterRole && role !== querierRole) {
     return undefined;
   }
 

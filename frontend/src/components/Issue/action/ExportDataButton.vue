@@ -40,7 +40,13 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 import { useExtraIssueLogic, useIssueLogic } from "../logic";
-import { DatabaseId, GrantRequestPayload, Issue, UNKNOWN_ID } from "@/types";
+import {
+  DatabaseId,
+  GrantRequestPayload,
+  Issue,
+  PresetRoleType,
+  UNKNOWN_ID,
+} from "@/types";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { pushNotification, useDatabaseStore, useSQLStore } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
@@ -88,7 +94,7 @@ const exportContext = computed(() => {
 onMounted(async () => {
   const payload = ((issue.value as Issue).payload as any)
     .grantRequest as GrantRequestPayload;
-  if (payload.role !== "roles/EXPORTER") {
+  if (payload.role !== PresetRoleType.Exporter) {
     throw "Only support EXPORTER role";
   }
   const expressionList = payload.condition.expression.split(" && ");

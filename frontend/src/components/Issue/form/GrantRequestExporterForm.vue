@@ -119,6 +119,7 @@ import {
   GrantRequestPayload,
   Issue,
   IssueCreate,
+  PresetRoleType,
   SQLDialect,
   UNKNOWN_ID,
   dialectOfEngine,
@@ -190,7 +191,7 @@ const handleProjectSelect = async (projectId: string) => {
   const project = await useProjectV1Store().getOrFetchProjectByUID(projectId);
   const memberList = memberListInProjectV1(project, project.iamPolicy);
   const ownerList = memberList.filter((member) =>
-    member.roleList.includes("roles/OWNER")
+    member.roleList.includes(PresetRoleType.Owner)
   );
   const projectOwner = head(ownerList);
   if (projectOwner) {
@@ -219,10 +220,7 @@ const handleDatabaseSelect = (databaseId: DatabaseId) => {
   const database = databaseStore.getDatabaseById(
     state.databaseId || UNKNOWN_ID
   );
-  if (
-    database &&
-    String(database.id) !== String(UNKNOWN_ID)
-  ) {
+  if (database && String(database.id) !== String(UNKNOWN_ID)) {
     state.environmentId = String(database.instance.environment.id);
     handleProjectSelect(String(database.projectId));
   }
@@ -264,7 +262,7 @@ watch(
     if (!create.value) {
       const payload = ((issue.value as Issue).payload as any)
         .grantRequest as GrantRequestPayload;
-      if (payload.role !== "roles/EXPORTER") {
+      if (payload.role !== PresetRoleType.Exporter) {
         throw "Only support EXPORTER role";
       }
       const expressionList = payload.condition.expression.split(" && ");

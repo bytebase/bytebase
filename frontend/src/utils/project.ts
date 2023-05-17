@@ -1,21 +1,10 @@
-import { orderBy, uniq } from "lodash-es";
-import {
-  extractUserEmail,
-  useMemberStore,
-  useProjectIamPolicyStore,
-  useProjectStore,
-  useUserStore,
-} from "@/store";
 import {
   DEFAULT_PROJECT_ID,
   Principal,
   PrincipalId,
   ProjectMember,
   ProjectRoleType,
-  ProjectRoleTypeOwner,
   type Project,
-  ProjectId,
-  ComposedPrincipal,
 } from "../types";
 import { hasProjectPermission, ProjectPermissionType } from "./role";
 
@@ -91,18 +80,5 @@ export const isMemberOfProject = (
   const id = typeof userOrId === "object" ? userOrId.id : userOrId;
   return (
     project.memberList.findIndex((member) => member.principal.id === id) >= 0
-  );
-};
-
-export const isOwnerOfProject = (
-  project: Project,
-  userOrId: Principal | PrincipalId
-): boolean => {
-  const id = typeof userOrId === "object" ? userOrId.id : userOrId;
-  return (
-    project.memberList.findIndex(
-      (member) =>
-        member.role === ProjectRoleTypeOwner && member.principal.id === id
-    ) >= 0
   );
 };

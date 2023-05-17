@@ -1,7 +1,7 @@
 import slug from "slug";
 import { orderBy, uniq } from "lodash-es";
 
-import { DEFAULT_PROJECT_V1_NAME, UNKNOWN_ID } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, PresetRoleType, UNKNOWN_ID } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { IamPolicy, Project } from "@/types/proto/v1/project_service";
@@ -51,7 +51,7 @@ export const isMemberOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
 };
 
 export const isOwnerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
-  return roleListInProjectV1(iamPolicy, user).includes("roles/OWNER");
+  return roleListInProjectV1(iamPolicy, user).includes(PresetRoleType.Owner);
 };
 
 export const memberListInProjectV1 = (
@@ -91,7 +91,7 @@ export const memberListInProjectV1 = (
   return orderBy(
     composedUserList,
     [
-      (item) => (item.roleList.includes("roles/OWNER") ? 0 : 1),
+      (item) => (item.roleList.includes(PresetRoleType.Owner) ? 0 : 1),
       (item) => item.user.email,
     ],
     ["asc", "asc"]

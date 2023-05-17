@@ -145,7 +145,6 @@ import {
 } from "@/components/CreateDatabasePrepForm";
 import {
   useInstanceStore,
-  useProjectV1Store,
   useDBSchemaStore,
   useProjectV1ByUID,
 } from "@/store";
@@ -193,7 +192,6 @@ const extractLocalContextFromProps = (): CreatePITRDatabaseContext => {
 };
 
 const instanceStore = useInstanceStore();
-const projectV1Store = useProjectV1Store();
 const dbSchemaStore = useDBSchemaStore();
 
 // Refresh the instance list
