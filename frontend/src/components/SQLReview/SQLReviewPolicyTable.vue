@@ -27,7 +27,7 @@
       <div class="bb-grid-cell justify-center">
         <BBCheckbox
           :disabled="!review || !hasPermission"
-          :value="review?.rowStatus === 'NORMAL'"
+          :value="review?.enforce"
           @toggle="toggleReviewEnabled(review!, $event)"
         />
       </div>
@@ -149,7 +149,7 @@ const combinedList = computed(() => {
 const toggleReviewEnabled = async (review: SQLReviewPolicy, on: boolean) => {
   await sqlReviewStore.updateReviewPolicy({
     id: review.id,
-    rowStatus: on ? "NORMAL" : "ARCHIVED",
+    enforce: on,
   });
 };
 

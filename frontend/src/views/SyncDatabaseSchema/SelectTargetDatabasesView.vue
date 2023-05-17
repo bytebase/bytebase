@@ -191,7 +191,7 @@
   <TargetDatabasesSelectPanel
     v-if="state.showSelectDatabasePanel"
     :project-id="projectId"
-    :environment-id="String(sourceSchema.environmentId)"
+    :environment-id="sourceSchema.environmentId"
     :database-id="sourceSchema.databaseId"
     :selected-database-id-list="state.selectedDatabaseIdList"
     @close="state.showSelectDatabasePanel = false"
@@ -216,7 +216,6 @@ import {
   Database,
   DatabaseId,
   EngineType,
-  EnvironmentId,
   MigrationHistory,
   ProjectId,
   UNKNOWN_ID,
@@ -227,7 +226,7 @@ import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 import DiffViewPanel from "./DiffViewPanel.vue";
 
 interface SourceSchema {
-  environmentId: EnvironmentId;
+  environmentId: string;
   databaseId: DatabaseId;
   migrationHistory: MigrationHistory;
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,7 +21,7 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	"github.com/google/uuid"
 	"github.com/gosimple/slug"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo-contrib/prometheus"
@@ -38,6 +39,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	v1 "github.com/bytebase/bytebase/backend/api/v1"
@@ -107,6 +110,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	// Register postgresql advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
+	// Register oracle advisor.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
 
 	// Register mysql differ driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/mysql"
@@ -129,6 +134,7 @@ const (
 	webhookAPIPrefix = "/hook"
 	// openAPIPrefix is the API prefix for Bytebase OpenAPI.
 	openAPIPrefix = "/v1"
+	maxStacksize  = 8 * 1024
 )
 
 // Server is the Bytebase server.
@@ -262,14 +268,16 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Start a Postgres sample server. This is used for onboarding users without requiring them to
 	// configure an external instance.
-	log.Info("-----Sample Postgres Instance BEGIN-----")
-	sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir)
-	log.Info(fmt.Sprintf("sampleDatabasePort=%d", profile.SampleDatabasePort))
-	log.Info(fmt.Sprintf("sampleDataDir=%s", sampleDataDir))
-	if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
-		return nil, err
+	if profile.SampleDatabasePort != 0 {
+		log.Info("-----Sample Postgres Instance BEGIN-----")
+		sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir)
+		log.Info(fmt.Sprintf("sampleDatabasePort=%d", profile.SampleDatabasePort))
+		log.Info(fmt.Sprintf("sampleDataDir=%s", sampleDataDir))
+		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
+			return nil, err
+		}
+		log.Info("-----Sample Postgres Instance END-----")
 	}
-	log.Info("-----Sample Postgres Instance END-----")
 
 	// New MetadataDB instance.
 	if profile.UseEmbedDB() {
@@ -502,7 +510,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerOAuthRoutes(apiGroup)
 	s.registerPrincipalRoutes(apiGroup)
 	s.registerMemberRoutes(apiGroup)
-	s.registerPolicyRoutes(apiGroup)
 	s.registerProjectRoutes(apiGroup)
 	s.registerProjectWebhookRoutes(apiGroup)
 	s.registerEnvironmentRoutes(apiGroup)
@@ -530,8 +537,16 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, s.licenseService, profile.Mode)
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
+	onPanic := func(p any) error {
+		stack := make([]byte, maxStacksize)
+		stack = stack[:runtime.Stack(stack, true)]
+		// keep a multiline stack
+		log.Error("v1 server panic error", zap.Error(errors.Errorf("error: %v\n%s", p, stack)))
+		return status.Errorf(codes.Unknown, "error: %v", p)
+	}
+	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	s.grpcServer = grpc.NewServer(
-		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor),
+		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor, recoveryUnaryInterceptor),
 	)
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.licenseService, s.MetricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
@@ -540,8 +555,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			}
 			// Only generate onboarding data after the first enduser signup.
 			if firstEndUser {
-				if err := s.generateOnboardingData(ctx, user.ID); err != nil {
-					return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
+				if profile.SampleDatabasePort != 0 {
+					if err := s.generateOnboardingData(ctx, user.ID); err != nil {
+						return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
+					}
 				}
 			}
 			return nil
@@ -572,6 +589,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
 	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store, s.ActivityManager, s.TaskScheduler, s.stateCfg))
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
+	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -580,7 +598,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(auth.GatewayResponseModifier))
+	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(auth.GatewayResponseModifier))
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
@@ -624,6 +642,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
@@ -909,8 +930,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown postgres sample instance.
-	if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir)); err != nil {
-		log.Error("Failed to stop postgres sample instance", zap.Error(err))
+	if s.profile.SampleDatabasePort != 0 {
+		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir)); err != nil {
+			log.Error("Failed to stop postgres sample instance", zap.Error(err))
+		}
 	}
 
 	// Shutdown postgres server if embed.

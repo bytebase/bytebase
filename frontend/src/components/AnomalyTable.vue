@@ -169,7 +169,7 @@ export default defineComponent({
           const payload =
             anomaly.payload as AnomalyDatabaseBackupPolicyViolationPayload;
           const environment = useEnvironmentV1Store().getEnvironmentByUID(
-            payload.environmentId
+            String(payload.environmentId)
           );
           return `'${environment.title}' environment requires ${payload.expectedSchedule} auto-backup.`;
         }

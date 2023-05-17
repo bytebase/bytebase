@@ -1,31 +1,32 @@
 <template>
-  <div v-if="showBanner" class="bg-warning">
-    <div
-      class="mx-auto py-3 px-3 w-full flex flex-row items-center justify-between flex-wrap"
-    >
-      <div class="flex flex-row items-center">
-        <heroicons-outline:megaphone class="w-8 h-auto text-gray-800 mr-1" />
-        <i18n-t
-          tag="p"
-          keypath="subscription.overuse-warning"
-          class="text-white text-lg"
+  <div v-if="showBanner" class="bg-gray-200 overflow-clip">
+    <div class="w-full scroll-animation">
+      <div
+        class="mx-auto py-1 px-3 w-full flex flex-row items-center justify-center flex-wrap"
+      >
+        <div class="flex flex-row items-center">
+          <heroicons-outline:megaphone class="w-5 h-auto text-gray-800 mr-1" />
+          <i18n-t tag="p" keypath="subscription.overuse-warning">
+            <template #neededPlan>
+              <span
+                class="underline cursor-pointer hover:opacity-80"
+                @click="state.showModal = true"
+                >{{ neededPlan }}</span
+              >
+            </template>
+            <template #currentPlan>
+              {{ currentPlan }}
+            </template>
+          </i18n-t>
+        </div>
+        <button
+          class="bg-white btn btn-normal btn-small flex flex-row justify-center items-center ml-2 !py-1"
+          @click="gotoSubscriptionPage"
         >
-          <template #neededPlan>
-            <span
-              class="underline cursor-pointer hover:opacity-80"
-              @click="state.showModal = true"
-              >{{ neededPlan }}</span
-            >
-          </template>
-          <template #currentPlan>
-            {{ currentPlan }}
-          </template>
-        </i18n-t>
+          {{ $t("subscription.button.upgrade") }}
+          <heroicons-outline:sparkles class="w-4 h-auto text-accent ml-1" />
+        </button>
       </div>
-      <button class="bg-white btn btn-normal" @click="gotoSubscriptionPage">
-        {{ $t("subscription.button.upgrade") }}
-        <heroicons-outline:sparkles class="w-5 h-auto text-accent ml-1" />
-      </button>
     </div>
   </div>
 
@@ -184,3 +185,25 @@ const gotoSubscriptionPage = () => {
   return router.push({ name: "setting.workspace.subscription" });
 };
 </script>
+
+<style>
+.scroll-animation {
+  display: inline-block;
+  animation: scroll 4s ease-in-out infinite;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateY(100%);
+  }
+  25% {
+    transform: translateY(0);
+  }
+  80% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
+}
+</style>

@@ -29,10 +29,7 @@
             :link="false"
           />
         </BBBadge>
-        <div
-          v-if="reviewPolicy.rowStatus == 'ARCHIVED'"
-          class="whitespace-nowrap"
-        >
+        <div v-if="!reviewPolicy.enforce" class="whitespace-nowrap">
           <BBBadge
             :text="$t('sql-review.disabled')"
             :can-remove="false"
@@ -52,7 +49,7 @@
       </div>
       <div v-if="hasPermission" class="flex space-x-2">
         <button
-          v-if="reviewPolicy.rowStatus === 'NORMAL'"
+          v-if="reviewPolicy.enforce"
           type="button"
           class="btn-normal py-2 px-4"
           @click.prevent="state.showDisableModal = true"
@@ -231,7 +228,7 @@ const hasPermission = computed(() => {
 const reviewPolicy = computed((): SQLReviewPolicy => {
   return (
     store.getReviewPolicyByEnvironmentUID(
-      idFromSlug(props.sqlReviewPolicySlug)
+      String(idFromSlug(props.sqlReviewPolicySlug))
     ) || (unknown("SQL_REVIEW") as SQLReviewPolicy)
   );
 });
@@ -382,14 +379,14 @@ const onEdit = () => {
 const onArchive = () => {
   store.updateReviewPolicy({
     id: reviewPolicy.value.id,
-    rowStatus: "ARCHIVED",
+    enforce: false,
   });
 };
 
 const onRestore = () => {
   store.updateReviewPolicy({
     id: reviewPolicy.value.id,
-    rowStatus: "NORMAL",
+    enforce: true,
   });
 };
 

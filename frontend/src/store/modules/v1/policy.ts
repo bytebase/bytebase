@@ -11,14 +11,7 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { MaybeRef, UNKNOWN_ID } from "@/types";
 import { useCurrentUser } from "../auth";
-import { State } from "@/types/proto/v1/common";
-import {
-  policyNamePrefix,
-  projectNamePrefix,
-  environmentNamePrefix,
-  instanceNamePrefix,
-  databaseNamePrefix,
-} from "@/store/modules/v1/common";
+import { policyNamePrefix } from "@/store/modules/v1/common";
 
 interface PolicyState {
   policyMapByName: Map<string, Policy>;
@@ -29,13 +22,13 @@ const getPolicyParentByResourceType = (
 ): string => {
   switch (resourceType) {
     case PolicyResourceType.PROJECT:
-      return `${projectNamePrefix}-`;
+      return "projects/-";
     case PolicyResourceType.ENVIRONMENT:
-      return `${environmentNamePrefix}-`;
+      return "environments/-";
     case PolicyResourceType.INSTANCE:
-      return `${instanceNamePrefix}-`;
+      return "instances/-";
     case PolicyResourceType.DATABASE:
-      return `${instanceNamePrefix}-/${databaseNamePrefix}-`;
+      return "instances/-/databases/-";
     default:
       return "";
   }
@@ -86,7 +79,7 @@ export const usePolicyV1Store = defineStore("policy_v1", {
         if (policy.resourceType != resourceType || policy.type != policyType) {
           continue;
         }
-        if (!showDeleted && policy.state == State.DELETED) {
+        if (!showDeleted && !policy.enforce) {
           continue;
         }
         if (resourceUID && policy.resourceUid != resourceUID) {
@@ -253,7 +246,6 @@ export const getDefaultBackupPlanPolicy = (
     backupPlanPolicy: {
       schedule: defaultBackupSchedule,
     },
-    state: State.ACTIVE,
   };
 };
 
@@ -277,6 +269,5 @@ export const getDefaultDeploymentApprovalPolicy = (
       defaultStrategy: defaultApprovalStrategy,
       deploymentApprovalStrategies: [],
     },
-    state: State.ACTIVE,
   };
 };

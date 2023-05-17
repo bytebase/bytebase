@@ -743,7 +743,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			}
 			findDatabase.ProjectID = &match[1]
 		case filterKeyStartTime:
-			switch expr.comparator {
+			switch expr.operator {
 			case comparatorTypeGreater:
 				if startLogDate != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", request.Filter)
@@ -785,7 +785,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				t = t.AddDate(0, 0, 1).UTC()
 				endLogDate = &t
 			default:
-				return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q %q %q", expr.key, expr.comparator, expr.value)
+				return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q %q %q", expr.key, expr.operator, expr.value)
 			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", expr.key)

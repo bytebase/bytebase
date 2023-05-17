@@ -106,7 +106,7 @@ export default defineComponent({
       (selectedId) => {
         invalidateSelectionIfNeeded();
         state.selectedEnvironment = environmentList.value.find(
-          (env) => env.uid === selectedId
+          (env) => env.uid === String(selectedId)
         );
       },
       { immediate: true }

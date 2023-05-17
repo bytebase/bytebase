@@ -106,7 +106,7 @@
       <CreateDatabasePrepForm
         v-if="state.restoreBackupContext.target === 'NEW'"
         :project-id="database.project.id"
-        :environment-id="database.instance.environment.id"
+        :environment-id="String(database.instance.environment.id)"
         :instance-id="database.instance.id"
         :backup="state.restoreBackupContext.backup"
         @dismiss="state.restoreBackupContext = undefined"

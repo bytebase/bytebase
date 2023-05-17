@@ -71,7 +71,6 @@ import {
 import DatabaseTable from "../components/DatabaseTable.vue";
 import {
   type Database,
-  type EnvironmentId,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   InstanceId,
@@ -157,8 +156,8 @@ const prepareDatabaseList = () => {
 
 watchEffect(prepareDatabaseList);
 
-const changeEnvironmentId = (environment: EnvironmentId | undefined) => {
-  if (environment && environment !== UNKNOWN_ID) {
+const changeEnvironmentId = (environment: string | undefined) => {
+  if (environment && environment !== String(UNKNOWN_ID)) {
     router.replace({
       name: "workspace.database",
       query: { environment },

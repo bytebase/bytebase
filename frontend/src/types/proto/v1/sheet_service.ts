@@ -1,4 +1,5 @@
 /* eslint-disable */
+import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
@@ -39,6 +40,11 @@ export interface UpdateSheetRequest {
    * The list of fields to be updated.
    * Fields are specified relative to the sheet.
    * (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
+   * Only support update the following fields for now:
+   * - `title`
+   * - `statement`
+   * - `starred`
+   * - `visibility`
    */
   updateMask?: string[];
 }
@@ -57,6 +63,14 @@ export interface SearchSheetsRequest {
    * Foramt: projects/{project}
    */
   parent: string;
+  /**
+   * To filter the search result.
+   * Format: only support the following spec for now:
+   * - `creator = user:{email}`, `creator != user:{email}`
+   * - `starred = true`, `starred = false`.
+   * Not support empty filter for now.
+   */
+  filter: string;
   /**
    * Not used. The maximum number of sheets to return. The service may return fewer than
    * this value.
@@ -77,13 +91,6 @@ export interface SearchSheetsRequest {
 export interface SearchSheetsResponse {
   /** The sheets that matched the search criteria. */
   sheets: Sheet[];
-  /**
-   * To filter the search result.
-   * Format: only support the following spec for now:
-   * - `creator = user:{email}`, `creator != user:{email}`
-   * - `starred = true`, `starred = false`.
-   */
-  filter: string;
   /**
    * Not used. A token, which can be sent as `page_token` to retrieve the next page.
    * If this field is omitted, there are no subsequent pages.
@@ -131,7 +138,7 @@ export interface Sheet {
    */
   content: Uint8Array;
   /** content_size is the full size of the content, may not match the size of the `content` field. */
-  contentSize: Uint8Array;
+  contentSize: number;
   visibility: Sheet_Visibility;
   /** The source of the sheet. */
   source: Sheet_Source;
@@ -554,7 +561,7 @@ export const DeleteSheetRequest = {
 };
 
 function createBaseSearchSheetsRequest(): SearchSheetsRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", filter: "", pageSize: 0, pageToken: "" };
 }
 
 export const SearchSheetsRequest = {
@@ -562,11 +569,14 @@ export const SearchSheetsRequest = {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
+    if (message.filter !== "") {
+      writer.uint32(18).string(message.filter);
+    }
     if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
+      writer.uint32(24).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
+      writer.uint32(34).string(message.pageToken);
     }
     return writer;
   },
@@ -586,14 +596,21 @@ export const SearchSheetsRequest = {
           message.parent = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
           message.pageSize = reader.int32();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -611,6 +628,7 @@ export const SearchSheetsRequest = {
   fromJSON(object: any): SearchSheetsRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
+      filter: isSet(object.filter) ? String(object.filter) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
     };
@@ -619,6 +637,7 @@ export const SearchSheetsRequest = {
   toJSON(message: SearchSheetsRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
+    message.filter !== undefined && (obj.filter = message.filter);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
@@ -631,6 +650,7 @@ export const SearchSheetsRequest = {
   fromPartial(object: DeepPartial<SearchSheetsRequest>): SearchSheetsRequest {
     const message = createBaseSearchSheetsRequest();
     message.parent = object.parent ?? "";
+    message.filter = object.filter ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     return message;
@@ -638,7 +658,7 @@ export const SearchSheetsRequest = {
 };
 
 function createBaseSearchSheetsResponse(): SearchSheetsResponse {
-  return { sheets: [], filter: "", nextPageToken: "" };
+  return { sheets: [], nextPageToken: "" };
 }
 
 export const SearchSheetsResponse = {
@@ -646,11 +666,8 @@ export const SearchSheetsResponse = {
     for (const v of message.sheets) {
       Sheet.encode(v!, writer.uint32(10).fork()).ldelim();
     }
-    if (message.filter !== "") {
-      writer.uint32(18).string(message.filter);
-    }
     if (message.nextPageToken !== "") {
-      writer.uint32(26).string(message.nextPageToken);
+      writer.uint32(18).string(message.nextPageToken);
     }
     return writer;
   },
@@ -674,13 +691,6 @@ export const SearchSheetsResponse = {
             break;
           }
 
-          message.filter = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
           message.nextPageToken = reader.string();
           continue;
       }
@@ -695,7 +705,6 @@ export const SearchSheetsResponse = {
   fromJSON(object: any): SearchSheetsResponse {
     return {
       sheets: Array.isArray(object?.sheets) ? object.sheets.map((e: any) => Sheet.fromJSON(e)) : [],
-      filter: isSet(object.filter) ? String(object.filter) : "",
       nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
     };
   },
@@ -707,7 +716,6 @@ export const SearchSheetsResponse = {
     } else {
       obj.sheets = [];
     }
-    message.filter !== undefined && (obj.filter = message.filter);
     message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
     return obj;
   },
@@ -719,7 +727,6 @@ export const SearchSheetsResponse = {
   fromPartial(object: DeepPartial<SearchSheetsResponse>): SearchSheetsResponse {
     const message = createBaseSearchSheetsResponse();
     message.sheets = object.sheets?.map((e) => Sheet.fromPartial(e)) || [];
-    message.filter = object.filter ?? "";
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
@@ -790,7 +797,7 @@ function createBaseSheet(): Sheet {
     createTime: undefined,
     updateTime: undefined,
     content: new Uint8Array(),
-    contentSize: new Uint8Array(),
+    contentSize: 0,
     visibility: 0,
     source: 0,
     type: 0,
@@ -821,8 +828,8 @@ export const Sheet = {
     if (message.content.length !== 0) {
       writer.uint32(58).bytes(message.content);
     }
-    if (message.contentSize.length !== 0) {
-      writer.uint32(66).bytes(message.contentSize);
+    if (message.contentSize !== 0) {
+      writer.uint32(64).int64(message.contentSize);
     }
     if (message.visibility !== 0) {
       writer.uint32(72).int32(message.visibility);
@@ -896,11 +903,11 @@ export const Sheet = {
           message.content = reader.bytes();
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag !== 64) {
             break;
           }
 
-          message.contentSize = reader.bytes();
+          message.contentSize = longToNumber(reader.int64() as Long);
           continue;
         case 9:
           if (tag !== 72) {
@@ -948,7 +955,7 @@ export const Sheet = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(),
-      contentSize: isSet(object.contentSize) ? bytesFromBase64(object.contentSize) : new Uint8Array(),
+      contentSize: isSet(object.contentSize) ? Number(object.contentSize) : 0,
       visibility: isSet(object.visibility) ? sheet_VisibilityFromJSON(object.visibility) : 0,
       source: isSet(object.source) ? sheet_SourceFromJSON(object.source) : 0,
       type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
@@ -966,8 +973,7 @@ export const Sheet = {
     message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
     message.content !== undefined &&
       (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array()));
-    message.contentSize !== undefined &&
-      (obj.contentSize = base64FromBytes(message.contentSize !== undefined ? message.contentSize : new Uint8Array()));
+    message.contentSize !== undefined && (obj.contentSize = Math.round(message.contentSize));
     message.visibility !== undefined && (obj.visibility = sheet_VisibilityToJSON(message.visibility));
     message.source !== undefined && (obj.source = sheet_SourceToJSON(message.source));
     message.type !== undefined && (obj.type = sheet_TypeToJSON(message.type));
@@ -988,7 +994,7 @@ export const Sheet = {
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
     message.content = object.content ?? new Uint8Array();
-    message.contentSize = object.contentSize ?? new Uint8Array();
+    message.contentSize = object.contentSize ?? 0;
     message.visibility = object.visibility ?? 0;
     message.source = object.source ?? 0;
     message.type = object.type ?? 0;
@@ -1412,8 +1418,8 @@ function toTimestamp(date: Date): Timestamp {
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = t.seconds * 1_000;
-  millis += t.nanos / 1_000_000;
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
   return new Date(millis);
 }
 
@@ -1425,6 +1431,20 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {
