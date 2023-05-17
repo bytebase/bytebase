@@ -274,16 +274,18 @@ message Rollout {
     // The number of the latest taskrun of each task in the rollout.
     // i.e. the number of tasks that have taskruns.
     int32 total_taskruns = 2;
-    // The number of the latest taskrun of each task whose status is DONE.
-    int32 completed_taskruns = 3;
+    // The number of the latest taskrun of each task whose status is PENDING.
+    int32 pending_taskruns = 3;
+    // The number of the latest taskrun of each task whose status is COMPLETED.
+    int32 completed_taskruns = 4;
     // The number of the latest taskrun of each task whose status is FAILED.
-    int32 failed_taskruns = 4;
+    int32 failed_taskruns = 5;
     // The number of the latest taskrun of each task whose status is RUNNING.
-    int32 running_taskruns = 5;
+    int32 running_taskruns = 6;
     // The number of the latest taskrun of each task whose status is CANCELED.
-    int32 canceled_taskruns = 6;
+    int32 canceled_taskruns = 7;
     // The number of the latest taskrun of each task whose status is SKIPPED.
-    int32 skipped_taskruns = 7;
+    int32 skipped_taskruns = 8;
   }
 }
 
@@ -322,17 +324,6 @@ message Task {
   }
   Type type = 6;
 
-  enum Status {
-    STATUS_UNSPECIFIED = 0;
-    PENDING = 1;
-    PENDING_APPROVAL = 2;
-    RUNNING = 3;
-    DONE = 4;
-    FAILED = 5;
-    CANCELED = 6;
-  }
-  Status status = 7;
-
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string blocked_by_tasks = 8;
 
@@ -350,11 +341,12 @@ message TaskRun {
   string title = 3;
   enum Status {
     STATUS_UNSPECIFIED = 0;
-    RUNNING = 1;
-    DONE = 2;
-    FAILED = 3;
-    CANCELED = 4;
-    SKIPPED = 5;
+    PENDING = 1;
+    RUNNING = 2;
+    COMPLETED = 3;
+    FAILED = 4;
+    CANCELED = 5;
+    SKIPPED = 6;
   }
   Status status = 4;
   int64 code = 6;
