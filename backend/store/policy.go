@@ -148,8 +148,7 @@ type PolicyMessage struct {
 	Enforce           bool
 
 	// Output only.
-	UID     int
-	Deleted bool
+	UID int
 }
 
 // FindPolicyMessage is the message for finding policies.
@@ -278,13 +277,6 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		}
 		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
-	if v := patch.Delete; v != nil {
-		rowStatus := api.Normal
-		if *patch.Delete {
-			rowStatus = api.Archived
-		}
-		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
-	}
 	args = append(args, patch.ResourceType, patch.ResourceUID, patch.Type)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -322,7 +314,6 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	if rowStatus == string(api.Normal) {
 		policy.Enforce = true
 	}
-	policy.Deleted = convertRowStatusToDeleted(rowStatus)
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -450,7 +441,6 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 		if rowStatus == api.Normal {
 			policyMessage.Enforce = true
 		}
-		policyMessage.Deleted = convertRowStatusToDeleted(string(rowStatus))
 		policyList = append(policyList, &policyMessage)
 	}
 	if err := rows.Err(); err != nil {

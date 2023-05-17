@@ -215,8 +215,6 @@ message Policy {
 
   // The system-assigned, unique identifier for the resource.
   string resource_uid = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  State state = 15;
 }
 
 enum PolicyType {

@@ -3520,7 +3520,6 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
-| state | [State](#bytebase-v1-State) |  |  |
 
 
 
