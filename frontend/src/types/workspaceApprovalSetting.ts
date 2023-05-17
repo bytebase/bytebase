@@ -1,6 +1,6 @@
 import { SimpleExpr } from "@/plugins/cel";
 import type { Risk_Source } from "@/types/proto/v1/risk_service";
-import type { ApprovalTemplate } from "./proto/store/approval";
+import { ApprovalTemplate } from "@/types/proto/v1/review_service";
 
 export type LocalApprovalRule = {
   uid: string;

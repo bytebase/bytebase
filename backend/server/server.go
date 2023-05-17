@@ -762,7 +762,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 	// initial feishu app
 	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingAppIM,
-		Value:       "",
+		Value:       "{}",
 		Description: "",
 	}, api.SystemBotID); err != nil {
 		return nil, err

@@ -34,19 +34,15 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { NTooltip } from "naive-ui";
 
-import {
-  pushNotification,
-  useCurrentUser,
-  useIssueStore,
-  useSettingStore,
-} from "@/store";
+import { pushNotification, useCurrentUser, useIssueStore } from "@/store";
 import { useIssueLogic } from "./logic";
 import { Issue } from "@/types";
-import { SettingAppIMValue } from "@/types/setting";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { AppIMSetting_IMType } from "@/types/proto/v1/setting_service";
 
 const { t } = useI18n();
 const currentUser = useCurrentUser();
-const settingStore = useSettingStore();
+const settingV1Store = useSettingV1Store();
 const { create, project, issue } = useIssueLogic();
 
 const showNotifyAssignee = computed(() => {
@@ -79,17 +75,15 @@ const isAssigneeAttentionOn = computed(() => {
 
 const externalApprovalSetting = computed(
   (): { enabled: boolean; type: string } => {
-    const setting = settingStore.getSettingByName("bb.app.im");
-    if (setting) {
-      const appFeishuValue = JSON.parse(
-        setting.value || "{}"
-      ) as SettingAppIMValue;
-      if (appFeishuValue.imType === "im.feishu") {
-        return {
-          type: "feishu",
-          enabled: appFeishuValue.externalApproval.enabled,
-        };
-      }
+    const setting = settingV1Store.getSettingByName("bb.app.im");
+    if (
+      setting?.value?.appImSettingValue?.imType === AppIMSetting_IMType.FEISHU
+    ) {
+      return {
+        type: "feishu",
+        enabled:
+          setting?.value?.appImSettingValue.externalApproval?.enabled ?? false,
+      };
     }
     return {
       enabled: false,

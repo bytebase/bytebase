@@ -62,7 +62,6 @@ import { reactive } from "vue";
 import {
   useIdentityProviderStore,
   useInstanceStore,
-  useSettingStore,
   useSubscriptionStore,
 } from "@/store";
 import { onMounted } from "vue";
@@ -73,6 +72,7 @@ import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { useI18n } from "vue-i18n";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { useRouter } from "vue-router";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 interface LocalState {
   showModal: boolean;
@@ -86,7 +86,7 @@ const state = reactive<LocalState>({
 });
 
 const idpStore = useIdentityProviderStore();
-const settingStore = useSettingStore();
+const settingV1Store = useSettingV1Store();
 const instanceStore = useInstanceStore();
 const environmentV1Store = useEnvironmentV1Store();
 
@@ -123,23 +123,22 @@ const overusedEnterprisePlanFeatureList = computed(() => {
   if (idpStore.identityProviderList.length > 0) {
     list.push("bb.feature.sso");
   }
-  const brandingSetting = settingStore.getSettingByName("bb.branding.logo");
-  if (brandingSetting && brandingSetting.value) {
+  if (settingV1Store.brandingLogo) {
     list.push("bb.feature.branding");
   }
-  const watermarkSetting = settingStore.getSettingByName(
+  const watermarkSetting = settingV1Store.getSettingByName(
     "bb.workspace.watermark"
   );
-  if (watermarkSetting && watermarkSetting.value === "1") {
+  if (watermarkSetting && watermarkSetting.value?.stringValue === "1") {
     list.push("bb.feature.watermark");
   }
-  if (settingStore.workspaceSetting?.disallowSignup ?? false) {
+  if (settingV1Store.workspaceProfileSetting?.disallowSignup ?? false) {
     list.push("bb.feature.disallow-signup");
   }
-  if (settingStore.workspaceSetting?.require2fa ?? false) {
+  if (settingV1Store.workspaceProfileSetting?.require2fa ?? false) {
     list.push("bb.feature.2fa");
   }
-  const openAIKeySetting = settingStore.getSettingByName(
+  const openAIKeySetting = settingV1Store.getSettingByName(
     "bb.plugin.openai.key"
   );
   if (openAIKeySetting && openAIKeySetting.value) {
@@ -173,7 +172,7 @@ onMounted(() => {
 
   Promise.all([
     idpStore.fetchIdentityProviderList(),
-    settingStore.fetchSetting(),
+    settingV1Store.fetchSettingList(),
     environmentV1Store.fetchEnvironments(),
     instanceStore.fetchInstanceList(),
   ]).catch(() => {
