@@ -18,7 +18,11 @@
 import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import { UNKNOWN_ID, DEFAULT_PROJECT_ID, unknownProject } from "../types";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
-import { isMemberOfProjectV1, projectV1Name } from "@/utils";
+import {
+  hasWorkspacePermissionV1,
+  isMemberOfProjectV1,
+  projectV1Name,
+} from "@/utils";
 import { Project, TenantMode } from "@/types/proto/v1/project_service";
 import { State } from "@/types/proto/v1/common";
 
@@ -71,13 +75,20 @@ export default defineComponent({
 
     const currentUserV1 = useCurrentUserV1();
     const projectV1Store = useProjectV1Store();
+    const canManageProject = hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-project",
+      currentUserV1.value.userRole
+    );
 
     const rawProjectList = computed((): Project[] => {
       let list = projectV1Store.getProjectList(true /* showDeleted */);
 
       if (props.onlyUserself) {
         list = list.filter((project) => {
-          return isMemberOfProjectV1(project.iamPolicy, currentUserV1.value);
+          return (
+            canManageProject ||
+            isMemberOfProjectV1(project.iamPolicy, currentUserV1.value)
+          );
         });
       }
 
