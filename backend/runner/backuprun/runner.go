@@ -340,7 +340,7 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 		if project.Deleted {
 			continue
 		}
-		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
 			log.Error("Failed to get instance", zap.Error(err))
 		}
@@ -404,7 +404,7 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 
 // ScheduleBackupTask schedules a backup task.
 func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.DatabaseMessage, backupName string, backupType api.BackupType, creatorID int) (*store.BackupMessage, error) {
-	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, err
 	}

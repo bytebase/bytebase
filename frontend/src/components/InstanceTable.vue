@@ -13,10 +13,7 @@
         {{ instanceName(instance) }}
       </div>
       <div class="bb-grid-cell">
-        <div class="flex items-center gap-x-1">
-          {{ environmentNameFromId(instance.environment.id) }}
-          <ProductionEnvironmentIcon :environment="instance.environment" />
-        </div>
+        <EnvironmentName :environment="instance.environment" :link="false" />
       </div>
       <div class="bb-grid-cell">
         <template v-if="instance.port"
@@ -40,16 +37,15 @@
 import { PropType, defineComponent, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { urlfy, instanceSlug, environmentName } from "@/utils";
-import { EnvironmentId, Instance } from "@/types";
-import { useEnvironmentStore } from "@/store";
+import { urlfy, instanceSlug } from "@/utils";
+import { Instance } from "@/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
-import ProductionEnvironmentIcon from "./Environment/ProductionEnvironmentIcon.vue";
 import { BBGridColumn } from "@/bbkit";
+import { EnvironmentName } from "@/components/v2";
 
 export default defineComponent({
   name: "InstanceTable",
-  components: { InstanceEngineIcon, ProductionEnvironmentIcon },
+  components: { InstanceEngineIcon, EnvironmentName },
   props: {
     instanceList: {
       required: true,
@@ -101,16 +97,10 @@ export default defineComponent({
       }
     };
 
-    const environmentNameFromId = (id: EnvironmentId) => {
-      const env = useEnvironmentStore().getEnvironmentById(id);
-      return environmentName(env);
-    };
-
     return {
       columnList,
       urlfy,
       clickInstance,
-      environmentNameFromId,
     };
   },
 });

@@ -22,7 +22,7 @@
     </div>
     <div class="flex items-center justify-between">
       <EnvironmentTabFilter
-        :environment="state.filter.environment?.id ?? UNKNOWN_ID"
+        :environment="state.filter.environment?.uid ?? String(UNKNOWN_ID)"
         :include-all="true"
         @update:environment="changeEnvironment"
       />
@@ -48,24 +48,19 @@ import { orderBy } from "lodash-es";
 import { BBAttention } from "@/bbkit";
 import {
   pushNotification,
-  useEnvironmentList,
+  useEnvironmentV1List,
   useInstanceStore,
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
-import {
-  ComposedSlowQueryPolicy,
-  Environment,
-  EnvironmentId,
-  Instance,
-  UNKNOWN_ID,
-} from "@/types";
+import { ComposedSlowQueryPolicy, Instance, UNKNOWN_ID } from "@/types";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import { SlowQueryPolicyTable } from "./components";
 import { instanceSupportSlowQuery } from "@/utils";
 import { useGracefulRequest } from "@/store/modules/utils";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { getInstancePathByLegacyInstance } from "@/store/modules/v1/common";
+import { Environment } from "@/types/proto/v1/environment_service";
 
 type LocalState = {
   ready: boolean;
@@ -89,7 +84,7 @@ const { t } = useI18n();
 const slowQueryPolicyStore = useSlowQueryPolicyStore();
 const slowQueryStore = useSlowQueryStore();
 const instanceStore = useInstanceStore();
-const environmentList = useEnvironmentList(["NORMAL"]);
+const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
 const policyList = computed(() => {
   return slowQueryPolicyStore.getPolicyList();
@@ -118,9 +113,9 @@ const composedSlowQueryPolicyList = computed(() => {
 const filteredComposedSlowQueryPolicyList = computed(() => {
   let list = [...composedSlowQueryPolicyList.value];
   const { environment } = state.filter;
-  if (environment && environment.id !== UNKNOWN_ID) {
+  if (environment && environment.uid !== String(UNKNOWN_ID)) {
     list = list.filter(
-      (item) => item.instance.environment.id === environment.id
+      (item) => String(item.instance.environment.id) === environment.uid
     );
   }
   const keyword = state.filter.keyword.trim().toLowerCase();
@@ -148,8 +143,10 @@ const prepare = async () => {
   }
 };
 
-const changeEnvironment = (id: EnvironmentId | undefined) => {
-  state.filter.environment = environmentList.value.find((env) => env.id === id);
+const changeEnvironment = (id: string | undefined) => {
+  state.filter.environment = environmentList.value.find(
+    (env) => env.uid === id
+  );
 };
 
 const patchInstanceSlowQueryPolicy = async (

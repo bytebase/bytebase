@@ -75,7 +75,7 @@
         :tab-item-list="tabItemList"
         :selected-index="state.selectedIndex"
         @select-index="
-          (index) => {
+          (index: number) => {
             state.selectedIndex = index;
           }
         "
@@ -91,7 +91,7 @@
                 : $t('common.instance'),
           })
         "
-        @change-text="(text) => changeSearchText(text)"
+        @change-text="(text:string) => changeSearchText(text)"
       />
     </div>
     <template v-if="state.selectedIndex == DATABASE_TAB">
@@ -130,22 +130,22 @@ import { computed, defineComponent, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 
 import AnomalyTable from "../components/AnomalyTable.vue";
-import { Anomaly, EnvironmentId, UNKNOWN_ID } from "../types";
+import { Anomaly, UNKNOWN_USER_NAME } from "../types";
 import {
   databaseSlug,
   instanceSlug,
-  hasWorkspacePermission,
-  sortDatabaseList,
-  sortInstanceList,
+  hasWorkspacePermissionV1,
+  sortDatabaseListByEnvironmentV1,
+  sortInstanceListByEnvironmentV1,
 } from "../utils";
 import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
 import { cloneDeep } from "lodash-es";
 import {
   featureToRef,
   useAnomalyList,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
-  useEnvironmentList,
+  useEnvironmentV1List,
   useInstanceList,
 } from "@/store";
 
@@ -171,23 +171,23 @@ export default defineComponent({
     const databaseStore = useDatabaseStore();
     const { t } = useI18n();
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const state = reactive<LocalState>({
-      selectedIndex: hasWorkspacePermission(
+      selectedIndex: hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-instance",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
         ? INSTANCE_TAB
         : DATABASE_TAB,
       searchText: "",
     });
 
-    const environmentList = useEnvironmentList(["NORMAL"]);
+    const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
     const prepareDatabaseList = () => {
       // It will also be called when user logout
-      if (currentUser.value.id !== UNKNOWN_ID) {
+      if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
         databaseStore.fetchDatabaseList();
       }
     };
@@ -195,7 +195,7 @@ export default defineComponent({
     watchEffect(prepareDatabaseList);
 
     const databaseList = computed(() => {
-      return databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
+      return databaseStore.getDatabaseListByUser(currentUserV1.value);
     });
 
     const instanceList = useInstanceList();
@@ -221,7 +221,7 @@ export default defineComponent({
           }
         }
 
-        sortDatabaseList(dbList, environmentList.value);
+        sortDatabaseListByEnvironmentV1(dbList, environmentList.value);
 
         for (const database of dbList) {
           const anomalyListOfDatabase = allAnomalyList.value.filter(
@@ -260,7 +260,7 @@ export default defineComponent({
           }
         }
 
-        sortInstanceList(insList, environmentList.value);
+        sortInstanceListByEnvironmentV1(insList, environmentList.value);
 
         for (const instance of insList) {
           const anomalyListOfInstance = allAnomalyList.value.filter(
@@ -280,7 +280,7 @@ export default defineComponent({
     );
 
     const databaseAnomalySummaryList = computed((): Summary[] => {
-      const envMap: Map<EnvironmentId, Summary> = new Map();
+      const envMap: Map<string, Summary> = new Map();
       for (const database of databaseList.value) {
         let criticalCount = 0;
         let highCount = 0;
@@ -301,13 +301,13 @@ export default defineComponent({
               break;
           }
         }
-        const summary = envMap.get(database.instance.environment.id);
+        const summary = envMap.get(String(database.instance.environment.id));
         if (summary) {
           summary.criticalCount += criticalCount;
           summary.highCount += highCount;
           summary.mediumCount += mediumCount;
         } else {
-          envMap.set(database.instance.environment.id, {
+          envMap.set(String(database.instance.environment.id), {
             environmentName: database.instance.environment.name,
             criticalCount,
             highCount,
@@ -318,7 +318,7 @@ export default defineComponent({
 
       const list: Summary[] = [];
       for (const environment of environmentList.value) {
-        const summary = envMap.get(environment.id);
+        const summary = envMap.get(environment.uid);
         if (summary) {
           list.push(summary);
         }
@@ -328,7 +328,7 @@ export default defineComponent({
     });
 
     const instanceAnomalySummaryList = computed((): Summary[] => {
-      const envMap: Map<EnvironmentId, Summary> = new Map();
+      const envMap: Map<string, Summary> = new Map();
       for (const instance of instanceList.value) {
         let criticalCount = 0;
         let highCount = 0;
@@ -349,13 +349,13 @@ export default defineComponent({
               break;
           }
         }
-        const summary = envMap.get(instance.environment.id);
+        const summary = envMap.get(String(instance.environment.id));
         if (summary) {
           summary.criticalCount += criticalCount;
           summary.highCount += highCount;
           summary.mediumCount += mediumCount;
         } else {
-          envMap.set(instance.environment.id, {
+          envMap.set(String(instance.environment.id), {
             environmentName: instance.environment.name,
             criticalCount,
             highCount,
@@ -366,7 +366,7 @@ export default defineComponent({
 
       const list: Summary[] = [];
       for (const environment of environmentList.value) {
-        const summary = envMap.get(environment.id);
+        const summary = envMap.get(environment.uid);
         if (summary) {
           list.push(summary);
         }

@@ -11,13 +11,10 @@ import {
   DataSource,
   empty,
   EMPTY_ID,
-  EnvironmentId,
   Instance,
   InstanceId,
   MaybeRef,
-  PrincipalId,
   Project,
-  ProjectId,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -25,8 +22,10 @@ import {
 } from "@/types";
 import { useDataSourceStore } from "./dataSource";
 import { useInstanceStore } from "./instance";
-import { useProjectStore } from "./project";
-import { isMemberOfProject } from "@/utils";
+import { useLegacyProjectStore } from "./project";
+import { hasWorkspacePermissionV1, isMemberOfProjectV1 } from "@/utils";
+import { useProjectV1Store } from "./v1";
+import { User } from "@/types/proto/v1/auth_service";
 
 function convert(
   database: ResourceObject,
@@ -56,7 +55,7 @@ function convert(
   }
 
   const instanceStore = useInstanceStore();
-  const projectStore = useProjectStore();
+  const projectStore = useLegacyProjectStore();
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = instanceStore.convert(item, includedList);
@@ -172,30 +171,40 @@ export const useDatabaseStore = defineStore("database", {
       }
       return this.databaseListByInstanceId.get(instanceId) || [];
     },
-    getDatabaseListByPrincipalId(userId: PrincipalId): Database[] {
+    getDatabaseListByUser(user: User): Database[] {
+      const canManageDatabase = hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-database",
+        user.userRole
+      );
       const list: Database[] = [];
       for (const [_, databaseList] of this.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
-          if (isMemberOfProject(item.project, userId)) {
+          const projectV1 = useProjectV1Store().getProjectByUID(
+            String(item.project.id)
+          );
+          if (
+            canManageDatabase ||
+            isMemberOfProjectV1(projectV1.iamPolicy, user)
+          ) {
             list.push(item);
           }
         });
       }
       return list;
     },
-    getDatabaseListByEnvironmentId(environmentId: EnvironmentId): Database[] {
+    getDatabaseListByEnvironmentId(environmentId: string): Database[] {
       const list: Database[] = [];
       for (const [_, databaseList] of this.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
-          if (item.instance.environment.id == environmentId) {
+          if (String(item.instance.environment.id) === environmentId) {
             list.push(item);
           }
         });
       }
       return list;
     },
-    getDatabaseListByProjectId(projectId: ProjectId): Database[] {
-      return this.databaseListByProjectId.get(projectId) || [];
+    getDatabaseListByProjectId(projectId: string): Database[] {
+      return this.databaseListByProjectId.get(parseInt(projectId, 10)) || [];
     },
     getDatabaseById(databaseId: DatabaseId, instanceId?: InstanceId): Database {
       if (databaseId == EMPTY_ID) {
@@ -224,7 +233,7 @@ export const useDatabaseStore = defineStore("database", {
       projectId,
     }: {
       databaseList: Database[];
-      projectId: ProjectId;
+      projectId: string;
     }) {
       this.databaseListByProjectId.set(projectId, databaseList);
     },
@@ -321,7 +330,7 @@ export const useDatabaseStore = defineStore("database", {
 
       return databaseList[0];
     },
-    async fetchDatabaseListByProjectId(projectId: ProjectId) {
+    async fetchDatabaseListByProjectId(projectId: string) {
       const databaseList = await this.fetchDatabaseList({
         projectId,
       });
@@ -330,7 +339,7 @@ export const useDatabaseStore = defineStore("database", {
 
       return databaseList;
     },
-    async fetchDatabaseListByEnvironmentId(environmentId: EnvironmentId) {
+    async fetchDatabaseListByEnvironmentId(environmentId: string) {
       // Don't fetch the data source info as the current user may not have access to the
       // database of this particular environment.
       const data = (
@@ -382,10 +391,10 @@ export const useDatabaseStore = defineStore("database", {
       labels,
     }: {
       databaseId: DatabaseId;
-      projectId: ProjectId;
+      projectId: string;
       labels?: DatabaseLabel[];
     }) {
-      const attributes: any = { projectId };
+      const attributes: any = { projectId: Number(projectId) };
       if (labels) {
         attributes.labels = JSON.stringify(labels);
       }

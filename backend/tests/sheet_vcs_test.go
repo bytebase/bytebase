@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -45,7 +46,7 @@ func TestSheetVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -68,13 +69,9 @@ func TestSheetVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Create a project.
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID: generateRandomString("project", 10),
-					Name:       "Test VCS Project",
-					Key:        "TestVCSSchemaUpdate",
-				},
-			)
+			project, err := ctl.createProject(ctx)
+			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			// Create a repository.
@@ -87,7 +84,7 @@ func TestSheetVCS(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              vcs.ID,
-					ProjectID:          project.ID,
+					ProjectID:          projectUID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -116,7 +113,7 @@ func TestSheetVCS(t *testing.T) {
 			sheetsBefore, err := ctl.listMySheets()
 			a.NoError(err)
 
-			err = ctl.syncSheet(project.ID)
+			err = ctl.syncSheet(projectUID)
 			a.NoError(err)
 
 			sheetsAfter, err := ctl.listMySheets()

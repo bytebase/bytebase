@@ -20,14 +20,15 @@ import {
   Database,
   DEFAULT_PROJECT_ID,
   QuickActionType,
+  unknownUser,
   UNKNOWN_ID,
 } from "../types";
 import {
-  hasPermissionInProject,
-  hasWorkspacePermission,
+  hasPermissionInProjectV1,
+  hasWorkspacePermissionV1,
   idFromSlug,
-  memberListInProject,
   migrationHistoryIdFromSlug,
+  roleListInProjectV1,
 } from "../utils";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -39,28 +40,28 @@ import {
   useVCSStore,
   useDataSourceStore,
   useSQLReviewStore,
-  useProjectStore,
+  useLegacyProjectStore,
   useSheetStore,
   useAuthStore,
   useActuatorStore,
   useDatabaseStore,
-  useEnvironmentStore,
   useInstanceStore,
-  usePrincipalStore,
   useRouterStore,
   useDBSchemaStore,
   useConnectionTreeStore,
   useOnboardingStateStore,
   useTabStore,
   useIdentityProviderStore,
-  useCurrentUser,
   useSubscriptionStore,
   useUserStore,
   useProjectV1Store,
   useProjectWebhookV1Store,
+  useEnvironmentV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { State } from "@/types/proto/v1/common";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -330,11 +331,10 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.profile",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                const principalId = parseInt(
-                  route.params.principalId as string,
-                  10
-                );
-                return usePrincipalStore().principalById(principalId).name;
+                const userUID = route.params.principalId as string;
+                const user =
+                  useUserStore().getUserById(userUID) ?? unknownUser();
+                return user.title;
               },
             },
             components: {
@@ -573,7 +573,7 @@ const routes: Array<RouteRecordRaw> = [
                     const slug = route.params.sqlReviewPolicySlug as string;
                     return (
                       useSQLReviewStore().getReviewPolicyByEnvironmentUID(
-                        idFromSlug(slug)
+                        String(idFromSlug(slug))
                       )?.name ?? ""
                     );
                   },
@@ -652,9 +652,9 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: (route: RouteLocationNormalized) => {
                 const slug = route.params.environmentSlug as string;
-                return useEnvironmentStore().getEnvironmentById(
-                  idFromSlug(slug)
-                ).name;
+                return useEnvironmentV1Store().getEnvironmentByUID(
+                  String(idFromSlug(slug))
+                ).title;
               },
               allowBookmark: true,
             },
@@ -692,22 +692,22 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
-                const project = useProjectStore().getProjectById(
-                  idFromSlug(slug)
+                const project = useProjectV1Store().getProjectByUID(
+                  String(idFromSlug(slug))
                 );
 
-                if (project.rowStatus == "NORMAL") {
+                if (project.state === State.ACTIVE) {
                   const actionList: string[] = [];
 
-                  const currentUser = useCurrentUser();
+                  const currentUserV1 = useCurrentUserV1();
                   let allowAlterSchemaOrChangeData = false;
                   let allowCreateDB = false;
                   let allowTransferDB = false;
                   let allowTransferOutDB = false;
                   if (
-                    hasWorkspacePermission(
+                    hasWorkspacePermissionV1(
                       "bb.permission.workspace.manage-instance",
-                      currentUser.value.role
+                      currentUserV1.value.userRole
                     )
                   ) {
                     allowAlterSchemaOrChangeData = true;
@@ -715,24 +715,24 @@ const routes: Array<RouteRecordRaw> = [
                     allowTransferDB = true;
                     allowTransferOutDB = true;
                   } else {
-                    const memberList = memberListInProject(
-                      project,
-                      currentUser.value
+                    const roleList = roleListInProjectV1(
+                      project.iamPolicy,
+                      currentUserV1.value
                     );
-                    if (memberList.length > 0) {
-                      allowAlterSchemaOrChangeData = hasPermissionInProject(
-                        project,
-                        currentUser.value,
+                    if (roleList.length > 0) {
+                      allowAlterSchemaOrChangeData = hasPermissionInProjectV1(
+                        project.iamPolicy,
+                        currentUserV1.value,
                         "bb.permission.project.change-database"
                       );
-                      allowTransferDB = hasPermissionInProject(
-                        project,
-                        currentUser.value,
+                      allowTransferDB = hasPermissionInProjectV1(
+                        project.iamPolicy,
+                        currentUserV1.value,
                         "bb.permission.project.transfer-database"
                       );
-                      allowTransferOutDB = hasPermissionInProject(
-                        project,
-                        currentUser.value,
+                      allowTransferOutDB = hasPermissionInProjectV1(
+                        project.iamPolicy,
+                        currentUserV1.value,
                         "bb.permission.project.transfer-database"
                       );
 
@@ -747,15 +747,15 @@ const routes: Array<RouteRecordRaw> = [
                       } else {
                         // See RBAC otherwise.
                         // AKA yes if project owner.
-                        allowCreateDB = hasPermissionInProject(
-                          project,
-                          currentUser.value,
+                        allowCreateDB = hasPermissionInProjectV1(
+                          project.iamPolicy,
+                          currentUserV1.value,
                           "bb.permission.project.create-database"
                         );
                       }
                     }
                   }
-                  if (project.id === DEFAULT_PROJECT_ID) {
+                  if (project.uid === String(DEFAULT_PROJECT_ID)) {
                     allowAlterSchemaOrChangeData = false;
                   }
                   if (allowAlterSchemaOrChangeData) {
@@ -812,7 +812,10 @@ const routes: Array<RouteRecordRaw> = [
                     if (projectId === DEFAULT_PROJECT_ID) {
                       return t("database.unassigned-databases");
                     }
-                    return useProjectStore().getProjectById(projectId).name;
+                    const projectV1 = useProjectV1Store().getProjectByUID(
+                      String(projectId)
+                    );
+                    return projectV1.title;
                   },
                   allowBookmark: true,
                 },
@@ -837,7 +840,7 @@ const routes: Array<RouteRecordRaw> = [
                     const projectWebhookSlug = route.params
                       .projectWebhookSlug as string;
                     const project = useProjectV1Store().getProjectByUID(
-                      idFromSlug(projectSlug)
+                      String(idFromSlug(projectSlug))
                     );
                     const webhook =
                       useProjectWebhookV1Store().getProjectWebhookFromProjectById(
@@ -888,36 +891,44 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
-                      // "quickaction.bb.database.troubleshoot",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ];
                 const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
-                      // "quickaction.bb.database.troubleshoot",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ];
                 const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
-                      // "quickaction.bb.database.request",
-                      // "quickaction.bb.database.troubleshoot",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter",
                     ];
                 return new Map([
                   ["OWNER", ownerList],
@@ -1126,10 +1137,9 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   const databaseStore = useDatabaseStore();
   const dbSchemaStore = useDBSchemaStore();
-  const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
   const routerStore = useRouterStore();
-  const projectStore = useProjectStore();
+  const projectStore = useLegacyProjectStore();
   const projectV1Store = useProjectV1Store();
   const projectWebhookV1Store = useProjectWebhookV1Store();
 
@@ -1215,17 +1225,12 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  const userStore = useUserStore();
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   const serverInfo = useActuatorStore().serverInfo;
 
   // If 2FA is required, redirect to MFA setup page if the user has not enabled 2FA.
-  if (
-    hasFeature("bb.feature.2fa") &&
-    serverInfo?.require2fa &&
-    currentUser.value
-  ) {
-    const user = userStore.getUserById(currentUser.value.id as number);
+  if (hasFeature("bb.feature.2fa") && serverInfo?.require2fa) {
+    const user = currentUserV1.value;
     if (user && !user.mfaEnabled) {
       next({
         name: "2fa.setup",
@@ -1250,9 +1255,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.im-integration")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-im-integration",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1265,9 +1270,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.sso")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-sso",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1280,9 +1285,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.gitops")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-vcs-provider",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1295,9 +1300,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.project")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-project",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1310,9 +1315,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.audit-log")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.audit-log",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1325,9 +1330,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.debug-log")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.debug-log",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1340,9 +1345,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.instance") {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-instance",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1356,9 +1361,9 @@ router.beforeEach((to, from, next) => {
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
     if (
       !hasFeature("bb.feature.data-source") ||
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-instance",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1417,8 +1422,8 @@ router.beforeEach((to, from, next) => {
   const sqlReviewPolicySlug = routerSlug.sqlReviewPolicySlug;
 
   if (principalId) {
-    usePrincipalStore()
-      .fetchPrincipalById(principalId)
+    useUserStore()
+      .getOrFetchUserById(String(principalId))
       .then(() => {
         next();
       })
@@ -1433,25 +1438,33 @@ router.beforeEach((to, from, next) => {
   }
 
   if (environmentSlug) {
-    const env = environmentStore.getEnvironmentById(
-      idFromSlug(environmentSlug)
-    );
-    // getEnvironmentById returns unknown("ENVIRONMENT") when it doesn't exist
-    // so we need to check the id here
-    if (env && env.id !== UNKNOWN_ID) {
-      next();
-      return;
-    }
-    next({
-      name: "error.404",
-      replace: false,
-    });
+    useEnvironmentV1Store()
+      .getOrFetchEnvironmentByUID(String(idFromSlug(environmentSlug)))
+      .then((env) => {
+        // getEnvironmentById returns unknown("ENVIRONMENT") when it doesn't exist
+        // so we need to check the id here
+        if (env && env.uid !== String(UNKNOWN_ID)) {
+          next();
+          return;
+        } else {
+          throw new Error();
+        }
+      })
+      .catch(() => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+      });
+    return;
   }
 
   if (projectSlug) {
     projectStore
       .fetchProjectById(idFromSlug(projectSlug))
-      .then(() => projectV1Store.fetchProjectByUID(idFromSlug(projectSlug)))
+      .then(() =>
+        projectV1Store.fetchProjectByUID(String(idFromSlug(projectSlug)))
+      )
       .then((project) => {
         if (!projectWebhookSlug) {
           next();
@@ -1582,7 +1595,9 @@ router.beforeEach((to, from, next) => {
 
   if (sqlReviewPolicySlug) {
     useSQLReviewStore()
-      .getOrFetchReviewPolicyByEnvironmentUID(idFromSlug(sqlReviewPolicySlug))
+      .getOrFetchReviewPolicyByEnvironmentUID(
+        String(idFromSlug(sqlReviewPolicySlug))
+      )
       .then(() => {
         next();
       })

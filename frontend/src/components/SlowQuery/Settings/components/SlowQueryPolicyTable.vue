@@ -8,11 +8,14 @@
   >
     <template #item="{ item }: { item: ComposedSlowQueryPolicy }">
       <div class="bb-grid-cell">
-        <InstanceName :instance="item.instance" />
+        <InstanceName :instance="item.instance" :link="false" />
       </div>
 
       <div class="bb-grid-cell">
-        <EnvironmentName :environment="item.instance.environment" />
+        <EnvironmentName
+          :environment="item.instance.environment"
+          :link="false"
+        />
       </div>
       <div class="bb-grid-cell">
         <SpinnerSwitch
@@ -32,8 +35,8 @@ import { useI18n } from "vue-i18n";
 import { type BBGridColumn, BBGrid } from "@/bbkit";
 import type { Instance, ComposedSlowQueryPolicy } from "@/types";
 import { InstanceName, EnvironmentName, SpinnerSwitch } from "@/components/v2/";
-import { useCurrentUser } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { useCurrentUserV1 } from "@/store";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 defineProps<{
   composedSlowQueryPolicyList: ComposedSlowQueryPolicy[];
@@ -41,7 +44,7 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const COLUMNS = computed((): BBGridColumn[] => {
   return [
@@ -61,9 +64,9 @@ const COLUMNS = computed((): BBGridColumn[] => {
 });
 
 const allowAdmin = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-slow-query",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 </script>

@@ -1,12 +1,13 @@
 import { defineStore } from "pinia";
 import { computed } from "vue";
+import { isEqual, isUndefined, orderBy } from "lodash-es";
+
 import { environmentServiceClient } from "@/grpcweb";
 import {
   Environment,
   EnvironmentTier,
 } from "@/types/proto/v1/environment_service";
-import { ResourceId, EnvironmentId } from "@/types";
-import { isEqual, isUndefined } from "lodash-es";
+import { ResourceId } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 
@@ -20,7 +21,11 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
   }),
   getters: {
     environmentList(state) {
-      return Array.from(state.environmentMapByName.values());
+      return orderBy(
+        Array.from(state.environmentMapByName.values()),
+        (env) => env.order,
+        "asc"
+      );
     },
   },
   actions: {
@@ -87,6 +92,23 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       this.environmentMapByName.set(environment.name, environment);
       return environment;
     },
+    async reorderEnvironmentList(orderedEnvironmentList: Environment[]) {
+      const updatedEnvironmentList = await Promise.all(
+        orderedEnvironmentList.map((environment, order) => {
+          return environmentServiceClient.updateEnvironment({
+            environment: {
+              ...environment,
+              order,
+            },
+            updateMask: ["order"],
+          });
+        })
+      );
+      updatedEnvironmentList.forEach((environment) => {
+        this.environmentMapByName.set(environment.name, environment);
+      });
+      return updatedEnvironmentList;
+    },
     async getOrFetchEnvironmentByName(name: string) {
       const cachedData = this.environmentMapByName.get(name);
       if (cachedData) {
@@ -98,17 +120,19 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       this.environmentMapByName.set(environment.name, environment);
       return environment;
     },
-    async getOrFetchEnvironmentByUID(uid: EnvironmentId) {
+    async getOrFetchEnvironmentByUID(uid: string) {
       const name = `${environmentNamePrefix}${uid}`;
       return this.getOrFetchEnvironmentByName(name);
     },
     getEnvironmentByName(name: string) {
       return this.environmentMapByName.get(name);
     },
-    getEnvironmentByUID(uid: EnvironmentId) {
+    getEnvironmentByUID(uid: string) {
       return (
         this.environmentList.find((env) => env.uid == uid) ??
-        ({} as Environment)
+        Environment.fromJSON({
+          uid: "-1",
+        })
       );
     },
   },
@@ -131,7 +155,7 @@ const getUpdateMaskFromEnvironments = (
   return updateMask;
 };
 
-export const useEnvironmentList = (showDeleted = false) => {
+export const useEnvironmentV1List = (showDeleted = false) => {
   const store = useEnvironmentV1Store();
   return computed(() => store.getEnvironmentList(showDeleted));
 };

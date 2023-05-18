@@ -245,7 +245,13 @@
     "collapse": "Colapsar",
     "select": "Seleccionar",
     "optional": "Opcional",
-    "reason": "Razón"
+    "reason": "Razón",
+    "date": {
+      "days": "{days} días",
+      "months": "{months} meses",
+      "years": "{years} años"
+    },
+    "expiration": "Expiración"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1431,6 +1437,7 @@
       "select-schema-change-type-sdl": "Migración basada en declaración de estado. Por ejemplo, CREATE TABLE",
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos.",
       "members": {
+        "edit": "Editar miembro - {member}",
         "view-by-principals": "Ver por principales",
         "view-by-roles": "Ver por roles",
         "cannot-remove-last-owner": "No se puede eliminar el último propietario de un proyecto",
@@ -1828,6 +1835,7 @@
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
     "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
+    "upgrade-now": "Actualizar ahora",
     "update": {
       "success": {
         "title": "Licencia actualizada con éxito",
@@ -1837,6 +1845,12 @@
         "title": "Error al actualizar la licencia",
         "description": "Por favor, comprueba si tu licencia es válida."
       }
+    },
+    "plan-features": "{plan} función",
+    "overuse-warning": "{neededPlan} puede estar restringido en {currentPlan}, actualice ahora para asegurar un uso adecuado.",
+    "overuse-modal": {
+      "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones.",
+      "instance-count-exceeds": "El número de instancias excedió el límite {count}"
     },
     "features": {
       "bb-feature-task-schedule-time": {
@@ -2468,6 +2482,7 @@
     },
     "querier": {
       "description": "Rol de querier del proyecto definido por el sistema"
-    }
+    },
+    "select-role": "Seleccionar rol"
   }
 }

@@ -2,7 +2,8 @@
   "engine": {
     "mysql": "MySQL",
     "tidb": "TiDB",
-    "postgres": "PostgreSQL"
+    "postgres": "PostgreSQL",
+    "oracle": "Oracle"
   },
   "category": {
     "engine": "引擎",
@@ -164,6 +165,23 @@
         }
       }
     },
+    "naming-table-no-keyword": {
+      "title": "禁止使用关键字作为表名",
+      "description": ""
+    },
+    "naming-identifier-no-keyword": {
+      "title": "禁止使用关键字作为字段名",
+      "description": ""
+    },
+    "naming-identifier-case": {
+      "title": "强制字段名大小写",
+      "description": "",
+      "component": {
+        "upper": {
+          "title": "大写"
+        }
+      }
+    },
     "column-required": {
       "title": "强制表中包含特定列",
       "description": "某些通用列有助于更好的维护应用，例如增加 \"ID\" 作为业务无关的通用主键避免了业务变化（如业务合并）导致的主键冲突，某些场景还能带来更好的数据插入性能。建议错误等级：警告",
@@ -229,6 +247,15 @@
     "column-maximum-character-length": {
       "title": "限制 \"CHAR\" 类型长度",
       "description": "\"CHAR\" 是定长类型，例如 CHAR(20) 列即便只存放1个字符也将占用20个字符空间造成浪费，当字符串过长且长度不固定时，MySQL 可考虑用 VARCHAR 替代，PostgreSQL 可考虑用 TEXT 替代。建议错误等级：错误",
+      "component": {
+        "number": {
+          "title": "最大长度"
+        }
+      }
+    },
+    "column-maximum-varchar-length": {
+      "title": "限制 \"VARCHAR\" 类型长度",
+      "description": "",
       "component": {
         "number": {
           "title": "最大长度"

@@ -19,11 +19,15 @@ import {
   SheetPayload,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
-import { useCurrentUser } from "./auth";
+import { useCurrentUserV1 } from "./auth";
 import { useDatabaseStore } from "./database";
-import { useProjectStore } from "./project";
+import { useLegacyProjectStore } from "./project";
 import { useTabStore } from "./tab";
-import { getDefaultSheetPayloadWithSource, isSheetWritable } from "@/utils";
+import {
+  extractUserUID,
+  getDefaultSheetPayloadWithSource,
+  isSheetWritable,
+} from "@/utils";
 
 function convertSheetPayload(
   resourceObj: ResourceObject,
@@ -53,7 +57,7 @@ function convertSheet(
   const databaseId = sheet.attributes.databaseId || UNKNOWN_ID;
 
   const databaseStore = useDatabaseStore();
-  const projectStore = useProjectStore();
+  const projectStore = useLegacyProjectStore();
   for (const item of includedList || []) {
     if (item.type == "project" && Number(item.id) === Number(projectId)) {
       project = projectStore.convert(item, includedList);
@@ -101,12 +105,15 @@ export const useSheetStore = defineStore("sheet", {
       return state.sheetById.get(sheetId) || unknown("SHEET");
     },
     isCreator() {
-      const currentUser = useCurrentUser();
+      const currentUserV1 = useCurrentUserV1();
       const currentSheet = this.currentSheet as Sheet;
 
       if (!currentSheet) return false;
 
-      return currentUser.value.id === currentSheet!.creator.id;
+      return (
+        extractUserUID(currentUserV1.value.name) ===
+        String(currentSheet.creator.id)
+      );
     },
     /**
      * Check the sheet whether is read-only.
@@ -117,7 +124,6 @@ export const useSheetStore = defineStore("sheet", {
      *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
      */
     isReadOnly() {
-      const currentUser = useCurrentUser();
       const currentSheet = this.currentSheet as Sheet;
 
       // We don't have a selected sheet, we've got nothing to edit.
@@ -135,7 +141,7 @@ export const useSheetStore = defineStore("sheet", {
         return true;
       }
 
-      return !isSheetWritable(currentSheet, currentUser.value);
+      return !isSheetWritable(currentSheet);
     },
   },
 

@@ -30,12 +30,12 @@
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.project") }}
       </h2>
-      <router-link
-        :to="`/project/${projectSlug(project)}`"
+      <ProjectV1Name
+        :project="project"
+        :link="true"
+        :plain="true"
         class="col-span-2 text-sm font-medium text-main hover:underline"
-      >
-        {{ projectName(project) }}
-      </router-link>
+      />
 
       <template v-if="!create">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -90,14 +90,15 @@
 import { computed, reactive } from "vue";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { Project, Issue, IssueCreate } from "@/types";
-import { useProjectStore } from "@/store";
+import { Issue, IssueCreate } from "@/types";
+import { useProjectV1Store } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import { IssueReviewSidebarSection } from "./review";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import FeatureModal from "../FeatureModal.vue";
+import { ProjectV1Name } from "../v2";
 
 dayjs.extend(isSameOrAfter);
 
@@ -105,7 +106,7 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
-const projectStore = useProjectStore();
+const projectV1Store = useProjectV1Store();
 
 const { create, issue } = useIssueLogic();
 const { addSubscriberId, removeSubscriberId } = useExtraIssueLogic();
@@ -114,10 +115,10 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-const project = computed((): Project => {
-  if (create.value) {
-    return projectStore.getProjectById((issue.value as IssueCreate).projectId);
-  }
-  return (issue.value as Issue).project;
+const project = computed(() => {
+  const projectId = create.value
+    ? (issue.value as IssueCreate).projectId
+    : (issue.value as Issue).project.id;
+  return projectV1Store.getProjectByUID(String(projectId));
 });
 </script>

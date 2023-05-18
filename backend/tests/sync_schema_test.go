@@ -49,7 +49,7 @@ DROP SCHEMA "schema_a";
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -78,11 +78,9 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test sync schema Project",
-		Key:        "TestSyncSchemaProject",
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -103,16 +101,16 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Nil(databases)
 
-	err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil)
 	a.NoError(err)
 
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -121,7 +119,7 @@ DROP SCHEMA "schema_a";
 	a.Equal(instance.ID, database.Instance.ID)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
+		ProjectID:  projectUID,
 		Name:       "create schema",
 		Statement:  createSchema,
 		Visibility: api.ProjectSheet,
@@ -142,7 +140,7 @@ DROP SCHEMA "schema_a";
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("Create sequence for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("Create sequence of database %q.", databaseName),
@@ -150,7 +148,7 @@ DROP SCHEMA "schema_a";
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -163,12 +161,12 @@ DROP SCHEMA "schema_a";
 	a.Equal(1, len(history))
 	latest := history[0]
 
-	err = ctl.createDatabase(project, instance, newDatabaseName, "bytebase", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, newDatabaseName, "bytebase", nil)
 	a.NoError(err)
 
 	dbName := newDatabaseName
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 		Name:      &dbName,
 	})
 	a.NoError(err)

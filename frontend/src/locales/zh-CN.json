@@ -243,7 +243,13 @@
     "collapse": "收起",
     "select": "选择",
     "optional": "可选",
-    "reason": "理由"
+    "reason": "理由",
+    "date": {
+      "days": "{days} 天",
+      "months": "{months} 月",
+      "years": "{years} 年"
+    },
+    "expiration": "过期时间"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1431,6 +1437,7 @@
       "select-schema-change-type-sdl": "声明式 - 面向终态的 Schema 描述，如 CREATE TABLE",
       "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。",
       "members": {
+        "edit": "编辑成员 - {member}",
         "view-by-principals": "按用户查看",
         "view-by-roles": "按角色查看",
         "cannot-remove-last-owner": "不能移除项目的最后一个所有者",
@@ -1835,6 +1842,7 @@
     "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
     "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
+    "upgrade-now": "现在升级",
     "update": {
       "success": {
         "title": "证书更新成功",
@@ -1844,6 +1852,12 @@
         "title": "证书更新失败",
         "description": "请检查证书是否有效"
       }
+    },
+    "plan-features": "{plan}功能",
+    "overuse-warning": "{neededPlan}在{currentPlan}可能受限，现在升级以确保正常使用。",
+    "overuse-modal": {
+      "description": "您正在使用当前 {plan} 不包含的功能。立即升级避免影响使用。",
+      "instance-count-exceeds": "实例数量超出了限制 {count}"
     },
     "features": {
       "bb-feature-task-schedule-time": {
@@ -2477,6 +2491,7 @@
     },
     "querier": {
       "description": "系统定义的项目数据查询者角色"
-    }
+    },
+    "select-role": "选择角色"
   }
 }

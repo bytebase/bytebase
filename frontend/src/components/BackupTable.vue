@@ -105,8 +105,8 @@
 
       <CreateDatabasePrepForm
         v-if="state.restoreBackupContext.target === 'NEW'"
-        :project-id="database.project.id"
-        :environment-id="database.instance.environment.id"
+        :project-id="String(database.project.id)"
+        :environment-id="String(database.instance.environment.id)"
         :instance-id="database.instance.id"
         :backup="state.restoreBackupContext.backup"
         @dismiss="state.restoreBackupContext = undefined"
@@ -386,7 +386,7 @@ export default defineComponent({
           type: "bb.issue.database.restore.pitr",
           description: "",
           assigneeId: SYSTEM_BOT_ID,
-          projectId: database.project.id,
+          projectId: Number(database.project.id),
           payload: {},
           createContext,
         };

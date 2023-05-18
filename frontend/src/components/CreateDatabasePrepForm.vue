@@ -188,15 +188,14 @@
           {{ $t("common.assignee") }} <span class="text-red-600">*</span>
         </label>
         <!-- DBA and Owner always have all access, so we only need to grant to developer -->
-        <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           id="user"
           class="mt-1 w-full"
           name="user"
-          :allowed-role-list="['OWNER', 'DBA']"
-          :selectedId="state.assigneeId"
+          :allowed-role-list="[UserRole.OWNER, UserRole.DBA]"
+          :selected-id="state.assigneeId"
           :placeholder="'Select assignee'"
-          @select-principal-id="selectAssignee"
+          @select-user-id="selectAssignee"
         />
       </div>
     </div>
@@ -257,12 +256,9 @@ import ProjectSelect from "../components/ProjectSelect.vue";
 import MemberSelect from "../components/MemberSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import {
-  EnvironmentId,
   InstanceId,
-  ProjectId,
   IssueCreate,
   SYSTEM_BOT_ID,
-  PrincipalId,
   Backup,
   defaultCharset,
   defaultCollation,
@@ -280,23 +276,25 @@ import {
   INTERNAL_RDS_INSTANCE_USER_LIST,
 } from "@/types/InstanceUser";
 import {
-  hasWorkspacePermission,
+  extractEnvironmentResourceName,
+  hasWorkspacePermissionV1,
   instanceHasCollationAndCharacterSet,
   instanceHasCreateDatabase,
   issueSlug,
 } from "../utils";
 import {
   hasFeature,
-  useCurrentUser,
-  useEnvironmentStore,
+  useCurrentUserV1,
+  useEnvironmentV1Store,
   useInstanceStore,
   useIssueStore,
   useProjectV1Store,
 } from "@/store";
+import { UserRole } from "@/types/proto/v1/auth_service";
 
 interface LocalState {
-  projectId?: ProjectId;
-  environmentId?: EnvironmentId;
+  projectId?: string;
+  environmentId?: string;
   instanceId?: InstanceId;
   instanceUserId?: InstanceUserId;
   labelList: DatabaseLabel[];
@@ -305,7 +303,7 @@ interface LocalState {
   characterSet: string;
   collation: string;
   cluster: string;
-  assigneeId?: PrincipalId;
+  assigneeId?: string;
   showFeatureModal: boolean;
   creating: boolean;
 }
@@ -323,11 +321,11 @@ export default defineComponent({
   },
   props: {
     projectId: {
-      type: Number as PropType<ProjectId>,
+      type: String,
       default: undefined,
     },
     environmentId: {
-      type: Number as PropType<EnvironmentId>,
+      type: String,
       default: undefined,
     },
     instanceId: {
@@ -345,7 +343,7 @@ export default defineComponent({
     const instanceStore = useInstanceStore();
     const router = useRouter();
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
     const projectV1Store = useProjectV1Store();
 
     useEventListener("keydown", (e: KeyboardEvent) => {
@@ -364,9 +362,9 @@ export default defineComponent({
     const showAssigneeSelect = computed(() => {
       // If the role can't change assignee after creating the issue, then we will show the
       // assignee select in the prep stage here to request a particular assignee.
-      return !hasWorkspacePermission(
+      return !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-issue",
-        currentUser.value.role
+        currentUserV1.value.userRole
       );
     });
 
@@ -380,13 +378,15 @@ export default defineComponent({
       characterSet: "",
       collation: "",
       cluster: "",
-      assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
+      assigneeId: showAssigneeSelect.value ? undefined : String(SYSTEM_BOT_ID),
       showFeatureModal: false,
       creating: false,
     });
 
     const project = computed(() => {
-      return projectV1Store.getProjectByUID(state.projectId ?? UNKNOWN_ID);
+      return projectV1Store.getProjectByUID(
+        state.projectId ?? String(UNKNOWN_ID)
+      );
     });
 
     const isReservedName = computed(() => {
@@ -480,11 +480,11 @@ export default defineComponent({
       labels: toRef(state, "labelList"),
     });
 
-    const selectProject = (projectId: ProjectId) => {
+    const selectProject = (projectId: string) => {
       state.projectId = projectId;
     };
 
-    const selectEnvironment = (environmentId: EnvironmentId) => {
+    const selectEnvironment = (environmentId: string) => {
       state.environmentId = environmentId;
     };
 
@@ -496,7 +496,7 @@ export default defineComponent({
       state.instanceUserId = instanceUserId;
     };
 
-    const selectAssignee = (assigneeId: PrincipalId) => {
+    const selectAssignee = (assigneeId: string) => {
       state.assigneeId = assigneeId;
     };
 
@@ -564,8 +564,8 @@ export default defineComponent({
           name: `Create database '${databaseName}' from backup '${props.backup.name}'`,
           type: "bb.issue.database.restore.pitr",
           description: `Creating database '${databaseName}' from backup '${props.backup.name}'`,
-          assigneeId: state.assigneeId!,
-          projectId: state.projectId!,
+          assigneeId: parseInt(state.assigneeId!, 10),
+          projectId: parseInt(state.projectId!, 10),
           pipeline: {
             stageList: [],
             name: "",
@@ -579,8 +579,8 @@ export default defineComponent({
           name: `Create database '${databaseName}'`,
           type: "bb.issue.database.create",
           description: "",
-          assigneeId: state.assigneeId!,
-          projectId: state.projectId!,
+          assigneeId: parseInt(state.assigneeId!, 10),
+          projectId: parseInt(state.projectId!, 10),
           pipeline: {
             stageList: [],
             name: "",
@@ -612,15 +612,23 @@ export default defineComponent({
       const key = "bb.environment";
       const index = labelList.findIndex((label) => label.key === key);
       if (envId) {
-        const env = useEnvironmentStore().getEnvironmentById(envId);
-        if (index >= 0) labelList[index].value = env.resourceId;
-        else labelList.unshift({ key, value: env.resourceId });
+        const env = useEnvironmentV1Store().getEnvironmentByUID(envId);
+        const resourceId = extractEnvironmentResourceName(env.name);
+        if (index >= 0) {
+          labelList[index].value = resourceId;
+        } else {
+          labelList.unshift({
+            key,
+            value: resourceId,
+          });
+        }
       } else {
         if (index >= 0) labelList.splice(index, 1);
       }
     });
 
     return {
+      UserRole,
       defaultCharset,
       defaultCollation,
       state,

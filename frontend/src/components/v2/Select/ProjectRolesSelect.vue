@@ -14,7 +14,7 @@ import { computed } from "vue";
 import { type SelectOption, NSelect } from "naive-ui";
 
 import { featureToRef, useRoleStore } from "@/store";
-import { ProjectRoleType } from "@/types";
+import { PresetRoleType, ProjectRoleType } from "@/types";
 import { displayRoleTitle } from "@/utils";
 
 defineProps<{
@@ -29,9 +29,10 @@ const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 
 const roleOptions = computed(() => {
   let roleList = useRoleStore().roleList;
+  // For enterprise plan, we don't allow to add exporter role.
   if (hasCustomRoleFeature.value) {
     roleList = useRoleStore().roleList.filter((role) => {
-      return role.name !== "roles/EXPORTER" && role.name !== "roles/QUERIER";
+      return role.name !== PresetRoleType.EXPORTER;
     });
   }
   return roleList.map<SelectOption>((role) => {

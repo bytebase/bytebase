@@ -110,24 +110,15 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		case "key":
 			patch.Key = &request.Project.Key
 		case "workflow":
-			workflow, err := convertToProjectWorkflowType(request.Project.Workflow)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
+			workflow := convertToProjectWorkflowType(request.Project.Workflow)
 			patch.Workflow = &workflow
 		case "tenant_mode":
-			tenantMode, err := convertToProjectTenantMode(request.Project.TenantMode)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
+			tenantMode := convertToProjectTenantMode(request.Project.TenantMode)
 			patch.TenantMode = &tenantMode
 		case "db_name_template":
 			patch.DBNameTemplate = &request.Project.DbNameTemplate
 		case "schema_change":
-			schemaChange, err := convertToProjectSchemaChangeType(request.Project.SchemaChange)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
+			schemaChange := convertToProjectSchemaChangeType(request.Project.SchemaChange)
 			patch.SchemaChangeType = &schemaChange
 		}
 	}
@@ -210,6 +201,29 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 	return convertToProject(project), nil
 }
 
+// SearchProjects searches all projects that the caller have permission to.
+func (s *ProjectService) SearchProjects(ctx context.Context, _ *v1pb.SearchProjectsRequest) (*v1pb.SearchProjectsResponse, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+
+	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	response := &v1pb.SearchProjectsResponse{}
+	for _, project := range projects {
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if !isOwnerOrDBA(role) && !isProjectMember(policy, principalID) {
+			continue
+		}
+		response.Projects = append(response.Projects, convertToProject(project))
+	}
+	return response, nil
+}
+
 // GetIamPolicy returns the IAM policy for a project.
 func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
 	projectID, err := getProjectID(request.Project)
@@ -225,6 +239,29 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 	}
 
 	return convertToIamPolicy(iamPolicy), nil
+}
+
+// BatchGetIamPolicy returns the IAM policy for projects in batch.
+func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.BatchGetIamPolicyRequest) (*v1pb.BatchGetIamPolicyResponse, error) {
+	resp := &v1pb.BatchGetIamPolicyResponse{}
+	for _, name := range request.Names {
+		projectID, err := getProjectID(name)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+
+		iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+			ProjectID: &projectID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		resp.PolicyResults = append(resp.PolicyResults, &v1pb.BatchGetIamPolicyResponse_PolicyResult{
+			Project: name,
+			Policy:  convertToIamPolicy(iamPolicy),
+		})
+	}
+	return resp, nil
 }
 
 // SetIamPolicy sets the IAM policy for a project.
@@ -843,12 +880,6 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 	}, nil
 }
 
-// getUserIdentifier returns the user identifier.
-// See more details in project_service.proto.
-func getUserIdentifier(email string) string {
-	return "user:" + email
-}
-
 func convertToProjectRole(role api.Role) string {
 	return fmt.Sprintf("%s%s", rolePrefix, role)
 }
@@ -922,78 +953,57 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	}
 }
 
-func convertToProjectWorkflowType(workflow v1pb.Workflow) (api.ProjectWorkflowType, error) {
-	var w api.ProjectWorkflowType
+func convertToProjectWorkflowType(workflow v1pb.Workflow) api.ProjectWorkflowType {
 	switch workflow {
 	case v1pb.Workflow_UI:
-		w = api.UIWorkflow
+		return api.UIWorkflow
 	case v1pb.Workflow_VCS:
-		w = api.VCSWorkflow
+		return api.VCSWorkflow
 	default:
-		return w, errors.Errorf("invalid workflow %v", workflow)
+		// Default is UI workflow.
+		return api.UIWorkflow
 	}
-	return w, nil
 }
 
-func convertToProjectVisibility(visibility v1pb.Visibility) (api.ProjectVisibility, error) {
-	var v api.ProjectVisibility
+func convertToProjectVisibility(visibility v1pb.Visibility) api.ProjectVisibility {
 	switch visibility {
 	case v1pb.Visibility_VISIBILITY_PRIVATE:
-		v = api.Private
+		return api.Private
 	case v1pb.Visibility_VISIBILITY_PUBLIC:
-		v = api.Public
+		return api.Public
 	default:
-		return v, errors.Errorf("invalid visibility %v", visibility)
+		// Default is public.
+		return api.Public
 	}
-	return v, nil
 }
 
-func convertToProjectTenantMode(tenantMode v1pb.TenantMode) (api.ProjectTenantMode, error) {
-	var t api.ProjectTenantMode
+func convertToProjectTenantMode(tenantMode v1pb.TenantMode) api.ProjectTenantMode {
 	switch tenantMode {
 	case v1pb.TenantMode_TENANT_MODE_DISABLED:
-		t = api.TenantModeDisabled
+		return api.TenantModeDisabled
 	case v1pb.TenantMode_TENANT_MODE_ENABLED:
-		t = api.TenantModeTenant
+		return api.TenantModeTenant
 	default:
-		return t, errors.Errorf("invalid tenant mode %v", tenantMode)
+		return api.TenantModeDisabled
 	}
-	return t, nil
 }
 
-func convertToProjectSchemaChangeType(schemaChange v1pb.SchemaChange) (api.ProjectSchemaChangeType, error) {
-	var s api.ProjectSchemaChangeType
+func convertToProjectSchemaChangeType(schemaChange v1pb.SchemaChange) api.ProjectSchemaChangeType {
 	switch schemaChange {
 	case v1pb.SchemaChange_DDL:
-		s = api.ProjectSchemaChangeTypeDDL
+		return api.ProjectSchemaChangeTypeDDL
 	case v1pb.SchemaChange_SDL:
-		s = api.ProjectSchemaChangeTypeSDL
+		return api.ProjectSchemaChangeTypeSDL
 	default:
-		return s, errors.Errorf("invalid schema change type %v", schemaChange)
+		return api.ProjectSchemaChangeTypeDDL
 	}
-	return s, nil
 }
 
 func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
-	workflow, err := convertToProjectWorkflowType(project.Workflow)
-	if err != nil {
-		return nil, err
-	}
-
-	visibility, err := convertToProjectVisibility(project.Visibility)
-	if err != nil {
-		return nil, err
-	}
-
-	tenantMode, err := convertToProjectTenantMode(project.TenantMode)
-	if err != nil {
-		return nil, err
-	}
-
-	schemaChange, err := convertToProjectSchemaChangeType(project.SchemaChange)
-	if err != nil {
-		return nil, err
-	}
+	workflow := convertToProjectWorkflowType(project.Workflow)
+	visibility := convertToProjectVisibility(project.Visibility)
+	tenantMode := convertToProjectTenantMode(project.TenantMode)
+	schemaChange := convertToProjectSchemaChangeType(project.SchemaChange)
 
 	return &store.ProjectMessage{
 		ResourceID:       resourceID,
@@ -1159,10 +1169,6 @@ func validateIAMPolicy(policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
 	return validateBindings(policy.Bindings, roles)
 }
 
-func getUserEmailFromIdentifier(ident string) string {
-	return strings.TrimPrefix(ident, "user:")
-}
-
 func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 	if len(bindings) == 0 {
 		return errors.Errorf("IAM Binding is required")
@@ -1183,12 +1189,8 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 		if len(binding.Members) == 0 {
 			return errors.Errorf("Each IAM binding must have at least one member")
 		}
-		// We have not merge the binding by the same role yet, so the roles in each binding must be unique.
-		if _, ok := projectRoleMap[binding.Role]; ok {
-			return errors.Errorf("Each IAM binding must have a unique role")
-		}
 
-		// Users with each role must be unique.
+		// Users within each binding must be unique.
 		userMap := make(map[string]bool)
 		for _, member := range binding.Members {
 			if _, ok := userMap[member]; ok {
@@ -1218,4 +1220,15 @@ func validateMember(member string) error {
 		}
 	}
 	return errors.Errorf("invalid user %s", member)
+}
+
+func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID == userID {
+				return true
+			}
+		}
+	}
+	return false
 }

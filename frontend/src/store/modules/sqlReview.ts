@@ -1,8 +1,6 @@
 import { pullAt } from "lodash-es";
 import {
   PolicyId,
-  EnvironmentId,
-  RowStatus,
   SchemaPolicyRule,
   SQLReviewPolicy,
   IdType,
@@ -14,7 +12,7 @@ import { defineStore } from "pinia";
 import { usePolicyV1Store } from "./v1/policy";
 import { useEnvironmentV1Store } from "./v1/environment";
 import { computed, unref, watchEffect } from "vue";
-import { State, Engine } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/v1/common";
 import {
   PolicyType,
   Policy,
@@ -32,8 +30,8 @@ import {
 const getEnvironmentById = async (
   environmentId: IdType
 ): Promise<Environment> => {
-  const environmentStore = useEnvironmentV1Store();
-  const environment = await environmentStore.getOrFetchEnvironmentByName(
+  const environmentV1Store = useEnvironmentV1Store();
+  const environment = await environmentV1Store.getOrFetchEnvironmentByName(
     `${environmentNamePrefix}${environmentId}`
   );
   return environment;
@@ -74,7 +72,7 @@ const convertToSQLReviewPolicy = async (
     name: policy.sqlReviewPolicy.name,
     environment,
     ruleList,
-    rowStatus: policy.state == State.ACTIVE ? "NORMAL" : "ARCHIVED",
+    enforce: policy.enforce,
   };
 };
 
@@ -193,12 +191,12 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     async updateReviewPolicy({
       id,
       name,
-      rowStatus,
+      enforce,
       ruleList,
     }: {
       id: PolicyId;
       name?: string;
-      rowStatus?: RowStatus;
+      enforce?: boolean;
       ruleList?: SchemaPolicyRule[];
     }) {
       const index = this.reviewPolicyList.findIndex((g) => g.id === id);
@@ -217,9 +215,9 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
 
       const updateMask: string[] = [];
-      if (rowStatus) {
-        updateMask.push("state");
-        policy.state = rowStatus === "ARCHIVED" ? State.DELETED : State.ACTIVE;
+      if (enforce !== undefined) {
+        updateMask.push("enforce");
+        policy.enforce = enforce;
       }
       if (name && ruleList) {
         updateMask.push("payload");
@@ -255,7 +253,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
     },
     getReviewPolicyByEnvironmentUID(
-      environmentUID: EnvironmentId
+      environmentUID: string
     ): SQLReviewPolicy | undefined {
       return this.reviewPolicyList.find(
         (g) => g.environment.uid == environmentUID
@@ -281,7 +279,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       return reviewPolicyList;
     },
     async getOrFetchReviewPolicyByEnvironmentUID(
-      environmentUID: EnvironmentId
+      environmentUID: string
     ): Promise<SQLReviewPolicy | undefined> {
       const environment = await getEnvironmentById(environmentUID);
       const policyStore = usePolicyV1Store();
@@ -312,7 +310,7 @@ export const useSQLReviewPolicyList = () => {
 };
 
 export const useReviewPolicyByEnvironmentId = (
-  environmentId: MaybeRef<EnvironmentId>
+  environmentId: MaybeRef<string>
 ) => {
   const store = useSQLReviewStore();
   watchEffect(() => {

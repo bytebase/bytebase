@@ -22,7 +22,7 @@
 
 <script lang="ts">
 import { isNullOrUndefined } from "@/plugins/demo/utils";
-import { useCurrentUser, useDatabaseStore } from "@/store";
+import { useCurrentUserV1, useDatabaseStore } from "@/store";
 import {
   computed,
   reactive,
@@ -34,11 +34,10 @@ import {
 import {
   UNKNOWN_ID,
   Database,
-  ProjectId,
   InstanceId,
-  EnvironmentId,
   EngineType,
   DatabaseSyncStatus,
+  DEFAULT_PROJECT_ID,
 } from "../types";
 
 interface LocalState {
@@ -57,16 +56,16 @@ export default defineComponent({
       type: String as PropType<"ALL" | "INSTANCE" | "ENVIRONMENT" | "USER">,
     },
     environmentId: {
-      type: Number as PropType<EnvironmentId>,
-      default: UNKNOWN_ID,
+      type: String,
+      default: String(UNKNOWN_ID),
     },
     instanceId: {
       type: Number as PropType<InstanceId>,
       default: UNKNOWN_ID,
     },
     projectId: {
-      type: Number as PropType<ProjectId>,
-      default: UNKNOWN_ID,
+      type: String,
+      default: String(UNKNOWN_ID),
     },
     engineTypeList: {
       type: Array as PropType<EngineType[]>,
@@ -96,7 +95,7 @@ export default defineComponent({
       selectedId: props.selectedId,
     });
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const prepareDatabaseList = () => {
       // TODO(tianzhou): Instead of fetching each time, we maybe able to let the outside context
@@ -105,7 +104,7 @@ export default defineComponent({
         databaseStore.fetchDatabaseList();
       } else if (
         props.mode == "ENVIRONMENT" &&
-        props.environmentId != UNKNOWN_ID
+        props.environmentId !== String(UNKNOWN_ID)
       ) {
         databaseStore.fetchDatabaseListByEnvironmentId(props.environmentId);
       } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
@@ -123,7 +122,7 @@ export default defineComponent({
         list = databaseStore.getDatabaseList();
       } else if (
         props.mode == "ENVIRONMENT" &&
-        props.environmentId != UNKNOWN_ID
+        props.environmentId !== String(UNKNOWN_ID)
       ) {
         list = databaseStore.getDatabaseListByEnvironmentId(
           props.environmentId
@@ -131,20 +130,7 @@ export default defineComponent({
       } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
         list = databaseStore.getDatabaseListByInstanceId(props.instanceId);
       } else if (props.mode == "USER") {
-        list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
-        if (
-          props.environmentId != UNKNOWN_ID ||
-          props.projectId != UNKNOWN_ID
-        ) {
-          list = list.filter((database: Database) => {
-            return (
-              (props.environmentId == UNKNOWN_ID ||
-                database.instance.environment.id == props.environmentId) &&
-              (props.projectId == UNKNOWN_ID ||
-                database.project.id == props.projectId)
-            );
-          });
-        }
+        list = databaseStore.getDatabaseListByUser(currentUserV1.value);
       }
 
       if (!isNullOrUndefined(props.engineTypeList)) {
@@ -158,6 +144,24 @@ export default defineComponent({
           return database.syncStatus === props.syncStatus;
         });
       }
+
+      if (
+        props.environmentId !== String(UNKNOWN_ID) ||
+        props.projectId !== String(UNKNOWN_ID)
+      ) {
+        list = list.filter((database: Database) => {
+          return (
+            (props.environmentId === String(UNKNOWN_ID) ||
+              database.instance.environment.id == props.environmentId) &&
+            (props.projectId === String(UNKNOWN_ID) ||
+              database.project.id == props.projectId)
+          );
+        });
+      }
+
+      list = list.filter((database: Database) => {
+        return database.project.id !== DEFAULT_PROJECT_ID;
+      });
 
       return list;
     });

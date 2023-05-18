@@ -154,10 +154,11 @@ import {
   stageSlug,
   activeTaskInStage,
   isDatabaseRelatedIssueType,
+  extractUserUID,
 } from "@/utils";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
-import { useCurrentUser } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { CurrentApprover } from "../review";
 
 type Mode = "ALL" | "PROJECT";
@@ -261,7 +262,7 @@ const state = reactive<LocalState>({
   dataSource: [],
   selectedIssueIdList: new Set(),
 });
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const tableRef = ref<HTMLTableElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
@@ -291,7 +292,7 @@ const issueTaskStatus = (issue: Issue) => {
     return "PENDING_APPROVAL";
   }
 
-  return activeTask(issue.pipeline).status;
+  return activeTask(issue.pipeline!).status;
 };
 
 const activeEnvironmentName = function (issue: Issue) {
@@ -309,11 +310,11 @@ const taskStepList = function (issue: Issue): BBStep[] {
     ];
   }
 
-  return issue.pipeline.stageList.map((stage) => {
+  return issue.pipeline!.stageList.map((stage) => {
     const task = activeTaskInStage(stage);
     let status: BBStepStatus = task.status;
     if (status == "PENDING" || status == "PENDING_APPROVAL") {
-      if (activeTask(issue.pipeline).id == task.id) {
+      if (activeTask(issue.pipeline!).id == task.id) {
         status =
           status == "PENDING" ? "PENDING_ACTIVE" : "PENDING_APPROVAL_ACTIVE";
       }
@@ -370,7 +371,7 @@ const isAssigneeAttentionOn = (issue: Issue) => {
   if (issue.status !== "OPEN") {
     return false;
   }
-  if (currentUser.value.id === issue.assignee.id) {
+  if (extractUserUID(currentUserV1.value.name) === String(issue.assignee.id)) {
     // True if current user is the assignee
     return issue.assigneeNeedAttention;
   }
@@ -390,7 +391,7 @@ const clickIssue = (_: number, row: number, e: MouseEvent) => {
 
 const clickIssueStep = (issue: Issue, step: BBStep) => {
   const task = step.payload as Task;
-  const stageIndex = issue.pipeline.stageList.findIndex((item) => {
+  const stageIndex = issue.pipeline!.stageList.findIndex((item) => {
     return item.id == task.stage.id;
   });
 

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,12 +19,12 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
+func (ctl *controller) createDatabase(ctx context.Context, projectUID int, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
 	labels, err := marshalLabels(labelMap, instance.Environment.ResourceID)
 	if err != nil {
 		return err
 	}
-	ctx := &api.CreateDatabaseContext{
+	createCtx := &api.CreateDatabaseContext{
 		InstanceID:   instance.ID,
 		DatabaseName: databaseName,
 		Labels:       labels,
@@ -31,16 +32,16 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		Collation:    "utf8mb4_general_ci",
 	}
 	if instance.Engine == db.Postgres {
-		ctx.Owner = owner
-		ctx.CharacterSet = "UTF8"
-		ctx.Collation = "en_US.UTF-8"
+		createCtx.Owner = owner
+		createCtx.CharacterSet = "UTF8"
+		createCtx.Collation = "en_US.UTF-8"
 	}
-	createContext, err := json.Marshal(ctx)
+	createContext, err := json.Marshal(createCtx)
 	if err != nil {
 		return errors.Wrap(err, "failed to construct database creation issue CreateContext payload")
 	}
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("create database %q", databaseName),
 		Type:          api.IssueDatabaseCreate,
 		Description:   fmt.Sprintf("This creates a database %q.", databaseName),
@@ -53,7 +54,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
 		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval %s", issue.ID, issue.Pipeline.ID, status)
 	}
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
 	}
@@ -73,7 +74,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 }
 
 // cloneDatabaseFromBackup clones the database from an existing backup.
-func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *api.Instance, databaseName string, backup *api.Backup, labelMap map[string]string) error {
+func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, projectUID int, instance *api.Instance, databaseName string, backup *api.Backup, labelMap map[string]string) error {
 	labels, err := marshalLabels(labelMap, instance.Environment.ResourceID)
 	if err != nil {
 		return err
@@ -89,7 +90,7 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 		return errors.Wrap(err, "failed to construct database creation issue CreateContext payload")
 	}
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("create database %q from backup %q", databaseName, backup.Name),
 		Type:          api.IssueDatabaseCreate,
 		Description:   fmt.Sprintf("This creates a database %q from backup %q.", databaseName, backup.Name),
@@ -102,7 +103,7 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
 		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval %s", issue.ID, issue.Pipeline.ID, status)
 	}
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
 	}

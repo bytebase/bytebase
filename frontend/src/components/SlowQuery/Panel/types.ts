@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
-import { Environment, Instance, Database, Project, UNKNOWN_ID } from "@/types";
+import { Instance, Database, UNKNOWN_ID } from "@/types";
 import { ListSlowQueriesRequest } from "@/types/proto/v1/database_service";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { Project } from "@/types/proto/v1/project_service";
 
 export type SlowQueryFilterParams = {
   project: Project | undefined; // undefined to "All"
@@ -45,13 +47,13 @@ export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
     request.parent = `instances/${database.instance.resourceId}/databases/${database.name}`;
   } else if (instance && instance.id !== UNKNOWN_ID) {
     request.parent = `instances/${instance.resourceId}/databases/-`;
-  } else if (environment && environment.id !== UNKNOWN_ID) {
+  } else if (environment && parseInt(environment.uid) !== UNKNOWN_ID) {
     request.parent = `instances/-/databases/-`;
-    query.push(`environment = "environments/${environment.resourceId}"`);
+    query.push(`environment = "${environment.name}"`);
   }
 
   if (project) {
-    query.push(`project = "projects/${project.resourceId}"`);
+    query.push(`project = "${project.name}"`);
   }
   if (fromTime) {
     const start = dayjs(fromTime).toISOString();

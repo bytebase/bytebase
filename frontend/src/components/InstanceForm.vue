@@ -580,7 +580,7 @@ import { Status } from "nice-grpc-common";
 import { useRouter } from "vue-router";
 
 import {
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   instanceHasSSL,
   instanceHasSSH,
   instanceSlug,
@@ -610,11 +610,10 @@ import {
 import {
   hasFeature,
   pushNotification,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useDataSourceStore,
   useInstanceStore,
-  useSettingStore,
   useActuatorStore,
   useSQLStore,
 } from "@/store";
@@ -632,6 +631,7 @@ import {
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 const props = defineProps({
   instance: {
@@ -658,7 +658,7 @@ interface BasicInformation {
   name: string;
   engine: EngineType;
   externalLink?: string;
-  environmentId: number;
+  environmentId: string;
 }
 
 interface LocalState {
@@ -675,9 +675,9 @@ const router = useRouter();
 const instanceStore = useInstanceStore();
 const instanceV1Store = useInstanceV1Store();
 const dataSourceStore = useDataSourceStore();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const sqlStore = useSQLStore();
-const settingStore = useSettingStore();
+const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorStore();
 
 const state = reactive<LocalState>({
@@ -695,7 +695,7 @@ const basicInformation = ref<BasicInformation>({
   rowStatus: props.instance?.rowStatus || "NORMAL",
   name: props.instance?.name || t("instance.new-instance"),
   engine: props.instance?.engine || "MYSQL",
-  environmentId: (props.instance?.environment.id || UNKNOWN_ID) as number,
+  environmentId: String(props.instance?.environment.id || UNKNOWN_ID),
 });
 
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
@@ -753,7 +753,7 @@ onMounted(async () => {
     adminDataSource.value.options.srv = false;
     adminDataSource.value.options.authenticationDatabase = "";
   }
-  await settingStore.fetchSetting();
+  await settingV1Store.fetchSettingList();
 });
 
 watch(
@@ -775,10 +775,10 @@ const engineList = computed(() => {
 });
 
 const outboundIpList = computed(() => {
-  if (!settingStore.workspaceSetting) {
+  if (!settingV1Store.workspaceProfileSetting) {
     return "";
   }
-  return settingStore.workspaceSetting.outboundIpList.join(",");
+  return settingV1Store.workspaceProfileSetting.outboundIpList.join(",");
 });
 
 const EngineIconPath = {
@@ -825,9 +825,9 @@ const allowCreate = computed(() => {
 const allowEdit = computed(() => {
   return (
     basicInformation.value.rowStatus == "NORMAL" &&
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   );
 });
@@ -1210,7 +1210,7 @@ const updateInstanceState = async () => {
     rowStatus: instance.rowStatus,
     name: instance.name,
     engine: instance.engine,
-    environmentId: instance.environment.id as number,
+    environmentId: String(instance.environment.id),
   };
   adminDataSource.value = {
     ...cloneDeep(instance.dataSourceList.find((ds) => ds.type === "ADMIN")!),
@@ -1277,7 +1277,7 @@ const doCreate = async () => {
     name: basicInformation.value.name.trim(),
     engine: basicInformation.value.engine,
     externalLink: basicInformation.value.externalLink,
-    environmentId: basicInformation.value.environmentId,
+    environmentId: parseInt(basicInformation.value.environmentId, 10),
     host: adminDataSource.value.host,
     port: adminDataSource.value.port,
     database: adminDataSource.value.database,
@@ -1605,7 +1605,7 @@ const getInstanceStateData = () => {
       rowStatus: props.instance?.rowStatus || "NORMAL",
       name: props.instance?.name || t("instance.new-instance"),
       engine: props.instance?.engine || "MYSQL",
-      environmentId: (props.instance?.environment.id || UNKNOWN_ID) as number,
+      environmentId: String(props.instance?.environment.id || UNKNOWN_ID),
     },
     adminDataSource: {
       ...(getDataSourceWithType("ADMIN") || unknown("DATA_SOURCE")),

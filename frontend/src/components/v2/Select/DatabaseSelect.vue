@@ -16,15 +16,13 @@ import { computed, watch, watchEffect } from "vue";
 import { NSelect, SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import { useCurrentUser, useDatabaseStore } from "@/store";
+import { useCurrentUserV1, useDatabaseStore } from "@/store";
 import {
   Database,
   DatabaseId,
   EngineType,
   EngineTypeList,
-  EnvironmentId,
   InstanceId,
-  ProjectId,
   UNKNOWN_ID,
   unknown,
 } from "@/types";
@@ -37,9 +35,9 @@ interface DatabaseSelectOption extends SelectOption {
 const props = withDefaults(
   defineProps<{
     database: DatabaseId | undefined;
-    environment?: EnvironmentId;
+    environment?: string;
     instance?: InstanceId;
-    project?: ProjectId;
+    project?: string;
     allowedEngineTypeList?: readonly EngineType[];
     includeAll?: boolean;
     autoReset?: boolean;
@@ -61,7 +59,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseStore();
 
 const prepare = () => {
@@ -70,17 +68,17 @@ const prepare = () => {
 watchEffect(prepare);
 
 const rawDatabaseList = computed(() => {
-  const list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
+  const list = databaseStore.getDatabaseListByUser(currentUserV1.value);
 
   return list.filter((db) => {
-    if (props.environment && props.environment !== UNKNOWN_ID) {
+    if (props.environment && props.environment !== String(UNKNOWN_ID)) {
       if (db.instance.environment.id !== props.environment) return false;
     }
     if (props.instance && props.instance !== UNKNOWN_ID) {
       if (db.instance.id !== props.instance) return false;
     }
-    if (props.project && props.project !== UNKNOWN_ID) {
-      if (db.project.id !== props.project) return false;
+    if (props.project && props.project !== String(UNKNOWN_ID)) {
+      if (String(db.project.id) !== props.project) return false;
     }
     if (!props.allowedEngineTypeList.includes(db.instance.engine)) return false;
 

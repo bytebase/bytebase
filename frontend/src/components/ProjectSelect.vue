@@ -6,25 +6,25 @@
     :placeholder="$t('project.select')"
     :show-prefix-item="true"
     :error="!validate()"
-    @select-item="(project) => $emit('select-project-id', project.id)"
+    @select-item="(project: Project) => $emit('select-project-id', project.uid)"
   >
     <template #menuItem="{ item: project }">
-      {{ projectName(project) }}
+      {{ projectV1Name(project) }}
     </template>
   </BBSelect>
 </template>
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive, watch } from "vue";
+import { UNKNOWN_ID, DEFAULT_PROJECT_ID, unknownProject } from "../types";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
-  Project,
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_ID,
-  ProjectRoleType,
-  unknown,
-} from "../types";
-import { useCurrentUser, useProjectStore } from "@/store";
-import { isMemberOfProject } from "@/utils";
+  hasWorkspacePermissionV1,
+  isMemberOfProjectV1,
+  projectV1Name,
+} from "@/utils";
+import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
   selectedProject?: Project;
@@ -39,8 +39,8 @@ export default defineComponent({
   name: "ProjectSelect",
   props: {
     selectedId: {
-      default: UNKNOWN_ID,
-      type: Number,
+      default: String(UNKNOWN_ID),
+      type: String,
     },
     disabled: {
       default: false,
@@ -48,7 +48,7 @@ export default defineComponent({
     },
     allowedRoleList: {
       default: () => ["OWNER", "DEVELOPER"],
-      type: Array as PropType<ProjectRoleType[]>,
+      type: Array as PropType<string[]>,
     },
     includeDefaultProject: {
       default: false,
@@ -73,23 +73,36 @@ export default defineComponent({
       selectedProject: undefined,
     });
 
-    const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
+    const currentUserV1 = useCurrentUserV1();
+    const projectV1Store = useProjectV1Store();
+    const canManageProject = hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-project",
+      currentUserV1.value.userRole
+    );
 
     const rawProjectList = computed((): Project[] => {
-      let list = projectStore.projectList as Project[];
+      let list = projectV1Store.getProjectList(true /* showDeleted */);
 
       if (props.onlyUserself) {
         list = list.filter((project) => {
-          return isMemberOfProject(project, currentUser.value);
+          return (
+            canManageProject ||
+            isMemberOfProjectV1(project.iamPolicy, currentUserV1.value)
+          );
         });
       }
 
       list = list.filter((project) => {
-        if (project.tenantMode === "DISABLED" && props.mode & Mode.Standard) {
+        if (
+          project.tenantMode === TenantMode.TENANT_MODE_DISABLED &&
+          props.mode & Mode.Standard
+        ) {
           return true;
         }
-        if (project.tenantMode === "TENANT" && props.mode & Mode.Tenant) {
+        if (
+          project.tenantMode === TenantMode.TENANT_MODE_ENABLED &&
+          props.mode & Mode.Tenant
+        ) {
           return true;
         }
         return false;
@@ -97,38 +110,40 @@ export default defineComponent({
 
       return list.filter((project: Project) => {
         // Do not show Default project in selector.
-        return project.id != DEFAULT_PROJECT_ID;
+        return project.uid !== String(DEFAULT_PROJECT_ID);
       });
     });
 
     const selectedIdNotInList = computed((): boolean => {
-      if (props.selectedId == UNKNOWN_ID) {
+      if (props.selectedId === String(UNKNOWN_ID)) {
         return false;
       }
 
       return (
         rawProjectList.value.find((item) => {
-          return item.id == props.selectedId;
+          return item.uid === props.selectedId;
         }) == null
       );
     });
 
     const projectList = computed((): Project[] => {
       const list = rawProjectList.value.filter((project) => {
-        if (project.rowStatus === "NORMAL") {
+        if (project.state === State.ACTIVE) {
           return true;
         }
-        // project.rowStatus === "ARCHIVED"
-        if (project.id === props.selectedId) {
+        // project.state === State.DELETED
+        if (project.uid === props.selectedId) {
           return true;
         }
         return false;
       });
 
-      const defaultProject = projectStore.getProjectById(DEFAULT_PROJECT_ID);
+      const defaultProject = projectV1Store.getProjectByUID(
+        String(DEFAULT_PROJECT_ID)
+      );
       if (
         props.includeDefaultProject ||
-        props.selectedId === DEFAULT_PROJECT_ID
+        props.selectedId === String(DEFAULT_PROJECT_ID)
       ) {
         // If includeDefaultProject is false but the selected project is the default
         // project, we will show it. If includeDefaultProject is true, then it's
@@ -137,16 +152,19 @@ export default defineComponent({
       }
 
       if (
-        props.selectedId !== DEFAULT_PROJECT_ID &&
+        props.selectedId !== String(DEFAULT_PROJECT_ID) &&
         selectedIdNotInList.value
       ) {
         // It may happen the selected id might not be in the project list.
         // e.g. the selected project is deleted after the selection and we
         // are unable to cleanup properly. In such case, the selected project id
         // is orphaned and we just display the id
-        const dummyProject = reactive(unknown("PROJECT"));
-        dummyProject.id = props.selectedId;
-        dummyProject.name = props.selectedId.toString();
+        const dummyProject = {
+          ...unknownProject(),
+          name: `projects/${props.selectedId}`,
+          uid: props.selectedId,
+          title: props.selectedId,
+        };
         list.unshift(dummyProject);
       }
 
@@ -157,14 +175,17 @@ export default defineComponent({
       if (!props.required) {
         return true;
       }
-      return !!state.selectedProject && state.selectedProject.id !== UNKNOWN_ID;
+      return (
+        !!state.selectedProject &&
+        state.selectedProject.uid !== String(UNKNOWN_ID)
+      );
     };
 
     watch(
       [() => props.selectedId, projectList],
       ([selectedId, list]) => {
         state.selectedProject = list.find(
-          (project) => project.id === selectedId
+          (project) => project.uid === selectedId
         );
       },
       { immediate: true }
@@ -173,6 +194,7 @@ export default defineComponent({
     return {
       UNKNOWN_ID,
       DEFAULT_PROJECT_ID,
+      projectV1Name,
       state,
       projectList,
       validate,

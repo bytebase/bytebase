@@ -9,7 +9,6 @@ import {
   BackupSettingUpsert,
   BackupState,
   DatabaseId,
-  EnvironmentId,
   ResourceObject,
   unknown,
 } from "@/types";
@@ -176,7 +175,7 @@ export const useBackupStore = defineStore("backup", {
     },
 
     async upsertBackupSettingByEnvironmentId(
-      environmentId: EnvironmentId,
+      environmentId: string,
       backupSettingUpsert: Omit<BackupSettingUpsert, "databaseId">
     ) {
       const url = `/api/environment/${environmentId}/backup-setting`;

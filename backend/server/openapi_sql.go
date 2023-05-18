@@ -112,9 +112,8 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusNotFound, "instance not found with host and port")
 		}
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			EnvironmentID: &instance.EnvironmentID,
-			InstanceID:    &instance.ResourceID,
-			DatabaseName:  &request.DatabaseName,
+			InstanceID:   &instance.ResourceID,
+			DatabaseName: &request.DatabaseName,
 		})
 		if err != nil {
 			return err

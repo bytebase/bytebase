@@ -34,52 +34,6 @@ const (
 )
 
 func (s *Server) registerProjectRoutes(g *echo.Group) {
-	g.POST("/project", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		projectCreate := &api.ProjectCreate{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create project request").SetInternal(err)
-		}
-		if projectCreate.Key == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project key cannot be empty")
-		}
-		if projectCreate.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
-		if projectCreate.TenantMode == "" {
-			projectCreate.TenantMode = api.TenantModeDisabled
-		}
-		if err := api.ValidateProjectDBNameTemplate(projectCreate.DBNameTemplate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed create project request: %s", err.Error()))
-		}
-		if projectCreate.TenantMode != api.TenantModeTenant && projectCreate.DBNameTemplate != "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "database name template can only be set for tenant mode project")
-		}
-
-		creatorID := c.Get(getPrincipalIDContextKey()).(int)
-		project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
-			ResourceID:       projectCreate.ResourceID,
-			Title:            projectCreate.Name,
-			Key:              projectCreate.Key,
-			TenantMode:       projectCreate.TenantMode,
-			DBNameTemplate:   projectCreate.DBNameTemplate,
-			SchemaChangeType: projectCreate.SchemaChangeType,
-		}, creatorID)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create Project with ProjectCreate[%+v]", projectCreate)
-		}
-
-		composedProject, err := s.store.GetProjectByID(ctx, project.UID)
-		if err != nil {
-			return err
-		}
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, composedProject); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create project response").SetInternal(err)
-		}
-		return nil
-	})
-
 	g.GET("/project", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		projectFind := &api.ProjectFind{}
@@ -116,80 +70,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, project); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project ID response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.PATCH("/project/:projectID", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("projectID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
-		}
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &id})
-		if err != nil {
-			return err
-		}
-		if project == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project %d not found", id))
-		}
-		projectPatch := &api.ProjectPatch{
-			ID:        id,
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-		}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch project request").SetInternal(err)
-		}
-
-		if v := projectPatch.Key; v != nil && *v == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project key cannot be empty")
-		}
-		if v := projectPatch.TenantMode; v != nil {
-			if api.ProjectTenantMode(*v) == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-				return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-			}
-		}
-		if v := projectPatch.DBNameTemplate; v != nil {
-			if err := api.ValidateProjectDBNameTemplate(*v); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed patch project request: %s", err.Error()))
-			}
-		}
-
-		// Verify before archiving the project:
-		// 1. the project has no database.
-		// 2. the issue status of this project should be canceled or done.
-		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
-			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("failed to find databases in the project %d", id)).SetInternal(err)
-			}
-			if len(databases) > 0 {
-				return echo.NewHTTPError(http.StatusBadRequest, "Please transfer all databases under the project before archiving the project.")
-			}
-
-			openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectUID: &id, StatusList: []api.IssueStatus{api.IssueOpen}})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("failed to find issues in the project %d", id)).SetInternal(err)
-			}
-			if len(openIssues) > 0 {
-				return echo.NewHTTPError(http.StatusBadRequest, "Please resolve all the issues in it before archiving the project.")
-			}
-		}
-
-		composedProject, err := s.store.PatchProject(ctx, projectPatch)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
-			}
-			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, errors.Cause(err).Error())
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project with ID %v", id)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, composedProject); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project ID response: %v", id)).SetInternal(err)
 		}
 		return nil

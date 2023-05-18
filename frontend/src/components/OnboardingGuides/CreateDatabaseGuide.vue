@@ -18,7 +18,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { lastTask } from "@/utils";
-import { useInstanceList, useIssueStore, useProjectStore } from "@/store";
+import { useInstanceList, useIssueStore, useProjectV1List } from "@/store";
 import GuideDialog from "@/plugins/demo/components/GuideDialog.vue";
 import CreateDatabaseGuideFinished from "./CreateDatabaseGuideFinished.vue";
 import { useI18n } from "vue-i18n";
@@ -116,7 +116,7 @@ const guideStepList = computed(() => {
 });
 
 const instanceList = useInstanceList();
-const projectList = computed(() => useProjectStore().projectList);
+const { projectList } = useProjectV1List(false /* !showDeleted */);
 const issueList = computed(() => useIssueStore().issueList);
 
 const shownGuideList = computed(() => {
@@ -152,7 +152,7 @@ watch(
     }
     if (issueList.value.length > 0) {
       const issue = issueList.value[0];
-      const task = lastTask(issue.pipeline);
+      const task = lastTask(issue.pipeline!);
       if (task.status === "PENDING_APPROVAL") {
         tempGuideIndex = 3;
       } else if (task.status === "PENDING" || task.status === "RUNNING") {

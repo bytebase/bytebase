@@ -60,7 +60,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -77,12 +77,11 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	defer pgStopInstance()
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test Project",
-		Key:        t.Name(),
-	})
+	project, err := ctl.createProject(ctx)
 	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
+	a.NoError(err)
+
 	environments, err := ctl.getEnvironments()
 	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
@@ -123,11 +122,11 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		default:
 			a.FailNow("unsupported db type")
 		}
-		err = ctl.createDatabase(project, instance, tt.databaseName, databaseOwner, nil)
+		err = ctl.createDatabase(ctx, projectUID, instance, tt.databaseName, databaseOwner, nil)
 		a.NoError(err)
 
 		databases, err := ctl.getDatabases(api.DatabaseFind{
-			ProjectID: &project.ID,
+			ProjectID: &projectUID,
 		})
 		a.NoError(err)
 		a.Equal(idx+1, len(databases))
@@ -144,7 +143,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		a.Equal(instance.ID, database.Instance.ID)
 
 		sheet, err := ctl.createSheet(api.SheetCreate{
-			ProjectID:  project.ID,
+			ProjectID:  projectUID,
 			Name:       "prepareStatements",
 			Statement:  tt.prepareStatements,
 			Visibility: api.ProjectSheet,
@@ -165,7 +164,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		})
 		a.NoError(err)
 		issue, err := ctl.createIssue(api.IssueCreate{
-			ProjectID:     project.ID,
+			ProjectID:     projectUID,
 			Name:          fmt.Sprintf("Prepare statements of database %q", tt.databaseName),
 			Type:          api.IssueDatabaseSchemaUpdate,
 			Description:   fmt.Sprintf("Prepare statements of database %q.", tt.databaseName),
@@ -173,7 +172,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			CreateContext: string(createContext),
 		})
 		a.NoError(err)
-		status, err := ctl.waitIssuePipeline(issue.ID)
+		status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 

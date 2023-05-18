@@ -441,14 +441,17 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 			if err := t.scanComment(); err != nil {
 				return nil, err
 			}
+			t.skipBlank()
 		case t.char(0) == '-' && t.char(1) == '-':
 			if err := t.scanComment(); err != nil {
 				return nil, err
 			}
+			t.skipBlank()
 		case t.char(0) == '#':
 			if err := t.scanComment(); err != nil {
 				return nil, err
 			}
+			t.skipBlank()
 		case t.char(0) == '\'' || t.char(0) == '"':
 			if err := t.scanString(t.char(0)); err != nil {
 				return nil, err
@@ -494,10 +497,12 @@ func (t *tokenizer) splitStandardMultiSQL() ([]SingleSQL, error) {
 			if err := t.scanComment(); err != nil {
 				return nil, err
 			}
+			t.skipBlank()
 		case t.char(0) == '-' && t.char(1) == '-':
 			if err := t.scanComment(); err != nil {
 				return nil, err
 			}
+			t.skipBlank()
 		case t.char(0) == '\'':
 			if err := t.scanString('\''); err != nil {
 				return nil, err
@@ -589,10 +594,12 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 			if err := t.scanComment(); err != nil {
 				return nil, err
 			}
+			t.skipBlank()
 		case t.char(0) == '-' && t.char(1) == '-':
 			if err := t.scanComment(); err != nil {
 				return nil, err
 			}
+			t.skipBlank()
 		case t.char(0) == '\'':
 			if err := t.scanString('\''); err != nil {
 				return nil, err

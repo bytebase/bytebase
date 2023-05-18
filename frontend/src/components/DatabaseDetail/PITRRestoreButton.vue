@@ -364,6 +364,7 @@ const onConfirm = async () => {
         environmentId: context.environmentId,
         instanceId: context.instanceId,
         databaseName: context.databaseName,
+        tableName: "",
         characterSet: context.characterSet,
         collation: context.collation,
         owner: "",

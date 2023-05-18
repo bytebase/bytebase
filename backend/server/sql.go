@@ -265,7 +265,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			var project *store.ProjectMessage
 			var databases []*store.DatabaseMessage
 			for _, databaseName := range databaseNames {
-				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 				if err != nil {
 					if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
 						// If database not found, skip.
@@ -323,7 +323,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		var database *store.DatabaseMessage
 		if exec.DatabaseName != "" {
-			database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &exec.DatabaseName})
+			database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &exec.DatabaseName})
 			if err != nil {
 				return err
 			}
@@ -332,7 +332,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceLevel := advisor.Success
 		adviceList := []advisor.Advice{}
 
-		if api.IsSQLReviewSupported(instance.Engine) && exec.DatabaseName != "" {
+		if api.IsSQLReviewSupported(instance.Engine) && exec.DatabaseName != "" && !isExport {
+			// Skip SQL review for exporting data.
 			dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
@@ -617,7 +618,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &exec.DatabaseName})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &exec.DatabaseName})
 		if err != nil {
 			return err
 		}
@@ -946,7 +947,7 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.Ins
 			continue
 		}
 
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 		if err != nil {
 			return nil, err
 		}

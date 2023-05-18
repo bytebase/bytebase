@@ -202,7 +202,7 @@
             name="project"
             :allowed-role-list="['OWNER']"
             :include-default-project="allowTransferToDefaultProject"
-            :selected-id="state.editingProjectId as number"
+            :selected-id="state.editingProjectId"
             @select-project-id="
               (projectId) => {
                 state.editingProjectId = projectId;
@@ -320,7 +320,7 @@ import { DatabaseLabelProps } from "@/components/DatabaseLabels";
 import { SelectDatabaseLabel } from "@/components/TransferDatabaseForm";
 import {
   idFromSlug,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   hidePrefix,
   allowGhostMigration,
   isPITRDatabase,
@@ -330,10 +330,9 @@ import {
   instanceHasBackupRestore,
   instanceHasAlterSchema,
   instanceSupportSlowQuery,
-  hasPermissionInProject,
+  hasPermissionInProjectV1,
 } from "@/utils";
 import {
-  ProjectId,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   Database,
@@ -346,10 +345,11 @@ import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
 import {
   pushNotification,
-  useCurrentUser,
   useCurrentUserIamPolicy,
+  useCurrentUserV1,
   useDatabaseStore,
   useDBSchemaStore,
+  useProjectV1ByUID,
   useSQLStore,
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
@@ -365,7 +365,7 @@ interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
   showSchemaEditorModal: boolean;
-  editingProjectId: ProjectId;
+  editingProjectId: string;
   selectedIndex: number;
   syncingSchema: boolean;
   showSchemaDiagram: boolean;
@@ -403,18 +403,23 @@ const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
   showSchemaEditorModal: false,
-  editingProjectId: UNKNOWN_ID,
+  editingProjectId: String(UNKNOWN_ID),
   selectedIndex: 0,
   syncingSchema: false,
   showSchemaDiagram: false,
 });
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
 const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
 });
+const { project: projectV1 } = useProjectV1ByUID(
+  computed(() => {
+    return String(database.value.project.id);
+  })
+);
 
 const allowToChangeDatabase = computed(() => {
   return currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -435,7 +440,7 @@ const accessControlPolicy = usePolicyByParentAndType(
 const allowQuery = computed(() => {
   const policy = accessControlPolicy.value;
   const list = policy ? [policy] : [];
-  return isDatabaseAccessible(database.value, list, currentUser.value);
+  return isDatabaseAccessible(database.value, list, currentUserV1.value);
 });
 
 // Project can be transferred if meets either of the condition below:
@@ -452,18 +457,18 @@ const allowTransferProject = computed(() => {
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-project",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;
   }
 
   if (
-    hasPermissionInProject(
-      database.value.project,
-      currentUser.value,
+    hasPermissionInProjectV1(
+      projectV1.value.iamPolicy,
+      currentUserV1.value,
       "bb.permission.project.transfer-database"
     )
   ) {
@@ -481,9 +486,9 @@ const allowTransferToDefaultProject = computed(() => {
   // Allow to transfer a database to DEFAULT project only if the current user
   // can manage all projects.
   // AKA DBA or workspace owner.
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-project",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -500,18 +505,18 @@ const allowAdmin = computed(() => {
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;
   }
 
   if (
-    hasPermissionInProject(
-      database.value.project,
-      currentUser.value,
+    hasPermissionInProjectV1(
+      projectV1.value.iamPolicy,
+      currentUserV1.value,
       "bb.permission.project.admin-database"
     )
   ) {
@@ -532,18 +537,18 @@ const allowEdit = computed(() => {
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;
   }
 
   if (
-    hasPermissionInProject(
-      database.value.project,
-      currentUser.value,
+    hasPermissionInProjectV1(
+      projectV1.value.iamPolicy,
+      currentUserV1.value,
       "bb.permission.project.change-database"
     )
   ) {
@@ -591,7 +596,7 @@ const tabItemList = computed((): BBTabFilterItem[] => {
 });
 
 const tryTransferProject = () => {
-  state.editingProjectId = database.value.project.id;
+  state.editingProjectId = String(database.value.project.id);
   state.showTransferDatabaseModal = true;
 };
 
@@ -672,7 +677,7 @@ const createMigration = async (
   });
 };
 
-const updateProject = (newProjectId: ProjectId, labels?: DatabaseLabel[]) => {
+const updateProject = (newProjectId: string, labels?: DatabaseLabel[]) => {
   databaseStore
     .transferProject({
       databaseId: database.value.id,
@@ -728,7 +733,7 @@ const selectDatabaseTabOnHash = () => {
 };
 
 const handleGotoSQLEditorFailed = () => {
-  state.editingProjectId = database.value.project.id;
+  state.editingProjectId = String(database.value.project.id);
   state.showIncorrectProjectModal = true;
 };
 

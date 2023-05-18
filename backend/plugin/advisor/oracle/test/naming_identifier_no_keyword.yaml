@@ -1,0 +1,48 @@
+- statement: CREATE TABLE "table"(id int, name varchar(255))
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: Identifier "table" is a keyword and should be avoided
+      line: 1
+      details: ""
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: Identifier "NAME" is a keyword and should be avoided
+      line: 1
+      details: ""
+- statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtsdfasdfasdfiutqeb"(id int, name varchar(255))
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: Identifier "NAME" is a keyword and should be avoided
+      line: 1
+      details: ""
+- statement: CREATE TABLE analyze(id int, name varchar(255))
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: Identifier "NAME" is a keyword and should be avoided
+      line: 1
+      details: ""
+- statement: ALTER TABLE tech_book RENAME TO analyze
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    create table techBook(id int);
+    ALTER TABLE techBook RENAME TO tech_book_tmp;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""

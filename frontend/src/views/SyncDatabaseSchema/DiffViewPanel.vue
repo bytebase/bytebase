@@ -1,6 +1,6 @@
 <template>
   <NTabs v-model:value="tab">
-    <NTabPane name="diff" :label="$t('database.sync-schema.schema-change')">
+    <NTabPane name="diff" :tab="$t('database.sync-schema.schema-change')">
       <div class="w-full flex flex-row justify-start items-center mb-2">
         <span>{{ previewSchemaChangeMessage }}</span>
       </div>
@@ -23,7 +23,7 @@
 
     <NTabPane
       name="ddl"
-      :label="$t('database.sync-schema.generated-ddl-statement')"
+      :tab="$t('database.sync-schema.generated-ddl-statement')"
     >
       <div class="w-full flex flex-col justify-start mb-2">
         <div class="flex flex-row justify-start items-center">

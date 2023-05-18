@@ -124,6 +124,48 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	return response, nil
 }
 
+// SearchDatabases searches all databases.
+func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.SearchDatabasesRequest) (*v1pb.SearchDatabasesResponse, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+
+	instanceID, err := getInstanceID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	find := &store.FindDatabaseMessage{}
+	if instanceID != "-" {
+		find.InstanceID = &instanceID
+	}
+	if request.Filter != "" {
+		projectFilter, err := getFilter(request.Filter, "project")
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		projectID, err := getProjectID(projectFilter)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid project %q in the filter", projectFilter)
+		}
+		find.ProjectID = &projectID
+	}
+	databases, err := s.store.ListDatabases(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	response := &v1pb.SearchDatabasesResponse{}
+	for _, database := range databases {
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.ProjectID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if !isOwnerOrDBA(role) && !isProjectMember(policy, principalID) {
+			continue
+		}
+		response.Databases = append(response.Databases, convertToDatabase(database))
+	}
+	return response, nil
+}
+
 // UpdateDatabase updates a database.
 func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.UpdateDatabaseRequest) (*v1pb.Database, error) {
 	if request.Database == nil {
@@ -581,7 +623,6 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	updateDatabaseMessage.Secrets = &storepb.Secrets{
 		Items: secretItems,
 	}
-	updateDatabaseMessage.EnvironmentID = database.EnvironmentID
 	updateDatabaseMessage.InstanceID = database.InstanceID
 	updateDatabaseMessage.DatabaseName = database.DatabaseName
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -650,7 +691,6 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	updateDatabaseMessage.Secrets = &storepb.Secrets{
 		Items: secretItems,
 	}
-	updateDatabaseMessage.EnvironmentID = database.EnvironmentID
 	updateDatabaseMessage.InstanceID = database.InstanceID
 	updateDatabaseMessage.DatabaseName = database.DatabaseName
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -703,7 +743,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			}
 			findDatabase.ProjectID = &match[1]
 		case filterKeyStartTime:
-			switch expr.comparator {
+			switch expr.operator {
 			case comparatorTypeGreater:
 				if startLogDate != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", request.Filter)
@@ -745,7 +785,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				t = t.AddDate(0, 0, 1).UTC()
 				endLogDate = &t
 			default:
-				return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q %q %q", expr.key, expr.comparator, expr.value)
+				return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q %q %q", expr.key, expr.operator, expr.value)
 			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", expr.key)
@@ -1004,7 +1044,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		syncState = v1pb.State_DELETED
 	}
 	return &v1pb.Database{
-		Name:               fmt.Sprintf("environments/%s/instances/%s/databases/%s", database.EnvironmentID, database.InstanceID, database.DatabaseName),
+		Name:               fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
 		Uid:                fmt.Sprintf("%d", database.UID),
 		SyncState:          syncState,
 		SuccessfulSyncTime: timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
@@ -1377,9 +1417,8 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 	for _, db := range dbList {
 		if db != "" && db != database.DatabaseName {
 			findDatabase := &store.FindDatabaseMessage{
-				EnvironmentID: &database.EnvironmentID,
-				InstanceID:    &database.InstanceID,
-				DatabaseName:  &db,
+				InstanceID:   &database.InstanceID,
+				DatabaseName: &db,
 			}
 			database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 			if err != nil {

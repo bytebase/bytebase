@@ -10,7 +10,7 @@
         <EnvironmentTabFilter
           v-if="filterTypes.includes('environment')"
           class="flex-1"
-          :environment="params.environment?.id ?? UNKNOWN_ID"
+          :environment="params.environment?.uid ?? String(UNKNOWN_ID)"
           :include-all="true"
           :disabled="loading"
           @update:environment="changeEnvironmentId"
@@ -26,7 +26,7 @@
       <NInputGroup class="flex-1">
         <ProjectSelect
           v-if="filterTypes.includes('project')"
-          :project="params.project?.id ?? UNKNOWN_ID"
+          :project="params.project?.uid ?? String(UNKNOWN_ID)"
           :include-default-project="canVisitDefaultProject"
           :include-all="true"
           :disabled="loading"
@@ -35,7 +35,7 @@
         <InstanceSelect
           v-if="filterTypes.includes('instance')"
           :instance="params.instance?.id ?? UNKNOWN_ID"
-          :environment="params.environment?.id"
+          :environment="params.environment?.uid"
           :include-all="true"
           :filter="instanceFilter"
           :disabled="loading"
@@ -44,9 +44,9 @@
         <DatabaseSelect
           v-if="filterTypes.includes('database')"
           :database="params.database?.id ?? UNKNOWN_ID"
-          :environment="params.environment?.id"
+          :environment="params.environment?.uid"
           :instance="params.instance?.id"
-          :project="params.project?.id"
+          :project="params.project?.uid"
           :include-all="true"
           :filter="(db) => instanceFilter(db.instance)"
           :disabled="loading"
@@ -97,21 +97,19 @@ import dayjs from "dayjs";
 
 import {
   type DatabaseId,
-  type EnvironmentId,
   type InstanceId,
-  type ProjectId,
   UNKNOWN_ID,
   Instance,
 } from "@/types";
 import {
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
-  useEnvironmentStore,
+  useEnvironmentV1Store,
   useInstanceStore,
-  useProjectStore,
+  useProjectV1Store,
   useSlowQueryPolicyList,
 } from "@/store";
-import { hasWorkspacePermission, instanceSupportSlowQuery } from "@/utils";
+import { hasWorkspacePermissionV1, instanceSupportSlowQuery } from "@/utils";
 import type { FilterType, SlowQueryFilterParams } from "./types";
 import {
   ProjectSelect,
@@ -130,18 +128,18 @@ const emit = defineEmits<{
   (event: "update:params", params: SlowQueryFilterParams): void;
 }>();
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const { list: policyList, ready } = useSlowQueryPolicyList();
 
 const canVisitDefaultProject = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-database",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
-const changeEnvironmentId = (id: EnvironmentId) => {
-  const environment = useEnvironmentStore().getEnvironmentById(id);
+const changeEnvironmentId = (id: string) => {
+  const environment = useEnvironmentV1Store().getEnvironmentByUID(id);
   update({ environment });
 };
 const changeInstanceId = (id: InstanceId | undefined) => {
@@ -160,9 +158,9 @@ const changeDatabaseId = (id: DatabaseId | undefined) => {
   }
   update({ database: undefined });
 };
-const changeProjectId = (id: ProjectId | undefined) => {
-  if (id && id !== UNKNOWN_ID) {
-    const project = useProjectStore().getProjectById(id);
+const changeProjectId = (id: string | undefined) => {
+  if (id && id !== String(UNKNOWN_ID)) {
+    const project = useProjectV1Store().getProjectByUID(id);
     update({ project });
     return;
   }
@@ -213,7 +211,7 @@ const instanceFilter = (instance: Instance) => {
   if (!policy) {
     return false;
   }
-  return policy.slowQueryPolicy?.active;
+  return !!policy.slowQueryPolicy?.active;
 };
 
 const isDateDisabled = (date: number) => {

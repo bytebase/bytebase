@@ -42,7 +42,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -50,11 +50,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test Project",
-		Key:        "TestSchemaUpdate",
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	// Provision an instance.
@@ -80,7 +78,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Expecting project to have no database.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Zero(len(databases))
@@ -93,12 +91,12 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabase(project, instance, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
 	// Expecting project to have 1 database.
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -106,7 +104,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	migrationStatementSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
+		ProjectID:  projectUID,
 		Name:       "migration statement sheet",
 		Statement:  migrationStatement,
 		Visibility: api.ProjectSheet,
@@ -127,7 +125,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
@@ -135,7 +133,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -145,7 +143,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(bookSchemaSQLResult, result)
 
 	dataUpdateStatementSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
+		ProjectID:  projectUID,
 		Name:       "dataUpdateStatement",
 		Statement:  dataUpdateStatement,
 		Visibility: api.ProjectSheet,
@@ -166,7 +164,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err = ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("update data for database %q", databaseName),
 		Type:          api.IssueDatabaseDataUpdate,
 		Description:   fmt.Sprintf("This updates the data of database %q.", databaseName),
@@ -174,7 +172,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err = ctl.waitIssuePipeline(issue.ID)
+	status, err = ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -232,7 +230,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	cloneDatabaseName := "testClone"
-	err = ctl.cloneDatabaseFromBackup(project, instance, cloneDatabaseName, backup, nil /* labelMap */)
+	err = ctl.cloneDatabaseFromBackup(ctx, projectUID, instance, cloneDatabaseName, backup, nil /* labelMap */)
 	a.NoError(err)
 
 	// Query clone database book table data.
@@ -429,7 +427,7 @@ func TestVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -454,13 +452,9 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Create a project.
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID: generateRandomString("project", 10),
-					Name:       "Test VCS Project",
-					Key:        "TestVCSSchemaUpdate",
-				},
-			)
+			project, err := ctl.createProject(ctx)
+			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			// Create a repository.
@@ -473,7 +467,7 @@ func TestVCS(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
-					ProjectID:          project.ID,
+					ProjectID:          projectUID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -510,11 +504,11 @@ func TestVCS(t *testing.T) {
 
 			// Create an issue that creates a database.
 			databaseName := "testVCSSchemaUpdate"
-			err = ctl.createDatabase(project, instance, databaseName, "", nil /* labelMap */)
+			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
 			a.NoError(err)
 			// Expecting project to have 1 database.
 			databases, err := ctl.getDatabases(api.DatabaseFind{
-				ProjectID: &project.ID,
+				ProjectID: &projectUID,
 			})
 			a.NoError(err)
 			a.Equal(1, len(databases))
@@ -551,11 +545,11 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(issue.ID)
+			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
@@ -592,11 +586,11 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get data update issue.
-			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			status, err = ctl.waitIssuePipeline(issue.ID)
+			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
 			a.Error(err)
 			a.Equal(api.TaskFailed, status)
 
@@ -613,7 +607,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get data update issue.
-			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
@@ -630,7 +624,7 @@ func TestVCS(t *testing.T) {
 			}, issue.Pipeline.ID, task.ID)
 			a.NoError(err)
 
-			status, err = ctl.waitIssuePipeline(issue.ID)
+			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
@@ -647,7 +641,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			sheet, err := ctl.createSheet(api.SheetCreate{
-				ProjectID:  project.ID,
+				ProjectID:  projectUID,
 				Name:       "migration statement 4 sheet",
 				Statement:  migrationStatement4,
 				Visibility: api.ProjectSheet,
@@ -669,7 +663,7 @@ func TestVCS(t *testing.T) {
 			})
 			a.NoError(err)
 			issue, err = ctl.createIssue(api.IssueCreate{
-				ProjectID:     project.ID,
+				ProjectID:     projectUID,
 				Name:          fmt.Sprintf("update schema for database %q", databaseName),
 				Type:          api.IssueDatabaseSchemaUpdate,
 				Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
@@ -677,7 +671,7 @@ func TestVCS(t *testing.T) {
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
-			status, err = ctl.waitIssuePipeline(issue.ID)
+			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, prodEnvironment.ResourceID, database.Name)
@@ -842,7 +836,7 @@ func TestVCS_SDL(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -892,14 +886,9 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Create a project
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID:       generateRandomString("project", 10),
-					Name:             "Test VCS Project",
-					Key:              "TestVCSSchemaUpdate",
-					SchemaChangeType: api.ProjectSchemaChangeTypeSDL,
-				},
-			)
+			project, err := ctl.createProject(ctx)
+			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			// Create a repository
@@ -912,7 +901,7 @@ func TestVCS_SDL(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
-					ProjectID:          project.ID,
+					ProjectID:          projectUID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -948,7 +937,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database
-			err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil /* labelMap */)
+			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
 			// Simulate Git commits for schema update to create a new table "users".
@@ -968,11 +957,11 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue
-			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(issue.ID)
+			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
@@ -1003,11 +992,11 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Get data update issue
-			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			status, err = ctl.waitIssuePipeline(issue.ID)
+			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
@@ -1358,7 +1347,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -1384,13 +1373,9 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Create a project.
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID: generateRandomString("project", 10),
-					Name:       "Test VCS Project",
-					Key:        "TVP",
-				},
-			)
+			project, err := ctl.createProject(ctx)
+			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			// Create a repository.
@@ -1403,7 +1388,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
-					ProjectID:          project.ID,
+					ProjectID:          projectUID,
 					Name:               "Test Repository",
 					FullPath:           repoFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, repoFullPath),
@@ -1437,7 +1422,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database.
-			err = ctl.createDatabase(project, instance, dbName, "", nil /* labelMap */)
+			err = ctl.createDatabase(ctx, projectUID, instance, dbName, "", nil /* labelMap */)
 			a.NoError(err)
 
 			a.Equal(len(test.expect), len(test.commitNewFileNames))
@@ -1460,12 +1445,12 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				a.NoError(err)
 
 				// Check for newly generated issues.
-				issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
+				issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
 				a.NoError(err)
 				if test.expect[idx] {
 					a.Len(issues, 1)
 					issue := issues[0]
-					status, err := ctl.waitIssuePipeline(issue.ID)
+					status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 					a.NoError(err)
 					a.Equal(api.TaskDone, status)
 					_, err = ctl.patchIssueStatus(
@@ -1580,7 +1565,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 				// We check against empty SQL Review policy, while our onboarding data generation
@@ -1631,13 +1616,9 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			// Create a project.
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID: generateRandomString("project", 10),
-					Name:       "Test VCS Project",
-					Key:        "TestVCSSchemaUpdate",
-				},
-			)
+			project, err := ctl.createProject(ctx)
+			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			environments, err := ctl.getEnvironments()
@@ -1659,7 +1640,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database.
-			err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil)
+			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil)
 			a.NoError(err)
 
 			// Create a repository.
@@ -1672,7 +1653,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			repository, err := ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              vcsData.ID,
-					ProjectID:          project.ID,
+					ProjectID:          projectUID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -1689,11 +1670,11 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NotNil(repository)
 			a.Equal(false, repository.EnableSQLReviewCI)
 
-			sqlReviewCI, err := ctl.createSQLReviewCI(project.ID, repository.ID)
+			sqlReviewCI, err := ctl.createSQLReviewCI(projectUID, repository.ID)
 			a.NoError(err)
 			a.NotNil(sqlReviewCI)
 
-			repositoryList, err := ctl.listRepository(project.ID)
+			repositoryList, err := ctl.listRepository(projectUID)
 			a.NoError(err)
 			a.NotNil(repositoryList)
 			a.Equal(1, len(repositoryList))
@@ -1732,11 +1713,17 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.Equal(emptySQLReview.Content, res.Content)
 
 			// create the SQL review policy then re-trigger the VCS SQL review.
-			policyPayload, err := prodTemplateSQLReviewPolicyForPostgreSQL()
+			reviewPolicy, err := prodTemplateSQLReviewPolicyForPostgreSQL()
 			a.NoError(err)
 
-			_, err = ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
-				Payload: &policyPayload,
+			_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+				Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+				Policy: &v1pb.Policy{
+					Type: v1pb.PolicyType_SQL_REVIEW,
+					Policy: &v1pb.Policy_SqlReviewPolicy{
+						SqlReviewPolicy: reviewPolicy,
+					},
+				},
 			})
 			a.NoError(err)
 
@@ -1860,7 +1847,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			ctl := &controller{}
 
 			// Create a server.
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: vcsTest.vcsProviderCreator,
 			})
@@ -1884,13 +1871,9 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			a.NoError(err)
 
 			// Create a project.
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID: generateRandomString("project", 10),
-					Name:       "Test VSC Project",
-					Key:        "TVP",
-				},
-			)
+			project, err := ctl.createProject(ctx)
+			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			for _, test := range vcsTest.caseList {
@@ -1909,7 +1892,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 					_, err = ctl.createRepository(
 						api.RepositoryCreate{
 							VCSID:              apiVCS.ID,
-							ProjectID:          project.ID,
+							ProjectID:          projectUID,
 							Name:               "Test Repository",
 							FullPath:           vcsTest.repoFullPath,
 							WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, vcsTest.repoFullPath),
@@ -1927,7 +1910,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 						a.Error(err)
 					} else {
 						a.NoError(err)
-						err = ctl.unlinkRepository(project.ID)
+						err = ctl.unlinkRepository(projectUID)
 						a.NoError(err)
 					}
 				})
@@ -2107,7 +2090,7 @@ CREATE TABLE public.book (
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            t.TempDir(),
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -2135,14 +2118,11 @@ CREATE TABLE public.book (
 			default:
 				a.FailNow("unsupported db type")
 			}
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID: generateRandomString("project", 10),
-					Name:       test.name,
-					Key:        test.name,
-				},
-			)
+			project, err := ctl.createProject(ctx)
 			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
+			a.NoError(err)
+
 			// Add an instance.
 			var instance *api.Instance
 			switch test.dbType {
@@ -2171,7 +2151,7 @@ CREATE TABLE public.book (
 			}
 
 			a.NoError(err)
-			err = ctl.createDatabase(project, instance, test.databaseName, "root", nil /* labelMap */)
+			err = ctl.createDatabase(ctx, projectUID, instance, test.databaseName, "root", nil /* labelMap */)
 			a.NoError(err)
 			databases, err := ctl.getDatabases(api.DatabaseFind{
 				InstanceID: &instance.ID,
@@ -2188,7 +2168,7 @@ CREATE TABLE public.book (
 			a.NotNil(database)
 
 			ddlSheet, err := ctl.createSheet(api.SheetCreate{
-				ProjectID:  project.ID,
+				ProjectID:  projectUID,
 				Name:       "test ddl",
 				Statement:  test.ddl,
 				Visibility: api.ProjectSheet,
@@ -2209,7 +2189,7 @@ CREATE TABLE public.book (
 			})
 			a.NoError(err)
 			issue, err := ctl.createIssue(api.IssueCreate{
-				ProjectID:     project.ID,
+				ProjectID:     projectUID,
 				Name:          fmt.Sprintf("update schema for database %q", test.databaseName),
 				Type:          api.IssueDatabaseSchemaUpdate,
 				Description:   fmt.Sprintf("This updates the schema of database %q.", test.databaseName),
@@ -2217,7 +2197,7 @@ CREATE TABLE public.book (
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
-			status, err := ctl.waitIssuePipeline(issue.ID)
+			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 			latestSchemaDump, err := ctl.getLatestSchemaDump(database.ID)
@@ -2245,7 +2225,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -2253,11 +2233,9 @@ func TestMarkTaskAsDone(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test Project",
-		Key:        "TestSchemaUpdate",
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	// Provision an instance.
@@ -2283,7 +2261,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Expecting project to have no database.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Zero(len(databases))
@@ -2296,12 +2274,12 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabase(project, instance, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
 	// Expecting project to have 1 database.
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -2309,7 +2287,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
+		ProjectID:  projectUID,
 		Name:       "migration statement sheet",
 		Statement:  migrationStatement,
 		Visibility: api.ProjectSheet,
@@ -2330,7 +2308,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
@@ -2357,7 +2335,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a.Equal(true, payload.Skipped)
 	a.Equal(skippedReason, payload.SkippedReason)
 
-	status, err := ctl.waitIssuePipelineWithNoApproval(issue.ID)
+	status, err := ctl.waitIssuePipelineWithNoApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -2448,7 +2426,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -2497,14 +2475,18 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Create a project
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID:       generateRandomString("project", 10),
-					Name:             "Test VCS Project",
-					Key:              "TestVCSSchemaUpdate",
-					SchemaChangeType: api.ProjectSchemaChangeTypeSDL,
+			projectID := generateRandomString("project", 10)
+			project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+				Project: &v1pb.Project{
+					Name:         fmt.Sprintf("projects/%s", projectID),
+					Title:        projectID,
+					Key:          projectID,
+					SchemaChange: v1pb.SchemaChange_SDL,
 				},
-			)
+				ProjectId: projectID,
+			})
+			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			// Create a repository
@@ -2517,7 +2499,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
-					ProjectID:          project.ID,
+					ProjectID:          projectUID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -2551,7 +2533,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Create an issue that creates a database
-			err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil /* labelMap */)
+			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
 			// Simulate Git commits for schema update to create a new table "users".
@@ -2571,11 +2553,11 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue
-			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(issue.ID)
+			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
@@ -2606,11 +2588,11 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Get data update issue
-			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue = issues[0]
-			status, err = ctl.waitIssuePipeline(issue.ID)
+			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)

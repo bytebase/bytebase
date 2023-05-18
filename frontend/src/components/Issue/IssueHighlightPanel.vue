@@ -94,6 +94,7 @@ import { head } from "lodash-es";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import {
   activeTask,
+  extractUserUID,
   isDatabaseRelatedIssueType,
   isGrantRequestIssueType,
 } from "@/utils";
@@ -103,8 +104,9 @@ import {
   Issue,
   VCSPushEvent,
   GrantRequestPayload,
+  PresetRoleType,
 } from "@/types";
-import { useCurrentUser } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import { IssueReviewButtonGroup } from "./review";
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
@@ -117,7 +119,7 @@ interface LocalState {
 }
 
 const logic = useIssueLogic();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const create = logic.create;
 const issue = logic.issue as Ref<Issue>;
 const { allowEditNameAndDescription, updateName } = useExtraIssueLogic();
@@ -150,23 +152,26 @@ const showExportButton = computed(() => {
   // Don't show export button when issue is closed or done.
   if (issue.value.status !== "OPEN") return false;
 
-  const payload = (issue.value.payload as any)
+  const issuePayload = (issue.value.payload as any)
     .grantRequest as GrantRequestPayload;
+  if (
+    issuePayload.role !== PresetRoleType.EXPORTER ||
+    extractUserUID(currentUserV1.value.name) !== String(issue.value.creator.id)
+  ) {
+    return false;
+  }
 
-  return (
-    currentUser.value.id === issue.value.creator.id &&
-    payload.role === "roles/EXPORTER"
-  );
+  return true;
 });
 
-const issueTaskStatus = () => {
+const issueTaskStatus = computed(() => {
   // For grant request issue, we always show the status as "PENDING_APPROVAL" as task status.
   if (!isDatabaseRelatedIssueType(issue.value.type)) {
     return "PENDING_APPROVAL";
   }
 
-  return activeTask(issue.value.pipeline).status;
-};
+  return activeTask(issue.value.pipeline!).status;
+});
 
 watch(
   () => issue.value,
@@ -177,11 +182,11 @@ watch(
 
 const pushEvent = computed((): VCSPushEvent | undefined => {
   if (issue.value.type == "bb.issue.database.schema.update") {
-    const payload = activeTask(issue.value.pipeline)
+    const payload = activeTask(issue.value.pipeline!)
       .payload as TaskDatabaseSchemaUpdatePayload;
     return payload?.pushEvent;
   } else if (issue.value.type == "bb.issue.database.data.update") {
-    const payload = activeTask(issue.value.pipeline)
+    const payload = activeTask(issue.value.pipeline!)
       .payload as TaskDatabaseDataUpdatePayload;
     return payload?.pushEvent;
   }

@@ -1,5 +1,5 @@
 import { computed, Ref } from "vue";
-import { useCurrentUser } from "@/store";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
   Issue,
   IssueStatusTransitionType,
@@ -16,6 +16,7 @@ import {
   TaskStatusTransition,
   TASK_STATUS_TRANSITION_LIST,
   isDatabaseRelatedIssueType,
+  extractUserUID,
 } from "@/utils";
 import {
   allowUserToBeAssignee,
@@ -27,7 +28,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
   const { create, activeTaskOfPipeline, allowApplyTaskStatusTransition } =
     useIssueLogic();
 
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
 
   const isAllowedToApplyTaskTransition = computed(() => {
@@ -38,10 +39,15 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
       return false;
     }
 
+    const project = useProjectV1Store().getProjectByUID(
+      String(issue.value.project.id)
+    );
+
     if (
       allowUserToBeAssignee(
-        currentUser.value,
-        issue.value.project,
+        currentUserV1.value,
+        project,
+        project.iamPolicy,
         rollOutPolicy.value.policy,
         rollOutPolicy.value.assigneeGroup
       )
@@ -51,7 +57,10 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
 
     // Otherwise, only the assignee can apply task status transitions
     // including roll out, cancel, retry, etc.
-    return issue.value.assignee.id === currentUser.value.id;
+    return (
+      String(issue.value.assignee.id) ===
+      extractUserUID(currentUserV1.value.name)
+    );
   });
 
   const getApplicableIssueStatusTransitionList = (
@@ -148,15 +157,15 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
 export const calcApplicableIssueStatusTransitionList = (
   issue: Issue
 ): IssueStatusTransition[] => {
-  const currentUser = useCurrentUser();
   const issueEntity = issue as Issue;
   const transitionTypeList: IssueStatusTransitionType[] = [];
+  const currentUserUID = extractUserUID(useCurrentUserV1().value.name);
 
   // The creator and the assignee can apply issue status transition
   // including resolve, cancel, reopen
   if (
-    currentUser.value.id === issueEntity.creator?.id ||
-    currentUser.value.id === issueEntity.assignee?.id
+    currentUserUID === String(issueEntity.creator?.id) ||
+    currentUserUID === String(issueEntity.assignee?.id)
   ) {
     const actions = APPLICABLE_ISSUE_ACTION_LIST.get(issueEntity.status);
     if (actions) {

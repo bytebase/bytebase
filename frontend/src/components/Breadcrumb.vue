@@ -154,7 +154,7 @@ export default defineComponent({
 
         if (projectWebhookSlug) {
           const project = projectV1Store.getProjectByUID(
-            idFromSlug(projectSlug)
+            String(idFromSlug(projectSlug))
           );
           list.push({
             name: `${project.title}`,

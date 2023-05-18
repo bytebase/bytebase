@@ -34,26 +34,24 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { NTooltip } from "naive-ui";
 
-import {
-  pushNotification,
-  useCurrentUser,
-  useIssueStore,
-  useSettingStore,
-} from "@/store";
+import { pushNotification, useCurrentUserV1, useIssueStore } from "@/store";
 import { useIssueLogic } from "./logic";
 import { Issue } from "@/types";
-import { SettingAppIMValue } from "@/types/setting";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { AppIMSetting_IMType } from "@/types/proto/v1/setting_service";
+import { Workflow } from "@/types/proto/v1/project_service";
+import { extractUserUID } from "@/utils";
 
 const { t } = useI18n();
-const currentUser = useCurrentUser();
-const settingStore = useSettingStore();
+const currentUserV1 = useCurrentUserV1();
+const settingV1Store = useSettingV1Store();
 const { create, project, issue } = useIssueLogic();
 
 const showNotifyAssignee = computed(() => {
   if (create.value) {
     return false;
   }
-  if (project.value.workflowType === "VCS") {
+  if (project.value.workflow === Workflow.VCS) {
     return false;
   }
 
@@ -62,15 +60,16 @@ const showNotifyAssignee = computed(() => {
   if (issueEntity.status !== "OPEN") {
     return false;
   }
+  const currentUserUID = extractUserUID(currentUserV1.value.name);
   if (
     issueEntity.assigneeNeedAttention &&
-    currentUser.value.id === issueEntity.assignee.id
+    currentUserUID === String(issueEntity.assignee.id)
   ) {
     // Also show the icon for assignee if need attention.
     return true;
   }
 
-  return currentUser.value.id === issueEntity.creator.id;
+  return currentUserUID === String(issueEntity.creator.id);
 });
 
 const isAssigneeAttentionOn = computed(() => {
@@ -79,17 +78,15 @@ const isAssigneeAttentionOn = computed(() => {
 
 const externalApprovalSetting = computed(
   (): { enabled: boolean; type: string } => {
-    const setting = settingStore.getSettingByName("bb.app.im");
-    if (setting) {
-      const appFeishuValue = JSON.parse(
-        setting.value || "{}"
-      ) as SettingAppIMValue;
-      if (appFeishuValue.imType === "im.feishu") {
-        return {
-          type: "feishu",
-          enabled: appFeishuValue.externalApproval.enabled,
-        };
-      }
+    const setting = settingV1Store.getSettingByName("bb.app.im");
+    if (
+      setting?.value?.appImSettingValue?.imType === AppIMSetting_IMType.FEISHU
+    ) {
+      return {
+        type: "feishu",
+        enabled:
+          setting?.value?.appImSettingValue.externalApproval?.enabled ?? false,
+      };
     }
     return {
       enabled: false,

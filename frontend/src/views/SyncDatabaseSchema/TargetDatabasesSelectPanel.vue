@@ -21,7 +21,7 @@
         class="overflow-y-auto"
         arrow-placement="left"
         :default-expanded-names="
-          databaseListGroupByEnvironment.map((group) => group.environment.id)
+          databaseListGroupByEnvironment.map((group) => group.environment.uid)
         "
       >
         <NCollapseItem
@@ -29,8 +29,8 @@
             environment,
             databaseList: databaseListInEnvironment,
           } in databaseListGroupByEnvironment"
-          :key="environment.id"
-          :name="environment.id"
+          :key="environment.uid"
+          :name="environment.uid"
         >
           <template #header>
             <label class="flex items-center gap-x-2" @click.stop="">
@@ -52,11 +52,7 @@
                   )
                 "
               />
-              <div>{{ environment.name }}</div>
-              <ProductionEnvironmentIcon
-                class="w-4 h-4 -ml-1"
-                :environment="environment"
-              />
+              <EnvironmentV1Name :environment="environment" :link="false" />
             </label>
           </template>
 
@@ -127,6 +123,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed, reactive, PropType } from "vue";
 import {
   NCollapse,
   NCollapseItem,
@@ -134,15 +131,10 @@ import {
   NDrawer,
   NDrawerContent,
 } from "naive-ui";
-import { computed, reactive, PropType } from "vue";
-import { useDatabaseStore, useEnvironmentStore } from "@/store";
-import {
-  Database,
-  DatabaseId,
-  Environment,
-  EnvironmentId,
-  ProjectId,
-} from "@/types";
+import { useDatabaseStore, useEnvironmentV1Store } from "@/store";
+import { Database, DatabaseId } from "@/types";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentV1Name } from "@/components/v2";
 
 type LocalState = {
   searchText: string;
@@ -151,11 +143,11 @@ type LocalState = {
 
 const props = defineProps({
   projectId: {
-    type: Number as PropType<ProjectId>,
+    type: String,
     required: true,
   },
   environmentId: {
-    type: Number as PropType<EnvironmentId>,
+    type: String,
     required: true,
   },
   databaseId: {
@@ -173,7 +165,7 @@ const emit = defineEmits<{
   (event: "update", databaseIdList: DatabaseId[]): void;
 }>();
 
-const environmentStore = useEnvironmentStore();
+const environmentV1Store = useEnvironmentV1Store();
 const databaseStore = useDatabaseStore();
 const state = reactive<LocalState>({
   searchText: "",
@@ -188,15 +180,15 @@ const sourceDatabase = computed(() => {
 
 const databaseListGroupByEnvironment = computed(() => {
   const databaseList =
-    databaseStore.databaseListByProjectId
-      .get(props.projectId)
-      ?.filter((db) => db.name.includes(state.searchText))
+    databaseStore
+      .getDatabaseListByProjectId(props.projectId)
+      .filter((db) => db.name.includes(state.searchText))
       .filter(
         (db) => db.instance.engine === sourceDatabase.value.instance.engine
       ) || [];
-  const listByEnv = environmentStore.environmentList.map((environment) => {
+  const listByEnv = environmentV1Store.environmentList.map((environment) => {
     const list = databaseList.filter(
-      (db) => db.instance.environment.id === environment.id
+      (db) => String(db.instance.environment.id) === environment.uid
     );
     return {
       environment,
@@ -235,7 +227,7 @@ const toggleAllDatabasesSelectionForEnvironment = (
   on: boolean
 ) => {
   databaseList
-    .filter((db) => db.instance.environment.id === environment.id)
+    .filter((db) => String(db.instance.environment.id) === environment.uid)
     .forEach((db) => toggleDatabaseSelected(db.id, on));
 };
 
@@ -245,7 +237,7 @@ const getAllSelectionStateForEnvironment = (
 ): { checked: boolean; indeterminate: boolean } => {
   const set = new Set(
     state.selectedDatabaseList
-      .filter((db) => db.instance.environment.id === environment.id)
+      .filter((db) => String(db.instance.environment.id) === environment.uid)
       .map((db) => db.id)
   );
   const checked = databaseList.every((db) => set.has(db.id));
@@ -263,7 +255,7 @@ const getSelectionStateSummaryForEnvironment = (
 ) => {
   const set = new Set(
     state.selectedDatabaseList
-      .filter((db) => db.instance.environment.id === environment.id)
+      .filter((db) => String(db.instance.environment.id) === environment.uid)
       .map((db) => db.id)
   );
   const selected = databaseList.filter((db) => set.has(db.id)).length;

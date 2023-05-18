@@ -63,7 +63,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { defaultTemplate, templateForType } from "@/plugins";
-import { useProjectStore } from "@/store";
+import { useProjectV1Store } from "@/store";
 import {
   provideIssueLogic,
   IssueLogic,
@@ -89,7 +89,7 @@ const emit = defineEmits<{
   (e: "status-changed", eager: boolean): void;
 }>();
 
-const projectStore = useProjectStore();
+const projectV1Store = useProjectV1Store();
 
 const create = computed(() => props.create);
 const issue = computed(() => props.issue);
@@ -102,9 +102,9 @@ const issueLogic = ref<IssueLogic>();
 
 watchEffect(() => {
   if (props.create) {
-    const projectId = (props.issue as IssueCreate).projectId;
-    if (projectId !== UNKNOWN_ID) {
-      projectStore.fetchProjectById(projectId);
+    const projectId = String((props.issue as IssueCreate).projectId);
+    if (projectId !== String(UNKNOWN_ID)) {
+      projectV1Store.getOrFetchProjectByUID(projectId);
     }
   }
 });

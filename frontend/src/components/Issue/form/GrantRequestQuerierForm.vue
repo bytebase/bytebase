@@ -2,8 +2,8 @@
   <div
     class="w-full mx-auto flex flex-col justify-start items-start space-y-4 my-8 gap-4"
   >
-    <div v-if="create" class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center">
+    <div v-if="create" class="w-full flex flex-row justify-start items-start">
+      <span class="flex w-40 items-center textlabel !leading-6 mt-2">
         {{ $t("common.project") }}
         <RequiredStar />
       </span>
@@ -11,37 +11,56 @@
         class="!w-60 shrink-0"
         :only-userself="false"
         :selected-id="projectId"
-        @select-project-id="handleSourceProjectSelect"
+        @select-project-id="handleProjectSelect"
       />
     </div>
     <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center">
+      <span class="flex w-40 items-center textlabel shrink-0 !leading-6">
         {{ $t("common.databases") }}
         <RequiredStar />
       </span>
       <div v-if="create">
         <NRadioGroup
           v-model:value="state.allDatabases"
-          class="w-full !flex flex-row justify-start items-center gap-4"
+          class="w-full !flex flex-row justify-start items-start gap-4"
           name="radiogroup"
         >
           <NRadio
+            class="!leading-6 whitespace-nowrap"
             :value="true"
             :label="$t('issue.grant-request.all-databases')"
           />
-          <div>
+          <div class="flex flex-row justify-start flex-wrap gap-y-2">
             <NRadio
+              class="!leading-6"
               :value="false"
               :disabled="!state.projectId"
               :label="$t('issue.grant-request.manually-select')"
+              @click="handleManuallySelectClick"
             />
             <button
               v-if="state.projectId"
-              class="ml-2 normal-link disabled:cursor-not-allowed"
+              class="ml-2 normal-link h-6 disabled:cursor-not-allowed"
               @click="state.showSelectDatabasePanel = true"
             >
               {{ $t("common.select") }}
             </button>
+            <div
+              v-if="selectedDatabaseList.length > 0"
+              class="ml-6 flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
+            >
+              <div
+                v-for="database in selectedDatabaseList"
+                :key="database.id"
+                class="flex flex-row justify-start items-center"
+              >
+                <InstanceEngineIcon
+                  class="mr-1"
+                  :instance="database.instance"
+                />
+                {{ database.name }}
+              </div>
+            </div>
           </div>
         </NRadioGroup>
       </div>
@@ -60,8 +79,8 @@
         </div>
       </div>
     </div>
-    <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-start">
+    <div class="w-full flex flex-row justify-start items-start">
+      <span class="flex w-40 items-start textlabel !leading-6">
         {{
           create
             ? $t("issue.grant-request.expire-days")
@@ -72,26 +91,28 @@
       <div v-if="create">
         <NRadioGroup
           v-model:value="state.expireDays"
-          class="!grid grid-cols-4 gap-2"
+          class="!grid grid-cols-4 gap-x-4 gap-y-4"
           name="radiogroup"
         >
-          <NRadio
+          <div
             v-for="day in expireDaysOptions"
             :key="day.value"
-            :value="day.value"
-            :label="day.label"
-          />
+            class="col-span-1 flex flex-row justify-start items-center"
+          >
+            <NRadio :value="day.value" :label="day.label" />
+          </div>
           <div class="col-span-2 flex flex-row justify-start items-center">
             <NRadio :value="-1" :label="$t('issue.grant-request.customize')" />
             <NInputNumber
               v-model:value="state.customDays"
+              class="!w-24 ml-2"
               :disabled="state.expireDays !== -1"
-              size="small"
               :min="1"
-              :max="365"
-              :step="1"
-              class="!w-24"
-            />
+              :show-button="false"
+              :placeholder="''"
+            >
+              <template #suffix>{{ $t("common.date.days") }}</template>
+            </NInputNumber>
           </div>
         </NRadioGroup>
       </div>
@@ -111,9 +132,10 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
+import { head, uniq } from "lodash-es";
 import { NRadioGroup, NRadio, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useIssueLogic } from "../logic";
 import {
   DatabaseId,
@@ -121,20 +143,26 @@ import {
   GrantRequestPayload,
   Issue,
   IssueCreate,
-  ProjectId,
+  PresetRoleType,
   UNKNOWN_ID,
 } from "@/types";
-import { getProjectMemberList, parseExpiredTimeString } from "@/utils";
-import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
-import { useDatabaseStore } from "@/store";
-import { useInstanceV1Store } from "@/store/modules/v1/instance";
-import { instanceNamePrefix } from "@/store/modules/v1/common";
+import {
+  getDatabaseIdByName,
+  memberListInProjectV1,
+  parseConditionExpressionString,
+} from "@/utils";
+import {
+  convertUserToPrincipal,
+  useDatabaseStore,
+  useProjectV1Store,
+} from "@/store";
 import RequiredStar from "@/components/RequiredStar.vue";
+import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
 
 interface LocalState {
   showSelectDatabasePanel: boolean;
   // For creating
-  projectId?: ProjectId;
+  projectId?: string;
   allDatabases: boolean;
   selectedDatabaseIdList: DatabaseId[];
   expireDays: number;
@@ -143,36 +171,9 @@ interface LocalState {
   expiredAt: string;
 }
 
-const expireDaysOptions = [
-  {
-    value: 7,
-    label: "7 days",
-  },
-  {
-    value: 30,
-    label: "30 days",
-  },
-  {
-    value: 60,
-    label: "60 days",
-  },
-  {
-    value: 90,
-    label: "90 days",
-  },
-  {
-    value: 180,
-    label: "6 months",
-  },
-  {
-    value: 365,
-    label: "1 year",
-  },
-];
-
+const { t } = useI18n();
 const { create, issue } = useIssueLogic();
 const databaseStore = useDatabaseStore();
-const instanceV1Store = useInstanceV1Store();
 const state = reactive<LocalState>({
   showSelectDatabasePanel: false,
   projectId: undefined,
@@ -193,30 +194,70 @@ const selectedDatabaseList = computed(() => {
   });
 });
 
+const expireDaysOptions = computed(() => [
+  {
+    value: 7,
+    label: t("common.date.days", { days: 7 }),
+  },
+  {
+    value: 30,
+    label: t("common.date.days", { days: 30 }),
+  },
+  {
+    value: 60,
+    label: t("common.date.days", { days: 60 }),
+  },
+  {
+    value: 90,
+    label: t("common.date.days", { days: 90 }),
+  },
+  {
+    value: 180,
+    label: t("common.date.months", { months: 6 }),
+  },
+  {
+    value: 365,
+    label: t("common.date.years", { years: 1 }),
+  },
+]);
+
 onMounted(() => {
   if (create.value) {
-    const projectId = (issue.value as IssueCreate).projectId;
-    if (projectId && projectId !== UNKNOWN_ID) {
-      state.projectId = projectId;
+    const projectId = String((issue.value as IssueCreate).projectId);
+    if (projectId && projectId !== String(UNKNOWN_ID)) {
+      handleProjectSelect(projectId);
     }
   }
 });
 
-const handleSourceProjectSelect = async (projectId: ProjectId) => {
+const handleProjectSelect = async (projectId: string) => {
   if (!create.value) {
     return;
   }
 
   state.projectId = projectId;
-  (issue.value as IssueCreate).projectId = projectId;
+  (issue.value as IssueCreate).projectId = parseInt(projectId, 10);
   // update issue assignee
-  const projectOwner = head(
-    (await getProjectMemberList(projectId)).filter(
-      (member) => !member.roleList.includes("OWNER")
-    )
+
+  const project = await useProjectV1Store().getOrFetchProjectByUID(projectId);
+  const memberList = memberListInProjectV1(project, project.iamPolicy);
+  const ownerList = memberList.filter((member) =>
+    member.roleList.includes(PresetRoleType.OWNER)
   );
+  const projectOwner = head(ownerList);
   if (projectOwner) {
-    (issue.value as IssueCreate).assigneeId = projectOwner.principal.id;
+    const ownerPrincipal = convertUserToPrincipal(projectOwner.user);
+    (issue.value as IssueCreate).assigneeId = ownerPrincipal.id;
+  }
+  state.selectedDatabaseIdList = state.selectedDatabaseIdList.filter((id) => {
+    const database = databaseStore.getDatabaseById(id);
+    return String(database.project.id) === projectId;
+  });
+};
+
+const handleManuallySelectClick = () => {
+  if (state.selectedDatabaseIdList.length === 0) {
+    state.showSelectDatabasePanel = true;
   }
 };
 
@@ -254,36 +295,30 @@ watch(
     if (!create.value) {
       const payload = ((issue.value as Issue).payload as any)
         .grantRequest as GrantRequestPayload;
-      if (payload.role !== "roles/QUERIER") {
+      if (payload.role !== PresetRoleType.QUERIER) {
         throw "Only support QUERIER role";
       }
-      const expressionList = payload.condition.expression.split(" && ");
-      for (const expression of expressionList) {
-        const fields = expression.split(" ");
-        if (fields[0] === "request.time") {
-          state.expiredAt = parseExpiredTimeString(fields[2]).toLocaleString();
-        } else if (fields[0] === "resource.database") {
-          const databaseIdList = [];
-          for (const url of JSON.parse(fields[2])) {
-            const value = url.split("/");
-            const instanceName = value[1] || "";
-            const databaseName = value[3] || "";
-            const instance = await instanceV1Store.getOrFetchInstanceByName(
-              instanceNamePrefix + instanceName
-            );
-            const databaseList =
-              await databaseStore.getOrFetchDatabaseListByInstanceId(
-                instance.uid
-              );
-            const database = databaseList.find(
-              (db) => db.name === databaseName
-            );
-            if (database) {
-              databaseIdList.push(database.id);
-            }
+
+      const conditionExpression = parseConditionExpressionString(
+        payload.condition.expression
+      );
+      if (conditionExpression.expiredTime !== undefined) {
+        state.expiredAt = new Date(
+          conditionExpression.expiredTime
+        ).toLocaleString();
+      }
+      if (
+        conditionExpression.databases !== undefined &&
+        conditionExpression.databases.length > 0
+      ) {
+        const databaseIdList = [];
+        for (const databaseName of conditionExpression.databases) {
+          const id = await getDatabaseIdByName(databaseName);
+          if (id && id !== UNKNOWN_ID) {
+            databaseIdList.push(id);
           }
-          state.selectedDatabaseIdList = databaseIdList;
         }
+        state.selectedDatabaseIdList = uniq(databaseIdList);
       }
     }
   },

@@ -30,8 +30,8 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref, toRef } from "vue";
 
-import { featureToRef, useCurrentUser, useRiskStore } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { featureToRef, useCurrentUserV1, useRiskStore } from "@/store";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   RiskCenter,
   RiskDialog,
@@ -50,11 +50,11 @@ const state = reactive<LocalState>({
 });
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const allowAdmin = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-custom-approval",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

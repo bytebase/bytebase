@@ -5,21 +5,20 @@
     :disabled="disabled"
     :placeholder="$t('environment.select')"
     :show-prefix-item="true"
-    @select-item="(env: Environment) => $emit('select-environment-id', env.id)"
+    @select-item="(env: Environment) => $emit('select-environment-id', env.uid)"
   >
     <template #menuItem="{ item: environment }">
-      <div class="flex items-center">
-        {{ environmentName(environment) }}
-        <ProductionEnvironmentIcon class="ml-1" :environment="environment" />
-      </div>
+      <EnvironmentV1Name :environment="environment" :link="false" />
     </template>
   </BBSelect>
 </template>
 
 <script lang="ts">
 import { computed, defineComponent, onMounted, reactive, watch } from "vue";
-import { Environment } from "../types";
-import { useEnvironmentList } from "@/store";
+import { useEnvironmentV1List } from "@/store";
+import { State } from "@/types/proto/v1/common";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentV1Name } from "@/components/v2";
 
 interface LocalState {
   selectedEnvironment?: Environment;
@@ -27,9 +26,10 @@ interface LocalState {
 
 export default defineComponent({
   name: "EnvironmentSelect",
+  components: { EnvironmentV1Name },
   props: {
     selectedId: {
-      type: Number,
+      type: String,
       default: undefined,
     },
     selectDefault: {
@@ -47,17 +47,17 @@ export default defineComponent({
       selectedEnvironment: undefined,
     });
 
-    const rawEnvironmentList = useEnvironmentList(["NORMAL", "ARCHIVED"]);
+    const rawEnvironmentList = useEnvironmentV1List(true /* showDeleted */);
     const environmentList = computed(() => {
       const list = [...rawEnvironmentList.value].reverse();
 
       return list.filter((env) => {
-        if (env.rowStatus === "NORMAL") {
+        if (env.state === State.ACTIVE) {
           return true;
         }
 
         // env.rowStatus === "ARCHIVED"
-        if (env.id === state.selectedEnvironment?.id) {
+        if (env.uid === state.selectedEnvironment?.uid) {
           return true;
         }
         return false;
@@ -73,14 +73,14 @@ export default defineComponent({
       if (list.length > 0) {
         if (
           !props.selectedId ||
-          !list.find((item: Environment) => item.id == props.selectedId)
+          !list.find((item: Environment) => item.uid === props.selectedId)
         ) {
           // auto select the first NORMAL environment
           const defaultEnvironment = list.find(
-            (env) => env.rowStatus === "NORMAL"
+            (env) => env.state === State.ACTIVE
           );
           state.selectedEnvironment = defaultEnvironment;
-          emit("select-environment-id", defaultEnvironment?.id);
+          emit("select-environment-id", defaultEnvironment?.uid);
         }
       }
     };
@@ -93,7 +93,7 @@ export default defineComponent({
       if (
         state.selectedEnvironment &&
         !environmentList.value.find(
-          (item: Environment) => item.id == state.selectedEnvironment?.id
+          (item: Environment) => item.uid == state.selectedEnvironment?.uid
         )
       ) {
         state.selectedEnvironment = undefined;
@@ -106,7 +106,7 @@ export default defineComponent({
       (selectedId) => {
         invalidateSelectionIfNeeded();
         state.selectedEnvironment = environmentList.value.find(
-          (env) => env.id === selectedId
+          (env) => env.uid === String(selectedId)
         );
       },
       { immediate: true }

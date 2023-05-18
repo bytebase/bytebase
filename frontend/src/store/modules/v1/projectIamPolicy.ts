@@ -3,11 +3,11 @@ import { defineStore } from "pinia";
 
 import { IamPolicy } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
-import { Database, MaybeRef } from "@/types";
-import { useProjectStore } from "../project";
+import { Database, MaybeRef, PresetRoleType } from "@/types";
+import { useLegacyProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
-import { UserRole } from "@/types/proto/v1/auth_service";
+import { hasWorkspacePermissionV1, isMemberOfProjectV1 } from "@/utils";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -32,6 +32,18 @@ export const useProjectIamPolicyStore = defineStore(
       return request;
     };
 
+    const batchFetchIamPolicy = async (projectList: string[]) => {
+      const response = await projectServiceClient.batchGetIamPolicy({
+        scope: "projects/-",
+        names: projectList,
+      });
+      response.policyResults.forEach(({ policy, project }) => {
+        if (policy) {
+          policyMap.value.set(project, policy);
+        }
+      });
+    };
+
     const updateProjectIamPolicy = async (
       project: string,
       policy: IamPolicy
@@ -42,12 +54,14 @@ export const useProjectIamPolicyStore = defineStore(
       });
       policyMap.value.set(project, updated);
 
-      // legacy project API support
-      // re-fetch the legacy project entity to refresh its `memberList`
       const projectEntity = await useProjectV1Store().getOrFetchProjectByName(
         project
       );
-      await useProjectStore().fetchProjectById(parseInt(projectEntity.uid, 10));
+      // legacy project API support
+      // re-fetch the legacy project entity to refresh its `memberList`
+      await useLegacyProjectStore().fetchProjectById(
+        parseInt(projectEntity.uid, 10)
+      );
     };
 
     const getProjectIamPolicy = (project: string) => {
@@ -61,11 +75,23 @@ export const useProjectIamPolicyStore = defineStore(
       return getProjectIamPolicy(project);
     };
 
+    const batchGetOrFetchProjectIamPolicy = async (projectList: string[]) => {
+      // BatchFetch policies that missing in the local map.
+      const missingProjectList = projectList.filter(
+        (project) => !policyMap.value.has(project)
+      );
+      if (missingProjectList.length > 0) {
+        await batchFetchIamPolicy(missingProjectList);
+      }
+      return projectList.map(getProjectIamPolicy);
+    };
+
     return {
       policyMap,
       getProjectIamPolicy,
       fetchProjectIamPolicy,
       getOrFetchProjectIamPolicy,
+      batchGetOrFetchProjectIamPolicy,
       updateProjectIamPolicy,
     };
   }
@@ -95,18 +121,23 @@ export const useCurrentUserIamPolicy = () => {
   const projectStore = useProjectV1Store();
   const currentUser = useCurrentUserV1();
 
-  watchEffect(async () => {
-    for (const project of projectStore.projectList) {
-      await iamPolicyStore.getOrFetchProjectIamPolicy(project.name);
-    }
+  watchEffect(() => {
+    // Fetch all project iam policies.
+    Promise.all(
+      projectStore.projectList.map((project) =>
+        iamPolicyStore.getOrFetchProjectIamPolicy(project.name)
+      )
+    );
   });
 
-  const isWorkspaceOwner = computed(
-    () => currentUser.value.userRole === UserRole.OWNER
+  // hasWorkspaceSuperPrivilege checks whether the current user has the super privilege to access all databases. AKA. Owners and DBAs
+  const hasWorkspaceSuperPrivilege = hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-access-control",
+    currentUser.value.userRole
   );
 
-  const allowToChangeDatabaseOfProject = (projectName: string) => {
-    if (isWorkspaceOwner.value) {
+  const isMemberOfProject = (projectName: string) => {
+    if (hasWorkspaceSuperPrivilege) {
       return true;
     }
 
@@ -114,10 +145,22 @@ export const useCurrentUserIamPolicy = () => {
     if (!policy) {
       return false;
     }
+    return isMemberOfProjectV1(policy, currentUser.value);
+  };
+
+  const allowToChangeDatabaseOfProject = (projectName: string) => {
+    if (hasWorkspaceSuperPrivilege) {
+      return true;
+    }
+
+    const policy = iamPolicyStore.getProjectIamPolicy(projectName);
+    if (!policy) {
+      return false;
+    }
     for (const binding of policy.bindings) {
       if (
-        (binding.role === "roles/OWNER" ||
-          binding.role === "roles/DEVELOPER") &&
+        (binding.role === PresetRoleType.OWNER ||
+          binding.role === PresetRoleType.DEVELOPER) &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )
@@ -128,21 +171,20 @@ export const useCurrentUserIamPolicy = () => {
     return false;
   };
 
-  const allowToQueryDatabase = async (database: Database) => {
-    if (isWorkspaceOwner.value) {
+  const allowToQueryDatabase = (database: Database) => {
+    if (hasWorkspaceSuperPrivilege) {
       return true;
     }
 
-    const policy = await iamPolicyStore.getOrFetchProjectIamPolicy(
+    const policy = iamPolicyStore.getProjectIamPolicy(
       `projects/${database.project.resourceId}`
     );
-    console.log("!", policy, database.project.resourceId);
     if (!policy) {
       return false;
     }
     for (const binding of policy.bindings) {
       if (
-        binding.role === "roles/OWNER" &&
+        binding.role === PresetRoleType.OWNER &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )
@@ -150,16 +192,18 @@ export const useCurrentUserIamPolicy = () => {
         return true;
       }
       if (
-        binding.role === "roles/QUERIER" &&
+        binding.role === PresetRoleType.QUERIER &&
         binding.members.find(
           (member) => member === `user:${currentUser.value.email}`
         )
       ) {
         const expressionList = binding.condition?.expression.split(" && ");
         if (expressionList && expressionList.length > 0) {
+          let hasDatabaseField = false;
           for (const expression of expressionList) {
             const fields = expression.split(" ");
             if (fields[0] === "resource.database") {
+              hasDatabaseField = true;
               for (const url of JSON.parse(fields[2])) {
                 const value = url.split("/");
                 const instanceName = value[1] || "";
@@ -173,6 +217,9 @@ export const useCurrentUserIamPolicy = () => {
               }
             }
           }
+          if (!hasDatabaseField) {
+            return true;
+          }
         } else {
           return true;
         }
@@ -182,6 +229,7 @@ export const useCurrentUserIamPolicy = () => {
   };
 
   return {
+    isMemberOfProject,
     allowToChangeDatabaseOfProject,
     allowToQueryDatabase,
   };

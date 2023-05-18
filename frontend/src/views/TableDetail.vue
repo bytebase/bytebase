@@ -189,12 +189,12 @@ import { computed, defineComponent, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   bytesToString,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   idFromSlug,
   isDatabaseAccessible,
   isGhostTable,
 } from "@/utils";
-import { useCurrentUser, useDatabaseStore, useDBSchemaStore } from "@/store";
+import { useCurrentUserV1, useDatabaseStore, useDBSchemaStore } from "@/store";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import ColumnTable from "../components/ColumnTable.vue";
@@ -223,7 +223,7 @@ export default defineComponent({
     const router = useRouter();
     const databaseStore = useDatabaseStore();
     const dbSchemaStore = useDBSchemaStore();
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
     const table = ref<TableMetadata>();
     const databaseId = idFromSlug(props.databaseSlug);
     const schemaName = (route.query.schema as string) || "";
@@ -246,14 +246,14 @@ export default defineComponent({
         database.value.projectId === UNKNOWN_ID ||
         database.value.projectId === DEFAULT_PROJECT_ID
       ) {
-        return hasWorkspacePermission(
+        return hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-database",
-          currentUser.value.role
+          currentUserV1.value.userRole
         );
       }
       const policy = accessControlPolicy.value;
       const list = policy ? [policy] : [];
-      return isDatabaseAccessible(database.value, list, currentUser.value);
+      return isDatabaseAccessible(database.value, list, currentUserV1.value);
     });
     const hasSchemaProperty = computed(
       () => instanceEngine.value === "POSTGRES"

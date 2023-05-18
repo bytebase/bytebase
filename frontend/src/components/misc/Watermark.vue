@@ -22,25 +22,30 @@
 import { computed } from "vue";
 import { NWatermark } from "naive-ui";
 
-import { featureToRef, useCurrentUser, useSettingByName } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { featureToRef, useCurrentUserV1 } from "@/store";
+import { UNKNOWN_USER_NAME } from "@/types";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { extractUserUID } from "@/utils";
 
 const GAP = 320;
 const SIZE = 16;
 const PADDING = 6;
 
-const currentUser = useCurrentUser();
-const setting = useSettingByName("bb.workspace.watermark");
+const currentUserV1 = useCurrentUserV1();
+const setting = computed(() =>
+  useSettingV1Store().getSettingByName("bb.workspace.watermark")
+);
 const hasWatermarkFeature = featureToRef("bb.feature.watermark");
 
 const lines = computed(() => {
-  const user = currentUser.value;
-  if (user.id === UNKNOWN_ID) return [];
+  const user = currentUserV1.value;
+  const uid = extractUserUID(user.name);
+  if (user.name === UNKNOWN_USER_NAME) return [];
   if (!hasWatermarkFeature.value) return [];
-  if (setting.value?.value !== "1") return [];
+  if (setting.value?.value?.stringValue !== "1") return [];
 
   const lines: string[] = [];
-  lines.push(`${user.name} (${user.id})`);
+  lines.push(`${user.title} (${uid})`);
   if (user.email) {
     lines.push(user.email);
   }

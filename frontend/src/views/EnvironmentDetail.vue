@@ -52,7 +52,6 @@
 import { computed, reactive, watchEffect } from "vue";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { EnvironmentPatch } from "../types";
 import { idFromSlug } from "../utils";
 import { hasFeature, pushNotification, useBackupStore } from "@/store";
 import { useI18n } from "vue-i18n";
@@ -110,7 +109,7 @@ const { t } = useI18n();
 
 const state = reactive<LocalState>({
   environment: environmentV1Store.getEnvironmentByUID(
-    idFromSlug(props.environmentSlug)
+    String(idFromSlug(props.environmentSlug))
   ),
   showArchiveModal: false,
   showDisableAutoBackupModal: false,
@@ -154,15 +153,12 @@ const assignEnvironment = (environment: Environment) => {
   state.environment = environment;
 };
 
-const doUpdate = (environmentPatch: EnvironmentPatch) => {
+const doUpdate = (environmentPatch: Environment) => {
   const pendingUpdate = cloneDeep(state.environment);
-  if (environmentPatch.title) {
+  if (environmentPatch.title !== pendingUpdate.title) {
     pendingUpdate.title = environmentPatch.title;
   }
-  if (environmentPatch.order) {
-    pendingUpdate.order = environmentPatch.order;
-  }
-  if (environmentPatch.tier) {
+  if (environmentPatch.tier !== pendingUpdate.tier) {
     if (
       pendingUpdate.tier !== defaultEnvironmentTier &&
       !hasFeature("bb.feature.environment-tier-policy")
@@ -180,7 +176,7 @@ const doUpdate = (environmentPatch: EnvironmentPatch) => {
       module: "bytebase",
       style: "SUCCESS",
       title: t("environment.successfully-updated-environment", {
-        name: environment.name,
+        name: environment.title,
       }),
     });
   });
@@ -207,7 +203,7 @@ const success = () => {
     module: "bytebase",
     style: "SUCCESS",
     title: t("environment.successfully-updated-environment", {
-      name: state.environment.name,
+      name: state.environment.title,
     }),
   });
 };

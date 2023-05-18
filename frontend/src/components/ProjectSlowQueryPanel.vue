@@ -16,7 +16,7 @@ import {
   SlowQueryFilterParams,
   defaultSlowQueryFilterParams,
 } from "@/components/SlowQuery";
-import { Project } from "@/types";
+import { Project } from "@/types/proto/v1/project_service";
 
 const props = defineProps<{
   project: Project;
@@ -28,7 +28,7 @@ const filter = shallowRef<SlowQueryFilterParams>({
 });
 
 watch(
-  () => props.project.id,
+  () => props.project.uid,
   () => {
     filter.value.project = props.project;
   }

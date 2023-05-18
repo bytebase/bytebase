@@ -1,9 +1,6 @@
 import { RemovableRef } from "@vueuse/core";
 import {
-  EnvironmentId,
   MigrationHistoryId,
-  Policy,
-  PolicyType,
   QueryHistory,
   Sheet,
   OnboardingGuideType,
@@ -14,7 +11,6 @@ import { Bookmark } from "./bookmark";
 import { Command } from "./common";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
-import { Environment } from "./environment";
 import {
   CommandId,
   DatabaseId,
@@ -31,12 +27,10 @@ import { Instance, MigrationHistory } from "./instance";
 import { InstanceUser } from "./InstanceUser";
 import { Issue } from "./issue";
 import { IssueSubscriber } from "./issueSubscriber";
-import { Member } from "./member";
 import { Notification } from "./notification";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { Repository } from "./repository";
-import { Setting, SettingName } from "./setting";
 import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ReleaseInfo } from "./actuator";
@@ -52,14 +46,6 @@ export interface ActuatorState {
 
 export interface AuditLogState {
   auditLogList: AuditLog[];
-}
-
-export interface SettingState {
-  settingByName: Map<SettingName, Setting>;
-}
-
-export interface MemberState {
-  memberList: Member[];
 }
 
 export interface PrincipalState {
@@ -98,16 +84,8 @@ export interface StageState {}
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface TaskState {}
 
-export interface PolicyState {
-  policyMapByEnvironmentId: Map<EnvironmentId, Map<PolicyType, Policy>>;
-}
-
 export interface ProjectState {
   projectById: Map<ProjectId, Project>;
-}
-
-export interface EnvironmentState {
-  environmentList: Environment[];
 }
 
 export interface InstanceState {
