@@ -184,6 +184,7 @@ export interface Instance {
   state: State;
   title: string;
   engine: Engine;
+  engineVersion: string;
   externalLink: string;
   dataSources: DataSource[];
   /**
@@ -1012,7 +1013,17 @@ export const SyncSlowQueriesRequest = {
 };
 
 function createBaseInstance(): Instance {
-  return { name: "", uid: "", state: 0, title: "", engine: 0, externalLink: "", dataSources: [], environment: "" };
+  return {
+    name: "",
+    uid: "",
+    state: 0,
+    title: "",
+    engine: 0,
+    engineVersion: "",
+    externalLink: "",
+    dataSources: [],
+    environment: "",
+  };
 }
 
 export const Instance = {
@@ -1032,14 +1043,17 @@ export const Instance = {
     if (message.engine !== 0) {
       writer.uint32(40).int32(message.engine);
     }
+    if (message.engineVersion !== "") {
+      writer.uint32(50).string(message.engineVersion);
+    }
     if (message.externalLink !== "") {
-      writer.uint32(50).string(message.externalLink);
+      writer.uint32(58).string(message.externalLink);
     }
     for (const v of message.dataSources) {
-      DataSource.encode(v!, writer.uint32(58).fork()).ldelim();
+      DataSource.encode(v!, writer.uint32(66).fork()).ldelim();
     }
     if (message.environment !== "") {
-      writer.uint32(66).string(message.environment);
+      writer.uint32(74).string(message.environment);
     }
     return writer;
   },
@@ -1091,17 +1105,24 @@ export const Instance = {
             break;
           }
 
-          message.externalLink = reader.string();
+          message.engineVersion = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.dataSources.push(DataSource.decode(reader, reader.uint32()));
+          message.externalLink = reader.string();
           continue;
         case 8:
           if (tag !== 66) {
+            break;
+          }
+
+          message.dataSources.push(DataSource.decode(reader, reader.uint32()));
+          continue;
+        case 9:
+          if (tag !== 74) {
             break;
           }
 
@@ -1123,6 +1144,7 @@ export const Instance = {
       state: isSet(object.state) ? stateFromJSON(object.state) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engineVersion: isSet(object.engineVersion) ? String(object.engineVersion) : "",
       externalLink: isSet(object.externalLink) ? String(object.externalLink) : "",
       dataSources: Array.isArray(object?.dataSources) ? object.dataSources.map((e: any) => DataSource.fromJSON(e)) : [],
       environment: isSet(object.environment) ? String(object.environment) : "",
@@ -1136,6 +1158,7 @@ export const Instance = {
     message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.title !== undefined && (obj.title = message.title);
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    message.engineVersion !== undefined && (obj.engineVersion = message.engineVersion);
     message.externalLink !== undefined && (obj.externalLink = message.externalLink);
     if (message.dataSources) {
       obj.dataSources = message.dataSources.map((e) => e ? DataSource.toJSON(e) : undefined);
@@ -1157,6 +1180,7 @@ export const Instance = {
     message.state = object.state ?? 0;
     message.title = object.title ?? "";
     message.engine = object.engine ?? 0;
+    message.engineVersion = object.engineVersion ?? "";
     message.externalLink = object.externalLink ?? "";
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     message.environment = object.environment ?? "";
