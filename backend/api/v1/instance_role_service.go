@@ -266,7 +266,7 @@ func (s *InstanceRoleService) getInstanceMessage(ctx context.Context, instanceID
 
 func convertToInstanceRole(role *db.DatabaseRoleMessage, instance *store.InstanceMessage) *v1pb.InstanceRole {
 	return &v1pb.InstanceRole{
-		Name:            fmt.Sprintf("environments/%s/instances/%s/roles/%s", instance.EnvironmentID, instance.ResourceID, role.Name),
+		Name:            fmt.Sprintf("instances/%s/roles/%s", instance.ResourceID, role.Name),
 		RoleName:        role.Name,
 		ConnectionLimit: &role.ConnectionLimit,
 		ValidUntil:      role.ValidUntil,
