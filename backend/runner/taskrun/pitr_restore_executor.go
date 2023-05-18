@@ -120,7 +120,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	if err != nil {
 		return nil, err
 	}
-	targetDatabase, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &targetInstance.EnvironmentID, InstanceID: &targetInstance.ResourceID, DatabaseName: payload.DatabaseName})
+	targetDatabase, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &targetInstance.ResourceID, DatabaseName: payload.DatabaseName})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find target database %q in instance %q", *payload.DatabaseName, instance.Title)
 	}
@@ -154,7 +154,6 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	// and since we can't guarantee cross database transaction consistency, there is always a chance to have
 	// inconsistent data. We choose to do Patch afterwards since this one is unlikely to fail.
 	if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		EnvironmentID:  targetDatabase.EnvironmentID,
 		InstanceID:     targetDatabase.InstanceID,
 		DatabaseName:   targetDatabase.DatabaseName,
 		SourceBackupID: &backup.UID,

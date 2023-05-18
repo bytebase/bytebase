@@ -206,9 +206,8 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 	var databaseUID sql.NullInt32
 	if upsert.DatabaseName != "" {
 		database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{
-			EnvironmentID: upsert.EnvironmentID,
-			InstanceID:    upsert.InstanceID,
-			DatabaseName:  &upsert.DatabaseName,
+			InstanceID:   upsert.InstanceID,
+			DatabaseName: &upsert.DatabaseName,
 		})
 		if err != nil {
 			return err

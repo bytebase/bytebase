@@ -13,12 +13,11 @@
       }"
     >
       <div class="bb-grid-cell">
-        <router-link :to="`/environment/${environment.uid}`">
-          {{ environmentTitleV1(environment) }}
-          <ProductionEnvironmentIcon
-            :tier="environmentTierToJSON(environment.tier)"
-          />
-        </router-link>
+        <EnvironmentV1Name
+          :environment="environment"
+          :link="true"
+          :plain="true"
+        />
       </div>
       <div class="bb-grid-cell">
         <template v-if="review">
@@ -28,7 +27,7 @@
       <div class="bb-grid-cell justify-center">
         <BBCheckbox
           :disabled="!review || !hasPermission"
-          :value="review?.rowStatus === 'NORMAL'"
+          :value="review?.enforce"
           @toggle="toggleReviewEnabled(review!, $event)"
         />
       </div>
@@ -75,16 +74,16 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
 import { BBButtonConfirm, BBCheckbox, BBGrid, BBGridColumn } from "@/bbkit";
-import { pushNotification, useCurrentUser, useSQLReviewStore } from "@/store";
-import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
-import { SQLReviewPolicy } from "@/types";
-import ProductionEnvironmentIcon from "../Environment/ProductionEnvironmentIcon.vue";
 import {
-  Environment,
-  environmentTierToJSON,
-} from "@/types/proto/v1/environment_service";
-import { useEnvironmentList } from "@/store/modules/v1/environment";
-import { environmentTitleV1 } from "@/utils";
+  pushNotification,
+  useCurrentUserV1,
+  useSQLReviewStore,
+  useEnvironmentV1List,
+} from "@/store";
+import { hasWorkspacePermissionV1, sqlReviewPolicySlug } from "@/utils";
+import { SQLReviewPolicy } from "@/types";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentV1Name } from "@/components/v2";
 
 type EnvironmentReviewPolicy = {
   environment: Environment;
@@ -93,7 +92,7 @@ type EnvironmentReviewPolicy = {
 
 const { t } = useI18n();
 const router = useRouter();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const sqlReviewStore = useSQLReviewStore();
 
 onMounted(() => {
@@ -126,13 +125,13 @@ const columnList = computed((): BBGridColumn[] => {
 });
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-sql-review-policy",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
-const environmentList = useEnvironmentList();
+const environmentList = useEnvironmentV1List();
 const reviewPolicyList = computed(() => sqlReviewStore.reviewPolicyList);
 
 const combinedList = computed(() => {
@@ -150,7 +149,7 @@ const combinedList = computed(() => {
 const toggleReviewEnabled = async (review: SQLReviewPolicy, on: boolean) => {
   await sqlReviewStore.updateReviewPolicy({
     id: review.id,
-    rowStatus: on ? "NORMAL" : "ARCHIVED",
+    enforce: on,
   });
 };
 

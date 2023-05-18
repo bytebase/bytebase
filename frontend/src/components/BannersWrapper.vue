@@ -1,4 +1,5 @@
 <template>
+  <BannerUpgradeSubscription />
   <template v-if="shouldShowDemoBanner">
     <BannerDemo />
   </template>
@@ -25,18 +26,19 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import {
   useActuatorStore,
-  useCurrentUser,
+  useCurrentUserV1,
   useDebugStore,
   useSubscriptionStore,
 } from "@/store/modules";
-import { hasWorkspacePermission, isDev } from "@/utils";
+import { hasWorkspacePermissionV1, isDev } from "@/utils";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerDebug from "@/views/BannerDebug.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
+import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
 
 const actuatorStore = useActuatorStore();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const debugStore = useDebugStore();
 const subscriptionStore = useSubscriptionStore();
 
@@ -56,9 +58,9 @@ const shouldShowDemoBanner = computed(() => {
 const shouldShowDebugBanner = computed(() => {
   return (
     isDebug.value &&
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.debug",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   );
 });

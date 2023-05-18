@@ -200,7 +200,7 @@ const allowCreate = computed(() => {
 
 const create = async () => {
   if (
-    state.project.tenantMode === TenantMode.TENANT_MODE_DISABLED &&
+    state.project.tenantMode === TenantMode.TENANT_MODE_ENABLED &&
     !hasFeature("bb.feature.multi-tenancy")
   ) {
     state.showFeatureModal = true;

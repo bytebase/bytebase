@@ -1,5 +1,5 @@
 <template>
-  <EnvironmentName
+  <EnvironmentV1Name
     v-if="environment"
     :environment="environment"
     :link="false"
@@ -23,8 +23,8 @@ import { computed } from "vue";
 import { escape } from "lodash-es";
 
 import { DatabaseTreeOption } from "./common";
-import { useDatabaseStore, useEnvironmentStore } from "@/store";
-import { EnvironmentName, InstanceName } from "@/components/v2";
+import { useDatabaseStore, useEnvironmentV1Store } from "@/store";
+import { EnvironmentV1Name, InstanceName } from "@/components/v2";
 import { getHighlightHTMLByRegExp } from "@/utils";
 
 const props = defineProps<{
@@ -33,18 +33,18 @@ const props = defineProps<{
 }>();
 
 const id = computed(() => {
-  return parseInt(props.option.value.split("-").pop()!, 10);
+  return props.option.value.split("-").pop()!;
 });
 
 const environment = computed(() => {
   const { option } = props;
-  if (option.level === "database") return undefined;
-  return useEnvironmentStore().getEnvironmentById(id.value);
+  if (option.level !== "environment") return undefined;
+  return useEnvironmentV1Store().getEnvironmentByUID(id.value);
 });
 
 const database = computed(() => {
   const { option } = props;
-  if (option.level === "environment") return undefined;
+  if (option.level !== "database") return undefined;
   return useDatabaseStore().getDatabaseById(id.value);
 });
 

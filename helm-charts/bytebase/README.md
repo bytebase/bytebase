@@ -79,6 +79,7 @@ upgrade bytebase-release bytebase-repo/bytebase
 |   bytebase.persistence.storageClass    |                                                  The storage class used by Bytebase PVC.                                                  |                                           ""                                            |
 |      bytebase.persistence.storage      |                                                  The storage size of Bytebase PVC used.                                                   |                                          "2Gi"                                          |
 |   bytebase.persistence.existingClaim   |                                                The existing PVC that bytebase need to use.                                                |                                           ""                                            |
+|      bytebase.registryMirrorHost       |                                                                    ""                                                                     |     The host of the registry mirror used by downloading bytebase container images.      |
 
 **If you enable bytebase persistence, you should provide storageClass and storage to bytebase to request a PVC, or provide the already existed PVC by existingClaim.**
 

@@ -51,19 +51,13 @@ import { reactive, PropType, computed } from "vue";
 import { NInputGroup } from "naive-ui";
 import { uniqBy } from "lodash-es";
 
-import {
-  Database,
-  EnvironmentId,
-  Instance,
-  InstanceId,
-  UNKNOWN_ID,
-} from "../types";
+import { Database, Instance, InstanceId, UNKNOWN_ID } from "../types";
 import { filterDatabaseByKeyword } from "@/utils";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import { EnvironmentTabFilter, InstanceSelect, SearchBox } from "./v2";
 
 interface LocalState {
-  environment: EnvironmentId;
+  environment: string;
   instance: InstanceId;
   keyword: string;
 }
@@ -76,7 +70,7 @@ const props = defineProps({
 });
 
 const state = reactive<LocalState>({
-  environment: UNKNOWN_ID,
+  environment: String(UNKNOWN_ID),
   instance: UNKNOWN_ID,
   keyword: "",
 });
@@ -85,8 +79,8 @@ const filteredDatabaseList = computed(() => {
   return props.databaseList
     .filter((db) => {
       return (
-        state.environment === UNKNOWN_ID ||
-        db.instance.environment.id === state.environment
+        state.environment === String(UNKNOWN_ID) ||
+        String(db.instance.environment.id) === state.environment
       );
     })
     .filter((db) => {

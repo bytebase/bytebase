@@ -217,6 +217,11 @@ export interface ApprovalTemplate {
   flow?: ApprovalFlow;
   title: string;
   description: string;
+  /**
+   * The name of the creator.
+   * Format: users/{user}. {user} is a system-generated unique ID.
+   */
+  creator: string;
 }
 
 export interface ApprovalFlow {
@@ -1199,7 +1204,7 @@ export const Review_Approver = {
 };
 
 function createBaseApprovalTemplate(): ApprovalTemplate {
-  return { flow: undefined, title: "", description: "" };
+  return { flow: undefined, title: "", description: "", creator: "" };
 }
 
 export const ApprovalTemplate = {
@@ -1212,6 +1217,9 @@ export const ApprovalTemplate = {
     }
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
+    }
+    if (message.creator !== "") {
+      writer.uint32(34).string(message.creator);
     }
     return writer;
   },
@@ -1244,6 +1252,13 @@ export const ApprovalTemplate = {
 
           message.description = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1258,6 +1273,7 @@ export const ApprovalTemplate = {
       flow: isSet(object.flow) ? ApprovalFlow.fromJSON(object.flow) : undefined,
       title: isSet(object.title) ? String(object.title) : "",
       description: isSet(object.description) ? String(object.description) : "",
+      creator: isSet(object.creator) ? String(object.creator) : "",
     };
   },
 
@@ -1266,6 +1282,7 @@ export const ApprovalTemplate = {
     message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined && (obj.description = message.description);
+    message.creator !== undefined && (obj.creator = message.creator);
     return obj;
   },
 
@@ -1280,6 +1297,7 @@ export const ApprovalTemplate = {
       : undefined;
     message.title = object.title ?? "";
     message.description = object.description ?? "";
+    message.creator = object.creator ?? "";
     return message;
   },
 };
@@ -1847,8 +1865,8 @@ function toTimestamp(date: Date): Timestamp {
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = t.seconds * 1_000;
-  millis += t.nanos / 1_000_000;
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
   return new Date(millis);
 }
 

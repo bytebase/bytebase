@@ -64,15 +64,15 @@ import { BBAlertDialog, BBStepTab } from "@/bbkit";
 import SQLReviewInfo from "./SQLReviewInfo.vue";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import {
-  useCurrentUser,
+  useCurrentUserV1,
   pushNotification,
   useSQLReviewStore,
   useSubscriptionStore,
+  useEnvironmentV1List,
 } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import { rulesToTemplate } from "./components";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { useEnvironmentList } from "@/store/modules/v1/environment";
 
 interface LocalState {
   currentStep: number;
@@ -104,7 +104,7 @@ const alertDialog = ref<InstanceType<typeof BBAlertDialog>>();
 const { t } = useI18n();
 const router = useRouter();
 const store = useSQLReviewStore();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const subscriptionStore = useSubscriptionStore();
 
 const BASIC_INFO_STEP = 0;
@@ -157,7 +157,7 @@ const onTemplateApply = (template: SQLReviewPolicyTemplate | undefined) => {
 };
 
 const availableEnvironmentList = computed((): Environment[] => {
-  const environmentList = useEnvironmentList();
+  const environmentList = useEnvironmentV1List();
   const filteredList = store.availableEnvironments(
     environmentList.value,
     props.policy?.id
@@ -214,9 +214,9 @@ const tryChangeStep = (
 
 const tryFinishSetup = (allowChangeCallback: () => void) => {
   if (
-    !hasWorkspacePermission(
+    !hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-sql-review-policy",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     pushNotification({

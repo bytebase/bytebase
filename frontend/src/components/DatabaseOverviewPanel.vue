@@ -233,7 +233,7 @@
 <script lang="ts" setup>
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { computed, reactive, watchEffect, PropType } from "vue";
-import { hasWorkspacePermission, memberListInProject } from "../utils";
+import { hasWorkspacePermissionV1, roleListInProjectV1 } from "../utils";
 import {
   Anomaly,
   Database,
@@ -243,10 +243,11 @@ import {
 } from "../types";
 import {
   featureToRef,
-  useCurrentUser,
   useDataSourceStore,
   useAnomalyList,
   useDBSchemaStore,
+  useProjectV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyTable.vue";
@@ -274,7 +275,7 @@ const state = reactive<LocalState>({
   selectedSchemaName: "",
 });
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const dbSchemaStore = useDBSchemaStore();
 
 const databaseEngine = computed(() => {
@@ -367,9 +368,9 @@ const functionList = computed(() => {
 });
 
 const allowConfigInstance = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-instance",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -378,13 +379,11 @@ const allowViewDataSource = computed(() => {
     return true;
   }
 
-  return (
-    memberListInProject(
-      props.database.project,
-      currentUser.value,
-      /* empty array to "ALL" */ []
-    ).length > 0
+  const project = useProjectV1Store().getProjectByUID(
+    String(props.database.project.id)
   );
+
+  return roleListInProjectV1(project.iamPolicy, currentUserV1.value).length > 0;
 });
 
 const dataSourceList = computed(() => {

@@ -1,6 +1,5 @@
 import { useI18n } from "vue-i18n";
 import { PolicyId } from "./id";
-import { RowStatus } from "./common";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import sqlReviewSchema from "./sql-review-schema.yaml";
@@ -9,7 +8,7 @@ import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 
 // The engine type for rule template
-export type SchemaRuleEngineType = "MYSQL" | "POSTGRES" | "TIDB";
+export type SchemaRuleEngineType = "MYSQL" | "POSTGRES" | "TIDB" | "ORACLE";
 
 // The category type for rule template
 export type CategoryType =
@@ -104,6 +103,9 @@ export type RuleType =
   | "naming.index.fk"
   | "naming.index.idx"
   | "naming.column.auto-increment"
+  | "naming.table.no-keyword"
+  | "naming.identifier.no-keyword"
+  | "naming.identifier.case"
   | "column.required"
   | "column.no-null"
   | "column.comment"
@@ -116,6 +118,7 @@ export type RuleType =
   | "column.disallow-set-charset"
   | "column.auto-increment-must-unsigned"
   | "column.maximum-character-length"
+  | "column.maximum-varchar-length"
   | "column.auto-increment-initial-value"
   | "column.current-time-count-limit"
   | "column.require-default"
@@ -173,6 +176,12 @@ interface NumberLimitPayload {
   number: number;
 }
 
+// The case rule payload.
+// Used by the backend.
+interface CasePayload {
+  upper: boolean;
+}
+
 // The SchemaPolicyRule stores the rule configuration by users.
 // Used by the backend
 export interface SchemaPolicyRule {
@@ -182,7 +191,8 @@ export interface SchemaPolicyRule {
     | NamingFormatPayload
     | StringArrayLimitPayload
     | CommentFormatPayload
-    | NumberLimitPayload;
+    | NumberLimitPayload
+    | CasePayload;
   comment: string;
 }
 
@@ -191,7 +201,8 @@ export interface SQLReviewPolicy {
   id: PolicyId;
 
   // Standard fields
-  rowStatus: RowStatus;
+  // enforce means if the policy is active
+  enforce: boolean;
 
   // Domain specific fields
   name: string;
@@ -445,6 +456,19 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
+    case "naming.identifier.case":
+      if (!booleanComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+      return {
+        ...res,
+        componentList: [
+          {
+            ...booleanComponent,
+            payload: booleanComponent.payload,
+          },
+        ],
+      };
     case "column.required": {
       const requiredColumnComponent = ruleTemplate.componentList[0];
       // The columnList payload is deprecated.
@@ -514,6 +538,7 @@ export const convertPolicyRuleToRuleTemplate = (
     case "statement.insert.row-limit":
     case "statement.affected-row-limit":
     case "column.maximum-character-length":
+    case "column.maximum-varchar-length":
     case "column.auto-increment-initial-value":
     case "index.key-number-limit":
     case "index.total-number-limit":
@@ -615,6 +640,16 @@ export const convertRuleTemplateToPolicyRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
+    case "naming.identifier.case":
+      if (!booleanPayload) {
+        throw new Error(`Invalid rule ${rule.type}`);
+      }
+      return {
+        ...base,
+        payload: {
+          upper: booleanPayload.value ?? booleanPayload.default,
+        },
+      };
     case "column.required":
     case "column.type-disallow-list":
     case "index.primary-key-type-allowlist":
@@ -644,6 +679,7 @@ export const convertRuleTemplateToPolicyRule = (
     case "statement.insert.row-limit":
     case "statement.affected-row-limit":
     case "column.maximum-character-length":
+    case "column.maximum-varchar-length":
     case "column.auto-increment-initial-value":
     case "index.key-number-limit":
     case "index.total-number-limit":

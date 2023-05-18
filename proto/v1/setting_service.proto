@@ -4,11 +4,20 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/client.proto";
+import "google/api/expr/v1alpha1/syntax.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "v1/review_service.proto";
+import "v1/subscription_service.proto";
 
 option go_package = "generated-go/v1";
 
 service SettingService {
+  rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse) {
+    option (google.api.http) = {get: "/v1/settings"};
+    option (google.api.method_signature) = "";
+  }
+
   rpc GetSetting(GetSettingRequest) returns (Setting) {
     option (google.api.http) = {get: "/v1/{name=settings/*}"};
     option (google.api.method_signature) = "name";
@@ -20,6 +29,30 @@ service SettingService {
       body: "setting"
     };
   }
+}
+
+message ListSettingsRequest {
+  // The maximum number of settings to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 settings will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListSettings` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListSettings` must match
+  // the call that provided the page token.
+  string page_token = 2;
+}
+
+message ListSettingsResponse {
+  // The settings from the specified request.
+  repeated Setting settings = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
 }
 
 // The request message for getting a setting.
@@ -62,6 +95,11 @@ message Value {
     // Defines this value as being a string value.
     string string_value = 1;
     SMTPMailDeliverySettingValue smtp_mail_delivery_setting_value = 2;
+    AppIMSetting app_im_setting_value = 3;
+    AgentPluginSetting agent_plugin_setting_value = 4;
+    WorkspaceProfileSetting workspace_profile_setting_value = 5;
+    WorkspaceApprovalSetting workspace_approval_setting_value = 6;
+    WorkspaceTrialSetting workspace_trial_setting_value = 7;
   }
 }
 
@@ -107,4 +145,73 @@ message SMTPMailDeliverySettingValue {
 
   // The recipient email address, used with validate_only to send test email.
   string to = 11;
+}
+
+message AppIMSetting {
+  enum IMType {
+    IM_TYPE_UNSPECIFIED = 0;
+    FEISHU = 1;
+  }
+  IMType im_type = 1;
+
+  string app_id = 2;
+
+  string app_secret = 3;
+
+  message ExternalApproval {
+    bool enabled = 1;
+    string approval_definition_id = 2;
+  }
+  ExternalApproval external_approval = 4;
+}
+
+message AgentPluginSetting {
+  // The URL for the agent API.
+  string url = 1;
+
+  // The token for the agent.
+  string token = 2;
+}
+
+message WorkspaceProfileSetting {
+  // The URL user visits Bytebase.
+  //
+  // The external URL is used for:
+  // 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
+  // 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
+  string external_url = 1;
+
+  // Disallow self-service signup, users can only be invited by the owner.
+  bool disallow_signup = 2;
+
+  // Require 2FA for all users.
+  bool require_2fa = 3;
+
+  // outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
+  repeated string outbound_ip_list = 4;
+
+  // The webhook URL for the GitOps workflow.
+  string gitops_webhook_url = 5;
+}
+
+message WorkspaceApprovalSetting {
+  message Rule {
+    google.api.expr.v1alpha1.ParsedExpr expression = 1;
+    ApprovalTemplate template = 2;
+  }
+  repeated Rule rules = 1;
+}
+
+message WorkspaceTrialSetting {
+  int32 instance_count = 1;
+
+  google.protobuf.Timestamp expire_time = 2;
+
+  google.protobuf.Timestamp issued_time = 3;
+
+  string subject = 4;
+
+  string org_name = 5;
+
+  PlanType plan = 6;
 }

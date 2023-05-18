@@ -1,7 +1,8 @@
 import { computed, unref } from "vue";
-import { MaybeRef, ProjectRoleType, RoleType } from "../types";
-import { hasFeature, useCurrentUser, useRoleStore } from "@/store";
+import { MaybeRef, PresetRoleType, ProjectRoleType, RoleType } from "../types";
+import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
 import { t } from "@/plugins/i18n";
+import { UserRole } from "@/types/proto/v1/auth_service";
 
 export type WorkspacePermissionType =
   | "bb.permission.workspace.debug"
@@ -65,29 +66,30 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
 ]);
 
 // Returns true if RBAC is not enabled or the particular role has the particular permission.
-export function hasWorkspacePermission(
+export function hasWorkspacePermissionV1(
   permission: WorkspacePermissionType,
-  role: RoleType
+  role: UserRole
 ): boolean {
   if (!hasFeature("bb.feature.rbac")) {
     return true;
   }
   switch (role) {
-    case "DEVELOPER":
+    case UserRole.DEVELOPER:
       return WORKSPACE_PERMISSION_MATRIX.get(permission)![0];
-    case "DBA":
+    case UserRole.DBA:
       return WORKSPACE_PERMISSION_MATRIX.get(permission)![1];
-    case "OWNER":
+    case UserRole.OWNER:
       return WORKSPACE_PERMISSION_MATRIX.get(permission)![2];
   }
+  return false;
 }
 
-export const useWorkspacePermission = (
+export const useWorkspacePermissionV1 = (
   permission: MaybeRef<WorkspacePermissionType>
 ) => {
-  const user = useCurrentUser();
+  const user = useCurrentUserV1();
   return computed(() => {
-    return hasWorkspacePermission(unref(permission), user.value.role);
+    return hasWorkspacePermissionV1(unref(permission), user.value.userRole);
   });
 };
 
@@ -142,18 +144,18 @@ export function hasProjectPermission(
 }
 
 // Returns true if admin feature is NOT supported or the principal is OWNER
-export function isOwner(role: RoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role === "OWNER";
+export function isOwner(role: UserRole): boolean {
+  return !hasFeature("bb.feature.rbac") || role === UserRole.OWNER;
 }
 
 // Returns true if admin feature is NOT supported or the principal is DBA
-export function isDBA(role: RoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role === "DBA";
+export function isDBA(role: UserRole): boolean {
+  return !hasFeature("bb.feature.rbac") || role === UserRole.DBA;
 }
 
 // Returns true if admin feature is NOT supported or the principal is DEVELOPER
-export function isDeveloper(role: RoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role === "DEVELOPER";
+export function isDeveloper(role: UserRole): boolean {
+  return !hasFeature("bb.feature.rbac") || role === UserRole.DEVELOPER;
 }
 
 export function roleName(role: RoleType): string {
@@ -186,10 +188,10 @@ export const extractRoleResourceName = (resourceId: string): string => {
 
 export const displayRoleTitle = (role: string): string => {
   // Use i18n-defined readable titles for system roles
-  if (role === "roles/OWNER") return t("common.role.owner");
-  if (role === "roles/DEVELOPER") return t("common.role.developer");
-  if (role === "roles/EXPORTER") return t("common.role.exporter");
-  if (role === "roles/QUERIER") return t("common.role.querier");
+  if (role === PresetRoleType.OWNER) return t("common.role.owner");
+  if (role === PresetRoleType.DEVELOPER) return t("common.role.developer");
+  if (role === PresetRoleType.EXPORTER) return t("common.role.exporter");
+  if (role === PresetRoleType.QUERIER) return t("common.role.querier");
   // Use role.title if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
   // Fallback to extracted resource name otherwise

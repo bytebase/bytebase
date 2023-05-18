@@ -5,10 +5,10 @@ import {
   ComposedProject,
   emptyProject,
   EMPTY_ID,
-  IdType,
   MaybeRef,
   ResourceId,
   unknownProject,
+  UNKNOWN_ID,
 } from "@/types";
 import { projectServiceClient } from "@/grpcweb";
 import { Project } from "@/types/proto/v1/project_service";
@@ -16,6 +16,7 @@ import { useProjectIamPolicyStore } from "./projectIamPolicy";
 import { State } from "@/types/proto/v1/common";
 import { User } from "@/types/proto/v1/auth_service";
 import { useCurrentUserV1 } from "../auth";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
@@ -27,10 +28,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
 
   // Actions
   const upsertProjectMap = async (projectList: Project[]) => {
-    for (const project of projectList) {
-      const composed = await composeProjectIamPolicy(project);
-      projectMapByName.set(composed.name, composed);
-    }
+    const composedProjectList = await batchComposeProjectIamPolicy(projectList);
+    composedProjectList.forEach((project) => {
+      projectMapByName.set(project.name, project);
+    });
   };
   const fetchProjectList = async (showDeleted = false) => {
     const { projects } = await projectServiceClient.listProjects({
@@ -39,15 +40,38 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     await upsertProjectMap(projects);
     return projects;
   };
-  const getProjectByUID = (uid: IdType) => {
-    if (typeof uid === "string") {
-      uid = parseInt(uid, 10);
+  const getProjectList = (showDeleted = false) => {
+    if (unref(showDeleted)) {
+      return projectList.value;
     }
-    if (uid === EMPTY_ID) {
+    return projectList.value.filter(
+      (project) => project.state === State.ACTIVE
+    );
+  };
+  const getProjectListByUser = (user: User, showDeleted = false) => {
+    const canManageProject = hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-project",
+      user.userRole
+    );
+    const projectList = getProjectList(showDeleted);
+    if (canManageProject) {
+      return projectList;
+    }
+
+    return projectList.filter((project) => {
+      return project.iamPolicy.bindings.some((binding) => {
+        return binding.members.some((email) => {
+          return email === `user:${unref(user).email}`;
+        });
+      });
+    });
+  };
+  const getProjectByUID = (uid: string) => {
+    if (uid === String(EMPTY_ID)) {
       return emptyProject();
     }
     return (
-      projectList.value.find((project) => parseInt(project.uid, 10) === uid) ??
+      projectList.value.find((project) => project.uid === uid) ??
       unknownProject()
     );
   };
@@ -56,9 +80,9 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       name,
     });
     await upsertProjectMap([project]);
-    return project;
+    return project as ComposedProject;
   };
-  const fetchProjectByUID = async (uid: IdType) => {
+  const fetchProjectByUID = async (uid: string) => {
     return fetchProjectByName(`projects/${uid}`);
   };
   const getOrFetchProjectByName = async (name: string) => {
@@ -68,14 +92,16 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     }
     return fetchProjectByName(name);
   };
-  const getOrFetchProjectByUID = async (uid: IdType) => {
-    const cachedData = projectList.value.find(
-      (project) => parseInt(project.uid, 10) === uid
-    );
+  const getOrFetchProjectByUID = async (uid: string) => {
+    if (uid === String(EMPTY_ID)) return emptyProject();
+    if (uid === String(UNKNOWN_ID)) return unknownProject();
+
+    const cachedData = projectList.value.find((project) => project.uid === uid);
     if (cachedData) {
       return cachedData;
     }
-    return fetchProjectByUID(uid);
+    await fetchProjectByUID(uid);
+    return getProjectByUID(uid);
   };
   const createProject = async (project: Project, resourceId: string) => {
     const created = await projectServiceClient.createProject({
@@ -111,6 +137,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   return {
     projectMapByName,
     projectList,
+    getProjectList,
+    getProjectListByUser,
     upsertProjectMap,
     getProjectByUID,
     fetchProjectList,
@@ -135,12 +163,7 @@ export const useProjectV1List = (showDeleted: MaybeRef<boolean> = false) => {
     });
   });
   const projectList = computed(() => {
-    if (unref(showDeleted)) {
-      return store.projectList;
-    }
-    return store.projectList.filter(
-      (project) => project.state === State.ACTIVE
-    );
+    return store.getProjectList(unref(showDeleted));
   });
   return { projectList, ready };
 };
@@ -149,15 +172,10 @@ export const useProjectV1ListByUser = (
   user: MaybeRef<User>,
   showDeleted: MaybeRef<boolean> = false
 ) => {
-  const { projectList: rawProjectList, ready } = useProjectV1List(showDeleted);
+  const store = useProjectV1Store();
+  const { ready } = useProjectV1List(showDeleted);
   const projectList = computed(() => {
-    return rawProjectList.value.filter((project) => {
-      return project.iamPolicy.bindings.some((binding) => {
-        return binding.members.some((email) => {
-          return email === `user:${unref(user).email}`;
-        });
-      });
-    });
+    return store.getProjectListByUser(unref(user), unref(showDeleted));
   });
   return { projectList, ready };
 };
@@ -166,7 +184,7 @@ export const useProjectV1ListByCurrentUser = (
   showDeleted: MaybeRef<boolean> = false
 ) => useProjectV1ListByUser(useCurrentUserV1(), showDeleted);
 
-export const useProjectV1ByUID = (uid: MaybeRef<IdType>) => {
+export const useProjectV1ByUID = (uid: MaybeRef<string>) => {
   const store = useProjectV1Store();
   const ready = ref(false);
   watchEffect(() => {
@@ -181,11 +199,15 @@ export const useProjectV1ByUID = (uid: MaybeRef<IdType>) => {
   return { project, ready };
 };
 
-const composeProjectIamPolicy = async (project: Project) => {
-  const policy = await useProjectIamPolicyStore().getOrFetchProjectIamPolicy(
-    project.name
+const batchComposeProjectIamPolicy = async (projectList: Project[]) => {
+  const projectIamPolicyStore = useProjectIamPolicyStore();
+  await projectIamPolicyStore.batchGetOrFetchProjectIamPolicy(
+    projectList.map((project) => project.name)
   );
-  const composedProject = project as ComposedProject;
-  composedProject.iamPolicy = policy;
-  return composedProject;
+  return projectList.map((project) => {
+    const policy = projectIamPolicyStore.getProjectIamPolicy(project.name);
+    const composedProject = project as ComposedProject;
+    composedProject.iamPolicy = policy;
+    return composedProject;
+  });
 };

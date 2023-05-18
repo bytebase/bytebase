@@ -379,6 +379,15 @@ const (
 
 	// OracleAddNotNullColumnRequireDefault is an advisor type for Oracle adding not null column requires default.
 	OracleAddNotNullColumnRequireDefault Type = "bb.plugin.advisor.oracle.column.add-not-null-column-require-default"
+
+	// OracleTableNamingNoKeyword is an advisor type for Oracle table naming convention without keyword.
+	OracleTableNamingNoKeyword Type = "bb.plugin.advisor.oracle.naming.table-no-keyword"
+
+	// OracleIdentifierNamingNoKeyword is an advisor type for Oracle identifier naming convention without keyword.
+	OracleIdentifierNamingNoKeyword Type = "bb.plugin.advisor.oracle.naming.identifier-no-keyword"
+
+	// OracleIdentifierCase is an advisor type for Oracle identifier case.
+	OracleIdentifierCase Type = "bb.plugin.advisor.oracle.naming.identifier-case"
 )
 
 // Advice is the result of an advisor.
@@ -510,7 +519,7 @@ func IsSyntaxCheckSupported(dbType db.Type) bool {
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres:
+	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle:
 		return true
 	}
 	return false

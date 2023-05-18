@@ -1,5 +1,9 @@
 <template>
-  <button class="btn-primary" @click="state.showConfirmModal = true">
+  <button
+    class="btn-primary flex flex-row justify-center items-center"
+    @click="state.showConfirmModal = true"
+  >
+    <heroicons-outline:document-download class="w-4 h-auto mr-0.5" />
     {{ $t("common.export") }}
   </button>
 
@@ -35,8 +39,14 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
-import { useIssueLogic } from "../logic";
-import { DatabaseId, GrantRequestPayload, Issue, UNKNOWN_ID } from "@/types";
+import { useExtraIssueLogic, useIssueLogic } from "../logic";
+import {
+  DatabaseId,
+  GrantRequestPayload,
+  Issue,
+  PresetRoleType,
+  UNKNOWN_ID,
+} from "@/types";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { pushNotification, useDatabaseStore, useSQLStore } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
@@ -54,6 +64,7 @@ interface LocalState {
   isRequesting: boolean;
 }
 
+const { changeIssueStatus } = useExtraIssueLogic();
 const { issue } = useIssueLogic();
 const databaseStore = useDatabaseStore();
 const instanceV1Store = useInstanceV1Store();
@@ -83,7 +94,7 @@ const exportContext = computed(() => {
 onMounted(async () => {
   const payload = ((issue.value as Issue).payload as any)
     .grantRequest as GrantRequestPayload;
-  if (payload.role !== "roles/EXPORTER") {
+  if (payload.role !== PresetRoleType.EXPORTER) {
     throw "Only support EXPORTER role";
   }
   const expressionList = payload.condition.expression.split(" && ");
@@ -185,5 +196,8 @@ const handleExport = async () => {
   link.click();
   state.isRequesting = false;
   state.showConfirmModal = false;
+
+  // After data exported successfully, we change the issue status to DONE automatically.
+  changeIssueStatus("DONE", "");
 };
 </script>

@@ -41,14 +41,10 @@
         <MemberSelect
           class="w-full"
           :disabled="!allowEditAssignee"
-          :selected-id="assigneeId as number"
-          :custom-filter="filterPrincipal"
+          :selected-id="assigneeId"
+          :custom-filter="filterUser"
           data-label="bb-assignee-select"
-          @select-principal-id="
-            (principalId: number) => {
-              updateAssigneeId(principalId)
-            }
-          "
+          @select-user-id="updateAssigneeId"
         />
       </div>
 
@@ -91,7 +87,7 @@
         </h2>
         <div class="col-span-2">
           <StageSelect
-            :pipeline="(issue as Issue).pipeline"
+            :pipeline="(issue as Issue).pipeline!"
             :selected-id="(selectedStage as Stage).id as number"
             @select-stage-id="(stageId) => selectStageOrTask(stageId)"
           />
@@ -104,7 +100,7 @@
         </h2>
         <div class="col-span-2">
           <TaskSelect
-            :pipeline="(issue as Issue).pipeline"
+            :pipeline="(issue as Issue).pipeline!"
             :stage="(selectedStage as Stage)"
             :selected-id="(selectedTask as Task).id"
             @select-task-id="(taskId) => selectTaskId(taskId)"
@@ -209,13 +205,11 @@
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.environment") }}
       </h2>
-      <router-link
-        :to="`/environment/${environmentSlug(environment)}`"
-        class="col-span-2 text-sm font-medium text-main hover:underline flex items-center"
-      >
-        {{ environmentName(environment) }}
-        <ProductionEnvironmentIcon class="ml-1" :environment="environment" />
-      </router-link>
+      <EnvironmentV1Name
+        :environment="environment"
+        :link="true"
+        class="col-span-2 !text-sm !font-medium !text-main !hover:underline flex items-center"
+      />
 
       <template v-for="label in visibleLabelList" :key="label.key">
         <h2
@@ -235,12 +229,12 @@
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.project") }}
       </h2>
-      <router-link
-        :to="`/project/${projectSlug(project)}`"
+      <ProjectV1Name
+        :project="project"
+        :link="true"
+        :plain="true"
         class="col-span-2 text-sm font-medium text-main hover:underline"
-      >
-        {{ projectName(project) }}
-      </router-link>
+      />
 
       <template v-if="!create">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -309,11 +303,10 @@ import InstanceEngineIcon from "../InstanceEngineIcon.vue";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import MemberSelect from "../MemberSelect.vue";
 import FeatureModal from "../FeatureModal.vue";
+import { EnvironmentV1Name } from "@/components/v2";
 import { InputField } from "@/plugins";
 import {
   Database,
-  Environment,
-  Project,
   Issue,
   IssueCreate,
   Task,
@@ -322,24 +315,24 @@ import {
   StageCreate,
   Instance,
   DatabaseLabel,
-  Principal,
   UNKNOWN_ID,
 } from "@/types";
 import {
   allTaskList,
   databaseSlug,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   hidePrefix,
   taskSlug,
   extractDatabaseNameFromTask,
   PRESET_LABEL_KEYS,
+  extractUserUID,
 } from "@/utils";
 import {
   hasFeature,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
-  useEnvironmentStore,
-  useProjectStore,
+  useEnvironmentV1Store,
+  useProjectV1Store,
 } from "@/store";
 import {
   allowUserToBeAssignee,
@@ -348,8 +341,10 @@ import {
   useExtraIssueLogic,
   useIssueLogic,
 } from "./logic";
-import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { ProjectV1Name } from "@/components/v2";
+import { User } from "@/types/proto/v1/auth_service";
 
 dayjs.extend(isSameOrAfter);
 
@@ -370,7 +365,7 @@ const props = defineProps({
 });
 
 const router = useRouter();
-const projectStore = useProjectStore();
+const projectV1Store = useProjectV1Store();
 
 const {
   create,
@@ -400,9 +395,10 @@ const allowEdit = computed(() => {
   // is performing the issue based on the old value.
   // For now, we choose to be on the safe side at the cost of flexibility.
   const issueEntity = issue.value as Issue;
+  const currentUserUID = extractUserUID(currentUserV1.value.name);
   return (
-    issueEntity.status == "OPEN" &&
-    issueEntity.assignee?.id == currentUser.value.id
+    issueEntity.status === "OPEN" &&
+    String(issueEntity.assignee?.id) === currentUserUID
   );
 });
 
@@ -417,7 +413,7 @@ watch(selectedTask, (cur) => {
   state.earliestAllowedTs = cur.earliestAllowedTs;
 });
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const fieldValue = <T = string>(field: InputField): T => {
   return issue.value.payload[field.id] as T;
@@ -428,26 +424,25 @@ const databaseName = computed((): string | undefined => {
 });
 
 const environment = computed((): Environment => {
-  if (create.value) {
-    const stage = selectedStage.value as StageCreate;
-    return useEnvironmentStore().getEnvironmentById(stage.environmentId);
-  }
-  const stage = selectedStage.value as Stage;
-  return stage.environment;
+  const environmentId = create.value
+    ? (selectedStage.value as StageCreate).environmentId
+    : (selectedStage.value as Stage).environment.id;
+
+  return useEnvironmentV1Store().getEnvironmentByUID(String(environmentId));
 });
 
-const project = computed((): Project => {
-  if (create.value) {
-    return projectStore.getProjectById((issue.value as IssueCreate).projectId);
-  }
-  return (issue.value as Issue).project;
+const project = computed(() => {
+  const projectUID = create.value
+    ? (issue.value as IssueCreate).projectId
+    : (issue.value as Issue).project.id;
+  return projectV1Store.getProjectByUID(String(projectUID));
 });
 
 const assigneeId = computed(() => {
   if (create.value) {
-    return (issue.value as IssueCreate).assigneeId;
+    return String((issue.value as IssueCreate).assigneeId);
   }
-  return (issue.value as Issue).assignee.id;
+  return String((issue.value as Issue).assignee.id);
 });
 
 const databaseEntity = ref<Database>();
@@ -463,7 +458,7 @@ const visibleLabelList = computed((): DatabaseLabel[] => {
 
 const showStageSelect = computed((): boolean => {
   return (
-    !create.value && allTaskList((issue.value as Issue).pipeline).length > 1
+    !create.value && allTaskList((issue.value as Issue).pipeline!).length > 1
   );
 });
 
@@ -476,9 +471,9 @@ const showTaskSelect = computed((): boolean => {
 });
 
 const allowManageInstance = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-instance",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -486,7 +481,7 @@ const allowEditAssignee = computed(() => {
   if (create.value) {
     return true;
   }
-  return allowUserToChangeAssignee(currentUser.value, issue.value as Issue);
+  return allowUserToChangeAssignee(currentUserV1.value, issue.value as Issue);
 });
 
 const allowEditEarliestAllowedTime = computed(() => {
@@ -496,10 +491,11 @@ const allowEditEarliestAllowedTime = computed(() => {
   // only the assignee is allowed to modify EarliestAllowedTime
   const issueEntity = issue.value as Issue;
   const task = selectedTask.value as Task;
+  const currentUserUID = extractUserUID(currentUserV1.value.name);
   return (
-    issueEntity.status == "OPEN" &&
-    (task.status == "PENDING" || task.status == "PENDING_APPROVAL") &&
-    currentUser.value.id == issueEntity.assignee.id
+    issueEntity.status === "OPEN" &&
+    (task.status === "PENDING" || task.status === "PENDING_APPROVAL") &&
+    currentUserUID === String(issueEntity.assignee.id)
   );
 });
 
@@ -607,10 +603,11 @@ const selectTaskId = (taskId: TaskId) => {
   selectStageOrTask(stage.id as number, slug);
 };
 const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
-const filterPrincipal = (principal: Principal): boolean => {
+const filterUser = (user: User): boolean => {
   return allowUserToBeAssignee(
-    principal,
+    user,
     project.value,
+    project.value.iamPolicy,
     rollOutPolicy.value.policy,
     rollOutPolicy.value.assigneeGroup
   );

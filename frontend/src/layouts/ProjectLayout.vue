@@ -46,17 +46,18 @@ import { startCase } from "lodash-es";
 
 import {
   idFromSlug,
-  hasWorkspacePermission,
-  hasPermissionInProject,
+  hasWorkspacePermissionV1,
+  hasPermissionInProjectV1,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import { Project, DEFAULT_PROJECT_ID } from "../types";
 import {
-  useCurrentUser,
   useCurrentUserIamPolicy,
-  useProjectStore,
+  useCurrentUserV1,
+  useLegacyProjectStore,
+  useProjectV1Store,
 } from "@/store";
 
 type ProjectTabItem = {
@@ -87,11 +88,17 @@ export default defineComponent({
     const router = useRouter();
     const { t } = useI18n();
 
-    const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
+    const currentUserV1 = useCurrentUserV1();
+    const legacyProjectStore = useLegacyProjectStore();
+    const projectV1Store = useProjectV1Store();
 
     const project = computed((): Project => {
-      return projectStore.getProjectById(idFromSlug(props.projectSlug));
+      return legacyProjectStore.getProjectById(idFromSlug(props.projectSlug));
+    });
+    const projectV1 = computed(() => {
+      return projectV1Store.getProjectByUID(
+        String(idFromSlug(props.projectSlug))
+      );
     });
     const currentUserIamPolicy = useCurrentUserIamPolicy();
 
@@ -105,11 +112,22 @@ export default defineComponent({
 
     const projectTabItemList = computed((): ProjectTabItem[] => {
       if (
-        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+        !currentUserIamPolicy.isMemberOfProject(
           `projects/${project.value.resourceId}`
         )
       ) {
         return [{ name: t("common.databases"), hash: "databases" }];
+      }
+      if (
+        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+          `projects/${project.value.resourceId}`
+        )
+      ) {
+        const list = [{ name: t("common.databases"), hash: "databases" }];
+        if (!isDefaultProject.value) {
+          list.push({ name: t("common.settings"), hash: "setting" });
+        }
+        return list;
       }
 
       const list: (ProjectTabItem | null)[] = [
@@ -162,18 +180,18 @@ export default defineComponent({
       }
 
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-project",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         return true;
       }
 
       if (
-        hasPermissionInProject(
-          project.value,
-          currentUser.value,
+        hasPermissionInProjectV1(
+          projectV1.value.iamPolicy,
+          currentUserV1.value,
           "bb.permission.project.manage-general"
         )
       ) {

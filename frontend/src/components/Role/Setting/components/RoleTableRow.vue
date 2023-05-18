@@ -29,10 +29,11 @@ import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
 import type { Role } from "@/types/proto/v1/role_service";
-import { useWorkspacePermission } from "@/utils";
+import { useWorkspacePermissionV1 } from "@/utils";
 import { SpinnerButton } from "@/components/v2";
 import { useRoleStore } from "@/store";
 import { useCustomRoleSettingContext } from "../context";
+import { PresetRoleType, isCustomRole } from "@/types";
 
 const props = defineProps<{
   role: Role;
@@ -48,33 +49,44 @@ const { hasCustomRoleFeature, showFeatureModal } =
 
 const description = computed(() => {
   const { role } = props;
-  if (role.name === "roles/OWNER") return t("role.owner.description");
-  if (role.name === "roles/DEVELOPER") return t("role.developer.description");
-  if (role.name === "roles/EXPORTER") return t("role.exporter.description");
-  if (role.name === "roles/QUERIER") return t("role.querier.description");
+  if (role.name === PresetRoleType.OWNER) {
+    return t("role.owner.description");
+  }
+  if (role.name === PresetRoleType.DEVELOPER) {
+    return t("role.developer.description");
+  }
+  if (role.name === PresetRoleType.EXPORTER) {
+    return t("role.exporter.description");
+  }
+  if (role.name === PresetRoleType.QUERIER) {
+    return t("role.querier.description");
+  }
   return role.description;
 });
 
 const title = computed(() => {
   const { role } = props;
-  if (role.name === "roles/OWNER") return t("common.role.owner");
-  if (role.name === "roles/DEVELOPER") return t("common.role.developer");
-  if (role.name === "roles/EXPORTER") return t("common.role.exporter");
-  if (role.name === "roles/QUERIER") return t("common.role.querier");
+  if (role.name === PresetRoleType.OWNER) {
+    return t("common.role.owner");
+  }
+  if (role.name === PresetRoleType.DEVELOPER) {
+    return t("common.role.developer");
+  }
+  if (role.name === PresetRoleType.EXPORTER) {
+    return t("common.role.exporter");
+  }
+  if (role.name === PresetRoleType.QUERIER) {
+    return t("common.role.querier");
+  }
   return role.title;
 });
 
-const allowAdmin = useWorkspacePermission(
+const allowAdmin = useWorkspacePermissionV1(
   "bb.permission.workspace.manage-general"
 );
 
 const allowEdit = computed(() => {
-  return (
-    props.role.name !== "roles/OWNER" &&
-    props.role.name !== "roles/DEVELOPER" &&
-    props.role.name !== "roles/EXPORTER" &&
-    props.role.name !== "roles/QUERIER"
-  );
+  return isCustomRole(props.role.name);
 });
 
 const deleteRole = async () => {

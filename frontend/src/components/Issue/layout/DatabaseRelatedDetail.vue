@@ -134,7 +134,7 @@ import type {
   MigrationType,
 } from "@/types";
 import { defaultTemplate, templateForType } from "@/plugins";
-import { useInstanceStore, useProjectStore, useTaskStore } from "@/store";
+import { useInstanceStore, useProjectV1Store, useTaskStore } from "@/store";
 import {
   provideIssueLogic,
   TenantModeProvider,
@@ -165,7 +165,7 @@ const { t } = useI18n();
 const route = useRoute();
 
 const taskStore = useTaskStore();
-const projectStore = useProjectStore();
+const projectV1Store = useProjectV1Store();
 
 const create = computed(() => props.create);
 const issue = computed(() => props.issue);
@@ -203,7 +203,9 @@ const logicProviderType = computed(() => {
 
 watchEffect(() => {
   if (props.create) {
-    projectStore.fetchProjectById((props.issue as IssueCreate).projectId);
+    projectV1Store.getOrFetchProjectByUID(
+      String((props.issue as IssueCreate).projectId)
+    );
   }
 });
 
@@ -215,7 +217,7 @@ const runTaskChecks = (taskList: Task[]) => {
   const requests = taskList.map((task) => {
     return taskStore.runChecks({
       issueId: (props.issue as Issue).id,
-      pipelineId: (props.issue as Issue).pipeline.id,
+      pipelineId: (props.issue as Issue).pipeline!.id,
       taskId: task.id,
     });
   });

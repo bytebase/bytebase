@@ -6,7 +6,7 @@
   >
     <template #label="{ item }">
       <template v-if="item.value === UNKNOWN_ID">{{ item.label }}</template>
-      <EnvironmentName v-else :environment="item.environment" :link="false" />
+      <EnvironmentV1Name v-else :environment="item.environment" :link="false" />
     </template>
   </TabFilter>
 </template>
@@ -15,18 +15,19 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { useEnvironmentList } from "@/store";
-import { Environment, EnvironmentId, UNKNOWN_ID, unknown } from "@/types";
+import { useEnvironmentV1List } from "@/store";
+import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { TabFilterItem } from "./types";
-import { EnvironmentName } from "../Model";
+import { EnvironmentV1Name } from "../Model";
+import { Environment } from "@/types/proto/v1/environment_service";
 
-interface EnvironmentTabFilterItem extends TabFilterItem<EnvironmentId> {
+interface EnvironmentTabFilterItem extends TabFilterItem<string> {
   environment: Environment;
 }
 
 const props = withDefaults(
   defineProps<{
-    environment: EnvironmentId; // UNKNOWN_ID(-1) to "ALL"
+    environment: string; // UNKNOWN_ID(-1) to "ALL"
     includeAll?: boolean;
   }>(),
   {
@@ -35,25 +36,29 @@ const props = withDefaults(
 );
 
 defineEmits<{
-  (event: "update:environment", id: EnvironmentId): void;
+  (event: "update:environment", id: string): void;
 }>();
 
 const { t } = useI18n();
-const environmentList = useEnvironmentList(["NORMAL"]);
+const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
 const items = computed(() => {
   const reversedEnvironmentList = [...environmentList.value].reverse();
   const environmentItems =
     reversedEnvironmentList.map<EnvironmentTabFilterItem>((env) => ({
-      value: env.id,
-      label: env.name,
+      value: env.uid,
+      label: env.title,
       environment: env,
     }));
-  if (props.environment === UNKNOWN_ID || props.includeAll) {
+  if (props.environment === String(UNKNOWN_ID) || props.includeAll) {
+    const dummyAll = {
+      ...unknownEnvironment(),
+      title: t("common.all"),
+    };
     environmentItems.unshift({
-      value: UNKNOWN_ID,
-      label: t("common.all"),
-      environment: unknown("ENVIRONMENT"),
+      value: dummyAll.uid,
+      label: dummyAll.title,
+      environment: dummyAll,
     });
   }
   return environmentItems;

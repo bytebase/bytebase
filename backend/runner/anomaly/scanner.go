@@ -122,7 +122,7 @@ func (s *Scanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 						s.checkInstanceAnomaly(ctx, instance)
 
-						databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID})
+						databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 						if err != nil {
 							log.Error("Failed to retrieve database list",
 								zap.String("instance", instance.ResourceID),

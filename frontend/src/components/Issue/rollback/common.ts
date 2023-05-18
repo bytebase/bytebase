@@ -16,8 +16,9 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
-  hasPermissionInProject,
-  hasWorkspacePermission,
+  extractUserUID,
+  hasPermissionInProjectV1,
+  hasWorkspacePermissionV1,
   isTaskCreate,
   isTaskSkipped,
   semverCompare,
@@ -25,9 +26,10 @@ import {
 import { flattenTaskList, useIssueLogic } from "../logic";
 import {
   useActivityStore,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useIssueStore,
+  useProjectV1Store,
 } from "@/store";
 
 const MIN_ROLLBACK_SQL_MYSQL_VERSION = "5.7.0";
@@ -38,7 +40,7 @@ export type RollbackUIType =
   | "NONE"; // Nothing
 
 export const useRollbackLogic = () => {
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   const context = useIssueLogic();
   const {
     create,
@@ -102,21 +104,25 @@ export const useRollbackLogic = () => {
     }
 
     const issueEntity = issue.value as Issue;
-    const user = currentUser.value;
+    const user = currentUserV1.value;
+    const userUID = extractUserUID(user.name);
 
-    if (user.id === issueEntity.creator.id) {
+    if (userUID === String(issueEntity.creator.id)) {
       // Allowed to the issue creator
       return true;
     }
 
-    if (user.id === issueEntity.assignee.id) {
+    if (userUID === String(issueEntity.assignee.id)) {
       // Allowed to the issue assignee
       return true;
     }
 
+    const projectV1 = useProjectV1Store().getProjectByUID(
+      String(issueEntity.project.id)
+    );
     if (
-      hasPermissionInProject(
-        issueEntity.project,
+      hasPermissionInProjectV1(
+        projectV1.iamPolicy,
         user,
         "bb.permission.project.admin-database"
       )
@@ -125,7 +131,10 @@ export const useRollbackLogic = () => {
     }
 
     if (
-      hasWorkspacePermission("bb.permission.workspace.manage-issue", user.role)
+      hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-issue",
+        user.userRole
+      )
     ) {
       // Allowed to DBAs and workspace owners
       return true;

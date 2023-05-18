@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestSensitiveData(t *testing.T) {
@@ -42,7 +43,7 @@ func TestSensitiveData(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -70,11 +71,9 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test Sensitive Data Project",
-		Key:        "TestSensitiveData",
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -98,7 +97,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Nil(databases)
@@ -108,11 +107,11 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 	a.Nil(databases)
 
-	err = ctl.createDatabase(project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -121,7 +120,7 @@ func TestSensitiveData(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
+		ProjectID:  projectUID,
 		Name:       "createTable",
 		Statement:  createTable,
 		Visibility: api.ProjectSheet,
@@ -142,7 +141,7 @@ func TestSensitiveData(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("Create table for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("Create table of database %q.", databaseName),
@@ -150,35 +149,37 @@ func TestSensitiveData(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
 	// Create sensitive data policy.
-	policyPayload, err := json.Marshal(api.SensitiveDataPolicy{
-		SensitiveDataList: []api.SensitiveData{
-			{
-				Table:  tableName,
-				Column: "id",
-				Type:   api.SensitiveDataMaskTypeDefault,
-			},
-			{
-				Table:  tableName,
-				Column: "author",
-				Type:   api.SensitiveDataMaskTypeDefault,
+	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+		Parent: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.Name),
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_SENSITIVE_DATA,
+			Policy: &v1pb.Policy_SensitiveDataPolicy{
+				SensitiveDataPolicy: &v1pb.SensitiveDataPolicy{
+					SensitiveData: []*v1pb.SensitiveData{
+						{
+							Table:    tableName,
+							Column:   "id",
+							MaskType: v1pb.SensitiveDataMaskType_DEFAULT,
+						},
+						{
+							Table:    tableName,
+							Column:   "author",
+							MaskType: v1pb.SensitiveDataMaskType_DEFAULT,
+						},
+					},
+				},
 			},
 		},
 	})
 	a.NoError(err)
-	payloadString := string(policyPayload)
-
-	_, err = ctl.upsertPolicy(api.PolicyResourceTypeDatabase, database.ID, api.PolicyTypeSensitiveData, api.PolicyUpsert{
-		Payload: &payloadString,
-	})
-	a.NoError(err)
 
 	insertDataSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
+		ProjectID:  projectUID,
 		Name:       "insertData",
 		Statement:  insertData,
 		Visibility: api.ProjectSheet,
@@ -199,7 +200,7 @@ func TestSensitiveData(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err = ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("update data for database %q", databaseName),
 		Type:          api.IssueDatabaseDataUpdate,
 		Description:   fmt.Sprintf("This updates the data of database %q.", databaseName),
@@ -207,7 +208,7 @@ func TestSensitiveData(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err = ctl.waitIssuePipeline(issue.ID)
+	status, err = ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 

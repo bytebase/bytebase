@@ -11,10 +11,6 @@ export type ProjectRoleType =
   | "EXPORTER"
   | "QUERIER"
   | string;
-export const ProjectRoleTypeOwner: ProjectRoleType = "OWNER";
-export const ProjectRoleTypeDeveloper: ProjectRoleType = "DEVELOPER";
-export const ProjectRoleTypeExporter: ProjectRoleType = "EXPORTER";
-export const ProjectRoleTypeQuerier: ProjectRoleType = "QUERIER";
 
 export type ProjectWorkflowType = "UI" | "VCS";
 

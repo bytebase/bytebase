@@ -88,11 +88,8 @@ import {
   AnomalyType,
 } from "../types";
 import { databaseSlug, humanizeTs, instanceSlug } from "../utils";
-import {
-  useDatabaseStore,
-  useEnvironmentStore,
-  useInstanceStore,
-} from "@/store";
+import { useDatabaseStore, useInstanceStore } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 
 type Action = {
   onClick: () => void;
@@ -171,10 +168,10 @@ export default defineComponent({
         case "bb.anomaly.database.backup.policy-violation": {
           const payload =
             anomaly.payload as AnomalyDatabaseBackupPolicyViolationPayload;
-          const environment = useEnvironmentStore().getEnvironmentById(
-            payload.environmentId
+          const environment = useEnvironmentV1Store().getEnvironmentByUID(
+            String(payload.environmentId)
           );
-          return `'${environment.name}' environment requires ${payload.expectedSchedule} auto-backup.`;
+          return `'${environment.title}' environment requires ${payload.expectedSchedule} auto-backup.`;
         }
         case "bb.anomaly.database.backup.missing": {
           const payload =

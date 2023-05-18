@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
@@ -20,7 +22,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:                 dataDir,
 		vcsProviderCreator:      fake.NewGitLab,
 		feishuProverdierCreator: fake.NewFeishu,
@@ -67,11 +69,9 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test Project",
-		Key:        "TestExternalApprovalFeishu",
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	// Provision an instance.
@@ -97,7 +97,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 
 	// Expecting project to have no database.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Zero(len(databases))
@@ -110,12 +110,12 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabase(project, instance, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
 	// Expecting project to have 1 database.
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -123,7 +123,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
+		ProjectID:  projectUID,
 		Name:       "migration statement sheet",
 		Statement:  migrationStatement,
 		Visibility: api.ProjectSheet,
@@ -144,7 +144,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
@@ -154,7 +154,9 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	for {
-		review, err := ctl.getReview(fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID))
+		review, err := ctl.reviewServiceClient.GetReview(ctx, &v1.GetReviewRequest{
+			Name: fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID),
+		})
 		a.NoError(err)
 		if review.ApprovalFindingDone {
 			break
@@ -184,7 +186,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	ctl.feishuProvider.ApprovePendingApprovals()
 
 	// Waiting ApplicationRunner to approves the issue.
-	status, err := ctl.waitIssuePipelineWithNoApproval(issue.ID)
+	status, err := ctl.waitIssuePipelineWithNoApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 }
@@ -195,7 +197,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:                 dataDir,
 		vcsProviderCreator:      fake.NewGitLab,
 		feishuProverdierCreator: fake.NewFeishu,
@@ -242,11 +244,9 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test Project",
-		Key:        "TestExternalApprovalFeishu",
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	// Provision an instance.
@@ -272,7 +272,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 
 	// Expecting project to have no database.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Zero(len(databases))
@@ -285,12 +285,12 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabase(project, instance, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
 	// Expecting project to have 1 database.
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -298,7 +298,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
+		ProjectID:  projectUID,
 		Name:       "migration statement sheet",
 		Statement:  migrationStatement,
 		Visibility: api.ProjectSheet,
@@ -319,7 +319,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
@@ -329,7 +329,9 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	for {
-		review, err := ctl.getReview(fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID))
+		review, err := ctl.reviewServiceClient.GetReview(ctx, &v1.GetReviewRequest{
+			Name: fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID),
+		})
 		a.NoError(err)
 		if review.ApprovalFindingDone {
 			break
@@ -359,7 +361,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	ctl.feishuProvider.ApprovePendingApprovals()
 
 	// Waiting ApplicationRunner to approves the issue.
-	status, err := ctl.waitIssuePipelineWithNoApproval(issue.ID)
+	status, err := ctl.waitIssuePipelineWithNoApproval(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 }

@@ -245,7 +245,13 @@
     "collapse": "Collapse",
     "select": "Select",
     "optional": "Optional",
-    "reason": "Reason"
+    "reason": "Reason",
+    "date": {
+      "days": "{days} days",
+      "months": "{months} months",
+      "years": "{years} year"
+    },
+    "expiration": "Expiration"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1439,6 +1445,7 @@
       "select-schema-change-type-sdl": "Declarative - State-based migration. E.g., CREATE TABLE",
       "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
       "members": {
+        "edit": "Edit member - {member}",
         "view-by-principals": "View by principals",
         "view-by-roles": "View by roles",
         "cannot-remove-last-owner": "Cannot remove the last owner of a project",
@@ -1843,6 +1850,7 @@
     "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required",
     "trial-for-days": "You can start a free trial for {days} days - no credit card required",
     "upgrade-trial": "You can upgrade your free trial to this plan",
+    "upgrade-now": "Upgrade Now",
     "update": {
       "success": {
         "title": "Successfully updated license",
@@ -1852,6 +1860,12 @@
         "title": "Failed to update license",
         "description": "Please check if your license is valid."
       }
+    },
+    "plan-features": "{plan} Features",
+    "overuse-warning": "{neededPlan} on {currentPlan} will be restricted. Upgrade now to ensure continued access.",
+    "overuse-modal": {
+      "description": "You are using features unavailable in the {plan}. Upgrade now to ensure continued access:",
+      "instance-count-exceeds": "Instance count exceeds the limit ${count}"
     },
     "features": {
       "bb-feature-task-schedule-time": {
@@ -2487,6 +2501,7 @@
     },
     "querier": {
       "description": "System defined project querier role"
-    }
+    },
+    "select-role": "Select role"
   }
 }

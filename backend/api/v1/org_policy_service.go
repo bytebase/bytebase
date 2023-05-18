@@ -16,7 +16,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisordb "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -146,12 +145,6 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 			patch.Payload = &payloadStr
 		case "enforce":
 			patch.Enforce = &request.Policy.Enforce
-		case "state":
-			if request.Policy.State == v1pb.State_DELETED {
-				patch.Delete = &deletePatch
-			} else if request.Policy.State == v1pb.State_ACTIVE {
-				patch.Delete = &undeletePatch
-			}
 		}
 	}
 
@@ -450,10 +443,24 @@ func validatePolicyType(policyType api.PolicyType, policyResourceType api.Policy
 func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
 	case v1pb.PolicyType_DEPLOYMENT_APPROVAL:
-		// TODO: validate
 		payload, err := convertToPipelineApprovalPolicyPayload(policy.GetDeploymentApprovalPolicy())
 		if err != nil {
 			return "", err
+		}
+		if payload.Value != api.PipelineApprovalValueManualNever && payload.Value != api.PipelineApprovalValueManualAlways {
+			return "", errors.Errorf("invalid approval policy value: %q", *payload)
+		}
+		issueTypeSeen := make(map[api.IssueType]bool)
+		for _, group := range payload.AssigneeGroupList {
+			if group.IssueType != api.IssueDatabaseSchemaUpdate &&
+				group.IssueType != api.IssueDatabaseSchemaUpdateGhost &&
+				group.IssueType != api.IssueDatabaseDataUpdate {
+				return "", errors.Errorf("invalid assignee group issue type %q", group.IssueType)
+			}
+			if issueTypeSeen[group.IssueType] {
+				return "", errors.Errorf("duplicate assignee group issue type %q", group.IssueType)
+			}
+			issueTypeSeen[group.IssueType] = true
 		}
 		return payload.String()
 	case v1pb.PolicyType_BACKUP_PLAN:
@@ -525,7 +532,6 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 		Enforce:           policyMessage.Enforce,
 		ResourceType:      resourceType,
 		ResourceUid:       fmt.Sprintf("%d", policyMessage.ResourceUID),
-		State:             convertDeletedToState(policyMessage.Deleted),
 	}
 
 	pType := v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED
@@ -638,7 +644,7 @@ func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQL
 			Payload: rule.Payload,
 			Type:    advisor.SQLReviewRuleType(rule.Type),
 			Comment: rule.Comment,
-			Engine:  advisordb.Type(convertEngine(rule.Engine)),
+			// DONOT assign the engine, we will use FlattenSQLReviewRulesWithEngine to map available engine with the rule.
 		})
 	}
 

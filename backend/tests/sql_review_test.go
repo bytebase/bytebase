@@ -16,8 +16,9 @@ import (
 
 	// Import pg driver.
 	// init() in pgx will register it's pgx driver.
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -26,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var noSQLReviewPolicy = []api.TaskCheckResult{
@@ -78,7 +80,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -107,11 +109,9 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test SQL Review Project",
-		Key:        "TestSQLReview",
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -119,19 +119,31 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	policyPayload, err := prodTemplateSQLReviewPolicyForPostgreSQL()
+	reviewPolicy, err := prodTemplateSQLReviewPolicyForPostgreSQL()
 	a.NoError(err)
 
-	_, err = ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
-		Payload: &policyPayload,
+	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+		Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_SQL_REVIEW,
+			Policy: &v1pb.Policy_SqlReviewPolicy{
+				SqlReviewPolicy: reviewPolicy,
+			},
+		},
 	})
 	a.NoError(err)
 
-	policy, err := ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
-		Payload: &policyPayload,
+	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+		Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_SQL_REVIEW,
+			Policy: &v1pb.Policy_SqlReviewPolicy{
+				SqlReviewPolicy: reviewPolicy,
+			},
+		},
 	})
 	a.NoError(err)
-	a.NotNil(policy.Environment)
+	a.NotNil(policy.Name)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
@@ -146,16 +158,16 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Nil(databases)
 
-	err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil)
 	a.NoError(err)
 
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -174,7 +186,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	for i, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
@@ -190,21 +202,25 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	}
 
 	// disable the SQL review policy
-	disable := string(api.Archived)
-	_, err = ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
-		Payload:   &policyPayload,
-		RowStatus: &disable,
+	policy.Enforce = false
+	_, err = ctl.orgPolicyServiceClient.UpdatePolicy(ctx, &v1pb.UpdatePolicyRequest{
+		Policy: policy,
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{"enforce"},
+		},
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 
 	// delete the SQL review policy
-	err = ctl.deletePolicy(prodEnvironment.ID, api.PolicyTypeSQLReview)
+	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
+		Name: fmt.Sprintf("environments/%s/policies/%s", prodEnvironment.ResourceID, v1pb.PolicyType_SQL_REVIEW),
+	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
+	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 
@@ -258,7 +274,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -286,11 +302,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test SQL Review Project",
-		Key:        "TestSQLReview",
-	})
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -298,19 +312,31 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	policyPayload, err := prodTemplateSQLReviewPolicyForMySQL()
+	reviewPolicy, err := prodTemplateSQLReviewPolicyForMySQL()
 	a.NoError(err)
 
-	_, err = ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
-		Payload: &policyPayload,
+	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+		Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_SQL_REVIEW,
+			Policy: &v1pb.Policy_SqlReviewPolicy{
+				SqlReviewPolicy: reviewPolicy,
+			},
+		},
 	})
 	a.NoError(err)
 
-	policy, err := ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
-		Payload: &policyPayload,
+	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
+		Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_SQL_REVIEW,
+			Policy: &v1pb.Policy_SqlReviewPolicy{
+				SqlReviewPolicy: reviewPolicy,
+			},
+		},
 	})
 	a.NoError(err)
-	a.NotNil(policy.Environment)
+	a.NotNil(policy.Name)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
@@ -325,7 +351,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Nil(databases)
@@ -335,11 +361,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Nil(databases)
 
-	err = ctl.createDatabase(project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -358,7 +384,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	for i, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
@@ -389,35 +415,39 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		`INSERT INTO test(id, name) VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');`,
 	}
 	for _, stmt := range initialStmts {
-		createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, stmt, true /* wait */)
+		createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, stmt, true /* wait */)
 	}
 	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	origin, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
 	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]],[false]]", origin)
-	createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, dmlSQL, false /* wait */)
+	createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, dmlSQL, false /* wait */)
 	finial, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
 	a.Equal(origin, finial)
 
 	// disable the SQL review policy
-	disable := string(api.Archived)
-	_, err = ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
-		Payload:   &policyPayload,
-		RowStatus: &disable,
+	policy.Enforce = false
+	_, err = ctl.orgPolicyServiceClient.UpdatePolicy(ctx, &v1pb.UpdatePolicyRequest{
+		Policy: policy,
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{"enforce"},
+		},
 	})
 	a.NoError(err)
 
 	// delete the SQL review policy
-	err = ctl.deletePolicy(prodEnvironment.ID, api.PolicyTypeSQLReview)
+	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
+		Name: fmt.Sprintf("environments/%s/policies/%s", prodEnvironment.ResourceID, v1pb.PolicyType_SQL_REVIEW),
+	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, database.ID, projectUID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 
-func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, statement string, wait bool) []api.TaskCheckResult {
+func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Assertions, ctl *controller, databaseID int, projectID int, statement string, wait bool) []api.TaskCheckResult {
 	sheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectID,
 		Name:       "statement",
@@ -455,7 +485,7 @@ func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller,
 	if wait {
 		a.Equal(1, len(result))
 		a.Equal(common.Ok.Int(), result[0].Code, result[0])
-		status, err := ctl.waitIssuePipeline(issue.ID)
+		status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 	}

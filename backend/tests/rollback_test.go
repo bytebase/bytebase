@@ -104,7 +104,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -119,13 +119,9 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	defer stopInstance()
 
 	// Create a project.
-	project, err := ctl.createProject(
-		api.ProjectCreate{
-			ResourceID: generateRandomString("project", 10),
-			Name:       fmt.Sprintf("Project %s", t.Name()),
-			Key:        "ROLLBACK",
-		},
-	)
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -147,7 +143,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabase(project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 	databases, err := ctl.getDatabases(api.DatabaseFind{
 		InstanceID: &instance.ID,
@@ -167,7 +163,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	t.Log("Schema initialized.")
 
 	dmlSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID: project.ID,
+		ProjectID: projectUID,
 		Name:      "migration statement sheet",
 		Statement: `
 		DELETE FROM t WHERE id = 1;
@@ -192,7 +188,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          "update data",
 		Type:          api.IssueDatabaseDataUpdate,
 		AssigneeID:    api.SystemBotID,
@@ -200,7 +196,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 	t.Logf("Issue %d created.", issue.ID)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 	a.Len(issue.Pipeline.StageList, 1)
@@ -269,7 +265,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 
 	rollbackIssue, err = ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          "rollback",
 		Type:          api.IssueDatabaseDataUpdate,
 		AssigneeID:    api.SystemBotID,
@@ -278,7 +274,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 	t.Logf("Rollback issue %d created.", rollbackIssue.ID)
 
-	status, err = ctl.waitIssuePipeline(rollbackIssue.ID)
+	status, err = ctl.waitIssuePipeline(ctx, rollbackIssue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 	// Re-query the issue to get the updated task, which has the RollbackFromIssueID and RollbackFromTaskID fields.
@@ -319,7 +315,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -334,13 +330,9 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	defer stopInstance()
 
 	// Create a project.
-	project, err := ctl.createProject(
-		api.ProjectCreate{
-			ResourceID: generateRandomString("project", 10),
-			Name:       fmt.Sprintf("Project %s", t.Name()),
-			Key:        "ROLLBACK",
-		},
-	)
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -362,7 +354,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabase(project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 	databases, err := ctl.getDatabases(api.DatabaseFind{
 		InstanceID: &instance.ID,
@@ -382,7 +374,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	t.Log("Schema initialized.")
 
 	dmlSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID: project.ID,
+		ProjectID: projectUID,
 		Name:      "migration statement sheet",
 		Statement: `
 		DELETE FROM t WHERE id = 1;
@@ -407,7 +399,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          "update data",
 		Type:          api.IssueDatabaseDataUpdate,
 		AssigneeID:    api.SystemBotID,
@@ -415,7 +407,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	})
 	a.NoError(err)
 	t.Logf("Issue %d created.", issue.ID)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 	a.Len(issue.Pipeline.StageList, 1)
@@ -492,7 +484,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 
 	rollbackIssue, err = ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          "rollback",
 		Type:          api.IssueDatabaseDataUpdate,
 		AssigneeID:    api.SystemBotID,
@@ -501,7 +493,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 	t.Logf("Rollback issue %d created.", rollbackIssue.ID)
 
-	status, err = ctl.waitIssuePipeline(rollbackIssue.ID)
+	status, err = ctl.waitIssuePipeline(ctx, rollbackIssue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 	// Re-query the issue to get the updated task, which has the RollbackFromIssueID and RollbackFromTaskID fields.
@@ -542,7 +534,7 @@ func TestRollbackCanceled(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -557,13 +549,9 @@ func TestRollbackCanceled(t *testing.T) {
 	defer stopInstance()
 
 	// Create a project.
-	project, err := ctl.createProject(
-		api.ProjectCreate{
-			ResourceID: generateRandomString("project", 10),
-			Name:       fmt.Sprintf("Project %s", t.Name()),
-			Key:        "ROLLBACK",
-		},
-	)
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -585,7 +573,7 @@ func TestRollbackCanceled(t *testing.T) {
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
-	err = ctl.createDatabase(project, instance, databaseName, "", nil)
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 	databases, err := ctl.getDatabases(api.DatabaseFind{
 		InstanceID: &instance.ID,
@@ -605,7 +593,7 @@ func TestRollbackCanceled(t *testing.T) {
 	t.Log("Schema initialized.")
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID: project.ID,
+		ProjectID: projectUID,
 		Name:      "delete statement sheet",
 		Statement: `
 		DELETE FROM t WHERE id = 1;
@@ -630,7 +618,7 @@ func TestRollbackCanceled(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          "update data",
 		Type:          api.IssueDatabaseDataUpdate,
 		AssigneeID:    api.SystemBotID,
@@ -638,7 +626,7 @@ func TestRollbackCanceled(t *testing.T) {
 	})
 	a.NoError(err)
 	t.Logf("Issue %d created.", issue.ID)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 	a.Len(issue.Pipeline.StageList, 1)

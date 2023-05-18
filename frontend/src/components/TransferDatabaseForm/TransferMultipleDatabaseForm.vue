@@ -6,15 +6,15 @@
       class="overflow-y-auto"
       style="max-height: calc(100vh - 380px)"
       arrow-placement="left"
-      :default-expanded-names="environmentList.map((env) => env.id)"
+      :default-expanded-names="environmentList.map((env) => env.uid)"
     >
       <NCollapseItem
         v-for="{
           environment,
           databaseList: databaseListInEnvironment,
         } in databaseListGroupByEnvironment"
-        :key="environment.id"
-        :name="environment.id"
+        :key="environment.uid"
+        :name="environment.uid"
       >
         <template #header>
           <label class="flex items-center gap-x-2" @click.stop="">
@@ -36,11 +36,8 @@
                 )
               "
             />
-            <div>{{ environment.name }}</div>
-            <ProductionEnvironmentIcon
-              class="w-4 h-4 -ml-1"
-              :environment="environment"
-            />
+            <div>{{ environment.title }}</div>
+            <ProductionEnvironmentV1Icon :environment="environment" />
           </label>
         </template>
 
@@ -72,9 +69,9 @@
                 type="checkbox"
                 class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent"
                 :checked="
-                  isDatabaseSelectedForEnvironment(database.id, environment.id)
+                  isDatabaseSelectedForEnvironment(database.id, environment.uid)
                 "
-                @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.id, e.target.checked)"
+                @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.uid, e.target.checked)"
                 @click.stop=""
               />
               <span
@@ -137,12 +134,14 @@ import { computed, PropType, reactive, watch } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
 
 import { type BBGridColumn, BBGrid } from "@/bbkit";
-import { Database, DatabaseId, Environment, EnvironmentId } from "@/types";
+import { Database, DatabaseId } from "@/types";
 import { TransferSource } from "./utils";
-import { useDatabaseStore, useEnvironmentList } from "@/store";
+import { useDatabaseStore, useEnvironmentV1List } from "@/store";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { ProductionEnvironmentV1Icon } from "../v2";
 
 type LocalState = {
-  selectedDatabaseIdListForEnvironment: Map<EnvironmentId, Set<DatabaseId>>;
+  selectedDatabaseIdListForEnvironment: Map<string, Set<DatabaseId>>;
 };
 
 const props = defineProps({
@@ -162,7 +161,7 @@ const emit = defineEmits<{
 }>();
 
 const databaseStore = useDatabaseStore();
-const environmentList = useEnvironmentList();
+const environmentList = useEnvironmentV1List();
 
 const state = reactive<LocalState>({
   selectedDatabaseIdListForEnvironment: new Map(),
@@ -190,7 +189,7 @@ const gridColumnList = computed((): BBGridColumn[] => {
 const databaseListGroupByEnvironment = computed(() => {
   const listByEnv = environmentList.value.map((environment) => {
     const databaseList = props.databaseList.filter(
-      (db) => db.instance.environment.id === environment.id
+      (db) => String(db.instance.environment.id) === environment.uid
     );
     return {
       environment,
@@ -219,7 +218,7 @@ const combinedSelectedDatabaseIdList = computed(() => {
 
 const isDatabaseSelectedForEnvironment = (
   databaseId: DatabaseId,
-  environmentId: EnvironmentId
+  environmentId: string
 ) => {
   const map = state.selectedDatabaseIdListForEnvironment;
   const set = map.get(environmentId) || new Set();
@@ -228,7 +227,7 @@ const isDatabaseSelectedForEnvironment = (
 
 const toggleDatabaseIdForEnvironment = (
   databaseId: DatabaseId,
-  environmentId: EnvironmentId,
+  environmentId: string,
   selected: boolean
 ) => {
   const map = state.selectedDatabaseIdListForEnvironment;
@@ -246,7 +245,8 @@ const getAllSelectionStateForEnvironment = (
   databaseList: Database[]
 ): { checked: boolean; indeterminate: boolean } => {
   const set =
-    state.selectedDatabaseIdListForEnvironment.get(environment.id) ?? new Set();
+    state.selectedDatabaseIdListForEnvironment.get(environment.uid) ??
+    new Set();
   const checked = databaseList.every((db) => set.has(db.id));
   const indeterminate = !checked && databaseList.some((db) => set.has(db.id));
 
@@ -262,7 +262,7 @@ const toggleAllDatabasesSelectionForEnvironment = (
   on: boolean
 ) => {
   databaseList.forEach((db) =>
-    toggleDatabaseIdForEnvironment(db.id, environment.id, on)
+    toggleDatabaseIdForEnvironment(db.id, environment.uid, on)
   );
 };
 
@@ -271,7 +271,8 @@ const getSelectionStateSummaryForEnvironment = (
   databaseList: Database[]
 ) => {
   const set =
-    state.selectedDatabaseIdListForEnvironment.get(environment.id) || new Set();
+    state.selectedDatabaseIdListForEnvironment.get(environment.uid) ||
+    new Set();
   const selected = databaseList.filter((db) => set.has(db.id)).length;
   const total = databaseList.length;
 
@@ -281,8 +282,8 @@ const getSelectionStateSummaryForEnvironment = (
 const handleClickRow = (db: Database) => {
   toggleDatabaseIdForEnvironment(
     db.id,
-    db.instance.environment.id,
-    !isDatabaseSelectedForEnvironment(db.id, db.instance.environment.id)
+    String(db.instance.environment.id),
+    !isDatabaseSelectedForEnvironment(db.id, String(db.instance.environment.id))
   );
 };
 

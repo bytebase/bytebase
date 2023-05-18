@@ -33,6 +33,11 @@ func generateOneMBInsert() string {
 func TestOracleSplitMultiSQL(t *testing.T) {
 	tests := []testData{
 		{
+			statement: `-- klsjdfjasldf
+			-- klsjdflkjaskldfj
+			`,
+		},
+		{
 			statement: `
 				select * from t;
 				create table table$1 (id int);
@@ -72,6 +77,11 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 func TestPGSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []testData{
+		{
+			statement: `-- klsjdfjasldf
+			-- klsjdflkjaskldfj
+			`,
+		},
 		{
 			statement: `select * from t;
 			/* sdfasdf */`,
@@ -305,6 +315,11 @@ func TestPGSplitMultiSQL(t *testing.T) {
 func TestMySQLSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []testData{
+		{
+			statement: `-- klsjdfjasldf
+			-- klsjdflkjaskldfj
+			`,
+		},
 		{
 			statement: `select * from t;
 			/* sdfasdf */`,

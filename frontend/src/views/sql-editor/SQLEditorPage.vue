@@ -117,10 +117,10 @@ import { NDrawer } from "naive-ui";
 import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
 import {
   useConnectionTreeStore,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useInstanceById,
-  useProjectStore,
+  useProjectV1Store,
   useSQLEditorStore,
   useTabStore,
 } from "@/store";
@@ -155,7 +155,7 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
 const connectionTreeStore = useConnectionTreeStore();
 const sqlEditorStore = useSQLEditorStore();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
@@ -173,7 +173,7 @@ const allowAccess = computed(() => {
   return isDatabaseAccessible(
     database,
     accessControlPolicyList,
-    currentUser.value
+    currentUserV1.value
   );
 });
 
@@ -200,7 +200,9 @@ const handleAlterSchema = async (params: {
   const { databaseId, schema, table } = params;
   const database = databaseStore.getDatabaseById(databaseId);
   if (allowUsingSchemaEditor([database])) {
-    await useProjectStore().getOrFetchProjectById(database.project.id);
+    await useProjectV1Store().getOrFetchProjectByUID(
+      String(database.project.id)
+    );
     // TODO: support open selected database tab directly in Schema Editor.
     alterSchemaState.databaseIdList = [databaseId];
     alterSchemaState.showModal = true;

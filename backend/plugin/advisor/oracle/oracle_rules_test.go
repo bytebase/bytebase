@@ -25,6 +25,9 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleColumnRequireDefault,
 		advisor.SchemaRuleAddNotNullColumnRequireDefault,
 		advisor.SchemaRuleColumnMaximumVarcharLength,
+		advisor.SchemaRuleTableNameNoKeyword,
+		advisor.SchemaRuleIdentifierNoKeyword,
+		advisor.SchemaRuleIdentifierCase,
 	}
 
 	for _, rule := range oracleRules {

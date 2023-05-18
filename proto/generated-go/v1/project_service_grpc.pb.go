@@ -22,11 +22,13 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	ProjectService_GetProject_FullMethodName             = "/bytebase.v1.ProjectService/GetProject"
 	ProjectService_ListProjects_FullMethodName           = "/bytebase.v1.ProjectService/ListProjects"
+	ProjectService_SearchProjects_FullMethodName         = "/bytebase.v1.ProjectService/SearchProjects"
 	ProjectService_CreateProject_FullMethodName          = "/bytebase.v1.ProjectService/CreateProject"
 	ProjectService_UpdateProject_FullMethodName          = "/bytebase.v1.ProjectService/UpdateProject"
 	ProjectService_DeleteProject_FullMethodName          = "/bytebase.v1.ProjectService/DeleteProject"
 	ProjectService_UndeleteProject_FullMethodName        = "/bytebase.v1.ProjectService/UndeleteProject"
 	ProjectService_GetIamPolicy_FullMethodName           = "/bytebase.v1.ProjectService/GetIamPolicy"
+	ProjectService_BatchGetIamPolicy_FullMethodName      = "/bytebase.v1.ProjectService/BatchGetIamPolicy"
 	ProjectService_SetIamPolicy_FullMethodName           = "/bytebase.v1.ProjectService/SetIamPolicy"
 	ProjectService_GetDeploymentConfig_FullMethodName    = "/bytebase.v1.ProjectService/GetDeploymentConfig"
 	ProjectService_UpdateDeploymentConfig_FullMethodName = "/bytebase.v1.ProjectService/UpdateDeploymentConfig"
@@ -44,11 +46,14 @@ const (
 type ProjectServiceClient interface {
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error)
+	// Search for projects that the caller has both projects.get permission on, and also satisfy the specified query.
+	SearchProjects(ctx context.Context, in *SearchProjectsRequest, opts ...grpc.CallOption) (*SearchProjectsResponse, error)
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteProject(ctx context.Context, in *UndeleteProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	BatchGetIamPolicy(ctx context.Context, in *BatchGetIamPolicyRequest, opts ...grpc.CallOption) (*BatchGetIamPolicyResponse, error)
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 	GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error)
 	UpdateDeploymentConfig(ctx context.Context, in *UpdateDeploymentConfigRequest, opts ...grpc.CallOption) (*DeploymentConfig, error)
@@ -80,6 +85,15 @@ func (c *projectServiceClient) GetProject(ctx context.Context, in *GetProjectReq
 func (c *projectServiceClient) ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error) {
 	out := new(ListProjectsResponse)
 	err := c.cc.Invoke(ctx, ProjectService_ListProjects_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) SearchProjects(ctx context.Context, in *SearchProjectsRequest, opts ...grpc.CallOption) (*SearchProjectsResponse, error) {
+	out := new(SearchProjectsResponse)
+	err := c.cc.Invoke(ctx, ProjectService_SearchProjects_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +139,15 @@ func (c *projectServiceClient) UndeleteProject(ctx context.Context, in *Undelete
 func (c *projectServiceClient) GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
 	out := new(IamPolicy)
 	err := c.cc.Invoke(ctx, ProjectService_GetIamPolicy_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) BatchGetIamPolicy(ctx context.Context, in *BatchGetIamPolicyRequest, opts ...grpc.CallOption) (*BatchGetIamPolicyResponse, error) {
+	out := new(BatchGetIamPolicyResponse)
+	err := c.cc.Invoke(ctx, ProjectService_BatchGetIamPolicy_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -218,11 +241,14 @@ func (c *projectServiceClient) GetProjectGitOpsInfo(ctx context.Context, in *Set
 type ProjectServiceServer interface {
 	GetProject(context.Context, *GetProjectRequest) (*Project, error)
 	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
+	// Search for projects that the caller has both projects.get permission on, and also satisfy the specified query.
+	SearchProjects(context.Context, *SearchProjectsRequest) (*SearchProjectsResponse, error)
 	CreateProject(context.Context, *CreateProjectRequest) (*Project, error)
 	UpdateProject(context.Context, *UpdateProjectRequest) (*Project, error)
 	DeleteProject(context.Context, *DeleteProjectRequest) (*emptypb.Empty, error)
 	UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error)
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
+	BatchGetIamPolicy(context.Context, *BatchGetIamPolicyRequest) (*BatchGetIamPolicyResponse, error)
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
 	GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*DeploymentConfig, error)
 	UpdateDeploymentConfig(context.Context, *UpdateDeploymentConfigRequest) (*DeploymentConfig, error)
@@ -245,6 +271,9 @@ func (UnimplementedProjectServiceServer) GetProject(context.Context, *GetProject
 func (UnimplementedProjectServiceServer) ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjects not implemented")
 }
+func (UnimplementedProjectServiceServer) SearchProjects(context.Context, *SearchProjectsRequest) (*SearchProjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchProjects not implemented")
+}
 func (UnimplementedProjectServiceServer) CreateProject(context.Context, *CreateProjectRequest) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProject not implemented")
 }
@@ -259,6 +288,9 @@ func (UnimplementedProjectServiceServer) UndeleteProject(context.Context, *Undel
 }
 func (UnimplementedProjectServiceServer) GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetIamPolicy not implemented")
+}
+func (UnimplementedProjectServiceServer) BatchGetIamPolicy(context.Context, *BatchGetIamPolicyRequest) (*BatchGetIamPolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchGetIamPolicy not implemented")
 }
 func (UnimplementedProjectServiceServer) SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetIamPolicy not implemented")
@@ -332,6 +364,24 @@ func _ProjectService_ListProjects_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServiceServer).ListProjects(ctx, req.(*ListProjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_SearchProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchProjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).SearchProjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_SearchProjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).SearchProjects(ctx, req.(*SearchProjectsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -422,6 +472,24 @@ func _ProjectService_GetIamPolicy_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServiceServer).GetIamPolicy(ctx, req.(*GetIamPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_BatchGetIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchGetIamPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).BatchGetIamPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_BatchGetIamPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).BatchGetIamPolicy(ctx, req.(*BatchGetIamPolicyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -604,6 +672,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ProjectService_ListProjects_Handler,
 		},
 		{
+			MethodName: "SearchProjects",
+			Handler:    _ProjectService_SearchProjects_Handler,
+		},
+		{
 			MethodName: "CreateProject",
 			Handler:    _ProjectService_CreateProject_Handler,
 		},
@@ -622,6 +694,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetIamPolicy",
 			Handler:    _ProjectService_GetIamPolicy_Handler,
+		},
+		{
+			MethodName: "BatchGetIamPolicy",
+			Handler:    _ProjectService_BatchGetIamPolicy_Handler,
 		},
 		{
 			MethodName: "SetIamPolicy",

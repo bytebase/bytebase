@@ -18,8 +18,8 @@ import { computed } from "vue";
 
 import type { Database } from "@/types";
 import { ConnectionTreeMode, DEFAULT_PROJECT_ID, UNKNOWN_ID } from "@/types";
-import { connectionSlug, hasWorkspacePermission } from "@/utils";
-import { useConnectionTreeStore, useCurrentUser } from "@/store";
+import { connectionSlug, hasWorkspacePermissionV1 } from "@/utils";
+import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
 
 const props = withDefaults(
   defineProps<{
@@ -39,7 +39,7 @@ const emit = defineEmits<{
   (name: "failed", database: Database): void;
 }>();
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const showTooltip = computed((): boolean => {
   return !props.disabled && props.tooltip;
@@ -68,9 +68,9 @@ const gotoSQLEditor = () => {
     database.projectId === DEFAULT_PROJECT_ID
   ) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-database",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       // For unassigned databases, only high-privileged users

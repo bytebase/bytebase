@@ -12,7 +12,7 @@
         {{ rule.template?.title }}
       </div>
       <div class="bb-grid-cell justify-center">
-        <template v-if="creatorOfRule(rule).id === SYSTEM_BOT_ID">
+        <template v-if="creatorOfRule(rule).name === SYSTEM_BOT_USER_NAME">
           {{ $t("custom-approval.approval-flow.type.system") }}
         </template>
         <template v-else>
@@ -37,7 +37,7 @@
         {{ rule.template?.description }}
       </div>
       <div class="bb-grid-cell gap-x-2">
-        <template v-if="creatorOfRule(rule).id !== SYSTEM_BOT_ID">
+        <template v-if="creatorOfRule(rule).name !== SYSTEM_BOT_USER_NAME">
           <NButton size="small" @click="editApprovalTemplate(rule)">
             {{ allowAdmin ? $t("common.edit") : $t("common.view") }}
           </NButton>
@@ -73,7 +73,7 @@ import { NButton } from "naive-ui";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { SpinnerButton } from "../../common";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
-import { LocalApprovalRule, SYSTEM_BOT_ID } from "@/types";
+import { LocalApprovalRule, SYSTEM_BOT_USER_NAME } from "@/types";
 import { ApprovalFlow } from "@/types/proto/store/approval";
 import { StepsTable } from "../common";
 import { useCustomApprovalContext } from "../context";

@@ -96,7 +96,7 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../DatabaseSelect.vue";
 import { activeEnvironment } from "@/utils";
 import { OutputField, IssueContext } from "@/plugins";
-import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "@/types";
+import { DatabaseId, Issue, UNKNOWN_ID } from "@/types";
 import { pushNotification, useCurrentUser } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 
@@ -108,8 +108,8 @@ const { allowEditOutput, updateCustomField } = useExtraIssueLogic();
 
 const currentUser = useCurrentUser();
 
-const environmentId = computed((): EnvironmentId => {
-  return activeEnvironment(issue.value.pipeline).id;
+const environmentId = computed((): string => {
+  return String(activeEnvironment(issue.value.pipeline).id);
 });
 
 const fieldValue = (field: OutputField): string => {

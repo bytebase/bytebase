@@ -12,13 +12,13 @@
       >
         <div class="flex items-center">
           {{ item.title }}
-          <ProductionEnvironmentIcon :environment="item.data!" class="ml-1" />
+          <ProductionEnvironmentV1Icon :environment="item.data!" class="ml-1" />
         </div>
       </template>
 
       <BBTabPanel
-        v-for="(item, index) in environmentList"
-        :key="item.id"
+        v-for="(env, index) in environmentList"
+        :key="env.uid"
         :active="index == state.selectedIndex"
       >
         <div v-if="state.reorder" class="flex justify-center pt-5">
@@ -40,7 +40,7 @@
         </div>
         <EnvironmentDetail
           v-else
-          :environment-slug="environmentSlug(item)"
+          :environment-slug="environmentV1Slug(env)"
           @archive="doArchive"
         />
       </BBTabPanel>
@@ -56,7 +56,7 @@
       :environment="getEnvironmentCreate()"
       :approval-policy="(DEFAULT_NEW_APPROVAL_POLICY as any)"
       :backup-policy="(DEFAULT_NEW_BACKUP_PLAN_POLICY as any)"
-      :environment-tier-policy="(DEFAULT_NEW_ENVIRONMENT_TIER_POLICY as any)"
+      :environment-tier="defaultEnvironmentTier"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
@@ -72,60 +72,48 @@
 <script lang="ts" setup>
 import { onMounted, computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
-import { arraySwap } from "../utils";
+import { arraySwap, environmentV1Slug } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import type {
-  Environment,
-  EnvironmentCreate,
-  Policy,
-  PolicyUpsert,
-  PipelineApprovalPolicyPayload,
-  EnvironmentTierPolicyPayload,
-} from "../types";
-import { DefaultApprovalPolicy, DefaultEnvironmentTier } from "../types";
 import type { BBTabItem } from "../bbkit/types";
 import {
   useRegisterCommand,
   useUIStateStore,
   hasFeature,
-  usePolicyStore,
-  useEnvironmentStore,
-  useEnvironmentList,
+  useEnvironmentV1Store,
+  defaultEnvironmentTier,
+  useEnvironmentV1List,
 } from "@/store";
-import ProductionEnvironmentIcon from "../components/Environment/ProductionEnvironmentIcon.vue";
-import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
-import { environmentTierFromJSON } from "@/types/proto/v1/environment_service";
+import { ProductionEnvironmentV1Icon } from "@/components/v2";
+import {
+  Environment,
+  EnvironmentTier,
+} from "@/types/proto/v1/environment_service";
 import {
   usePolicyV1Store,
+  defaultBackupSchedule,
+  defaultApprovalStrategy,
   getDefaultBackupPlanPolicy,
+  getDefaultDeploymentApprovalPolicy,
 } from "@/store/modules/v1/policy";
 import {
-  Policy as PolicyV1,
-  PolicyType as PolicyTypeV1,
+  Policy,
+  PolicyType,
   PolicyResourceType,
-  BackupPlanSchedule,
 } from "@/types/proto/v1/org_policy_service";
+import { emptyEnvironment } from "@/types";
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
-const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
-  payload: {
-    value: DefaultApprovalPolicy,
-    assigneeGroupList: [],
-  },
-};
-
-// The default value should be consistent with the GetDefaultPolicy from the backend.
-const DEFAULT_NEW_BACKUP_PLAN_POLICY: PolicyV1 = getDefaultBackupPlanPolicy(
+const DEFAULT_NEW_APPROVAL_POLICY: Policy = getDefaultDeploymentApprovalPolicy(
   "",
   PolicyResourceType.ENVIRONMENT
 );
 
-const DEFAULT_NEW_ENVIRONMENT_TIER_POLICY: PolicyUpsert = {
-  payload: {
-    environmentTier: DefaultEnvironmentTier,
-  },
-};
+// The default value should be consistent with the GetDefaultPolicy from the backend.
+const DEFAULT_NEW_BACKUP_PLAN_POLICY: Policy = getDefaultBackupPlanPolicy(
+  "",
+  PolicyResourceType.ENVIRONMENT
+);
 
 interface LocalState {
   reorderedEnvironmentList: Environment[];
@@ -134,13 +122,12 @@ interface LocalState {
   reorder: boolean;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
-    | "bb.feature.backup-policy";
+    | "bb.feature.backup-policy"
+    | "bb.feature.environment-tier-policy";
 }
 
-const environmentStore = useEnvironmentStore();
 const environmentV1Store = useEnvironmentV1Store();
 const uiStateStore = useUIStateStore();
-const policyStore = usePolicyStore();
 const policyV1Store = usePolicyV1Store();
 const router = useRouter();
 
@@ -156,8 +143,8 @@ const selectEnvironmentOnHash = () => {
     if (router.currentRoute.value.hash) {
       for (let i = 0; i < environmentList.value.length; i++) {
         if (
-          environmentList.value[i].id ===
-          parseInt(router.currentRoute.value.hash.slice(1), 10)
+          environmentList.value[i].uid ===
+          router.currentRoute.value.hash.slice(1)
         ) {
           selectEnvironment(i);
           break;
@@ -204,27 +191,24 @@ watch(
   }
 );
 
-const environmentList = useEnvironmentList();
+const environmentList = useEnvironmentV1List();
 
 const tabItemList = computed((): BBTabItem[] => {
   if (environmentList.value) {
     const list = state.reorder
       ? state.reorderedEnvironmentList
       : environmentList.value;
-    return list.map((item: Environment, index: number): BBTabItem => {
-      const title = `${index + 1}. ${item.name}`;
-      const id = item.id.toString();
+    return list.map((item, index: number): BBTabItem => {
+      const title = `${index + 1}. ${item.title}`;
+      const id = item.uid;
       return { title, id, data: item };
     });
   }
   return [];
 });
 
-const getEnvironmentCreate = (): EnvironmentCreate => {
-  return {
-    name: "",
-    resourceId: "",
-  };
+const getEnvironmentCreate = () => {
+  return emptyEnvironment();
 };
 
 const createEnvironment = () => {
@@ -233,66 +217,65 @@ const createEnvironment = () => {
 };
 
 const doCreate = async (
-  newEnvironment: EnvironmentCreate,
+  newEnvironment: Environment,
   approvalPolicy: Policy,
-  backupPolicy: PolicyV1,
-  environmentTierPolicy: Policy
+  backupPolicy: Policy,
+  environmentTier: EnvironmentTier
 ) => {
   if (
-    (approvalPolicy.payload as PipelineApprovalPolicyPayload).value ===
-      "MANUAL_APPROVAL_NEVER" &&
+    approvalPolicy.deploymentApprovalPolicy?.defaultStrategy !==
+      defaultApprovalStrategy &&
     !hasFeature("bb.feature.approval-policy")
   ) {
     state.missingRequiredFeature = "bb.feature.approval-policy";
     return;
   }
   if (
-    backupPolicy.backupPlanPolicy?.schedule !== BackupPlanSchedule.UNSET &&
+    backupPolicy.backupPlanPolicy?.schedule !== defaultBackupSchedule &&
     !hasFeature("bb.feature.backup-policy")
   ) {
     state.missingRequiredFeature = "bb.feature.backup-policy";
     return;
   }
+  if (
+    environmentTier !== defaultEnvironmentTier &&
+    !hasFeature("bb.feature.backup-policy")
+  ) {
+    state.missingRequiredFeature = "bb.feature.environment-tier-policy";
+    return;
+  }
 
-  const environmentTierPayload =
-    environmentTierPolicy.payload as EnvironmentTierPolicyPayload;
   const environment = await environmentV1Store.createEnvironment({
-    name: newEnvironment.resourceId,
-    title: newEnvironment.name,
+    name: newEnvironment.name,
+    title: newEnvironment.title,
     order: environmentList.value.length,
-    tier: environmentTierFromJSON(environmentTierPayload.environmentTier),
+    tier: environmentTier,
   });
   // After creating with v1 store, we need to fetch the latest data in old store.
   // TODO(steven): using grpc store.
-  await environmentStore.fetchEnvironmentList();
+  await environmentV1Store.fetchEnvironments();
 
   const requests = [
-    policyStore.upsertPolicyByEnvironmentAndType({
-      environmentId: environment.uid,
-      type: "bb.policy.pipeline-approval",
-      policyUpsert: { payload: approvalPolicy.payload },
+    policyV1Store.upsertPolicy({
+      parentPath: environment.name,
+      updateMask: ["payload"],
+      policy: approvalPolicy,
     }),
     policyV1Store.upsertPolicy({
       parentPath: environment.name,
       updateMask: ["payload"],
       policy: backupPolicy,
     }),
-    policyStore.upsertPolicyByEnvironmentAndType({
-      environmentId: environment.uid,
-      type: "bb.policy.environment-tier",
-      policyUpsert: { payload: environmentTierPayload },
-    }),
     policyV1Store.upsertPolicy({
       parentPath: environment.name,
       updateMask: ["payload", "inherit_from_parent"],
       policy: {
-        type: PolicyTypeV1.ACCESS_CONTROL,
+        type: PolicyType.ACCESS_CONTROL,
         inheritFromParent: false,
         accessControlPolicy: {
           disallowRules: [
             {
-              fullDatabase:
-                environmentTierPayload.environmentTier === "PROTECTED",
+              fullDatabase: environmentTier === EnvironmentTier.PROTECTED,
             },
           ],
         },
@@ -321,7 +304,7 @@ const reorderEnvironment = (sourceIndex: number, targetIndex: number) => {
 
 const orderChanged = computed(() => {
   for (let i = 0; i < state.reorderedEnvironmentList.length; i++) {
-    if (state.reorderedEnvironmentList[i].id != environmentList.value[i].id) {
+    if (state.reorderedEnvironmentList[i].uid != environmentList.value[i].uid) {
       return true;
     }
   }
@@ -333,7 +316,7 @@ const discardReorder = () => {
 };
 
 const doReorder = () => {
-  environmentStore
+  environmentV1Store
     .reorderEnvironmentList(state.reorderedEnvironmentList)
     .then(() => {
       stopReorder();
@@ -350,7 +333,7 @@ const selectEnvironment = (index: number) => {
   state.selectedIndex = index;
   router.replace({
     name: "workspace.environment",
-    hash: "#" + environmentList.value[index].id,
+    hash: "#" + environmentList.value[index].uid,
   });
 };
 </script>

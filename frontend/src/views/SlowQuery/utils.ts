@@ -6,18 +6,18 @@ import {
 } from "@/components/SlowQuery";
 import {
   useDatabaseStore,
-  useEnvironmentStore,
+  useEnvironmentV1Store,
   useInstanceStore,
-  useProjectStore,
+  useProjectV1Store,
 } from "@/store";
 
 export const wrapQueryFromFilterParams = (params: SlowQueryFilterParams) => {
   const query: Record<string, any> = {};
-  if (params.project && params.project.id !== UNKNOWN_ID) {
-    query.project = params.project.id;
+  if (params.project && params.project.uid !== String(UNKNOWN_ID)) {
+    query.project = params.project.uid;
   }
-  if (params.environment && params.environment.id !== UNKNOWN_ID) {
-    query.environment = params.environment.id;
+  if (params.environment && params.environment.uid !== String(UNKNOWN_ID)) {
+    query.environment = params.environment.uid;
   }
   if (params.instance && params.instance.id !== UNKNOWN_ID) {
     query.instance = params.instance.id;
@@ -47,16 +47,16 @@ export const extractSlowQueryLogFilterFromQuery = async (
 ) => {
   const params: SlowQueryFilterParams = defaultSlowQueryFilterParams();
   if (query.environment) {
-    const id = parseInt(query.environment as string, 10) ?? UNKNOWN_ID;
-    const environment = useEnvironmentStore().getEnvironmentById(id);
-    if (environment && environment.id !== UNKNOWN_ID) {
+    const id = (query.environment as string) ?? String(UNKNOWN_ID);
+    const environment = useEnvironmentV1Store().getEnvironmentByUID(id);
+    if (environment && environment.uid !== String(UNKNOWN_ID)) {
       params.environment = environment;
     }
   }
   if (query.project) {
-    const id = parseInt(query.project as string, 10) ?? UNKNOWN_ID;
-    const project = await useProjectStore().getOrFetchProjectById(id);
-    if (project && project.id !== UNKNOWN_ID) {
+    const id = (query.project as string) ?? String(UNKNOWN_ID);
+    const project = await useProjectV1Store().getOrFetchProjectByUID(id);
+    if (project && project.uid !== String(UNKNOWN_ID)) {
       params.project = project;
     }
   }

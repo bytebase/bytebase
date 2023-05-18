@@ -147,8 +147,8 @@ type FindInstanceMessage struct {
 
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
-	if find.EnvironmentID != nil && find.ResourceID != nil {
-		if instance, ok := s.instanceCache.Load(getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)); ok {
+	if find.ResourceID != nil {
+		if instance, ok := s.instanceCache.Load(getInstanceCacheKey(*find.ResourceID)); ok {
 			return instance.(*InstanceMessage), nil
 		}
 	}
@@ -181,7 +181,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	}
 
 	instance := instances[0]
-	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
 }
@@ -204,7 +204,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 	}
 
 	for _, instance := range instances {
-		s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+		s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
 		s.instanceIDCache.Store(instance.UID, instance)
 	}
 	return instances, nil
@@ -287,7 +287,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		ExternalLink:  instanceCreate.ExternalLink,
 		DataSources:   dataSources,
 	}
-	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
 }
@@ -400,7 +400,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		return nil, err
 	}
 
-	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
 }

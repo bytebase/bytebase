@@ -58,6 +58,45 @@ export interface ListDatabasesResponse {
   nextPageToken: string;
 }
 
+export interface SearchDatabasesRequest {
+  /**
+   * The parent, which owns this collection of databases.
+   * Format: instances/{instance}
+   * Use "instances/-" to list all databases.
+   */
+  parent: string;
+  /**
+   * The maximum number of databases to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 databases will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListDatabases` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListDatabases` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+  /**
+   * Filter is used to filter databases returned in the list.
+   * For example, "project = projects/{project}" can be used to list databases in a project.
+   */
+  filter: string;
+}
+
+export interface SearchDatabasesResponse {
+  /** The databases from the specified request. */
+  databases: Database[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
 export interface UpdateDatabaseRequest {
   /**
    * The database to update.
@@ -915,6 +954,178 @@ export const ListDatabasesResponse = {
 
   fromPartial(object: DeepPartial<ListDatabasesResponse>): ListDatabasesResponse {
     const message = createBaseListDatabasesResponse();
+    message.databases = object.databases?.map((e) => Database.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchDatabasesRequest(): SearchDatabasesRequest {
+  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
+}
+
+export const SearchDatabasesRequest = {
+  encode(message: SearchDatabasesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchDatabasesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchDatabasesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchDatabasesRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      filter: isSet(object.filter) ? String(object.filter) : "",
+    };
+  },
+
+  toJSON(message: SearchDatabasesRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.filter !== undefined && (obj.filter = message.filter);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchDatabasesRequest>): SearchDatabasesRequest {
+    return SearchDatabasesRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SearchDatabasesRequest>): SearchDatabasesRequest {
+    const message = createBaseSearchDatabasesRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    message.filter = object.filter ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchDatabasesResponse(): SearchDatabasesResponse {
+  return { databases: [], nextPageToken: "" };
+}
+
+export const SearchDatabasesResponse = {
+  encode(message: SearchDatabasesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.databases) {
+      Database.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchDatabasesResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchDatabasesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databases.push(Database.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchDatabasesResponse {
+    return {
+      databases: Array.isArray(object?.databases) ? object.databases.map((e: any) => Database.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: SearchDatabasesResponse): unknown {
+    const obj: any = {};
+    if (message.databases) {
+      obj.databases = message.databases.map((e) => e ? Database.toJSON(e) : undefined);
+    } else {
+      obj.databases = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchDatabasesResponse>): SearchDatabasesResponse {
+    return SearchDatabasesResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SearchDatabasesResponse>): SearchDatabasesResponse {
+    const message = createBaseSearchDatabasesResponse();
     message.databases = object.databases?.map((e) => Database.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
@@ -4638,6 +4849,67 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    /** Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. */
+    searchDatabases: {
+      name: "SearchDatabases",
+      requestType: SearchDatabasesRequest,
+      requestStream: false,
+      responseType: SearchDatabasesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              43,
+              18,
+              41,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
+            ]),
+          ],
+        },
+      },
+    },
     updateDatabase: {
       name: "UpdateDatabase",
       requestType: UpdateDatabaseRequest,
@@ -5548,6 +5820,11 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: ListDatabasesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListDatabasesResponse>>;
+  /** Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. */
+  searchDatabases(
+    request: SearchDatabasesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<SearchDatabasesResponse>>;
   updateDatabase(request: UpdateDatabaseRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Database>>;
   batchUpdateDatabases(
     request: BatchUpdateDatabasesRequest,
@@ -5596,6 +5873,11 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListDatabasesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListDatabasesResponse>;
+  /** Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. */
+  searchDatabases(
+    request: DeepPartial<SearchDatabasesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<SearchDatabasesResponse>;
   updateDatabase(
     request: DeepPartial<UpdateDatabaseRequest>,
     options?: CallOptions & CallOptionsExt,
@@ -5674,8 +5956,8 @@ function toTimestamp(date: Date): Timestamp {
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = t.seconds * 1_000;
-  millis += t.nanos / 1_000_000;
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
   return new Date(millis);
 }
 

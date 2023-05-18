@@ -16,7 +16,6 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
-import { isMemberOfProject } from "@/utils";
 
 function convert(
   project: ResourceObject,
@@ -81,7 +80,7 @@ function convertMember(
   };
 }
 
-export const useProjectStore = defineStore("project", {
+export const useLegacyProjectStore = defineStore("project_legacy", {
   state: (): ProjectState => ({
     projectById: new Map(),
   }),
@@ -93,25 +92,6 @@ export const useProjectStore = defineStore("project", {
   actions: {
     convert(instance: ResourceObject, includedList: ResourceObject[]): Project {
       return convert(instance, includedList || []);
-    },
-
-    getProjectListByUser(
-      userId: PrincipalId,
-      rowStatusList?: RowStatus[]
-    ): Project[] {
-      const result: Project[] = [];
-      for (const [_, project] of this.projectById) {
-        if (
-          (!rowStatusList && project.rowStatus == "NORMAL") ||
-          (rowStatusList && rowStatusList.includes(project.rowStatus))
-        ) {
-          if (isMemberOfProject(project, userId)) {
-            result.push(project);
-          }
-        }
-      }
-
-      return result;
     },
 
     getProjectById(projectId: ProjectId): Project {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var (
@@ -32,7 +34,7 @@ func TestTenant(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -42,12 +44,18 @@ func TestTenant(t *testing.T) {
 	a.NoError(err)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID: generateRandomString("project", 10),
-		Name:       "Test Project",
-		Key:        "TestSchemaUpdate",
-		TenantMode: api.TenantModeTenant,
+	projectID := generateRandomString("project", 10)
+	project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+		Project: &v1pb.Project{
+			Name:       fmt.Sprintf("projects/%s", projectID),
+			Title:      projectID,
+			Key:        projectID,
+			TenantMode: v1pb.TenantMode_TENANT_MODE_ENABLED,
+		},
+		ProjectId: projectID,
 	})
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	// Provision instances.
@@ -101,7 +109,7 @@ func TestTenant(t *testing.T) {
 	// Create deployment configuration.
 	_, err = ctl.upsertDeploymentConfig(
 		api.DeploymentConfigUpsert{
-			ProjectID: project.ID,
+			ProjectID: projectUID,
 		},
 		deploymentSchedule,
 	)
@@ -110,17 +118,17 @@ func TestTenant(t *testing.T) {
 	// Create issues that create databases.
 	databaseName := "testTenantSchemaUpdate"
 	for i, testInstance := range testInstances {
-		err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
-		err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(ctx, projectUID, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 
 	// Getting databases for each environment.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 
@@ -146,7 +154,7 @@ func TestTenant(t *testing.T) {
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
+		ProjectID:  projectUID,
 		Name:       "migration statement sheet",
 		Statement:  migrationStatement,
 		Visibility: api.ProjectSheet,
@@ -166,7 +174,7 @@ func TestTenant(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
@@ -174,7 +182,7 @@ func TestTenant(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -285,7 +293,7 @@ func TestTenantVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -311,14 +319,18 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Create a project.
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID: generateRandomString("project", 10),
-					Name:       "Test VCS Project",
-					Key:        "TestVCSSchemaUpdate",
-					TenantMode: api.TenantModeTenant,
+			projectID := generateRandomString("project", 10)
+			project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+				Project: &v1pb.Project{
+					Name:       fmt.Sprintf("projects/%s", projectID),
+					Title:      projectID,
+					Key:        projectID,
+					TenantMode: v1pb.TenantMode_TENANT_MODE_ENABLED,
 				},
-			)
+				ProjectId: projectID,
+			})
+			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			// Create a repository.
@@ -331,7 +343,7 @@ func TestTenantVCS(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
-					ProjectID:          project.ID,
+					ProjectID:          projectUID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -401,7 +413,7 @@ func TestTenantVCS(t *testing.T) {
 			// Create deployment configuration.
 			_, err = ctl.upsertDeploymentConfig(
 				api.DeploymentConfigUpsert{
-					ProjectID: project.ID,
+					ProjectID: projectUID,
 				},
 				deploymentSchedule,
 			)
@@ -410,16 +422,16 @@ func TestTenantVCS(t *testing.T) {
 			// Create issues that create databases.
 			databaseName := "testTenantVCSSchemaUpdate"
 			for i, testInstance := range testInstances {
-				err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+				err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 				a.NoError(err)
 			}
 			for i, prodInstance := range prodInstances {
-				err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+				err := ctl.createDatabase(ctx, projectUID, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 				a.NoError(err)
 			}
 
 			// Getting databases for each environment.
-			databases, err := ctl.getDatabases(api.DatabaseFind{ProjectID: &project.ID})
+			databases, err := ctl.getDatabases(api.DatabaseFind{ProjectID: &projectUID})
 			a.NoError(err)
 
 			var testDatabases []*api.Database
@@ -457,13 +469,13 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
 
 			// Test pipeline stage patch status.
-			status, err := ctl.waitIssuePipelineWithStageApproval(issue.ID)
+			status, err := ctl.waitIssuePipelineWithStageApproval(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 
@@ -507,7 +519,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServerWithExternalPg(ctx, &config{
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -518,13 +530,19 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.NoError(err)
 
 	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		ResourceID:     generateRandomString("project", 10),
-		Name:           "Test Project",
-		Key:            "TestSchemaUpdate",
-		TenantMode:     api.TenantModeTenant,
-		DBNameTemplate: "{{DB_NAME}}_{{TENANT}}",
+	projectID := generateRandomString("project", 10)
+	project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+		Project: &v1pb.Project{
+			Name:           fmt.Sprintf("projects/%s", projectID),
+			Title:          projectID,
+			Key:            projectID,
+			TenantMode:     v1pb.TenantMode_TENANT_MODE_ENABLED,
+			DbNameTemplate: "{{DB_NAME}}_{{TENANT}}",
+		},
+		ProjectId: projectID,
 	})
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
 	// Provision instances.
@@ -562,7 +580,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	// Create deployment configuration.
 	_, err = ctl.upsertDeploymentConfig(
 		api.DeploymentConfigUpsert{
-			ProjectID: project.ID,
+			ProjectID: projectUID,
 		},
 		deploymentSchedule,
 	)
@@ -572,18 +590,18 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	baseDatabaseName := "testTenant"
 	for i := 0; i < testTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(ctx, projectUID, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 
 	// Getting databases for each environment.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &projectUID,
 	})
 	a.NoError(err)
 
@@ -611,7 +629,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.Equal(len(prodDatabases), prodTenantNumber)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  project.ID,
+		ProjectID:  projectUID,
 		Name:       "migration statement sheet",
 		Statement:  migrationStatement,
 		Visibility: api.ProjectSheet,
@@ -631,7 +649,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:     project.ID,
+		ProjectID:     projectUID,
 		Name:          "update schema for tenants",
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   "This updates the schema of tenant databases.",
@@ -639,7 +657,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
@@ -737,7 +755,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -763,15 +781,19 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Create a project.
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID:     generateRandomString("project", 10),
-					Name:           "Test VCS Project",
-					Key:            "TestVCSSchemaUpdate",
-					TenantMode:     api.TenantModeTenant,
-					DBNameTemplate: "{{DB_NAME}}_{{TENANT}}",
+			projectID := generateRandomString("project", 10)
+			project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+				Project: &v1pb.Project{
+					Name:           fmt.Sprintf("projects/%s", projectID),
+					Title:          projectID,
+					Key:            projectID,
+					TenantMode:     v1pb.TenantMode_TENANT_MODE_ENABLED,
+					DbNameTemplate: "{{DB_NAME}}_{{TENANT}}",
 				},
-			)
+				ProjectId: projectID,
+			})
+			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			// Create a repository.
@@ -784,7 +806,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
-					ProjectID:          project.ID,
+					ProjectID:          projectUID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -854,7 +876,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			// Create deployment configuration.
 			_, err = ctl.upsertDeploymentConfig(
 				api.DeploymentConfigUpsert{
-					ProjectID: project.ID,
+					ProjectID: projectUID,
 				},
 				deploymentSchedule,
 			)
@@ -866,18 +888,18 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
+				err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
 				a.NoError(err)
 			}
 			for i, prodInstance := range prodInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
+				err := ctl.createDatabase(ctx, projectUID, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
 				a.NoError(err)
 			}
 
 			// Getting databases for each environment.
-			databases, err := ctl.getDatabases(api.DatabaseFind{ProjectID: &project.ID})
+			databases, err := ctl.getDatabases(api.DatabaseFind{ProjectID: &projectUID})
 			a.NoError(err)
 
 			var testDatabases []*api.Database
@@ -915,11 +937,11 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issue.
-			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(issue.ID)
+			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 
@@ -1065,7 +1087,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -1091,14 +1113,18 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 
 			// Create a tenant project with empty database name template.
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID: generateRandomString("project", 10),
-					Name:       "Test VCS Project",
-					Key:        "TestTenantVCSDatabaseNameTemplate_Empty",
-					TenantMode: api.TenantModeTenant,
+			projectID := generateRandomString("project", 10)
+			project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+				Project: &v1pb.Project{
+					Name:       fmt.Sprintf("projects/%s", projectID),
+					Title:      projectID,
+					Key:        projectID,
+					TenantMode: v1pb.TenantMode_TENANT_MODE_ENABLED,
 				},
-			)
+				ProjectId: projectID,
+			})
+			a.NoError(err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
 			// Create a repository.
@@ -1111,7 +1137,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
-					ProjectID:          project.ID,
+					ProjectID:          projectUID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -1160,7 +1186,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			// Create deployment configuration.
 			_, err = ctl.upsertDeploymentConfig(
 				api.DeploymentConfigUpsert{
-					ProjectID: project.ID,
+					ProjectID: projectUID,
 				},
 				api.DeploymentSchedule{
 					Deployments: []*api.Deployment{
@@ -1188,14 +1214,14 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, testInstance, databaseName, "", nil /* labelMap */)
+				err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", nil /* labelMap */)
 				a.NoError(err)
 			}
 
 			// Getting databases for each environment.
 			databases, err := ctl.getDatabases(
 				api.DatabaseFind{
-					ProjectID: &project.ID,
+					ProjectID: &projectUID,
 				},
 			)
 			a.NoError(err)
@@ -1225,11 +1251,11 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 
 			// Get schema update issues.
-			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
 			a.NoError(err)
 			a.Len(issues, 1)
 			issue := issues[0]
-			status, err := ctl.waitIssuePipeline(issue.ID)
+			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 
@@ -1344,7 +1370,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServerWithExternalPg(ctx, &config{
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -1370,14 +1396,19 @@ func TestTenantVCS_YAML(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create a tenant project with empty database name template.
-			project, err := ctl.createProject(
-				api.ProjectCreate{
-					ResourceID: generateRandomString("project", 10),
-					Name:       "Test VCS Project",
-					Key:        "TestTenantVCS_YAML",
-					TenantMode: api.TenantModeTenant,
+			projectID := generateRandomString("project", 10)
+			project, err := ctl.projectServiceClient.CreateProject(ctx, &v1pb.CreateProjectRequest{
+				Project: &v1pb.Project{
+					Name:           fmt.Sprintf("projects/%s", projectID),
+					Title:          projectID,
+					Key:            projectID,
+					TenantMode:     v1pb.TenantMode_TENANT_MODE_ENABLED,
+					DbNameTemplate: "{{DB_NAME}}_{{TENANT}}",
 				},
-			)
+				ProjectId: projectID,
+			})
+			require.NoError(t, err)
+			projectUID, err := strconv.Atoi(project.Uid)
 			require.NoError(t, err)
 
 			// Create a repository.
@@ -1390,7 +1421,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
-					ProjectID:          project.ID,
+					ProjectID:          projectUID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -1439,7 +1470,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			// Create deployment configuration.
 			_, err = ctl.upsertDeploymentConfig(
 				api.DeploymentConfigUpsert{
-					ProjectID: project.ID,
+					ProjectID: projectUID,
 				},
 				api.DeploymentSchedule{
 					Deployments: []*api.Deployment{
@@ -1467,14 +1498,14 @@ func TestTenantVCS_YAML(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, testInstance, databaseName, "", nil /* labelMap */)
+				err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", nil /* labelMap */)
 				require.NoError(t, err)
 			}
 
 			// Getting databases for each environment.
 			databases, err := ctl.getDatabases(
 				api.DatabaseFind{
-					ProjectID: &project.ID,
+					ProjectID: &projectUID,
 				},
 			)
 			require.NoError(t, err)
@@ -1504,10 +1535,10 @@ func TestTenantVCS_YAML(t *testing.T) {
 			require.NoError(t, err)
 
 			// Get schema update issues.
-			issues, err := ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
 			require.NoError(t, err)
 			require.Len(t, issues, 1)
-			status, err := ctl.waitIssuePipeline(issues[0].ID)
+			status, err := ctl.waitIssuePipeline(ctx, issues[0].ID)
 			require.NoError(t, err)
 			require.Equal(t, api.TaskDone, status)
 
@@ -1537,9 +1568,9 @@ statement: |
 			require.NoError(t, err)
 
 			// Get data update issues.
-			issues, err = ctl.getIssues(&project.ID, api.IssueOpen)
+			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
 			require.NoError(t, err)
-			status, err = ctl.waitIssuePipeline(issues[0].ID)
+			status, err = ctl.waitIssuePipeline(ctx, issues[0].ID)
 			require.NoError(t, err)
 			require.Equal(t, api.TaskDone, status)
 

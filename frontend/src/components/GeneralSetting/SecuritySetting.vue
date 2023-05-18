@@ -108,48 +108,49 @@ import { NCheckbox } from "naive-ui";
 import {
   featureToRef,
   pushNotification,
-  useCurrentUser,
-  useSettingByName,
-  useSettingStore,
+  useCurrentUserV1,
   useActuatorStore,
   useUserStore,
 } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { FeatureType } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 interface LocalState {
   featureNameForModal?: FeatureType;
 }
 const state = reactive<LocalState>({});
 const { t } = useI18n();
-const settingStore = useSettingStore();
-const currentUser = useCurrentUser();
+const settingV1Store = useSettingV1Store();
+const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
 const actuatorStore = useActuatorStore();
 
 const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
-const watermarkSetting = useSettingByName("bb.workspace.watermark");
 const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
 
 const allowEdit = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-general",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 const watermarkEnabled = computed((): boolean => {
-  return watermarkSetting.value?.value === "1";
+  return (
+    settingV1Store.getSettingByName("bb.workspace.watermark")?.value
+      ?.stringValue === "1"
+  );
 });
 const disallowSignupEnabled = computed((): boolean => {
-  return settingStore.workspaceSetting?.disallowSignup ?? false;
+  return settingV1Store.workspaceProfileSetting?.disallowSignup ?? false;
 });
 const require2FAEnabled = computed((): boolean => {
-  return settingStore.workspaceSetting?.require2fa ?? false;
+  return settingV1Store.workspaceProfileSetting?.require2fa ?? false;
 });
 
 const handleDisallowSignupToggle = async (on: boolean) => {
@@ -157,7 +158,7 @@ const handleDisallowSignupToggle = async (on: boolean) => {
     state.featureNameForModal = "bb.feature.disallow-signup";
     return;
   }
-  await settingStore.updateWorkspaceProfile({
+  await settingV1Store.updateWorkspaceProfile({
     disallowSignup: on,
   });
   pushNotification({
@@ -196,7 +197,7 @@ const handleRequire2FAToggle = async (on: boolean) => {
     }
   }
 
-  await settingStore.updateWorkspaceProfile({
+  await settingV1Store.updateWorkspaceProfile({
     require2fa: on,
   });
   pushNotification({
@@ -212,9 +213,11 @@ const handleWatermarkToggle = async (on: boolean) => {
     return;
   }
   const value = on ? "1" : "0";
-  await settingStore.updateSettingByName({
+  await settingV1Store.upsertSetting({
     name: "bb.workspace.watermark",
-    value,
+    value: {
+      stringValue: value,
+    },
   });
   pushNotification({
     module: "bytebase",

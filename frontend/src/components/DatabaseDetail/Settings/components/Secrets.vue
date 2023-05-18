@@ -198,10 +198,11 @@ import {
   pushNotification,
   useDatabaseSecretStore,
   hasFeature,
-  useCurrentUser,
+  useCurrentUserV1,
+  useProjectV1Store,
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
-import { hasPermissionInProject, hasWorkspacePermission } from "@/utils";
+import { hasPermissionInProjectV1, hasWorkspacePermissionV1 } from "@/utils";
 
 export type Detail = {
   secret: Secret;
@@ -227,7 +228,7 @@ const parent = computed(() => {
 });
 const detail = ref<Detail>();
 const showFeatureModal = ref(false);
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const COLUMNS = computed(() => {
   const columns: BBGridColumn[] = [
@@ -248,14 +249,17 @@ const COLUMNS = computed(() => {
 });
 
 const allowAdmin = computed(() => {
+  const projectV1 = useProjectV1Store().getProjectByUID(
+    String(props.database.project.id)
+  );
   return (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-database-secrets",
-      currentUser.value.role
+      currentUserV1.value.userRole
     ) ||
-    hasPermissionInProject(
-      props.database.project,
-      currentUser.value,
+    hasPermissionInProjectV1(
+      projectV1.iamPolicy,
+      currentUserV1.value,
       "bb.permission.project.manage-database-secrets"
     )
   );

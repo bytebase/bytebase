@@ -7,7 +7,7 @@
           <span>{{ $t("common.project") }} - </span>
           <a
             class="normal-link inline-flex items-center"
-            :href="`/project/${projectSlug(project)}`"
+            :href="`/project/${projectV1Slug(project)}`"
             >{{ project.name }}</a
           >
         </div>
@@ -15,8 +15,8 @@
           <span>{{ $t("common.environment") }} - </span>
           <a
             class="normal-link inline-flex items-center"
-            :href="`/environment#${environment.id}`"
-            >{{ environment.name }}</a
+            :href="`/environment#${environment.uid}`"
+            >{{ environment.title }}</a
           >
         </div>
       </div>
@@ -204,30 +204,36 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import axios from "axios";
 import { head, isEqual } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { PropType, computed, onMounted, reactive, ref, watch } from "vue";
+import {
+  PropType,
+  computed,
+  onMounted,
+  reactive,
+  ref,
+  toRef,
+  watch,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useDatabaseStore,
-  useEnvironmentStore,
-  useProjectStore,
+  useEnvironmentV1Store,
+  useProjectV1ByUID,
 } from "@/store";
 import {
   Database,
   DatabaseId,
   EngineType,
-  EnvironmentId,
   MigrationHistory,
-  ProjectId,
   UNKNOWN_ID,
 } from "@/types";
-import { migrationHistorySlug } from "@/utils";
+import { migrationHistorySlug, projectV1Slug } from "@/utils";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 import DiffViewPanel from "./DiffViewPanel.vue";
 
 interface SourceSchema {
-  environmentId: EnvironmentId;
+  environmentId: string;
   databaseId: DatabaseId;
   migrationHistory: MigrationHistory;
 }
@@ -242,7 +248,7 @@ interface LocalState {
 
 const props = defineProps({
   projectId: {
-    type: Number as PropType<ProjectId>,
+    type: String,
     required: true,
   },
   sourceSchema: {
@@ -252,8 +258,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const projectStore = useProjectStore();
-const environmentStore = useEnvironmentStore();
+const environmentV1Store = useEnvironmentV1Store();
 const databaseStore = useDatabaseStore();
 const diffViewerRef = ref<HTMLDivElement>();
 const state = reactive<LocalState>({
@@ -274,11 +279,11 @@ const databaseDiffCache = reactive<
   >
 >({});
 
-const project = computed(() => {
-  return projectStore.getProjectById(props.projectId);
-});
+const { project } = useProjectV1ByUID(toRef(props, "projectId"));
 const environment = computed(() => {
-  return environmentStore.getEnvironmentById(props.sourceSchema.environmentId);
+  return environmentV1Store.getEnvironmentByUID(
+    props.sourceSchema.environmentId
+  );
 });
 const sourceDatabase = computed(() => {
   return databaseStore.getDatabaseById(props.sourceSchema.databaseId);

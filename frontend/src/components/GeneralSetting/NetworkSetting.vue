@@ -89,9 +89,10 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
-import { pushNotification, useCurrentUser, useSettingStore } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { pushNotification, useCurrentUserV1 } from "@/store";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import { useI18n } from "vue-i18n";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 interface LocalState {
   externalUrl: string;
@@ -99,8 +100,8 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const settingStore = useSettingStore();
-const currentUser = useCurrentUser();
+const settingV1Store = useSettingV1Store();
+const currentUserV1 = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   externalUrl: "",
@@ -108,15 +109,15 @@ const state = reactive<LocalState>({
 });
 
 watchEffect(() => {
-  state.externalUrl = settingStore.workspaceSetting?.externalUrl ?? "";
+  state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";
   state.gitopsWebhookUrl =
-    settingStore.workspaceSetting?.gitopsWebhookUrl ?? "";
+  settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "";
 });
 
 const allowEdit = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-general",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -127,10 +128,10 @@ const allowSave = computed((): boolean => {
 
   const externalUrlChanged =
     state.externalUrl !== "" &&
-    state.externalUrl !== settingStore.workspaceSetting?.externalUrl;
+    state.externalUrl !== settingV1Store.workspaceProfileSetting?.externalUrl;
   const gitopsWebhookUrlChanged =
     state.gitopsWebhookUrl !== "" &&
-    state.gitopsWebhookUrl !== settingStore.workspaceSetting?.gitopsWebhookUrl;
+    state.gitopsWebhookUrl !== settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl;
   return externalUrlChanged || gitopsWebhookUrlChanged;
 });
 
@@ -146,7 +147,7 @@ const updateNetworkSetting = async () => {
   if (!allowSave.value) {
     return;
   }
-  await settingStore.updateWorkspaceProfile({
+  await settingV1Store.updateWorkspaceProfile({
     externalUrl: state.externalUrl,
     gitopsWebhookUrl: state.gitopsWebhookUrl,
   });
@@ -156,8 +157,8 @@ const updateNetworkSetting = async () => {
     title: t("settings.general.workspace.config-updated"),
   });
 
-  state.externalUrl = settingStore.workspaceSetting?.externalUrl ?? "";
+  state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";
   state.gitopsWebhookUrl =
-    settingStore.workspaceSetting?.gitopsWebhookUrl ?? "";
+    settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "";
 };
 </script>
