@@ -32,7 +32,9 @@ const SIZE = 16;
 const PADDING = 6;
 
 const currentUserV1 = useCurrentUserV1();
-const setting = useSettingV1Store().getSettingByName("bb.workspace.watermark");
+const setting = computed(() =>
+  useSettingV1Store().getSettingByName("bb.workspace.watermark")
+);
 const hasWatermarkFeature = featureToRef("bb.feature.watermark");
 
 const lines = computed(() => {
@@ -40,7 +42,7 @@ const lines = computed(() => {
   const uid = extractUserUID(user.name);
   if (user.name === UNKNOWN_USER_NAME) return [];
   if (!hasWatermarkFeature.value) return [];
-  if (setting?.value?.stringValue !== "1") return [];
+  if (setting.value?.value?.stringValue !== "1") return [];
 
   const lines: string[] = [];
   lines.push(`${user.title} (${uid})`);
