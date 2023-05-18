@@ -4,6 +4,7 @@
 {{- $pg := .Values.bytebase.option.pg -}}
 {{- $data := .Values.bytebase.option.data -}}
 {{- $version := .Values.bytebase.version -}}
+{{- $registryMirrorHost := .Values.bytebase.registryMirrorHost -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -25,7 +26,13 @@ spec:
     spec:
       containers:
         - name: bytebase
-          image: "bytebase/bytebase:{{ $version }}"
+          {{ if $registryMirrorHost }}
+          # If user specifies a registry mirror host, we should use that instead of the default.
+          image: {{ trimSuffix "/" $registryMirrorHost }}/bytebase/bytebase:{{ $version }}
+          {{ else }}
+          image: bytebase/bytebase:{{ $version }}
+          {{ end }}
+          imagePullPolicy: Always
           env:
           - name: PG_URL
             {{ if $existingPgURLSecret }}
@@ -37,7 +44,6 @@ spec:
             {{ else }}
             value: {{ $pg }}
             {{ end }}
-          imagePullPolicy: Always
           args:
             [
               "--data",
