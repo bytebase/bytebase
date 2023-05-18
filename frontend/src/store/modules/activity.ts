@@ -18,9 +18,9 @@ import {
   empty,
   ActivityFind,
 } from "@/types";
-import { isDatabaseRelatedIssueType } from "@/utils";
+import { extractUserUID, isDatabaseRelatedIssueType } from "@/utils";
 import { convertEntityList } from "./utils";
-import { useCurrentUser } from "./auth";
+import { useCurrentUserV1 } from "./auth";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useIssueStore } from "./issue";
 
@@ -179,10 +179,10 @@ export const useActivityStore = defineStore("activity", {
       this.fetchActivityListForIssue(issue);
     },
     async fetchActivityListForQueryHistory({ limit }: { limit: number }) {
-      const currentUser = useCurrentUser();
+      const currentUserV1 = useCurrentUserV1();
       const activityList = await this.fetchActivityList({
         typePrefix: "bb.sql-editor.query",
-        user: currentUser.value.id as number,
+        user: Number(extractUserUID(currentUserV1.value.name)),
         order: "DESC",
         limit,
         level: ["INFO", "WARN"],

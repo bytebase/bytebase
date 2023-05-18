@@ -93,7 +93,7 @@
           <div class="flex">
             <div class="flex-shrink-0">
               <div class="relative">
-                <PrincipalAvatar :principal="currentUser" />
+                <UserAvatar :user="currentUserV1" />
                 <span
                   class="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px"
                 >
@@ -152,7 +152,7 @@ import {
   onMounted,
 } from "vue";
 import { useRoute } from "vue-router";
-import PrincipalAvatar from "../PrincipalAvatar.vue";
+import UserAvatar from "../User/UserAvatar.vue";
 import type {
   Issue,
   Activity,
@@ -161,12 +161,13 @@ import type {
   IssueSubscriber,
   ActivityIssueCommentCreatePayload,
 } from "@/types";
-import { sizeToFit } from "@/utils";
+import { extractUserUID, sizeToFit } from "@/utils";
 import { IssueBuiltinFieldId } from "@/plugins";
 import {
-  useCurrentUser,
   useIssueSubscriberStore,
   useActivityStore,
+  useCurrentUserV1,
+  useCurrentUser,
 } from "@/store";
 import { useEventListener } from "@vueuse/core";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
@@ -220,6 +221,7 @@ const keyboardHandler = (e: KeyboardEvent) => {
 useEventListener("keydown", keyboardHandler);
 
 const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const prepareActivityList = () => {
   activityStore.fetchActivityListForIssue(issue.value);
@@ -301,7 +303,9 @@ const allowEditActivity = (activity: Activity) => {
   if (activity.type !== "bb.issue.comment.create") {
     return false;
   }
-  if (currentUser.value.id !== activity.creator.id) {
+  if (
+    extractUserUID(currentUserV1.value.name) !== String(activity.creator.id)
+  ) {
     return false;
   }
   const payload = activity.payload as ActivityIssueCommentCreatePayload;

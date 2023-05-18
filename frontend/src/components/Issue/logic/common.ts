@@ -4,7 +4,7 @@ import { useRoute } from "vue-router";
 import { v4 as uuidv4 } from "uuid";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import {
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useIssueStore,
   useSheetStore,
@@ -33,6 +33,7 @@ import {
 import { IssueLogic, useIssueLogic } from "./index";
 import {
   defer,
+  extractUserUID,
   getBacktracePayloadWithIssue,
   isDev,
   isTaskTriggeredByVCS,
@@ -45,7 +46,7 @@ export const useCommonLogic = () => {
   const { create, issue, selectedTask, createIssue, onStatusChanged, dialog } =
     useIssueLogic();
   const route = useRoute();
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   const databaseStore = useDatabaseStore();
   const issueStore = useIssueStore();
   const taskStore = useTaskStore();
@@ -78,7 +79,7 @@ export const useCommonLogic = () => {
     return taskStore
       .patchTask({
         issueId: (issue.value as Issue).id,
-        pipelineId: (issue.value as Issue).pipeline.id,
+        pipelineId: (issue.value as Issue).pipeline!.id,
         taskId,
         taskPatch,
       })
@@ -169,7 +170,10 @@ export const useCommonLogic = () => {
     if (issueEntity.status !== "OPEN") {
       return false;
     }
-    if (issueEntity.creator.id !== currentUser.value.id) {
+    if (
+      String(issueEntity.creator.id) !==
+      extractUserUID(currentUserV1.value.name)
+    ) {
       if (isTaskTriggeredByVCS(selectedTask.value as Task)) {
         // If an issue is triggered by VCS, its creator will be 1 (SYSTEM_BOT_ID)
         // We should "Allow" current user to edit the statement (via VCS).

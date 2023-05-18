@@ -144,18 +144,18 @@ export function hasProjectPermission(
 }
 
 // Returns true if admin feature is NOT supported or the principal is OWNER
-export function isOwner(role: RoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role === "OWNER";
+export function isOwner(role: UserRole): boolean {
+  return !hasFeature("bb.feature.rbac") || role === UserRole.OWNER;
 }
 
 // Returns true if admin feature is NOT supported or the principal is DBA
-export function isDBA(role: RoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role === "DBA";
+export function isDBA(role: UserRole): boolean {
+  return !hasFeature("bb.feature.rbac") || role === UserRole.DBA;
 }
 
 // Returns true if admin feature is NOT supported or the principal is DEVELOPER
-export function isDeveloper(role: RoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role === "DEVELOPER";
+export function isDeveloper(role: UserRole): boolean {
+  return !hasFeature("bb.feature.rbac") || role === UserRole.DEVELOPER;
 }
 
 export function roleName(role: RoleType): string {
