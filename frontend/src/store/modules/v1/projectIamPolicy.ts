@@ -7,7 +7,7 @@ import { Database, MaybeRef, PresetRoleType } from "@/types";
 import { useLegacyProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV1, isMemberOfProjectV1 } from "@/utils";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -145,16 +145,7 @@ export const useCurrentUserIamPolicy = () => {
     if (!policy) {
       return false;
     }
-    for (const binding of policy.bindings) {
-      if (
-        binding.members.find(
-          (member) => member === `user:${currentUser.value.email}`
-        )
-      ) {
-        return true;
-      }
-    }
-    return false;
+    return isMemberOfProjectV1(policy, currentUser.value);
   };
 
   const allowToChangeDatabaseOfProject = (projectName: string) => {

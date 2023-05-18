@@ -23,7 +23,7 @@ import {
 import { useDataSourceStore } from "./dataSource";
 import { useInstanceStore } from "./instance";
 import { useLegacyProjectStore } from "./project";
-import { isMemberOfProjectV1 } from "@/utils";
+import { hasWorkspacePermissionV1, isMemberOfProjectV1 } from "@/utils";
 import { useProjectV1Store } from "./v1";
 import { User } from "@/types/proto/v1/auth_service";
 
@@ -172,13 +172,20 @@ export const useDatabaseStore = defineStore("database", {
       return this.databaseListByInstanceId.get(instanceId) || [];
     },
     getDatabaseListByUser(user: User): Database[] {
+      const canManageDatabase = hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-database",
+        user.userRole
+      );
       const list: Database[] = [];
       for (const [_, databaseList] of this.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
           const projectV1 = useProjectV1Store().getProjectByUID(
             String(item.project.id)
           );
-          if (isMemberOfProjectV1(projectV1.iamPolicy, user)) {
+          if (
+            canManageDatabase ||
+            isMemberOfProjectV1(projectV1.iamPolicy, user)
+          ) {
             list.push(item);
           }
         });
