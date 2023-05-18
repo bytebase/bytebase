@@ -6,7 +6,7 @@ type: application
 home: https://bytebase.com/
 sources:
   - https://github.com/bytebase/bytebase
-icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/assets/logo-full.svg
+icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo-full.svg
 maintainers:
   - name: Bytebase
     email: support@bytebase.com
