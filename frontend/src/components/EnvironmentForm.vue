@@ -211,7 +211,7 @@
               v-if="allowEditSQLReviewPolicy"
               class="mr-2"
               :text="true"
-              :value="sqlReviewPolicy.rowStatus === 'NORMAL'"
+              :value="sqlReviewPolicy.enforce"
               @toggle="toggleSQLReviewPolicy"
             />
             <button
@@ -630,7 +630,7 @@ const restoreEnvironment = () => {
 const toggleSQLReviewPolicy = async (on: boolean) => {
   const policy = sqlReviewPolicy.value;
   if (!policy) return;
-  const originalOn = policy.rowStatus === "NORMAL";
+  const originalOn = policy.enforce;
   if (on === originalOn) return;
   await useSQLReviewStore().updateReviewPolicy({
     id: policy.id,
