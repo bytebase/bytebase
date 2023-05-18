@@ -308,7 +308,7 @@ watch(
         ).toLocaleString();
       }
       if (
-        conditionExpression.databases &&
+        conditionExpression.databases !== undefined &&
         conditionExpression.databases.length > 0
       ) {
         const databaseIdList = [];

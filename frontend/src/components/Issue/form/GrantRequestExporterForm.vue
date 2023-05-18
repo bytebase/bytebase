@@ -270,11 +270,11 @@ watch(
       const conditionExpression = parseConditionExpressionString(
         payload.condition.expression
       );
-      if (conditionExpression.statement) {
+      if (conditionExpression.statement !== undefined) {
         state.statement = conditionExpression.statement;
       }
       if (
-        conditionExpression.databases &&
+        conditionExpression.databases !== undefined &&
         conditionExpression.databases.length > 0
       ) {
         const databaseIdList = [];
