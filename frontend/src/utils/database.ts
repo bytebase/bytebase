@@ -1,17 +1,13 @@
+import { User } from "@/types/proto/v1/auth_service";
 import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import { keyBy } from "lodash-es";
-import type {
-  Database,
-  DataSourceType,
-  Environment,
-  Principal,
-} from "../types";
-import { hasWorkspacePermission } from "./role";
+import type { Database, DataSourceType, Environment } from "../types";
+import { hasWorkspacePermissionV1 } from "./role";
 import { isDev, semverCompare } from "./util";
 
 export function allowDatabaseAccess(
   database: Database,
-  principal: Principal,
+  user: User,
   type: DataSourceType
 ): boolean {
   // "ADMIN" data source should only be used by the system, thus it shouldn't
@@ -29,9 +25,9 @@ export function allowDatabaseAccess(
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      principal.role
+      user.userRole
     )
   ) {
     return true;

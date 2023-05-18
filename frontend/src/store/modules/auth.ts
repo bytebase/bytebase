@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { isEqual } from "lodash-es";
 import { computed } from "vue";
-import { SignupInfo, ActivateInfo } from "@/types";
+import { SignupInfo, ActivateInfo, unknownUser } from "@/types";
 import { getIntCookie } from "@/utils";
 import { authServiceClient } from "@/grpcweb";
 import {
@@ -12,7 +12,6 @@ import {
   UserType,
 } from "@/types/proto/v1/auth_service";
 import { convertUserToPrincipal, useUserStore } from ".";
-import { unknown } from "@/utils/common";
 
 interface AuthState {
   currentUser: User;
@@ -58,13 +57,13 @@ export const useAuthStore = defineStore("auth_v1", {
       });
     },
     async logout() {
-      const unknownUser = unknown("USER");
+      const unknown = unknownUser();
       try {
         await axios.post("/v1/auth/logout");
       } finally {
-        this.currentUser = unknownUser;
+        this.currentUser = unknown;
       }
-      return unknownUser;
+      return unknown;
     },
     async activate(activateInfo: ActivateInfo) {
       const activatedUser = (
@@ -89,7 +88,7 @@ export const useAuthStore = defineStore("auth_v1", {
         this.currentUser = loggedInUser;
         return loggedInUser;
       }
-      return unknown("USER");
+      return unknownUser();
     },
     async refreshUserIfNeeded(name: string) {
       if (name === this.currentUser.name) {

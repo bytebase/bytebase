@@ -1,11 +1,6 @@
 import { isUndefined, uniq } from "lodash-es";
 
-import {
-  useCurrentUser,
-  useCurrentUserV1,
-  useProjectV1Store,
-  useSheetStore,
-} from "@/store";
+import { useCurrentUserV1, useProjectV1Store, useSheetStore } from "@/store";
 import {
   Issue,
   Sheet,
@@ -21,14 +16,14 @@ import {
   TaskDatabaseSchemaUpdateSDLPayload,
 } from "@/types";
 import {
+  extractUserUID,
   hasPermissionInProjectV1,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   isMemberOfProjectV1,
 } from "../utils";
 import { flattenTaskList } from "@/components/Issue/logic";
 
 export const isSheetReadable = (sheet: Sheet) => {
-  const currentUser = useCurrentUser();
   const currentUserV1 = useCurrentUserV1();
 
   // readable to
@@ -36,7 +31,7 @@ export const isSheetReadable = (sheet: Sheet) => {
   // PROJECT: the creator and members in the project, workspace Owner and DBA
   // PUBLIC: everyone
 
-  if (sheet.creator.id === currentUser.value.id) {
+  if (String(sheet.creator.id) === extractUserUID(currentUserV1.value.name)) {
     // Always readable to the creator
     return true;
   }
@@ -46,9 +41,9 @@ export const isSheetReadable = (sheet: Sheet) => {
   }
   if (visibility === "PROJECT") {
     if (
-      hasWorkspacePermission(
+      hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-project",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       return true;
@@ -69,7 +64,6 @@ export const isSheetWritable = (sheet: Sheet) => {
     return false;
   }
 
-  const currentUser = useCurrentUser();
   const currentUserV1 = useCurrentUserV1();
 
   // writable to
@@ -77,7 +71,7 @@ export const isSheetWritable = (sheet: Sheet) => {
   // PROJECT: the creator or project role can manage sheet, workspace Owner and DBA
   // PUBLIC: the creator only
 
-  if (sheet.creator.id === currentUser.value.id) {
+  if (String(sheet.creator.id) === extractUserUID(currentUserV1.value.name)) {
     // Always writable to the creator
     return true;
   }
@@ -87,9 +81,9 @@ export const isSheetWritable = (sheet: Sheet) => {
   }
   if (visibility === "PROJECT") {
     if (
-      hasWorkspacePermission(
+      hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-project",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       return true;

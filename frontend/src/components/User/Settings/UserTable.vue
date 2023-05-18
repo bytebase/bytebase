@@ -177,10 +177,9 @@ import { RoleSelect } from "@/components/v2";
 import UserAvatar from "../UserAvatar.vue";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import { hasWorkspacePermission, extractUserUID } from "@/utils";
+import { hasWorkspacePermissionV1, extractUserUID } from "@/utils";
 import {
   featureToRef,
-  useCurrentUser,
   useCurrentUserV1,
   pushNotification,
   useUserStore,
@@ -213,7 +212,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
 
@@ -268,9 +266,9 @@ const hasMoreThanOneOwner = computed(() => {
 });
 
 const allowEdit = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-member",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

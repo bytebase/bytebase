@@ -1,6 +1,6 @@
 import { computed, unref } from "vue";
 import { MaybeRef, PresetRoleType, ProjectRoleType, RoleType } from "../types";
-import { hasFeature, useCurrentUser, useRoleStore } from "@/store";
+import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
 import { t } from "@/plugins/i18n";
 import { UserRole } from "@/types/proto/v1/auth_service";
 
@@ -66,23 +66,6 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
 ]);
 
 // Returns true if RBAC is not enabled or the particular role has the particular permission.
-export function hasWorkspacePermission(
-  permission: WorkspacePermissionType,
-  role: RoleType
-): boolean {
-  if (!hasFeature("bb.feature.rbac")) {
-    return true;
-  }
-  switch (role) {
-    case "DEVELOPER":
-      return WORKSPACE_PERMISSION_MATRIX.get(permission)![0];
-    case "DBA":
-      return WORKSPACE_PERMISSION_MATRIX.get(permission)![1];
-    case "OWNER":
-      return WORKSPACE_PERMISSION_MATRIX.get(permission)![2];
-  }
-}
-
 export function hasWorkspacePermissionV1(
   permission: WorkspacePermissionType,
   role: UserRole
@@ -101,12 +84,12 @@ export function hasWorkspacePermissionV1(
   return false;
 }
 
-export const useWorkspacePermission = (
+export const useWorkspacePermissionV1 = (
   permission: MaybeRef<WorkspacePermissionType>
 ) => {
-  const user = useCurrentUser();
+  const user = useCurrentUserV1();
   return computed(() => {
-    return hasWorkspacePermission(unref(permission), user.value.role);
+    return hasWorkspacePermissionV1(unref(permission), user.value.userRole);
   });
 };
 

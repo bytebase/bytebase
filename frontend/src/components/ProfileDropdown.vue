@@ -123,13 +123,14 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { ServerInfo } from "@/types";
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
   useActuatorStore,
   useAuthStore,
   useCurrentUser,
+  useCurrentUserV1,
   useDebugStore,
   useUIStateStore,
 } from "@/store";
@@ -144,13 +145,14 @@ const { setLocale, locale } = useLanguage();
 const menu = ref();
 const languageMenu = ref();
 const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 // For now, debug mode is a global setting and will affect all users.
 // So we only allow DBA and Owner to toggle it.
 const allowToggleDebug = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.debug",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

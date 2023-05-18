@@ -1,10 +1,11 @@
 import { hasFeature, useCurrentUserIamPolicy } from "@/store";
-import type { Database, Instance, Principal } from "@/types";
-import { hasWorkspacePermission } from "./role";
+import type { Database, Instance } from "@/types";
+import { hasWorkspacePermissionV1 } from "./role";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import { User } from "@/types/proto/v1/auth_service";
 
-export const isInstanceAccessible = (instance: Instance, user: Principal) => {
+export const isInstanceAccessible = (instance: Instance, user: User) => {
   if (!hasFeature("bb.feature.access-control")) {
     // The current plan doesn't have access control feature.
     // Fallback to true.
@@ -12,9 +13,9 @@ export const isInstanceAccessible = (instance: Instance, user: Principal) => {
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-access-control",
-      user.role
+      user.userRole
     )
   ) {
     // The current user has the super privilege to access all databases.
@@ -34,7 +35,7 @@ export const isInstanceAccessible = (instance: Instance, user: Principal) => {
 export const isDatabaseAccessible = (
   database: Database,
   policyList: Policy[],
-  user: Principal
+  user: User
 ) => {
   if (!hasFeature("bb.feature.access-control")) {
     // The current plan doesn't have access control feature.
@@ -43,9 +44,9 @@ export const isDatabaseAccessible = (
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-access-control",
-      user.role
+      user.userRole
     )
   ) {
     // The current user has the super privilege to access all databases.

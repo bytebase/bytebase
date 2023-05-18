@@ -42,11 +42,14 @@ import { computed, defineComponent, reactive, watchEffect } from "vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import { EnvironmentV1Table, ProjectV1Table } from "../components/v2";
 import { Instance } from "../types";
-import { filterProjectV1ListByKeyword, hasWorkspacePermission } from "../utils";
+import {
+  filterProjectV1ListByKeyword,
+  hasWorkspacePermissionV1,
+} from "../utils";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import {
-  useCurrentUser,
+  useCurrentUserV1,
   useEnvironmentV1Store,
   useIdentityProviderStore,
   useInstanceStore,
@@ -83,7 +86,7 @@ export default defineComponent({
       searchText: "",
     });
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const searchFieldPlaceholder = computed(() => {
       if (state.selectedIndex == PROJECT_TAB) {
@@ -105,9 +108,9 @@ export default defineComponent({
 
     const prepareList = () => {
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-instance",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         instanceStore.fetchInstanceList(["ARCHIVED"]);
@@ -138,27 +141,27 @@ export default defineComponent({
       ];
 
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-instance",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         list.push({ title: t("common.instance"), alert: false });
       }
 
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-environment",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         list.push({ title: t("common.environment"), alert: false });
       }
 
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-sso",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         list.push({ title: t("settings.sidebar.sso"), alert: false });

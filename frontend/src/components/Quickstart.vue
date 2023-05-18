@@ -118,11 +118,11 @@ import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
 
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   pushNotification,
   useActuatorStore,
-  useCurrentUser,
+  useCurrentUserV1,
   useSubscriptionStore,
   useUIStateStore,
 } from "@/store";
@@ -141,7 +141,7 @@ const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 const kbarHandler = useKBarHandler();
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const { isDemo } = storeToRefs(actuatorStore);
 
 const show = computed(() => {
@@ -181,9 +181,9 @@ const introList = computed(() => {
   ];
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-environment",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     introList.push({
@@ -196,9 +196,9 @@ const introList = computed(() => {
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     introList.push({
@@ -215,9 +215,9 @@ const introList = computed(() => {
   });
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-member",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     introList.push({

@@ -580,7 +580,7 @@ import { Status } from "nice-grpc-common";
 import { useRouter } from "vue-router";
 
 import {
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   instanceHasSSL,
   instanceHasSSH,
   instanceSlug,
@@ -610,7 +610,7 @@ import {
 import {
   hasFeature,
   pushNotification,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useDataSourceStore,
   useInstanceStore,
@@ -675,7 +675,7 @@ const router = useRouter();
 const instanceStore = useInstanceStore();
 const instanceV1Store = useInstanceV1Store();
 const dataSourceStore = useDataSourceStore();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const sqlStore = useSQLStore();
 const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorStore();
@@ -825,9 +825,9 @@ const allowCreate = computed(() => {
 const allowEdit = computed(() => {
   return (
     basicInformation.value.rowStatus == "NORMAL" &&
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   );
 });
