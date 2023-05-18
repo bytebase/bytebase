@@ -20,6 +20,7 @@ import {
   useEnvironmentV1List,
   useCurrentUser,
   useDatabaseStore,
+  useCurrentUserV1,
 } from "@/store";
 
 export default defineComponent({
@@ -30,6 +31,7 @@ export default defineComponent({
     const router = useRouter();
 
     const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const rawEnvironmentList = useEnvironmentV1List();
 
@@ -50,7 +52,7 @@ export default defineComponent({
     // Use this to make the list reactive when project is transferred.
     const databaseList = computed((): Database[] => {
       return databaseStore
-        .getDatabaseListByPrincipalId(currentUser.value.id)
+        .getDatabaseListByUser(currentUserV1.value)
         .filter((db) => db.syncStatus === "OK");
     });
 
