@@ -301,7 +301,9 @@ watch(
       for (const expression of expressionList) {
         const fields = expression.split(" ");
         if (fields[0] === "request.time") {
-          state.expiredAt = parseExpiredTimeString(fields[2]).toLocaleString();
+          state.expiredAt = new Date(
+            parseExpiredTimeString(fields[2])
+          ).toLocaleString();
         } else if (fields[0] === "resource.database") {
           const databaseIdList = [];
           for (const url of JSON.parse(fields[2])) {
