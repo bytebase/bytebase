@@ -3031,6 +3031,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | state | [State](#bytebase-v1-State) |  |  |
 | title | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
+| engine_version | [string](#string) |  |  |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
