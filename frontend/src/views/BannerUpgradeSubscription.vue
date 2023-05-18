@@ -5,7 +5,9 @@
         class="mx-auto py-1 px-3 w-full flex flex-row items-center justify-center flex-wrap"
       >
         <div class="flex flex-row items-center">
-          <heroicons-outline:megaphone class="w-5 h-auto text-gray-800 mr-1" />
+          <heroicons-outline:exclamation-circle
+            class="w-5 h-auto text-gray-800 mr-1"
+          />
           <i18n-t tag="p" keypath="subscription.overuse-warning">
             <template #neededPlan>
               <span
@@ -20,7 +22,7 @@
           </i18n-t>
         </div>
         <button
-          class="bg-white btn btn-normal btn-small flex flex-row justify-center items-center ml-2 !py-1"
+          class="btn btn-normal btn-small flex flex-row justify-center items-center ml-2 !py-1 px-2"
           @click="gotoSubscriptionPage"
         >
           {{ $t("subscription.button.upgrade") }}
@@ -91,10 +93,7 @@ const instanceStore = useInstanceStore();
 const environmentV1Store = useEnvironmentV1Store();
 
 const showBanner = computed(() => {
-  return (
-    subscriptionStore.currentPlan !== PlanType.ENTERPRISE &&
-    overusedFeatureList.value.length > 0
-  );
+  return true;
 });
 
 const neededPlan = computed(() => {
