@@ -38,6 +38,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {
+	// https://stackoverflow.com/questions/10886450/how-to-generate-entire-ddl-of-an-oracle-schema-scriptable
 	query := fmt.Sprintf(`
 select dbms_metadata.get_ddl(object_type, object_name, owner)
 from
