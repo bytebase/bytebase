@@ -202,13 +202,15 @@ message Instance {
 
   Engine engine = 5;
 
-  string external_link = 6;
+  string engine_version = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  repeated DataSource data_sources = 7;
+  string external_link = 7;
+
+  repeated DataSource data_sources = 8;
 
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
-  string environment = 8;
+  string environment = 9;
 }
 
 message DataSource {
