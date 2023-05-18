@@ -124,24 +124,27 @@ message Plan {
   string description = 4;
 
   // TODO(d/xz): support spec with 1) deployment config, 2) user specified targets with stages/steps, 3) project groups in the future.
-  message Stage {
-    repeated Task tasks = 1;
+  message Step {
+    repeated Spec specs = 1;
   }
 
-  message Task {
+  message Spec {
+    // earliest_allowed_time the earliest execution time of the change.
+    google.protobuf.Timestamp earliest_allowed_time = 4;
+
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
-      PitrConfig pitr_config = 3;
+      RestoreConfig restore_config = 3;
     }
   }
 
-  repeated Stage stages = 5;
+  repeated Step steps = 5;
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
     // Format: instances/{instance}
-    string instance = 1;
+    string target = 1;
     // The name of the database to create.
     string database = 2;
     // table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
@@ -193,13 +196,12 @@ message Plan {
     // schema_version is parsed from VCS file name.
     // It is automatically generated in the UI workflow.
     string schema_version = 4;
-    // earliest_allowed_time the earliest execution time of the change.
-    google.protobuf.Timestamp earliest_allowed_time = 5;
+
     // If RollbackEnabled, build the RollbackSheetID of the task.
     bool rollback_enabled = 6;
   }
 
-  message PitrConfig {
+  message RestoreConfig {
     // The resource name of the database to restore.
     string database = 1;
     // create_database_config is present if the user wants to restore to a new database.
@@ -239,7 +241,11 @@ message PlanCheckRun {
   repeated Result results = 6;
 }
 
-message GetRolloutRequest {}
+message GetRolloutRequest {
+  // The name of the rollout to retrieve.
+  // Format: projects/{project}/rollouts/{rollout}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
 
 message Rollout {
   // Stage, task.
