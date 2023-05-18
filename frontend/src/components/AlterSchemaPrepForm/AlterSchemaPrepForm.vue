@@ -231,7 +231,7 @@ import {
 } from "@/utils";
 import {
   hasFeature,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useEnvironmentV1List,
   useProjectV1Store,
@@ -273,7 +273,7 @@ const emit = defineEmits(["dismiss"]);
 
 const router = useRouter();
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
@@ -327,7 +327,7 @@ const databaseList = computed(() => {
   if (props.projectId) {
     list = databaseStore.getDatabaseListByProjectId(props.projectId);
   } else {
-    list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
+    list = databaseStore.getDatabaseListByUser(currentUserV1.value);
   }
 
   list = list.filter((db) => db.syncStatus === "OK");

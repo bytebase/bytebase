@@ -22,7 +22,7 @@
 
 <script lang="ts">
 import { isNullOrUndefined } from "@/plugins/demo/utils";
-import { useCurrentUser, useDatabaseStore } from "@/store";
+import { useCurrentUserV1, useDatabaseStore } from "@/store";
 import {
   computed,
   reactive,
@@ -95,7 +95,7 @@ export default defineComponent({
       selectedId: props.selectedId,
     });
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const prepareDatabaseList = () => {
       // TODO(tianzhou): Instead of fetching each time, we maybe able to let the outside context
@@ -130,7 +130,7 @@ export default defineComponent({
       } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
         list = databaseStore.getDatabaseListByInstanceId(props.instanceId);
       } else if (props.mode == "USER") {
-        list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
+        list = databaseStore.getDatabaseListByUser(currentUserV1.value);
       }
 
       if (!isNullOrUndefined(props.engineTypeList)) {
