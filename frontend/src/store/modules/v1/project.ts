@@ -16,6 +16,7 @@ import { useProjectIamPolicyStore } from "./projectIamPolicy";
 import { State } from "@/types/proto/v1/common";
 import { User } from "@/types/proto/v1/auth_service";
 import { useCurrentUserV1 } from "../auth";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
@@ -48,7 +49,16 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     );
   };
   const getProjectListByUser = (user: User, showDeleted = false) => {
-    return getProjectList(showDeleted).filter((project) => {
+    const canManageProject = hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-project",
+      user.userRole
+    );
+    const projectList = getProjectList(showDeleted);
+    if (canManageProject) {
+      return projectList;
+    }
+
+    return projectList.filter((project) => {
       return project.iamPolicy.bindings.some((binding) => {
         return binding.members.some((email) => {
           return email === `user:${unref(user).email}`;
