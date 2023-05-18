@@ -144,6 +144,7 @@ import {
   featureToRef,
   useAnomalyList,
   useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useEnvironmentV1List,
   useInstanceList,
@@ -172,6 +173,7 @@ export default defineComponent({
     const { t } = useI18n();
 
     const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const state = reactive<LocalState>({
       selectedIndex: hasWorkspacePermission(
@@ -195,7 +197,7 @@ export default defineComponent({
     watchEffect(prepareDatabaseList);
 
     const databaseList = computed(() => {
-      return databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
+      return databaseStore.getDatabaseListByUser(currentUserV1.value);
     });
 
     const instanceList = useInstanceList();

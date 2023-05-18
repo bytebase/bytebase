@@ -14,7 +14,6 @@ import {
   Instance,
   InstanceId,
   MaybeRef,
-  PrincipalId,
   Project,
   ResourceIdentifier,
   ResourceObject,
@@ -24,7 +23,9 @@ import {
 import { useDataSourceStore } from "./dataSource";
 import { useInstanceStore } from "./instance";
 import { useLegacyProjectStore } from "./project";
-import { isMemberOfProject } from "@/utils";
+import { isMemberOfProjectV1 } from "@/utils";
+import { useProjectV1Store } from "./v1";
+import { User } from "@/types/proto/v1/auth_service";
 
 function convert(
   database: ResourceObject,
@@ -170,11 +171,14 @@ export const useDatabaseStore = defineStore("database", {
       }
       return this.databaseListByInstanceId.get(instanceId) || [];
     },
-    getDatabaseListByPrincipalId(userId: PrincipalId): Database[] {
+    getDatabaseListByUser(user: User): Database[] {
       const list: Database[] = [];
       for (const [_, databaseList] of this.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
-          if (isMemberOfProject(item.project, userId)) {
+          const projectV1 = useProjectV1Store().getProjectByUID(
+            String(item.project.id)
+          );
+          if (isMemberOfProjectV1(projectV1.iamPolicy, user)) {
             list.push(item);
           }
         });

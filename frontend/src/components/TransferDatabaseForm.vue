@@ -52,7 +52,7 @@ import {
 } from "../utils";
 import {
   pushNotification,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useEnvironmentV1List,
   useProjectV1ByUID,
@@ -78,7 +78,7 @@ const emit = defineEmits<{
 }>();
 
 const databaseStore = useDatabaseStore();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   transferSource:
@@ -108,7 +108,7 @@ const rawDatabaseList = computed(() => {
   } else {
     const list = hasWorkspaceManageDatabasePermission.value
       ? databaseStore.getDatabaseList()
-      : databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
+      : databaseStore.getDatabaseListByUser(currentUserV1.value);
     return cloneDeep(list).filter(
       (item: Database) =>
         String(item.project.id) !== props.projectId &&
