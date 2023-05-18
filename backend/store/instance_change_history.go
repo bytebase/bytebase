@@ -510,32 +510,3 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 
 	return list[0].ID, nil
 }
-
-// ListInstanceHavingInstanceChangeHistory finds the instance id lists that have instance change history.
-func (s *Store) ListInstanceHavingInstanceChangeHistory(ctx context.Context) ([]int, error) {
-	query := `
-		SELECT DISTINCT
-			instance_id
-		FROM instance_change_history
-		WHERE instance_id IS NOT NULL
-	`
-	rows, err := s.db.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var list []int
-	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		list = append(list, id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
