@@ -320,7 +320,7 @@ import { DatabaseLabelProps } from "@/components/DatabaseLabels";
 import { SelectDatabaseLabel } from "@/components/TransferDatabaseForm";
 import {
   idFromSlug,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   hidePrefix,
   allowGhostMigration,
   isPITRDatabase,
@@ -345,7 +345,6 @@ import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
 import {
   pushNotification,
-  useCurrentUser,
   useCurrentUserIamPolicy,
   useCurrentUserV1,
   useDatabaseStore,
@@ -410,7 +409,6 @@ const state = reactive<LocalState>({
   showSchemaDiagram: false,
 });
 
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
@@ -442,7 +440,7 @@ const accessControlPolicy = usePolicyByParentAndType(
 const allowQuery = computed(() => {
   const policy = accessControlPolicy.value;
   const list = policy ? [policy] : [];
-  return isDatabaseAccessible(database.value, list, currentUser.value);
+  return isDatabaseAccessible(database.value, list, currentUserV1.value);
 });
 
 // Project can be transferred if meets either of the condition below:
@@ -459,9 +457,9 @@ const allowTransferProject = computed(() => {
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-project",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;
@@ -488,9 +486,9 @@ const allowTransferToDefaultProject = computed(() => {
   // Allow to transfer a database to DEFAULT project only if the current user
   // can manage all projects.
   // AKA DBA or workspace owner.
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-project",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -507,9 +505,9 @@ const allowAdmin = computed(() => {
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;
@@ -539,9 +537,9 @@ const allowEdit = computed(() => {
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;

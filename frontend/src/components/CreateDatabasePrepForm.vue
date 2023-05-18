@@ -277,14 +277,14 @@ import {
 } from "@/types/InstanceUser";
 import {
   extractEnvironmentResourceName,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   instanceHasCollationAndCharacterSet,
   instanceHasCreateDatabase,
   issueSlug,
 } from "../utils";
 import {
   hasFeature,
-  useCurrentUser,
+  useCurrentUserV1,
   useEnvironmentV1Store,
   useInstanceStore,
   useIssueStore,
@@ -343,7 +343,7 @@ export default defineComponent({
     const instanceStore = useInstanceStore();
     const router = useRouter();
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
     const projectV1Store = useProjectV1Store();
 
     useEventListener("keydown", (e: KeyboardEvent) => {
@@ -362,9 +362,9 @@ export default defineComponent({
     const showAssigneeSelect = computed(() => {
       // If the role can't change assignee after creating the issue, then we will show the
       // assignee select in the prep stage here to request a particular assignee.
-      return !hasWorkspacePermission(
+      return !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-issue",
-        currentUser.value.role
+        currentUserV1.value.userRole
       );
     });
 

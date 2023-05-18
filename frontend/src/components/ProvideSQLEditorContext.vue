@@ -17,6 +17,7 @@ import {
   pushNotification,
   useConnectionTreeStore,
   useProjectV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import {
   Connection,
@@ -35,7 +36,7 @@ import {
   isDatabaseAccessible,
   getDefaultTabNameFromConnection,
   isSimilarTab,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
@@ -50,6 +51,7 @@ const router = useRouter();
 const { t } = useI18n();
 
 const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 const policyV1Store = usePolicyV1Store();
@@ -83,7 +85,7 @@ const prepareAccessibleDatabaseList = async () => {
     isDatabaseAccessible(
       db,
       connectionTreeStore.accessControlPolicyList,
-      currentUser.value
+      currentUserV1.value
     )
   );
   connectionTreeStore.tree.databaseList = databaseList;
@@ -92,9 +94,9 @@ const prepareAccessibleDatabaseList = async () => {
 const prepareConnectionTree = async () => {
   if (connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-database",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;
@@ -122,7 +124,7 @@ const prepareConnectionTree = async () => {
           node.disabled = !isDatabaseAccessible(
             db,
             connectionTreeStore.accessControlPolicyList,
-            currentUser.value
+            currentUserV1.value
           );
           if (node.disabled) {
             // If a database node is not accessible
@@ -159,7 +161,7 @@ const prepareConnectionTree = async () => {
           node.disabled = !isDatabaseAccessible(
             db,
             connectionTreeStore.accessControlPolicyList,
-            currentUser.value
+            currentUserV1.value
           );
           if (node.disabled) {
             // If a database node is not accessible

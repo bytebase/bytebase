@@ -48,7 +48,7 @@ import {
   filterDatabaseByKeyword,
   PRESET_LABEL_KEY_PLACEHOLDERS,
   sortDatabaseListByEnvironmentV1,
-  useWorkspacePermission,
+  useWorkspacePermissionV1,
 } from "../utils";
 import {
   pushNotification,
@@ -87,7 +87,7 @@ const state = reactive<LocalState>({
   searchText: "",
   loading: false,
 });
-const hasWorkspaceManageDatabasePermission = useWorkspacePermission(
+const hasWorkspaceManageDatabasePermission = useWorkspacePermissionV1(
   "bb.permission.workspace.manage-database"
 );
 const { project } = useProjectV1ByUID(toRef(props, "projectId"));

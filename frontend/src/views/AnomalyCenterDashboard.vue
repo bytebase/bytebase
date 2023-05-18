@@ -130,11 +130,11 @@ import { computed, defineComponent, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 
 import AnomalyTable from "../components/AnomalyTable.vue";
-import { Anomaly, UNKNOWN_ID } from "../types";
+import { Anomaly, UNKNOWN_USER_NAME } from "../types";
 import {
   databaseSlug,
   instanceSlug,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   sortDatabaseListByEnvironmentV1,
   sortInstanceListByEnvironmentV1,
 } from "../utils";
@@ -143,7 +143,6 @@ import { cloneDeep } from "lodash-es";
 import {
   featureToRef,
   useAnomalyList,
-  useCurrentUser,
   useCurrentUserV1,
   useDatabaseStore,
   useEnvironmentV1List,
@@ -172,13 +171,12 @@ export default defineComponent({
     const databaseStore = useDatabaseStore();
     const { t } = useI18n();
 
-    const currentUser = useCurrentUser();
     const currentUserV1 = useCurrentUserV1();
 
     const state = reactive<LocalState>({
-      selectedIndex: hasWorkspacePermission(
+      selectedIndex: hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-instance",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
         ? INSTANCE_TAB
         : DATABASE_TAB,
@@ -189,7 +187,7 @@ export default defineComponent({
 
     const prepareDatabaseList = () => {
       // It will also be called when user logout
-      if (currentUser.value.id !== UNKNOWN_ID) {
+      if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
         databaseStore.fetchDatabaseList();
       }
     };

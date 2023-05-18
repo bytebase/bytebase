@@ -86,19 +86,18 @@ import {
   ComposedProjectMember,
   ProjectMemberTable,
 } from "../components/Project/ProjectSetting";
-import { DEFAULT_PROJECT_ID, PresetRoleType, unknownUser } from "../types";
+import { DEFAULT_PROJECT_V1_NAME, PresetRoleType, unknownUser } from "../types";
 import { UserSelect } from "./v2";
 import {
   addRoleToProjectIamPolicy,
   extractUserUID,
   hasPermissionInProjectV1,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
 } from "../utils";
 import {
   extractUserEmail,
   featureToRef,
   pushNotification,
-  useCurrentUser,
   useCurrentUserV1,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
@@ -123,7 +122,6 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy, ready } = useProjectIamPolicy(projectResourceName);
@@ -139,7 +137,7 @@ const hasRBACFeature = featureToRef("bb.feature.rbac");
 const userStore = useUserStore();
 
 const allowAdmin = computed(() => {
-  if (parseInt(props.project.uid, 10) === DEFAULT_PROJECT_ID) {
+  if (props.project.name === DEFAULT_PROJECT_V1_NAME) {
     return false;
   }
 
@@ -149,9 +147,9 @@ const allowAdmin = computed(() => {
 
   // Allow workspace roles having manage project permission here in case project owners are not available.
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-project",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;

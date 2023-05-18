@@ -85,10 +85,10 @@ import { NPopconfirm } from "naive-ui";
 import { uniq } from "lodash-es";
 import { useRouter } from "vue-router";
 
-import { featureToRef, useCurrentUser, useDatabaseStore } from "@/store";
+import { featureToRef, useCurrentUserV1, useDatabaseStore } from "@/store";
 import { Database } from "@/types";
 import { BBGridColumn } from "@/bbkit/types";
-import { databaseSlug, hasWorkspacePermission } from "@/utils";
+import { databaseSlug, hasWorkspacePermissionV1 } from "@/utils";
 import { BBGrid } from "@/bbkit";
 import {
   usePolicyListByResourceTypeAndPolicyType,
@@ -123,11 +123,11 @@ const state = reactive<LocalState>({
 const databaseStore = useDatabaseStore();
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const allowAdmin = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-sensitive-data",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

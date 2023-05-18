@@ -215,10 +215,10 @@ import { useI18n } from "vue-i18n";
 import { NPopconfirm } from "naive-ui";
 import { uniq } from "lodash-es";
 
-import { featureToRef, useCurrentUser, useDatabaseStore } from "@/store";
+import { featureToRef, useCurrentUserV1, useDatabaseStore } from "@/store";
 import { Database, DatabaseId, DEFAULT_PROJECT_ID } from "@/types";
 import { BBTableColumn } from "@/bbkit/types";
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import AddRuleForm from "@/components/AccessControl/AddRuleForm.vue";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import {
@@ -251,11 +251,11 @@ const databaseStore = useDatabaseStore();
 const policyStore = usePolicyV1Store();
 const hasAccessControlFeature = featureToRef("bb.feature.access-control");
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const allowAdmin = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-access-control",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

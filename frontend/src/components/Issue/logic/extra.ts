@@ -2,7 +2,7 @@ import { computed, nextTick } from "vue";
 import { cloneDeep, isEqual } from "lodash-es";
 
 import {
-  useCurrentUser,
+  useCurrentUserV1,
   useIssueStore,
   useIssueSubscriberStore,
   useTaskStore,
@@ -23,7 +23,7 @@ import type {
 } from "@/types";
 import type { InputField, OutputField } from "@/plugins";
 import { useIssueLogic } from "./index";
-import { hasWorkspacePermission } from "@/utils";
+import { extractUserUID, hasWorkspacePermissionV1 } from "@/utils";
 
 export const useExtraIssueLogic = () => {
   const {
@@ -41,7 +41,10 @@ export const useExtraIssueLogic = () => {
   const issueStore = useIssueStore();
   const issueSubscriberStore = useIssueSubscriberStore();
   const taskStore = useTaskStore();
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
+  const currentUserUID = computed(() =>
+    extractUserUID(currentUserV1.value.name)
+  );
 
   const allowEditOutput = computed(() => {
     if (create.value) {
@@ -50,8 +53,8 @@ export const useExtraIssueLogic = () => {
 
     const issueEntity = issue.value as Issue;
     return (
-      issueEntity.status == "OPEN" &&
-      issueEntity.assignee?.id == currentUser.value.id
+      issueEntity.status === "OPEN" &&
+      String(issueEntity.assignee?.id) === currentUserUID.value
     );
   });
 
@@ -63,17 +66,17 @@ export const useExtraIssueLogic = () => {
     const issueEntity = issue.value as Issue;
     if (issueEntity.status === "OPEN") {
       if (
-        issueEntity.assignee.id === currentUser.value.id ||
-        issueEntity.creator.id === currentUser.value.id
+        String(issueEntity.assignee.id) === currentUserUID.value ||
+        String(issueEntity.creator.id) === currentUserUID.value
       ) {
         // Allowed if current user is the assignee or creator.
         return true;
       }
 
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-issue",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         // Allowed if RBAC is enabled and current is DBA or workspace owner.

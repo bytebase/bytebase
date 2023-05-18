@@ -171,54 +171,54 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { hasWorkspacePermission } from "../utils";
-import { useCurrentUser, useRouterStore } from "@/store";
+import { hasWorkspacePermissionV1 } from "../utils";
+import { useCurrentUserV1, useRouterStore } from "@/store";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 
 const routerStore = useRouterStore();
 const route = useRoute();
 const router = useRouter();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const showProjectItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-project",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
 const showSensitiveDataItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-sensitive-data",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
 const showAccessControlItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-access-control",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
 const showIMIntegrationItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-im-integration",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
 const showSSOItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-sso",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
 const showVCSItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-vcs-provider",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -227,23 +227,23 @@ const showIntegrationSection = computed(() => {
 });
 
 const showDebugLogItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.debug-log",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
 const showAuditLogItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.audit-log",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
 const showMailDeliveryItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-mail-delivery",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

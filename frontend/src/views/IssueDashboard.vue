@@ -97,12 +97,11 @@ import { type Issue, UNKNOWN_ID } from "../types";
 import {
   activeEnvironment,
   extractUserUID,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   isDatabaseRelatedIssueType,
   projectV1Slug,
 } from "../utils";
 import {
-  useCurrentUser,
   useCurrentUserV1,
   useEnvironmentV1Store,
   useProjectV1Store,
@@ -117,7 +116,6 @@ interface LocalState {
 const router = useRouter();
 const route = useRoute();
 
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const environmentV1Store = useEnvironmentV1Store();
@@ -146,9 +144,9 @@ const showClosed = computed(
 
 const allowFilterUsers = computed(() => {
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-issue",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;
@@ -157,9 +155,9 @@ const allowFilterUsers = computed(() => {
 });
 
 const allowSelectAllUsers = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-issue",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

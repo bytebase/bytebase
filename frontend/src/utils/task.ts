@@ -1,6 +1,6 @@
 import { groupBy, maxBy } from "lodash-es";
 
-import { useCurrentUser, useDatabaseStore } from "@/store";
+import { useCurrentUserV1, useDatabaseStore } from "@/store";
 import {
   Issue,
   Task,
@@ -20,7 +20,8 @@ import {
 } from "@/types";
 import { issueSlug, stageSlug, taskSlug } from "./slug";
 import { activeTask } from "./pipeline";
-import { hasWorkspacePermission } from "./role";
+import { hasWorkspacePermissionV1 } from "./role";
+import { extractUserUID } from "./v1";
 
 export const extractDatabaseNameFromTask = (
   task: Task | TaskCreate
@@ -228,18 +229,18 @@ export const canSkipTask = (
     return false;
   }
 
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-issue",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;
   }
 
-  if (currentUser.value.id === issue.assignee.id) {
+  if (extractUserUID(currentUserV1.value.name) === String(issue.assignee.id)) {
     return true;
   }
 

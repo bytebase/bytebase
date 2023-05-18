@@ -47,8 +47,8 @@ export default { name: "RepositoryVCSProviderPanel" };
 import { reactive, computed, watchEffect, onUnmounted, onMounted } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { OAuthWindowEventPayload, openWindowForOAuth, VCS } from "../types";
-import { hasWorkspacePermission } from "../utils";
-import { pushNotification, useCurrentUser, useVCSStore } from "@/store";
+import { hasWorkspacePermissionV1 } from "../utils";
+import { pushNotification, useCurrentUserV1, useVCSStore } from "@/store";
 
 interface LocalState {
   selectedVCS?: VCS;
@@ -63,7 +63,7 @@ const emit = defineEmits<{
 const vcsStore = useVCSStore();
 const state = reactive<LocalState>({});
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const prepareVCSList = () => {
   vcsStore.fetchVCSList();
@@ -97,9 +97,9 @@ const eventListener = (event: Event) => {
 };
 
 const canManageVCSProvider = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-vcs-provider",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
