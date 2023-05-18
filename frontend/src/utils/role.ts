@@ -98,7 +98,7 @@ export function hasWorkspacePermissionV1(
     case UserRole.OWNER:
       return WORKSPACE_PERMISSION_MATRIX.get(permission)![2];
   }
-  return true;
+  return false;
 }
 
 export const useWorkspacePermission = (

@@ -116,12 +116,12 @@ export const useExtraIssueLogic = () => {
     }
   };
 
-  const updateAssigneeId = (newAssigneeId: PrincipalId) => {
+  const updateAssigneeId = (newAssigneeId: string) => {
     if (create.value) {
-      (issue.value as IssueCreate).assigneeId = newAssigneeId;
+      (issue.value as IssueCreate).assigneeId = parseInt(newAssigneeId, 10);
     } else {
       patchIssue({
-        assigneeId: newAssigneeId,
+        assigneeId: parseInt(newAssigneeId, 10),
       });
     }
   };

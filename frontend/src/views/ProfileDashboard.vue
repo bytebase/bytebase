@@ -8,65 +8,51 @@
       <div class="h-32 w-full bg-accent lg:h-48"></div>
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
-          <PrincipalAvatar :principal="principal" :size="'HUGE'" />
+          <UserAvatar :user="user" size="HUGE" />
           <div
             class="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-end sm:space-x-6 sm:pb-1"
           >
             <div class="mt-6 flex flex-row justify-stretch space-x-4">
               <template v-if="allowEdit">
                 <template v-if="state.editing">
-                  <button
-                    type="button"
-                    class="btn-normal"
-                    @click.prevent="cancelEdit"
-                  >
+                  <NButton @click.prevent="cancelEdit">
                     {{ $t("common.cancel") }}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-normal"
-                    :disabled="!allowSaveEdit"
-                    @click.prevent="saveEdit"
-                  >
-                    <heroicons-solid:save
-                      class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                    />
-                    <span>{{ $t("common.save") }}</span>
-                  </button>
+                  </NButton>
+                  <NButton :disabled="!allowSaveEdit" @click.prevent="saveEdit">
+                    <template #icon>
+                      <heroicons-solid:save
+                        class="h-5 w-5 text-control-light"
+                      />
+                    </template>
+                    {{ $t("common.save") }}
+                  </NButton>
                 </template>
-                <button
-                  v-else
-                  type="button"
-                  class="btn-normal"
-                  @click.prevent="editUser"
-                >
-                  <heroicons-solid:pencil
-                    class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                  />
-                  <span>{{ $t("common.edit") }}</span>
-                </button>
+                <NButton v-else @click.prevent="editUser">
+                  <template #icon>
+                    <heroicons-solid:pencil
+                      class="h-5 w-5 text-control-light"
+                    />
+                  </template>
+                  {{ $t("common.edit") }}
+                </NButton>
               </template>
             </div>
           </div>
         </div>
         <div class="block mt-6 min-w-0 flex-1">
-          <input
+          <NInput
             v-if="state.editing"
-            id="name"
             ref="editNameTextField"
-            required
-            autocomplete="off"
-            name="name"
-            type="text"
-            class="textfield"
-            :value="state.editingPrincipal?.name"
-            @input="(e: any)=>updatePrincipal('name', e.target.value)"
+            :input-props="{ autocomplete: 'off' }"
+            :value="state.editingUser?.title"
+            style="width: 16rem"
+            @update:value="updateUser('title', $event)"
           />
           <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
-            {{ principal.name }}
+            {{ user.title }}
           </h1>
           <span
-            v-if="principal.type === 'SERVICE_ACCOUNT'"
+            v-if="user.userType === UserType.SERVICE_ACCOUNT"
             class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
           >
             {{ $t("settings.members.service-account") }}
@@ -77,7 +63,7 @@
 
     <!-- Description list -->
     <div
-      v-if="principal.type === 'END_USER'"
+      v-if="user.userType === UserType.USER"
       class="mt-6 mb-2 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
     >
       <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
@@ -86,13 +72,9 @@
             {{ $t("settings.profile.role") }}
           </dt>
           <dd class="mt-1 text-sm text-main">
-            <router-link
-              :to="'/setting/member'"
-              class="normal-link capitalize"
-              >{{
-                $t(`common.role.${principal.role.toLowerCase()}`)
-              }}</router-link
-            >
+            <router-link :to="'/setting/member'" class="normal-link capitalize">
+              {{ roleNameV1(user.userRole) }}
+            </router-link>
             <router-link
               v-if="!hasRBACFeature"
               :to="'/setting/subscription'"
@@ -108,19 +90,14 @@
             {{ $t("settings.profile.email") }}
           </dt>
           <dd class="mt-1 text-sm text-main">
-            <input
+            <NInput
               v-if="state.editing"
-              id="email"
-              required
-              autocomplete="off"
-              name="email"
-              type="text"
-              class="textfield"
-              :value="state.editingPrincipal?.email"
-              @input="(e: any)=>updatePrincipal('email', e.target.value)"
+              :value="state.editingUser?.email"
+              :input-props="{ autocomplete: 'off', type: 'email' }"
+              @update:value="updateUser('email', $event)"
             />
             <template v-else>
-              {{ principal.email }}
+              {{ user.email }}
             </template>
           </dd>
         </div>
@@ -131,15 +108,12 @@
               {{ $t("settings.profile.password") }}
             </dt>
             <dd class="mt-1 text-sm text-main">
-              <input
-                id="password"
-                name="password"
-                type="text"
-                class="textfield mt-1 w-full"
-                autocomplete="off"
+              <NInput
+                type="password"
                 :placeholder="$t('common.sensitive-placeholder')"
-                :value="state.editingPrincipal?.password"
-                @input="(e: any) => updatePrincipal('password', e.target.value)"
+                :value="state.editingUser?.password"
+                :input-props="{ autocomplete: 'off' }"
+                @update:value="updateUser('password', $event)"
               />
             </dd>
           </div>
@@ -152,17 +126,13 @@
               }}</span>
             </dt>
             <dd class="mt-1 text-sm text-main">
-              <input
-                id="password-confirm"
-                name="password-confirm"
-                type="text"
-                class="textfield mt-1 w-full"
-                autocomplete="off"
+              <NInput
                 :placeholder="
                   $t('settings.profile.password-confirm-placeholder')
                 "
                 :value="state.passwordConfirm"
-                @input="(e: any) => state.passwordConfirm = e.target.value"
+                :input-props="{ autocomplete: 'off' }"
+                @update:value="state.passwordConfirm = $event"
               />
             </dd>
           </div>
@@ -183,16 +153,12 @@
           <FeatureBadge :feature="'bb.feature.2fa'" class="ml-2 text-accent" />
         </span>
         <div class="space-x-2">
-          <button class="btn btn-normal" @click="enable2FA">
+          <NButton @click="enable2FA">
             {{ isMFAEnabled ? $t("common.edit") : $t("common.enable") }}
-          </button>
-          <button
-            v-if="isMFAEnabled"
-            class="btn btn-normal"
-            @click="disable2FA"
-          >
+          </NButton>
+          <NButton v-if="isMFAEnabled" @click="disable2FA">
             {{ $t("common.disable") }}
-          </button>
+          </NButton>
         </div>
       </div>
       <p class="mt-4 text-sm text-gray-500">
@@ -259,30 +225,36 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
-import { PrincipalPatch } from "../types";
-import { hasWorkspacePermission } from "../utils";
+import { NButton, NInput } from "naive-ui";
+import { useI18n } from "vue-i18n";
+import { cloneDeep, isEmpty, isEqual } from "lodash-es";
+import { useRouter } from "vue-router";
+
+import { unknownUser } from "../types";
+import { hasWorkspacePermission, roleNameV1 } from "../utils";
 import {
   featureToRef,
   pushNotification,
   useActuatorStore,
   useAuthStore,
   useCurrentUser,
-  usePrincipalStore,
+  useCurrentUserV1,
   useUserStore,
 } from "@/store";
-import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { useRouter } from "vue-router";
-import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
+import {
+  UpdateUserRequest,
+  User,
+  UserType,
+} from "@/types/proto/v1/auth_service";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
-import { useI18n } from "vue-i18n";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 
 interface LocalState {
   editing: boolean;
-  editingPrincipal?: PrincipalPatch;
-  passwordConfirm?: string;
+  editingUser?: User;
+  passwordConfirm: string;
   showFeatureModal: boolean;
   showDisable2FAConfirmModal: boolean;
   showRegenerateRecoveryCodesView: boolean;
@@ -297,16 +269,17 @@ const router = useRouter();
 const actuatorStore = useActuatorStore();
 const authStore = useAuthStore();
 const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
-const principalStore = usePrincipalStore();
 const state = reactive<LocalState>({
   editing: false,
+  passwordConfirm: "",
   showFeatureModal: false,
   showDisable2FAConfirmModal: false,
   showRegenerateRecoveryCodesView: false,
 });
 
-const editNameTextField = ref();
+const editNameTextField = ref<InstanceType<typeof NInput>>();
 const recoveryCodesMenu = ref();
 
 const keyboardHandler = (e: KeyboardEvent) => {
@@ -336,22 +309,22 @@ const isMFAEnabled = computed(() => {
   return authStore.currentUser.mfaEnabled;
 });
 
-const principal = computed(() => {
+const user = computed(() => {
   if (props.principalId) {
-    return principalStore.principalById(parseInt(props.principalId));
+    return userStore.getUserById(String(props.principalId)) ?? unknownUser();
   }
-  return currentUser.value;
+  return currentUserV1.value;
 });
 
 const showMFAConfig = computed(() => {
   // Only show MFA config for the user themselves.
-  return principal.value.id === currentUser.value.id;
+  return user.value.name === currentUserV1.value.name;
 });
 
 const passwordMismatch = computed(() => {
   return (
-    !isEmpty(state.editingPrincipal?.password) &&
-    state.editingPrincipal?.password != state.passwordConfirm
+    !isEmpty(state.editingUser?.password) &&
+    state.editingUser?.password !== state.passwordConfirm
   );
 });
 
@@ -359,7 +332,7 @@ const passwordMismatch = computed(() => {
 // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.
 const allowEdit = computed(() => {
   return (
-    currentUser.value.id === principal.value.id ||
+    currentUserV1.value.name === user.value.name ||
     hasWorkspacePermission(
       "bb.permission.workspace.manage-member",
       currentUser.value.role
@@ -369,39 +342,54 @@ const allowEdit = computed(() => {
 
 const allowSaveEdit = computed(() => {
   return (
-    !isEqual(principal.value, state.editingPrincipal) &&
+    !isEqual(user.value, state.editingUser) &&
     (state.passwordConfirm === "" ||
-      state.passwordConfirm === state.editingPrincipal?.password)
+      state.passwordConfirm === state.editingUser?.password)
   );
 });
 
-const updatePrincipal = (field: string, value: string) => {
-  (state.editingPrincipal as any)[field] = value;
+const updateUser = <K extends keyof User>(field: K, value: User[K]) => {
+  if (!state.editingUser) return;
+
+  state.editingUser[field] = value;
 };
 
 const editUser = () => {
-  const clone = cloneDeep(principal.value);
-  state.editingPrincipal = {
-    name: clone.name,
-    email: clone.email,
-    type: clone.type,
-  };
+  state.editingUser = cloneDeep(user.value);
   state.editing = true;
+  state.passwordConfirm = "";
 
-  nextTick(() => editNameTextField.value.focus());
+  nextTick(() => editNameTextField.value?.focus());
 };
 
 const cancelEdit = () => {
-  state.editingPrincipal = undefined;
+  state.editingUser = undefined;
   state.editing = false;
 };
 
 const saveEdit = async () => {
-  await principalStore.patchPrincipal({
-    principalId: principal.value.id,
-    principalPatch: state.editingPrincipal!,
+  const userPatch = state.editingUser;
+  if (!userPatch) return;
+
+  const updateMask: string[] = [];
+  if (userPatch.title !== user.value.title) {
+    updateMask.push("title");
+  }
+  if (userPatch.email !== user.value.email) {
+    updateMask.push("email");
+  }
+  if (userPatch.password !== user.value.email) {
+    updateMask.push("password");
+  }
+  await userStore.updateUser({
+    user: userPatch,
+    updateMask,
+    regenerateRecoveryCodes: false,
+    regenerateTempMfaSecret: false,
   });
-  state.editingPrincipal = undefined;
+  await useAuthStore().refreshUserIfNeeded(currentUserV1.value.name);
+
+  state.editingUser = undefined;
   state.editing = false;
 };
 

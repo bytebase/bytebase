@@ -1,10 +1,11 @@
-import { usePrincipalStore } from "@/store";
+import { useUserStore } from "@/store";
 import { IssueBuiltinFieldId } from "../plugins";
 import { t } from "@/plugins/i18n";
 import {
   Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityIssueStatusUpdatePayload,
+  unknownUser,
 } from "../types";
 
 export function issueActivityActionSentence(
@@ -16,7 +17,7 @@ export function issueActivityActionSentence(
     case "bb.issue.comment.create":
       return ["activity.sentence.commented", {}];
     case "bb.issue.field.update": {
-      const principalStore = usePrincipalStore();
+      const userStore = useUserStore();
       const update = activity.payload as ActivityIssueFieldUpdatePayload;
 
       switch (update.fieldId) {
@@ -34,8 +35,12 @@ export function issueActivityActionSentence(
         }
         case IssueBuiltinFieldId.ASSIGNEE: {
           if (update.oldValue && update.newValue) {
-            const oldName = principalStore.principalById(+update.oldValue).name;
-            const newName = principalStore.principalById(+update.newValue).name;
+            const oldName = (
+              userStore.getUserById(String(update.oldValue)) ?? unknownUser()
+            ).name;
+            const newName = (
+              userStore.getUserById(String(update.newValue)) ?? unknownUser()
+            ).name;
             return [
               "activity.sentence.reassigned-issue",
               {
@@ -44,7 +49,9 @@ export function issueActivityActionSentence(
               },
             ];
           } else if (!update.oldValue && update.newValue) {
-            const newName = principalStore.principalById(+update.newValue).name;
+            const newName = (
+              userStore.getUserById(String(update.newValue)) ?? unknownUser()
+            ).name;
             return [
               "activity.sentence.assigned-issue",
               {
@@ -52,7 +59,9 @@ export function issueActivityActionSentence(
               },
             ];
           } else if (update.oldValue && !update.newValue) {
-            const oldName = principalStore.principalById(+update.oldValue).name;
+            const oldName = (
+              userStore.getUserById(String(update.oldValue)) ?? unknownUser()
+            ).name;
             return [
               "activity.sentence.unassigned-issue",
               {

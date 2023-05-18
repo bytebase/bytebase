@@ -29,12 +29,11 @@
 
 <script lang="ts" setup>
 import { computed, reactive, Ref } from "vue";
-import { storeToRefs } from "pinia";
 
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 import {
   candidatesOfApprovalStep,
-  useAuthStore,
+  useCurrentUserV1,
   useReviewStore,
 } from "@/store";
 import { Issue } from "@/types";
@@ -52,7 +51,7 @@ const state = reactive<LocalState>({
 });
 
 const store = useReviewStore();
-const { currentUser } = storeToRefs(useAuthStore());
+const currentUserV1 = useCurrentUserV1();
 const issueContext = useIssueLogic();
 const issue = issueContext.issue as Ref<Issue>;
 const { flow, ready, done } = useIssueReviewContext();
@@ -70,7 +69,7 @@ const showApproveButton = computed(() => {
   const step = steps[index];
   if (!step) return [];
   const candidates = candidatesOfApprovalStep(issue.value, step);
-  return candidates.includes(currentUser.value.name);
+  return candidates.includes(currentUserV1.value.name);
 });
 
 const handleConfirmApprove = async (onSuccess: () => void) => {
