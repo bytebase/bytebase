@@ -16,8 +16,12 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 
-import { useUIStateStore, useProjectV1ListByCurrentUser } from "@/store";
-import { filterProjectV1ListByKeyword } from "@/utils";
+import {
+  useUIStateStore,
+  useProjectV1ListByCurrentUser,
+  useCurrentUserV1,
+} from "@/store";
+import { filterProjectV1ListByKeyword, isMemberOfProjectV1 } from "@/utils";
 import { DEFAULT_PROJECT_ID } from "@/types";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
 
@@ -28,6 +32,7 @@ interface LocalState {
 const state = reactive<LocalState>({
   searchText: "",
 });
+const currentUserV1 = useCurrentUserV1();
 const { projectList } = useProjectV1ListByCurrentUser();
 
 const changeSearchText = (searchText: string) => {
@@ -36,7 +41,9 @@ const changeSearchText = (searchText: string) => {
 
 const filteredProjectList = computed(() => {
   const list = projectList.value.filter(
-    (project) => project.uid != String(DEFAULT_PROJECT_ID)
+    (project) =>
+      project.uid != String(DEFAULT_PROJECT_ID) &&
+      isMemberOfProjectV1(project.iamPolicy, currentUserV1.value)
   );
   return filterProjectV1ListByKeyword(list, state.searchText);
 });

@@ -61,7 +61,6 @@
 import { computed, watchEffect, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { NInputGroup, NTooltip } from "naive-ui";
-import { cloneDeep } from "lodash-es";
 
 import {
   EnvironmentTabFilter,
@@ -82,9 +81,9 @@ import {
 } from "../utils";
 import {
   useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useEnvironmentV1Store,
-  useProjectV1ListByCurrentUser,
   useUIStateStore,
 } from "@/store";
 
@@ -108,7 +107,8 @@ const state = reactive<LocalState>({
 });
 
 const currentUser = useCurrentUser();
-const { projectList } = useProjectV1ListByCurrentUser();
+const currentUserV1 = useCurrentUserV1();
+const databaseStore = useDatabaseStore();
 
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
@@ -133,24 +133,19 @@ onMounted(() => {
   }
 });
 
-const prepareDatabaseList = () => {
+const prepareDatabaseList = async () => {
   // It will also be called when user logout
   if (currentUser.value.id != UNKNOWN_ID) {
-    const projectIdList = projectList.value.map((project) => project.uid);
     state.loading = true;
-    useDatabaseStore()
-      .fetchDatabaseList()
-      .then((list) => {
-        state.databaseList = sortDatabaseListByEnvironmentV1(
-          cloneDeep(list).filter((db) =>
-            projectIdList.includes(String(db.projectId))
-          ),
-          environmentV1Store.getEnvironmentList()
-        );
-      })
-      .finally(() => {
-        state.loading = false;
-      });
+    await databaseStore.fetchDatabaseList();
+    const databaseList = databaseStore.getDatabaseListByUser(
+      currentUserV1.value
+    );
+    state.databaseList = sortDatabaseListByEnvironmentV1(
+      databaseList,
+      environmentV1Store.getEnvironmentList()
+    );
+    state.loading = false;
   }
 };
 

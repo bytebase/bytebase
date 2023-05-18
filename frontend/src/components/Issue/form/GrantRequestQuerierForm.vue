@@ -15,7 +15,7 @@
       />
     </div>
     <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center textlabel !leading-6">
+      <span class="flex w-40 items-center textlabel shrink-0 !leading-6">
         {{ $t("common.databases") }}
         <RequiredStar />
       </span>
@@ -30,7 +30,7 @@
             :value="true"
             :label="$t('issue.grant-request.all-databases')"
           />
-          <div class="flex flex-row justify-start flex-wrap">
+          <div class="flex flex-row justify-start flex-wrap gap-y-2">
             <NRadio
               class="!leading-6"
               :value="false"
@@ -47,7 +47,7 @@
             </button>
             <div
               v-if="selectedDatabaseList.length > 0"
-              class="ml-6 flex flex-row justify-start items-start gap-4"
+              class="ml-6 flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
             >
               <div
                 v-for="database in selectedDatabaseList"
