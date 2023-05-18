@@ -220,7 +220,6 @@ message Plan {
   }
 }
 
-// (type, database, sheet) uniquely identifies a plan check run.
 message PlanCheckRun {
   // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
   string name = 1;
@@ -252,7 +251,9 @@ message PlanCheckRun {
   }
   Status status = 4;
 
+  // Format: instances/{instance}/databases/{database}
   string target = 5;
+  // Format: sheets/{sheet}
   string sheet = 6;
 
   string detail = 7;
@@ -287,9 +288,7 @@ message GetRolloutRequest {
 }
 
 message Rollout {
-  // Stage, task.
-  // The name of the rollout.
-  // `rollout` is a system generated ID.
+  // The resource name of the rollout.
   // Format: projects/{project}/rollouts/{rollout}
   string name = 1;
 
@@ -382,11 +381,11 @@ message Task {
   string target = 6;
 
   oneof payload {
-    DatabaseCreate database_case = 8;
-    DatabaseSchemaBaseline database_schema_baseline = 9;
-    DatabaseSchemaUpdate database_schema_update = 10;
-    DatabaseDataUpdate database_data_update = 11;
-    DatabaseRestorePitrRestore database_restore_pitr_restore = 12;
+    DatabaseCreate database_case = 7;
+    DatabaseSchemaBaseline database_schema_baseline = 8;
+    DatabaseSchemaUpdate database_schema_update = 9;
+    DatabaseDataUpdate database_data_update = 10;
+    DatabaseRestorePitrRestore database_restore_pitr_restore = 11;
   }
 
   message DatabaseCreate {
@@ -456,8 +455,18 @@ message Task {
 message TaskRun {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}
   string name = 1;
+  // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string title = 3;
+
+  // Format: user:hello@world.com
+  string creator = 3;
+  // Format: user:hello@world.com
+  string updater = 4;
+  google.protobuf.Timestamp create_time = 5;
+  google.protobuf.Timestamp update_time = 6;
+
+  string title = 7;
+
   enum Status {
     UNKNOWN = 0;
     PENDING = 1;
@@ -467,18 +476,12 @@ message TaskRun {
     CANCELED = 5;
     SKIPPED = 6;
   }
-  Status status = 4;
-  int64 code = 5;
-  string comment = 6;
-  // Attempt number of the run. 1 for the first run attempt.
-  int64 attempt = 7;
+  Status status = 8;
 
-  message Result {
-    string detail = 1;
-    // id of the instance change history
-    // FIXME: Format: TBD
-    string change_history = 2;
-    string version = 3;
-  }
-  Result result = 8;
+  // Below are the results of a task run.
+  string detail = 9;
+  // The resource name of the change history
+  // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+  string change_history = 11;
+  string version = 12;
 }
