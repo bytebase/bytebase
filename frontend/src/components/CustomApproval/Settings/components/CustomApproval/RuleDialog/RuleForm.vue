@@ -73,7 +73,7 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import { NInput } from "naive-ui";
 import { cloneDeep } from "lodash-es";
 
-import { LocalApprovalRule, SYSTEM_BOT_ID } from "@/types";
+import { LocalApprovalRule, SYSTEM_BOT_USER_NAME } from "@/types";
 import { RequiredStar } from "../../common";
 import { StepsTable } from "../common";
 import { validateApprovalTemplate } from "../logic";
@@ -115,7 +115,7 @@ const state = ref(resolveLocalState());
 
 const allowEditRule = computed(() => {
   if (!allowAdmin.value) return false;
-  return creatorOfRule(rule.value).id !== SYSTEM_BOT_ID;
+  return creatorOfRule(rule.value).name !== SYSTEM_BOT_USER_NAME;
 });
 
 const allowCreateOrUpdate = computed(() => {

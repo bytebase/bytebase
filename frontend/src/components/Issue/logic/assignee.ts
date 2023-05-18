@@ -42,7 +42,7 @@ export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   const activeEnvironment = computed(() => {
     const environmentId = create.value
       ? (issue.value as IssueCreate).pipeline!.stageList[0].environmentId
-      : activeStageOfPipeline(issue.value.pipeline as Pipeline).id;
+      : activeStageOfPipeline(issue.value.pipeline as Pipeline).environment.id;
     return useEnvironmentV1Store().getEnvironmentByUID(String(environmentId));
   });
 

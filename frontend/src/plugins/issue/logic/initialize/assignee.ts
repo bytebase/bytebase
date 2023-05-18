@@ -1,11 +1,10 @@
 import { IssueCreate, PresetRoleType } from "@/types";
+import { useInstanceStore, useProjectV1Store, useUserStore } from "@/store";
 import {
-  convertUserToPrincipal,
-  useInstanceStore,
-  useMemberStore,
-  useProjectV1Store,
-} from "@/store";
-import { hasWorkspacePermission, memberListInProjectV1 } from "@/utils";
+  extractUserUID,
+  hasWorkspacePermissionV1,
+  memberListInProjectV1,
+} from "@/utils";
 import { extractRollOutPolicyValue } from "@/components/Issue/logic";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
@@ -14,6 +13,7 @@ import {
   ApprovalStrategy,
   ApprovalGroup,
 } from "@/types/proto/v1/org_policy_service";
+import { UserRole } from "@/types/proto/v1/auth_service";
 
 export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
   const firstTask = issueCreate.pipeline?.stageList[0]?.taskList[0];
@@ -67,40 +67,36 @@ const assignToProjectOwner = (issueCreate: IssueCreate) => {
     member.roleList.includes(PresetRoleType.OWNER);
   });
 
-  const workspaceMemberList = useMemberStore().memberList;
+  const workspaceMemberList = useUserStore().userList;
 
   for (const member of projectOwnerList) {
-    const principal = convertUserToPrincipal(member.user);
-    const principalId = String(principal.id);
     for (const wm of workspaceMemberList) {
-      if (String(wm.id) === principalId && wm.role == "DEVELOPER") {
-        issueCreate.assigneeId = wm.id;
+      if (wm.name === member.user.name && wm.userRole === UserRole.DEVELOPER) {
+        issueCreate.assigneeId = parseInt(extractUserUID(wm.name), 10);
         return;
       }
     }
   }
 
   for (const member of projectOwnerList) {
-    const principal = convertUserToPrincipal(member.user);
-    const principalId = String(principal.id);
     for (const wm of workspaceMemberList) {
-      if (wm.id == principalId) {
-        issueCreate.assigneeId = wm.id;
+      if (wm.name == member.user.name) {
+        issueCreate.assigneeId = parseInt(extractUserUID(wm.name), 10);
         return;
       }
     }
   }
 };
 const assignToWorkspaceOwnerOrDBA = (issueCreate: IssueCreate) => {
-  const memberList = useMemberStore().memberList;
+  const memberList = useUserStore().userList;
   // Find the workspace owner or DBA, the first one we found is okay.
-  const ownerOrDBA = memberList.find((member) => {
-    return hasWorkspacePermission(
+  const ownerOrDBA = memberList.find((user) => {
+    return hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-issue",
-      member.role
+      user.userRole
     );
   });
   if (ownerOrDBA) {
-    issueCreate.assigneeId = ownerOrDBA.principal.id;
+    issueCreate.assigneeId = parseInt(extractUserUID(ownerOrDBA.name), 10);
   }
 };

@@ -2482,6 +2482,7 @@
     },
     "querier": {
       "description": "Rol de querier del proyecto definido por el sistema"
-    }
+    },
+    "select-role": "Seleccionar rol"
   }
 }

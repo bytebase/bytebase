@@ -10,7 +10,6 @@ import { CommandId, CommandRegisterId, PrincipalId } from "./id";
 import { Inbox } from "./inbox";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
-import { Member } from "./member";
 import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
@@ -107,7 +106,6 @@ export type QuickActionType =
 
 export type ResourceType =
   | "PRINCIPAL"
-  | "MEMBER"
   | "ENVIRONMENT"
   | "PROJECT"
   | "PROJECT_MEMBER"
@@ -134,7 +132,6 @@ export type ResourceType =
 
 interface ResourceMaker {
   (type: "PRINCIPAL"): Principal;
-  (type: "MEMBER"): Member;
   (type: "ENVIRONMENT"): Environment;
   (type: "PROJECT"): Project;
   (type: "PROJECT_MEMBER"): ProjectMember;
@@ -167,14 +164,6 @@ const makeUnknown = (type: ResourceType) => {
     email: "",
     role: "DEVELOPER",
   } as Principal;
-
-  const UNKNOWN_MEMBER: Member = {
-    id: UNKNOWN_ID,
-    rowStatus: "NORMAL",
-    status: "ACTIVE",
-    role: "DEVELOPER",
-    principal: UNKNOWN_PRINCIPAL,
-  };
 
   const UNKNOWN_ENVIRONMENT: Environment = {
     id: UNKNOWN_ID,
@@ -433,8 +422,6 @@ const makeUnknown = (type: ResourceType) => {
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
-    case "MEMBER":
-      return UNKNOWN_MEMBER;
     case "ENVIRONMENT":
       return UNKNOWN_ENVIRONMENT;
     case "PROJECT":
@@ -486,14 +473,6 @@ const makeEmpty = (type: ResourceType) => {
     email: "",
     role: "DEVELOPER",
   } as Principal;
-
-  const EMPTY_MEMBER: Member = {
-    id: EMPTY_ID,
-    rowStatus: "NORMAL",
-    status: "ACTIVE",
-    role: "DEVELOPER",
-    principal: EMPTY_PRINCIPAL,
-  };
 
   const EMPTY_ENVIRONMENT: Environment = {
     id: EMPTY_ID,
@@ -761,8 +740,6 @@ const makeEmpty = (type: ResourceType) => {
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
-    case "MEMBER":
-      return EMPTY_MEMBER;
     case "ENVIRONMENT":
       return EMPTY_ENVIRONMENT;
     case "PROJECT":

@@ -5,7 +5,8 @@ import {
   DEFAULT_RISK_LEVEL,
   ParsedApprovalRule,
   SYSTEM_BOT_ID,
-  UNKNOWN_ID,
+  unknownUser,
+  UNKNOWN_USER_NAME,
   UnrecognizedApprovalRule,
 } from "@/types";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
@@ -15,7 +16,6 @@ import {
   LocalApprovalRule,
   PresetRiskLevelList,
   SupportedSourceList,
-  unknown,
 } from "@/types";
 import { t, te } from "@/plugins/i18n";
 import {
@@ -25,8 +25,7 @@ import {
   ApprovalNode_Type,
   ApprovalStep_Type,
 } from "@/types/proto/v1/review_service";
-import { usePrincipalStore } from "@/store";
-import { getUserId } from "@/store/modules/v1/common";
+import { useUserStore } from "@/store";
 import {
   buildCELExpr,
   EqualityExpr,
@@ -317,8 +316,7 @@ export const seedWorkspaceApprovalSetting = () => {
 };
 
 export const creatorOfRule = (rule: LocalApprovalRule) => {
-  const creatorName = rule.template.creator ?? `${UNKNOWN_ID}`;
-  if (creatorName === `${UNKNOWN_ID}`) return unknown("PRINCIPAL");
-  const userId = getUserId(creatorName);
-  return usePrincipalStore().principalById(userId);
+  const creatorName = rule.template.creator ?? UNKNOWN_USER_NAME;
+  if (creatorName === UNKNOWN_USER_NAME) return unknownUser();
+  return useUserStore().getUserByName(creatorName) ?? unknownUser();
 };

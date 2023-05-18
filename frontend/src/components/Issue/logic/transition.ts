@@ -1,5 +1,5 @@
 import { computed, Ref } from "vue";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
   Issue,
   IssueStatusTransitionType,
@@ -28,6 +28,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     useIssueLogic();
 
   const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
 
   const isAllowedToApplyTaskTransition = computed(() => {
@@ -38,10 +39,15 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
       return false;
     }
 
+    const project = useProjectV1Store().getProjectByUID(
+      String(issue.value.project.id)
+    );
+
     if (
       allowUserToBeAssignee(
-        currentUser.value,
-        issue.value.project,
+        currentUserV1.value,
+        project,
+        project.iamPolicy,
         rollOutPolicy.value.policy,
         rollOutPolicy.value.assigneeGroup
       )
