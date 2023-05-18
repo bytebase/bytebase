@@ -46,7 +46,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
   }
 
-  rpc ListPlanCheckRuns(ListRolloutCheckRunsRequest) returns (PlanCheckRuns) {
+  rpc ListPlanCheckRuns(ListPlanCheckRunsRequest) returns (PlanCheckRuns) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/planCheckRuns"};
     option (google.api.method_signature) = "parent";
   }
@@ -222,7 +222,7 @@ message PlanCheckRun {
   string name = 1;
 
   enum Type {
-
+    TYPE_UNSPECIPED = 0;
 
   }
   Type type = 2;
@@ -230,6 +230,13 @@ message PlanCheckRun {
   string database = 3;
   string sheet = 4;
 
+  int64 code = 5;
+  string comment = 5;
+  string detail = 5;
+
+  message Result {}
+
+  repeated Result results = 6;
 }
 
 message GetRolloutRequest {}
@@ -248,23 +255,11 @@ message Rollout {
   // Format: projects/{project}/plans/{plan}
   string plan = 3;
 
-  // The current status of the rollout.
-  enum Status {
-    STATUS_UNSPECIFIED = 0;
-    // The rollout is in progress.
-    IN_PROGRESS = 1;
-    // The rollout is completed.
-    COMPLETED = 2;
-    // The rollout is failed.
-    FAILED = 3;
-  }
-  Status status = 4;
-
   // stages and thus tasks of the rollout.
-  repeated Stage stages = 5;
+  repeated Stage stages = 4;
 
   // Digest is the digest of the tasks and the latest taskruns of rollout.
-  Digest digest = 6;
+  Digest digest = 5;
 
   // Digest summarizes the tasks and the latest taskruns of rollout.
   // We only take the latest taskrun of each task into account.
@@ -293,7 +288,7 @@ message Stage {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
   string name = 1;
   // The system-assigned, unique identifier for a resource.
-  string uid = 2;
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Fromat: environments/{environment}
   string environment = 3;
 
@@ -349,10 +344,10 @@ message TaskRun {
     SKIPPED = 6;
   }
   Status status = 4;
-  int64 code = 6;
-  string comment = 7;
+  int64 code = 5;
+  string comment = 6;
   // Attempt number of the run. 1 for the first run attempt.
-  int64 attempt = 8;
+  int64 attempt = 7;
 
   message Result {
     string detail = 1;
@@ -360,5 +355,5 @@ message TaskRun {
     string migration = 2;
     string version = 3;
   }
-  Result result = 9;
+  Result result = 8;
 }
