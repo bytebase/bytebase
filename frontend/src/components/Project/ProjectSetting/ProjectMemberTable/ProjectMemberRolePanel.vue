@@ -80,7 +80,6 @@ import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
 
 import { DatabaseId, PresetRoleType, UNKNOWN_ID } from "@/types";
 import {
-  useCurrentUser,
   useCurrentUserV1,
   useDatabaseStore,
   useProjectIamPolicy,
@@ -94,7 +93,7 @@ import {
   getDatabaseIdByName,
   getDatabaseNameById,
   hasPermissionInProjectV1,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   parseConditionExpressionString,
   stringifyConditionExpression,
 } from "@/utils";
@@ -127,7 +126,6 @@ const emits = defineEmits<{
 
 const { t } = useI18n();
 const dialog = useDialog();
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
 const databaseStore = useDatabaseStore();
@@ -171,9 +169,9 @@ const COLUMNS = computed(() => {
 
 const allowAdmin = computed(() => {
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-project",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;

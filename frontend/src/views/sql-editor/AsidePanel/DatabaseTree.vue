@@ -66,7 +66,7 @@ import { ConnectionTreeState, TabMode, UNKNOWN_ID } from "@/types";
 import {
   isConnectableAtom,
   useConnectionTreeStore,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useIsLoggedIn,
   useTabStore,
@@ -74,7 +74,7 @@ import {
 import {
   emptyConnection,
   getDefaultTabNameFromConnection,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   instanceHasAlterSchema,
   instanceHasReadonlyMode,
   instanceOfConnectionAtom,
@@ -111,7 +111,7 @@ const databaseStore = useDatabaseStore();
 const connectionTreeStore = useConnectionTreeStore();
 const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const mounted = useMounted();
 const showDropdown = ref(false);
@@ -179,9 +179,9 @@ const selectedKeys = computed(() => {
 });
 
 const allowAdmin = computed(() =>
-  hasWorkspacePermission(
+  hasWorkspacePermissionV1(
     "bb.permission.workspace.admin-sql-editor",
-    currentUser.value.role
+    currentUserV1.value.userRole
   )
 );
 

@@ -149,7 +149,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { cloneDeep } from "lodash-es";
 
-import { idFromSlug, hasWorkspacePermission } from "@/utils";
+import { idFromSlug, hasWorkspacePermissionV1 } from "@/utils";
 import {
   unknown,
   RuleLevel,
@@ -165,8 +165,8 @@ import {
 import { BBTextField } from "@/bbkit";
 import {
   featureToRef,
-  useCurrentUser,
   pushNotification,
+  useCurrentUserV1,
   useSQLReviewStore,
   useSubscriptionStore,
 } from "@/store";
@@ -201,7 +201,7 @@ interface LocalState {
 const { t } = useI18n();
 const store = useSQLReviewStore();
 const router = useRouter();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const ROUTE_NAME = "setting.workspace.sql-review";
 const subscriptionStore = useSubscriptionStore();
 
@@ -219,9 +219,9 @@ const state = reactive<LocalState>({
 const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-sql-review-policy",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

@@ -14,10 +14,10 @@
 import { computed } from "vue";
 
 import { TabMode } from "@/types";
-import { useCurrentUser, useTabStore, useWebTerminalStore } from "@/store";
+import { useCurrentUserV1, useTabStore, useWebTerminalStore } from "@/store";
 import {
   getDefaultTabNameFromConnection,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
 } from "@/utils";
 import { last } from "lodash-es";
 
@@ -25,12 +25,12 @@ const emit = defineEmits<{
   (e: "enter"): void;
 }>();
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const allowAdmin = computed(() =>
-  hasWorkspacePermission(
+  hasWorkspacePermissionV1(
     "bb.permission.workspace.admin-sql-editor",
-    currentUser.value.role
+    currentUserV1.value.userRole
   )
 );
 

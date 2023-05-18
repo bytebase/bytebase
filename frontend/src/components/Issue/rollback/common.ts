@@ -16,8 +16,9 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
+  extractUserUID,
   hasPermissionInProjectV1,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   isTaskCreate,
   isTaskSkipped,
   semverCompare,
@@ -25,7 +26,6 @@ import {
 import { flattenTaskList, useIssueLogic } from "../logic";
 import {
   useActivityStore,
-  useCurrentUser,
   useCurrentUserV1,
   useDatabaseStore,
   useIssueStore,
@@ -40,7 +40,6 @@ export type RollbackUIType =
   | "NONE"; // Nothing
 
 export const useRollbackLogic = () => {
-  const currentUser = useCurrentUser();
   const currentUserV1 = useCurrentUserV1();
   const context = useIssueLogic();
   const {
@@ -105,14 +104,15 @@ export const useRollbackLogic = () => {
     }
 
     const issueEntity = issue.value as Issue;
-    const user = currentUser.value;
+    const user = currentUserV1.value;
+    const userUID = extractUserUID(user.name);
 
-    if (user.id === issueEntity.creator.id) {
+    if (userUID === String(issueEntity.creator.id)) {
       // Allowed to the issue creator
       return true;
     }
 
-    if (user.id === issueEntity.assignee.id) {
+    if (userUID === String(issueEntity.assignee.id)) {
       // Allowed to the issue assignee
       return true;
     }
@@ -123,7 +123,7 @@ export const useRollbackLogic = () => {
     if (
       hasPermissionInProjectV1(
         projectV1.iamPolicy,
-        currentUserV1.value,
+        user,
         "bb.permission.project.admin-database"
       )
     ) {
@@ -131,7 +131,10 @@ export const useRollbackLogic = () => {
     }
 
     if (
-      hasWorkspacePermission("bb.permission.workspace.manage-issue", user.role)
+      hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-issue",
+        user.userRole
+      )
     ) {
       // Allowed to DBAs and workspace owners
       return true;

@@ -47,7 +47,7 @@ import { RoleTable, RolePanel } from "./components";
 import FeatureModal from "@/components/FeatureModal.vue";
 import { featureToRef, useRoleStore } from "@/store";
 import { Role } from "@/types/proto/v1/role_service";
-import { useWorkspacePermission } from "@/utils";
+import { useWorkspacePermissionV1 } from "@/utils";
 import { provideCustomRoleSettingContext } from "./context";
 
 type LocalState = {
@@ -76,7 +76,7 @@ const state = reactive<LocalState>({
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const showFeatureModal = ref(false);
 
-const allowAdmin = useWorkspacePermission(
+const allowAdmin = useWorkspacePermissionV1(
   "bb.permission.workspace.manage-general"
 );
 

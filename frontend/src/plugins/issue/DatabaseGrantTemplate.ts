@@ -1,3 +1,4 @@
+import { useUserStore } from "@/store";
 import { Issue, IssueCreate, UNKNOWN_ID } from "../../types";
 import { allowDatabaseAccess, fullDatabasePath } from "../../utils";
 import {
@@ -68,7 +69,10 @@ const template: IssueTemplate = {
       resolved: (ctx: IssueContext): boolean => {
         const issue = ctx.issue as Issue;
         const database = issue.pipeline.stageList[0].taskList[0].database!;
-        const creator = (ctx.issue as Issue).creator;
+        const creator = useUserStore().getUserById(
+          String((ctx.issue as Issue).creator.id)
+        );
+        if (!creator) return false;
         const type = ctx.issue.payload[INPUT_READ_ONLY_FIELD_ID] ? "RO" : "RW";
         return allowDatabaseAccess(database, creator, type);
       },

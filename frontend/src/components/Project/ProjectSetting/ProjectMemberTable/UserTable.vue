@@ -73,14 +73,13 @@ import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import { IamPolicy, Project } from "@/types/proto/v1/project_service";
 import {
   featureToRef,
-  useCurrentUser,
   useCurrentUserV1,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useRoleStore,
 } from "@/store";
 import {
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   displayRoleTitle,
   addRoleToProjectIamPolicy,
   hasPermissionInProjectV1,
@@ -104,7 +103,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const hasRBACFeature = featureToRef("bb.feature.rbac");
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const roleStore = useRoleStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
@@ -138,9 +136,9 @@ const allowAdmin = computed(() => {
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-project",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;

@@ -102,14 +102,14 @@ import {
   Instance,
 } from "@/types";
 import {
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useEnvironmentV1Store,
   useInstanceStore,
   useProjectV1Store,
   useSlowQueryPolicyList,
 } from "@/store";
-import { hasWorkspacePermission, instanceSupportSlowQuery } from "@/utils";
+import { hasWorkspacePermissionV1, instanceSupportSlowQuery } from "@/utils";
 import type { FilterType, SlowQueryFilterParams } from "./types";
 import {
   ProjectSelect,
@@ -128,13 +128,13 @@ const emit = defineEmits<{
   (event: "update:params", params: SlowQueryFilterParams): void;
 }>();
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const { list: policyList, ready } = useSlowQueryPolicyList();
 
 const canVisitDefaultProject = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-database",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

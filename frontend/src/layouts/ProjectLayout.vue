@@ -46,7 +46,7 @@ import { startCase } from "lodash-es";
 
 import {
   idFromSlug,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   hasPermissionInProjectV1,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
@@ -54,7 +54,6 @@ import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import { Project, DEFAULT_PROJECT_ID } from "../types";
 import {
-  useCurrentUser,
   useCurrentUserIamPolicy,
   useCurrentUserV1,
   useLegacyProjectStore,
@@ -89,7 +88,6 @@ export default defineComponent({
     const router = useRouter();
     const { t } = useI18n();
 
-    const currentUser = useCurrentUser();
     const currentUserV1 = useCurrentUserV1();
     const legacyProjectStore = useLegacyProjectStore();
     const projectV1Store = useProjectV1Store();
@@ -182,9 +180,9 @@ export default defineComponent({
       }
 
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-project",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         return true;

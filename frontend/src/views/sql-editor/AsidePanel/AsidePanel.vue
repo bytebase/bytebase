@@ -53,7 +53,7 @@ import { computed, ref, watchEffect } from "vue";
 
 import {
   useConnectionTreeStore,
-  useCurrentUser,
+  useCurrentUserV1,
   useInstanceStore,
   useTabStore,
 } from "@/store";
@@ -62,7 +62,7 @@ import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SchemaPanel from "./SchemaPanel/";
 import { Splitpanes, Pane } from "splitpanes";
 import { ConnectionTreeMode, DatabaseId, UNKNOWN_ID } from "@/types";
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 defineEmits<{
   (
@@ -71,7 +71,7 @@ defineEmits<{
   ): void;
 }>();
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const tabStore = useTabStore();
 const connectionTreeStore = useConnectionTreeStore();
 const searchPattern = ref("");
@@ -83,9 +83,9 @@ const tab = ref<"projects" | "instances" | "history">(
 );
 
 const hasInstanceView = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-database",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

@@ -86,11 +86,11 @@ import {
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import {
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   instanceHasAlterSchema,
   instanceSlug,
 } from "../utils";
-import { useCurrentUser, useInstanceStore } from "@/store";
+import { useCurrentUserV1, useInstanceStore } from "@/store";
 
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
@@ -123,7 +123,7 @@ export default defineComponent({
       loading: false,
     });
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const prepareMigrationHistoryList = () => {
       state.loading = true;
@@ -153,9 +153,9 @@ export default defineComponent({
     onBeforeMount(prepareMigrationHistoryList);
 
     const allowConfigInstance = computed(() => {
-      return hasWorkspacePermission(
+      return hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-instance",
-        currentUser.value.role
+        currentUserV1.value.userRole
       );
     });
     const isTenantProject = computed(() => {
