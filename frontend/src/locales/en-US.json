@@ -1858,7 +1858,7 @@
       }
     },
     "plan-features": "{plan} Features",
-    "overuse-warning": "{neededPlan} on {currentPlan} may be lost. Upgrade now to ensure continued access.",
+    "overuse-warning": "{neededPlan} on {currentPlan} will be restricted. Upgrade now to ensure continued access.",
     "overuse-modal": {
       "description": "You are using features unavailable in the {plan}. Upgrade now to ensure continued access:",
       "instance-count-exceeds": "Instance count exceeds the limit ${count}"
