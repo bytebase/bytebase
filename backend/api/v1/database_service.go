@@ -1044,7 +1044,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		syncState = v1pb.State_DELETED
 	}
 	return &v1pb.Database{
-		Name:               fmt.Sprintf("environments/%s/instances/%s/databases/%s", database.EnvironmentID, database.InstanceID, database.DatabaseName),
+		Name:               fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
 		Uid:                fmt.Sprintf("%d", database.UID),
 		SyncState:          syncState,
 		SuccessfulSyncTime: timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
