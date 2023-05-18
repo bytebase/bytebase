@@ -20,6 +20,7 @@ import {
   Database,
   DEFAULT_PROJECT_ID,
   QuickActionType,
+  unknownUser,
   UNKNOWN_ID,
 } from "../types";
 import {
@@ -45,7 +46,6 @@ import {
   useActuatorStore,
   useDatabaseStore,
   useInstanceStore,
-  usePrincipalStore,
   useRouterStore,
   useDBSchemaStore,
   useConnectionTreeStore,
@@ -332,11 +332,10 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.profile",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                const principalId = parseInt(
-                  route.params.principalId as string,
-                  10
-                );
-                return usePrincipalStore().principalById(principalId).name;
+                const userUID = route.params.principalId as string;
+                const user =
+                  useUserStore().getUserById(userUID) ?? unknownUser();
+                return user.title;
               },
             },
             components: {
@@ -1238,7 +1237,7 @@ router.beforeEach((to, from, next) => {
     serverInfo?.require2fa &&
     currentUser.value
   ) {
-    const user = userStore.getUserById(currentUser.value.id as number);
+    const user = userStore.getUserById(String(currentUser.value.id));
     if (user && !user.mfaEnabled) {
       next({
         name: "2fa.setup",
@@ -1430,8 +1429,8 @@ router.beforeEach((to, from, next) => {
   const sqlReviewPolicySlug = routerSlug.sqlReviewPolicySlug;
 
   if (principalId) {
-    usePrincipalStore()
-      .fetchPrincipalById(principalId)
+    useUserStore()
+      .getOrFetchUserById(String(principalId))
       .then(() => {
         next();
       })

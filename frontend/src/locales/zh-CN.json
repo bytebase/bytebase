@@ -2491,6 +2491,7 @@
     },
     "querier": {
       "description": "系统定义的项目数据查询者角色"
-    }
+    },
+    "select-role": "选择角色"
   }
 }

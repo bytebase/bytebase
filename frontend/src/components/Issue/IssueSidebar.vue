@@ -41,14 +41,10 @@
         <MemberSelect
           class="w-full"
           :disabled="!allowEditAssignee"
-          :selected-id="assigneeId as number"
-          :custom-filter="filterPrincipal"
+          :selected-id="assigneeId"
+          :custom-filter="filterUser"
           data-label="bb-assignee-select"
-          @select-principal-id="
-            (principalId: number) => {
-              updateAssigneeId(principalId)
-            }
-          "
+          @select-user-id="updateAssigneeId"
         />
       </div>
 
@@ -319,7 +315,6 @@ import {
   StageCreate,
   Instance,
   DatabaseLabel,
-  Principal,
   UNKNOWN_ID,
 } from "@/types";
 import {
@@ -337,7 +332,6 @@ import {
   useDatabaseStore,
   useEnvironmentV1Store,
   useProjectV1Store,
-  useUserStore,
 } from "@/store";
 import {
   allowUserToBeAssignee,
@@ -444,9 +438,9 @@ const project = computed(() => {
 
 const assigneeId = computed(() => {
   if (create.value) {
-    return (issue.value as IssueCreate).assigneeId;
+    return String((issue.value as IssueCreate).assigneeId);
   }
-  return (issue.value as Issue).assignee.id;
+  return String((issue.value as Issue).assignee.id);
 });
 
 const databaseEntity = ref<Database>();
@@ -606,9 +600,7 @@ const selectTaskId = (taskId: TaskId) => {
   selectStageOrTask(stage.id as number, slug);
 };
 const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
-const filterPrincipal = (principal: Principal): boolean => {
-  const user =
-    useUserStore().getUserByName(`users/${principal.id}`) ?? User.fromJSON({});
+const filterUser = (user: User): boolean => {
   return allowUserToBeAssignee(
     user,
     project.value,

@@ -2497,6 +2497,7 @@
     },
     "querier": {
       "description": "System defined project querier role"
-    }
+    },
+    "select-role": "Select role"
   }
 }

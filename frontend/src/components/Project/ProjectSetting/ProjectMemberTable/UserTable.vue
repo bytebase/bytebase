@@ -2,25 +2,28 @@
   <BBGrid
     :column-list="columnList"
     :row-clickable="false"
-    :data-source="composedPrincipalList"
+    :data-source="memberList"
+    :ready="ready"
     class="border"
     row-key="email"
   >
-    <template #item="{ item }: ComposedPrincipalRow">
+    <template #item="{ item }: ProjectMemberRow">
       <div class="bb-grid-cell gap-x-2">
-        <PrincipalAvatar :principal="item.principal" />
+        <UserAvatar :user="item.user" />
         <div class="flex flex-col">
           <div class="flex flex-row items-center space-x-2">
-            <router-link :to="`/u/${item.principal.id}`" class="normal-link">{{
-              item.principal.name
-            }}</router-link>
+            <router-link
+              :to="`/u/${extractUserUID(item.user.name)}`"
+              class="normal-link"
+              >{{ item.user.title }}</router-link
+            >
             <span
-              v-if="currentUser.id == item.principal.id"
+              v-if="currentUserV1.name === item.user.name"
               class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
               >{{ $t("common.you") }}</span
             >
           </div>
-          <span class="textlabel">{{ item.principal.email }}</span>
+          <span class="textlabel">{{ item.user.email }}</span>
         </div>
       </div>
       <div v-if="hasRBACFeature" class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
@@ -65,7 +68,7 @@ import { NButton, NPopselect, NTag, SelectOption } from "naive-ui";
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
-import { ComposedPrincipal, PresetRoleType } from "@/types";
+import { PresetRoleType } from "@/types";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import { IamPolicy, Project } from "@/types/proto/v1/project_service";
 import {
@@ -81,17 +84,21 @@ import {
   displayRoleTitle,
   addRoleToProjectIamPolicy,
   hasPermissionInProjectV1,
+  extractUserUID,
 } from "@/utils";
 import { State } from "@/types/proto/v1/common";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel.vue";
+import { ComposedProjectMember } from "./types";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 
-export type ComposedPrincipalRow = BBGridRow<ComposedPrincipal>;
+export type ProjectMemberRow = BBGridRow<ComposedProjectMember>;
 
 const props = defineProps<{
   project: Project;
   iamPolicy: IamPolicy;
   editable: boolean;
-  composedPrincipalList: ComposedPrincipal[];
+  ready?: boolean;
+  memberList: ComposedProjectMember[];
 }>();
 
 const { t } = useI18n();
@@ -101,7 +108,7 @@ const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const roleStore = useRoleStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
-const editingMember = ref<ComposedPrincipal | null>(null);
+const editingMember = ref<ComposedProjectMember | null>(null);
 
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
@@ -152,7 +159,7 @@ const allowAdmin = computed(() => {
   return false;
 });
 
-const allowAddRole = (item: ComposedPrincipal) => {
+const allowAddRole = (item: ComposedProjectMember) => {
   if (!allowAdmin.value) return false;
   if (props.project.state === State.DELETED) {
     return false;
@@ -161,7 +168,7 @@ const allowAddRole = (item: ComposedPrincipal) => {
   return item.roleList.length < roleStore.roleList.length;
 };
 
-const getRoleOptions = (item: ComposedPrincipal) => {
+const getRoleOptions = (item: ComposedProjectMember) => {
   let roleList = useRoleStore().roleList.filter((role) => {
     return !item.roleList.includes(role.name);
   });
@@ -179,8 +186,8 @@ const getRoleOptions = (item: ComposedPrincipal) => {
   });
 };
 
-const addRole = async (item: ComposedPrincipal, role: string) => {
-  const user = `user:${item.email}`;
+const addRole = async (item: ComposedProjectMember, role: string) => {
+  const user = `user:${item.user.email}`;
   const policy = cloneDeep(props.iamPolicy);
   addRoleToProjectIamPolicy(policy, user, role);
   await projectIamPolicyStore.updateProjectIamPolicy(
