@@ -531,14 +531,15 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	}
 
 	return &v1pb.Instance{
-		Name:         fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID),
-		Uid:          fmt.Sprintf("%d", instance.UID),
-		Title:        instance.Title,
-		Engine:       engine,
-		ExternalLink: instance.ExternalLink,
-		DataSources:  dataSourceList,
-		State:        convertDeletedToState(instance.Deleted),
-		Environment:  fmt.Sprintf("environments/%s", instance.EnvironmentID),
+		Name:          fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID),
+		Uid:           fmt.Sprintf("%d", instance.UID),
+		Title:         instance.Title,
+		Engine:        engine,
+		EngineVersion: instance.EngineVersion,
+		ExternalLink:  instance.ExternalLink,
+		DataSources:   dataSourceList,
+		State:         convertDeletedToState(instance.Deleted),
+		Environment:   fmt.Sprintf("environments/%s", instance.EnvironmentID),
 	}
 }
 
