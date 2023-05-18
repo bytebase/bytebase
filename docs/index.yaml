@@ -6,7 +6,7 @@ entries:
     description: Safe database schema change and version control for DevOps teams.
     digest: 55551c2b2a090980b5f06feb67bbe59f2f9546ff0c4811507032b3e94cb36846
     home: https://bytebase.com/
-    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/assets/logo-full.svg
+    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo-full.svg
     maintainers:
     - email: support@bytebase.com
       name: Bytebase
@@ -22,7 +22,7 @@ entries:
     description: Safe database schema change and version control for DevOps teams.
     digest: 0de78149cf15773271210aeb60325f473f7835ef2d004bce5c8ce28454e53ab1
     home: https://bytebase.com/
-    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/assets/logo-full.svg
+    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo-full.svg
     maintainers:
     - email: support@bytebase.com
       name: Bytebase
@@ -38,7 +38,7 @@ entries:
     description: Safe database schema change and version control for DevOps teams.
     digest: 95711d0adec416207c21bf2bb707c9c3179509ac4acb6151803d8ec10f4bc465
     home: https://bytebase.com/
-    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/assets/logo-full.svg
+    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo-full.svg
     maintainers:
     - email: support@bytebase.com
       name: Bytebase
@@ -54,7 +54,7 @@ entries:
     description: Safe database schema change and version control for DevOps teams.
     digest: c273189105a7b2ef1d7f9833b76c9008341d9689ff22622aba9809c5ac59adc2
     home: https://bytebase.com/
-    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/assets/logo-full.svg
+    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo-full.svg
     maintainers:
     - email: support@bytebase.com
       name: Bytebase
