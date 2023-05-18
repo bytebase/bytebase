@@ -111,7 +111,7 @@ const state = reactive<LocalState>({
 watchEffect(() => {
   state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";
   state.gitopsWebhookUrl =
-  settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "";
+    settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "";
 });
 
 const allowEdit = computed((): boolean => {
@@ -131,7 +131,8 @@ const allowSave = computed((): boolean => {
     state.externalUrl !== settingV1Store.workspaceProfileSetting?.externalUrl;
   const gitopsWebhookUrlChanged =
     state.gitopsWebhookUrl !== "" &&
-    state.gitopsWebhookUrl !== settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl;
+    state.gitopsWebhookUrl !==
+      settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl;
   return externalUrlChanged || gitopsWebhookUrlChanged;
 });
 

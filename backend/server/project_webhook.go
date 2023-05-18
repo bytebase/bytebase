@@ -50,8 +50,8 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace setting").SetInternal(err)
 		}
-		if setting.ExternalUrl == "" && setting.GitopsWebhookUrl == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "neither external URL nor GitOps webhook URL has been set, see https://www.bytebase.com/docs/get-started/install/external-url")
+		if setting.ExternalUrl == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "external URL isn't setup yet, see https://www.bytebase.com/docs/get-started/install/external-url")
 		}
 
 		projectID, err := strconv.Atoi(c.Param("projectID"))
@@ -212,8 +212,8 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace setting").SetInternal(err)
 		}
-		if setting.ExternalUrl == "" && setting.GitopsWebhookUrl == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "neither external URL nor GitOps webhook URL has been set, see https://www.bytebase.com/docs/get-started/install/external-url")
+		if setting.ExternalUrl == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "external URL isn't setup yet, see https://www.bytebase.com/docs/get-started/install/external-url")
 		}
 
 		projectID, err := strconv.Atoi(c.Param("projectID"))
@@ -244,10 +244,6 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
 		}
 
-		gitopsWebhookURL := setting.GitopsWebhookUrl
-		if gitopsWebhookURL == "" {
-			gitopsWebhookURL = setting.ExternalUrl
-		}
 		result := &api.ProjectWebhookTestResult{}
 		err = webhookPlugin.Post(
 			webhook.Type,
@@ -257,7 +253,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 				ActivityType: string(api.ActivityIssueCreate),
 				Title:        fmt.Sprintf("Test webhook %q", webhook.Title),
 				Description:  "This is a test",
-				Link:         fmt.Sprintf("%s/project/%s/webhook/%s", gitopsWebhookURL, getProjectSlug(project), api.ProjectWebhookSlug(webhook.Title, webhook.ID)),
+				Link:         fmt.Sprintf("%s/project/%s/webhook/%s", setting.ExternalUrl, getProjectSlug(project), api.ProjectWebhookSlug(webhook.Title, webhook.ID)),
 				CreatorID:    api.SystemBotID,
 				CreatorName:  "Bytebase",
 				CreatorEmail: "support@bytebase.com",
