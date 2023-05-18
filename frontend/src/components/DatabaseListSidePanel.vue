@@ -14,11 +14,10 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import type { BBOutlineItem } from "@/bbkit/types";
-import { Database, UNKNOWN_ID } from "@/types";
+import { Database, UNKNOWN_USER_NAME } from "@/types";
 import { databaseSlug, environmentV1Name, projectSlug } from "@/utils";
 import {
   useEnvironmentV1List,
-  useCurrentUser,
   useDatabaseStore,
   useCurrentUserV1,
 } from "@/store";
@@ -27,7 +26,6 @@ const { t } = useI18n();
 const databaseStore = useDatabaseStore();
 const router = useRouter();
 
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 
 const rawEnvironmentList = useEnvironmentV1List();
@@ -39,7 +37,7 @@ const environmentList = computed(() =>
 
 const prepareList = () => {
   // It will also be called when user logout
-  if (currentUser.value.id !== UNKNOWN_ID) {
+  if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
     databaseStore.fetchDatabaseList();
   }
 };

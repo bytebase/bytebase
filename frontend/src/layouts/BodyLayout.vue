@@ -253,7 +253,7 @@ import { isDBA, isDeveloper, isOwner } from "../utils";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
   useActuatorStore,
-  useCurrentUser,
+  useCurrentUserV1,
   useSubscriptionStore,
 } from "@/store";
 
@@ -293,10 +293,10 @@ export default defineComponent({
       return actuatorStore.hasNewRelease;
     });
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const quickActionList = computed(() => {
-      const role = currentUser.value.role;
+      const role = currentUserV1.value.userRole;
       const quickActionListFunc =
         router.currentRoute.value.meta.quickActionListByRole;
       const listByRole = quickActionListFunc

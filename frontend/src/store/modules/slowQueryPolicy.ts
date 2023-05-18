@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref, watchEffect } from "vue";
-import { UNKNOWN_ID } from "@/types";
-import { useCurrentUser } from "./auth";
+import { UNKNOWN_USER_NAME } from "@/types";
+import { useCurrentUserV1 } from "./auth";
 import { usePolicyV1Store } from "./v1/policy";
 import {
   Policy,
@@ -68,11 +68,11 @@ export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
 
 export const useSlowQueryPolicyList = () => {
   const store = useSlowQueryPolicyStore();
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   const ready = ref(false);
 
   watchEffect(() => {
-    if (currentUser.value.id === UNKNOWN_ID) return;
+    if (currentUserV1.value.name === UNKNOWN_USER_NAME) return;
     ready.value = false;
     store.fetchPolicyList().finally(() => {
       ready.value = true;
