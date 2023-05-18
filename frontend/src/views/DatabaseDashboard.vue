@@ -74,14 +74,15 @@ import {
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   InstanceId,
+  UNKNOWN_USER_NAME,
 } from "../types";
 import {
   filterDatabaseByKeyword,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   sortDatabaseListByEnvironmentV1,
 } from "../utils";
 import {
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useEnvironmentV1Store,
   useProjectV1ListByCurrentUser,
@@ -107,7 +108,7 @@ const state = reactive<LocalState>({
   loading: false,
 });
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const { projectList } = useProjectV1ListByCurrentUser();
 
 const selectedEnvironment = computed(() => {
@@ -118,9 +119,9 @@ const selectedEnvironment = computed(() => {
 });
 
 const canVisitUnassignedDatabases = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-database",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -135,7 +136,7 @@ onMounted(() => {
 
 const prepareDatabaseList = () => {
   // It will also be called when user logout
-  if (currentUser.value.id != UNKNOWN_ID) {
+  if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
     const projectIdList = projectList.value.map((project) => project.uid);
     state.loading = true;
     useDatabaseStore()

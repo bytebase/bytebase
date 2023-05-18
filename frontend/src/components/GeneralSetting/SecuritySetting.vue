@@ -108,11 +108,11 @@ import { NCheckbox } from "naive-ui";
 import {
   featureToRef,
   pushNotification,
-  useCurrentUser,
+  useCurrentUserV1,
   useActuatorStore,
   useUserStore,
 } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import { useI18n } from "vue-i18n";
 import { FeatureType } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
@@ -125,7 +125,7 @@ interface LocalState {
 const state = reactive<LocalState>({});
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
 const actuatorStore = useActuatorStore();
 
@@ -135,9 +135,9 @@ const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
 
 const allowEdit = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-general",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 const watermarkEnabled = computed((): boolean => {

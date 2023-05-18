@@ -140,7 +140,7 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { DatabaseId, UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
 import {
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useEnvironmentV1Store,
 } from "@/store";
@@ -163,7 +163,7 @@ export default defineComponent({
     const databaseStore = useDatabaseStore();
     const router = useRouter();
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const keyboardHandler = (e: KeyboardEvent) => {
       if (e.code == "Escape") {
@@ -200,7 +200,7 @@ export default defineComponent({
       const database = databaseStore.getDatabaseById(state.databaseId);
       return allowDatabaseAccess(
         database,
-        currentUser.value,
+        currentUserV1.value,
         state.readonly ? "RO" : "RW"
       );
     });

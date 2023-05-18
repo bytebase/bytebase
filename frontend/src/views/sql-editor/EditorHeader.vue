@@ -96,8 +96,8 @@ import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "@/components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
-import { useCurrentUser, useInboxStore } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { useCurrentUser, useCurrentUserV1, useInboxStore } from "@/store";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 interface LocalState {
@@ -118,15 +118,16 @@ export default defineComponent({
     });
 
     const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const logoUrl = computed((): string | undefined => {
       return settingV1Store.brandingLogo;
     });
 
     const showAuditLogItem = computed((): boolean => {
-      return hasWorkspacePermission(
+      return hasWorkspacePermissionV1(
         "bb.permission.workspace.audit-log",
-        currentUser.value.role
+        currentUserV1.value.userRole
       );
     });
 

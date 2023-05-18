@@ -75,9 +75,9 @@ import { NCheckbox } from "naive-ui";
 
 import { MemberAddOrInvite, UserTable } from "@/components/User/Settings";
 import { SearchBox } from "@/components/v2";
-import { hasWorkspacePermission } from "../utils";
+import { hasWorkspacePermissionV1 } from "../utils";
 import { SYSTEM_BOT_USER_NAME, filterUserListByKeyword } from "../types";
-import { featureToRef, useCurrentUser, useUserStore } from "@/store";
+import { featureToRef, useCurrentUserV1, useUserStore } from "@/store";
 import { State } from "@/types/proto/v1/common";
 
 type LocalState = {
@@ -93,7 +93,7 @@ const state = reactive<LocalState>({
 });
 
 const userStore = useUserStore();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const hasRBACFeature = featureToRef("bb.feature.rbac");
 
 const activeUserList = computed(() => {
@@ -123,18 +123,18 @@ const allowAddOrInvite = computed(() => {
   // TODO(tianzhou): Implement invite mode for DBA and developer
   // If current user has manage user permission, MemberAddOrInvite is in Add mode.
   // Otherwise, MemberAddOrInvite is in Invite mode.
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-member",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
 const showUpgradeInfo = computed(() => {
   return (
     !hasRBACFeature.value &&
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-general",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   );
 });

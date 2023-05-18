@@ -39,10 +39,10 @@
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
-import { hasPermissionInProjectV1, hasWorkspacePermission } from "../utils";
+import { hasPermissionInProjectV1, hasWorkspacePermissionV1 } from "../utils";
 import { ProjectGeneralSettingPanel } from "../components/Project/ProjectSetting";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
-import { useCurrentUser, useCurrentUserV1, useProjectV1Store } from "@/store";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
 
@@ -57,15 +57,14 @@ const props = defineProps({
   },
 });
 
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 
 const allowArchiveOrRestore = computed(() => {
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-project",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;

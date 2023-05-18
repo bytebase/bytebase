@@ -132,11 +132,11 @@ import PricingTable from "../components/PricingTable/";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
   pushNotification,
-  useCurrentUser,
+  useCurrentUserV1,
   useSubscriptionStore,
 } from "@/store";
 import { storeToRefs } from "pinia";
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   loading: boolean;
@@ -146,7 +146,7 @@ interface LocalState {
 
 const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   loading: false,
@@ -211,9 +211,9 @@ const openTrialModal = () => {
 };
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-subscription",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 </script>

@@ -245,7 +245,7 @@ import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import TenantIcon from "./TenantIcon.vue";
 import DatabaseName from "@/components/DatabaseName.vue";
 import { SQLEditorButton } from "@/components/DatabaseDetail";
-import { useCurrentUser } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import {
   ColumnDef,
   getCoreRowModel,
@@ -328,7 +328,7 @@ const props = defineProps({
 const emit = defineEmits(["select-database"]);
 
 const router = useRouter();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const { t } = useI18n();
 const state = reactive<State>({
   showIncorrectProjectModal: false,
@@ -516,7 +516,7 @@ const showSQLEditorLink = computed(() => {
 });
 
 const allowQuery = (database: Database) => {
-  return isDatabaseAccessible(database, policyList.value, currentUser.value);
+  return isDatabaseAccessible(database, policyList.value, currentUserV1.value);
 };
 
 const showTenantIcon = computed(() => {

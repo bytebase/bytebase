@@ -232,13 +232,12 @@ import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { useRouter } from "vue-router";
 
 import { unknownUser } from "../types";
-import { hasWorkspacePermission, roleNameV1 } from "../utils";
+import { hasWorkspacePermissionV1, roleNameV1 } from "../utils";
 import {
   featureToRef,
   pushNotification,
   useActuatorStore,
   useAuthStore,
-  useCurrentUser,
   useCurrentUserV1,
   useUserStore,
 } from "@/store";
@@ -268,7 +267,6 @@ const { t } = useI18n();
 const router = useRouter();
 const actuatorStore = useActuatorStore();
 const authStore = useAuthStore();
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
@@ -333,9 +331,9 @@ const passwordMismatch = computed(() => {
 const allowEdit = computed(() => {
   return (
     currentUserV1.value.name === user.value.name ||
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-member",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   );
 });
