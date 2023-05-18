@@ -154,10 +154,11 @@ import {
   stageSlug,
   activeTaskInStage,
   isDatabaseRelatedIssueType,
+  extractUserUID,
 } from "@/utils";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
-import { useCurrentUser } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { CurrentApprover } from "../review";
 
 type Mode = "ALL" | "PROJECT";
@@ -261,7 +262,7 @@ const state = reactive<LocalState>({
   dataSource: [],
   selectedIssueIdList: new Set(),
 });
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const tableRef = ref<HTMLTableElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
@@ -370,7 +371,7 @@ const isAssigneeAttentionOn = (issue: Issue) => {
   if (issue.status !== "OPEN") {
     return false;
   }
-  if (currentUser.value.id === issue.assignee.id) {
+  if (extractUserUID(currentUserV1.value.name) === String(issue.assignee.id)) {
     // True if current user is the assignee
     return issue.assigneeNeedAttention;
   }

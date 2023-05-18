@@ -9,8 +9,8 @@ import {
   BackupPlanSchedule,
   ApprovalStrategy,
 } from "@/types/proto/v1/org_policy_service";
-import { MaybeRef, UNKNOWN_ID } from "@/types";
-import { useCurrentUser } from "../auth";
+import { MaybeRef, UNKNOWN_USER_NAME } from "@/types";
+import { useCurrentUserV1 } from "../auth";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 
 interface PolicyState {
@@ -187,9 +187,9 @@ export const usePolicyListByResourceTypeAndPolicyType = (
   }>
 ) => {
   const store = usePolicyV1Store();
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   watchEffect(() => {
-    if (currentUser.value.id === UNKNOWN_ID) return;
+    if (currentUserV1.value.name === UNKNOWN_USER_NAME) return;
     const { resourceType, policyType, showDeleted } = unref(params);
 
     store.fetchPolicies({ resourceType, policyType, showDeleted });
@@ -208,9 +208,9 @@ export const usePolicyByParentAndType = (
   }>
 ) => {
   const store = usePolicyV1Store();
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   watchEffect(() => {
-    if (currentUser.value.id === UNKNOWN_ID) return;
+    if (currentUserV1.value.name === UNKNOWN_USER_NAME) return;
     const { policyType, parentPath } = unref(params);
     store.getOrFetchPolicyByParentAndType({
       parentPath,

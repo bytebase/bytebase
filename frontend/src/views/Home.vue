@@ -37,7 +37,7 @@
       session-key="home-assigned"
       :issue-find="{
         statusList: ['OPEN'],
-        assigneeId: currentUser.id,
+        assigneeId: Number(currentUserUID),
       }"
       :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
     >
@@ -58,7 +58,7 @@
       session-key="home-created"
       :issue-find="{
         statusList: ['OPEN'],
-        creatorId: currentUser.id,
+        creatorId: Number(currentUserUID),
       }"
       :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
     >
@@ -79,7 +79,7 @@
       session-key="home-subscribed"
       :issue-find="{
         statusList: ['OPEN'],
-        subscriberId: currentUser.id,
+        subscriberId: Number(currentUserUID),
       }"
       :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
     >
@@ -189,15 +189,19 @@
 <script lang="ts" setup>
 import { reactive, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { activeEnvironment, isDatabaseRelatedIssueType } from "../utils";
+import {
+  activeEnvironment,
+  extractUserUID,
+  isDatabaseRelatedIssueType,
+} from "../utils";
 import { UNKNOWN_ID, Issue, planTypeToString } from "../types";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import {
-  useCurrentUser,
   useEnvironmentV1Store,
   useSubscriptionStore,
   useOnboardingStateStore,
   featureToRef,
+  useCurrentUserV1,
 } from "@/store";
 import {
   IssueTable,
@@ -224,7 +228,8 @@ const state = reactive<LocalState>({
   showTrialStartModal: false,
 });
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
+const currentUserUID = computed(() => extractUserUID(currentUserV1.value.name));
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
 const onTrialingModalClose = () => {
