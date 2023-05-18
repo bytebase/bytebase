@@ -29,7 +29,7 @@ import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
 import type { Role } from "@/types/proto/v1/role_service";
-import { useWorkspacePermission } from "@/utils";
+import { useWorkspacePermissionV1 } from "@/utils";
 import { SpinnerButton } from "@/components/v2";
 import { useRoleStore } from "@/store";
 import { useCustomRoleSettingContext } from "../context";
@@ -81,7 +81,7 @@ const title = computed(() => {
   return role.title;
 });
 
-const allowAdmin = useWorkspacePermission(
+const allowAdmin = useWorkspacePermissionV1(
   "bb.permission.workspace.manage-general"
 );
 

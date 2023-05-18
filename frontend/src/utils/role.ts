@@ -1,6 +1,6 @@
 import { computed, unref } from "vue";
 import { MaybeRef, PresetRoleType, ProjectRoleType, RoleType } from "../types";
-import { hasFeature, useCurrentUser, useRoleStore } from "@/store";
+import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
 import { t } from "@/plugins/i18n";
 import { UserRole } from "@/types/proto/v1/auth_service";
 
@@ -101,12 +101,12 @@ export function hasWorkspacePermissionV1(
   return false;
 }
 
-export const useWorkspacePermission = (
+export const useWorkspacePermissionV1 = (
   permission: MaybeRef<WorkspacePermissionType>
 ) => {
-  const user = useCurrentUser();
+  const user = useCurrentUserV1();
   return computed(() => {
-    return hasWorkspacePermission(unref(permission), user.value.role);
+    return hasWorkspacePermissionV1(unref(permission), user.value.userRole);
   });
 };
 
