@@ -32,7 +32,7 @@ import { BBModal } from "@/bbkit";
 import RuleForm from "./RuleForm.vue";
 import { useCustomApprovalContext } from "../context";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
-import { LocalApprovalRule, SYSTEM_BOT_ID } from "@/types";
+import { LocalApprovalRule, SYSTEM_BOT_USER_NAME } from "@/types";
 
 type LocalState = {
   loading: boolean;
@@ -53,7 +53,7 @@ const allowEditRule = computed(() => {
   if (!allowAdmin.value) return false;
   const rule = dialog.value?.rule;
   if (!rule) return false;
-  return creatorOfRule(rule).id !== SYSTEM_BOT_ID;
+  return creatorOfRule(rule).name !== SYSTEM_BOT_USER_NAME;
 });
 
 const title = computed(() => {

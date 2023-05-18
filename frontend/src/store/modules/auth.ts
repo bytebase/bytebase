@@ -36,7 +36,9 @@ export const useAuthStore = defineStore("auth_v1", {
 
       const userId = getIntCookie("user");
       if (userId) {
-        const loggedInUser = await useUserStore().getOrFetchUserById(userId);
+        const loggedInUser = await useUserStore().getOrFetchUserById(
+          String(userId)
+        );
         this.currentUser = loggedInUser;
       }
     },
@@ -72,14 +74,18 @@ export const useAuthStore = defineStore("auth_v1", {
       ).data.data;
 
       // Refresh the corresponding user.
-      const user = await useUserStore().getOrFetchUserById(activatedUser.id);
+      const user = await useUserStore().getOrFetchUserById(
+        String(activatedUser.id)
+      );
       this.currentUser = user;
       return user;
     },
     async restoreUser() {
       const userId = getIntCookie("user");
       if (userId) {
-        const loggedInUser = await useUserStore().getOrFetchUserById(userId);
+        const loggedInUser = await useUserStore().getOrFetchUserById(
+          String(userId)
+        );
         this.currentUser = loggedInUser;
         return loggedInUser;
       }
