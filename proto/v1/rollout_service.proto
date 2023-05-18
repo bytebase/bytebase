@@ -300,7 +300,7 @@ message Task {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   string name = 1;
   // The system-assigned, unique identifier for a resource.
-  string uid = 2;
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string title = 3;
 
   enum Type {
@@ -332,7 +332,7 @@ message Task {
 message TaskRun {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}
   string name = 1;
-  string uid = 2;
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string title = 3;
   enum Status {
     STATUS_UNSPECIFIED = 0;
