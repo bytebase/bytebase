@@ -162,14 +162,13 @@ const allowAddRole = (item: ComposedPrincipal) => {
 };
 
 const getRoleOptions = (item: ComposedPrincipal) => {
-  let roleList = useRoleStore().roleList;
+  let roleList = useRoleStore().roleList.filter((role) => {
+    return !item.roleList.includes(role.name);
+  });
+  // For enterprise plan, we don't allow to add exporter role.
   if (hasCustomRoleFeature.value) {
-    roleList = useRoleStore().roleList.filter((role) => {
-      return (
-        role.name !== PresetRoleType.EXPORTER &&
-        role.name !== PresetRoleType.QUERIER &&
-        !item.roleList.includes(role.name)
-      );
+    roleList = roleList.filter((role) => {
+      return role.name !== PresetRoleType.EXPORTER;
     });
   }
   return roleList.map<SelectOption>((role) => {

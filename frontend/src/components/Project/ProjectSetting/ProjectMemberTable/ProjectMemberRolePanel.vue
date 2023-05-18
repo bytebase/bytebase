@@ -101,7 +101,6 @@ import {
   hasPermissionInProjectV1,
   hasWorkspacePermission,
   parseConditionExpressionString,
-  removeRoleFromProjectIamPolicy,
   stringifyConditionExpression,
 } from "@/utils";
 import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
@@ -242,7 +241,21 @@ const handleDeleteRole = (role: string) => {
     onPositiveClick: async () => {
       const user = `user:${props.member.email}`;
       const policy = cloneDeep(iamPolicy.value);
-      removeRoleFromProjectIamPolicy(policy, user, role);
+      for (const binding of policy.bindings) {
+        if (binding.role !== role) {
+          continue;
+        }
+        if (binding.members.includes(user)) {
+          binding.members = binding.members.filter((member) => {
+            return member !== user;
+          });
+        }
+        if (binding.members.length === 0) {
+          policy.bindings = policy.bindings.filter(
+            (item) => !isEqual(item, binding)
+          );
+        }
+      }
       await projectIamPolicyStore.updateProjectIamPolicy(
         projectResourceName.value,
         policy
