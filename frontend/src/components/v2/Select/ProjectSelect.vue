@@ -17,13 +17,11 @@ import { NSelect, SelectOption } from "naive-ui";
 
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID, unknownProject } from "@/types";
-import { extractRoleResourceName, memberListInProjectV1 } from "@/utils";
 import {
   Project,
   TenantMode,
   Workflow,
 } from "@/types/proto/v1/project_service";
-import { intersection } from "lodash-es";
 import { State } from "@/types/proto/v1/common";
 
 interface ProjectSelectOption extends SelectOption {
@@ -73,13 +71,9 @@ const rawProjectList = computed(() => {
     currentUserV1.value,
     true /* showDeleted */
   );
-  // Filter by role
+  // Filter the default project
   list = list.filter((project) => {
-    const member = memberListInProjectV1(project, project.iamPolicy).find(
-      (member) => member.user.name === currentUserV1.value.name
-    );
-    const roleList = (member?.roleList ?? []).map(extractRoleResourceName);
-    return intersection(roleList, props.allowedProjectRoleList).length > 0;
+    return project.uid !== String(DEFAULT_PROJECT_ID);
   });
   // Filter by project tenant mode
   list = list.filter((project) => {
