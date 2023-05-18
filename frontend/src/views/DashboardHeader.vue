@@ -410,7 +410,6 @@ export default defineComponent({
       getRouteLinkClass,
       shouldShowInstanceEntry,
       shouldShowIssueEntry,
-      currentUser,
       currentPlan,
       PlanType,
       isDevFeatures,

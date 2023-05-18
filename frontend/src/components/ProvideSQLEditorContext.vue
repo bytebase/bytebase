@@ -7,7 +7,6 @@ import { uniqBy } from "lodash-es";
 import { onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  useCurrentUser,
   useDatabaseStore,
   useSQLEditorStore,
   useTabStore,
@@ -25,6 +24,7 @@ import {
   ConnectionTreeMode,
   CoreTabInfo,
   TabMode,
+  UNKNOWN_USER_NAME,
 } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
 import {
@@ -50,7 +50,6 @@ const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
@@ -70,7 +69,7 @@ const prepareAccessControlPolicy = async () => {
 
 const prepareAccessibleDatabaseList = async () => {
   // It will also be called when user logout
-  if (currentUser.value.id === UNKNOWN_ID) {
+  if (currentUserV1.value.name === UNKNOWN_USER_NAME) {
     return;
   }
   instanceStore.fetchInstanceList();
@@ -380,15 +379,18 @@ onMounted(async () => {
     immediate: true,
   });
 
-  watch(currentUser, (user) => {
-    if (user.id === UNKNOWN_ID) {
-      // Cleanup when user signed out
-      connectionTreeStore.tree.data = [];
-      connectionTreeStore.tree.state = ConnectionTreeState.UNSET;
+  watch(
+    () => currentUserV1.value.name,
+    (name) => {
+      if (name === UNKNOWN_USER_NAME) {
+        // Cleanup when user signed out
+        connectionTreeStore.tree.data = [];
+        connectionTreeStore.tree.state = ConnectionTreeState.UNSET;
 
-      tabStore.reset();
+        tabStore.reset();
+      }
     }
-  });
+  );
 
   await setConnectionFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();

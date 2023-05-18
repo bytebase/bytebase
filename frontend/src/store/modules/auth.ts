@@ -19,7 +19,7 @@ interface AuthState {
 
 export const useAuthStore = defineStore("auth_v1", {
   state: (): AuthState => ({
-    currentUser: User.fromPartial({}),
+    currentUser: unknownUser(),
   }),
   actions: {
     isLoggedIn: () => {
