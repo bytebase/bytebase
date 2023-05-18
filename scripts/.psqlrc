@@ -17,6 +17,3 @@
 \set VERBOSITY verbose
 
 \set QUIET 0
-
-\echo 'Welcome to PostgreSQL in Bytebase Docker image! \n'
-\echo 'Type \\q to exit. \n'
