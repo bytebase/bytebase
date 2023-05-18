@@ -29,12 +29,10 @@ const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 
 const roleOptions = computed(() => {
   let roleList = useRoleStore().roleList;
+  // For enterprise plan, we don't allow to add exporter role.
   if (hasCustomRoleFeature.value) {
     roleList = useRoleStore().roleList.filter((role) => {
-      return (
-        role.name !== PresetRoleType.Exporter &&
-        role.name !== PresetRoleType.Querier
-      );
+      return role.name !== PresetRoleType.EXPORTER;
     });
   }
   return roleList.map<SelectOption>((role) => {
