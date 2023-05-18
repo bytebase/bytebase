@@ -124,15 +124,17 @@ import {
   UNKNOWN_ID,
   dialectOfEngine,
 } from "@/types";
-import { memberListInProjectV1 } from "@/utils";
+import {
+  getDatabaseIdByName,
+  memberListInProjectV1,
+  parseConditionExpressionString,
+} from "@/utils";
 import {
   convertUserToPrincipal,
   useDatabaseStore,
   useProjectV1Store,
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
-import { useInstanceV1Store } from "@/store/modules/v1/instance";
-import { instanceNamePrefix } from "@/store/modules/v1/common";
 import RequiredStar from "@/components/RequiredStar.vue";
 
 interface LocalState {
@@ -146,7 +148,6 @@ interface LocalState {
 }
 
 const { create, issue } = useIssueLogic();
-const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseStore();
 const state = reactive<LocalState>({
   maxRowCount: 1000,
@@ -265,37 +266,31 @@ watch(
       if (payload.role !== PresetRoleType.EXPORTER) {
         throw "Only support EXPORTER role";
       }
-      const expressionList = payload.condition.expression.split(" && ");
-      for (const expression of expressionList) {
-        const fields = expression.split(" ");
-        if (fields[0] === "request.statement") {
-          state.statement = atob(JSON.parse(fields[2]));
-        } else if (fields[0] === "resource.database") {
-          const databaseIdList = [];
-          for (const url of JSON.parse(fields[2])) {
-            const value = url.split("/");
-            const instanceName = value[1] || "";
-            const databaseName = value[3] || "";
-            const instance = await instanceV1Store.getOrFetchInstanceByName(
-              instanceNamePrefix + instanceName
-            );
-            const databaseList =
-              await databaseStore.getOrFetchDatabaseListByInstanceId(
-                instance.uid
-              );
-            const database = databaseList.find(
-              (db) => db.name === databaseName
-            );
-            if (database) {
-              databaseIdList.push(database.id);
-            }
+
+      const conditionExpression = parseConditionExpressionString(
+        payload.condition.expression
+      );
+      if (conditionExpression.statement !== undefined) {
+        state.statement = conditionExpression.statement;
+      }
+      if (
+        conditionExpression.databases !== undefined &&
+        conditionExpression.databases.length > 0
+      ) {
+        const databaseIdList = [];
+        for (const databaseName of conditionExpression.databases) {
+          const id = await getDatabaseIdByName(databaseName);
+          if (id && id !== UNKNOWN_ID) {
+            databaseIdList.push(id);
           }
-          state.databaseId = head(databaseIdList);
-        } else if (fields[0] === "request.row_limit") {
-          state.maxRowCount = Number(fields[2]);
-        } else if (fields[0] === "request.export_format") {
-          state.exportFormat = JSON.parse(fields[2]) as "CSV" | "JSON";
         }
+        state.databaseId = head(databaseIdList);
+      }
+      if (conditionExpression.rowLimit !== undefined) {
+        state.maxRowCount = conditionExpression.rowLimit;
+      }
+      if (conditionExpression.exportFormat !== undefined) {
+        state.exportFormat = conditionExpression.exportFormat as "CSV" | "JSON";
       }
     }
   },
