@@ -11,7 +11,7 @@
           <i18n-t tag="p" keypath="subscription.overuse-warning">
             <template #neededPlan>
               <span
-                class="underline cursor-pointer hover:opacity-80"
+                class="underline cursor-pointer hover:opacity-60"
                 @click="state.showModal = true"
                 >{{ neededPlan }}</span
               >
