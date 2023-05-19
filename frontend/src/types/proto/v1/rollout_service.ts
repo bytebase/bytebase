@@ -387,7 +387,7 @@ export function planCheckRun_TypeToJSON(object: PlanCheckRun_Type): string {
 }
 
 export enum PlanCheckRun_Status {
-  UNKNOWN = 0,
+  STATUS_UNSPECIFIED = 0,
   RUNNING = 1,
   DONE = 2,
   FAILED = 3,
@@ -398,8 +398,8 @@ export enum PlanCheckRun_Status {
 export function planCheckRun_StatusFromJSON(object: any): PlanCheckRun_Status {
   switch (object) {
     case 0:
-    case "UNKNOWN":
-      return PlanCheckRun_Status.UNKNOWN;
+    case "STATUS_UNSPECIFIED":
+      return PlanCheckRun_Status.STATUS_UNSPECIFIED;
     case 1:
     case "RUNNING":
       return PlanCheckRun_Status.RUNNING;
@@ -421,8 +421,8 @@ export function planCheckRun_StatusFromJSON(object: any): PlanCheckRun_Status {
 
 export function planCheckRun_StatusToJSON(object: PlanCheckRun_Status): string {
   switch (object) {
-    case PlanCheckRun_Status.UNKNOWN:
-      return "UNKNOWN";
+    case PlanCheckRun_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
     case PlanCheckRun_Status.RUNNING:
       return "RUNNING";
     case PlanCheckRun_Status.DONE:
@@ -590,7 +590,7 @@ export interface Stage {
   name: string;
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
-  /** Fromat: environments/{environment} */
+  /** Format: environments/{environment} */
   environment: string;
   title: string;
   tasks: Task[];
@@ -729,7 +729,7 @@ export interface Task_DatabaseCreate {
   table: string;
   /** Format: sheets/{sheet} */
   sheet: string;
-  charecterSet: string;
+  characterSet: string;
   collection: string;
   labels: { [key: string]: string };
 }
@@ -873,7 +873,7 @@ export interface Task_DatabaseRestorePitrRestore {
 }
 
 export interface TaskRun {
-  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun} */
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun} */
   name: string;
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
@@ -896,7 +896,7 @@ export interface TaskRun {
 }
 
 export enum TaskRun_Status {
-  UNKNOWN = 0,
+  STATUS_UNSPECIFIED = 0,
   PENDING = 1,
   RUNNING = 2,
   COMPLETED = 3,
@@ -909,8 +909,8 @@ export enum TaskRun_Status {
 export function taskRun_StatusFromJSON(object: any): TaskRun_Status {
   switch (object) {
     case 0:
-    case "UNKNOWN":
-      return TaskRun_Status.UNKNOWN;
+    case "STATUS_UNSPECIFIED":
+      return TaskRun_Status.STATUS_UNSPECIFIED;
     case 1:
     case "PENDING":
       return TaskRun_Status.PENDING;
@@ -938,8 +938,8 @@ export function taskRun_StatusFromJSON(object: any): TaskRun_Status {
 
 export function taskRun_StatusToJSON(object: TaskRun_Status): string {
   switch (object) {
-    case TaskRun_Status.UNKNOWN:
-      return "UNKNOWN";
+    case TaskRun_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
     case TaskRun_Status.PENDING:
       return "PENDING";
     case TaskRun_Status.RUNNING:
@@ -3221,7 +3221,7 @@ export const Task = {
 };
 
 function createBaseTask_DatabaseCreate(): Task_DatabaseCreate {
-  return { project: "", database: "", table: "", sheet: "", charecterSet: "", collection: "", labels: {} };
+  return { project: "", database: "", table: "", sheet: "", characterSet: "", collection: "", labels: {} };
 }
 
 export const Task_DatabaseCreate = {
@@ -3238,8 +3238,8 @@ export const Task_DatabaseCreate = {
     if (message.sheet !== "") {
       writer.uint32(34).string(message.sheet);
     }
-    if (message.charecterSet !== "") {
-      writer.uint32(42).string(message.charecterSet);
+    if (message.characterSet !== "") {
+      writer.uint32(42).string(message.characterSet);
     }
     if (message.collection !== "") {
       writer.uint32(50).string(message.collection);
@@ -3290,7 +3290,7 @@ export const Task_DatabaseCreate = {
             break;
           }
 
-          message.charecterSet = reader.string();
+          message.characterSet = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
@@ -3324,7 +3324,7 @@ export const Task_DatabaseCreate = {
       database: isSet(object.database) ? String(object.database) : "",
       table: isSet(object.table) ? String(object.table) : "",
       sheet: isSet(object.sheet) ? String(object.sheet) : "",
-      charecterSet: isSet(object.charecterSet) ? String(object.charecterSet) : "",
+      characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
       collection: isSet(object.collection) ? String(object.collection) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -3341,7 +3341,7 @@ export const Task_DatabaseCreate = {
     message.database !== undefined && (obj.database = message.database);
     message.table !== undefined && (obj.table = message.table);
     message.sheet !== undefined && (obj.sheet = message.sheet);
-    message.charecterSet !== undefined && (obj.charecterSet = message.charecterSet);
+    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
     message.collection !== undefined && (obj.collection = message.collection);
     obj.labels = {};
     if (message.labels) {
@@ -3362,7 +3362,7 @@ export const Task_DatabaseCreate = {
     message.database = object.database ?? "";
     message.table = object.table ?? "";
     message.sheet = object.sheet ?? "";
-    message.charecterSet = object.charecterSet ?? "";
+    message.characterSet = object.characterSet ?? "";
     message.collection = object.collection ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {

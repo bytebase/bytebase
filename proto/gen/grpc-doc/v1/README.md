@@ -5464,7 +5464,7 @@ We only take the latest taskrun of each task into account.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| environment | [string](#string) |  | Fromat: environments/{environment} |
+| environment | [string](#string) |  | Format: environments/{environment} |
 | title | [string](#string) |  |  |
 | tasks | [Task](#bytebase-v1-Task) | repeated |  |
 
@@ -5525,7 +5525,7 @@ We only take the latest taskrun of each task into account.
 | database | [string](#string) |  | database name |
 | table | [string](#string) |  | table name |
 | sheet | [string](#string) |  | Format: sheets/{sheet} |
-| charecter_set | [string](#string) |  |  |
+| character_set | [string](#string) |  |  |
 | collection | [string](#string) |  |  |
 | labels | [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry) | repeated |  |
 
@@ -5635,7 +5635,7 @@ We only take the latest taskrun of each task into account.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun} |
+| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | creator | [string](#string) |  | Format: user:hello@world.com |
 | updater | [string](#string) |  | Format: user:hello@world.com |
@@ -5723,7 +5723,7 @@ Type is the type of changing the database.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| UNKNOWN | 0 |  |
+| STATUS_UNSPECIFIED | 0 |  |
 | RUNNING | 1 |  |
 | DONE | 2 |  |
 | FAILED | 3 |  |
@@ -5795,7 +5795,7 @@ Type is the type of changing the database.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| UNKNOWN | 0 |  |
+| STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
 | RUNNING | 2 |  |
 | COMPLETED | 3 |  |
