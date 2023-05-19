@@ -80,6 +80,11 @@ export interface Plan {
   name: string;
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
+  /**
+   * The resource name of the review associated with this plan.
+   * Format: projects/{project}/reviews/{review}
+   */
+  review: string;
   title: string;
   description: string;
   steps: Plan_Step[];
@@ -1288,7 +1293,7 @@ export const UpdatePlanRequest = {
 };
 
 function createBasePlan(): Plan {
-  return { name: "", uid: "", title: "", description: "", steps: [] };
+  return { name: "", uid: "", review: "", title: "", description: "", steps: [] };
 }
 
 export const Plan = {
@@ -1299,14 +1304,17 @@ export const Plan = {
     if (message.uid !== "") {
       writer.uint32(18).string(message.uid);
     }
+    if (message.review !== "") {
+      writer.uint32(26).string(message.review);
+    }
     if (message.title !== "") {
-      writer.uint32(26).string(message.title);
+      writer.uint32(34).string(message.title);
     }
     if (message.description !== "") {
-      writer.uint32(34).string(message.description);
+      writer.uint32(42).string(message.description);
     }
     for (const v of message.steps) {
-      Plan_Step.encode(v!, writer.uint32(42).fork()).ldelim();
+      Plan_Step.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -1337,17 +1345,24 @@ export const Plan = {
             break;
           }
 
-          message.title = reader.string();
+          message.review = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.description = reader.string();
+          message.title = reader.string();
           continue;
         case 5:
           if (tag !== 42) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
             break;
           }
 
@@ -1366,6 +1381,7 @@ export const Plan = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
+      review: isSet(object.review) ? String(object.review) : "",
       title: isSet(object.title) ? String(object.title) : "",
       description: isSet(object.description) ? String(object.description) : "",
       steps: Array.isArray(object?.steps) ? object.steps.map((e: any) => Plan_Step.fromJSON(e)) : [],
@@ -1376,6 +1392,7 @@ export const Plan = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
+    message.review !== undefined && (obj.review = message.review);
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined && (obj.description = message.description);
     if (message.steps) {
@@ -1394,6 +1411,7 @@ export const Plan = {
     const message = createBasePlan();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
+    message.review = object.review ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
     message.steps = object.steps?.map((e) => Plan_Step.fromPartial(e)) || [];
