@@ -385,14 +385,6 @@ message Task {
   // Format: instances/{instance}/databases/{database}
   string target = 6;
 
-  oneof payload {
-    DatabaseCreate database_case = 7;
-    DatabaseSchemaBaseline database_schema_baseline = 8;
-    DatabaseSchemaUpdate database_schema_update = 9;
-    DatabaseDataUpdate database_data_update = 10;
-    DatabaseRestoreRestore database_restore_restore = 11;
-  }
-
   message DatabaseCreate {
     // The project owning the database.
     // Format: projects/{project}
@@ -484,6 +476,14 @@ message Task {
       // After the PITR operations, the database will be recovered to the state at this time.
       google.protobuf.Timestamp point_in_time = 3;
     }
+  }
+
+  oneof payload {
+    DatabaseCreate database_case = 7;
+    DatabaseSchemaBaseline database_schema_baseline = 8;
+    DatabaseSchemaUpdate database_schema_update = 9;
+    DatabaseDataUpdate database_data_update = 10;
+    DatabaseRestoreRestore database_restore_restore = 11;
   }
 }
 
