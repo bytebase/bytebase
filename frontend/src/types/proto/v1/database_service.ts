@@ -11,6 +11,49 @@ import { State, stateFromJSON, stateToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
+export enum ChangeHistoryView {
+  /**
+   * CHANGE_HISTORY_VIEW_UNSPECIFIED - The default / unset value.
+   * The API will default to the BASIC view.
+   */
+  CHANGE_HISTORY_VIEW_UNSPECIFIED = 0,
+  CHANGE_HISTORY_VIEW_BASIC = 1,
+  CHANGE_HISTORY_VIEW_FULL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function changeHistoryViewFromJSON(object: any): ChangeHistoryView {
+  switch (object) {
+    case 0:
+    case "CHANGE_HISTORY_VIEW_UNSPECIFIED":
+      return ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED;
+    case 1:
+    case "CHANGE_HISTORY_VIEW_BASIC":
+      return ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC;
+    case 2:
+    case "CHANGE_HISTORY_VIEW_FULL":
+      return ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ChangeHistoryView.UNRECOGNIZED;
+  }
+}
+
+export function changeHistoryViewToJSON(object: ChangeHistoryView): string {
+  switch (object) {
+    case ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED:
+      return "CHANGE_HISTORY_VIEW_UNSPECIFIED";
+    case ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC:
+      return "CHANGE_HISTORY_VIEW_BASIC";
+    case ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL:
+      return "CHANGE_HISTORY_VIEW_FULL";
+    case ChangeHistoryView.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface GetDatabaseRequest {
   /**
    * The name of the database to retrieve.
@@ -736,9 +779,9 @@ export interface ChangeHistory {
   /** Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} */
   name: string;
   uid: string;
-  /** Format: user:hello@world.com */
+  /** Format: users/hello@world.com */
   creator: string;
-  /** Format: user:hello@world.com */
+  /** Format: users/hello@world.com */
   updater: string;
   createTime?: Date;
   updateTime?: Date;
@@ -747,10 +790,7 @@ export interface ChangeHistory {
   source: ChangeHistory_Source;
   type: ChangeHistory_Type;
   status: ChangeHistory_Status;
-  sequence: number;
   version: string;
-  useSemanticVersion: boolean;
-  semanticVersionPrefix: string;
   description: string;
   statement: string;
   schema: string;
@@ -869,7 +909,7 @@ export function changeHistory_TypeToJSON(object: ChangeHistory_Type): string {
 }
 
 export enum ChangeHistory_Status {
-  UNKNOWN = 0,
+  STATUS_UNSPECIFIED = 0,
   PENDING = 1,
   COMPLETED = 2,
   FAILED = 3,
@@ -879,8 +919,8 @@ export enum ChangeHistory_Status {
 export function changeHistory_StatusFromJSON(object: any): ChangeHistory_Status {
   switch (object) {
     case 0:
-    case "UNKNOWN":
-      return ChangeHistory_Status.UNKNOWN;
+    case "STATUS_UNSPECIFIED":
+      return ChangeHistory_Status.STATUS_UNSPECIFIED;
     case 1:
     case "PENDING":
       return ChangeHistory_Status.PENDING;
@@ -899,8 +939,8 @@ export function changeHistory_StatusFromJSON(object: any): ChangeHistory_Status 
 
 export function changeHistory_StatusToJSON(object: ChangeHistory_Status): string {
   switch (object) {
-    case ChangeHistory_Status.UNKNOWN:
-      return "UNKNOWN";
+    case ChangeHistory_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
     case ChangeHistory_Status.PENDING:
       return "PENDING";
     case ChangeHistory_Status.COMPLETED:
@@ -933,6 +973,7 @@ export interface ListChangeHistoriesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  view: ChangeHistoryView;
 }
 
 export interface ListChangeHistoriesResponse {
@@ -951,6 +992,7 @@ export interface GetChangeHistoryRequest {
    * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
    */
   name: string;
+  view: ChangeHistoryView;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -4971,10 +5013,7 @@ function createBaseChangeHistory(): ChangeHistory {
     source: 0,
     type: 0,
     status: 0,
-    sequence: 0,
     version: "",
-    useSemanticVersion: false,
-    semanticVersionPrefix: "",
     description: "",
     statement: "",
     schema: "",
@@ -5016,35 +5055,26 @@ export const ChangeHistory = {
     if (message.status !== 0) {
       writer.uint32(80).int32(message.status);
     }
-    if (message.sequence !== 0) {
-      writer.uint32(88).int64(message.sequence);
-    }
     if (message.version !== "") {
-      writer.uint32(98).string(message.version);
-    }
-    if (message.useSemanticVersion === true) {
-      writer.uint32(104).bool(message.useSemanticVersion);
-    }
-    if (message.semanticVersionPrefix !== "") {
-      writer.uint32(114).string(message.semanticVersionPrefix);
+      writer.uint32(90).string(message.version);
     }
     if (message.description !== "") {
-      writer.uint32(122).string(message.description);
+      writer.uint32(98).string(message.description);
     }
     if (message.statement !== "") {
-      writer.uint32(130).string(message.statement);
+      writer.uint32(106).string(message.statement);
     }
     if (message.schema !== "") {
-      writer.uint32(138).string(message.schema);
+      writer.uint32(114).string(message.schema);
     }
     if (message.prevSchema !== "") {
-      writer.uint32(146).string(message.prevSchema);
+      writer.uint32(122).string(message.prevSchema);
     }
     if (message.executionDuration !== undefined) {
-      Duration.encode(message.executionDuration, writer.uint32(154).fork()).ldelim();
+      Duration.encode(message.executionDuration, writer.uint32(130).fork()).ldelim();
     }
     if (message.review !== "") {
-      writer.uint32(162).string(message.review);
+      writer.uint32(138).string(message.review);
     }
     return writer;
   },
@@ -5127,70 +5157,49 @@ export const ChangeHistory = {
           message.status = reader.int32() as any;
           continue;
         case 11:
-          if (tag !== 88) {
+          if (tag !== 90) {
             break;
           }
 
-          message.sequence = longToNumber(reader.int64() as Long);
+          message.version = reader.string();
           continue;
         case 12:
           if (tag !== 98) {
             break;
           }
 
-          message.version = reader.string();
+          message.description = reader.string();
           continue;
         case 13:
-          if (tag !== 104) {
+          if (tag !== 106) {
             break;
           }
 
-          message.useSemanticVersion = reader.bool();
+          message.statement = reader.string();
           continue;
         case 14:
           if (tag !== 114) {
             break;
           }
 
-          message.semanticVersionPrefix = reader.string();
+          message.schema = reader.string();
           continue;
         case 15:
           if (tag !== 122) {
             break;
           }
 
-          message.description = reader.string();
+          message.prevSchema = reader.string();
           continue;
         case 16:
           if (tag !== 130) {
             break;
           }
 
-          message.statement = reader.string();
+          message.executionDuration = Duration.decode(reader, reader.uint32());
           continue;
         case 17:
           if (tag !== 138) {
-            break;
-          }
-
-          message.schema = reader.string();
-          continue;
-        case 18:
-          if (tag !== 146) {
-            break;
-          }
-
-          message.prevSchema = reader.string();
-          continue;
-        case 19:
-          if (tag !== 154) {
-            break;
-          }
-
-          message.executionDuration = Duration.decode(reader, reader.uint32());
-          continue;
-        case 20:
-          if (tag !== 162) {
             break;
           }
 
@@ -5217,10 +5226,7 @@ export const ChangeHistory = {
       source: isSet(object.source) ? changeHistory_SourceFromJSON(object.source) : 0,
       type: isSet(object.type) ? changeHistory_TypeFromJSON(object.type) : 0,
       status: isSet(object.status) ? changeHistory_StatusFromJSON(object.status) : 0,
-      sequence: isSet(object.sequence) ? Number(object.sequence) : 0,
       version: isSet(object.version) ? String(object.version) : "",
-      useSemanticVersion: isSet(object.useSemanticVersion) ? Boolean(object.useSemanticVersion) : false,
-      semanticVersionPrefix: isSet(object.semanticVersionPrefix) ? String(object.semanticVersionPrefix) : "",
       description: isSet(object.description) ? String(object.description) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
       schema: isSet(object.schema) ? String(object.schema) : "",
@@ -5242,10 +5248,7 @@ export const ChangeHistory = {
     message.source !== undefined && (obj.source = changeHistory_SourceToJSON(message.source));
     message.type !== undefined && (obj.type = changeHistory_TypeToJSON(message.type));
     message.status !== undefined && (obj.status = changeHistory_StatusToJSON(message.status));
-    message.sequence !== undefined && (obj.sequence = Math.round(message.sequence));
     message.version !== undefined && (obj.version = message.version);
-    message.useSemanticVersion !== undefined && (obj.useSemanticVersion = message.useSemanticVersion);
-    message.semanticVersionPrefix !== undefined && (obj.semanticVersionPrefix = message.semanticVersionPrefix);
     message.description !== undefined && (obj.description = message.description);
     message.statement !== undefined && (obj.statement = message.statement);
     message.schema !== undefined && (obj.schema = message.schema);
@@ -5272,10 +5275,7 @@ export const ChangeHistory = {
     message.source = object.source ?? 0;
     message.type = object.type ?? 0;
     message.status = object.status ?? 0;
-    message.sequence = object.sequence ?? 0;
     message.version = object.version ?? "";
-    message.useSemanticVersion = object.useSemanticVersion ?? false;
-    message.semanticVersionPrefix = object.semanticVersionPrefix ?? "";
     message.description = object.description ?? "";
     message.statement = object.statement ?? "";
     message.schema = object.schema ?? "";
@@ -5289,7 +5289,7 @@ export const ChangeHistory = {
 };
 
 function createBaseListChangeHistoriesRequest(): ListChangeHistoriesRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", view: 0 };
 }
 
 export const ListChangeHistoriesRequest = {
@@ -5302,6 +5302,9 @@ export const ListChangeHistoriesRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.view !== 0) {
+      writer.uint32(32).int32(message.view);
     }
     return writer;
   },
@@ -5334,6 +5337,13 @@ export const ListChangeHistoriesRequest = {
 
           message.pageToken = reader.string();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.view = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5348,6 +5358,7 @@ export const ListChangeHistoriesRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      view: isSet(object.view) ? changeHistoryViewFromJSON(object.view) : 0,
     };
   },
 
@@ -5356,6 +5367,7 @@ export const ListChangeHistoriesRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.view !== undefined && (obj.view = changeHistoryViewToJSON(message.view));
     return obj;
   },
 
@@ -5368,6 +5380,7 @@ export const ListChangeHistoriesRequest = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.view = object.view ?? 0;
     return message;
   },
 };
@@ -5450,13 +5463,16 @@ export const ListChangeHistoriesResponse = {
 };
 
 function createBaseGetChangeHistoryRequest(): GetChangeHistoryRequest {
-  return { name: "" };
+  return { name: "", view: 0 };
 }
 
 export const GetChangeHistoryRequest = {
   encode(message: GetChangeHistoryRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.view !== 0) {
+      writer.uint32(16).int32(message.view);
     }
     return writer;
   },
@@ -5475,6 +5491,13 @@ export const GetChangeHistoryRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.view = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5485,12 +5508,16 @@ export const GetChangeHistoryRequest = {
   },
 
   fromJSON(object: any): GetChangeHistoryRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      view: isSet(object.view) ? changeHistoryViewFromJSON(object.view) : 0,
+    };
   },
 
   toJSON(message: GetChangeHistoryRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.view !== undefined && (obj.view = changeHistoryViewToJSON(message.view));
     return obj;
   },
 
@@ -5501,6 +5528,7 @@ export const GetChangeHistoryRequest = {
   fromPartial(object: DeepPartial<GetChangeHistoryRequest>): GetChangeHistoryRequest {
     const message = createBaseGetChangeHistoryRequest();
     message.name = object.name ?? "";
+    message.view = object.view ?? 0;
     return message;
   },
 };

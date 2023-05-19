@@ -113,6 +113,7 @@
     - [ChangeHistory.Source](#bytebase-v1-ChangeHistory-Source)
     - [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status)
     - [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type)
+    - [ChangeHistoryView](#bytebase-v1-ChangeHistoryView)
   
     - [DatabaseService](#bytebase-v1-DatabaseService)
   
@@ -1274,18 +1275,15 @@ Default (empty): Disable automatic backup. |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | uid | [string](#string) |  |  |
-| creator | [string](#string) |  | Format: user:hello@world.com |
-| updater | [string](#string) |  | Format: user:hello@world.com |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| updater | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | release_version | [string](#string) |  | release version of Bytebase |
 | source | [ChangeHistory.Source](#bytebase-v1-ChangeHistory-Source) |  |  |
 | type | [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type) |  |  |
 | status | [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status) |  |  |
-| sequence | [int64](#int64) |  |  |
 | version | [string](#string) |  |  |
-| use_semantic_version | [bool](#bool) |  |  |
-| semantic_version_prefix | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | statement | [string](#string) |  |  |
 | schema | [string](#string) |  |  |
@@ -1519,6 +1517,7 @@ FunctionMetadata is the metadata for functions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the change history to retrieve. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
 
 
 
@@ -1639,6 +1638,7 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListChangeHistories` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
+| view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
 
 
 
@@ -2046,7 +2046,7 @@ The type of the backup.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| UNKNOWN | 0 |  |
+| STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
 | COMPLETED | 2 |  |
 | FAILED | 3 |  |
@@ -2067,6 +2067,19 @@ The type of the backup.
 | MIGRATE_GHOST | 4 |  |
 | BRANCH | 5 |  |
 | DATA | 6 |  |
+
+
+
+<a name="bytebase-v1-ChangeHistoryView"></a>
+
+### ChangeHistoryView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_HISTORY_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| CHANGE_HISTORY_VIEW_BASIC | 1 |  |
+| CHANGE_HISTORY_VIEW_FULL | 2 |  |
 
 
  
