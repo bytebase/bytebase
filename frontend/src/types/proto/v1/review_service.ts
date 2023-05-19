@@ -217,10 +217,7 @@ export interface ApprovalTemplate {
   flow?: ApprovalFlow;
   title: string;
   description: string;
-  /**
-   * The name of the creator.
-   * Format: users/{user}. {user} is a system-generated unique ID.
-   */
+  /** The name of the creator in users/{email} format. */
   creator: string;
 }
 
