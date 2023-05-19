@@ -138,7 +138,7 @@ message Plan {
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
-      RestoreConfig restore_config = 3;
+      RestoreDatabaseConfig restore_database_config = 3;
     }
   }
 
@@ -169,13 +169,13 @@ message Plan {
   message ChangeDatabaseConfig {
     // The resource name of the target.
     // Format: projects/{project}/logicalDatabases/{ldb1}.
-    // Format: projects/{project}/logicalTables/{ltb1}.
+    // Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}.
     // Format: instances/{xxx}/databases/{db1}.
     string target = 1;
     // The resource name of the sheet.
     // Format: sheets/{sheet}
     string sheet = 2;
-    // Type is the type of changing the database.
+    // Type is the database change type.
     enum Type {
       TYPE_UNSPECIFIED = 0;
       // Used for establishing schema baseline, this is used when
@@ -202,7 +202,7 @@ message Plan {
     bool rollback_enabled = 6;
   }
 
-  message RestoreConfig {
+  message RestoreDatabaseConfig {
     // The resource name of the target to restore.
     // Format: instances/{instance}/databases/{database}
     string target = 1;
@@ -517,6 +517,6 @@ message TaskRun {
   string detail = 9;
   // The resource name of the change history
   // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-  string change_history = 11;
-  string schema_version = 12;
+  string change_history = 10;
+  string schema_version = 11;
 }
