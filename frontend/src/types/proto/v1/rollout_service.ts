@@ -1879,7 +1879,7 @@ export const Plan_ChangeDatabaseConfig = {
       writer.uint32(34).string(message.schemaVersion);
     }
     if (message.rollbackEnabled === true) {
-      writer.uint32(48).bool(message.rollbackEnabled);
+      writer.uint32(40).bool(message.rollbackEnabled);
     }
     return writer;
   },
@@ -1919,8 +1919,8 @@ export const Plan_ChangeDatabaseConfig = {
 
           message.schemaVersion = reader.string();
           continue;
-        case 6:
-          if (tag !== 48) {
+        case 5:
+          if (tag !== 40) {
             break;
           }
 
@@ -3065,7 +3065,7 @@ export const Task_DatabaseCreate = {
       writer.uint32(50).string(message.collection);
     }
     Object.entries(message.labels).forEach(([key, value]) => {
-      Task_DatabaseCreate_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
+      Task_DatabaseCreate_LabelsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
     });
     return writer;
   },
@@ -3119,14 +3119,14 @@ export const Task_DatabaseCreate = {
 
           message.collection = reader.string();
           continue;
-        case 9:
-          if (tag !== 74) {
+        case 7:
+          if (tag !== 58) {
             break;
           }
 
-          const entry9 = Task_DatabaseCreate_LabelsEntry.decode(reader, reader.uint32());
-          if (entry9.value !== undefined) {
-            message.labels[entry9.key] = entry9.value;
+          const entry7 = Task_DatabaseCreate_LabelsEntry.decode(reader, reader.uint32());
+          if (entry7.value !== undefined) {
+            message.labels[entry7.key] = entry7.value;
           }
           continue;
       }
