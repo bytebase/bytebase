@@ -105,7 +105,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", id)).SetInternal(err)
 		}
 		if user == nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", id))
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find user ID: %d", id))
 		}
 
 		memberPatch := &api.MemberPatch{
