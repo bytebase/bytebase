@@ -39,53 +39,36 @@ func TestIsValidResourceID(t *testing.T) {
 	}
 }
 
-func TestGetFilter(t *testing.T) {
+func TestGetProjectFilter(t *testing.T) {
 	tests := []struct {
-		filter    string
-		filterKey string
-		want      string
-		wantErr   bool
+		filter  string
+		want    string
+		wantErr bool
 	}{
 		{
-			filter:    "",
-			filterKey: "",
-			want:      "",
-			wantErr:   true,
+			filter:  "",
+			want:    "",
+			wantErr: true,
 		},
 		{
-			filter:    `project= "projects/abc".`,
-			filterKey: "project",
-			want:      "projects/abc",
-			wantErr:   false,
+			filter:  `project == "projects/abc"`,
+			want:    "projects/abc",
+			wantErr: false,
 		},
 		{
-			filter:    `project= "projects/abc".`,
-			filterKey: "instance",
-			want:      "",
-			wantErr:   true,
+			filter:  `project== "projects/abc"`,
+			want:    "projects/abc",
+			wantErr: false,
 		},
 		{
-			filter:    `project= abc.`,
-			filterKey: "project",
-			want:      "",
-			wantErr:   true,
-		},
-		{
-			filter:    `project= abc`,
-			filterKey: "project",
-			want:      "",
-			wantErr:   true,
-		},
-		{
-			filter:    `project= "projects/abc"`,
-			filterKey: "project",
-			want:      "",
-			wantErr:   true,
+			filter:  `project== "projects/abc".`,
+			want:    "",
+			wantErr: true,
 		},
 	}
 
 	for _, test := range tests {
-		value, err := getFilter(test.filter, test.filterKey)
+		value, err := getProjectFilter(test.filter)
 		if test.wantErr {
 			require.Error(t, err)
 		} else {
