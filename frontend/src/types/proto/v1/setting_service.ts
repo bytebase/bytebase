@@ -278,6 +278,8 @@ export interface WorkspaceProfileSetting {
   require2fa: boolean;
   /** outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. */
   outboundIpList: string[];
+  /** The webhook URL for the GitOps workflow. */
+  gitopsWebhookUrl: string;
 }
 
 export interface WorkspaceApprovalSetting {
@@ -1335,7 +1337,7 @@ export const AgentPluginSetting = {
 };
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
-  return { externalUrl: "", disallowSignup: false, require2fa: false, outboundIpList: [] };
+  return { externalUrl: "", disallowSignup: false, require2fa: false, outboundIpList: [], gitopsWebhookUrl: "" };
 }
 
 export const WorkspaceProfileSetting = {
@@ -1351,6 +1353,9 @@ export const WorkspaceProfileSetting = {
     }
     for (const v of message.outboundIpList) {
       writer.uint32(34).string(v!);
+    }
+    if (message.gitopsWebhookUrl !== "") {
+      writer.uint32(42).string(message.gitopsWebhookUrl);
     }
     return writer;
   },
@@ -1390,6 +1395,13 @@ export const WorkspaceProfileSetting = {
 
           message.outboundIpList.push(reader.string());
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.gitopsWebhookUrl = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1405,6 +1417,7 @@ export const WorkspaceProfileSetting = {
       disallowSignup: isSet(object.disallowSignup) ? Boolean(object.disallowSignup) : false,
       require2fa: isSet(object.require2fa) ? Boolean(object.require2fa) : false,
       outboundIpList: Array.isArray(object?.outboundIpList) ? object.outboundIpList.map((e: any) => String(e)) : [],
+      gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? String(object.gitopsWebhookUrl) : "",
     };
   },
 
@@ -1418,6 +1431,7 @@ export const WorkspaceProfileSetting = {
     } else {
       obj.outboundIpList = [];
     }
+    message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
     return obj;
   },
 
@@ -1431,6 +1445,7 @@ export const WorkspaceProfileSetting = {
     message.disallowSignup = object.disallowSignup ?? false;
     message.require2fa = object.require2fa ?? false;
     message.outboundIpList = object.outboundIpList?.map((e) => e) || [];
+    message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
     return message;
   },
 };

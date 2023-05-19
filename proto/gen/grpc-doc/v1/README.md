@@ -428,6 +428,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value. |
 | require_2fa | [bool](#bool) |  | require_2fa is the flag to require 2FA for all users. |
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
+| gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
 
 
 
@@ -5598,6 +5599,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
 | outbound_ip_list | [string](#string) | repeated | outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. |
+| gitops_webhook_url | [string](#string) |  | The webhook URL for the GitOps workflow. |
 
 
 
