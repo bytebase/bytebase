@@ -4547,7 +4547,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| creator | [string](#string) |  | The name of the creator. Format: users/{user}. {user} is a system-generated unique ID. |
+| creator | [string](#string) |  | The name of the creator in users/{email} format. |
 
 
 
