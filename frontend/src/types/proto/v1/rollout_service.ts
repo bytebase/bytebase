@@ -100,7 +100,7 @@ export interface Plan_Spec {
   earliestAllowedTime?: Date;
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
-  restoreConfig?: Plan_RestoreConfig | undefined;
+  restoreDatabaseConfig?: Plan_RestoreDatabaseConfig | undefined;
 }
 
 export interface Plan_CreateDatabaseConfig {
@@ -142,7 +142,7 @@ export interface Plan_ChangeDatabaseConfig {
   /**
    * The resource name of the target.
    * Format: projects/{project}/logicalDatabases/{ldb1}.
-   * Format: projects/{project}/logicalTables/{ltb1}.
+   * Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}.
    * Format: instances/{xxx}/databases/{db1}.
    */
   target: string;
@@ -161,7 +161,7 @@ export interface Plan_ChangeDatabaseConfig {
   rollbackEnabled: boolean;
 }
 
-/** Type is the type of changing the database. */
+/** Type is the database change type. */
 export enum Plan_ChangeDatabaseConfig_Type {
   TYPE_UNSPECIFIED = 0,
   /**
@@ -235,7 +235,7 @@ export function plan_ChangeDatabaseConfig_TypeToJSON(object: Plan_ChangeDatabase
   }
 }
 
-export interface Plan_RestoreConfig {
+export interface Plan_RestoreDatabaseConfig {
   /**
    * The resource name of the target to restore.
    * Format: instances/{instance}/databases/{database}
@@ -1484,7 +1484,7 @@ function createBasePlan_Spec(): Plan_Spec {
     earliestAllowedTime: undefined,
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
-    restoreConfig: undefined,
+    restoreDatabaseConfig: undefined,
   };
 }
 
@@ -1499,8 +1499,8 @@ export const Plan_Spec = {
     if (message.changeDatabaseConfig !== undefined) {
       Plan_ChangeDatabaseConfig.encode(message.changeDatabaseConfig, writer.uint32(18).fork()).ldelim();
     }
-    if (message.restoreConfig !== undefined) {
-      Plan_RestoreConfig.encode(message.restoreConfig, writer.uint32(26).fork()).ldelim();
+    if (message.restoreDatabaseConfig !== undefined) {
+      Plan_RestoreDatabaseConfig.encode(message.restoreDatabaseConfig, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1538,7 +1538,7 @@ export const Plan_Spec = {
             break;
           }
 
-          message.restoreConfig = Plan_RestoreConfig.decode(reader, reader.uint32());
+          message.restoreDatabaseConfig = Plan_RestoreDatabaseConfig.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1560,7 +1560,9 @@ export const Plan_Spec = {
       changeDatabaseConfig: isSet(object.changeDatabaseConfig)
         ? Plan_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig)
         : undefined,
-      restoreConfig: isSet(object.restoreConfig) ? Plan_RestoreConfig.fromJSON(object.restoreConfig) : undefined,
+      restoreDatabaseConfig: isSet(object.restoreDatabaseConfig)
+        ? Plan_RestoreDatabaseConfig.fromJSON(object.restoreDatabaseConfig)
+        : undefined,
     };
   },
 
@@ -1573,8 +1575,9 @@ export const Plan_Spec = {
     message.changeDatabaseConfig !== undefined && (obj.changeDatabaseConfig = message.changeDatabaseConfig
       ? Plan_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig)
       : undefined);
-    message.restoreConfig !== undefined &&
-      (obj.restoreConfig = message.restoreConfig ? Plan_RestoreConfig.toJSON(message.restoreConfig) : undefined);
+    message.restoreDatabaseConfig !== undefined && (obj.restoreDatabaseConfig = message.restoreDatabaseConfig
+      ? Plan_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig)
+      : undefined);
     return obj;
   },
 
@@ -1591,9 +1594,10 @@ export const Plan_Spec = {
     message.changeDatabaseConfig = (object.changeDatabaseConfig !== undefined && object.changeDatabaseConfig !== null)
       ? Plan_ChangeDatabaseConfig.fromPartial(object.changeDatabaseConfig)
       : undefined;
-    message.restoreConfig = (object.restoreConfig !== undefined && object.restoreConfig !== null)
-      ? Plan_RestoreConfig.fromPartial(object.restoreConfig)
-      : undefined;
+    message.restoreDatabaseConfig =
+      (object.restoreDatabaseConfig !== undefined && object.restoreDatabaseConfig !== null)
+        ? Plan_RestoreDatabaseConfig.fromPartial(object.restoreDatabaseConfig)
+        : undefined;
     return message;
   },
 };
@@ -1966,12 +1970,12 @@ export const Plan_ChangeDatabaseConfig = {
   },
 };
 
-function createBasePlan_RestoreConfig(): Plan_RestoreConfig {
+function createBasePlan_RestoreDatabaseConfig(): Plan_RestoreDatabaseConfig {
   return { target: "", createDatabaseConfig: undefined, backup: undefined, pointInTime: undefined };
 }
 
-export const Plan_RestoreConfig = {
-  encode(message: Plan_RestoreConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const Plan_RestoreDatabaseConfig = {
+  encode(message: Plan_RestoreDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.target !== "") {
       writer.uint32(10).string(message.target);
     }
@@ -1987,10 +1991,10 @@ export const Plan_RestoreConfig = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_RestoreConfig {
+  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_RestoreDatabaseConfig {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_RestoreConfig();
+    const message = createBasePlan_RestoreDatabaseConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2031,7 +2035,7 @@ export const Plan_RestoreConfig = {
     return message;
   },
 
-  fromJSON(object: any): Plan_RestoreConfig {
+  fromJSON(object: any): Plan_RestoreDatabaseConfig {
     return {
       target: isSet(object.target) ? String(object.target) : "",
       createDatabaseConfig: isSet(object.createDatabaseConfig)
@@ -2042,7 +2046,7 @@ export const Plan_RestoreConfig = {
     };
   },
 
-  toJSON(message: Plan_RestoreConfig): unknown {
+  toJSON(message: Plan_RestoreDatabaseConfig): unknown {
     const obj: any = {};
     message.target !== undefined && (obj.target = message.target);
     message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
@@ -2053,12 +2057,12 @@ export const Plan_RestoreConfig = {
     return obj;
   },
 
-  create(base?: DeepPartial<Plan_RestoreConfig>): Plan_RestoreConfig {
-    return Plan_RestoreConfig.fromPartial(base ?? {});
+  create(base?: DeepPartial<Plan_RestoreDatabaseConfig>): Plan_RestoreDatabaseConfig {
+    return Plan_RestoreDatabaseConfig.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<Plan_RestoreConfig>): Plan_RestoreConfig {
-    const message = createBasePlan_RestoreConfig();
+  fromPartial(object: DeepPartial<Plan_RestoreDatabaseConfig>): Plan_RestoreDatabaseConfig {
+    const message = createBasePlan_RestoreDatabaseConfig();
     message.target = object.target ?? "";
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
       ? Plan_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
@@ -3831,10 +3835,10 @@ export const TaskRun = {
       writer.uint32(74).string(message.detail);
     }
     if (message.changeHistory !== "") {
-      writer.uint32(90).string(message.changeHistory);
+      writer.uint32(82).string(message.changeHistory);
     }
     if (message.schemaVersion !== "") {
-      writer.uint32(98).string(message.schemaVersion);
+      writer.uint32(90).string(message.schemaVersion);
     }
     return writer;
   },
@@ -3909,15 +3913,15 @@ export const TaskRun = {
 
           message.detail = reader.string();
           continue;
-        case 11:
-          if (tag !== 90) {
+        case 10:
+          if (tag !== 82) {
             break;
           }
 
           message.changeHistory = reader.string();
           continue;
-        case 12:
-          if (tag !== 98) {
+        case 11:
+          if (tag !== 90) {
             break;
           }
 

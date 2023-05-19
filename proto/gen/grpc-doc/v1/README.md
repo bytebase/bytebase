@@ -340,7 +340,7 @@
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry)
-    - [Plan.RestoreConfig](#bytebase-v1-Plan-RestoreConfig)
+    - [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
     - [Plan.Step](#bytebase-v1-Plan-Step)
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
@@ -5267,7 +5267,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the target. Format: projects/{project}/logicalDatabases/{ldb1}. Format: projects/{project}/logicalTables/{ltb1}. Format: instances/{xxx}/databases/{db1}. |
+| target | [string](#string) |  | The resource name of the target. Format: projects/{project}/logicalDatabases/{ldb1}. Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}. Format: instances/{xxx}/databases/{db1}. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: sheets/{sheet} |
 | type | [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
@@ -5317,9 +5317,9 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 
 
-<a name="bytebase-v1-Plan-RestoreConfig"></a>
+<a name="bytebase-v1-Plan-RestoreDatabaseConfig"></a>
 
-### Plan.RestoreConfig
+### Plan.RestoreDatabaseConfig
 
 
 
@@ -5346,7 +5346,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
-| restore_config | [Plan.RestoreConfig](#bytebase-v1-Plan-RestoreConfig) |  |  |
+| restore_database_config | [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig) |  |  |
 
 
 
@@ -5651,7 +5651,7 @@ The plan&#39;s `name` field is used to identify the plan to update. Format: proj
 <a name="bytebase-v1-Plan-ChangeDatabaseConfig-Type"></a>
 
 ### Plan.ChangeDatabaseConfig.Type
-Type is the type of changing the database.
+Type is the database change type.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
