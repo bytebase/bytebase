@@ -2,12 +2,11 @@
 package parser
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 
 	tidbparser "github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
+	"github.com/pkg/errors"
 )
 
 // ParseMySQL parses the given SQL statement and returns the AST.
@@ -40,7 +39,7 @@ func ParseMySQL(statement string, charset string, collation string) ([]ast.StmtN
 			continue
 		}
 		if len(nodes) > 1 {
-			return nil, errors.New(fmt.Sprintf("get more than one sql after split: %s", sql.Text))
+			return nil, errors.Errorf("get more than one sql after split: %s", sql.Text)
 		}
 		node := nodes[0]
 		node.SetText(nil, strings.TrimSpace(node.Text()))
