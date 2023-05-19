@@ -188,7 +188,7 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 	for _, spec := range specs {
 		switch spec.key {
 		case "creator":
-			creatorEmail := getUserEmailFromIdentifier(spec.value)
+			creatorEmail := strings.TrimPrefix(spec.value, "users/")
 			if creatorEmail == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
 			}
@@ -652,7 +652,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		Name:        fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, sheetIDPrefix, sheet.UID),
 		Database:    databaseParent,
 		Title:       sheet.Name,
-		Creator:     getUserIdentifier(creator.Email),
+		Creator:     fmt.Sprintf("users/%s", creator.Email),
 		CreateTime:  timestamppb.New(sheet.CreatedTime),
 		UpdateTime:  timestamppb.New(sheet.UpdatedTime),
 		Content:     []byte(sheet.Statement),

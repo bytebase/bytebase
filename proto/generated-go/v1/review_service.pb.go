@@ -710,7 +710,7 @@ type Review struct {
 	ApprovalFindingDone  bool   `protobuf:"varint,10,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
 	ApprovalFindingError string `protobuf:"bytes,11,opt,name=approval_finding_error,json=approvalFindingError,proto3" json:"approval_finding_error,omitempty"`
 	// The subscribers.
-	// Format: user:hello@world.com
+	// Format: users/hello@world.com
 	Subscribers []string `protobuf:"bytes,12,rep,name=subscribers,proto3" json:"subscribers,omitempty"`
 	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,13,opt,name=creator,proto3" json:"creator,omitempty"`

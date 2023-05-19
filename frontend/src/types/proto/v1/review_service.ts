@@ -158,7 +158,7 @@ export interface Review {
   approvalFindingError: string;
   /**
    * The subscribers.
-   * Format: user:hello@world.com
+   * Format: users/hello@world.com
    */
   subscribers: string[];
   /** Format: users/hello@world.com */
