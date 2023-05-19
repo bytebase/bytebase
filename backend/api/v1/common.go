@@ -596,13 +596,3 @@ func convertEngine(engine v1pb.Engine) db.Type {
 	}
 	return db.UnknownType
 }
-
-// getUserIdentifier returns the user identifier.
-// See more details in project_service.proto.
-func getUserIdentifier(email string) string {
-	return "users/" + email
-}
-
-func getUserEmailFromIdentifier(ident string) string {
-	return strings.TrimPrefix(ident, "users/")
-}
