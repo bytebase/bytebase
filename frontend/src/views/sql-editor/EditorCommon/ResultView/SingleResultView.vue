@@ -115,6 +115,9 @@ import {
   useTabStore,
   RESULT_ROWS_LIMIT,
   featureToRef,
+  useDatabaseStore,
+  useCurrentUserIamPolicy,
+  pushNotification,
 } from "@/store";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
@@ -142,6 +145,7 @@ const { dark } = useSQLResultViewContext();
 const { t } = useI18n();
 const tabStore = useTabStore();
 const instanceStore = useInstanceStore();
+const databaseStore = useDatabaseStore();
 const dataTable = ref<InstanceType<typeof DataTable>>();
 
 const viewMode = computed((): ViewMode => {
@@ -170,6 +174,13 @@ const showSearchFeature = computed(() => {
 // In enterprise plan, all users need to fill in the export data request issue.
 const showExportButton = computed(() => {
   return !featureToRef("bb.feature.custom-role").value;
+});
+
+const allowToExportData = computed(() => {
+  const database = databaseStore.getDatabaseById(
+    tabStore.currentTab.connection.databaseId
+  );
+  return useCurrentUserIamPolicy().allowToExportDatabase(database);
 });
 
 // use a debounced value to improve performance when typing rapidly
@@ -240,7 +251,18 @@ const exportDropdownOptions = computed(() => [
 ]);
 
 const handleExportBtnClick = (format: "csv" | "json") => {
+  if (!allowToExportData.value) {
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: "You don't have permission to export data.",
+    });
+    return;
+  }
+
   let rawText = "";
+
+  console.log(columns.value, data.value);
 
   if (format === "csv") {
     const csvFields = columns.value.map((col) => col.header as string);
@@ -257,7 +279,15 @@ const handleExportBtnClick = (format: "csv" | "json") => {
       data: csvData,
     });
   } else {
-    rawText = JSON.stringify(data.value);
+    const objects = [];
+    for (const item of data.value) {
+      const object = {} as any;
+      for (let i = 0; i < columns.value.length; i++) {
+        object[columns.value[i].header] = item[i];
+      }
+      objects.push(object);
+    }
+    rawText = JSON.stringify(objects);
   }
 
   const encodedUri = encodeURI(`data:text/${format};charset=utf-8,${rawText}`);
