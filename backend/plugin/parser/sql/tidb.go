@@ -1,3 +1,4 @@
+// Package parser is the parser for SQL statement.
 package parser
 
 import (
