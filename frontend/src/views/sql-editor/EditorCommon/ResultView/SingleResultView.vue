@@ -262,8 +262,6 @@ const handleExportBtnClick = (format: "csv" | "json") => {
 
   let rawText = "";
 
-  console.log(columns.value, data.value);
-
   if (format === "csv") {
     const csvFields = columns.value.map((col) => col.header as string);
     const csvData = data.value.map((d) => {
