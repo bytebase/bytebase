@@ -268,7 +268,7 @@ message PlanCheckRun {
   Type type = 3;
 
   enum Status {
-    UNKNOWN = 0;
+    STATUS_UNSPECIFIED = 0;
     RUNNING = 1;
     DONE = 2;
     FAILED = 3;
@@ -360,7 +360,7 @@ message Stage {
   string name = 1;
   // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Fromat: environments/{environment}
+  // Format: environments/{environment}
   string environment = 3;
 
   string title = 4;
@@ -424,7 +424,7 @@ message Task {
     string table = 3;
     // Format: sheets/{sheet}
     string sheet = 4;
-    string charecter_set = 5;
+    string character_set = 5;
     string collection = 6;
     map<string, string> labels = 9;
   }
@@ -509,7 +509,7 @@ message Task {
 }
 
 message TaskRun {
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun}
   string name = 1;
   // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -524,7 +524,7 @@ message TaskRun {
   string title = 7;
 
   enum Status {
-    UNKNOWN = 0;
+    STATUS_UNSPECIFIED = 0;
     PENDING = 1;
     RUNNING = 2;
     COMPLETED = 3;
