@@ -555,34 +555,6 @@ export interface Rollout {
   title: string;
   /** stages and thus tasks of the rollout. */
   stages: Stage[];
-  /** Digest is the digest of the tasks and the latest taskruns of rollout. */
-  digest?: Rollout_Digest;
-}
-
-/**
- * Digest summarizes the tasks and the latest taskruns of rollout.
- * We only take the latest taskrun of each task into account.
- */
-export interface Rollout_Digest {
-  /** The number of tasks in the rollout. */
-  totalTasks: number;
-  /**
-   * The number of the latest taskrun of each task in the rollout.
-   * i.e. the number of tasks that have taskruns.
-   */
-  totalTaskRuns: number;
-  /** The number of the latest taskrun of each task whose status is PENDING. */
-  pendingTaskRuns: number;
-  /** The number of the latest taskrun of each task whose status is COMPLETED. */
-  completedTaskRuns: number;
-  /** The number of the latest taskrun of each task whose status is FAILED. */
-  failedTaskRuns: number;
-  /** The number of the latest taskrun of each task whose status is RUNNING. */
-  runningTaskRuns: number;
-  /** The number of the latest taskrun of each task whose status is CANCELED. */
-  canceledTaskRuns: number;
-  /** The number of the latest taskrun of each task whose status is SKIPPED. */
-  skippedTaskRuns: number;
 }
 
 export interface Stage {
@@ -2586,7 +2558,7 @@ export const GetRolloutRequest = {
 };
 
 function createBaseRollout(): Rollout {
-  return { name: "", uid: "", plan: "", title: "", stages: [], digest: undefined };
+  return { name: "", uid: "", plan: "", title: "", stages: [] };
 }
 
 export const Rollout = {
@@ -2605,9 +2577,6 @@ export const Rollout = {
     }
     for (const v of message.stages) {
       Stage.encode(v!, writer.uint32(42).fork()).ldelim();
-    }
-    if (message.digest !== undefined) {
-      Rollout_Digest.encode(message.digest, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -2654,13 +2623,6 @@ export const Rollout = {
 
           message.stages.push(Stage.decode(reader, reader.uint32()));
           continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.digest = Rollout_Digest.decode(reader, reader.uint32());
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2677,7 +2639,6 @@ export const Rollout = {
       plan: isSet(object.plan) ? String(object.plan) : "",
       title: isSet(object.title) ? String(object.title) : "",
       stages: Array.isArray(object?.stages) ? object.stages.map((e: any) => Stage.fromJSON(e)) : [],
-      digest: isSet(object.digest) ? Rollout_Digest.fromJSON(object.digest) : undefined,
     };
   },
 
@@ -2692,7 +2653,6 @@ export const Rollout = {
     } else {
       obj.stages = [];
     }
-    message.digest !== undefined && (obj.digest = message.digest ? Rollout_Digest.toJSON(message.digest) : undefined);
     return obj;
   },
 
@@ -2707,167 +2667,6 @@ export const Rollout = {
     message.plan = object.plan ?? "";
     message.title = object.title ?? "";
     message.stages = object.stages?.map((e) => Stage.fromPartial(e)) || [];
-    message.digest = (object.digest !== undefined && object.digest !== null)
-      ? Rollout_Digest.fromPartial(object.digest)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseRollout_Digest(): Rollout_Digest {
-  return {
-    totalTasks: 0,
-    totalTaskRuns: 0,
-    pendingTaskRuns: 0,
-    completedTaskRuns: 0,
-    failedTaskRuns: 0,
-    runningTaskRuns: 0,
-    canceledTaskRuns: 0,
-    skippedTaskRuns: 0,
-  };
-}
-
-export const Rollout_Digest = {
-  encode(message: Rollout_Digest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.totalTasks !== 0) {
-      writer.uint32(8).int32(message.totalTasks);
-    }
-    if (message.totalTaskRuns !== 0) {
-      writer.uint32(16).int32(message.totalTaskRuns);
-    }
-    if (message.pendingTaskRuns !== 0) {
-      writer.uint32(24).int32(message.pendingTaskRuns);
-    }
-    if (message.completedTaskRuns !== 0) {
-      writer.uint32(32).int32(message.completedTaskRuns);
-    }
-    if (message.failedTaskRuns !== 0) {
-      writer.uint32(40).int32(message.failedTaskRuns);
-    }
-    if (message.runningTaskRuns !== 0) {
-      writer.uint32(48).int32(message.runningTaskRuns);
-    }
-    if (message.canceledTaskRuns !== 0) {
-      writer.uint32(56).int32(message.canceledTaskRuns);
-    }
-    if (message.skippedTaskRuns !== 0) {
-      writer.uint32(64).int32(message.skippedTaskRuns);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Rollout_Digest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRollout_Digest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.totalTasks = reader.int32();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.totalTaskRuns = reader.int32();
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.pendingTaskRuns = reader.int32();
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.completedTaskRuns = reader.int32();
-          continue;
-        case 5:
-          if (tag !== 40) {
-            break;
-          }
-
-          message.failedTaskRuns = reader.int32();
-          continue;
-        case 6:
-          if (tag !== 48) {
-            break;
-          }
-
-          message.runningTaskRuns = reader.int32();
-          continue;
-        case 7:
-          if (tag !== 56) {
-            break;
-          }
-
-          message.canceledTaskRuns = reader.int32();
-          continue;
-        case 8:
-          if (tag !== 64) {
-            break;
-          }
-
-          message.skippedTaskRuns = reader.int32();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Rollout_Digest {
-    return {
-      totalTasks: isSet(object.totalTasks) ? Number(object.totalTasks) : 0,
-      totalTaskRuns: isSet(object.totalTaskRuns) ? Number(object.totalTaskRuns) : 0,
-      pendingTaskRuns: isSet(object.pendingTaskRuns) ? Number(object.pendingTaskRuns) : 0,
-      completedTaskRuns: isSet(object.completedTaskRuns) ? Number(object.completedTaskRuns) : 0,
-      failedTaskRuns: isSet(object.failedTaskRuns) ? Number(object.failedTaskRuns) : 0,
-      runningTaskRuns: isSet(object.runningTaskRuns) ? Number(object.runningTaskRuns) : 0,
-      canceledTaskRuns: isSet(object.canceledTaskRuns) ? Number(object.canceledTaskRuns) : 0,
-      skippedTaskRuns: isSet(object.skippedTaskRuns) ? Number(object.skippedTaskRuns) : 0,
-    };
-  },
-
-  toJSON(message: Rollout_Digest): unknown {
-    const obj: any = {};
-    message.totalTasks !== undefined && (obj.totalTasks = Math.round(message.totalTasks));
-    message.totalTaskRuns !== undefined && (obj.totalTaskRuns = Math.round(message.totalTaskRuns));
-    message.pendingTaskRuns !== undefined && (obj.pendingTaskRuns = Math.round(message.pendingTaskRuns));
-    message.completedTaskRuns !== undefined && (obj.completedTaskRuns = Math.round(message.completedTaskRuns));
-    message.failedTaskRuns !== undefined && (obj.failedTaskRuns = Math.round(message.failedTaskRuns));
-    message.runningTaskRuns !== undefined && (obj.runningTaskRuns = Math.round(message.runningTaskRuns));
-    message.canceledTaskRuns !== undefined && (obj.canceledTaskRuns = Math.round(message.canceledTaskRuns));
-    message.skippedTaskRuns !== undefined && (obj.skippedTaskRuns = Math.round(message.skippedTaskRuns));
-    return obj;
-  },
-
-  create(base?: DeepPartial<Rollout_Digest>): Rollout_Digest {
-    return Rollout_Digest.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<Rollout_Digest>): Rollout_Digest {
-    const message = createBaseRollout_Digest();
-    message.totalTasks = object.totalTasks ?? 0;
-    message.totalTaskRuns = object.totalTaskRuns ?? 0;
-    message.pendingTaskRuns = object.pendingTaskRuns ?? 0;
-    message.completedTaskRuns = object.completedTaskRuns ?? 0;
-    message.failedTaskRuns = object.failedTaskRuns ?? 0;
-    message.runningTaskRuns = object.runningTaskRuns ?? 0;
-    message.canceledTaskRuns = object.canceledTaskRuns ?? 0;
-    message.skippedTaskRuns = object.skippedTaskRuns ?? 0;
     return message;
   },
 };

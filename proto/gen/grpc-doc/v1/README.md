@@ -346,7 +346,6 @@
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
     - [Rollout](#bytebase-v1-Rollout)
-    - [Rollout.Digest](#bytebase-v1-Rollout-Digest)
     - [Stage](#bytebase-v1-Stage)
     - [Task](#bytebase-v1-Task)
     - [Task.DatabaseBackup](#bytebase-v1-Task-DatabaseBackup)
@@ -5424,30 +5423,6 @@ FIXME(d/xz): support spec with deployment config
 | plan | [string](#string) |  | The plan that this rollout is based on. Format: projects/{project}/plans/{plan} |
 | title | [string](#string) |  |  |
 | stages | [Stage](#bytebase-v1-Stage) | repeated | stages and thus tasks of the rollout. |
-| digest | [Rollout.Digest](#bytebase-v1-Rollout-Digest) |  | Digest is the digest of the tasks and the latest taskruns of rollout. |
-
-
-
-
-
-
-<a name="bytebase-v1-Rollout-Digest"></a>
-
-### Rollout.Digest
-Digest summarizes the tasks and the latest taskruns of rollout.
-We only take the latest taskrun of each task into account.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| total_tasks | [int32](#int32) |  | The number of tasks in the rollout. |
-| total_task_runs | [int32](#int32) |  | The number of the latest taskrun of each task in the rollout. i.e. the number of tasks that have taskruns. |
-| pending_task_runs | [int32](#int32) |  | The number of the latest taskrun of each task whose status is PENDING. |
-| completed_task_runs | [int32](#int32) |  | The number of the latest taskrun of each task whose status is COMPLETED. |
-| failed_task_runs | [int32](#int32) |  | The number of the latest taskrun of each task whose status is FAILED. |
-| running_task_runs | [int32](#int32) |  | The number of the latest taskrun of each task whose status is RUNNING. |
-| canceled_task_runs | [int32](#int32) |  | The number of the latest taskrun of each task whose status is CANCELED. |
-| skipped_task_runs | [int32](#int32) |  | The number of the latest taskrun of each task whose status is SKIPPED. |
 
 
 
