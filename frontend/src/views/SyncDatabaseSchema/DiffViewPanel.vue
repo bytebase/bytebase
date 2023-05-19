@@ -110,7 +110,9 @@ const onStatementChange = (statement: string) => {
 </script>
 
 <style lang="postcss">
-.--sync-schema-code-diff .d2h-file-side-diff {
+.sync-schema-code-diff .d2h-file-wrapper {
   border: 0;
+  border-radius: 0;
+  margin-bottom: 0;
 }
 </style>
