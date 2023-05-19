@@ -588,7 +588,7 @@ export interface Task {
   databaseSchemaBaseline?: Task_DatabaseSchemaBaseline | undefined;
   databaseSchemaUpdate?: Task_DatabaseSchemaUpdate | undefined;
   databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
-  databaseRestorePitrRestore?: Task_DatabaseRestorePitrRestore | undefined;
+  databaseRestoreRestore?: Task_DatabaseRestoreRestore | undefined;
 }
 
 export enum Task_Type {
@@ -610,10 +610,10 @@ export enum Task_Type {
   DATABASE_DATA_UPDATE = 8,
   /** DATABASE_BACKUP - use payload DatabaseBackup */
   DATABASE_BACKUP = 9,
-  /** DATABASE_RESTORE_PITR_RESTORE - use payload DatabaseRestorePitrRestore */
-  DATABASE_RESTORE_PITR_RESTORE = 10,
-  /** DATABASE_RESTORE_PITR_CUTOVER - use payload nil */
-  DATABASE_RESTORE_PITR_CUTOVER = 11,
+  /** DATABASE_RESTORE_RESTORE - use payload DatabaseRestoreRestore */
+  DATABASE_RESTORE_RESTORE = 10,
+  /** DATABASE_RESTORE_CUTOVER - use payload nil */
+  DATABASE_RESTORE_CUTOVER = 11,
   UNRECOGNIZED = -1,
 }
 
@@ -650,11 +650,11 @@ export function task_TypeFromJSON(object: any): Task_Type {
     case "DATABASE_BACKUP":
       return Task_Type.DATABASE_BACKUP;
     case 10:
-    case "DATABASE_RESTORE_PITR_RESTORE":
-      return Task_Type.DATABASE_RESTORE_PITR_RESTORE;
+    case "DATABASE_RESTORE_RESTORE":
+      return Task_Type.DATABASE_RESTORE_RESTORE;
     case 11:
-    case "DATABASE_RESTORE_PITR_CUTOVER":
-      return Task_Type.DATABASE_RESTORE_PITR_CUTOVER;
+    case "DATABASE_RESTORE_CUTOVER":
+      return Task_Type.DATABASE_RESTORE_CUTOVER;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -684,10 +684,10 @@ export function task_TypeToJSON(object: Task_Type): string {
       return "DATABASE_DATA_UPDATE";
     case Task_Type.DATABASE_BACKUP:
       return "DATABASE_BACKUP";
-    case Task_Type.DATABASE_RESTORE_PITR_RESTORE:
-      return "DATABASE_RESTORE_PITR_RESTORE";
-    case Task_Type.DATABASE_RESTORE_PITR_CUTOVER:
-      return "DATABASE_RESTORE_PITR_CUTOVER";
+    case Task_Type.DATABASE_RESTORE_RESTORE:
+      return "DATABASE_RESTORE_RESTORE";
+    case Task_Type.DATABASE_RESTORE_CUTOVER:
+      return "DATABASE_RESTORE_CUTOVER";
     case Task_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -832,7 +832,7 @@ export interface Task_DatabaseBackup {
   backup: string;
 }
 
-export interface Task_DatabaseRestorePitrRestore {
+export interface Task_DatabaseRestoreRestore {
   /**
    * Target is only used when doing restore to a new database now.
    * It is empty for the case of in-place restore.
@@ -2819,7 +2819,7 @@ function createBaseTask(): Task {
     databaseSchemaBaseline: undefined,
     databaseSchemaUpdate: undefined,
     databaseDataUpdate: undefined,
-    databaseRestorePitrRestore: undefined,
+    databaseRestoreRestore: undefined,
   };
 }
 
@@ -2855,8 +2855,8 @@ export const Task = {
     if (message.databaseDataUpdate !== undefined) {
       Task_DatabaseDataUpdate.encode(message.databaseDataUpdate, writer.uint32(82).fork()).ldelim();
     }
-    if (message.databaseRestorePitrRestore !== undefined) {
-      Task_DatabaseRestorePitrRestore.encode(message.databaseRestorePitrRestore, writer.uint32(90).fork()).ldelim();
+    if (message.databaseRestoreRestore !== undefined) {
+      Task_DatabaseRestoreRestore.encode(message.databaseRestoreRestore, writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -2943,7 +2943,7 @@ export const Task = {
             break;
           }
 
-          message.databaseRestorePitrRestore = Task_DatabaseRestorePitrRestore.decode(reader, reader.uint32());
+          message.databaseRestoreRestore = Task_DatabaseRestoreRestore.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2972,8 +2972,8 @@ export const Task = {
       databaseDataUpdate: isSet(object.databaseDataUpdate)
         ? Task_DatabaseDataUpdate.fromJSON(object.databaseDataUpdate)
         : undefined,
-      databaseRestorePitrRestore: isSet(object.databaseRestorePitrRestore)
-        ? Task_DatabaseRestorePitrRestore.fromJSON(object.databaseRestorePitrRestore)
+      databaseRestoreRestore: isSet(object.databaseRestoreRestore)
+        ? Task_DatabaseRestoreRestore.fromJSON(object.databaseRestoreRestore)
         : undefined,
     };
   },
@@ -3001,10 +3001,9 @@ export const Task = {
     message.databaseDataUpdate !== undefined && (obj.databaseDataUpdate = message.databaseDataUpdate
       ? Task_DatabaseDataUpdate.toJSON(message.databaseDataUpdate)
       : undefined);
-    message.databaseRestorePitrRestore !== undefined &&
-      (obj.databaseRestorePitrRestore = message.databaseRestorePitrRestore
-        ? Task_DatabaseRestorePitrRestore.toJSON(message.databaseRestorePitrRestore)
-        : undefined);
+    message.databaseRestoreRestore !== undefined && (obj.databaseRestoreRestore = message.databaseRestoreRestore
+      ? Task_DatabaseRestoreRestore.toJSON(message.databaseRestoreRestore)
+      : undefined);
     return obj;
   },
 
@@ -3033,9 +3032,9 @@ export const Task = {
     message.databaseDataUpdate = (object.databaseDataUpdate !== undefined && object.databaseDataUpdate !== null)
       ? Task_DatabaseDataUpdate.fromPartial(object.databaseDataUpdate)
       : undefined;
-    message.databaseRestorePitrRestore =
-      (object.databaseRestorePitrRestore !== undefined && object.databaseRestorePitrRestore !== null)
-        ? Task_DatabaseRestorePitrRestore.fromPartial(object.databaseRestorePitrRestore)
+    message.databaseRestoreRestore =
+      (object.databaseRestoreRestore !== undefined && object.databaseRestoreRestore !== null)
+        ? Task_DatabaseRestoreRestore.fromPartial(object.databaseRestoreRestore)
         : undefined;
     return message;
   },
@@ -3705,12 +3704,12 @@ export const Task_DatabaseBackup = {
   },
 };
 
-function createBaseTask_DatabaseRestorePitrRestore(): Task_DatabaseRestorePitrRestore {
+function createBaseTask_DatabaseRestoreRestore(): Task_DatabaseRestoreRestore {
   return { target: "", backup: undefined, pointInTime: undefined };
 }
 
-export const Task_DatabaseRestorePitrRestore = {
-  encode(message: Task_DatabaseRestorePitrRestore, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const Task_DatabaseRestoreRestore = {
+  encode(message: Task_DatabaseRestoreRestore, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.target !== "") {
       writer.uint32(10).string(message.target);
     }
@@ -3723,10 +3722,10 @@ export const Task_DatabaseRestorePitrRestore = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): Task_DatabaseRestorePitrRestore {
+  decode(input: _m0.Reader | Uint8Array, length?: number): Task_DatabaseRestoreRestore {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTask_DatabaseRestorePitrRestore();
+    const message = createBaseTask_DatabaseRestoreRestore();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3760,7 +3759,7 @@ export const Task_DatabaseRestorePitrRestore = {
     return message;
   },
 
-  fromJSON(object: any): Task_DatabaseRestorePitrRestore {
+  fromJSON(object: any): Task_DatabaseRestoreRestore {
     return {
       target: isSet(object.target) ? String(object.target) : "",
       backup: isSet(object.backup) ? String(object.backup) : undefined,
@@ -3768,7 +3767,7 @@ export const Task_DatabaseRestorePitrRestore = {
     };
   },
 
-  toJSON(message: Task_DatabaseRestorePitrRestore): unknown {
+  toJSON(message: Task_DatabaseRestoreRestore): unknown {
     const obj: any = {};
     message.target !== undefined && (obj.target = message.target);
     message.backup !== undefined && (obj.backup = message.backup);
@@ -3776,12 +3775,12 @@ export const Task_DatabaseRestorePitrRestore = {
     return obj;
   },
 
-  create(base?: DeepPartial<Task_DatabaseRestorePitrRestore>): Task_DatabaseRestorePitrRestore {
-    return Task_DatabaseRestorePitrRestore.fromPartial(base ?? {});
+  create(base?: DeepPartial<Task_DatabaseRestoreRestore>): Task_DatabaseRestoreRestore {
+    return Task_DatabaseRestoreRestore.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<Task_DatabaseRestorePitrRestore>): Task_DatabaseRestorePitrRestore {
-    const message = createBaseTask_DatabaseRestorePitrRestore();
+  fromPartial(object: DeepPartial<Task_DatabaseRestoreRestore>): Task_DatabaseRestoreRestore {
+    const message = createBaseTask_DatabaseRestoreRestore();
     message.target = object.target ?? "";
     message.backup = object.backup ?? undefined;
     message.pointInTime = object.pointInTime ?? undefined;

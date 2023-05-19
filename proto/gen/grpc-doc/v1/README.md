@@ -352,7 +352,7 @@
     - [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate)
     - [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry)
     - [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate)
-    - [Task.DatabaseRestorePitrRestore](#bytebase-v1-Task-DatabaseRestorePitrRestore)
+    - [Task.DatabaseRestoreRestore](#bytebase-v1-Task-DatabaseRestoreRestore)
     - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
     - [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
@@ -5467,7 +5467,7 @@ FIXME(d/xz): support spec with deployment config
 | database_schema_baseline | [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline) |  |  |
 | database_schema_update | [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate) |  |  |
 | database_data_update | [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate) |  |  |
-| database_restore_pitr_restore | [Task.DatabaseRestorePitrRestore](#bytebase-v1-Task-DatabaseRestorePitrRestore) |  |  |
+| database_restore_restore | [Task.DatabaseRestoreRestore](#bytebase-v1-Task-DatabaseRestoreRestore) |  |  |
 
 
 
@@ -5555,9 +5555,9 @@ FIXME(d/xz): support spec with deployment config
 
 
 
-<a name="bytebase-v1-Task-DatabaseRestorePitrRestore"></a>
+<a name="bytebase-v1-Task-DatabaseRestoreRestore"></a>
 
-### Task.DatabaseRestorePitrRestore
+### Task.DatabaseRestoreRestore
 
 
 
@@ -5759,8 +5759,8 @@ Type is the database change type.
 | DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER | 7 | use payload nil |
 | DATABASE_DATA_UPDATE | 8 | use payload DatabaseDataUpdate |
 | DATABASE_BACKUP | 9 | use payload DatabaseBackup |
-| DATABASE_RESTORE_PITR_RESTORE | 10 | use payload DatabaseRestorePitrRestore |
-| DATABASE_RESTORE_PITR_CUTOVER | 11 | use payload nil |
+| DATABASE_RESTORE_RESTORE | 10 | use payload DatabaseRestoreRestore |
+| DATABASE_RESTORE_CUTOVER | 11 | use payload nil |
 
 
 
