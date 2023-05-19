@@ -93,7 +93,10 @@ const instanceStore = useInstanceStore();
 const environmentV1Store = useEnvironmentV1Store();
 
 const showBanner = computed(() => {
-  return true;
+  return (
+    subscriptionStore.currentPlan !== PlanType.ENTERPRISE &&
+    overusedFeatureList.value.length > 0
+  );
 });
 
 const neededPlan = computed(() => {
@@ -140,7 +143,7 @@ const overusedEnterprisePlanFeatureList = computed(() => {
   const openAIKeySetting = settingV1Store.getSettingByName(
     "bb.plugin.openai.key"
   );
-  if (openAIKeySetting && openAIKeySetting.value) {
+  if (openAIKeySetting && openAIKeySetting.value?.stringValue) {
     list.push("bb.feature.plugin.openai");
   }
   for (const environment of environmentV1Store.environmentList) {

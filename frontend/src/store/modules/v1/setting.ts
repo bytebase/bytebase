@@ -66,9 +66,6 @@ export const useSettingV1Store = defineStore("setting_v1", {
       return resp;
     },
     async updateWorkspaceProfile(payload: object): Promise<void> {
-      console.log("updateWorkspaceProfile");
-      console.log(payload);
-      console.log(this.workspaceProfileSetting);
       if (!this.workspaceProfileSetting) {
         return;
       }
@@ -77,6 +74,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
         externalUrl: this.workspaceProfileSetting.externalUrl,
         require2fa: this.workspaceProfileSetting.require2fa,
         outboundIpList: this.workspaceProfileSetting.outboundIpList,
+        gitopsWebhookUrl: this.workspaceProfileSetting.gitopsWebhookUrl,
         ...payload,
       };
       await this.upsertSetting({
