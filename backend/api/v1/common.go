@@ -301,7 +301,6 @@ func getProjectFilter(filter string) (string, error) {
 	if expr == nil {
 		return "", retErr
 	}
-	fmt.Println(expr)
 	callExpr := expr.GetCallExpr()
 	if callExpr == nil {
 		return "", retErr
@@ -309,7 +308,6 @@ func getProjectFilter(filter string) (string, error) {
 	if callExpr.Function != "_==_" {
 		return "", retErr
 	}
-	fmt.Println(callExpr.Args)
 	if len(callExpr.Args) != 2 {
 		return "", retErr
 	}
