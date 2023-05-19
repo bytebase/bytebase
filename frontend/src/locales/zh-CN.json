@@ -54,7 +54,7 @@
     "bookmarks": "书签",
     "quick-action": "快捷操作",
     "archive": "归档",
-    "quickstart": "快速入门",
+    "quickstart": "新手任务",
     "logout": "登出",
     "close": "关闭",
     "latest": "最新",
@@ -363,7 +363,7 @@
   "intro": {
     "doc": "文档",
     "issue": "工单",
-    "quickstart": "快速入门"
+    "quickstart": "新手任务"
   },
   "bbkit": {
     "common": {
@@ -962,8 +962,8 @@
     "use-kbar": "使用 kbar ({shortcut})",
     "query-data": "查询数据",
     "notice": {
-      "title": "快速入门导览已关闭",
-      "desc": "您稍后仍可以从右上角的菜单中再次打开快速入门导览"
+      "title": "新手任务已关闭",
+      "desc": "您稍后仍可以从右上角的菜单中再次打开新手任务"
     }
   },
   "auth": {
