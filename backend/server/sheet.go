@@ -67,7 +67,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		if role != api.Owner && role != api.DBA {
 			// Non-workspace Owner or DBA can only create sheet into the project where she has the membership.
 			if !isProjectOwnerOrDeveloper(currentPrincipalID, projectPolicy) {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Must be a project owner or developer to create new sheet")
+				return echo.NewHTTPError(http.StatusForbidden, "Must be a project owner or developer to create new sheet")
 			}
 		}
 

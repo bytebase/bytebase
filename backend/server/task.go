@@ -111,7 +111,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task").SetInternal(err)
 		}
 		if task == nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID not found: %d", taskID))
 		}
 
 		issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
@@ -191,7 +191,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
 		}
 		if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
+			return echo.NewHTTPError(http.StatusForbidden, "Not allowed to change task status")
 		}
 
 		if taskStatusPatch.Status == api.TaskPending {
@@ -309,7 +309,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
 		}
 		if task == nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task not found with ID %d", taskID))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
 		if err := s.TaskCheckScheduler.ScheduleCheck(ctx, task, c.Get(getPrincipalIDContextKey()).(int)); err != nil {
