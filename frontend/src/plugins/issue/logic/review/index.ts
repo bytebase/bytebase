@@ -5,7 +5,6 @@ import type { Issue, MaybeRef, ReviewFlow, WrappedReviewStep } from "@/types";
 import { Review } from "@/types/proto/v1/review_service";
 import {
   candidatesOfApprovalStep,
-  extractUserEmail,
   useAuthStore,
   useReviewStore,
   useUserStore,
@@ -13,6 +12,7 @@ import {
 import { IssueReviewContext, provideIssueReviewContext } from "./context";
 import { ApprovalTemplate } from "@/types/proto/store/approval";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
+import { extractUserResourceName } from "@/utils";
 
 export type ReviewEvents = {
   "issue-status-changed": boolean;
@@ -122,7 +122,7 @@ export const useWrappedReviewSteps = (
     const approverOfStep = (index: number) => {
       const principal = flow.value.approvers[index]?.principal;
       if (!principal) return undefined;
-      const email = extractUserEmail(principal);
+      const email = extractUserResourceName(principal);
       return userStore.getUserByEmail(email);
     };
     const candidatesOfStep = (index: number) => {
