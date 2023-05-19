@@ -116,11 +116,15 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
+	_, created, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:  api.SettingEnterpriseTrial,
 		Value: string(value),
-	}, principalID); err != nil {
+	}, principalID)
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create license: %v", err.Error())
+	}
+	if !created {
+		return nil, status.Errorf(codes.InvalidArgument, "your trial already exists")
 	}
 
 	// we need to override the SettingEnterpriseLicense with an empty value to get the valid free trial.
