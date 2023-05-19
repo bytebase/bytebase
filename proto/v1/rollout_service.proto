@@ -120,7 +120,9 @@ message Plan {
   string title = 3;
   string description = 4;
 
-  // TODO(d/xz): support spec with 1) deployment config, 2) user specified targets with stages/steps, 3) project groups in the future.
+  repeated Step steps = 5;
+
+  // FIXME(d/xz): support spec with deployment config
   message Step {
     repeated Spec specs = 1;
   }
@@ -135,8 +137,6 @@ message Plan {
       RestoreConfig restore_config = 3;
     }
   }
-
-  repeated Step steps = 5;
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
