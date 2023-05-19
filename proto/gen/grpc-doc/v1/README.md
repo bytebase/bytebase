@@ -3399,12 +3399,12 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| creator | [string](#string) |  | The creator of the log entry. Format: user:{emailid} |
+| creator | [string](#string) |  | The creator of the log entry. Format: users/{emailid} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was created initally. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was updated. |
 | action | [LogEntry.Action](#bytebase-v1-LogEntry-Action) |  |  |
 | level | [LogEntry.Level](#bytebase-v1-LogEntry-Level) |  |  |
-| resource_name | [string](#string) |  | The name of the resource associated with this log entry. For example, the resource user associated with log entry type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: user:emailid For ACTION_ISSUE_*: issues/{issue} For ACTION_PIPELINE_*: pipelines/{pipeline} For ACTION_PROJECT_*: projects/{project} For ACTION_SQL_EDITOR_QUERY: workspaces/{workspace} OR projects/{project} |
+| resource_name | [string](#string) |  | The name of the resource associated with this log entry. For example, the resource user associated with log entry type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: users/{email} For ACTION_ISSUE_*: issues/{issue} For ACTION_PIPELINE_*: pipelines/{pipeline} For ACTION_PROJECT_*: projects/{project} For ACTION_SQL_EDITOR_QUERY: workspaces/{workspace} OR projects/{project} |
 | json_payload | [google.protobuf.Struct](#google-protobuf-Struct) |  | The payload of the log entry. |
 
 
@@ -4814,14 +4814,14 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | status | [ReviewStatus](#bytebase-v1-ReviewStatus) |  |  |
-| assignee | [string](#string) |  | Format: user:hello@world.com |
+| assignee | [string](#string) |  | Format: users/hello@world.com |
 | assignee_attention | [bool](#bool) |  |  |
 | approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
 | approvers | [Review.Approver](#bytebase-v1-Review-Approver) | repeated |  |
 | approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |
 | approval_finding_error | [string](#string) |  |  |
-| subscribers | [string](#string) | repeated | The subscribers. Format: user:hello@world.com |
-| creator | [string](#string) |  | Format: user:hello@world.com |
+| subscribers | [string](#string) | repeated | The subscribers. Format: users/hello@world.com |
+| creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
@@ -4839,7 +4839,7 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [Review.Approver.Status](#bytebase-v1-Review-Approver-Status) |  | The new status. |
-| principal | [string](#string) |  | Format: user:hello@world.com |
+| principal | [string](#string) |  | Format: users/hello@world.com |
 
 
 
@@ -5902,7 +5902,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource of the sheet. Foramt: projects/{project} |
-| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = user:{email}`, `creator != user:{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
+| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of sheets to return. The service may return fewer than this value. If unspecified, at most 50 sheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchSheets` call. Provide this to retrieve the subsequent page.
 

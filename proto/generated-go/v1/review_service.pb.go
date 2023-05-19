@@ -700,7 +700,7 @@ type Review struct {
 	Title       string       `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	Description string       `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	Status      ReviewStatus `protobuf:"varint,5,opt,name=status,proto3,enum=bytebase.v1.ReviewStatus" json:"status,omitempty"`
-	// Format: user:hello@world.com
+	// Format: users/hello@world.com
 	Assignee          string              `protobuf:"bytes,6,opt,name=assignee,proto3" json:"assignee,omitempty"`
 	AssigneeAttention bool                `protobuf:"varint,7,opt,name=assignee_attention,json=assigneeAttention,proto3" json:"assignee_attention,omitempty"`
 	ApprovalTemplates []*ApprovalTemplate `protobuf:"bytes,8,rep,name=approval_templates,json=approvalTemplates,proto3" json:"approval_templates,omitempty"`
@@ -710,9 +710,9 @@ type Review struct {
 	ApprovalFindingDone  bool   `protobuf:"varint,10,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
 	ApprovalFindingError string `protobuf:"bytes,11,opt,name=approval_finding_error,json=approvalFindingError,proto3" json:"approval_finding_error,omitempty"`
 	// The subscribers.
-	// Format: user:hello@world.com
+	// Format: users/hello@world.com
 	Subscribers []string `protobuf:"bytes,12,rep,name=subscribers,proto3" json:"subscribers,omitempty"`
-	// Format: user:hello@world.com
+	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,13,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
@@ -1126,7 +1126,7 @@ type Review_Approver struct {
 
 	// The new status.
 	Status Review_Approver_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.v1.Review_Approver_Status" json:"status,omitempty"`
-	// Format: user:hello@world.com
+	// Format: users/hello@world.com
 	Principal string `protobuf:"bytes,2,opt,name=principal,proto3" json:"principal,omitempty"`
 }
 

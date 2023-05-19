@@ -430,7 +430,7 @@ type SearchSheetsRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// To filter the search result.
 	// Format: only support the following spec for now:
-	// - `creator = user:{email}`, `creator != user:{email}`
+	// - `creator = users/{email}`, `creator != users/{email}`
 	// - `starred = true`, `starred = false`.
 	// Not support empty filter for now.
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`

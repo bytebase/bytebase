@@ -364,7 +364,7 @@ type LogEntry struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The creator of the log entry.
-	// Format: user:{emailid}
+	// Format: users/{emailid}
 	Creator string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
 	// The timestamp when the backup resource was created initally.
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
@@ -374,7 +374,7 @@ type LogEntry struct {
 	Level      LogEntry_Level         `protobuf:"varint,5,opt,name=level,proto3,enum=bytebase.v1.LogEntry_Level" json:"level,omitempty"`
 	// The name of the resource associated with this log entry. For example, the resource user associated with log entry type of "ACTION_MEMBER_CREATE".
 	// Format:
-	// For ACTION_MEMBER_*: user:emailid
+	// For ACTION_MEMBER_*: users/{email}
 	// For ACTION_ISSUE_*: issues/{issue}
 	// For ACTION_PIPELINE_*: pipelines/{pipeline}
 	// For ACTION_PROJECT_*: projects/{project}

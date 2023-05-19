@@ -66,7 +66,7 @@ export interface SearchSheetsRequest {
   /**
    * To filter the search result.
    * Format: only support the following spec for now:
-   * - `creator = user:{email}`, `creator != user:{email}`
+   * - `creator = users/{email}`, `creator != users/{email}`
    * - `starred = true`, `starred = false`.
    * Not support empty filter for now.
    */
