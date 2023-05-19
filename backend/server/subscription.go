@@ -68,7 +68,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		license := &enterpriseAPI.License{
 			InstanceCount: create.InstanceCount,
 			Seat:          create.Seat,
-			ExpiresTs:     time.Now().AddDate(0, 0, 0).Unix(),
+			ExpiresTs:     time.Now().AddDate(0, 0, create.Days).Unix(),
 			IssuedTs:      time.Now().Unix(),
 			Plan:          create.Type,
 			// the subject format for license should be {org id in hub}.{subscription id in hub}
