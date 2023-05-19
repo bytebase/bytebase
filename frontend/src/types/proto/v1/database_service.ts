@@ -438,7 +438,7 @@ export interface Backup {
    * Format: instances/{instance}/databases/{database}/backups/{backup-name}
    */
   name: string;
-  /** The timestamp when the backup resource was created initally. */
+  /** The timestamp when the backup resource was created initially. */
   createTime?: Date;
   /** The timestamp when the backup resource was updated. */
   updateTime?: Date;
@@ -704,13 +704,13 @@ export interface Secret {
    * instances/{instance}/databases/{database}/secrets/{secret}
    */
   name: string;
-  /** Not used. The timestamp when the secret resource was created initally. */
+  /** Not used. The timestamp when the secret resource was created initially. */
   createdTime?: Date;
   /** Not used. The timestamp when the secret resource was updated. */
   updatedTime?: Date;
   /** The value of the secret. */
   value: string;
-  /** The decsription of the secret. */
+  /** The description of the secret. */
   description: string;
 }
 
@@ -730,6 +730,227 @@ export interface AdviseIndexResponse {
   suggestion: string;
   /** The create index statement of the suggested index. */
   createIndexStatement: string;
+}
+
+export interface ChangeHistory {
+  /** Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} */
+  name: string;
+  uid: string;
+  /** Format: user:hello@world.com */
+  creator: string;
+  /** Format: user:hello@world.com */
+  updater: string;
+  createTime?: Date;
+  updateTime?: Date;
+  /** release version of Bytebase */
+  releaseVersion: string;
+  source: ChangeHistory_Source;
+  type: ChangeHistory_Type;
+  status: ChangeHistory_Status;
+  sequence: number;
+  version: string;
+  useSemanticVersion: boolean;
+  semanticVersionPrefix: string;
+  description: string;
+  statement: string;
+  schema: string;
+  prevSchema: string;
+  executionDuration?: Duration;
+  /** Format: projects/{project}/reviews/{review} */
+  review: string;
+}
+
+export enum ChangeHistory_Source {
+  SOURCE_UNSPECIFIED = 0,
+  UI = 1,
+  VCS = 2,
+  LIBRARY = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function changeHistory_SourceFromJSON(object: any): ChangeHistory_Source {
+  switch (object) {
+    case 0:
+    case "SOURCE_UNSPECIFIED":
+      return ChangeHistory_Source.SOURCE_UNSPECIFIED;
+    case 1:
+    case "UI":
+      return ChangeHistory_Source.UI;
+    case 2:
+    case "VCS":
+      return ChangeHistory_Source.VCS;
+    case 3:
+    case "LIBRARY":
+      return ChangeHistory_Source.LIBRARY;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ChangeHistory_Source.UNRECOGNIZED;
+  }
+}
+
+export function changeHistory_SourceToJSON(object: ChangeHistory_Source): string {
+  switch (object) {
+    case ChangeHistory_Source.SOURCE_UNSPECIFIED:
+      return "SOURCE_UNSPECIFIED";
+    case ChangeHistory_Source.UI:
+      return "UI";
+    case ChangeHistory_Source.VCS:
+      return "VCS";
+    case ChangeHistory_Source.LIBRARY:
+      return "LIBRARY";
+    case ChangeHistory_Source.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum ChangeHistory_Type {
+  TYPE_UNSPECIFIED = 0,
+  BASELINE = 1,
+  MIGRATE = 2,
+  MIGRATE_SDL = 3,
+  MIGRATE_GHOST = 4,
+  BRANCH = 5,
+  DATA = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function changeHistory_TypeFromJSON(object: any): ChangeHistory_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return ChangeHistory_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "BASELINE":
+      return ChangeHistory_Type.BASELINE;
+    case 2:
+    case "MIGRATE":
+      return ChangeHistory_Type.MIGRATE;
+    case 3:
+    case "MIGRATE_SDL":
+      return ChangeHistory_Type.MIGRATE_SDL;
+    case 4:
+    case "MIGRATE_GHOST":
+      return ChangeHistory_Type.MIGRATE_GHOST;
+    case 5:
+    case "BRANCH":
+      return ChangeHistory_Type.BRANCH;
+    case 6:
+    case "DATA":
+      return ChangeHistory_Type.DATA;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ChangeHistory_Type.UNRECOGNIZED;
+  }
+}
+
+export function changeHistory_TypeToJSON(object: ChangeHistory_Type): string {
+  switch (object) {
+    case ChangeHistory_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case ChangeHistory_Type.BASELINE:
+      return "BASELINE";
+    case ChangeHistory_Type.MIGRATE:
+      return "MIGRATE";
+    case ChangeHistory_Type.MIGRATE_SDL:
+      return "MIGRATE_SDL";
+    case ChangeHistory_Type.MIGRATE_GHOST:
+      return "MIGRATE_GHOST";
+    case ChangeHistory_Type.BRANCH:
+      return "BRANCH";
+    case ChangeHistory_Type.DATA:
+      return "DATA";
+    case ChangeHistory_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum ChangeHistory_Status {
+  UNKNOWN = 0,
+  PENDING = 1,
+  COMPLETED = 2,
+  FAILED = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function changeHistory_StatusFromJSON(object: any): ChangeHistory_Status {
+  switch (object) {
+    case 0:
+    case "UNKNOWN":
+      return ChangeHistory_Status.UNKNOWN;
+    case 1:
+    case "PENDING":
+      return ChangeHistory_Status.PENDING;
+    case 2:
+    case "COMPLETED":
+      return ChangeHistory_Status.COMPLETED;
+    case 3:
+    case "FAILED":
+      return ChangeHistory_Status.FAILED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ChangeHistory_Status.UNRECOGNIZED;
+  }
+}
+
+export function changeHistory_StatusToJSON(object: ChangeHistory_Status): string {
+  switch (object) {
+    case ChangeHistory_Status.UNKNOWN:
+      return "UNKNOWN";
+    case ChangeHistory_Status.PENDING:
+      return "PENDING";
+    case ChangeHistory_Status.COMPLETED:
+      return "COMPLETED";
+    case ChangeHistory_Status.FAILED:
+      return "FAILED";
+    case ChangeHistory_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface ListChangeHistoriesRequest {
+  /**
+   * The parent of the change histories.
+   * Format: instances/{instance}/databases/{database}
+   */
+  parent: string;
+  /**
+   * Not used. The maximum number of change histories to return. The service may return fewer than this value.
+   * If unspecified, at most 50 change histories will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * Not used. A page token, received from a previous `ListChangeHistories` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListChangeHistories` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListChangeHistoriesResponse {
+  /** The list of change histories. */
+  changeHistories: ChangeHistory[];
+  /**
+   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
+export interface GetChangeHistoryRequest {
+  /**
+   * The name of the change history to retrieve.
+   * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+   */
+  name: string;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -4738,6 +4959,552 @@ export const AdviseIndexResponse = {
   },
 };
 
+function createBaseChangeHistory(): ChangeHistory {
+  return {
+    name: "",
+    uid: "",
+    creator: "",
+    updater: "",
+    createTime: undefined,
+    updateTime: undefined,
+    releaseVersion: "",
+    source: 0,
+    type: 0,
+    status: 0,
+    sequence: 0,
+    version: "",
+    useSemanticVersion: false,
+    semanticVersionPrefix: "",
+    description: "",
+    statement: "",
+    schema: "",
+    prevSchema: "",
+    executionDuration: undefined,
+    review: "",
+  };
+}
+
+export const ChangeHistory = {
+  encode(message: ChangeHistory, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.uid !== "") {
+      writer.uint32(18).string(message.uid);
+    }
+    if (message.creator !== "") {
+      writer.uint32(26).string(message.creator);
+    }
+    if (message.updater !== "") {
+      writer.uint32(34).string(message.updater);
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(50).fork()).ldelim();
+    }
+    if (message.releaseVersion !== "") {
+      writer.uint32(58).string(message.releaseVersion);
+    }
+    if (message.source !== 0) {
+      writer.uint32(64).int32(message.source);
+    }
+    if (message.type !== 0) {
+      writer.uint32(72).int32(message.type);
+    }
+    if (message.status !== 0) {
+      writer.uint32(80).int32(message.status);
+    }
+    if (message.sequence !== 0) {
+      writer.uint32(88).int64(message.sequence);
+    }
+    if (message.version !== "") {
+      writer.uint32(98).string(message.version);
+    }
+    if (message.useSemanticVersion === true) {
+      writer.uint32(104).bool(message.useSemanticVersion);
+    }
+    if (message.semanticVersionPrefix !== "") {
+      writer.uint32(114).string(message.semanticVersionPrefix);
+    }
+    if (message.description !== "") {
+      writer.uint32(122).string(message.description);
+    }
+    if (message.statement !== "") {
+      writer.uint32(130).string(message.statement);
+    }
+    if (message.schema !== "") {
+      writer.uint32(138).string(message.schema);
+    }
+    if (message.prevSchema !== "") {
+      writer.uint32(146).string(message.prevSchema);
+    }
+    if (message.executionDuration !== undefined) {
+      Duration.encode(message.executionDuration, writer.uint32(154).fork()).ldelim();
+    }
+    if (message.review !== "") {
+      writer.uint32(162).string(message.review);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChangeHistory {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChangeHistory();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.uid = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.updater = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.releaseVersion = reader.string();
+          continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.source = reader.int32() as any;
+          continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.sequence = longToNumber(reader.int64() as Long);
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        case 13:
+          if (tag !== 104) {
+            break;
+          }
+
+          message.useSemanticVersion = reader.bool();
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.semanticVersionPrefix = reader.string();
+          continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.prevSchema = reader.string();
+          continue;
+        case 19:
+          if (tag !== 154) {
+            break;
+          }
+
+          message.executionDuration = Duration.decode(reader, reader.uint32());
+          continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.review = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ChangeHistory {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      uid: isSet(object.uid) ? String(object.uid) : "",
+      creator: isSet(object.creator) ? String(object.creator) : "",
+      updater: isSet(object.updater) ? String(object.updater) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+      releaseVersion: isSet(object.releaseVersion) ? String(object.releaseVersion) : "",
+      source: isSet(object.source) ? changeHistory_SourceFromJSON(object.source) : 0,
+      type: isSet(object.type) ? changeHistory_TypeFromJSON(object.type) : 0,
+      status: isSet(object.status) ? changeHistory_StatusFromJSON(object.status) : 0,
+      sequence: isSet(object.sequence) ? Number(object.sequence) : 0,
+      version: isSet(object.version) ? String(object.version) : "",
+      useSemanticVersion: isSet(object.useSemanticVersion) ? Boolean(object.useSemanticVersion) : false,
+      semanticVersionPrefix: isSet(object.semanticVersionPrefix) ? String(object.semanticVersionPrefix) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      statement: isSet(object.statement) ? String(object.statement) : "",
+      schema: isSet(object.schema) ? String(object.schema) : "",
+      prevSchema: isSet(object.prevSchema) ? String(object.prevSchema) : "",
+      executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
+      review: isSet(object.review) ? String(object.review) : "",
+    };
+  },
+
+  toJSON(message: ChangeHistory): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
+    message.creator !== undefined && (obj.creator = message.creator);
+    message.updater !== undefined && (obj.updater = message.updater);
+    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
+    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    message.releaseVersion !== undefined && (obj.releaseVersion = message.releaseVersion);
+    message.source !== undefined && (obj.source = changeHistory_SourceToJSON(message.source));
+    message.type !== undefined && (obj.type = changeHistory_TypeToJSON(message.type));
+    message.status !== undefined && (obj.status = changeHistory_StatusToJSON(message.status));
+    message.sequence !== undefined && (obj.sequence = Math.round(message.sequence));
+    message.version !== undefined && (obj.version = message.version);
+    message.useSemanticVersion !== undefined && (obj.useSemanticVersion = message.useSemanticVersion);
+    message.semanticVersionPrefix !== undefined && (obj.semanticVersionPrefix = message.semanticVersionPrefix);
+    message.description !== undefined && (obj.description = message.description);
+    message.statement !== undefined && (obj.statement = message.statement);
+    message.schema !== undefined && (obj.schema = message.schema);
+    message.prevSchema !== undefined && (obj.prevSchema = message.prevSchema);
+    message.executionDuration !== undefined &&
+      (obj.executionDuration = message.executionDuration ? Duration.toJSON(message.executionDuration) : undefined);
+    message.review !== undefined && (obj.review = message.review);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ChangeHistory>): ChangeHistory {
+    return ChangeHistory.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ChangeHistory>): ChangeHistory {
+    const message = createBaseChangeHistory();
+    message.name = object.name ?? "";
+    message.uid = object.uid ?? "";
+    message.creator = object.creator ?? "";
+    message.updater = object.updater ?? "";
+    message.createTime = object.createTime ?? undefined;
+    message.updateTime = object.updateTime ?? undefined;
+    message.releaseVersion = object.releaseVersion ?? "";
+    message.source = object.source ?? 0;
+    message.type = object.type ?? 0;
+    message.status = object.status ?? 0;
+    message.sequence = object.sequence ?? 0;
+    message.version = object.version ?? "";
+    message.useSemanticVersion = object.useSemanticVersion ?? false;
+    message.semanticVersionPrefix = object.semanticVersionPrefix ?? "";
+    message.description = object.description ?? "";
+    message.statement = object.statement ?? "";
+    message.schema = object.schema ?? "";
+    message.prevSchema = object.prevSchema ?? "";
+    message.executionDuration = (object.executionDuration !== undefined && object.executionDuration !== null)
+      ? Duration.fromPartial(object.executionDuration)
+      : undefined;
+    message.review = object.review ?? "";
+    return message;
+  },
+};
+
+function createBaseListChangeHistoriesRequest(): ListChangeHistoriesRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListChangeHistoriesRequest = {
+  encode(message: ListChangeHistoriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListChangeHistoriesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListChangeHistoriesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListChangeHistoriesRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListChangeHistoriesRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListChangeHistoriesRequest>): ListChangeHistoriesRequest {
+    return ListChangeHistoriesRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListChangeHistoriesRequest>): ListChangeHistoriesRequest {
+    const message = createBaseListChangeHistoriesRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListChangeHistoriesResponse(): ListChangeHistoriesResponse {
+  return { changeHistories: [], nextPageToken: "" };
+}
+
+export const ListChangeHistoriesResponse = {
+  encode(message: ListChangeHistoriesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.changeHistories) {
+      ChangeHistory.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListChangeHistoriesResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListChangeHistoriesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.changeHistories.push(ChangeHistory.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListChangeHistoriesResponse {
+    return {
+      changeHistories: Array.isArray(object?.changeHistories)
+        ? object.changeHistories.map((e: any) => ChangeHistory.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListChangeHistoriesResponse): unknown {
+    const obj: any = {};
+    if (message.changeHistories) {
+      obj.changeHistories = message.changeHistories.map((e) => e ? ChangeHistory.toJSON(e) : undefined);
+    } else {
+      obj.changeHistories = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListChangeHistoriesResponse>): ListChangeHistoriesResponse {
+    return ListChangeHistoriesResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListChangeHistoriesResponse>): ListChangeHistoriesResponse {
+    const message = createBaseListChangeHistoriesResponse();
+    message.changeHistories = object.changeHistories?.map((e) => ChangeHistory.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseGetChangeHistoryRequest(): GetChangeHistoryRequest {
+  return { name: "" };
+}
+
+export const GetChangeHistoryRequest = {
+  encode(message: GetChangeHistoryRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetChangeHistoryRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetChangeHistoryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetChangeHistoryRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetChangeHistoryRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetChangeHistoryRequest>): GetChangeHistoryRequest {
+    return GetChangeHistoryRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<GetChangeHistoryRequest>): GetChangeHistoryRequest {
+    const message = createBaseGetChangeHistoryRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
 export const DatabaseServiceDefinition = {
   name: "DatabaseService",
@@ -5811,6 +6578,148 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    listChangeHistories: {
+      name: "ListChangeHistories",
+      requestType: ListChangeHistoriesRequest,
+      requestStream: false,
+      responseType: ListChangeHistoriesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              54,
+              18,
+              52,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              99,
+              104,
+              97,
+              110,
+              103,
+              101,
+              72,
+              105,
+              115,
+              116,
+              111,
+              114,
+              105,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    getChangeHistory: {
+      name: "GetChangeHistory",
+      requestType: GetChangeHistoryRequest,
+      requestStream: false,
+      responseType: ChangeHistory,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              54,
+              18,
+              52,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              99,
+              104,
+              97,
+              110,
+              103,
+              101,
+              72,
+              105,
+              115,
+              116,
+              111,
+              114,
+              105,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -5865,6 +6774,14 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: AdviseIndexRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<AdviseIndexResponse>>;
+  listChangeHistories(
+    request: ListChangeHistoriesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListChangeHistoriesResponse>>;
+  getChangeHistory(
+    request: GetChangeHistoryRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ChangeHistory>>;
 }
 
 export interface DatabaseServiceClient<CallOptionsExt = {}> {
@@ -5921,6 +6838,14 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<AdviseIndexRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<AdviseIndexResponse>;
+  listChangeHistories(
+    request: DeepPartial<ListChangeHistoriesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListChangeHistoriesResponse>;
+  getChangeHistory(
+    request: DeepPartial<GetChangeHistoryRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ChangeHistory>;
 }
 
 declare var self: any | undefined;

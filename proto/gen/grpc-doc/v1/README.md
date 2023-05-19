@@ -67,6 +67,7 @@
     - [BackupSetting](#bytebase-v1-BackupSetting)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
+    - [ChangeHistory](#bytebase-v1-ChangeHistory)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
     - [CreateBackupRequest](#bytebase-v1-CreateBackupRequest)
     - [Database](#bytebase-v1-Database)
@@ -79,12 +80,15 @@
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest)
+    - [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest)
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
     - [ListBackupRequest](#bytebase-v1-ListBackupRequest)
     - [ListBackupResponse](#bytebase-v1-ListBackupResponse)
+    - [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest)
+    - [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
     - [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse)
     - [ListSecretsRequest](#bytebase-v1-ListSecretsRequest)
@@ -106,6 +110,9 @@
   
     - [Backup.BackupState](#bytebase-v1-Backup-BackupState)
     - [Backup.BackupType](#bytebase-v1-Backup-BackupType)
+    - [ChangeHistory.Source](#bytebase-v1-ChangeHistory-Source)
+    - [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status)
+    - [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type)
   
     - [DatabaseService](#bytebase-v1-DatabaseService)
   
@@ -1195,7 +1202,7 @@ The message of the backup.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The resource name of the database backup. backup-name is specified by the client. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was created initally. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was created initially. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was updated. |
 | state | [Backup.BackupState](#bytebase-v1-Backup-BackupState) |  | The state of the backup. |
 | backup_type | [Backup.BackupType](#bytebase-v1-Backup-BackupType) |  | The type of the backup. |
@@ -1251,6 +1258,40 @@ Default (empty): Disable automatic backup. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | databases | [Database](#bytebase-v1-Database) | repeated | Databases updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-ChangeHistory"></a>
+
+### ChangeHistory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| uid | [string](#string) |  |  |
+| creator | [string](#string) |  | Format: user:hello@world.com |
+| updater | [string](#string) |  | Format: user:hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| release_version | [string](#string) |  | release version of Bytebase |
+| source | [ChangeHistory.Source](#bytebase-v1-ChangeHistory-Source) |  |  |
+| type | [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type) |  |  |
+| status | [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status) |  |  |
+| sequence | [int64](#int64) |  |  |
+| version | [string](#string) |  |  |
+| use_semantic_version | [bool](#bool) |  |  |
+| semantic_version_prefix | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| statement | [string](#string) |  |  |
+| schema | [string](#string) |  |  |
+| prev_schema | [string](#string) |  |  |
+| execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+| review | [string](#string) |  | Format: projects/{project}/reviews/{review} |
 
 
 
@@ -1469,6 +1510,21 @@ FunctionMetadata is the metadata for functions.
 
 
 
+<a name="bytebase-v1-GetChangeHistoryRequest"></a>
+
+### GetChangeHistoryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the change history to retrieve. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+
+
+
+
+
+
 <a name="bytebase-v1-GetDatabaseMetadataRequest"></a>
 
 ### GetDatabaseMetadataRequest
@@ -1563,6 +1619,41 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | backups | [Backup](#bytebase-v1-Backup) | repeated | The backups from the specified request. |
+| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangeHistoriesRequest"></a>
+
+### ListChangeHistoriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent of the change histories. Format: instances/{instance}/databases/{database} |
+| page_size | [int32](#int32) |  | Not used. The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 50 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListChangeHistories` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangeHistoriesResponse"></a>
+
+### ListChangeHistoriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| change_histories | [ChangeHistory](#bytebase-v1-ChangeHistory) | repeated | The list of change histories. |
 | next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
@@ -1737,10 +1828,10 @@ Secret is the secret of the database now.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | name is the unique name of the secret, which is specified by the client. Format: instances/{instance}/databases/{database}/secrets/{secret} |
-| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was created initally. |
+| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was created initially. |
 | updated_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was updated. |
 | value | [string](#string) |  | The value of the secret. |
-| description | [string](#string) |  | The decsription of the secret. |
+| description | [string](#string) |  | The description of the secret. |
 
 
 
@@ -1933,6 +2024,51 @@ The type of the backup.
 | PITR | 3 | The backup is created automatically after doing PITR. |
 
 
+
+<a name="bytebase-v1-ChangeHistory-Source"></a>
+
+### ChangeHistory.Source
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SOURCE_UNSPECIFIED | 0 |  |
+| UI | 1 |  |
+| VCS | 2 |  |
+| LIBRARY | 3 |  |
+
+
+
+<a name="bytebase-v1-ChangeHistory-Status"></a>
+
+### ChangeHistory.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNKNOWN | 0 |  |
+| PENDING | 1 |  |
+| COMPLETED | 2 |  |
+| FAILED | 3 |  |
+
+
+
+<a name="bytebase-v1-ChangeHistory-Type"></a>
+
+### ChangeHistory.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| BASELINE | 1 |  |
+| MIGRATE | 2 |  |
+| MIGRATE_SDL | 3 |  |
+| MIGRATE_GHOST | 4 |  |
+| BRANCH | 5 |  |
+| DATA | 6 |  |
+
+
  
 
  
@@ -1961,6 +2097,8 @@ The type of the backup.
 | UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
 | DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
+| ListChangeHistories | [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest) | [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse) |  |
+| GetChangeHistory | [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest) | [ChangeHistory](#bytebase-v1-ChangeHistory) |  |
 
  
 
