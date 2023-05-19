@@ -7,7 +7,6 @@ import {
   Project,
   ProjectId,
   ProjectMember,
-  ProjectPatch,
   ProjectState,
   ResourceIdentifier,
   ResourceObject,
@@ -165,31 +164,6 @@ export const useLegacyProjectStore = defineStore("project_legacy", {
         project,
       });
       return project;
-    },
-
-    async patchProject({
-      projectId,
-      projectPatch,
-    }: {
-      projectId: ProjectId;
-      projectPatch: ProjectPatch;
-    }) {
-      const data = (
-        await axios.patch(`/api/project/${projectId}`, {
-          data: {
-            type: "projectPatch",
-            attributes: projectPatch,
-          },
-        })
-      ).data;
-      const updatedProject = convert(data.data, data.included);
-
-      this.setProjectById({
-        projectId,
-        project: updatedProject,
-      });
-
-      return updatedProject;
     },
 
     // sync member role from vcs
