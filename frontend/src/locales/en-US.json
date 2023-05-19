@@ -528,6 +528,10 @@
           "self": "External URL",
           "description": "The external URL where user visits Bytebase, must start with http:// or https://. {viewDoc}"
         },
+        "gitops-webhook-url": {
+          "self": "GitOps Webhook URL",
+          "description": "The URL used for sending GitOps webhooks to the Bytebase instance."
+        },
         "config-updated": "Configuration is updated",
         "plugin": {
           "openai": {

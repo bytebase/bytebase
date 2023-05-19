@@ -3,6 +3,7 @@ package v1
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -14,8 +15,6 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
-
-	"embed"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -155,6 +154,13 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 				return nil, status.Errorf(codes.InvalidArgument, "invalid external url: %v", err)
 			}
 			payload.ExternalUrl = externalURL
+		}
+		if payload.GitopsWebhookUrl != "" {
+			gitopsWebhookURL, err := common.NormalizeExternalURL(payload.GitopsWebhookUrl)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid GitOps webhook URL: %v", err)
+			}
+			payload.GitopsWebhookUrl = gitopsWebhookURL
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
