@@ -19,10 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RolloutService_GetPlan_FullMethodName    = "/bytebase.v1.RolloutService/GetPlan"
-	RolloutService_ListPlans_FullMethodName  = "/bytebase.v1.RolloutService/ListPlans"
-	RolloutService_CreatePlan_FullMethodName = "/bytebase.v1.RolloutService/CreatePlan"
-	RolloutService_UpdatePlan_FullMethodName = "/bytebase.v1.RolloutService/UpdatePlan"
+	RolloutService_GetPlan_FullMethodName             = "/bytebase.v1.RolloutService/GetPlan"
+	RolloutService_ListPlans_FullMethodName           = "/bytebase.v1.RolloutService/ListPlans"
+	RolloutService_CreatePlan_FullMethodName          = "/bytebase.v1.RolloutService/CreatePlan"
+	RolloutService_UpdatePlan_FullMethodName          = "/bytebase.v1.RolloutService/UpdatePlan"
+	RolloutService_GetRollout_FullMethodName          = "/bytebase.v1.RolloutService/GetRollout"
+	RolloutService_ListRolloutTaskRuns_FullMethodName = "/bytebase.v1.RolloutService/ListRolloutTaskRuns"
+	RolloutService_ListPlanCheckRuns_FullMethodName   = "/bytebase.v1.RolloutService/ListPlanCheckRuns"
 )
 
 // RolloutServiceClient is the client API for RolloutService service.
@@ -33,6 +36,9 @@ type RolloutServiceClient interface {
 	ListPlans(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error)
 	CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
 	UpdatePlan(ctx context.Context, in *UpdatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
+	GetRollout(ctx context.Context, in *GetRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
+	ListRolloutTaskRuns(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error)
+	ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error)
 }
 
 type rolloutServiceClient struct {
@@ -79,6 +85,33 @@ func (c *rolloutServiceClient) UpdatePlan(ctx context.Context, in *UpdatePlanReq
 	return out, nil
 }
 
+func (c *rolloutServiceClient) GetRollout(ctx context.Context, in *GetRolloutRequest, opts ...grpc.CallOption) (*Rollout, error) {
+	out := new(Rollout)
+	err := c.cc.Invoke(ctx, RolloutService_GetRollout_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rolloutServiceClient) ListRolloutTaskRuns(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error) {
+	out := new(ListPlansResponse)
+	err := c.cc.Invoke(ctx, RolloutService_ListRolloutTaskRuns_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rolloutServiceClient) ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error) {
+	out := new(ListPlanCheckRunsResponse)
+	err := c.cc.Invoke(ctx, RolloutService_ListPlanCheckRuns_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RolloutServiceServer is the server API for RolloutService service.
 // All implementations must embed UnimplementedRolloutServiceServer
 // for forward compatibility
@@ -87,6 +120,9 @@ type RolloutServiceServer interface {
 	ListPlans(context.Context, *ListPlansRequest) (*ListPlansResponse, error)
 	CreatePlan(context.Context, *CreatePlanRequest) (*Plan, error)
 	UpdatePlan(context.Context, *UpdatePlanRequest) (*Plan, error)
+	GetRollout(context.Context, *GetRolloutRequest) (*Rollout, error)
+	ListRolloutTaskRuns(context.Context, *ListPlansRequest) (*ListPlansResponse, error)
+	ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error)
 	mustEmbedUnimplementedRolloutServiceServer()
 }
 
@@ -105,6 +141,15 @@ func (UnimplementedRolloutServiceServer) CreatePlan(context.Context, *CreatePlan
 }
 func (UnimplementedRolloutServiceServer) UpdatePlan(context.Context, *UpdatePlanRequest) (*Plan, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePlan not implemented")
+}
+func (UnimplementedRolloutServiceServer) GetRollout(context.Context, *GetRolloutRequest) (*Rollout, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRollout not implemented")
+}
+func (UnimplementedRolloutServiceServer) ListRolloutTaskRuns(context.Context, *ListPlansRequest) (*ListPlansResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRolloutTaskRuns not implemented")
+}
+func (UnimplementedRolloutServiceServer) ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListPlanCheckRuns not implemented")
 }
 func (UnimplementedRolloutServiceServer) mustEmbedUnimplementedRolloutServiceServer() {}
 
@@ -191,6 +236,60 @@ func _RolloutService_UpdatePlan_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RolloutService_GetRollout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRolloutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RolloutServiceServer).GetRollout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RolloutService_GetRollout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RolloutServiceServer).GetRollout(ctx, req.(*GetRolloutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RolloutService_ListRolloutTaskRuns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPlansRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RolloutServiceServer).ListRolloutTaskRuns(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RolloutService_ListRolloutTaskRuns_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RolloutServiceServer).ListRolloutTaskRuns(ctx, req.(*ListPlansRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RolloutService_ListPlanCheckRuns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPlanCheckRunsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RolloutServiceServer).ListPlanCheckRuns(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RolloutService_ListPlanCheckRuns_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RolloutServiceServer).ListPlanCheckRuns(ctx, req.(*ListPlanCheckRunsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RolloutService_ServiceDesc is the grpc.ServiceDesc for RolloutService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -213,6 +312,18 @@ var RolloutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdatePlan",
 			Handler:    _RolloutService_UpdatePlan_Handler,
+		},
+		{
+			MethodName: "GetRollout",
+			Handler:    _RolloutService_GetRollout_Handler,
+		},
+		{
+			MethodName: "ListRolloutTaskRuns",
+			Handler:    _RolloutService_ListRolloutTaskRuns_Handler,
+		},
+		{
+			MethodName: "ListPlanCheckRuns",
+			Handler:    _RolloutService_ListPlanCheckRuns_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
