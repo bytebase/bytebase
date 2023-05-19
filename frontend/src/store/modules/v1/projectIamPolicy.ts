@@ -7,7 +7,12 @@ import { Database, MaybeRef, PresetRoleType } from "@/types";
 import { useLegacyProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
-import { hasWorkspacePermissionV1, isMemberOfProjectV1 } from "@/utils";
+import {
+  getDatabaseNameById,
+  hasWorkspacePermissionV1,
+  isMemberOfProjectV1,
+  parseConditionExpressionString,
+} from "@/utils";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -228,9 +233,50 @@ export const useCurrentUserIamPolicy = () => {
     return false;
   };
 
+  const allowToExportDatabase = (database: Database) => {
+    if (hasWorkspaceSuperPrivilege) {
+      return true;
+    }
+
+    const policy = iamPolicyStore.getProjectIamPolicy(
+      `projects/${database.project.resourceId}`
+    );
+    if (!policy) {
+      return false;
+    }
+    for (const binding of policy.bindings) {
+      if (
+        binding.role === PresetRoleType.OWNER &&
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        return true;
+      }
+      if (
+        binding.role === PresetRoleType.EXPORTER &&
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        const conditionExpression = parseConditionExpressionString(
+          binding.condition?.expression || ""
+        );
+        if (conditionExpression.databases) {
+          const databaseResourceName = getDatabaseNameById(database.id);
+          return conditionExpression.databases.includes(databaseResourceName);
+        } else {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   return {
     isMemberOfProject,
     allowToChangeDatabaseOfProject,
     allowToQueryDatabase,
+    allowToExportDatabase,
   };
 };

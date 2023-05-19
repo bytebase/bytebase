@@ -95,7 +95,7 @@ export const getDatabaseIdByName = async (name: string) => {
   return database?.id || UNKNOWN_ID;
 };
 
-export const getDatabaseNameById = async (id: DatabaseId) => {
+export const getDatabaseNameById = (id: DatabaseId) => {
   const database = useDatabaseStore().getDatabaseById(id);
   return `instances/${database.instance.resourceId}/databases/${database.name}`;
 };
