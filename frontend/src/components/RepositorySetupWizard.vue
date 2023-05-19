@@ -139,7 +139,6 @@ import {
   ExternalRepositoryInfo,
   OAuthToken,
   Project,
-  ProjectPatch,
   ProjectRepositoryConfig,
   RepositoryCreate,
   unknown,
@@ -147,7 +146,12 @@ import {
 } from "../types";
 import { projectSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useLegacyProjectStore, useRepositoryStore, hasFeature } from "@/store";
+import { useRepositoryStore, hasFeature, useProjectV1Store } from "@/store";
+import {
+  Project as ProjectV1,
+  SchemaChange,
+} from "@/types/proto/v1/project_service";
+import { cloneDeep } from "lodash-es";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
@@ -194,6 +198,10 @@ export default defineComponent({
     project: {
       required: true,
       type: Object as PropType<Project>,
+    },
+    projectV1: {
+      required: true,
+      type: Object as PropType<ProjectV1>,
     },
   },
   emits: ["cancel", "finish"],
@@ -316,13 +324,17 @@ export default defineComponent({
 
         // Update project schemaChangeType field firstly.
         if (state.config.schemaChangeType !== props.project.schemaChangeType) {
-          const projectPatch: ProjectPatch = {
-            schemaChangeType: state.config.schemaChangeType,
-          };
-          await useLegacyProjectStore().patchProject({
-            projectId: props.project.id,
-            projectPatch,
-          });
+          const projectPatch = cloneDeep(props.projectV1);
+          projectPatch.schemaChange =
+            state.config.schemaChangeType === "DDL"
+              ? SchemaChange.DDL
+              : SchemaChange.SDL;
+          const updateMask = ["schema_change"];
+          await useProjectV1Store().updateProject(projectPatch, updateMask);
+          // WARNING: using mixed new/old APIs so we need to force update the
+          // legacy project entity's local value manually
+          /* eslint-disable-next-line vue/no-mutating-props */
+          props.project.schemaChangeType = state.config.schemaChangeType;
         }
 
         const repositoryCreate: RepositoryCreate = {
