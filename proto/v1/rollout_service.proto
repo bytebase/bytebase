@@ -328,31 +328,6 @@ message Rollout {
 
   // stages and thus tasks of the rollout.
   repeated Stage stages = 5;
-
-  // Digest is the digest of the tasks and the latest taskruns of rollout.
-  Digest digest = 6;
-
-  // Digest summarizes the tasks and the latest taskruns of rollout.
-  // We only take the latest taskrun of each task into account.
-  message Digest {
-    // The number of tasks in the rollout.
-    int32 total_tasks = 1;
-    // The number of the latest taskrun of each task in the rollout.
-    // i.e. the number of tasks that have taskruns.
-    int32 total_task_runs = 2;
-    // The number of the latest taskrun of each task whose status is PENDING.
-    int32 pending_task_runs = 3;
-    // The number of the latest taskrun of each task whose status is COMPLETED.
-    int32 completed_task_runs = 4;
-    // The number of the latest taskrun of each task whose status is FAILED.
-    int32 failed_task_runs = 5;
-    // The number of the latest taskrun of each task whose status is RUNNING.
-    int32 running_task_runs = 6;
-    // The number of the latest taskrun of each task whose status is CANCELED.
-    int32 canceled_task_runs = 7;
-    // The number of the latest taskrun of each task whose status is SKIPPED.
-    int32 skipped_task_runs = 8;
-  }
 }
 
 message Stage {
