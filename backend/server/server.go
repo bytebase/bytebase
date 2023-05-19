@@ -605,6 +605,7 @@ func (s *Server) initMetricReporter(workspaceID string) {
 		metricReporter.Register(metric.MemberCountMetricName, metricCollector.NewMemberCountCollector(s.store))
 		s.MetricReporter = metricReporter
 	}
+}
 
 // retrieved via the SettingService upon startup.
 type workspaceConfig struct {
