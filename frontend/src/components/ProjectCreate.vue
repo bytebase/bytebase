@@ -224,7 +224,7 @@ const create = async () => {
       module: "bytebase",
       style: "SUCCESS",
       title: t("project.create-modal.success-prompt", {
-        name: createdProject.name,
+        name: createdProject.title,
       }),
     });
     const url = {
