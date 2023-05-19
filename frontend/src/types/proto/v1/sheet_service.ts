@@ -124,7 +124,7 @@ export interface Sheet {
   title: string;
   /**
    * The creator of the Sheet.
-   * Format: user:{email}
+   * Format: users/{email}
    */
   creator: string;
   /** The create time of the sheet. */

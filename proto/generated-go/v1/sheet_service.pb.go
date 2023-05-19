@@ -631,7 +631,7 @@ type Sheet struct {
 	// The title of the sheet.
 	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// The creator of the Sheet.
-	// Format: user:{email}
+	// Format: users/{email}
 	Creator string `protobuf:"bytes,4,opt,name=creator,proto3" json:"creator,omitempty"`
 	// The create time of the sheet.
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`

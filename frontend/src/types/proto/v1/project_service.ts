@@ -459,7 +459,7 @@ export interface Binding {
    * Specifies the principals requesting access for a Bytebase resource.
    * `members` can have the following values:
    *
-   * * `user:{emailid}`: An email address that represents a specific Bytebase
+   * * `users/{email}`: An email address that represents a specific Bytebase
    *    account. For example, `alice@example.com` .
    */
   members: string[];
