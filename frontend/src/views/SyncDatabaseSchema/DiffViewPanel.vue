@@ -1,62 +1,74 @@
 <template>
-  <NTabs v-model:value="tab">
-    <NTabPane name="diff" :tab="$t('database.sync-schema.schema-change')">
-      <div class="w-full flex flex-row justify-start items-center mb-2">
-        <span>{{ previewSchemaChangeMessage }}</span>
-      </div>
-      <code-diff
-        v-show="shouldShowDiff"
-        class="code-diff-container w-full h-auto max-h-96 overflow-y-auto border rounded"
-        :old-string="targetDatabaseSchema"
-        :new-string="sourceDatabaseSchema"
-        output-format="side-by-side"
-      />
-      <div
-        v-show="!shouldShowDiff"
-        class="w-full h-auto px-3 py-2 overflow-y-auto border rounded"
-      >
-        <p>
-          {{ $t("database.sync-schema.message.no-diff-found") }}
-        </p>
-      </div>
-    </NTabPane>
+  <div class="w-full h-full flex flex-col gap-y-2">
+    <NTabs v-model:value="tab">
+      <NTab name="diff">
+        {{ $t("database.sync-schema.schema-change") }}
+      </NTab>
+      <NTab name="ddl">
+        {{ $t("database.sync-schema.generated-ddl-statement") }}
+      </NTab>
+    </NTabs>
 
-    <NTabPane
-      name="ddl"
-      :tab="$t('database.sync-schema.generated-ddl-statement')"
-    >
-      <div class="w-full flex flex-col justify-start mb-2">
-        <div class="flex flex-row justify-start items-center">
-          <span>{{ $t("database.sync-schema.synchronize-statements") }}</span>
-          <button
-            type="button"
-            class="btn-icon ml-2"
-            @click.prevent="$emit('copy-statement')"
-          >
-            <heroicons-outline:clipboard class="h-5 w-5" />
-          </button>
+    <div class="flex-1 w-full flex flex-col gap-y-2 overflow-hidden">
+      <template v-if="tab === 'diff'">
+        <div class="w-full flex flex-row justify-start items-center">
+          <span>{{ previewSchemaChangeMessage }}</span>
         </div>
-        <div class="textinfolabel">
-          {{ $t("database.sync-schema.synchronize-statements-description") }}
+        <div
+          v-if="shouldShowDiff"
+          class="w-full flex-1 overflow-y-scroll border"
+        >
+          <CodeDiff
+            class="sync-schema-code-diff"
+            :old-string="targetDatabaseSchema"
+            :new-string="sourceDatabaseSchema"
+            output-format="side-by-side"
+          />
         </div>
-      </div>
-      <MonacoEditor
-        ref="editorRef"
-        class="w-full h-auto max-h-96 border rounded"
-        :value="statement"
-        :auto-focus="false"
-        :dialect="dialectOfEngine(engineType)"
-        @change="onStatementChange"
-        @ready="updateEditorHeight"
-      />
-    </NTabPane>
-  </NTabs>
+        <div
+          v-else
+          class="w-full flex-1 border flex items-center justify-center"
+        >
+          <p>
+            {{ $t("database.sync-schema.message.no-diff-found") }}
+          </p>
+        </div>
+      </template>
+
+      <template v-if="tab === 'ddl'">
+        <div class="w-full flex flex-col justify-start">
+          <div class="flex flex-row justify-start items-center">
+            <span>{{ $t("database.sync-schema.synchronize-statements") }}</span>
+            <button
+              type="button"
+              class="btn-icon ml-2"
+              @click.prevent="$emit('copy-statement')"
+            >
+              <heroicons-outline:clipboard class="h-5 w-5" />
+            </button>
+          </div>
+          <div class="textinfolabel">
+            {{ $t("database.sync-schema.synchronize-statements-description") }}
+          </div>
+        </div>
+        <MonacoEditor
+          ref="editorRef"
+          class="w-full flex-1 border"
+          :value="statement"
+          :auto-focus="false"
+          :dialect="dialectOfEngine(engineType)"
+          @change="onStatementChange"
+          @ready="updateEditorHeight"
+        />
+      </template>
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
 import { CodeDiff } from "v-code-diff";
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabs, NTab } from "naive-ui";
 
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { Database, dialectOfEngine } from "@/types";
@@ -96,3 +108,9 @@ const onStatementChange = (statement: string) => {
   });
 };
 </script>
+
+<style lang="postcss">
+.--sync-schema-code-diff .d2h-file-side-diff {
+  border: 0;
+}
+</style>
