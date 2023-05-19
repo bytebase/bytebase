@@ -11,8 +11,8 @@
         :disabled="!hasAuditLogFeature"
         :show-all="true"
         :show-system-bot="true"
-        :selected-id="selectedPrincipalId"
-        @select-principal-id="selectPrincipal"
+        :selected-id="selectedUserUID"
+        @select-user-id="selectUser"
       />
       <div class="w-52 ml-2">
         <TypeSelect
@@ -40,7 +40,7 @@
           selectedAuditTypeList.length > 0
             ? selectedAuditTypeList
             : typePrefixList,
-        user: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
+        user: parseInt(selectedUserUID, 10) > 0 ? selectedUserUID : undefined,
         order: 'DESC',
         createdTsAfter: selectedTimeRange ? selectedTimeRange[0] : undefined,
         createdTsBefore: selectedTimeRange ? selectedTimeRange[1] : undefined,
@@ -108,7 +108,7 @@ import { useRoute, useRouter } from "vue-router";
 import { NGrid, NGi, NDatePicker } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { BBDialog } from "@/bbkit";
-import { AuditActivityType, PrincipalId, EMPTY_ID } from "@/types";
+import { AuditActivityType, UNKNOWN_ID } from "@/types";
 import { featureToRef } from "@/store";
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
@@ -136,12 +136,12 @@ const typePrefixList = (
   Object.keys(AuditActivityType) as Array<keyof typeof AuditActivityType>
 ).map((key) => AuditActivityType[key]);
 
-const selectedPrincipalId = computed((): PrincipalId => {
-  const id = parseInt(route.query.user as string, 10);
-  if (id >= 0) {
+const selectedUserUID = computed((): string => {
+  const id = route.query.user as string;
+  if (id) {
     return id;
   }
-  return EMPTY_ID;
+  return String(UNKNOWN_ID);
 });
 
 const selectedAuditTypeList = computed((): AuditActivityType[] => {
@@ -178,12 +178,12 @@ const handleViewDetail = (log: any) => {
   dialog.value!.open();
 };
 
-const selectPrincipal = (principalId: PrincipalId) => {
+const selectUser = (user: string) => {
   router.replace({
     name: "setting.workspace.audit-log",
     query: {
       ...route.query,
-      user: principalId,
+      user: parseInt(user, 10) > 0 ? user : undefined,
     },
   });
 };

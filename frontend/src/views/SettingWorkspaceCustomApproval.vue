@@ -27,10 +27,10 @@ import { computed, onMounted, reactive, ref, toRef } from "vue";
 import {
   featureToRef,
   useWorkspaceApprovalSettingStore,
-  useCurrentUser,
+  useCurrentUserV1,
   useRiskStore,
 } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   CustomApproval,
   ApprovalRuleDialog,
@@ -51,11 +51,11 @@ const state = reactive<LocalState>({
 const tab = useRouteHash("rules", TabValueList, "replace");
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const allowAdmin = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-custom-approval",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

@@ -76,11 +76,11 @@ import { useRouter } from "vue-router";
 import { BBButtonConfirm, BBCheckbox, BBGrid, BBGridColumn } from "@/bbkit";
 import {
   pushNotification,
-  useCurrentUser,
+  useCurrentUserV1,
   useSQLReviewStore,
   useEnvironmentV1List,
 } from "@/store";
-import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
+import { hasWorkspacePermissionV1, sqlReviewPolicySlug } from "@/utils";
 import { SQLReviewPolicy } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from "@/components/v2";
@@ -92,7 +92,7 @@ type EnvironmentReviewPolicy = {
 
 const { t } = useI18n();
 const router = useRouter();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const sqlReviewStore = useSQLReviewStore();
 
 onMounted(() => {
@@ -125,9 +125,9 @@ const columnList = computed((): BBGridColumn[] => {
 });
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-sql-review-policy",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

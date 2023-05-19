@@ -67,6 +67,7 @@
     - [BackupSetting](#bytebase-v1-BackupSetting)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
+    - [ChangeHistory](#bytebase-v1-ChangeHistory)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
     - [CreateBackupRequest](#bytebase-v1-CreateBackupRequest)
     - [Database](#bytebase-v1-Database)
@@ -79,12 +80,15 @@
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest)
+    - [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest)
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
     - [ListBackupRequest](#bytebase-v1-ListBackupRequest)
     - [ListBackupResponse](#bytebase-v1-ListBackupResponse)
+    - [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest)
+    - [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
     - [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse)
     - [ListSecretsRequest](#bytebase-v1-ListSecretsRequest)
@@ -106,6 +110,10 @@
   
     - [Backup.BackupState](#bytebase-v1-Backup-BackupState)
     - [Backup.BackupType](#bytebase-v1-Backup-BackupType)
+    - [ChangeHistory.Source](#bytebase-v1-ChangeHistory-Source)
+    - [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status)
+    - [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type)
+    - [ChangeHistoryView](#bytebase-v1-ChangeHistoryView)
   
     - [DatabaseService](#bytebase-v1-DatabaseService)
   
@@ -459,6 +467,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value. |
 | require_2fa | [bool](#bool) |  | require_2fa is the flag to require 2FA for all users. |
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
+| gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
 
 
 
@@ -1226,7 +1235,7 @@ The message of the backup.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The resource name of the database backup. backup-name is specified by the client. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was created initally. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was created initially. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was updated. |
 | state | [Backup.BackupState](#bytebase-v1-Backup-BackupState) |  | The state of the backup. |
 | backup_type | [Backup.BackupType](#bytebase-v1-Backup-BackupType) |  | The type of the backup. |
@@ -1282,6 +1291,37 @@ Default (empty): Disable automatic backup. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | databases | [Database](#bytebase-v1-Database) | repeated | Databases updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-ChangeHistory"></a>
+
+### ChangeHistory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| uid | [string](#string) |  |  |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| updater | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| release_version | [string](#string) |  | release version of Bytebase |
+| source | [ChangeHistory.Source](#bytebase-v1-ChangeHistory-Source) |  |  |
+| type | [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type) |  |  |
+| status | [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status) |  |  |
+| version | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| statement | [string](#string) |  |  |
+| schema | [string](#string) |  |  |
+| prev_schema | [string](#string) |  |  |
+| execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+| review | [string](#string) |  | Format: projects/{project}/reviews/{review} |
 
 
 
@@ -1500,6 +1540,22 @@ FunctionMetadata is the metadata for functions.
 
 
 
+<a name="bytebase-v1-GetChangeHistoryRequest"></a>
+
+### GetChangeHistoryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the change history to retrieve. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetDatabaseMetadataRequest"></a>
 
 ### GetDatabaseMetadataRequest
@@ -1594,6 +1650,42 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | backups | [Backup](#bytebase-v1-Backup) | repeated | The backups from the specified request. |
+| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangeHistoriesRequest"></a>
+
+### ListChangeHistoriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent of the change histories. Format: instances/{instance}/databases/{database} |
+| page_size | [int32](#int32) |  | Not used. The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 50 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListChangeHistories` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
+| view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangeHistoriesResponse"></a>
+
+### ListChangeHistoriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| change_histories | [ChangeHistory](#bytebase-v1-ChangeHistory) | repeated | The list of change histories. |
 | next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
@@ -1768,10 +1860,10 @@ Secret is the secret of the database now.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | name is the unique name of the secret, which is specified by the client. Format: instances/{instance}/databases/{database}/secrets/{secret} |
-| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was created initally. |
+| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was created initially. |
 | updated_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was updated. |
 | value | [string](#string) |  | The value of the secret. |
-| description | [string](#string) |  | The decsription of the secret. |
+| description | [string](#string) |  | The description of the secret. |
 
 
 
@@ -1964,6 +2056,64 @@ The type of the backup.
 | PITR | 3 | The backup is created automatically after doing PITR. |
 
 
+
+<a name="bytebase-v1-ChangeHistory-Source"></a>
+
+### ChangeHistory.Source
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SOURCE_UNSPECIFIED | 0 |  |
+| UI | 1 |  |
+| VCS | 2 |  |
+| LIBRARY | 3 |  |
+
+
+
+<a name="bytebase-v1-ChangeHistory-Status"></a>
+
+### ChangeHistory.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| COMPLETED | 2 |  |
+| FAILED | 3 |  |
+
+
+
+<a name="bytebase-v1-ChangeHistory-Type"></a>
+
+### ChangeHistory.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| BASELINE | 1 |  |
+| MIGRATE | 2 |  |
+| MIGRATE_SDL | 3 |  |
+| MIGRATE_GHOST | 4 |  |
+| BRANCH | 5 |  |
+| DATA | 6 |  |
+
+
+
+<a name="bytebase-v1-ChangeHistoryView"></a>
+
+### ChangeHistoryView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_HISTORY_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| CHANGE_HISTORY_VIEW_BASIC | 1 |  |
+| CHANGE_HISTORY_VIEW_FULL | 2 |  |
+
+
  
 
  
@@ -1992,6 +2142,8 @@ The type of the backup.
 | UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
 | DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
+| ListChangeHistories | [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest) | [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse) |  |
+| GetChangeHistory | [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest) | [ChangeHistory](#bytebase-v1-ChangeHistory) |  |
 
  
 
@@ -3062,6 +3214,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | state | [State](#bytebase-v1-State) |  |  |
 | title | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
+| engine_version | [string](#string) |  |  |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
@@ -3277,12 +3430,12 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| creator | [string](#string) |  | The creator of the log entry. Format: user:{emailid} |
+| creator | [string](#string) |  | The creator of the log entry. Format: users/{emailid} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was created initally. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was updated. |
 | action | [LogEntry.Action](#bytebase-v1-LogEntry-Action) |  |  |
 | level | [LogEntry.Level](#bytebase-v1-LogEntry-Level) |  |  |
-| resource_name | [string](#string) |  | The name of the resource associated with this log entry. For example, the resource user associated with log entry type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: user:emailid For ACTION_ISSUE_*: issues/{issue} For ACTION_PIPELINE_*: pipelines/{pipeline} For ACTION_PROJECT_*: projects/{project} For ACTION_SQL_EDITOR_QUERY: workspaces/{workspace} OR projects/{project} |
+| resource_name | [string](#string) |  | The name of the resource associated with this log entry. For example, the resource user associated with log entry type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: users/{email} For ACTION_ISSUE_*: issues/{issue} For ACTION_PIPELINE_*: pipelines/{pipeline} For ACTION_PROJECT_*: projects/{project} For ACTION_SQL_EDITOR_QUERY: workspaces/{workspace} OR projects/{project} |
 | json_payload | [google.protobuf.Struct](#google-protobuf-Struct) |  | The payload of the log entry. |
 
 
@@ -4576,7 +4729,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| creator | [string](#string) |  | The name of the creator. Format: users/{user}. {user} is a system-generated unique ID. |
+| creator | [string](#string) |  | The name of the creator in users/{email} format. |
 
 
 
@@ -4692,14 +4845,14 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | status | [ReviewStatus](#bytebase-v1-ReviewStatus) |  |  |
-| assignee | [string](#string) |  | Format: user:hello@world.com |
+| assignee | [string](#string) |  | Format: users/hello@world.com |
 | assignee_attention | [bool](#bool) |  |  |
 | approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
 | approvers | [Review.Approver](#bytebase-v1-Review-Approver) | repeated |  |
 | approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |
 | approval_finding_error | [string](#string) |  |  |
-| subscribers | [string](#string) | repeated | The subscribers. Format: user:hello@world.com |
-| creator | [string](#string) |  | Format: user:hello@world.com |
+| subscribers | [string](#string) | repeated | The subscribers. Format: users/hello@world.com |
+| creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
@@ -4717,7 +4870,7 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [Review.Approver.Status](#bytebase-v1-Review-Approver-Status) |  | The new status. |
-| principal | [string](#string) |  | Format: user:hello@world.com |
+| principal | [string](#string) |  | Format: users/hello@world.com |
 
 
 
@@ -6185,6 +6338,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
 | outbound_ip_list | [string](#string) | repeated | outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. |
+| gitops_webhook_url | [string](#string) |  | The webhook URL for the GitOps workflow. |
 
 
 
@@ -6336,7 +6490,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource of the sheet. Foramt: projects/{project} |
-| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = user:{email}`, `creator != user:{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
+| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of sheets to return. The service may return fewer than this value. If unspecified, at most 50 sheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchSheets` call. Provide this to retrieve the subsequent page.
 
@@ -6374,7 +6528,7 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | name | [string](#string) |  | The name of the sheet resource, generated by the server. Canonical parent is project. Format: projects/{project}/sheets/{sheet} |
 | database | [string](#string) |  | The database resource name. Format: instances/{instance}/databases/{database} If the database parent doesn&#39;t exist, the database field is empty. |
 | title | [string](#string) |  | The title of the sheet. |
-| creator | [string](#string) |  | The creator of the Sheet. Format: user:{email} |
+| creator | [string](#string) |  | The creator of the Sheet. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the sheet. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the sheet. |
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |

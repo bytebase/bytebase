@@ -7,7 +7,7 @@ import { DatabaseId, UNKNOWN_ID } from "@/types";
 
 // e.g. timestamp("2021-08-31T00:00:00Z") => "2021-08-31T00:00:00Z"
 export const parseExpiredTimeString = (expiredTime: string): string => {
-  const regex = /timestamp\("(.+?)"\)/;
+  const regex = /^timestamp\("(.+?)"\)$/;
   const match = expiredTime.match(regex);
   if (!match) {
     throw new Error(`Invalid expired time: ${expiredTime}`);
@@ -64,17 +64,19 @@ export const parseConditionExpressionString = (
   const expressionList: string[] = conditionExpressionString.split(" && ");
   for (const expression of expressionList) {
     const fields = expression.split(" ");
-    if (fields[0] === "resource.database") {
-      const databases = (JSON.parse(fields[2]) as string[]) || [];
+    const key = fields[0];
+    const value = fields[2];
+    if (key === "resource.database") {
+      const databases = (JSON.parse(value) as string[]) || [];
       conditionExpression.databases = databases;
-    } else if (fields[0] === "request.time") {
-      conditionExpression.expiredTime = parseExpiredTimeString(fields[2]);
-    } else if (fields[0] === "request.statement") {
-      conditionExpression.statement = atob(JSON.parse(fields[2]));
-    } else if (fields[0] === "request.row_limit") {
-      conditionExpression.rowLimit = Number(fields[2]);
-    } else if (fields[0] === "request.export_format") {
-      conditionExpression.exportFormat = JSON.parse(fields[2]);
+    } else if (key === "request.time") {
+      conditionExpression.expiredTime = parseExpiredTimeString(value);
+    } else if (key === "request.statement") {
+      conditionExpression.statement = atob(JSON.parse(value));
+    } else if (key === "request.row_limit") {
+      conditionExpression.rowLimit = Number(value);
+    } else if (key === "request.export_format") {
+      conditionExpression.exportFormat = JSON.parse(value);
     }
   }
   return conditionExpression;
@@ -93,7 +95,7 @@ export const getDatabaseIdByName = async (name: string) => {
   return database?.id || UNKNOWN_ID;
 };
 
-export const getDatabaseNameById = async (id: DatabaseId) => {
+export const getDatabaseNameById = (id: DatabaseId) => {
   const database = useDatabaseStore().getDatabaseById(id);
   return `instances/${database.instance.resourceId}/databases/${database.name}`;
 };

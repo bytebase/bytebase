@@ -112,8 +112,8 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { hasFeature, pushNotification, useCurrentUser } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import FeatureBadge from "@/components/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureModal.vue";
 import scrollIntoView from "scroll-into-view-if-needed";
@@ -127,7 +127,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const containerRef = ref<HTMLDivElement>();
 
 const state = reactive<LocalState>({
@@ -149,9 +149,9 @@ watchEffect(() => {
 });
 
 const allowEdit = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-general",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

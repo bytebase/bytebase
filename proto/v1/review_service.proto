@@ -128,7 +128,7 @@ message Review {
 
   ReviewStatus status = 5;
 
-  // Format: user:hello@world.com
+  // Format: users/hello@world.com
   string assignee = 6;
 
   bool assignee_attention = 7;
@@ -142,7 +142,7 @@ message Review {
     // The new status.
     Status status = 1;
 
-    // Format: user:hello@world.com
+    // Format: users/hello@world.com
     string principal = 2;
   }
 
@@ -155,10 +155,10 @@ message Review {
   string approval_finding_error = 11;
 
   // The subscribers.
-  // Format: user:hello@world.com
+  // Format: users/hello@world.com
   repeated string subscribers = 12;
 
-  // Format: user:hello@world.com
+  // Format: users/hello@world.com
   string creator = 13;
 
   google.protobuf.Timestamp create_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -177,8 +177,7 @@ message ApprovalTemplate {
   ApprovalFlow flow = 1;
   string title = 2;
   string description = 3;
-  // The name of the creator.
-  // Format: users/{user}. {user} is a system-generated unique ID.
+  // The name of the creator in users/{email} format.
   string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 

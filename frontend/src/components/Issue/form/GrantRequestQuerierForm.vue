@@ -15,7 +15,7 @@
       />
     </div>
     <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center textlabel !leading-6">
+      <span class="flex w-40 items-center textlabel shrink-0 !leading-6">
         {{ $t("common.databases") }}
         <RequiredStar />
       </span>
@@ -30,7 +30,7 @@
             :value="true"
             :label="$t('issue.grant-request.all-databases')"
           />
-          <div class="flex flex-row justify-start flex-wrap">
+          <div class="flex flex-row justify-start flex-wrap gap-y-2">
             <NRadio
               class="!leading-6"
               :value="false"
@@ -47,7 +47,7 @@
             </button>
             <div
               v-if="selectedDatabaseList.length > 0"
-              class="ml-6 flex flex-row justify-start items-start gap-4"
+              class="ml-6 flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
             >
               <div
                 v-for="database in selectedDatabaseList"
@@ -132,7 +132,7 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
+import { head, uniq } from "lodash-es";
 import { NRadioGroup, NRadio, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -146,14 +146,16 @@ import {
   PresetRoleType,
   UNKNOWN_ID,
 } from "@/types";
-import { memberListInProjectV1, parseExpiredTimeString } from "@/utils";
+import {
+  getDatabaseIdByName,
+  memberListInProjectV1,
+  parseConditionExpressionString,
+} from "@/utils";
 import {
   convertUserToPrincipal,
   useDatabaseStore,
   useProjectV1Store,
 } from "@/store";
-import { useInstanceV1Store } from "@/store/modules/v1/instance";
-import { instanceNamePrefix } from "@/store/modules/v1/common";
 import RequiredStar from "@/components/RequiredStar.vue";
 import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
 
@@ -172,7 +174,6 @@ interface LocalState {
 const { t } = useI18n();
 const { create, issue } = useIssueLogic();
 const databaseStore = useDatabaseStore();
-const instanceV1Store = useInstanceV1Store();
 const state = reactive<LocalState>({
   showSelectDatabasePanel: false,
   projectId: undefined,
@@ -297,35 +298,27 @@ watch(
       if (payload.role !== PresetRoleType.QUERIER) {
         throw "Only support QUERIER role";
       }
-      const expressionList = payload.condition.expression.split(" && ");
-      for (const expression of expressionList) {
-        const fields = expression.split(" ");
-        if (fields[0] === "request.time") {
-          state.expiredAt = new Date(
-            parseExpiredTimeString(fields[2])
-          ).toLocaleString();
-        } else if (fields[0] === "resource.database") {
-          const databaseIdList = [];
-          for (const url of JSON.parse(fields[2])) {
-            const value = url.split("/");
-            const instanceName = value[1] || "";
-            const databaseName = value[3] || "";
-            const instance = await instanceV1Store.getOrFetchInstanceByName(
-              instanceNamePrefix + instanceName
-            );
-            const databaseList =
-              await databaseStore.getOrFetchDatabaseListByInstanceId(
-                instance.uid
-              );
-            const database = databaseList.find(
-              (db) => db.name === databaseName
-            );
-            if (database) {
-              databaseIdList.push(database.id);
-            }
+
+      const conditionExpression = parseConditionExpressionString(
+        payload.condition.expression
+      );
+      if (conditionExpression.expiredTime !== undefined) {
+        state.expiredAt = new Date(
+          conditionExpression.expiredTime
+        ).toLocaleString();
+      }
+      if (
+        conditionExpression.databases !== undefined &&
+        conditionExpression.databases.length > 0
+      ) {
+        const databaseIdList = [];
+        for (const databaseName of conditionExpression.databases) {
+          const id = await getDatabaseIdByName(databaseName);
+          if (id && id !== UNKNOWN_ID) {
+            databaseIdList.push(id);
           }
-          state.selectedDatabaseIdList = databaseIdList;
         }
+        state.selectedDatabaseIdList = uniq(databaseIdList);
       }
     }
   },

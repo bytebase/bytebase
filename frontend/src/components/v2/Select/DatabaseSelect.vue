@@ -16,7 +16,7 @@ import { computed, watch, watchEffect } from "vue";
 import { NSelect, SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import { useCurrentUser, useDatabaseStore } from "@/store";
+import { useCurrentUserV1, useDatabaseStore } from "@/store";
 import {
   Database,
   DatabaseId,
@@ -59,7 +59,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseStore();
 
 const prepare = () => {
@@ -68,7 +68,7 @@ const prepare = () => {
 watchEffect(prepare);
 
 const rawDatabaseList = computed(() => {
-  const list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
+  const list = databaseStore.getDatabaseListByUser(currentUserV1.value);
 
   return list.filter((db) => {
     if (props.environment && props.environment !== String(UNKNOWN_ID)) {

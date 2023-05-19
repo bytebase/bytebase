@@ -9,14 +9,14 @@
     <div class="text-lg font-medium leading-7 text-main">
       <span>{{ $t("project.settings.manage-member") }}</span>
       <span class="ml-1 font-normal text-control-light">
-        ({{ activeComposedPrincipalList.length }})
+        ({{ activeComposedMemberList.length }})
       </span>
     </div>
 
     <div v-if="allowAdmin" class="my-4 w-full flex gap-x-2">
       <div class="w-[18rem] shrink-0">
-        <PrincipalSelect
-          v-model:principal="state.principalId"
+        <UserSelect
+          v-model:user="state.userUID"
           :include-all="false"
           :filter="filterNonMemberUsers"
           :disabled="state.adding"
@@ -47,10 +47,10 @@
       :project="project"
       :ready="ready"
       :editable="true"
-      :composed-principal-list="activeComposedPrincipalList"
+      :member-list="activeComposedMemberList"
     />
 
-    <div v-if="inactiveComposedPrincipalList.length > 0" class="mt-4">
+    <div v-if="inactiveComposedMemberList.length > 0" class="mt-4">
       <NCheckbox v-model:checked="state.showInactiveMemberList">
         <span class="textinfolabel">
           {{ $t("project.settings.members.show-inactive") }}
@@ -62,7 +62,7 @@
       <div class="text-lg font-medium leading-7 text-main">
         <span>{{ $t("project.settings.members.inactive-members") }}</span>
         <span class="ml-1 font-normal text-control-light">
-          ({{ inactiveComposedPrincipalList.length }})
+          ({{ inactiveComposedMemberList.length }})
         </span>
       </div>
       <ProjectMemberTable
@@ -70,11 +70,7 @@
         :project="project"
         :ready="ready"
         :editable="false"
-        :composed-principal-list="
-          composedPrincipalList.filter(
-            (item) => item.member.rowStatus === 'ARCHIVED'
-          )
-        "
+        :member-list="inactiveComposedMemberList"
       />
     </div>
   </div>
@@ -84,40 +80,35 @@
 import { computed, PropType, reactive } from "vue";
 import { NButton, NCheckbox } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { cloneDeep, isEqual, orderBy, uniq, uniqWith } from "lodash-es";
+import { cloneDeep, orderBy, uniq } from "lodash-es";
 
-import { ProjectMemberTable } from "../components/Project/ProjectSetting";
 import {
-  ComposedPrincipal,
-  DEFAULT_PROJECT_ID,
-  PresetRoleType,
-  Principal,
-  PrincipalId,
-  UNKNOWN_ID,
-} from "../types";
-import { PrincipalSelect, ProjectRolesSelect } from "./v2";
+  ComposedProjectMember,
+  ProjectMemberTable,
+} from "../components/Project/ProjectSetting";
+import { DEFAULT_PROJECT_V1_NAME, PresetRoleType, unknownUser } from "../types";
+import { UserSelect } from "./v2";
 import {
   addRoleToProjectIamPolicy,
+  extractUserUID,
   hasPermissionInProjectV1,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
 } from "../utils";
 import {
   extractUserEmail,
   featureToRef,
   pushNotification,
-  useCurrentUser,
   useCurrentUserV1,
-  useMemberStore,
-  usePrincipalStore,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
 import { Project } from "@/types/proto/v1/project_service";
 import { State } from "@/types/proto/v1/common";
+import { User } from "@/types/proto/v1/auth_service";
 
 interface LocalState {
-  principalId: PrincipalId | undefined;
+  userUID: string | undefined;
   roleList: string[];
   adding: boolean;
   showInactiveMemberList: boolean;
@@ -131,13 +122,12 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy, ready } = useProjectIamPolicy(projectResourceName);
 
 const state = reactive<LocalState>({
-  principalId: undefined,
+  userUID: undefined,
   roleList: [],
   adding: false,
   showInactiveMemberList: false,
@@ -145,10 +135,9 @@ const state = reactive<LocalState>({
 
 const hasRBACFeature = featureToRef("bb.feature.rbac");
 const userStore = useUserStore();
-const memberStore = useMemberStore();
 
 const allowAdmin = computed(() => {
-  if (parseInt(props.project.uid, 10) === DEFAULT_PROJECT_ID) {
+  if (props.project.name === DEFAULT_PROJECT_V1_NAME) {
     return false;
   }
 
@@ -158,9 +147,9 @@ const allowAdmin = computed(() => {
 
   // Allow workspace roles having manage project permission here in case project owners are not available.
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-project",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;
@@ -178,90 +167,83 @@ const allowAdmin = computed(() => {
   return false;
 });
 
-const composedPrincipalList = computed(() => {
+const composedMemberList = computed(() => {
   const distinctUserResourceNameList = uniq(
     iamPolicy.value.bindings.flatMap((binding) => binding.members)
   );
 
-  const userEmailList = distinctUserResourceNameList.map((user) =>
-    extractUserEmail(user)
-  );
-
-  const composedUserList = userEmailList.map((email) => {
-    const user = userStore.getUserByEmail(email);
-    const member = memberStore.memberByEmail(email);
-    return { email, user, member };
+  const userList = distinctUserResourceNameList.map((user) => {
+    const email = extractUserEmail(user);
+    return (
+      userStore.getUserByEmail(email) ?? {
+        ...unknownUser(),
+        email,
+      }
+    );
   });
 
   const usersByRole = iamPolicy.value.bindings.map((binding) => {
     return {
       role: binding.role,
-      users: new Set(binding.members),
+      users: new Set(binding.members.map(extractUserEmail)),
     };
   });
-  const composedPrincipalList = composedUserList.map<ComposedPrincipal>(
-    ({ email, member }) => {
-      const resourceName = `user:${email}`;
-      const roleList = uniqWith(
-        usersByRole
-          .filter((binding) => binding.users.has(resourceName))
-          .map((binding) => binding.role),
-        isEqual
-      );
-      return {
-        email,
-        member,
-        principal: member.principal,
-        roleList,
-      };
-    }
-  );
+  const userRolesList = userList.map<ComposedProjectMember>((user) => {
+    const roleList = uniq(
+      usersByRole
+        .filter((binding) => binding.users.has(user.email))
+        .map((binding) => binding.role)
+    );
+    return {
+      user,
+      roleList,
+    };
+  });
 
   return orderBy(
-    composedPrincipalList,
+    userRolesList,
     [
       (item) => (item.roleList.includes(PresetRoleType.OWNER) ? 0 : 1),
-      (item) => item.principal.id,
+      (item) => parseInt(extractUserUID(item.user.name), 10),
     ],
     ["asc", "asc"]
   );
 });
 
-const activeComposedPrincipalList = computed(() => {
-  return composedPrincipalList.value.filter(
-    (item) => item.member.rowStatus === "NORMAL"
+const activeComposedMemberList = computed(() => {
+  return composedMemberList.value.filter(
+    (item) => item.user.state === State.ACTIVE
   );
 });
 
-const inactiveComposedPrincipalList = computed(() => {
-  return composedPrincipalList.value.filter(
-    (item) => item.member.rowStatus === "ARCHIVED"
+const inactiveComposedMemberList = computed(() => {
+  return composedMemberList.value.filter(
+    (item) => item.user.state === State.DELETED
   );
 });
 
 const isValid = computed(() => {
-  const { principalId, roleList } = state;
-  return principalId && principalId !== UNKNOWN_ID && roleList.length > 0;
+  const { userUID, roleList } = state;
+  return userUID && roleList.length > 0;
 });
 
-const filterNonMemberUsers = (principal: Principal) => {
-  const user = `user:${principal.email}`;
+const filterNonMemberUsers = (user: User) => {
   return iamPolicy.value.bindings.every(
-    (binding) => !binding.members.includes(user)
+    (binding) => !binding.members.includes(`user:${user.email}`)
   );
 };
 
 const addMember = async () => {
   if (!isValid.value) return;
-  const { principalId, roleList } = state;
-  if (!principalId) return;
+  const { userUID, roleList } = state;
+  if (!userUID) return;
   state.adding = true;
   try {
-    const principal = usePrincipalStore().principalById(principalId);
     const policy = cloneDeep(iamPolicy.value);
-    const user = `user:${principal.email}`;
+    const user = userStore.getUserById(userUID) ?? unknownUser();
+    const tag = `user:${user.email}`;
     roleList.forEach((role) => {
-      addRoleToProjectIamPolicy(policy, user, role);
+      addRoleToProjectIamPolicy(policy, tag, role);
     });
     await useProjectIamPolicyStore().updateProjectIamPolicy(
       projectResourceName.value,
@@ -272,11 +254,11 @@ const addMember = async () => {
       module: "bytebase",
       style: "SUCCESS",
       title: t("project.settings.success-member-added-prompt", {
-        name: principal.name,
+        name: user.title,
       }),
     });
     state.roleList = [];
-    state.principalId = undefined;
+    state.userUID = undefined;
   } finally {
     state.adding = false;
   }

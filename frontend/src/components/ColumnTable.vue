@@ -75,8 +75,8 @@ import { computed, defineComponent, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Column, Database } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
-import { featureToRef, useCurrentUser } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { featureToRef, useCurrentUserV1 } from "@/store";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import { BBTableColumn } from "@/bbkit/types";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { getDatabasePathByLegacyDatabase } from "@/store/modules/v1/common";
@@ -133,12 +133,12 @@ export default defineComponent({
       );
     });
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
     const allowAdmin = computed(() => {
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-sensitive-data",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         // True if the currentUser has workspace level sensitive data

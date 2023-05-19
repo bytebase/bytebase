@@ -147,7 +147,7 @@
 import { computed, reactive, watchEffect } from "vue";
 import {
   idFromSlug,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   instanceHasCreateDatabase,
   isMemberOfProjectV1,
 } from "../utils";
@@ -169,7 +169,6 @@ import { useI18n } from "vue-i18n";
 import {
   featureToRef,
   pushNotification,
-  useCurrentUser,
   useDatabaseStore,
   useInstanceStore,
   useSubscriptionStore,
@@ -203,7 +202,6 @@ const instanceStore = useInstanceStore();
 const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const sqlStore = useSQLStore();
 
@@ -249,9 +247,9 @@ const attentionText = computed((): string => {
       t(
         "instance.bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance"
       ) +
-      (hasWorkspacePermission(
+      (hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-instance",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
         ? ""
         : " " + t("instance.please-contact-your-dba-to-configure-it"))
@@ -261,9 +259,9 @@ const attentionText = computed((): string => {
       t(
         "instance.bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance"
       ) +
-      (hasWorkspacePermission(
+      (hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-instance",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
         ? " " +
           t("instance.please-check-the-instance-connection-info-is-correct")
@@ -275,9 +273,9 @@ const attentionText = computed((): string => {
 
 const attentionActionText = computed((): string => {
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     if (state.migrationSetupStatus == "NOT_EXIST") {
@@ -297,9 +295,9 @@ const databaseList = computed(() => {
   );
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return list;
@@ -328,17 +326,17 @@ const instanceUserList = computed(() => {
 const allowEdit = computed(() => {
   return (
     instance.value.rowStatus == "NORMAL" &&
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   );
 });
 
 const allowArchiveOrRestore = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-instance",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

@@ -9,7 +9,8 @@ bytebase:
     existingPgURLSecretKey: ""
     pg: postgresql://user:secret@host:port/dbname
     data: /var/opt/bytebase
-  version: 1.16.0
+  version: 2.0.0
+  registryMirrorHost: ""
   persistence:
     storage: 2Gi
     enabled: false

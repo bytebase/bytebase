@@ -1,33 +1,34 @@
 <template>
   <BBSelect
-    :selected-item="selectedRole"
-    :item-list="['OWNER', 'DBA', 'DEVELOPER']"
+    :selected-item="role"
+    :item-list="[UserRole.OWNER, UserRole.DBA, UserRole.DEVELOPER]"
     :placeholder="$t('settings.members.select-role')"
     :disabled="disabled"
-    @select-item="(role) => $emit('change-role', role)"
+    @select-item="$emit('update:role', $event as UserRole)"
   >
     <template #menuItem="{ item }">
-      {{ $t(`common.role.${item.toLowerCase()}`) }}
+      {{ roleNameV1(item) }}
     </template>
   </BBSelect>
 </template>
 
-<script lang="ts">
-import { defineComponent, PropType } from "vue";
-import { RoleType } from "../types";
+<script lang="ts" setup>
+import { PropType } from "vue";
+import { UserRole } from "@/types/proto/v1/auth_service";
+import { roleNameV1 } from "@/utils";
 
-export default defineComponent({
-  name: "RoleSelect",
-  props: {
-    selectedRole: {
-      type: String as PropType<RoleType>,
-      default: undefined,
-    },
-    disabled: {
-      default: false,
-      type: Boolean,
-    },
+defineProps({
+  role: {
+    type: Number as PropType<UserRole>,
+    default: undefined,
   },
-  emits: ["change-role"],
+  disabled: {
+    default: false,
+    type: Boolean,
+  },
 });
+
+defineEmits<{
+  (event: "update:role", role: UserRole): void;
+}>();
 </script>

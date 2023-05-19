@@ -34,6 +34,7 @@
     <ProjectVersionControlPanel
       id="gitops"
       :project="project"
+      :project-v1="projectV1"
       :allow-edit="allowEdit"
     />
   </template>

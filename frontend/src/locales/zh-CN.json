@@ -54,7 +54,7 @@
     "bookmarks": "书签",
     "quick-action": "快捷操作",
     "archive": "归档",
-    "quickstart": "快速入门",
+    "quickstart": "新手任务",
     "logout": "登出",
     "close": "关闭",
     "latest": "最新",
@@ -363,7 +363,7 @@
   "intro": {
     "doc": "文档",
     "issue": "工单",
-    "quickstart": "快速入门"
+    "quickstart": "新手任务"
   },
   "bbkit": {
     "common": {
@@ -525,6 +525,10 @@
         "external-url": {
           "self": "External URL",
           "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。{viewDoc}"
+        },
+        "gitops-webhook-url": {
+          "self": "GitOps Webhook URL",
+          "description": "用于 GitOps 中第三方服务向 Bytebase 发送 Webhook 的 URL。"
         },
         "config-updated": "配置已更新",
         "plugin": {
@@ -962,8 +966,8 @@
     "use-kbar": "使用 kbar ({shortcut})",
     "query-data": "查询数据",
     "notice": {
-      "title": "快速入门导览已关闭",
-      "desc": "您稍后仍可以从右上角的菜单中再次打开快速入门导览"
+      "title": "新手任务已关闭",
+      "desc": "您稍后仍可以从右上角的菜单中再次打开新手任务"
     }
   },
   "auth": {
@@ -1854,9 +1858,9 @@
       }
     },
     "plan-features": "{plan}功能",
-    "overuse-warning": "{neededPlan}在{currentPlan}可能受限，现在升级以确保正常使用。",
+    "overuse-warning": "{neededPlan}在{currentPlan}将会受限，请尽快升级以确保正常使用。",
     "overuse-modal": {
-      "description": "您正在使用当前 {plan} 不包含的功能。立即升级避免影响使用。",
+      "description": "您正在使用当前「{plan}」不包含的功能。立即升级避免影响使用。",
       "instance-count-exceeds": "实例数量超出了限制 {count}"
     },
     "features": {
@@ -2491,6 +2495,7 @@
     },
     "querier": {
       "description": "系统定义的项目数据查询者角色"
-    }
+    },
+    "select-role": "选择角色"
   }
 }

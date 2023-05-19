@@ -9,12 +9,12 @@ import {
 } from "@/types";
 import {
   useBackupListByDatabaseId,
-  useCurrentUser,
+  useCurrentUserV1,
   useInstanceStore,
   useIssueStore,
 } from "@/store";
 import { useI18n } from "vue-i18n";
-import { semverCompare } from "@/utils";
+import { extractUserUID, semverCompare } from "@/utils";
 
 export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
@@ -28,7 +28,7 @@ export const isPITRAvailableOnInstance = (instance: Instance): boolean => {
 
 export const usePITRLogic = (database: Ref<Database>) => {
   const { t } = useI18n();
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   const instanceStore = useInstanceStore();
 
   const backupList = useBackupListByDatabaseId(
@@ -101,7 +101,7 @@ export const usePITRLogic = (database: Ref<Database>) => {
       name: `Restore database [${database.value.name}]`,
       type: "bb.issue.database.restore.pitr",
       description: "",
-      assigneeId: currentUser.value.id,
+      assigneeId: Number(extractUserUID(currentUserV1.value.name)),
       projectId: Number(database.value.project.id),
       payload: {},
       createContext,

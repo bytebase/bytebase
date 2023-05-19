@@ -430,7 +430,7 @@ type SearchSheetsRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// To filter the search result.
 	// Format: only support the following spec for now:
-	// - `creator = user:{email}`, `creator != user:{email}`
+	// - `creator = users/{email}`, `creator != users/{email}`
 	// - `starred = true`, `starred = false`.
 	// Not support empty filter for now.
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
@@ -631,7 +631,7 @@ type Sheet struct {
 	// The title of the sheet.
 	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// The creator of the Sheet.
-	// Format: user:{email}
+	// Format: users/{email}
 	Creator string `protobuf:"bytes,4,opt,name=creator,proto3" json:"creator,omitempty"`
 	// The create time of the sheet.
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`

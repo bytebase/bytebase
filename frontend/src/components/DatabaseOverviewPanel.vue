@@ -233,7 +233,7 @@
 <script lang="ts" setup>
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { computed, reactive, watchEffect, PropType } from "vue";
-import { hasWorkspacePermission, roleListInProjectV1 } from "../utils";
+import { hasWorkspacePermissionV1, roleListInProjectV1 } from "../utils";
 import {
   Anomaly,
   Database,
@@ -243,7 +243,6 @@ import {
 } from "../types";
 import {
   featureToRef,
-  useCurrentUser,
   useDataSourceStore,
   useAnomalyList,
   useDBSchemaStore,
@@ -276,7 +275,6 @@ const state = reactive<LocalState>({
   selectedSchemaName: "",
 });
 
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const dbSchemaStore = useDBSchemaStore();
 
@@ -370,9 +368,9 @@ const functionList = computed(() => {
 });
 
 const allowConfigInstance = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-instance",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

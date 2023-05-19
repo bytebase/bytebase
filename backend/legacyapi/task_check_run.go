@@ -79,11 +79,6 @@ const (
 	TaskCheckPITRMySQL TaskCheckType = "bb.task-check.pitr.mysql"
 )
 
-// TaskCheckEarliestAllowedTimePayload is the task check payload for earliest allowed time.
-type TaskCheckEarliestAllowedTimePayload struct {
-	EarliestAllowedTs int64 `json:"earliestAllowedTs,omitempty"`
-}
-
 // Namespace is the namespace for task check result.
 type Namespace string
 

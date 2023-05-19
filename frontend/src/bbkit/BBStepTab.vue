@@ -43,7 +43,7 @@
         </div>
       </li>
     </ol>
-    <div class="mt-4 mb-4">
+    <div class="mt-4 mb-4" :class="paneClass">
       <template v-for="(step, index) in stepItemList" :key="index">
         <slot
           v-if="state.currentStep == index"
@@ -108,6 +108,7 @@
 <script lang="ts" setup>
 import { reactive, withDefaults } from "vue";
 import { BBStepTabItem } from "./types";
+import { VueClass } from "@/utils/types";
 
 interface LocalState {
   done: boolean;
@@ -121,12 +122,14 @@ withDefaults(
     allowNext?: boolean;
     finishTitle?: string;
     sticky?: boolean;
+    paneClass?: VueClass;
   }>(),
   {
     showCancel: true,
     allowNext: true,
     finishTitle: "bbkit.common.finish",
     sticky: false,
+    paneClass: undefined,
   }
 );
 

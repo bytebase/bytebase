@@ -89,7 +89,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
 		}
 		if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
+			return echo.NewHTTPError(http.StatusForbidden, "Not allowed to change task status")
 		}
 
 		if stageAllTaskStatusPatch.Status == api.TaskPending {

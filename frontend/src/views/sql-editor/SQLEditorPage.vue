@@ -117,7 +117,7 @@ import { NDrawer } from "naive-ui";
 import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
 import {
   useConnectionTreeStore,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useInstanceById,
   useProjectV1Store,
@@ -155,7 +155,7 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
 const connectionTreeStore = useConnectionTreeStore();
 const sqlEditorStore = useSQLEditorStore();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
@@ -173,7 +173,7 @@ const allowAccess = computed(() => {
   return isDatabaseAccessible(
     database,
     accessControlPolicyList,
-    currentUser.value
+    currentUserV1.value
   );
 });
 

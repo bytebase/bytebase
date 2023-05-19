@@ -11,7 +11,7 @@
       class="w-[44rem] max-w-[100vw] relative"
     >
       <div v-for="role in roleList" :key="role.role" class="mb-4">
-        <template v-if="role.formatedConditionList.length > 0">
+        <template v-if="role.formattedConditionList.length > 0">
           <div
             class="w-full px-2 py-2 flex flex-row justify-start items-center"
           >
@@ -36,10 +36,10 @@
           <BBGrid
             :column-list="COLUMNS"
             :row-clickable="false"
-            :data-source="role.formatedConditionList"
+            :data-source="role.formattedConditionList"
             class="border"
           >
-            <template #item="{ item }: FormatedConditionRow">
+            <template #item="{ item }: FormattedConditionRow">
               <div class="bb-grid-cell">
                 {{ extractDatabaseName(item.database) }}
               </div>
@@ -78,14 +78,8 @@
 import { computed, ref } from "vue";
 import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
 
+import { DatabaseId, PresetRoleType, UNKNOWN_ID } from "@/types";
 import {
-  ComposedPrincipal,
-  DatabaseId,
-  PresetRoleType,
-  UNKNOWN_ID,
-} from "@/types";
-import {
-  useCurrentUser,
   useCurrentUserV1,
   useDatabaseStore,
   useProjectIamPolicy,
@@ -99,9 +93,8 @@ import {
   getDatabaseIdByName,
   getDatabaseNameById,
   hasPermissionInProjectV1,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   parseConditionExpressionString,
-  removeRoleFromProjectIamPolicy,
   stringifyConditionExpression,
 } from "@/utils";
 import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
@@ -110,8 +103,9 @@ import RoleDescription from "./RoleDescription.vue";
 import { cloneDeep, isEqual, uniq } from "lodash-es";
 import { State } from "@/types/proto/v1/common";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
+import { ComposedProjectMember } from "./types";
 
-interface FormatedCondition {
+export interface FormattedCondition {
   database?: DatabaseId;
   table?: string;
   expiration?: Date;
@@ -119,11 +113,11 @@ interface FormatedCondition {
   rawRole: Binding;
 }
 
-export type FormatedConditionRow = BBGridRow<FormatedCondition>;
+export type FormattedConditionRow = BBGridRow<FormattedCondition>;
 
 const props = defineProps<{
   project: Project;
-  member: ComposedPrincipal;
+  member: ComposedProjectMember;
 }>();
 
 const emits = defineEmits<{
@@ -132,7 +126,6 @@ const emits = defineEmits<{
 
 const { t } = useI18n();
 const dialog = useDialog();
-const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
 const databaseStore = useDatabaseStore();
@@ -142,13 +135,13 @@ const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 const roleList = ref<
   {
     role: string;
-    formatedConditionList: FormatedCondition[];
+    formattedConditionList: FormattedCondition[];
   }[]
 >([]);
 
 const panelTitle = computed(() => {
   return t("project.settings.members.edit", {
-    member: `${props.member.principal.name}(${props.member.email})`,
+    member: `${props.member.user.title}(${props.member.user.email})`,
   });
 });
 
@@ -176,9 +169,9 @@ const COLUMNS = computed(() => {
 
 const allowAdmin = computed(() => {
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-project",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;
@@ -226,7 +219,7 @@ const allowRemoveRole = (role: string) => {
 const handleDeleteRole = (role: string) => {
   const title = t("project.settings.members.revoke-role-from-user", {
     role: displayRoleTitle(role),
-    user: props.member.principal.name,
+    user: props.member.user.title,
   });
   dialog.create({
     title: title,
@@ -240,9 +233,23 @@ const handleDeleteRole = (role: string) => {
       // nothing to do
     },
     onPositiveClick: async () => {
-      const user = `user:${props.member.email}`;
+      const user = `user:${props.member.user.email}`;
       const policy = cloneDeep(iamPolicy.value);
-      removeRoleFromProjectIamPolicy(policy, user, role);
+      for (const binding of policy.bindings) {
+        if (binding.role !== role) {
+          continue;
+        }
+        if (binding.members.includes(user)) {
+          binding.members = binding.members.filter((member) => {
+            return member !== user;
+          });
+        }
+        if (binding.members.length === 0) {
+          policy.bindings = policy.bindings.filter(
+            (item) => !isEqual(item, binding)
+          );
+        }
+      }
       await projectIamPolicyStore.updateProjectIamPolicy(
         projectResourceName.value,
         policy
@@ -251,7 +258,7 @@ const handleDeleteRole = (role: string) => {
   });
 };
 
-const handleDeleteCondition = async (condition: FormatedCondition) => {
+const handleDeleteCondition = async (condition: FormattedCondition) => {
   if (!condition.database) {
     return;
   }
@@ -261,7 +268,7 @@ const handleDeleteCondition = async (condition: FormatedCondition) => {
   );
   const title = t("project.settings.members.revoke-role-from-user", {
     role: `${displayRoleTitle(condition.rawRole.role)} - ${database.name}`,
-    user: props.member.principal.name,
+    user: props.member.user.title,
   });
   dialog.create({
     title: title,
@@ -275,7 +282,7 @@ const handleDeleteCondition = async (condition: FormatedCondition) => {
       // nothing to do
     },
     onPositiveClick: async () => {
-      const user = `user:${props.member.email}`;
+      const user = `user:${props.member.user.email}`;
       const policy = cloneDeep(iamPolicy.value);
       let rawRole = policy.bindings.find((binding) =>
         isEqual(binding, condition.rawRole)
@@ -368,20 +375,20 @@ watch(
   async () => {
     const tempRoleList: {
       role: string;
-      formatedConditionList: FormatedCondition[];
+      formattedConditionList: FormattedCondition[];
     }[] = [];
     const rawRoleList = iamPolicy.value?.bindings?.filter((binding) => {
-      return binding.members.includes(`user:${props.member.email}`);
+      return binding.members.includes(`user:${props.member.user.email}`);
     });
     for (const rawRole of rawRoleList) {
-      const formatedConditionList = [];
+      const formattedConditionList = [];
       const parsedCondition = await parseExpression(
         rawRole.condition?.expression || ""
       );
       const description = rawRole.condition?.description || "";
       if (Array.isArray(parsedCondition.database)) {
         for (const database of parsedCondition.database) {
-          formatedConditionList.push({
+          formattedConditionList.push({
             database: database,
             table: undefined,
             expiration: parsedCondition.expiredAt,
@@ -390,7 +397,7 @@ watch(
           });
         }
       } else {
-        formatedConditionList.push({
+        formattedConditionList.push({
           database: undefined,
           table: undefined,
           expiration: undefined,
@@ -400,11 +407,11 @@ watch(
       }
       const tempRole = tempRoleList.find((role) => role.role === rawRole.role);
       if (tempRole) {
-        tempRole.formatedConditionList.push(...formatedConditionList);
+        tempRole.formattedConditionList.push(...formattedConditionList);
       } else {
         tempRoleList.push({
           role: rawRole.role,
-          formatedConditionList,
+          formattedConditionList: formattedConditionList,
         });
       }
     }

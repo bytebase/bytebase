@@ -14,7 +14,6 @@ import {
   Instance,
   InstanceId,
   MaybeRef,
-  PrincipalId,
   Project,
   ResourceIdentifier,
   ResourceObject,
@@ -24,7 +23,9 @@ import {
 import { useDataSourceStore } from "./dataSource";
 import { useInstanceStore } from "./instance";
 import { useLegacyProjectStore } from "./project";
-import { isMemberOfProject } from "@/utils";
+import { hasWorkspacePermissionV1, isMemberOfProjectV1 } from "@/utils";
+import { useProjectV1Store } from "./v1";
+import { User } from "@/types/proto/v1/auth_service";
 
 function convert(
   database: ResourceObject,
@@ -170,11 +171,21 @@ export const useDatabaseStore = defineStore("database", {
       }
       return this.databaseListByInstanceId.get(instanceId) || [];
     },
-    getDatabaseListByPrincipalId(userId: PrincipalId): Database[] {
+    getDatabaseListByUser(user: User): Database[] {
+      const canManageDatabase = hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-database",
+        user.userRole
+      );
       const list: Database[] = [];
       for (const [_, databaseList] of this.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
-          if (isMemberOfProject(item.project, userId)) {
+          const projectV1 = useProjectV1Store().getProjectByUID(
+            String(item.project.id)
+          );
+          if (
+            canManageDatabase ||
+            isMemberOfProjectV1(projectV1.iamPolicy, user)
+          ) {
             list.push(item);
           }
         });
@@ -225,6 +236,21 @@ export const useDatabaseStore = defineStore("database", {
       projectId: string;
     }) {
       this.databaseListByProjectId.set(projectId, databaseList);
+    },
+    removeDatabaseListFromProject(databaseList: Database[]) {
+      for (const database of databaseList) {
+        const listByProject = this.databaseListByProjectId.get(
+          database.project.id
+        );
+        if (listByProject) {
+          const i = listByProject.findIndex(
+            (item: Database) => item.id == database.id
+          );
+          if (i >= 0) {
+            listByProject.splice(i, 1);
+          }
+        }
+      }
     },
     upsertDatabaseList({
       databaseList,
@@ -375,11 +401,11 @@ export const useDatabaseStore = defineStore("database", {
       return schema;
     },
     async transferProject({
-      databaseId,
+      database,
       projectId,
       labels,
     }: {
-      databaseId: DatabaseId;
+      database: Database;
       projectId: string;
       labels?: DatabaseLabel[];
     }) {
@@ -388,7 +414,7 @@ export const useDatabaseStore = defineStore("database", {
         attributes.labels = JSON.stringify(labels);
       }
       const data = (
-        await axios.patch(`/api/database/${databaseId}`, {
+        await axios.patch(`/api/database/${database.id}`, {
           data: {
             type: "databasePatch",
             attributes,
@@ -397,7 +423,7 @@ export const useDatabaseStore = defineStore("database", {
       ).data;
 
       const updatedDatabase = convert(data.data, data.included);
-
+      this.removeDatabaseListFromProject([database]);
       this.upsertDatabaseList({
         databaseList: [updatedDatabase],
       });

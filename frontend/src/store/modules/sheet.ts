@@ -19,11 +19,15 @@ import {
   SheetPayload,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
-import { useCurrentUser } from "./auth";
+import { useCurrentUserV1 } from "./auth";
 import { useDatabaseStore } from "./database";
 import { useLegacyProjectStore } from "./project";
 import { useTabStore } from "./tab";
-import { getDefaultSheetPayloadWithSource, isSheetWritable } from "@/utils";
+import {
+  extractUserUID,
+  getDefaultSheetPayloadWithSource,
+  isSheetWritable,
+} from "@/utils";
 
 function convertSheetPayload(
   resourceObj: ResourceObject,
@@ -101,12 +105,15 @@ export const useSheetStore = defineStore("sheet", {
       return state.sheetById.get(sheetId) || unknown("SHEET");
     },
     isCreator() {
-      const currentUser = useCurrentUser();
+      const currentUserV1 = useCurrentUserV1();
       const currentSheet = this.currentSheet as Sheet;
 
       if (!currentSheet) return false;
 
-      return currentUser.value.id === currentSheet!.creator.id;
+      return (
+        extractUserUID(currentUserV1.value.name) ===
+        String(currentSheet.creator.id)
+      );
     },
     /**
      * Check the sheet whether is read-only.

@@ -9,11 +9,10 @@ import {
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/review_service";
-import { convertUserToPrincipal, extractUserEmail, useUserStore } from "./user";
-import { useMemberStore } from "./member";
+import { useUserStore } from "./user";
 import { reviewServiceClient } from "@/grpcweb";
-import { User, UserType } from "@/types/proto/v1/auth_service";
-import { memberListInProjectV1 } from "@/utils";
+import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
+import { extractUserResourceName, memberListInProjectV1 } from "@/utils";
 import { useProjectV1Store } from "./v1";
 
 const reviewName = (issue: Issue) => {
@@ -85,7 +84,9 @@ const fetchReviewApproversAndCandidates = async (
 ) => {
   const userStore = useUserStore();
   const approvers = review.approvers.map((approver) => {
-    return userStore.getUserByEmail(extractUserEmail(approver.principal));
+    return userStore.getUserByEmail(
+      extractUserResourceName(approver.principal)
+    );
   });
   const candidates = review.approvalTemplates
     .flatMap((template) => {
@@ -100,16 +101,15 @@ const fetchReviewApproversAndCandidates = async (
 };
 
 export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
-  const memberStore = useMemberStore();
-  const workspaceMemberList = memberStore.memberList.filter(
-    (member) => member.principal.type === "END_USER"
+  const workspaceMemberList = useUserStore().activeUserList.filter(
+    (user) => user.userType === UserType.USER
   );
   const project = useProjectV1Store().getProjectByUID(String(issue.project.id));
   const projectMemberList = memberListInProjectV1(project, project.iamPolicy)
     .filter((member) => member.user.userType === UserType.USER)
     .map((member) => ({
       ...member,
-      principal: convertUserToPrincipal(member.user),
+      user: member.user,
     }));
 
   const candidates = step.nodes.flatMap((node) => {
@@ -126,22 +126,22 @@ export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
           .filter((member) =>
             member.roleList.includes(PresetRoleType.DEVELOPER)
           )
-          .map((member) => member.principal);
+          .map((member) => member.user);
       }
       if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
         return projectMemberList
           .filter((member) => member.roleList.includes(PresetRoleType.OWNER))
-          .map((member) => member.principal);
+          .map((member) => member.user);
       }
       if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {
-        return workspaceMemberList
-          .filter((member) => member.role === "DBA")
-          .map((member) => member.principal);
+        return workspaceMemberList.filter(
+          (member) => member.userRole === UserRole.DBA
+        );
       }
       if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
-        return workspaceMemberList
-          .filter((member) => member.role === "OWNER")
-          .map((member) => member.principal);
+        return workspaceMemberList.filter(
+          (member) => member.userRole === UserRole.OWNER
+        );
       }
       return [];
     };
@@ -153,7 +153,7 @@ export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
       return memberList
         .filter((member) => member.user.userType === UserType.USER)
         .filter((member) => member.roleList.includes(role))
-        .map((member) => convertUserToPrincipal(member.user));
+        .map((member) => member.user);
     };
 
     if (groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
@@ -165,5 +165,5 @@ export const candidatesOfApprovalStep = (issue: Issue, step: ApprovalStep) => {
     return [];
   });
 
-  return uniq(candidates.map((principal) => `users/${principal.id}`));
+  return uniq(candidates.map((user) => user.name));
 };

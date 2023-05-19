@@ -215,10 +215,10 @@ import { useI18n } from "vue-i18n";
 import { NPopconfirm } from "naive-ui";
 import { uniq } from "lodash-es";
 
-import { featureToRef, useCurrentUser, useDatabaseStore } from "@/store";
+import { featureToRef, useCurrentUserV1, useDatabaseStore } from "@/store";
 import { Database, DatabaseId, DEFAULT_PROJECT_ID } from "@/types";
 import { BBTableColumn } from "@/bbkit/types";
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import AddRuleForm from "@/components/AccessControl/AddRuleForm.vue";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import {
@@ -226,6 +226,7 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { getDatabasePathByLegacyDatabase } from "@/store/modules/v1/common";
 
 interface LocalState {
@@ -250,11 +251,11 @@ const databaseStore = useDatabaseStore();
 const policyStore = usePolicyV1Store();
 const hasAccessControlFeature = featureToRef("bb.feature.access-control");
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const allowAdmin = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-access-control",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -265,14 +266,16 @@ const databaseOfPolicy = (policy: Policy) => {
 const activePolicyList = computed(() => {
   return state.policyList.filter(
     (policy) =>
-      databaseOfPolicy(policy).instance.environment.tier === "PROTECTED"
+      databaseOfPolicy(policy).instance.environment.tier ===
+      EnvironmentTier.PROTECTED
   );
 });
 
 const inactivePolicyList = computed(() => {
   return state.policyList.filter(
     (policy) =>
-      databaseOfPolicy(policy).instance.environment.tier === "UNPROTECTED"
+      databaseOfPolicy(policy).instance.environment.tier ===
+      EnvironmentTier.UNPROTECTED
   );
 });
 
@@ -286,7 +289,7 @@ const prepareList = async () => {
 
   const allDatabaseList = await databaseStore.fetchDatabaseList();
   state.databaseList = allDatabaseList
-    .filter((db) => db.instance.environment.tier === "PROTECTED")
+    .filter((db) => db.instance.environment.tier === EnvironmentTier.PROTECTED)
     .filter((db) => db.project.id !== DEFAULT_PROJECT_ID);
 
   // For some policy related databases that are not in the state.databaseList,
@@ -330,7 +333,11 @@ const handleAddRule = async (databaseList: Database[]) => {
           type: PolicyType.ACCESS_CONTROL,
           inheritFromParent: false,
           accessControlPolicy: {
-            disallowRules: [],
+            disallowRules: [
+              {
+                fullDatabase: true,
+              },
+            ],
           },
         },
       });

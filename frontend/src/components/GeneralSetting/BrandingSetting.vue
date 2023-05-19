@@ -92,9 +92,9 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
-import { hasWorkspacePermission } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification, useCurrentUser } from "@/store";
+import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 interface LocalState {
@@ -132,12 +132,12 @@ watchEffect(() => {
   state.logoUrl = settingV1Store.brandingLogo;
 });
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const allowEdit = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-general",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 

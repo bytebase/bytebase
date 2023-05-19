@@ -41,14 +41,10 @@
         <MemberSelect
           class="w-full"
           :disabled="!allowEditAssignee"
-          :selected-id="assigneeId as number"
-          :custom-filter="filterPrincipal"
+          :selected-id="assigneeId"
+          :custom-filter="filterUser"
           data-label="bb-assignee-select"
-          @select-principal-id="
-            (principalId: number) => {
-              updateAssigneeId(principalId)
-            }
-          "
+          @select-user-id="updateAssigneeId"
         />
       </div>
 
@@ -319,25 +315,24 @@ import {
   StageCreate,
   Instance,
   DatabaseLabel,
-  Principal,
   UNKNOWN_ID,
 } from "@/types";
 import {
   allTaskList,
   databaseSlug,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   hidePrefix,
   taskSlug,
   extractDatabaseNameFromTask,
   PRESET_LABEL_KEYS,
+  extractUserUID,
 } from "@/utils";
 import {
   hasFeature,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useEnvironmentV1Store,
   useProjectV1Store,
-  useUserStore,
 } from "@/store";
 import {
   allowUserToBeAssignee,
@@ -400,9 +395,10 @@ const allowEdit = computed(() => {
   // is performing the issue based on the old value.
   // For now, we choose to be on the safe side at the cost of flexibility.
   const issueEntity = issue.value as Issue;
+  const currentUserUID = extractUserUID(currentUserV1.value.name);
   return (
-    issueEntity.status == "OPEN" &&
-    issueEntity.assignee?.id == currentUser.value.id
+    issueEntity.status === "OPEN" &&
+    String(issueEntity.assignee?.id) === currentUserUID
   );
 });
 
@@ -417,7 +413,7 @@ watch(selectedTask, (cur) => {
   state.earliestAllowedTs = cur.earliestAllowedTs;
 });
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const fieldValue = <T = string>(field: InputField): T => {
   return issue.value.payload[field.id] as T;
@@ -444,9 +440,9 @@ const project = computed(() => {
 
 const assigneeId = computed(() => {
   if (create.value) {
-    return (issue.value as IssueCreate).assigneeId;
+    return String((issue.value as IssueCreate).assigneeId);
   }
-  return (issue.value as Issue).assignee.id;
+  return String((issue.value as Issue).assignee.id);
 });
 
 const databaseEntity = ref<Database>();
@@ -475,9 +471,9 @@ const showTaskSelect = computed((): boolean => {
 });
 
 const allowManageInstance = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-instance",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -485,7 +481,7 @@ const allowEditAssignee = computed(() => {
   if (create.value) {
     return true;
   }
-  return allowUserToChangeAssignee(currentUser.value, issue.value as Issue);
+  return allowUserToChangeAssignee(currentUserV1.value, issue.value as Issue);
 });
 
 const allowEditEarliestAllowedTime = computed(() => {
@@ -495,10 +491,11 @@ const allowEditEarliestAllowedTime = computed(() => {
   // only the assignee is allowed to modify EarliestAllowedTime
   const issueEntity = issue.value as Issue;
   const task = selectedTask.value as Task;
+  const currentUserUID = extractUserUID(currentUserV1.value.name);
   return (
-    issueEntity.status == "OPEN" &&
-    (task.status == "PENDING" || task.status == "PENDING_APPROVAL") &&
-    currentUser.value.id == issueEntity.assignee.id
+    issueEntity.status === "OPEN" &&
+    (task.status === "PENDING" || task.status === "PENDING_APPROVAL") &&
+    currentUserUID === String(issueEntity.assignee.id)
   );
 });
 
@@ -606,9 +603,7 @@ const selectTaskId = (taskId: TaskId) => {
   selectStageOrTask(stage.id as number, slug);
 };
 const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
-const filterPrincipal = (principal: Principal): boolean => {
-  const user =
-    useUserStore().getUserByName(`users/${principal.id}`) ?? User.fromJSON({});
+const filterUser = (user: User): boolean => {
   return allowUserToBeAssignee(
     user,
     project.value,

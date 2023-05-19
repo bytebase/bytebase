@@ -94,6 +94,7 @@ import { head } from "lodash-es";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import {
   activeTask,
+  extractUserUID,
   isDatabaseRelatedIssueType,
   isGrantRequestIssueType,
 } from "@/utils";
@@ -105,7 +106,7 @@ import {
   GrantRequestPayload,
   PresetRoleType,
 } from "@/types";
-import { useCurrentUser } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import { IssueReviewButtonGroup } from "./review";
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
@@ -118,7 +119,7 @@ interface LocalState {
 }
 
 const logic = useIssueLogic();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const create = logic.create;
 const issue = logic.issue as Ref<Issue>;
 const { allowEditNameAndDescription, updateName } = useExtraIssueLogic();
@@ -155,7 +156,7 @@ const showExportButton = computed(() => {
     .grantRequest as GrantRequestPayload;
   if (
     issuePayload.role !== PresetRoleType.EXPORTER ||
-    currentUser.value.id !== issue.value.creator.id
+    extractUserUID(currentUserV1.value.name) !== String(issue.value.creator.id)
   ) {
     return false;
   }

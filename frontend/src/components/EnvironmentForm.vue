@@ -211,7 +211,7 @@
               v-if="allowEditSQLReviewPolicy"
               class="mr-2"
               :text="true"
-              :value="sqlReviewPolicy.rowStatus === 'NORMAL'"
+              :value="sqlReviewPolicy.enforce"
               @toggle="toggleSQLReviewPolicy"
             />
             <button
@@ -324,10 +324,10 @@ import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { getErrorCode } from "@/utils/grpcweb";
 import { BBSwitch } from "@/bbkit";
-import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
+import { hasWorkspacePermissionV1, sqlReviewPolicySlug } from "@/utils";
 import {
   pushNotification,
-  useCurrentUser,
+  useCurrentUserV1,
   useEnvironmentV1List,
   useSQLReviewStore,
 } from "@/store";
@@ -473,14 +473,14 @@ watch(
   }
 );
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const environmentList = useEnvironmentV1List();
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-environment",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -538,9 +538,9 @@ const allowCreate = computed(() => {
 });
 
 const allowEditSQLReviewPolicy = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-sql-review-policy",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -630,7 +630,7 @@ const restoreEnvironment = () => {
 const toggleSQLReviewPolicy = async (on: boolean) => {
   const policy = sqlReviewPolicy.value;
   if (!policy) return;
-  const originalOn = policy.rowStatus === "NORMAL";
+  const originalOn = policy.enforce;
   if (on === originalOn) return;
   await useSQLReviewStore().updateReviewPolicy({
     id: policy.id,

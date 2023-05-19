@@ -20,11 +20,12 @@ import {
   Database,
   DEFAULT_PROJECT_ID,
   QuickActionType,
+  unknownUser,
   UNKNOWN_ID,
 } from "../types";
 import {
   hasPermissionInProjectV1,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   idFromSlug,
   migrationHistoryIdFromSlug,
   roleListInProjectV1,
@@ -45,14 +46,12 @@ import {
   useActuatorStore,
   useDatabaseStore,
   useInstanceStore,
-  usePrincipalStore,
   useRouterStore,
   useDBSchemaStore,
   useConnectionTreeStore,
   useOnboardingStateStore,
   useTabStore,
   useIdentityProviderStore,
-  useCurrentUser,
   useSubscriptionStore,
   useUserStore,
   useProjectV1Store,
@@ -332,11 +331,10 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.profile",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                const principalId = parseInt(
-                  route.params.principalId as string,
-                  10
-                );
-                return usePrincipalStore().principalById(principalId).name;
+                const userUID = route.params.principalId as string;
+                const user =
+                  useUserStore().getUserById(userUID) ?? unknownUser();
+                return user.title;
               },
             },
             components: {
@@ -701,16 +699,15 @@ const routes: Array<RouteRecordRaw> = [
                 if (project.state === State.ACTIVE) {
                   const actionList: string[] = [];
 
-                  const currentUser = useCurrentUser();
                   const currentUserV1 = useCurrentUserV1();
                   let allowAlterSchemaOrChangeData = false;
                   let allowCreateDB = false;
                   let allowTransferDB = false;
                   let allowTransferOutDB = false;
                   if (
-                    hasWorkspacePermission(
+                    hasWorkspacePermissionV1(
                       "bb.permission.workspace.manage-instance",
-                      currentUser.value.role
+                      currentUserV1.value.userRole
                     )
                   ) {
                     allowAlterSchemaOrChangeData = true;
@@ -1228,17 +1225,12 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  const userStore = useUserStore();
-  const currentUser = useCurrentUser();
+  const currentUserV1 = useCurrentUserV1();
   const serverInfo = useActuatorStore().serverInfo;
 
   // If 2FA is required, redirect to MFA setup page if the user has not enabled 2FA.
-  if (
-    hasFeature("bb.feature.2fa") &&
-    serverInfo?.require2fa &&
-    currentUser.value
-  ) {
-    const user = userStore.getUserById(currentUser.value.id as number);
+  if (hasFeature("bb.feature.2fa") && serverInfo?.require2fa) {
+    const user = currentUserV1.value;
     if (user && !user.mfaEnabled) {
       next({
         name: "2fa.setup",
@@ -1263,9 +1255,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.im-integration")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-im-integration",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1278,9 +1270,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.sso")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-sso",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1293,9 +1285,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.gitops")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-vcs-provider",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1308,9 +1300,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.project")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-project",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1323,9 +1315,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.audit-log")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.audit-log",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1338,9 +1330,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("setting.workspace.debug-log")) {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.debug-log",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1353,9 +1345,9 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.instance") {
     if (
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-instance",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1369,9 +1361,9 @@ router.beforeEach((to, from, next) => {
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
     if (
       !hasFeature("bb.feature.data-source") ||
-      !hasWorkspacePermission(
+      !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-instance",
-        currentUser.value.role
+        currentUserV1.value.userRole
       )
     ) {
       next({
@@ -1430,8 +1422,8 @@ router.beforeEach((to, from, next) => {
   const sqlReviewPolicySlug = routerSlug.sqlReviewPolicySlug;
 
   if (principalId) {
-    usePrincipalStore()
-      .fetchPrincipalById(principalId)
+    useUserStore()
+      .getOrFetchUserById(String(principalId))
       .then(() => {
         next();
       })

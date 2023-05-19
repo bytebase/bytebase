@@ -145,7 +145,7 @@ export interface Review {
   title: string;
   description: string;
   status: ReviewStatus;
-  /** Format: user:hello@world.com */
+  /** Format: users/hello@world.com */
   assignee: string;
   assigneeAttention: boolean;
   approvalTemplates: ApprovalTemplate[];
@@ -158,10 +158,10 @@ export interface Review {
   approvalFindingError: string;
   /**
    * The subscribers.
-   * Format: user:hello@world.com
+   * Format: users/hello@world.com
    */
   subscribers: string[];
-  /** Format: user:hello@world.com */
+  /** Format: users/hello@world.com */
   creator: string;
   createTime?: Date;
   updateTime?: Date;
@@ -170,7 +170,7 @@ export interface Review {
 export interface Review_Approver {
   /** The new status. */
   status: Review_Approver_Status;
-  /** Format: user:hello@world.com */
+  /** Format: users/hello@world.com */
   principal: string;
 }
 
@@ -217,10 +217,7 @@ export interface ApprovalTemplate {
   flow?: ApprovalFlow;
   title: string;
   description: string;
-  /**
-   * The name of the creator.
-   * Format: users/{user}. {user} is a system-generated unique ID.
-   */
+  /** The name of the creator in users/{email} format. */
   creator: string;
 }
 

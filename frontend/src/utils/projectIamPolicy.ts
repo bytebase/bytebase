@@ -41,15 +41,8 @@ export const addRoleToProjectIamPolicy = (
   user: string,
   role: ProjectRoleType
 ) => {
-  const binding = policy.bindings.find((binding) => binding.role === role);
-  if (binding) {
-    if (!binding.members.includes(user)) {
-      binding.members.push(user);
-    }
-  } else {
-    policy.bindings.push({
-      role,
-      members: [user],
-    });
-  }
+  policy.bindings.push({
+    role,
+    members: [user],
+  });
 };

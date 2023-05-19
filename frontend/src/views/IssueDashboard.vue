@@ -12,12 +12,12 @@
         </NButton>
 
         <NInputGroup style="width: auto">
-          <PrincipalSelect
+          <UserSelect
             v-if="allowFilterUsers"
-            :principal="selectedPrincipalId"
+            :user="selectedUserUID"
             :include-system-bot="true"
             :include-all="allowSelectAllUsers"
-            @update:principal="changePrincipalId"
+            @update:user="changeUserUID"
           />
           <SearchBox
             :value="state.searchText"
@@ -36,8 +36,8 @@
       :issue-find="{
         statusList: ['OPEN'],
         principalId:
-          selectedPrincipalId && selectedPrincipalId !== UNKNOWN_ID
-            ? selectedPrincipalId
+          selectedUserUID && selectedUserUID !== String(UNKNOWN_ID)
+            ? selectedUserUID
             : undefined,
         projectId: selectedProjectId,
       }"
@@ -63,8 +63,8 @@
       :issue-find="{
         statusList: ['DONE', 'CANCELED'],
         principalId:
-          selectedPrincipalId && selectedPrincipalId !== UNKNOWN_ID
-            ? selectedPrincipalId
+          selectedUserUID && selectedUserUID !== String(UNKNOWN_ID)
+            ? selectedUserUID
             : undefined,
         projectId: selectedProjectId,
       }"
@@ -91,21 +91,18 @@ import { reactive, computed, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { NInputGroup, NButton } from "naive-ui";
 
-import {
-  EnvironmentTabFilter,
-  PrincipalSelect,
-  SearchBox,
-} from "@/components/v2";
+import { EnvironmentTabFilter, UserSelect, SearchBox } from "@/components/v2";
 import { IssueTable } from "../components/Issue";
-import { type Issue, type PrincipalId, UNKNOWN_ID } from "../types";
+import { type Issue, UNKNOWN_ID } from "../types";
 import {
   activeEnvironment,
-  hasWorkspacePermission,
+  extractUserUID,
+  hasWorkspacePermissionV1,
   isDatabaseRelatedIssueType,
   projectV1Slug,
 } from "../utils";
 import {
-  useCurrentUser,
+  useCurrentUserV1,
   useEnvironmentV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -119,7 +116,7 @@ interface LocalState {
 const router = useRouter();
 const route = useRoute();
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const environmentV1Store = useEnvironmentV1Store();
 
@@ -147,9 +144,9 @@ const showClosed = computed(
 
 const allowFilterUsers = computed(() => {
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-issue",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   ) {
     return true;
@@ -158,25 +155,25 @@ const allowFilterUsers = computed(() => {
 });
 
 const allowSelectAllUsers = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-issue",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
-const selectedPrincipalId = computed((): PrincipalId => {
+const selectedUserUID = computed((): string => {
   if (!allowFilterUsers.value) {
     // If current user is low-privileged. Don't filter by user id.
-    return UNKNOWN_ID;
+    return String(UNKNOWN_ID);
   }
 
-  const id = parseInt(route.query.user as string, 10);
-  if (id >= 0) {
+  const id = route.query.user as string;
+  if (id) {
     return id;
   }
   return allowSelectAllUsers.value
-    ? UNKNOWN_ID // default to 'All' if current user is owner or DBA
-    : currentUser.value.id; // default to current user otherwise
+    ? String(UNKNOWN_ID) // default to 'All' if current user is owner or DBA
+    : extractUserUID(currentUserV1.value.name); // default to current user otherwise
 });
 
 const selectedEnvironment = computed((): Environment | undefined => {
@@ -232,8 +229,8 @@ const changeEnvironmentId = (environment: string | undefined) => {
   }
 };
 
-const changePrincipalId = (user: PrincipalId | undefined) => {
-  if (user === UNKNOWN_ID) {
+const changeUserUID = (user: string | undefined) => {
+  if (user === String(UNKNOWN_ID)) {
     user = undefined;
   }
   router.replace({

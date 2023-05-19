@@ -528,6 +528,10 @@
           "self": "External URL",
           "description": "The external URL where user visits Bytebase, must start with http:// or https://. {viewDoc}"
         },
+        "gitops-webhook-url": {
+          "self": "GitOps Webhook URL",
+          "description": "The URL used for sending GitOps webhooks to the Bytebase instance."
+        },
         "config-updated": "Configuration is updated",
         "plugin": {
           "openai": {
@@ -1858,7 +1862,7 @@
       }
     },
     "plan-features": "{plan} Features",
-    "overuse-warning": "{neededPlan} on {currentPlan} may be lost. Upgrade now to ensure continued access.",
+    "overuse-warning": "{neededPlan} on {currentPlan} will be restricted. Upgrade now to ensure continued access.",
     "overuse-modal": {
       "description": "You are using features unavailable in the {plan}. Upgrade now to ensure continued access:",
       "instance-count-exceeds": "Instance count exceeds the limit ${count}"
@@ -2497,6 +2501,7 @@
     },
     "querier": {
       "description": "System defined project querier role"
-    }
+    },
+    "select-role": "Select role"
   }
 }

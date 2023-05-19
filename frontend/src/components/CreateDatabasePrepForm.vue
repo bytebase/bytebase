@@ -192,10 +192,10 @@
           id="user"
           class="mt-1 w-full"
           name="user"
-          :allowed-role-list="['OWNER', 'DBA']"
-          :selected-id="state.assigneeId as number"
+          :allowed-role-list="[UserRole.OWNER, UserRole.DBA]"
+          :selected-id="state.assigneeId"
           :placeholder="'Select assignee'"
-          @select-principal-id="selectAssignee"
+          @select-user-id="selectAssignee"
         />
       </div>
     </div>
@@ -259,7 +259,6 @@ import {
   InstanceId,
   IssueCreate,
   SYSTEM_BOT_ID,
-  PrincipalId,
   Backup,
   defaultCharset,
   defaultCollation,
@@ -278,19 +277,20 @@ import {
 } from "@/types/InstanceUser";
 import {
   extractEnvironmentResourceName,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   instanceHasCollationAndCharacterSet,
   instanceHasCreateDatabase,
   issueSlug,
 } from "../utils";
 import {
   hasFeature,
-  useCurrentUser,
+  useCurrentUserV1,
   useEnvironmentV1Store,
   useInstanceStore,
   useIssueStore,
   useProjectV1Store,
 } from "@/store";
+import { UserRole } from "@/types/proto/v1/auth_service";
 
 interface LocalState {
   projectId?: string;
@@ -303,7 +303,7 @@ interface LocalState {
   characterSet: string;
   collation: string;
   cluster: string;
-  assigneeId?: PrincipalId;
+  assigneeId?: string;
   showFeatureModal: boolean;
   creating: boolean;
 }
@@ -343,7 +343,7 @@ export default defineComponent({
     const instanceStore = useInstanceStore();
     const router = useRouter();
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
     const projectV1Store = useProjectV1Store();
 
     useEventListener("keydown", (e: KeyboardEvent) => {
@@ -362,9 +362,9 @@ export default defineComponent({
     const showAssigneeSelect = computed(() => {
       // If the role can't change assignee after creating the issue, then we will show the
       // assignee select in the prep stage here to request a particular assignee.
-      return !hasWorkspacePermission(
+      return !hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-issue",
-        currentUser.value.role
+        currentUserV1.value.userRole
       );
     });
 
@@ -378,7 +378,7 @@ export default defineComponent({
       characterSet: "",
       collation: "",
       cluster: "",
-      assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
+      assigneeId: showAssigneeSelect.value ? undefined : String(SYSTEM_BOT_ID),
       showFeatureModal: false,
       creating: false,
     });
@@ -496,7 +496,7 @@ export default defineComponent({
       state.instanceUserId = instanceUserId;
     };
 
-    const selectAssignee = (assigneeId: PrincipalId) => {
+    const selectAssignee = (assigneeId: string) => {
       state.assigneeId = assigneeId;
     };
 
@@ -564,7 +564,7 @@ export default defineComponent({
           name: `Create database '${databaseName}' from backup '${props.backup.name}'`,
           type: "bb.issue.database.restore.pitr",
           description: `Creating database '${databaseName}' from backup '${props.backup.name}'`,
-          assigneeId: state.assigneeId!,
+          assigneeId: parseInt(state.assigneeId!, 10),
           projectId: parseInt(state.projectId!, 10),
           pipeline: {
             stageList: [],
@@ -579,7 +579,7 @@ export default defineComponent({
           name: `Create database '${databaseName}'`,
           type: "bb.issue.database.create",
           description: "",
-          assigneeId: state.assigneeId!,
+          assigneeId: parseInt(state.assigneeId!, 10),
           projectId: parseInt(state.projectId!, 10),
           pipeline: {
             stageList: [],
@@ -628,6 +628,7 @@ export default defineComponent({
     });
 
     return {
+      UserRole,
       defaultCharset,
       defaultCollation,
       state,
