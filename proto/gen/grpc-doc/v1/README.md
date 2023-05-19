@@ -5356,7 +5356,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 <a name="bytebase-v1-Plan-Step"></a>
 
 ### Plan.Step
-TODO(d/xz): support spec with 1) deployment config, 2) user specified targets with stages/steps, 3) project groups in the future.
+FIXME(d/xz): support spec with deployment config
 
 
 | Field | Type | Label | Description |

@@ -85,7 +85,7 @@ export interface Plan {
   steps: Plan_Step[];
 }
 
-/** TODO(d/xz): support spec with 1) deployment config, 2) user specified targets with stages/steps, 3) project groups in the future. */
+/** FIXME(d/xz): support spec with deployment config */
 export interface Plan_Step {
   specs: Plan_Spec[];
 }

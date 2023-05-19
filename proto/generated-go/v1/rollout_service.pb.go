@@ -1677,7 +1677,7 @@ func (x *TaskRun) GetSchemaVersion() string {
 	return ""
 }
 
-// TODO(d/xz): support spec with 1) deployment config, 2) user specified targets with stages/steps, 3) project groups in the future.
+// FIXME(d/xz): support spec with deployment config
 type Plan_Step struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
