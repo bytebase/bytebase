@@ -66,7 +66,7 @@ export interface SearchSheetsRequest {
   /**
    * To filter the search result.
    * Format: only support the following spec for now:
-   * - `creator = user:{email}`, `creator != user:{email}`
+   * - `creator = users/{email}`, `creator != users/{email}`
    * - `starred = true`, `starred = false`.
    * Not support empty filter for now.
    */
@@ -124,7 +124,7 @@ export interface Sheet {
   title: string;
   /**
    * The creator of the Sheet.
-   * Format: user:{email}
+   * Format: users/{email}
    */
   creator: string;
   /** The create time of the sheet. */

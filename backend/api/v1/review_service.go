@@ -419,7 +419,7 @@ func convertToReview(ctx context.Context, s *store.Store, issue *store.IssueMess
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to find user by id %v", approver.PrincipalId)
 			}
-			convertedApprover.Principal = fmt.Sprintf("%s%s", userNamePrefix, user.Email)
+			convertedApprover.Principal = fmt.Sprintf("users/%s", user.Email)
 			review.Approvers = append(review.Approvers, convertedApprover)
 		}
 	}
