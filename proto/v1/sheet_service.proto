@@ -150,7 +150,7 @@ message Sheet {
   string title = 3 [(google.api.field_behavior) = REQUIRED];
 
   // The creator of the Sheet.
-  // Format: user:{email}
+  // Format: users/{email}
   string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The create time of the sheet.
