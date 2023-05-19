@@ -98,6 +98,18 @@ axios.interceptors.response.use(
         }
       }
 
+      // in such case, we shouldn't logout.
+      if (error.response.status == 403) {
+        const origin = location.origin;
+        if (error.response.request.responseURL.startsWith(origin)) {
+          // If the request URL starts with the browser's location origin
+          // e.g. http://localhost:3000/
+          // we know this is a request to Bytebase API endpoint (not an external service).
+          // Means that the API request is denied by authorization reasons.
+          router.push({ name: "error.403" });
+        }
+      }
+
       if (error.response.data.message && !isSilent()) {
         pushNotification({
           module: "bytebase",
