@@ -835,6 +835,14 @@ message ChangeHistory {
   // FIXME: vcs push event to be done.
 }
 
+enum ChangeHistoryView {
+  // The default / unset value.
+  // The API will default to the BASIC view.
+  CHANGE_HISTORY_VIEW_UNSPECIFIED = 0;
+  CHANGE_HISTORY_VIEW_BASIC = 1;
+  CHANGE_HISTORY_VIEW_FULL = 2;
+}
+
 message ListChangeHistoriesRequest {
   // The parent of the change histories.
   // Format: instances/{instance}/databases/{database}
@@ -851,6 +859,8 @@ message ListChangeHistoriesRequest {
   // When paginating, all other parameters provided to `ListChangeHistories` must match
   // the call that provided the page token.
   string page_token = 3;
+
+  ChangeHistoryView view = 4;
 }
 
 message ListChangeHistoriesResponse {
@@ -866,4 +876,5 @@ message GetChangeHistoryRequest {
   // The name of the change history to retrieve.
   // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
   string name = 1;
+  ChangeHistoryView view = 2;
 }
