@@ -102,6 +102,15 @@ service DatabaseService {
     option (google.api.http) = {post: "/v1/{parent=instances/*/databases/*}:adviseIndex"};
     option (google.api.method_signature) = "parent";
   }
+
+  rpc ListChangeHistories(ListChangeHistoriesRequest) returns (ListChangeHistoriesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changeHistories"};
+    option (google.api.method_signature) = "parent";
+  }
+  rpc GetChangeHistory(GetChangeHistoryRequest) returns (ChangeHistory) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changeHistories/*}"};
+    option (google.api.method_signature) = "name";
+  }
 }
 
 message GetDatabaseRequest {
@@ -561,7 +570,7 @@ message Backup {
   // Format: instances/{instance}/databases/{database}/backups/{backup-name}
   string name = 1;
 
-  // The timestamp when the backup resource was created initally.
+  // The timestamp when the backup resource was created initially.
   google.protobuf.Timestamp create_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the backup resource was updated.
@@ -737,7 +746,7 @@ message Secret {
   // instances/{instance}/databases/{database}/secrets/{secret}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // Not used. The timestamp when the secret resource was created initally.
+  // Not used. The timestamp when the secret resource was created initially.
   google.protobuf.Timestamp created_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Not used. The timestamp when the secret resource was updated.
@@ -746,7 +755,7 @@ message Secret {
   // The value of the secret.
   string value = 4 [(google.api.field_behavior) = INPUT_ONLY];
 
-  // The decsription of the secret.
+  // The description of the secret.
   string description = 5;
 }
 
@@ -769,4 +778,103 @@ message AdviseIndexResponse {
 
   // The create index statement of the suggested index.
   string create_index_statement = 3;
+}
+
+message ChangeHistory {
+  // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+  string name = 1;
+  string uid = 2;
+
+  // Format: users/hello@world.com
+  string creator = 3;
+  // Format: users/hello@world.com
+  string updater = 4;
+  google.protobuf.Timestamp create_time = 5;
+  google.protobuf.Timestamp update_time = 6;
+
+  // release version of Bytebase
+  string release_version = 7;
+
+  enum Source {
+    SOURCE_UNSPECIFIED = 0;
+    UI = 1;
+    VCS = 2;
+    LIBRARY = 3;
+  }
+  Source source = 8;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    BASELINE = 1;
+    MIGRATE = 2;
+    MIGRATE_SDL = 3;
+    MIGRATE_GHOST = 4;
+    BRANCH = 5;
+    DATA = 6;
+  }
+  Type type = 9;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    COMPLETED = 2;
+    FAILED = 3;
+  }
+  Status status = 10;
+
+  string version = 11;
+
+  string description = 12;
+  string statement = 13;
+  string schema = 14;
+  string prev_schema = 15;
+  google.protobuf.Duration execution_duration = 16;
+  // Format: projects/{project}/reviews/{review}
+  string review = 17;
+
+  // FIXME: vcs push event to be done.
+}
+
+enum ChangeHistoryView {
+  // The default / unset value.
+  // The API will default to the BASIC view.
+  CHANGE_HISTORY_VIEW_UNSPECIFIED = 0;
+  CHANGE_HISTORY_VIEW_BASIC = 1;
+  CHANGE_HISTORY_VIEW_FULL = 2;
+}
+
+message ListChangeHistoriesRequest {
+  // The parent of the change histories.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Not used. The maximum number of change histories to return. The service may return fewer than this value.
+  // If unspecified, at most 50 change histories will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used. A page token, received from a previous `ListChangeHistories` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListChangeHistories` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  ChangeHistoryView view = 4;
+}
+
+message ListChangeHistoriesResponse {
+  // The list of change histories.
+  repeated ChangeHistory change_histories = 1;
+
+  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message GetChangeHistoryRequest {
+  // The name of the change history to retrieve.
+  // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+  string name = 1;
+  ChangeHistoryView view = 2;
 }
