@@ -1,6 +1,8 @@
 <template>
-  <div class="w-full">
-    <div class="w-full flex flex-row justify-start items-start gap-8">
+  <div
+    class="select-target-database-view h-full overflow-y-hidden flex flex-col gap-y-4"
+  >
+    <div class="w-full flex flex-row gap-8">
       <span>{{ $t("database.sync-schema.source-schema") }}</span>
       <div class="space-y-2">
         <div>
@@ -46,7 +48,7 @@
     </div>
 
     <div
-      class="relative border rounded-lg w-full h-144 flex flex-row overflow-hidden mt-4"
+      class="relative border rounded-lg w-full flex flex-row flex-1 overflow-hidden"
     >
       <div class="w-1/4 min-w-[256px] max-w-xs h-full border-r">
         <div
@@ -147,36 +149,30 @@
           </div>
         </div>
       </div>
-      <div class="w-3/4 grow h-full">
-        <main ref="diffViewerRef" class="p-2 w-full h-full overflow-y-auto">
-          <div
-            v-show="selectedDatabase"
-            class="w-full h-auto flex flex-col justify-start items-start"
-          >
-            <DiffViewPanel
-              :statement="
-                state.selectedDatabaseId
-                  ? databaseDiffCache[state.selectedDatabaseId].edited
-                  : ''
-              "
-              :source-database="sourceDatabase"
-              :target-database-schema="targetDatabaseSchema"
-              :source-database-schema="sourceDatabaseSchema"
-              :should-show-diff="shouldShowDiff"
-              :preview-schema-change-message="previewSchemaChangeMessage"
-              @statement-change="onStatementChange"
-              @copy-statement="onCopyStatement"
-            />
-          </div>
-          <div
-            v-show="!selectedDatabase"
-            class="w-full h-full flex flex-col justify-center items-center"
-          >
-            {{
-              $t("database.sync-schema.message.select-a-target-database-first")
-            }}
-          </div>
-        </main>
+      <div class="flex-1 h-full overflow-hidden p-2">
+        <DiffViewPanel
+          v-show="selectedDatabase"
+          :statement="
+            state.selectedDatabaseId
+              ? databaseDiffCache[state.selectedDatabaseId].edited
+              : ''
+          "
+          :source-database="sourceDatabase"
+          :target-database-schema="targetDatabaseSchema"
+          :source-database-schema="sourceDatabaseSchema"
+          :should-show-diff="shouldShowDiff"
+          :preview-schema-change-message="previewSchemaChangeMessage"
+          @statement-change="onStatementChange"
+          @copy-statement="onCopyStatement"
+        />
+        <div
+          v-show="!selectedDatabase"
+          class="w-full h-full flex flex-col justify-center items-center"
+        >
+          {{
+            $t("database.sync-schema.message.select-a-target-database-first")
+          }}
+        </div>
         <div
           v-show="state.isLoading"
           class="absolute inset-0 z-10 bg-white bg-opacity-40 backdrop-blur-sm w-full h-full flex flex-col justify-center items-center"
