@@ -9,10 +9,10 @@ import {
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/review_service";
-import { extractUserEmail, useUserStore } from "./user";
+import { useUserStore } from "./user";
 import { reviewServiceClient } from "@/grpcweb";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
-import { memberListInProjectV1 } from "@/utils";
+import { extractUserResourceName, memberListInProjectV1 } from "@/utils";
 import { useProjectV1Store } from "./v1";
 
 const reviewName = (issue: Issue) => {
@@ -84,7 +84,9 @@ const fetchReviewApproversAndCandidates = async (
 ) => {
   const userStore = useUserStore();
   const approvers = review.approvers.map((approver) => {
-    return userStore.getUserByEmail(extractUserEmail(approver.principal));
+    return userStore.getUserByEmail(
+      extractUserResourceName(approver.principal)
+    );
   });
   const candidates = review.approvalTemplates
     .flatMap((template) => {

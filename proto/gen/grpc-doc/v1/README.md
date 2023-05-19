@@ -4814,14 +4814,14 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | status | [ReviewStatus](#bytebase-v1-ReviewStatus) |  |  |
-| assignee | [string](#string) |  | Format: user:hello@world.com |
+| assignee | [string](#string) |  | Format: users/hello@world.com |
 | assignee_attention | [bool](#bool) |  |  |
 | approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
 | approvers | [Review.Approver](#bytebase-v1-Review-Approver) | repeated |  |
 | approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |
 | approval_finding_error | [string](#string) |  |  |
 | subscribers | [string](#string) | repeated | The subscribers. Format: user:hello@world.com |
-| creator | [string](#string) |  | Format: user:hello@world.com |
+| creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
@@ -4839,7 +4839,7 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [Review.Approver.Status](#bytebase-v1-Review-Approver-Status) |  | The new status. |
-| principal | [string](#string) |  | Format: user:hello@world.com |
+| principal | [string](#string) |  | Format: users/hello@world.com |
 
 
 
