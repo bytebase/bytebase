@@ -372,10 +372,10 @@ message Task {
     DATABASE_DATA_UPDATE = 8;
     // use payload DatabaseBackup
     DATABASE_BACKUP = 9;
-    // use payload DatabaseRestorePitrRestore
-    DATABASE_RESTORE_PITR_RESTORE = 10;
+    // use payload DatabaseRestoreRestore
+    DATABASE_RESTORE_RESTORE = 10;
     // use payload nil
-    DATABASE_RESTORE_PITR_CUTOVER = 11;
+    DATABASE_RESTORE_CUTOVER = 11;
   }
   Type type = 4;
 
@@ -390,7 +390,7 @@ message Task {
     DatabaseSchemaBaseline database_schema_baseline = 8;
     DatabaseSchemaUpdate database_schema_update = 9;
     DatabaseDataUpdate database_data_update = 10;
-    DatabaseRestorePitrRestore database_restore_pitr_restore = 11;
+    DatabaseRestoreRestore database_restore_restore = 11;
   }
 
   message DatabaseCreate {
@@ -470,7 +470,7 @@ message Task {
     string backup = 1;
   }
 
-  message DatabaseRestorePitrRestore {
+  message DatabaseRestoreRestore {
     // Target is only used when doing restore to a new database now.
     // It is empty for the case of in-place restore.
     // Target {instance} must be within the same environment as the instance of the original database.
