@@ -863,8 +863,7 @@ type ApprovalTemplate struct {
 	Flow        *ApprovalFlow `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
 	Title       string        `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Description string        `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	// The name of the creator.
-	// Format: users/{user}. {user} is a system-generated unique ID.
+	// The name of the creator in users/{email} format.
 	Creator string `protobuf:"bytes,4,opt,name=creator,proto3" json:"creator,omitempty"`
 }
 

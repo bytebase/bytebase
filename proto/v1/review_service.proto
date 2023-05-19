@@ -177,8 +177,7 @@ message ApprovalTemplate {
   ApprovalFlow flow = 1;
   string title = 2;
   string description = 3;
-  // The name of the creator.
-  // Format: users/{user}. {user} is a system-generated unique ID.
+  // The name of the creator in users/{email} format.
   string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
