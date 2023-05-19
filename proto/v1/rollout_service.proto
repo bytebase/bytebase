@@ -199,7 +199,7 @@ message Plan {
     string schema_version = 4;
 
     // If RollbackEnabled, build the RollbackSheetID of the task.
-    bool rollback_enabled = 6;
+    bool rollback_enabled = 5;
   }
 
   message RestoreDatabaseConfig {
@@ -405,7 +405,7 @@ message Task {
     string sheet = 4;
     string character_set = 5;
     string collection = 6;
-    map<string, string> labels = 9;
+    map<string, string> labels = 7;
   }
 
   message DatabaseSchemaBaseline {
