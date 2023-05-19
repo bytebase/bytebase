@@ -173,7 +173,7 @@ export const useSubscriptionStore = defineStore("subscription", {
         {
           plan: planType,
           days: this.trialingDays,
-          instanceCount: -1,
+          instanceCount: 10,
         }
       );
       this.setSubscription(subscription);
