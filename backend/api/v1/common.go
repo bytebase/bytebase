@@ -6,8 +6,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/ebnf"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -281,29 +284,43 @@ func isValidResourceID(resourceID string) bool {
 	return resourceIDMatcher.MatchString(resourceID)
 }
 
-const filterExample = `project = "projects/abc".`
+const filterExample = `project == "projects/abc"`
 
-// getFilter will parse the simple filter such as `project = "abc".` to "project" and "abc" .
-func getFilter(filter, filterKey string) (string, error) {
+// getProjectFilter will parse the simple filter such as `project = "projects/abc"` to "projects/abc" .
+func getProjectFilter(filter string) (string, error) {
 	retErr := errors.Errorf("invalid filter %q, example %q", filter, filterExample)
-	grammar, err := ebnf.Parse("", strings.NewReader(filter))
+	e, err := cel.NewEnv(cel.Variable("project", cel.StringType))
 	if err != nil {
+		return "", err
+	}
+	ast, issues := e.Compile(filter)
+	if issues != nil {
+		return "", status.Errorf(codes.InvalidArgument, issues.String())
+	}
+	expr := ast.Expr()
+	if expr == nil {
 		return "", retErr
 	}
-	if len(grammar) != 1 {
+	fmt.Println(expr)
+	callExpr := expr.GetCallExpr()
+	if callExpr == nil {
 		return "", retErr
 	}
-	for key, production := range grammar {
-		if filterKey != key {
-			return "", errors.Errorf("support filter key %q only", filterKey)
-		}
-		token, ok := production.Expr.(*ebnf.Token)
-		if !ok {
-			return "", retErr
-		}
-		return token.String, nil
+	if callExpr.Function != "_==_" {
+		return "", retErr
 	}
-	return "", retErr
+	fmt.Println(callExpr.Args)
+	if len(callExpr.Args) != 2 {
+		return "", retErr
+	}
+	if callExpr.Args[0].GetIdentExpr() == nil || callExpr.Args[0].GetIdentExpr().Name != "project" {
+		return "", retErr
+	}
+	constExpr := callExpr.Args[1].GetConstExpr()
+	if constExpr == nil {
+		return "", retErr
+	}
+	return constExpr.GetStringValue(), nil
 }
 
 // getEBNFTokens will parse the simple filter such as `project = "abc" | "def".` to {project: ["abc", "def"]} .
