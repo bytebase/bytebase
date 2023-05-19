@@ -243,6 +243,25 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
 
+		switch instance.Engine {
+		case db.Postgres:
+			if _, err := parser.Parse(parser.Postgres, parser.ParseContext{}, exec.Statement); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid sql statement: %v", err))
+			}
+		case db.Oracle:
+			if _, err := parser.ParsePLSQL(exec.Statement); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid sql statement: %v", err))
+			}
+		case db.TiDB:
+			if _, err := parser.ParseTiDB(exec.Statement, "", ""); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid sql statement: %v", err))
+			}
+		case db.MySQL:
+			if _, err := parser.ParseMySQL(exec.Statement, "", ""); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid sql statement: %v", err))
+			}
+		}
+
 		if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), exec.Statement) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support SELECT sql statement")
 		}
