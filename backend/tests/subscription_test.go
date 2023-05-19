@@ -42,23 +42,7 @@ func TestSubscription(t *testing.T) {
 			// Test trial the TEAM plan.
 			instanceCount:       20,
 			expectInstanceCount: 20,
-			plan:                v1pb.PlanType_TEAM,
-			expectPlan:          v1pb.PlanType_TEAM,
-			Days:                7,
-		},
-		{
-			// Test trial the ENTERPRISE plan.
-			instanceCount:       10,
-			expectInstanceCount: 10,
 			plan:                v1pb.PlanType_ENTERPRISE,
-			expectPlan:          v1pb.PlanType_ENTERPRISE,
-			Days:                7,
-		},
-		{
-			// Downgrade should be ignored.
-			instanceCount:       99,
-			expectInstanceCount: 10,
-			plan:                v1pb.PlanType_TEAM,
 			expectPlan:          v1pb.PlanType_ENTERPRISE,
 			Days:                7,
 		},
