@@ -785,9 +785,9 @@ message ChangeHistory {
   string name = 1;
   string uid = 2;
 
-  // Format: user:hello@world.com
+  // Format: users/hello@world.com
   string creator = 3;
-  // Format: user:hello@world.com
+  // Format: users/hello@world.com
   string updater = 4;
   google.protobuf.Timestamp create_time = 5;
   google.protobuf.Timestamp update_time = 6;
@@ -815,25 +815,22 @@ message ChangeHistory {
   Type type = 9;
 
   enum Status {
-    UNKNOWN = 0;
+    STATUS_UNSPECIFIED = 0;
     PENDING = 1;
     COMPLETED = 2;
     FAILED = 3;
   }
   Status status = 10;
 
-  int64 sequence = 11;
-  string version = 12;
-  bool use_semantic_version = 13;
-  string semantic_version_prefix = 14;
+  string version = 11;
 
-  string description = 15;
-  string statement = 16;
-  string schema = 17;
-  string prev_schema = 18;
-  google.protobuf.Duration execution_duration = 19;
+  string description = 12;
+  string statement = 13;
+  string schema = 14;
+  string prev_schema = 15;
+  google.protobuf.Duration execution_duration = 16;
   // Format: projects/{project}/reviews/{review}
-  string review = 20;
+  string review = 17;
 
   // FIXME: vcs push event to be done.
 }
