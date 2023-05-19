@@ -117,10 +117,14 @@ message Plan {
   // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string title = 3;
-  string description = 4;
+  // The resource name of the review associated with this plan.
+  // Format: projects/{project}/reviews/{review}
+  string review = 3;
 
-  repeated Step steps = 5;
+  string title = 4;
+  string description = 5;
+
+  repeated Step steps = 6;
 
   // FIXME(d/xz): support spec with deployment config
   message Step {
