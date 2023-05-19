@@ -1667,7 +1667,7 @@ type Binding struct {
 	// Specifies the principals requesting access for a Bytebase resource.
 	// `members` can have the following values:
 	//
-	//   - `users/{email}`: An email address that represents a specific Bytebase
+	//   - `user:{emailid}`: An email address that represents a specific Bytebase
 	//     account. For example, `alice@example.com` .
 	Members []string `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
 	// The condition that is associated with this binding.
