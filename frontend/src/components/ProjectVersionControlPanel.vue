@@ -8,6 +8,7 @@
       <RepositorySetupWizard
         :create="state.showWizardForCreate"
         :project="project"
+        :project-v1="projectV1"
         @cancel="cancelWizard"
         @finish="finishWizard"
       />
@@ -76,6 +77,7 @@
       <template v-else-if="project.workflowType == 'VCS'">
         <RepositoryPanel
           :project="project"
+          :project-v1="projectV1"
           :repository="repository"
           :allow-edit="allowEdit"
           @change-repository="enterWizard(false)"
@@ -93,6 +95,7 @@ import RepositoryPanel from "./RepositoryPanel.vue";
 import { Project, ProjectWorkflowType, UNKNOWN_ID } from "../types";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useRepositoryStore } from "@/store";
+import { Project as ProjectV1 } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   workflowType: ProjectWorkflowType;
@@ -114,6 +117,10 @@ export default defineComponent({
     allowEdit: {
       default: true,
       type: Boolean,
+    },
+    projectV1: {
+      required: true,
+      type: Object as PropType<ProjectV1>,
     },
   },
   async setup(props) {
