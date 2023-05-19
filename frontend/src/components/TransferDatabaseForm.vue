@@ -142,7 +142,7 @@ const transferDatabase = async (databaseList: Database[]) => {
     labels?: DatabaseLabel[]
   ) => {
     return databaseStore.transferProject({
-      databaseId: database.id,
+      database,
       projectId: props.projectId,
       labels, // Will keep all labels if not specified here
     });

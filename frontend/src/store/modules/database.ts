@@ -237,6 +237,21 @@ export const useDatabaseStore = defineStore("database", {
     }) {
       this.databaseListByProjectId.set(projectId, databaseList);
     },
+    removeDatabaseListFromProject(databaseList: Database[]) {
+      for (const database of databaseList) {
+        const listByProject = this.databaseListByProjectId.get(
+          database.project.id
+        );
+        if (listByProject) {
+          const i = listByProject.findIndex(
+            (item: Database) => item.id == database.id
+          );
+          if (i >= 0) {
+            listByProject.splice(i, 1);
+          }
+        }
+      }
+    },
     upsertDatabaseList({
       databaseList,
       instanceId,
@@ -386,11 +401,11 @@ export const useDatabaseStore = defineStore("database", {
       return schema;
     },
     async transferProject({
-      databaseId,
+      database,
       projectId,
       labels,
     }: {
-      databaseId: DatabaseId;
+      database: Database;
       projectId: string;
       labels?: DatabaseLabel[];
     }) {
@@ -399,7 +414,7 @@ export const useDatabaseStore = defineStore("database", {
         attributes.labels = JSON.stringify(labels);
       }
       const data = (
-        await axios.patch(`/api/database/${databaseId}`, {
+        await axios.patch(`/api/database/${database.id}`, {
           data: {
             type: "databasePatch",
             attributes,
@@ -408,7 +423,7 @@ export const useDatabaseStore = defineStore("database", {
       ).data;
 
       const updatedDatabase = convert(data.data, data.included);
-
+      this.removeDatabaseListFromProject([database]);
       this.upsertDatabaseList({
         databaseList: [updatedDatabase],
       });
