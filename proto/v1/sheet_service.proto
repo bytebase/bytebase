@@ -97,7 +97,7 @@ message SearchSheetsRequest {
 
   // To filter the search result.
   // Format: only support the following spec for now:
-  // - `creator = user:{email}`, `creator != user:{email}`
+  // - `creator = users/{email}`, `creator != users/{email}`
   // - `starred = true`, `starred = false`.
   // Not support empty filter for now.
   string filter = 2;
@@ -150,7 +150,7 @@ message Sheet {
   string title = 3 [(google.api.field_behavior) = REQUIRED];
 
   // The creator of the Sheet.
-  // Format: user:{email}
+  // Format: users/{email}
   string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The create time of the sheet.

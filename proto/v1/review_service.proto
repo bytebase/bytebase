@@ -155,7 +155,7 @@ message Review {
   string approval_finding_error = 11;
 
   // The subscribers.
-  // Format: user:hello@world.com
+  // Format: users/hello@world.com
   repeated string subscribers = 12;
 
   // Format: users/hello@world.com
