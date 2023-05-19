@@ -99,47 +99,23 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal license").SetInternal(err)
 		}
 
-		principalID := c.Get(getPrincipalIDContextKey()).(int)
-		settingName := api.SettingEnterpriseTrial
-		settings, err := s.store.FindSetting(ctx, &api.SettingFind{
-			Name: &settingName,
-		})
+		_, created, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+			Name:  api.SettingEnterpriseTrial,
+			Value: string(value),
+		}, api.SystemBotID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find setting").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
+		}
+		if !created {
+			return echo.NewHTTPError(http.StatusBadRequest, "your trial already exists")
 		}
 
-		if len(settings) == 0 {
-			// We will create a new setting named SettingEnterpriseTrial to store the free trial license.
-			_, created, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-				Name:        api.SettingEnterpriseTrial,
-				Value:       string(value),
-				Description: "The trialing license.",
-			}, principalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
-			}
-
-			if created && subscription.Trialing {
-				// For trial upgrade
-				// Case 1: Users just have the SettingEnterpriseTrial, don't upload their license in SettingEnterpriseLicense.
-				// Case 2: Users have the SettingEnterpriseLicense with team plan and trialing status.
-				// In both cases, we can override the SettingEnterpriseLicense with an empty value to get the valid free trial.
-				if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
-					UpdaterID: principalID,
-					License:   "",
-				}); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove license").SetInternal(err)
-				}
-			}
-		} else {
-			// Update the existed free trial.
-			if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
-				UpdaterID: principalID,
-				Name:      api.SettingEnterpriseTrial,
-				Value:     string(value),
-			}); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch license").SetInternal(err)
-			}
+		// we need to override the SettingEnterpriseLicense with an empty value to get the valid free trial.
+		if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
+			UpdaterID: api.SystemBotID,
+			License:   "",
+		}); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch license").SetInternal(err)
 		}
 
 		s.licenseService.RefreshCache(ctx)
