@@ -102,7 +102,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 		}
 
 		if !pass {
-			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
+			return echo.NewHTTPError(http.StatusForbidden).SetInternal(
 				errors.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalID, role))
 		}
 
@@ -196,11 +196,11 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 		}
 
 		if len(projectRoles) == 0 {
-			return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project")
+			return echo.NewHTTPError(http.StatusForbidden, "is not a member of the project")
 		}
 
 		if !api.ProjectPermission(permission, plan, projectRoles) {
-			return echo.NewHTTPError(http.StatusUnauthorized, permissionErrMsg)
+			return echo.NewHTTPError(http.StatusForbidden, permissionErrMsg)
 		}
 	}
 
@@ -230,11 +230,11 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(plan api.PlanType, path string, m
 			}
 			if plan == api.ENTERPRISE {
 				if _, ok := oldProjectRoles[common.ProjectOwner]; !ok {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not project owner of project owns the database %d", databaseIDInt))
+					return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("user is not project owner of project owns the database %d", databaseIDInt))
 				}
 			} else {
 				if len(oldProjectRoles) == 0 {
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a project member of project owns the database %d", databaseIDInt))
+					return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("user is not a project member of project owns the database %d", databaseIDInt))
 				}
 			}
 
@@ -251,11 +251,11 @@ func enforceWorkspaceDeveloperDatabaseRouteACL(plan api.PlanType, path string, m
 				}
 				if plan == api.ENTERPRISE {
 					if _, ok := newProjectRoles[common.ProjectOwner]; !ok {
-						return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not project owner of project want owns the database %d", databaseIDInt))
+						return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("user is not project owner of project want owns the database %d", databaseIDInt))
 					}
 				} else {
 					if len(newProjectRoles) == 0 {
-						return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user is not a project member of project want to owns the database %d", databaseIDInt))
+						return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("user is not a project member of project want to owns the database %d", databaseIDInt))
 					}
 				}
 			}
@@ -283,7 +283,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 		}
 		switch sheet.Visibility {
 		case api.PrivateSheet:
-			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to access private sheet created by other user")
+			return echo.NewHTTPError(http.StatusForbidden, "not allowed to access private sheet created by other user")
 		case api.PublicSheet:
 			return nil
 		case api.ProjectSheet:
@@ -293,11 +293,11 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 			}
 
 			if len(projectRoles) == 0 {
-				return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project containing the sheet")
+				return echo.NewHTTPError(http.StatusForbidden, "is not a member of the project containing the sheet")
 			}
 
 			if !api.ProjectPermission(api.ProjectPermissionOrganizeSheet, plan, projectRoles) {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not have permission to organize the project sheet")
+				return echo.NewHTTPError(http.StatusForbidden, "not have permission to organize the project sheet")
 			}
 		}
 	} else if matches := sheetRouteRegex.FindStringSubmatch(path); matches != nil {
@@ -315,12 +315,12 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 		}
 		switch sheet.Visibility {
 		case api.PrivateSheet:
-			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to access private sheet created by other user")
+			return echo.NewHTTPError(http.StatusForbidden, "not allowed to access private sheet created by other user")
 		case api.PublicSheet:
 			if method == "GET" {
 				return nil
 			}
-			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to change public sheet created by other user")
+			return echo.NewHTTPError(http.StatusForbidden, "not allowed to change public sheet created by other user")
 		case api.ProjectSheet:
 			projectRoles, err := projectRolesFinder(sheet.ProjectID, principalID)
 			if err != nil {
@@ -328,7 +328,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 			}
 
 			if len(projectRoles) == 0 {
-				return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project containing the sheet")
+				return echo.NewHTTPError(http.StatusForbidden, "is not a member of the project containing the sheet")
 			}
 
 			if method == "GET" {
@@ -336,7 +336,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 			}
 
 			if !api.ProjectPermission(api.ProjectPermissionAdminSheet, plan, projectRoles) {
-				return echo.NewHTTPError(http.StatusUnauthorized, "not have permission to change the project sheet")
+				return echo.NewHTTPError(http.StatusForbidden, "not have permission to change the project sheet")
 			}
 		}
 	}
