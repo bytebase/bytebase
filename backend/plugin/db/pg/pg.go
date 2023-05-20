@@ -86,7 +86,11 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connConfig, err := pgx.ParseConfig(fmt.Sprintf("host=%s port=%s", config.Host, config.Port))
+	port := config.Port
+	if port == "" {
+		port = "5432"
+	}
+	connConfig, err := pgx.ParseConfig(fmt.Sprintf("host=%s port=%s", config.Host, port))
 	if err != nil {
 		return nil, err
 	}
