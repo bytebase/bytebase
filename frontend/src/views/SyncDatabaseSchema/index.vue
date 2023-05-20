@@ -1,123 +1,128 @@
 <template>
-  <p class="text-sm text-gray-500 px-4">
-    {{ $t("database.sync-schema.description") }}
-    <LearnMoreLink
-      url="https://www.bytebase.com/docs/change-database/synchronize-schema?source=console"
-    />
-  </p>
-  <BBStepTab
-    class="p-4 h-auto min-h-[calc(100%-40px)] overflow-y-auto"
-    :step-item-list="stepTabList"
-    :show-cancel="false"
-    :allow-next="allowNext"
-    :finish-title="$t('database.sync-schema.preview-issue')"
-    :current-step="state.currentStep"
-    @cancel="cancelSetup"
-    @try-change-step="tryChangeStep"
-    @try-finish="tryFinishSetup"
-  >
-    <template #0>
-      <div
-        class="w-full mx-auto flex flex-col justify-start items-start space-y-4 my-8"
-      >
-        <div class="w-full flex flex-row justify-start items-center">
-          <span class="flex w-40 items-center">
-            {{ $t("database.sync-schema.select-project") }}
-          </span>
-          <ProjectSelect
-            class="!w-60 shrink-0"
-            :selected-id="state.projectId"
-            @select-project-id="handleSourceProjectSelect"
-          />
-        </div>
-        <div class="w-full flex flex-row justify-start items-center">
-          <span class="flex w-40 items-center shrink-0">
-            {{ $t("database.sync-schema.source-database") }}
-          </span>
-          <EnvironmentSelect
-            class="!w-60 mr-4 shrink-0"
-            name="environment"
-            :selected-id="state.sourceSchema.environmentId"
-            :select-default="false"
-            @select-environment-id="handleSourceEnvironmentSelect"
-          />
-          <DatabaseSelect
-            class="!w-128"
-            :selected-id="(state.sourceSchema.databaseId as DatabaseId)"
-            :mode="'USER'"
-            :environment-id="state.sourceSchema.environmentId"
-            :project-id="state.projectId"
-            :engine-type-list="allowedEngineTypeList"
-            :sync-status="'OK'"
-            :customize-item="true"
-            @select-database-id="handleSourceDatabaseSelect"
-          >
-            <template #customizeItem="{ database }">
-              <div class="flex items-center">
-                <InstanceEngineIcon :instance="database.instance" />
-                <span class="mx-2">{{ database.name }}</span>
-                <span class="text-gray-400"
-                  >({{ database.instance.name }})</span
-                >
-              </div>
-            </template>
-          </DatabaseSelect>
-        </div>
-        <div class="w-full flex flex-row justify-start items-center">
-          <span class="flex w-40 items-center shrink-0">
-            {{ $t("database.sync-schema.schema-version.self") }}
-          </span>
-          <div
-            class="w-192 flex flex-row justify-start items-center relative"
-            :class="isValidId(state.projectId) ? '' : 'opacity-50'"
-          >
-            <BBSelect
-              class="w-full"
-              :selected-item="state.sourceSchema.migrationHistory"
-              :item-list="
+  <div class="w-full h-full overflow-hidden flex flex-col">
+    <p class="text-sm text-gray-500 px-4">
+      {{ $t("database.sync-schema.description") }}
+      <LearnMoreLink
+        url="https://www.bytebase.com/docs/change-database/synchronize-schema?source=console"
+      />
+    </p>
+    <BBStepTab
+      class="p-4 flex-1 overflow-hidden flex flex-col"
+      :step-item-list="stepTabList"
+      :show-cancel="false"
+      :allow-next="allowNext"
+      :finish-title="$t('database.sync-schema.preview-issue')"
+      :current-step="state.currentStep"
+      pane-class="flex-1 overflow-y-auto"
+      @cancel="cancelSetup"
+      @try-change-step="tryChangeStep"
+      @try-finish="tryFinishSetup"
+    >
+      <template #0>
+        <div
+          class="w-full mx-auto flex flex-col justify-start items-start space-y-4 my-8"
+        >
+          <div class="w-full flex flex-row justify-start items-center">
+            <span class="flex w-40 items-center">
+              {{ $t("database.sync-schema.select-project") }}
+            </span>
+            <ProjectSelect
+              class="!w-60 shrink-0"
+              :selected-id="state.projectId"
+              @select-project-id="handleSourceProjectSelect"
+            />
+          </div>
+          <div class="w-full flex flex-row justify-start items-center">
+            <span class="flex w-40 items-center shrink-0">
+              {{ $t("database.sync-schema.source-database") }}
+            </span>
+            <EnvironmentSelect
+              class="!w-60 mr-4 shrink-0"
+              name="environment"
+              :selected-id="state.sourceSchema.environmentId"
+              :select-default="false"
+              @select-environment-id="handleSourceEnvironmentSelect"
+            />
+            <DatabaseSelect
+              class="!w-128"
+              :selected-id="(state.sourceSchema.databaseId as DatabaseId)"
+              :mode="'USER'"
+              :environment-id="state.sourceSchema.environmentId"
+              :project-id="state.projectId"
+              :engine-type-list="allowedEngineTypeList"
+              :sync-status="'OK'"
+              :customize-item="true"
+              @select-database-id="handleSourceDatabaseSelect"
+            >
+              <template #customizeItem="{ database }">
+                <div class="flex items-center">
+                  <InstanceEngineIcon :instance="database.instance" />
+                  <span class="mx-2">{{ database.name }}</span>
+                  <span class="text-gray-400"
+                    >({{ database.instance.name }})</span
+                  >
+                </div>
+              </template>
+            </DatabaseSelect>
+          </div>
+          <div class="w-full flex flex-row justify-start items-center">
+            <span class="flex w-40 items-center shrink-0">
+              {{ $t("database.sync-schema.schema-version.self") }}
+            </span>
+            <div
+              class="w-192 flex flex-row justify-start items-center relative"
+              :class="isValidId(state.projectId) ? '' : 'opacity-50'"
+            >
+              <BBSelect
+                class="w-full"
+                :selected-item="state.sourceSchema.migrationHistory"
+                :item-list="
                 databaseMigrationHistoryList(state.sourceSchema.databaseId as DatabaseId)
               "
-              :placeholder="$t('change-history.select')"
-              :show-prefix-item="databaseMigrationHistoryList(state.sourceSchema.databaseId as DatabaseId).length > 0"
-              @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
-            >
-              <template #menuItem="{ item: migrationHistory }">
-                <div class="flex justify-between mr-2">
-                  <NEllipsis class="pr-2" :tooltip="false">
-                    {{ migrationHistory.version }} -
-                    {{ migrationHistory.description }}
-                  </NEllipsis>
-                  <span class="text-control-light">
-                    {{
-                      dayjs(migrationHistory.updatedTs * 1000).format(
-                        "YYYY-MM-DD HH:mm:ss"
-                      )
-                    }}
-                  </span>
-                </div>
-              </template>
-              <template v-if="shouldShowMoreVersionButton" #suffixItem>
-                <div
-                  class="w-full flex flex-row justify-start items-center pl-3 leading-8 text-accent cursor-pointer hover:opacity-80"
-                  @click.prevent.capture="() => (state.showFeatureModal = true)"
-                >
-                  <heroicons-solid:sparkles class="w-4 h-auto mr-1" />
-                  {{ $t("database.sync-schema.more-version") }}
-                </div>
-              </template>
-            </BBSelect>
+                :placeholder="$t('change-history.select')"
+                :show-prefix-item="databaseMigrationHistoryList(state.sourceSchema.databaseId as DatabaseId).length > 0"
+                @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
+              >
+                <template #menuItem="{ item: migrationHistory }">
+                  <div class="flex justify-between mr-2">
+                    <NEllipsis class="pr-2" :tooltip="false">
+                      {{ migrationHistory.version }} -
+                      {{ migrationHistory.description }}
+                    </NEllipsis>
+                    <span class="text-control-light">
+                      {{
+                        dayjs(migrationHistory.updatedTs * 1000).format(
+                          "YYYY-MM-DD HH:mm:ss"
+                        )
+                      }}
+                    </span>
+                  </div>
+                </template>
+                <template v-if="shouldShowMoreVersionButton" #suffixItem>
+                  <div
+                    class="w-full flex flex-row justify-start items-center pl-3 leading-8 text-accent cursor-pointer hover:opacity-80"
+                    @click.prevent.capture="
+                      () => (state.showFeatureModal = true)
+                    "
+                  >
+                    <heroicons-solid:sparkles class="w-4 h-auto mr-1" />
+                    {{ $t("database.sync-schema.more-version") }}
+                  </div>
+                </template>
+              </BBSelect>
+            </div>
           </div>
         </div>
-      </div>
-    </template>
-    <template #1>
-      <SelectTargetDatabasesView
-        ref="targetDatabaseViewRef"
-        :project-id="state.projectId!"
-        :source-schema="state.sourceSchema as any"
-      />
-    </template>
-  </BBStepTab>
+      </template>
+      <template #1>
+        <SelectTargetDatabasesView
+          ref="targetDatabaseViewRef"
+          :project-id="state.projectId!"
+          :source-schema="state.sourceSchema as any"
+        />
+      </template>
+    </BBStepTab>
+  </div>
 
   <FeatureModal
     v-if="state.showFeatureModal"

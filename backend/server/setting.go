@@ -99,6 +99,13 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				}
 				payload.ExternalUrl = externalURL
 			}
+			if payload.GitopsWebhookUrl != "" {
+				gitopsWebhookURL, err := common.NormalizeExternalURL(payload.GitopsWebhookUrl)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Invalid GitOps webhook URL").SetInternal(err)
+				}
+				payload.GitopsWebhookUrl = gitopsWebhookURL
+			}
 			bytes, err := protojson.Marshal(payload)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal setting value").SetInternal(err)

@@ -270,16 +270,21 @@ import {
   ExternalRepositoryInfo,
   RepositoryConfig,
   Project,
-  ProjectPatch,
   SchemaChangeType,
 } from "../types";
 import { useI18n } from "vue-i18n";
 import {
   hasFeature,
   pushNotification,
-  useLegacyProjectStore,
+  useProjectV1Store,
   useRepositoryStore,
 } from "@/store";
+import {
+  Project as ProjectV1,
+  SchemaChange,
+  Workflow,
+} from "@/types/proto/v1/project_service";
+import { cloneDeep } from "lodash-es";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -301,6 +306,10 @@ export default defineComponent({
       required: true,
       type: Object as PropType<Project>,
     },
+    projectV1: {
+      required: true,
+      type: Object as PropType<ProjectV1>,
+    },
     repository: {
       required: true,
       type: Object as PropType<Repository>,
@@ -314,7 +323,6 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
     const repositoryStore = useRepositoryStore();
-    const projectStore = useLegacyProjectStore();
     const state = reactive<LocalState>({
       repositoryConfig: {
         baseDirectory: props.repository.baseDirectory,
@@ -403,12 +411,16 @@ export default defineComponent({
         return;
       }
       await repositoryStore.deleteRepositoryByProjectId(props.project.id);
-      await projectStore.patchProject({
-        projectId: props.project.id,
-        projectPatch: {
-          workflowType: "UI",
-        },
-      });
+
+      const projectPatch = cloneDeep(props.projectV1);
+      projectPatch.workflow = Workflow.UI;
+      const updateMask = ["workflow"];
+      await useProjectV1Store().updateProject(projectPatch, updateMask);
+      // WARNING: using mixed new/old APIs so we need to force update the
+      // legacy project entity's local value manually
+      /* eslint-disable-next-line vue/no-mutating-props */
+      props.project.workflowType = "UI";
+
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -498,13 +510,17 @@ export default defineComponent({
 
       // Update project schemaChangeType field firstly.
       if (state.schemaChangeType !== props.project.schemaChangeType) {
-        const projectPatch: ProjectPatch = {
-          schemaChangeType: state.schemaChangeType,
-        };
-        await useLegacyProjectStore().patchProject({
-          projectId: props.project.id,
-          projectPatch,
-        });
+        const projectPatch = cloneDeep(props.projectV1);
+        projectPatch.schemaChange =
+          state.schemaChangeType === "DDL"
+            ? SchemaChange.DDL
+            : SchemaChange.SDL;
+        const updateMask = ["schema_change"];
+        await useProjectV1Store().updateProject(projectPatch, updateMask);
+        // WARNING: using mixed new/old APIs so we need to force update the
+        // legacy project entity's local value manually
+        /* eslint-disable-next-line vue/no-mutating-props */
+        props.project.schemaChangeType = state.schemaChangeType;
       }
 
       const disableSQLReview = disableSQLReviewCI.value;

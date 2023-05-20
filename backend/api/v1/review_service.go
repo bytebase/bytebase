@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pkg/errors"
 
@@ -372,13 +373,40 @@ func canUserApproveStep(step *storepb.ApprovalStep, user *store.UserMessage, pol
 	return false, nil
 }
 
-func convertToReview(ctx context.Context, store *store.Store, issue *store.IssueMessage) (*v1pb.Review, error) {
+func convertToReview(ctx context.Context, s *store.Store, issue *store.IssueMessage) (*v1pb.Review, error) {
 	issuePayload := &storepb.IssuePayload{}
 	if err := protojson.Unmarshal([]byte(issue.Payload), issuePayload); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal issue payload")
 	}
 
-	review := &v1pb.Review{}
+	review := &v1pb.Review{
+		Name:              fmt.Sprintf("%s%d", reviewPrefix, issue.UID),
+		Uid:               fmt.Sprintf("%d", issue.UID),
+		Title:             issue.Title,
+		Description:       issue.Description,
+		Status:            convertToReviewStatus(issue.Status),
+		Assignee:          fmt.Sprintf("%s%s", userNamePrefix, issue.Assignee.Email),
+		AssigneeAttention: issue.NeedAttention,
+		Creator:           fmt.Sprintf("%s%s", userNamePrefix, issue.Creator.Email),
+		CreateTime:        timestamppb.New(issue.CreatedTime),
+		UpdateTime:        timestamppb.New(issue.UpdatedTime),
+	}
+
+	for _, subscriber := range issue.Subscribers {
+		review.Subscribers = append(review.Subscribers, fmt.Sprintf("%s%s", userNamePrefix, subscriber.Email))
+	}
+
+	switch issue.Status {
+	case api.IssueOpen:
+		review.Status = v1pb.ReviewStatus_OPEN
+	case api.IssueDone:
+		review.Status = v1pb.ReviewStatus_DONE
+	case api.IssueCanceled:
+		review.Status = v1pb.ReviewStatus_CANCELED
+	default:
+		review.Status = v1pb.ReviewStatus_REVIEW_STATUS_UNSPECIFIED
+	}
+
 	if issuePayload.Approval != nil {
 		review.ApprovalFindingDone = issuePayload.Approval.ApprovalFindingDone
 		review.ApprovalFindingError = issuePayload.Approval.ApprovalFindingError
@@ -387,17 +415,29 @@ func convertToReview(ctx context.Context, store *store.Store, issue *store.Issue
 		}
 		for _, approver := range issuePayload.Approval.Approvers {
 			convertedApprover := &v1pb.Review_Approver{Status: v1pb.Review_Approver_Status(approver.Status)}
-			user, err := store.GetUserByID(ctx, int(approver.PrincipalId))
+			user, err := s.GetUserByID(ctx, int(approver.PrincipalId))
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to find user by id %v", approver.PrincipalId)
 			}
-			convertedApprover.Principal = fmt.Sprintf("user:%s", user.Email)
-
+			convertedApprover.Principal = fmt.Sprintf("users/%s", user.Email)
 			review.Approvers = append(review.Approvers, convertedApprover)
 		}
 	}
 
 	return review, nil
+}
+
+func convertToReviewStatus(status api.IssueStatus) v1pb.ReviewStatus {
+	switch status {
+	case api.IssueOpen:
+		return v1pb.ReviewStatus_OPEN
+	case api.IssueDone:
+		return v1pb.ReviewStatus_DONE
+	case api.IssueCanceled:
+		return v1pb.ReviewStatus_CANCELED
+	default:
+		return v1pb.ReviewStatus_REVIEW_STATUS_UNSPECIFIED
+	}
 }
 
 func convertToApprovalTemplate(template *storepb.ApprovalTemplate) *v1pb.ApprovalTemplate {

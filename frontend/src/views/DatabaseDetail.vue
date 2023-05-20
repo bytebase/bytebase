@@ -680,7 +680,7 @@ const createMigration = async (
 const updateProject = (newProjectId: string, labels?: DatabaseLabel[]) => {
   databaseStore
     .transferProject({
-      databaseId: database.value.id,
+      database: database.value,
       projectId: newProjectId,
       labels,
     })

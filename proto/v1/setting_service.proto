@@ -189,6 +189,9 @@ message WorkspaceProfileSetting {
 
   // outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
   repeated string outbound_ip_list = 4;
+
+  // The webhook URL for the GitOps workflow.
+  string gitops_webhook_url = 5;
 }
 
 message WorkspaceApprovalSetting {

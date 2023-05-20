@@ -103,7 +103,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		find.InstanceID = &instanceID
 	}
 	if request.Filter != "" {
-		projectFilter, err := getFilter(request.Filter, "project")
+		projectFilter, err := getProjectFilter(request.Filter)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -138,7 +138,7 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 		find.InstanceID = &instanceID
 	}
 	if request.Filter != "" {
-		projectFilter, err := getFilter(request.Filter, "project")
+		projectFilter, err := getProjectFilter(request.Filter)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -191,7 +191,10 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	}
 
 	var project *store.ProjectMessage
-	patch := &store.UpdateDatabaseMessage{}
+	patch := &store.UpdateDatabaseMessage{
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
+	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "project":

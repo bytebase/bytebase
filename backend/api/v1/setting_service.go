@@ -3,6 +3,7 @@ package v1
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -14,8 +15,6 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
-
-	"embed"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -88,7 +87,7 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *v1pb.ListSettingsR
 		if !settingInWhitelist(setting.Name) {
 			continue
 		}
-		settingMessage, err := convertToSettingMessage(setting)
+		settingMessage, err := s.convertToSettingMessage(ctx, setting)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 		}
@@ -121,7 +120,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 		return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
 	}
 	// Only return whitelisted setting.
-	settingMessage, err := convertToSettingMessage(setting)
+	settingMessage, err := s.convertToSettingMessage(ctx, setting)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
@@ -155,6 +154,13 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 				return nil, status.Errorf(codes.InvalidArgument, "invalid external url: %v", err)
 			}
 			payload.ExternalUrl = externalURL
+		}
+		if payload.GitopsWebhookUrl != "" {
+			gitopsWebhookURL, err := common.NormalizeExternalURL(payload.GitopsWebhookUrl)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid GitOps webhook URL: %v", err)
+			}
+			payload.GitopsWebhookUrl = gitopsWebhookURL
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
@@ -326,7 +332,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		return nil, status.Errorf(codes.Internal, "failed to set setting: %v", err)
 	}
 
-	settingMessage, err := convertToSettingMessage(setting)
+	settingMessage, err := s.convertToSettingMessage(ctx, setting)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert setting message: %v", err)
 	}
@@ -344,7 +350,7 @@ func convertV1PbToStorePb(inputPB, outputPB protoreflect.ProtoMessage) error {
 	return nil
 }
 
-func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, error) {
+func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *store.SettingMessage) (*v1pb.Setting, error) {
 	settingName := fmt.Sprintf("%s%s", settingNamePrefix, setting.Name)
 	switch setting.Name {
 	case api.SettingWorkspaceMailDelivery:
@@ -430,7 +436,11 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 		v1Value := &v1pb.WorkspaceApprovalSetting{}
 		for _, rule := range storeValue.Rules {
 			template := convertToApprovalTemplate(rule.Template)
-			template.Creator = fmt.Sprintf("%s%d", userNamePrefix, rule.Template.CreatorId)
+			creator, err := s.store.GetUserByID(ctx, int(rule.Template.CreatorId))
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
+			}
+			template.Creator = fmt.Sprintf("%s%s", userNamePrefix, creator.Email)
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
 				Expression: rule.Expression,
 				Template:   template,

@@ -832,7 +832,7 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) *v1pb.IamPolicy {
 	for _, binding := range iamPolicy.Bindings {
 		var members []string
 		for _, member := range binding.Members {
-			members = append(members, getUserIdentifier(member.Email))
+			members = append(members, fmt.Sprintf("user:%s", member.Email))
 		}
 		bindings = append(bindings, &v1pb.Binding{
 			Role:      convertToProjectRole(binding.Role),
@@ -855,7 +855,7 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		for _, member := range binding.Members {
-			email := getUserEmailFromIdentifier(member)
+			email := strings.TrimPrefix(member, "user:")
 			user, err := s.store.GetUser(ctx, &store.FindUserMessage{
 				Email:       &email,
 				ShowDeleted: true,

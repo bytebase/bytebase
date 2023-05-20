@@ -42,7 +42,11 @@ import { computed, PropType } from "vue";
 import { hasPermissionInProjectV1, hasWorkspacePermissionV1 } from "../utils";
 import { ProjectGeneralSettingPanel } from "../components/Project/ProjectSetting";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
-import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import {
+  useCurrentUserV1,
+  useGracefulRequest,
+  useProjectV1Store,
+} from "@/store";
 import { ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
 
@@ -83,10 +87,12 @@ const allowArchiveOrRestore = computed(() => {
 });
 
 const archiveOrRestoreProject = (archive: boolean) => {
-  if (archive) {
-    projectV1Store.archiveProject(props.project);
-  } else {
-    projectV1Store.restoreProject(props.project);
-  }
+  useGracefulRequest(async () => {
+    if (archive) {
+      await projectV1Store.archiveProject(props.project);
+    } else {
+      await projectV1Store.restoreProject(props.project);
+    }
+  });
 };
 </script>

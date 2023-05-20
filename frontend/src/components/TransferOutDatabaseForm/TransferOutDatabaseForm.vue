@@ -188,7 +188,7 @@ const doTransfer = async () => {
 
   const transferOneDatabase = (database: Database) => {
     return databaseStore.transferProject({
-      databaseId: database.id,
+      database,
       projectId: target.uid,
     });
   };
