@@ -924,6 +924,11 @@ export interface SchemaGroup {
    * The keyword {{TABLE}} in the sheet script will be rendered to the actual table name.
    */
   tableExpr?: Expr;
+  /**
+   * The table placeholder used for rendering. For example, if set to "tbl", all the table name
+   * "tbl" in the SQL script will be rendered to the actual table name.
+   */
+  tablePlaceholder: string;
 }
 
 function createBaseGetProjectRequest(): GetProjectRequest {
@@ -3980,7 +3985,7 @@ export const DeleteSchemaGroupRequest = {
 };
 
 function createBaseSchemaGroup(): SchemaGroup {
-  return { name: "", tableExpr: undefined };
+  return { name: "", tableExpr: undefined, tablePlaceholder: "" };
 }
 
 export const SchemaGroup = {
@@ -3990,6 +3995,9 @@ export const SchemaGroup = {
     }
     if (message.tableExpr !== undefined) {
       Expr.encode(message.tableExpr, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.tablePlaceholder !== "") {
+      writer.uint32(26).string(message.tablePlaceholder);
     }
     return writer;
   },
@@ -4015,6 +4023,13 @@ export const SchemaGroup = {
 
           message.tableExpr = Expr.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.tablePlaceholder = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4028,6 +4043,7 @@ export const SchemaGroup = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       tableExpr: isSet(object.tableExpr) ? Expr.fromJSON(object.tableExpr) : undefined,
+      tablePlaceholder: isSet(object.tablePlaceholder) ? String(object.tablePlaceholder) : "",
     };
   },
 
@@ -4035,6 +4051,7 @@ export const SchemaGroup = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.tableExpr !== undefined && (obj.tableExpr = message.tableExpr ? Expr.toJSON(message.tableExpr) : undefined);
+    message.tablePlaceholder !== undefined && (obj.tablePlaceholder = message.tablePlaceholder);
     return obj;
   },
 
@@ -4048,6 +4065,7 @@ export const SchemaGroup = {
     message.tableExpr = (object.tableExpr !== undefined && object.tableExpr !== null)
       ? Expr.fromPartial(object.tableExpr)
       : undefined;
+    message.tablePlaceholder = object.tablePlaceholder ?? "";
     return message;
   },
 };
