@@ -915,7 +915,7 @@ export interface DeleteSchemaGroupRequest {
 
 export interface SchemaGroup {
   /**
-   * The name of the database group.
+   * The name of the schema group.
    * Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
    */
   name: string;

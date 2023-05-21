@@ -2879,7 +2879,7 @@ type SchemaGroup struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The name of the database group.
+	// The name of the schema group.
 	// Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The table condition that is associated with this schema group.
