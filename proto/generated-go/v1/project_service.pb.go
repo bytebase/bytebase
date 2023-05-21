@@ -2883,7 +2883,7 @@ type SchemaGroup struct {
 	// Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The table condition that is associated with this schema group.
-	// The keyword {{TABLE}} in the sheet script will be rendered to the actual table name.
+	// The table_placeholder in the sheet script will be rendered to the actual table name.
 	TableExpr *expr.Expr `protobuf:"bytes,2,opt,name=table_expr,json=tableExpr,proto3" json:"table_expr,omitempty"`
 	// The table placeholder used for rendering. For example, if set to "tbl", all the table name
 	// "tbl" in the SQL script will be rendered to the actual table name.

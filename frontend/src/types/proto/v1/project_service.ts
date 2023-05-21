@@ -921,7 +921,7 @@ export interface SchemaGroup {
   name: string;
   /**
    * The table condition that is associated with this schema group.
-   * The keyword {{TABLE}} in the sheet script will be rendered to the actual table name.
+   * The table_placeholder in the sheet script will be rendered to the actual table name.
    */
   tableExpr?: Expr;
   /**

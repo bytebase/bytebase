@@ -662,7 +662,7 @@ message SchemaGroup {
   string name = 1;
 
   // The table condition that is associated with this schema group.
-  // The keyword {{TABLE}} in the sheet script will be rendered to the actual table name.
+  // The table_placeholder in the sheet script will be rendered to the actual table name.
   google.type.Expr table_expr = 2;
   // The table placeholder used for rendering. For example, if set to "tbl", all the table name
   // "tbl" in the SQL script will be rendered to the actual table name.
