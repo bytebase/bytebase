@@ -620,7 +620,7 @@ message DatabaseGroup {
   string name = 1;
 
   // The condition that is associated with this database group.
-  google.type.Expr database_expr = 3;
+  google.type.Expr database_expr = 2;
 }
 
 message CreateSchemaGroupRequest {
@@ -663,7 +663,7 @@ message SchemaGroup {
 
   // The table condition that is associated with this schema group.
   // The keyword {{TABLE}} in the sheet script will be rendered to the actual table name.
-  google.type.Expr table_expr = 3;
+  google.type.Expr table_expr = 2;
 
   // In the future, we can introduce schema_expr if users use schema (Postgres schema) for groups.
   // Its keyword will be {{SCHEMA}}.

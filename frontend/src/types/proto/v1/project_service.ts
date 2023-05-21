@@ -3698,7 +3698,7 @@ export const DatabaseGroup = {
       writer.uint32(10).string(message.name);
     }
     if (message.databaseExpr !== undefined) {
-      Expr.encode(message.databaseExpr, writer.uint32(26).fork()).ldelim();
+      Expr.encode(message.databaseExpr, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -3717,8 +3717,8 @@ export const DatabaseGroup = {
 
           message.name = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
@@ -3989,7 +3989,7 @@ export const SchemaGroup = {
       writer.uint32(10).string(message.name);
     }
     if (message.tableExpr !== undefined) {
-      Expr.encode(message.tableExpr, writer.uint32(26).fork()).ldelim();
+      Expr.encode(message.tableExpr, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -4008,8 +4008,8 @@ export const SchemaGroup = {
 
           message.name = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
