@@ -38,6 +38,12 @@ const (
 	ProjectService_TestWebhook_FullMethodName            = "/bytebase.v1.ProjectService/TestWebhook"
 	ProjectService_SetProjectGitOpsInfo_FullMethodName   = "/bytebase.v1.ProjectService/SetProjectGitOpsInfo"
 	ProjectService_GetProjectGitOpsInfo_FullMethodName   = "/bytebase.v1.ProjectService/GetProjectGitOpsInfo"
+	ProjectService_CreateDatabaseGroup_FullMethodName    = "/bytebase.v1.ProjectService/CreateDatabaseGroup"
+	ProjectService_UpdateDatabaseGroup_FullMethodName    = "/bytebase.v1.ProjectService/UpdateDatabaseGroup"
+	ProjectService_DeleteDatabaseGroup_FullMethodName    = "/bytebase.v1.ProjectService/DeleteDatabaseGroup"
+	ProjectService_CreateSchemaGroup_FullMethodName      = "/bytebase.v1.ProjectService/CreateSchemaGroup"
+	ProjectService_UpdateSchemaGroup_FullMethodName      = "/bytebase.v1.ProjectService/UpdateSchemaGroup"
+	ProjectService_DeleteSchemaGroup_FullMethodName      = "/bytebase.v1.ProjectService/DeleteSchemaGroup"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -63,6 +69,12 @@ type ProjectServiceClient interface {
 	TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error)
 	SetProjectGitOpsInfo(ctx context.Context, in *SetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error)
 	GetProjectGitOpsInfo(ctx context.Context, in *SetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error)
+	CreateDatabaseGroup(ctx context.Context, in *CreateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
+	UpdateDatabaseGroup(ctx context.Context, in *UpdateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
+	DeleteDatabaseGroup(ctx context.Context, in *DeleteDatabaseGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	CreateSchemaGroup(ctx context.Context, in *CreateSchemaGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
+	UpdateSchemaGroup(ctx context.Context, in *UpdateSchemaGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
+	DeleteSchemaGroup(ctx context.Context, in *DeleteSchemaGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type projectServiceClient struct {
@@ -235,6 +247,60 @@ func (c *projectServiceClient) GetProjectGitOpsInfo(ctx context.Context, in *Set
 	return out, nil
 }
 
+func (c *projectServiceClient) CreateDatabaseGroup(ctx context.Context, in *CreateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error) {
+	out := new(DatabaseGroup)
+	err := c.cc.Invoke(ctx, ProjectService_CreateDatabaseGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) UpdateDatabaseGroup(ctx context.Context, in *UpdateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error) {
+	out := new(DatabaseGroup)
+	err := c.cc.Invoke(ctx, ProjectService_UpdateDatabaseGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) DeleteDatabaseGroup(ctx context.Context, in *DeleteDatabaseGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ProjectService_DeleteDatabaseGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) CreateSchemaGroup(ctx context.Context, in *CreateSchemaGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error) {
+	out := new(DatabaseGroup)
+	err := c.cc.Invoke(ctx, ProjectService_CreateSchemaGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) UpdateSchemaGroup(ctx context.Context, in *UpdateSchemaGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error) {
+	out := new(DatabaseGroup)
+	err := c.cc.Invoke(ctx, ProjectService_UpdateSchemaGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) DeleteSchemaGroup(ctx context.Context, in *DeleteSchemaGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ProjectService_DeleteSchemaGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
@@ -258,6 +324,12 @@ type ProjectServiceServer interface {
 	TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error)
 	SetProjectGitOpsInfo(context.Context, *SetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error)
 	GetProjectGitOpsInfo(context.Context, *SetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error)
+	CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error)
+	UpdateDatabaseGroup(context.Context, *UpdateDatabaseGroupRequest) (*DatabaseGroup, error)
+	DeleteDatabaseGroup(context.Context, *DeleteDatabaseGroupRequest) (*emptypb.Empty, error)
+	CreateSchemaGroup(context.Context, *CreateSchemaGroupRequest) (*DatabaseGroup, error)
+	UpdateSchemaGroup(context.Context, *UpdateSchemaGroupRequest) (*DatabaseGroup, error)
+	DeleteSchemaGroup(context.Context, *DeleteSchemaGroupRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -318,6 +390,24 @@ func (UnimplementedProjectServiceServer) SetProjectGitOpsInfo(context.Context, *
 }
 func (UnimplementedProjectServiceServer) GetProjectGitOpsInfo(context.Context, *SetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjectGitOpsInfo not implemented")
+}
+func (UnimplementedProjectServiceServer) CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateDatabaseGroup not implemented")
+}
+func (UnimplementedProjectServiceServer) UpdateDatabaseGroup(context.Context, *UpdateDatabaseGroupRequest) (*DatabaseGroup, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDatabaseGroup not implemented")
+}
+func (UnimplementedProjectServiceServer) DeleteDatabaseGroup(context.Context, *DeleteDatabaseGroupRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteDatabaseGroup not implemented")
+}
+func (UnimplementedProjectServiceServer) CreateSchemaGroup(context.Context, *CreateSchemaGroupRequest) (*DatabaseGroup, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSchemaGroup not implemented")
+}
+func (UnimplementedProjectServiceServer) UpdateSchemaGroup(context.Context, *UpdateSchemaGroupRequest) (*DatabaseGroup, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSchemaGroup not implemented")
+}
+func (UnimplementedProjectServiceServer) DeleteSchemaGroup(context.Context, *DeleteSchemaGroupRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSchemaGroup not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 
@@ -656,6 +746,114 @@ func _ProjectService_GetProjectGitOpsInfo_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_CreateDatabaseGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDatabaseGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).CreateDatabaseGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_CreateDatabaseGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).CreateDatabaseGroup(ctx, req.(*CreateDatabaseGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_UpdateDatabaseGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDatabaseGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).UpdateDatabaseGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_UpdateDatabaseGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).UpdateDatabaseGroup(ctx, req.(*UpdateDatabaseGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_DeleteDatabaseGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDatabaseGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).DeleteDatabaseGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_DeleteDatabaseGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).DeleteDatabaseGroup(ctx, req.(*DeleteDatabaseGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_CreateSchemaGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSchemaGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).CreateSchemaGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_CreateSchemaGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).CreateSchemaGroup(ctx, req.(*CreateSchemaGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_UpdateSchemaGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSchemaGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).UpdateSchemaGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_UpdateSchemaGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).UpdateSchemaGroup(ctx, req.(*UpdateSchemaGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_DeleteSchemaGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSchemaGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).DeleteSchemaGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_DeleteSchemaGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).DeleteSchemaGroup(ctx, req.(*DeleteSchemaGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -734,6 +932,30 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProjectGitOpsInfo",
 			Handler:    _ProjectService_GetProjectGitOpsInfo_Handler,
+		},
+		{
+			MethodName: "CreateDatabaseGroup",
+			Handler:    _ProjectService_CreateDatabaseGroup_Handler,
+		},
+		{
+			MethodName: "UpdateDatabaseGroup",
+			Handler:    _ProjectService_UpdateDatabaseGroup_Handler,
+		},
+		{
+			MethodName: "DeleteDatabaseGroup",
+			Handler:    _ProjectService_DeleteDatabaseGroup_Handler,
+		},
+		{
+			MethodName: "CreateSchemaGroup",
+			Handler:    _ProjectService_CreateSchemaGroup_Handler,
+		},
+		{
+			MethodName: "UpdateSchemaGroup",
+			Handler:    _ProjectService_UpdateSchemaGroup_Handler,
+		},
+		{
+			MethodName: "DeleteSchemaGroup",
+			Handler:    _ProjectService_DeleteSchemaGroup_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -2456,6 +2456,493 @@ func (*Activity) Descriptor() ([]byte, []int) {
 	return file_v1_project_service_proto_rawDescGZIP(), []int{32}
 }
 
+type CreateDatabaseGroupRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The parent resource where this database group will be created.
+	// Format: projects/{project}
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// The database group to create.
+	DatabaseGroup *DatabaseGroup `protobuf:"bytes,2,opt,name=database_group,json=databaseGroup,proto3" json:"database_group,omitempty"`
+	// The ID to use for the database group, which will become the final component of
+	// the database group's resource name.
+	//
+	// This value should be 4-63 characters, and valid characters
+	// are /[a-z][0-9]-/.
+	DatabaseGroupId string `protobuf:"bytes,3,opt,name=database_group_id,json=databaseGroupId,proto3" json:"database_group_id,omitempty"`
+}
+
+func (x *CreateDatabaseGroupRequest) Reset() {
+	*x = CreateDatabaseGroupRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_project_service_proto_msgTypes[33]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *CreateDatabaseGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateDatabaseGroupRequest) ProtoMessage() {}
+
+func (x *CreateDatabaseGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[33]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateDatabaseGroupRequest.ProtoReflect.Descriptor instead.
+func (*CreateDatabaseGroupRequest) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *CreateDatabaseGroupRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
+func (x *CreateDatabaseGroupRequest) GetDatabaseGroup() *DatabaseGroup {
+	if x != nil {
+		return x.DatabaseGroup
+	}
+	return nil
+}
+
+func (x *CreateDatabaseGroupRequest) GetDatabaseGroupId() string {
+	if x != nil {
+		return x.DatabaseGroupId
+	}
+	return ""
+}
+
+type UpdateDatabaseGroupRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The database group to update.
+	//
+	// The database group's `name` field is used to identify the database group to update.
+	// Format: projects/{project}/databaseGroups/{databaseGroup}
+	DatabaseGroup *DatabaseGroup `protobuf:"bytes,1,opt,name=database_group,json=databaseGroup,proto3" json:"database_group,omitempty"`
+	// The list of fields to update.
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+}
+
+func (x *UpdateDatabaseGroupRequest) Reset() {
+	*x = UpdateDatabaseGroupRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_project_service_proto_msgTypes[34]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UpdateDatabaseGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateDatabaseGroupRequest) ProtoMessage() {}
+
+func (x *UpdateDatabaseGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[34]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateDatabaseGroupRequest.ProtoReflect.Descriptor instead.
+func (*UpdateDatabaseGroupRequest) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *UpdateDatabaseGroupRequest) GetDatabaseGroup() *DatabaseGroup {
+	if x != nil {
+		return x.DatabaseGroup
+	}
+	return nil
+}
+
+func (x *UpdateDatabaseGroupRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
+	if x != nil {
+		return x.UpdateMask
+	}
+	return nil
+}
+
+type DeleteDatabaseGroupRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name of the database group to delete.
+	// Format: projects/{project}/databaseGroups/{databaseGroup}
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *DeleteDatabaseGroupRequest) Reset() {
+	*x = DeleteDatabaseGroupRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_project_service_proto_msgTypes[35]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DeleteDatabaseGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteDatabaseGroupRequest) ProtoMessage() {}
+
+func (x *DeleteDatabaseGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[35]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteDatabaseGroupRequest.ProtoReflect.Descriptor instead.
+func (*DeleteDatabaseGroupRequest) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *DeleteDatabaseGroupRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type DatabaseGroup struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name of the database group.
+	// Format: projects/{project}/databaseGroups/{databaseGroup}
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The condition that is associated with this database group.
+	DatabaseExpr *expr.Expr `protobuf:"bytes,2,opt,name=database_expr,json=databaseExpr,proto3" json:"database_expr,omitempty"`
+}
+
+func (x *DatabaseGroup) Reset() {
+	*x = DatabaseGroup{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_project_service_proto_msgTypes[36]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DatabaseGroup) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DatabaseGroup) ProtoMessage() {}
+
+func (x *DatabaseGroup) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[36]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DatabaseGroup.ProtoReflect.Descriptor instead.
+func (*DatabaseGroup) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *DatabaseGroup) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *DatabaseGroup) GetDatabaseExpr() *expr.Expr {
+	if x != nil {
+		return x.DatabaseExpr
+	}
+	return nil
+}
+
+type CreateSchemaGroupRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The parent resource where this schema group will be created.
+	// Format: projects/{project}/databaseGroups/{databaseGroup}
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// The schema group to create.
+	SchemaGroup *SchemaGroup `protobuf:"bytes,2,opt,name=schema_group,json=schemaGroup,proto3" json:"schema_group,omitempty"`
+	// The ID to use for the schema group, which will become the final component of
+	// the schema group's resource name.
+	//
+	// This value should be 4-63 characters, and valid characters
+	// are /[a-z][0-9]-/.
+	SchemaGroupId string `protobuf:"bytes,3,opt,name=schema_group_id,json=schemaGroupId,proto3" json:"schema_group_id,omitempty"`
+}
+
+func (x *CreateSchemaGroupRequest) Reset() {
+	*x = CreateSchemaGroupRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_project_service_proto_msgTypes[37]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *CreateSchemaGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateSchemaGroupRequest) ProtoMessage() {}
+
+func (x *CreateSchemaGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[37]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateSchemaGroupRequest.ProtoReflect.Descriptor instead.
+func (*CreateSchemaGroupRequest) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *CreateSchemaGroupRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
+func (x *CreateSchemaGroupRequest) GetSchemaGroup() *SchemaGroup {
+	if x != nil {
+		return x.SchemaGroup
+	}
+	return nil
+}
+
+func (x *CreateSchemaGroupRequest) GetSchemaGroupId() string {
+	if x != nil {
+		return x.SchemaGroupId
+	}
+	return ""
+}
+
+type UpdateSchemaGroupRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The schema group to update.
+	//
+	// The schema group's `name` field is used to identify the schema group to update.
+	// Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
+	SchemaGroup *SchemaGroup `protobuf:"bytes,1,opt,name=schema_group,json=schemaGroup,proto3" json:"schema_group,omitempty"`
+	// The list of fields to update.
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+}
+
+func (x *UpdateSchemaGroupRequest) Reset() {
+	*x = UpdateSchemaGroupRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_project_service_proto_msgTypes[38]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UpdateSchemaGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSchemaGroupRequest) ProtoMessage() {}
+
+func (x *UpdateSchemaGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[38]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSchemaGroupRequest.ProtoReflect.Descriptor instead.
+func (*UpdateSchemaGroupRequest) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *UpdateSchemaGroupRequest) GetSchemaGroup() *SchemaGroup {
+	if x != nil {
+		return x.SchemaGroup
+	}
+	return nil
+}
+
+func (x *UpdateSchemaGroupRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
+	if x != nil {
+		return x.UpdateMask
+	}
+	return nil
+}
+
+type DeleteSchemaGroupRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name of the schema group to delete.
+	// Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *DeleteSchemaGroupRequest) Reset() {
+	*x = DeleteSchemaGroupRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_project_service_proto_msgTypes[39]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DeleteSchemaGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteSchemaGroupRequest) ProtoMessage() {}
+
+func (x *DeleteSchemaGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[39]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteSchemaGroupRequest.ProtoReflect.Descriptor instead.
+func (*DeleteSchemaGroupRequest) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *DeleteSchemaGroupRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type SchemaGroup struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name of the schema group.
+	// Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The table condition that is associated with this schema group.
+	// The table_placeholder in the sheet script will be rendered to the actual table name.
+	TableExpr *expr.Expr `protobuf:"bytes,2,opt,name=table_expr,json=tableExpr,proto3" json:"table_expr,omitempty"`
+	// The table placeholder used for rendering. For example, if set to "tbl", all the table name
+	// "tbl" in the SQL script will be rendered to the actual table name.
+	TablePlaceholder string `protobuf:"bytes,3,opt,name=table_placeholder,json=tablePlaceholder,proto3" json:"table_placeholder,omitempty"`
+}
+
+func (x *SchemaGroup) Reset() {
+	*x = SchemaGroup{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_project_service_proto_msgTypes[40]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SchemaGroup) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SchemaGroup) ProtoMessage() {}
+
+func (x *SchemaGroup) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[40]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SchemaGroup.ProtoReflect.Descriptor instead.
+func (*SchemaGroup) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *SchemaGroup) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *SchemaGroup) GetTableExpr() *expr.Expr {
+	if x != nil {
+		return x.TableExpr
+	}
+	return nil
+}
+
+func (x *SchemaGroup) GetTablePlaceholder() string {
+	if x != nil {
+		return x.TablePlaceholder
+	}
+	return ""
+}
+
 type BatchGetIamPolicyResponse_PolicyResult struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2468,7 +2955,7 @@ type BatchGetIamPolicyResponse_PolicyResult struct {
 func (x *BatchGetIamPolicyResponse_PolicyResult) Reset() {
 	*x = BatchGetIamPolicyResponse_PolicyResult{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_project_service_proto_msgTypes[33]
+		mi := &file_v1_project_service_proto_msgTypes[41]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2481,7 +2968,7 @@ func (x *BatchGetIamPolicyResponse_PolicyResult) String() string {
 func (*BatchGetIamPolicyResponse_PolicyResult) ProtoMessage() {}
 
 func (x *BatchGetIamPolicyResponse_PolicyResult) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[33]
+	mi := &file_v1_project_service_proto_msgTypes[41]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2814,7 +3301,69 @@ var file_v1_project_service_proto_rawDesc = []byte{
 	0x45, 0x44, 0x49, 0x54, 0x4f, 0x52, 0x5f, 0x51, 0x55, 0x45, 0x52, 0x59, 0x10, 0x13, 0x12, 0x24,
 	0x0a, 0x20, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x44, 0x41, 0x54, 0x41, 0x42, 0x41, 0x53, 0x45, 0x5f,
 	0x52, 0x45, 0x43, 0x4f, 0x56, 0x45, 0x52, 0x59, 0x5f, 0x50, 0x49, 0x54, 0x52, 0x5f, 0x44, 0x4f,
-	0x4e, 0x45, 0x10, 0x14, 0x2a, 0x35, 0x0a, 0x08, 0x57, 0x6f, 0x72, 0x6b, 0x66, 0x6c, 0x6f, 0x77,
+	0x4e, 0x45, 0x10, 0x14, 0x22, 0xad, 0x01, 0x0a, 0x1a, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x44,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x12, 0x1b, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x02, 0x52, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74,
+	0x12, 0x46, 0x0a, 0x0e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x67, 0x72, 0x6f,
+	0x75, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47,
+	0x72, 0x6f, 0x75, 0x70, 0x42, 0x03, 0xe0, 0x41, 0x02, 0x52, 0x0d, 0x64, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x2a, 0x0a, 0x11, 0x64, 0x61, 0x74, 0x61,
+	0x62, 0x61, 0x73, 0x65, 0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x0f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f,
+	0x75, 0x70, 0x49, 0x64, 0x22, 0xa1, 0x01, 0x0a, 0x1a, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x12, 0x46, 0x0a, 0x0e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x5f,
+	0x67, 0x72, 0x6f, 0x75, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x42, 0x03, 0xe0, 0x41, 0x02, 0x52, 0x0d, 0x64, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x3b, 0x0a, 0x0b, 0x75,
+	0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62,
+	0x75, 0x66, 0x2e, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4d, 0x61, 0x73, 0x6b, 0x52, 0x0a, 0x75, 0x70,
+	0x64, 0x61, 0x74, 0x65, 0x4d, 0x61, 0x73, 0x6b, 0x22, 0x35, 0x0a, 0x1a, 0x44, 0x65, 0x6c, 0x65,
+	0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x02, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22,
+	0x5b, 0x0a, 0x0d, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70,
+	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x12, 0x36, 0x0a, 0x0d, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
+	0x5f, 0x65, 0x78, 0x70, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x2e, 0x45, 0x78, 0x70, 0x72, 0x52, 0x0c,
+	0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x45, 0x78, 0x70, 0x72, 0x22, 0xa1, 0x01, 0x0a,
+	0x18, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f,
+	0x75, 0x70, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1b, 0x0a, 0x06, 0x70, 0x61, 0x72,
+	0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x02, 0x52, 0x06,
+	0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x12, 0x40, 0x0a, 0x0c, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61,
+	0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x63, 0x68, 0x65, 0x6d,
+	0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x42, 0x03, 0xe0, 0x41, 0x02, 0x52, 0x0b, 0x73, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x26, 0x0a, 0x0f, 0x73, 0x63, 0x68, 0x65,
+	0x6d, 0x61, 0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x0d, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x49, 0x64,
+	0x22, 0x99, 0x01, 0x0a, 0x18, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d,
+	0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x40, 0x0a,
+	0x0c, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x42, 0x03, 0xe0,
+	0x41, 0x02, 0x52, 0x0b, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12,
+	0x3b, 0x0a, 0x0b, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4d, 0x61, 0x73, 0x6b,
+	0x52, 0x0a, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x4d, 0x61, 0x73, 0x6b, 0x22, 0x33, 0x0a, 0x18,
+	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75,
+	0x70, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x02, 0x52, 0x04, 0x6e, 0x61, 0x6d,
+	0x65, 0x22, 0x80, 0x01, 0x0a, 0x0b, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75,
+	0x70, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x30, 0x0a, 0x0a, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x65,
+	0x78, 0x70, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x67, 0x6f, 0x6f, 0x67,
+	0x6c, 0x65, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x2e, 0x45, 0x78, 0x70, 0x72, 0x52, 0x09, 0x74, 0x61,
+	0x62, 0x6c, 0x65, 0x45, 0x78, 0x70, 0x72, 0x12, 0x2b, 0x0a, 0x11, 0x74, 0x61, 0x62, 0x6c, 0x65,
+	0x5f, 0x70, 0x6c, 0x61, 0x63, 0x65, 0x68, 0x6f, 0x6c, 0x64, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x10, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x50, 0x6c, 0x61, 0x63, 0x65, 0x68, 0x6f,
+	0x6c, 0x64, 0x65, 0x72, 0x2a, 0x35, 0x0a, 0x08, 0x57, 0x6f, 0x72, 0x6b, 0x66, 0x6c, 0x6f, 0x77,
 	0x12, 0x18, 0x0a, 0x14, 0x57, 0x4f, 0x52, 0x4b, 0x46, 0x4c, 0x4f, 0x57, 0x5f, 0x55, 0x4e, 0x53,
 	0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x06, 0x0a, 0x02, 0x55, 0x49,
 	0x10, 0x01, 0x12, 0x07, 0x0a, 0x03, 0x56, 0x43, 0x53, 0x10, 0x02, 0x2a, 0x57, 0x0a, 0x0a, 0x56,
@@ -2844,7 +3393,7 @@ var file_v1_project_service_proto_rawDesc = []byte{
 	0x12, 0x14, 0x0a, 0x10, 0x4f, 0x50, 0x45, 0x52, 0x41, 0x54, 0x4f, 0x52, 0x5f, 0x54, 0x59, 0x50,
 	0x45, 0x5f, 0x49, 0x4e, 0x10, 0x01, 0x12, 0x18, 0x0a, 0x14, 0x4f, 0x50, 0x45, 0x52, 0x41, 0x54,
 	0x4f, 0x52, 0x5f, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x45, 0x58, 0x49, 0x53, 0x54, 0x53, 0x10, 0x02,
-	0x32, 0xd5, 0x12, 0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76,
+	0x32, 0x88, 0x1b, 0x0a, 0x0e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x53, 0x65, 0x72, 0x76,
 	0x69, 0x63, 0x65, 0x12, 0x68, 0x0a, 0x0a, 0x47, 0x65, 0x74, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63,
 	0x74, 0x12, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
 	0x47, 0x65, 0x74, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
@@ -2993,9 +3542,76 @@ var file_v1_project_service_proto_rawDesc = []byte{
 	0x74, 0x47, 0x69, 0x74, 0x4f, 0x70, 0x73, 0x49, 0x6e, 0x66, 0x6f, 0x22, 0x2b, 0x82, 0xd3, 0xe4,
 	0x93, 0x02, 0x25, 0x12, 0x23, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63,
 	0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x67, 0x69,
-	0x74, 0x4f, 0x70, 0x73, 0x49, 0x6e, 0x66, 0x6f, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65,
-	0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x74, 0x4f, 0x70, 0x73, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0xb1, 0x01, 0x0a, 0x13, 0x43, 0x72, 0x65,
+	0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70,
+	0x12, 0x27, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43,
+	0x72, 0x65, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f,
+	0x75, 0x70, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1a, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
+	0x47, 0x72, 0x6f, 0x75, 0x70, 0x22, 0x55, 0xda, 0x41, 0x14, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74,
+	0x2c, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x38, 0x3a, 0x0e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x67,
+	0x72, 0x6f, 0x75, 0x70, 0x22, 0x26, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e,
+	0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x73, 0x12, 0xc6, 0x01, 0x0a,
+	0x13, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47,
+	0x72, 0x6f, 0x75, 0x70, 0x12, 0x27, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
+	0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1a, 0x2e,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61,
+	0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x22, 0x6a, 0xda, 0x41, 0x1a, 0x64, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x2c, 0x75, 0x70, 0x64,
+	0x61, 0x74, 0x65, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x47, 0x3a, 0x0e,
+	0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x32, 0x35,
+	0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x67, 0x72,
+	0x6f, 0x75, 0x70, 0x2e, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
+	0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75,
+	0x70, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0x8d, 0x01, 0x0a, 0x13, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
+	0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x27, 0x2e,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65,
+	0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x35,
+	0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x28, 0x2a, 0x26, 0x2f,
+	0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
+	0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75,
+	0x70, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xba, 0x01, 0x0a, 0x11, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65,
+	0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x25, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65,
+	0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x1a, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x22, 0x62,
+	0xda, 0x41, 0x14, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x2c, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x45, 0x3a, 0x0c, 0x73,
+	0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x22, 0x35, 0x2f, 0x76, 0x31,
+	0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
+	0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75,
+	0x70, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75,
+	0x70, 0x73, 0x12, 0xcb, 0x01, 0x0a, 0x11, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x53, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x25, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x53, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x1a, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x22, 0x73, 0xda, 0x41, 0x18,
+	0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x2c, 0x75, 0x70, 0x64,
+	0x61, 0x74, 0x65, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x52, 0x3a, 0x0c,
+	0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x32, 0x42, 0x2f, 0x76,
+	0x31, 0x2f, 0x7b, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x2e,
+	0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f,
+	0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x73, 0x2f, 0x2a,
+	0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x73, 0x2f, 0x2a, 0x7d,
+	0x12, 0x98, 0x01, 0x0a, 0x11, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d,
+	0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x25, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d,
+	0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e,
+	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e,
+	0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x44, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x37, 0x2a, 0x35, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d,
+	0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x63, 0x68, 0x65,
+	0x6d, 0x61, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x73, 0x2f, 0x2a, 0x7d, 0x42, 0x11, 0x5a, 0x0f, 0x67,
+	0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -3011,7 +3627,7 @@ func file_v1_project_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_project_service_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_v1_project_service_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
+var file_v1_project_service_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
 var file_v1_project_service_proto_goTypes = []interface{}{
 	(Workflow)(0),                                  // 0: bytebase.v1.Workflow
 	(Visibility)(0),                                // 1: bytebase.v1.Visibility
@@ -3054,24 +3670,32 @@ var file_v1_project_service_proto_goTypes = []interface{}{
 	(*LabelSelector)(nil),                          // 38: bytebase.v1.LabelSelector
 	(*LabelSelectorRequirement)(nil),               // 39: bytebase.v1.LabelSelectorRequirement
 	(*Activity)(nil),                               // 40: bytebase.v1.Activity
-	(*BatchGetIamPolicyResponse_PolicyResult)(nil), // 41: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
-	(*fieldmaskpb.FieldMask)(nil),                  // 42: google.protobuf.FieldMask
-	(*ProjectGitOpsInfo)(nil),                      // 43: bytebase.v1.ProjectGitOpsInfo
-	(State)(0),                                     // 44: bytebase.v1.State
-	(*expr.Expr)(nil),                              // 45: google.type.Expr
-	(*emptypb.Empty)(nil),                          // 46: google.protobuf.Empty
+	(*CreateDatabaseGroupRequest)(nil),             // 41: bytebase.v1.CreateDatabaseGroupRequest
+	(*UpdateDatabaseGroupRequest)(nil),             // 42: bytebase.v1.UpdateDatabaseGroupRequest
+	(*DeleteDatabaseGroupRequest)(nil),             // 43: bytebase.v1.DeleteDatabaseGroupRequest
+	(*DatabaseGroup)(nil),                          // 44: bytebase.v1.DatabaseGroup
+	(*CreateSchemaGroupRequest)(nil),               // 45: bytebase.v1.CreateSchemaGroupRequest
+	(*UpdateSchemaGroupRequest)(nil),               // 46: bytebase.v1.UpdateSchemaGroupRequest
+	(*DeleteSchemaGroupRequest)(nil),               // 47: bytebase.v1.DeleteSchemaGroupRequest
+	(*SchemaGroup)(nil),                            // 48: bytebase.v1.SchemaGroup
+	(*BatchGetIamPolicyResponse_PolicyResult)(nil), // 49: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
+	(*fieldmaskpb.FieldMask)(nil),                  // 50: google.protobuf.FieldMask
+	(*ProjectGitOpsInfo)(nil),                      // 51: bytebase.v1.ProjectGitOpsInfo
+	(State)(0),                                     // 52: bytebase.v1.State
+	(*expr.Expr)(nil),                              // 53: google.type.Expr
+	(*emptypb.Empty)(nil),                          // 54: google.protobuf.Empty
 }
 var file_v1_project_service_proto_depIdxs = []int32{
 	25, // 0: bytebase.v1.ListProjectsResponse.projects:type_name -> bytebase.v1.Project
 	25, // 1: bytebase.v1.SearchProjectsResponse.projects:type_name -> bytebase.v1.Project
 	25, // 2: bytebase.v1.CreateProjectRequest.project:type_name -> bytebase.v1.Project
 	25, // 3: bytebase.v1.UpdateProjectRequest.project:type_name -> bytebase.v1.Project
-	42, // 4: bytebase.v1.UpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
-	41, // 5: bytebase.v1.BatchGetIamPolicyResponse.policy_results:type_name -> bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
+	50, // 4: bytebase.v1.UpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
+	49, // 5: bytebase.v1.BatchGetIamPolicyResponse.policy_results:type_name -> bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
 	26, // 6: bytebase.v1.SetIamPolicyRequest.policy:type_name -> bytebase.v1.IamPolicy
 	34, // 7: bytebase.v1.UpdateDeploymentConfigRequest.config:type_name -> bytebase.v1.DeploymentConfig
-	43, // 8: bytebase.v1.SetProjectGitOpsInfoRequest.project_gitops_info:type_name -> bytebase.v1.ProjectGitOpsInfo
-	44, // 9: bytebase.v1.Project.state:type_name -> bytebase.v1.State
+	51, // 8: bytebase.v1.SetProjectGitOpsInfoRequest.project_gitops_info:type_name -> bytebase.v1.ProjectGitOpsInfo
+	52, // 9: bytebase.v1.Project.state:type_name -> bytebase.v1.State
 	0,  // 10: bytebase.v1.Project.workflow:type_name -> bytebase.v1.Workflow
 	1,  // 11: bytebase.v1.Project.visibility:type_name -> bytebase.v1.Visibility
 	2,  // 12: bytebase.v1.Project.tenant_mode:type_name -> bytebase.v1.TenantMode
@@ -3079,10 +3703,10 @@ var file_v1_project_service_proto_depIdxs = []int32{
 	4,  // 14: bytebase.v1.Project.schema_change:type_name -> bytebase.v1.SchemaChange
 	33, // 15: bytebase.v1.Project.webhooks:type_name -> bytebase.v1.Webhook
 	27, // 16: bytebase.v1.IamPolicy.bindings:type_name -> bytebase.v1.Binding
-	45, // 17: bytebase.v1.Binding.condition:type_name -> google.type.Expr
+	53, // 17: bytebase.v1.Binding.condition:type_name -> google.type.Expr
 	33, // 18: bytebase.v1.AddWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
 	33, // 19: bytebase.v1.UpdateWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	42, // 20: bytebase.v1.UpdateWebhookRequest.update_mask:type_name -> google.protobuf.FieldMask
+	50, // 20: bytebase.v1.UpdateWebhookRequest.update_mask:type_name -> google.protobuf.FieldMask
 	33, // 21: bytebase.v1.RemoveWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
 	33, // 22: bytebase.v1.TestWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
 	6,  // 23: bytebase.v1.Webhook.type:type_name -> bytebase.v1.Webhook.Type
@@ -3093,48 +3717,68 @@ var file_v1_project_service_proto_depIdxs = []int32{
 	38, // 28: bytebase.v1.DeploymentSpec.label_selector:type_name -> bytebase.v1.LabelSelector
 	39, // 29: bytebase.v1.LabelSelector.match_expressions:type_name -> bytebase.v1.LabelSelectorRequirement
 	5,  // 30: bytebase.v1.LabelSelectorRequirement.operator:type_name -> bytebase.v1.OperatorType
-	26, // 31: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult.policy:type_name -> bytebase.v1.IamPolicy
-	8,  // 32: bytebase.v1.ProjectService.GetProject:input_type -> bytebase.v1.GetProjectRequest
-	9,  // 33: bytebase.v1.ProjectService.ListProjects:input_type -> bytebase.v1.ListProjectsRequest
-	11, // 34: bytebase.v1.ProjectService.SearchProjects:input_type -> bytebase.v1.SearchProjectsRequest
-	13, // 35: bytebase.v1.ProjectService.CreateProject:input_type -> bytebase.v1.CreateProjectRequest
-	14, // 36: bytebase.v1.ProjectService.UpdateProject:input_type -> bytebase.v1.UpdateProjectRequest
-	15, // 37: bytebase.v1.ProjectService.DeleteProject:input_type -> bytebase.v1.DeleteProjectRequest
-	16, // 38: bytebase.v1.ProjectService.UndeleteProject:input_type -> bytebase.v1.UndeleteProjectRequest
-	17, // 39: bytebase.v1.ProjectService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
-	18, // 40: bytebase.v1.ProjectService.BatchGetIamPolicy:input_type -> bytebase.v1.BatchGetIamPolicyRequest
-	20, // 41: bytebase.v1.ProjectService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
-	21, // 42: bytebase.v1.ProjectService.GetDeploymentConfig:input_type -> bytebase.v1.GetDeploymentConfigRequest
-	22, // 43: bytebase.v1.ProjectService.UpdateDeploymentConfig:input_type -> bytebase.v1.UpdateDeploymentConfigRequest
-	28, // 44: bytebase.v1.ProjectService.AddWebhook:input_type -> bytebase.v1.AddWebhookRequest
-	29, // 45: bytebase.v1.ProjectService.UpdateWebhook:input_type -> bytebase.v1.UpdateWebhookRequest
-	30, // 46: bytebase.v1.ProjectService.RemoveWebhook:input_type -> bytebase.v1.RemoveWebhookRequest
-	31, // 47: bytebase.v1.ProjectService.TestWebhook:input_type -> bytebase.v1.TestWebhookRequest
-	23, // 48: bytebase.v1.ProjectService.SetProjectGitOpsInfo:input_type -> bytebase.v1.SetProjectGitOpsInfoRequest
-	23, // 49: bytebase.v1.ProjectService.GetProjectGitOpsInfo:input_type -> bytebase.v1.SetProjectGitOpsInfoRequest
-	25, // 50: bytebase.v1.ProjectService.GetProject:output_type -> bytebase.v1.Project
-	10, // 51: bytebase.v1.ProjectService.ListProjects:output_type -> bytebase.v1.ListProjectsResponse
-	12, // 52: bytebase.v1.ProjectService.SearchProjects:output_type -> bytebase.v1.SearchProjectsResponse
-	25, // 53: bytebase.v1.ProjectService.CreateProject:output_type -> bytebase.v1.Project
-	25, // 54: bytebase.v1.ProjectService.UpdateProject:output_type -> bytebase.v1.Project
-	46, // 55: bytebase.v1.ProjectService.DeleteProject:output_type -> google.protobuf.Empty
-	25, // 56: bytebase.v1.ProjectService.UndeleteProject:output_type -> bytebase.v1.Project
-	26, // 57: bytebase.v1.ProjectService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	19, // 58: bytebase.v1.ProjectService.BatchGetIamPolicy:output_type -> bytebase.v1.BatchGetIamPolicyResponse
-	26, // 59: bytebase.v1.ProjectService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	34, // 60: bytebase.v1.ProjectService.GetDeploymentConfig:output_type -> bytebase.v1.DeploymentConfig
-	34, // 61: bytebase.v1.ProjectService.UpdateDeploymentConfig:output_type -> bytebase.v1.DeploymentConfig
-	25, // 62: bytebase.v1.ProjectService.AddWebhook:output_type -> bytebase.v1.Project
-	25, // 63: bytebase.v1.ProjectService.UpdateWebhook:output_type -> bytebase.v1.Project
-	25, // 64: bytebase.v1.ProjectService.RemoveWebhook:output_type -> bytebase.v1.Project
-	32, // 65: bytebase.v1.ProjectService.TestWebhook:output_type -> bytebase.v1.TestWebhookResponse
-	43, // 66: bytebase.v1.ProjectService.SetProjectGitOpsInfo:output_type -> bytebase.v1.ProjectGitOpsInfo
-	43, // 67: bytebase.v1.ProjectService.GetProjectGitOpsInfo:output_type -> bytebase.v1.ProjectGitOpsInfo
-	50, // [50:68] is the sub-list for method output_type
-	32, // [32:50] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	44, // 31: bytebase.v1.CreateDatabaseGroupRequest.database_group:type_name -> bytebase.v1.DatabaseGroup
+	44, // 32: bytebase.v1.UpdateDatabaseGroupRequest.database_group:type_name -> bytebase.v1.DatabaseGroup
+	50, // 33: bytebase.v1.UpdateDatabaseGroupRequest.update_mask:type_name -> google.protobuf.FieldMask
+	53, // 34: bytebase.v1.DatabaseGroup.database_expr:type_name -> google.type.Expr
+	48, // 35: bytebase.v1.CreateSchemaGroupRequest.schema_group:type_name -> bytebase.v1.SchemaGroup
+	48, // 36: bytebase.v1.UpdateSchemaGroupRequest.schema_group:type_name -> bytebase.v1.SchemaGroup
+	50, // 37: bytebase.v1.UpdateSchemaGroupRequest.update_mask:type_name -> google.protobuf.FieldMask
+	53, // 38: bytebase.v1.SchemaGroup.table_expr:type_name -> google.type.Expr
+	26, // 39: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult.policy:type_name -> bytebase.v1.IamPolicy
+	8,  // 40: bytebase.v1.ProjectService.GetProject:input_type -> bytebase.v1.GetProjectRequest
+	9,  // 41: bytebase.v1.ProjectService.ListProjects:input_type -> bytebase.v1.ListProjectsRequest
+	11, // 42: bytebase.v1.ProjectService.SearchProjects:input_type -> bytebase.v1.SearchProjectsRequest
+	13, // 43: bytebase.v1.ProjectService.CreateProject:input_type -> bytebase.v1.CreateProjectRequest
+	14, // 44: bytebase.v1.ProjectService.UpdateProject:input_type -> bytebase.v1.UpdateProjectRequest
+	15, // 45: bytebase.v1.ProjectService.DeleteProject:input_type -> bytebase.v1.DeleteProjectRequest
+	16, // 46: bytebase.v1.ProjectService.UndeleteProject:input_type -> bytebase.v1.UndeleteProjectRequest
+	17, // 47: bytebase.v1.ProjectService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
+	18, // 48: bytebase.v1.ProjectService.BatchGetIamPolicy:input_type -> bytebase.v1.BatchGetIamPolicyRequest
+	20, // 49: bytebase.v1.ProjectService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
+	21, // 50: bytebase.v1.ProjectService.GetDeploymentConfig:input_type -> bytebase.v1.GetDeploymentConfigRequest
+	22, // 51: bytebase.v1.ProjectService.UpdateDeploymentConfig:input_type -> bytebase.v1.UpdateDeploymentConfigRequest
+	28, // 52: bytebase.v1.ProjectService.AddWebhook:input_type -> bytebase.v1.AddWebhookRequest
+	29, // 53: bytebase.v1.ProjectService.UpdateWebhook:input_type -> bytebase.v1.UpdateWebhookRequest
+	30, // 54: bytebase.v1.ProjectService.RemoveWebhook:input_type -> bytebase.v1.RemoveWebhookRequest
+	31, // 55: bytebase.v1.ProjectService.TestWebhook:input_type -> bytebase.v1.TestWebhookRequest
+	23, // 56: bytebase.v1.ProjectService.SetProjectGitOpsInfo:input_type -> bytebase.v1.SetProjectGitOpsInfoRequest
+	23, // 57: bytebase.v1.ProjectService.GetProjectGitOpsInfo:input_type -> bytebase.v1.SetProjectGitOpsInfoRequest
+	41, // 58: bytebase.v1.ProjectService.CreateDatabaseGroup:input_type -> bytebase.v1.CreateDatabaseGroupRequest
+	42, // 59: bytebase.v1.ProjectService.UpdateDatabaseGroup:input_type -> bytebase.v1.UpdateDatabaseGroupRequest
+	43, // 60: bytebase.v1.ProjectService.DeleteDatabaseGroup:input_type -> bytebase.v1.DeleteDatabaseGroupRequest
+	45, // 61: bytebase.v1.ProjectService.CreateSchemaGroup:input_type -> bytebase.v1.CreateSchemaGroupRequest
+	46, // 62: bytebase.v1.ProjectService.UpdateSchemaGroup:input_type -> bytebase.v1.UpdateSchemaGroupRequest
+	47, // 63: bytebase.v1.ProjectService.DeleteSchemaGroup:input_type -> bytebase.v1.DeleteSchemaGroupRequest
+	25, // 64: bytebase.v1.ProjectService.GetProject:output_type -> bytebase.v1.Project
+	10, // 65: bytebase.v1.ProjectService.ListProjects:output_type -> bytebase.v1.ListProjectsResponse
+	12, // 66: bytebase.v1.ProjectService.SearchProjects:output_type -> bytebase.v1.SearchProjectsResponse
+	25, // 67: bytebase.v1.ProjectService.CreateProject:output_type -> bytebase.v1.Project
+	25, // 68: bytebase.v1.ProjectService.UpdateProject:output_type -> bytebase.v1.Project
+	54, // 69: bytebase.v1.ProjectService.DeleteProject:output_type -> google.protobuf.Empty
+	25, // 70: bytebase.v1.ProjectService.UndeleteProject:output_type -> bytebase.v1.Project
+	26, // 71: bytebase.v1.ProjectService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	19, // 72: bytebase.v1.ProjectService.BatchGetIamPolicy:output_type -> bytebase.v1.BatchGetIamPolicyResponse
+	26, // 73: bytebase.v1.ProjectService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	34, // 74: bytebase.v1.ProjectService.GetDeploymentConfig:output_type -> bytebase.v1.DeploymentConfig
+	34, // 75: bytebase.v1.ProjectService.UpdateDeploymentConfig:output_type -> bytebase.v1.DeploymentConfig
+	25, // 76: bytebase.v1.ProjectService.AddWebhook:output_type -> bytebase.v1.Project
+	25, // 77: bytebase.v1.ProjectService.UpdateWebhook:output_type -> bytebase.v1.Project
+	25, // 78: bytebase.v1.ProjectService.RemoveWebhook:output_type -> bytebase.v1.Project
+	32, // 79: bytebase.v1.ProjectService.TestWebhook:output_type -> bytebase.v1.TestWebhookResponse
+	51, // 80: bytebase.v1.ProjectService.SetProjectGitOpsInfo:output_type -> bytebase.v1.ProjectGitOpsInfo
+	51, // 81: bytebase.v1.ProjectService.GetProjectGitOpsInfo:output_type -> bytebase.v1.ProjectGitOpsInfo
+	44, // 82: bytebase.v1.ProjectService.CreateDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
+	44, // 83: bytebase.v1.ProjectService.UpdateDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
+	54, // 84: bytebase.v1.ProjectService.DeleteDatabaseGroup:output_type -> google.protobuf.Empty
+	44, // 85: bytebase.v1.ProjectService.CreateSchemaGroup:output_type -> bytebase.v1.DatabaseGroup
+	44, // 86: bytebase.v1.ProjectService.UpdateSchemaGroup:output_type -> bytebase.v1.DatabaseGroup
+	54, // 87: bytebase.v1.ProjectService.DeleteSchemaGroup:output_type -> google.protobuf.Empty
+	64, // [64:88] is the sub-list for method output_type
+	40, // [40:64] is the sub-list for method input_type
+	40, // [40:40] is the sub-list for extension type_name
+	40, // [40:40] is the sub-list for extension extendee
+	0,  // [0:40] is the sub-list for field type_name
 }
 
 func init() { file_v1_project_service_proto_init() }
@@ -3542,6 +4186,102 @@ func file_v1_project_service_proto_init() {
 			}
 		}
 		file_v1_project_service_proto_msgTypes[33].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CreateDatabaseGroupRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_project_service_proto_msgTypes[34].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UpdateDatabaseGroupRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_project_service_proto_msgTypes[35].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DeleteDatabaseGroupRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_project_service_proto_msgTypes[36].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DatabaseGroup); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_project_service_proto_msgTypes[37].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CreateSchemaGroupRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_project_service_proto_msgTypes[38].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UpdateSchemaGroupRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_project_service_proto_msgTypes[39].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DeleteSchemaGroupRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_project_service_proto_msgTypes[40].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SchemaGroup); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_project_service_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*BatchGetIamPolicyResponse_PolicyResult); i {
 			case 0:
 				return &v.state
@@ -3560,7 +4300,7 @@ func file_v1_project_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_project_service_proto_rawDesc,
 			NumEnums:      8,
-			NumMessages:   34,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
