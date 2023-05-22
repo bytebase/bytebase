@@ -153,10 +153,14 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 });
 
-export const useProjectV1List = (showDeleted: MaybeRef<boolean> = false) => {
+export const useProjectV1List = (
+  showDeleted: MaybeRef<boolean> = false,
+  forceUpdate = false
+) => {
   const store = useProjectV1Store();
   const ready = ref(false);
   watchEffect(() => {
+    if (!unref(forceUpdate)) return;
     ready.value = false;
     store.fetchProjectList(unref(showDeleted)).then(() => {
       ready.value = true;
