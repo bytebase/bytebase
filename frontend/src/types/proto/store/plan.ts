@@ -4,23 +4,23 @@ import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.store";
 
-export interface PlanWorkflow {
-  steps: PlanWorkflow_Step[];
+export interface PlanConfig {
+  steps: PlanConfig_Step[];
 }
 
-export interface PlanWorkflow_Step {
-  specs: PlanWorkflow_Spec[];
+export interface PlanConfig_Step {
+  specs: PlanConfig_Spec[];
 }
 
-export interface PlanWorkflow_Spec {
+export interface PlanConfig_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
   earliestAllowedTime?: Date;
-  createDatabaseConfig?: PlanWorkflow_CreateDatabaseConfig | undefined;
-  changeDatabaseConfig?: PlanWorkflow_ChangeDatabaseConfig | undefined;
-  restoreDatabaseConfig?: PlanWorkflow_RestoreDatabaseConfig | undefined;
+  createDatabaseConfig?: PlanConfig_CreateDatabaseConfig | undefined;
+  changeDatabaseConfig?: PlanConfig_ChangeDatabaseConfig | undefined;
+  restoreDatabaseConfig?: PlanConfig_RestoreDatabaseConfig | undefined;
 }
 
-export interface PlanWorkflow_CreateDatabaseConfig {
+export interface PlanConfig_CreateDatabaseConfig {
   /**
    * The resource name of the instance on which the database is created.
    * Format: instances/{instance}
@@ -50,12 +50,12 @@ export interface PlanWorkflow_CreateDatabaseConfig {
   labels: { [key: string]: string };
 }
 
-export interface PlanWorkflow_CreateDatabaseConfig_LabelsEntry {
+export interface PlanConfig_CreateDatabaseConfig_LabelsEntry {
   key: string;
   value: string;
 }
 
-export interface PlanWorkflow_ChangeDatabaseConfig {
+export interface PlanConfig_ChangeDatabaseConfig {
   /**
    * The resource name of the target.
    * Format: projects/{project}/logicalDatabases/{ldb1}.
@@ -68,7 +68,7 @@ export interface PlanWorkflow_ChangeDatabaseConfig {
    * Format: sheets/{sheet}
    */
   sheet: string;
-  type: PlanWorkflow_ChangeDatabaseConfig_Type;
+  type: PlanConfig_ChangeDatabaseConfig_Type;
   /**
    * schema_version is parsed from VCS file name.
    * It is automatically generated in the UI workflow.
@@ -79,7 +79,7 @@ export interface PlanWorkflow_ChangeDatabaseConfig {
 }
 
 /** Type is the database change type. */
-export enum PlanWorkflow_ChangeDatabaseConfig_Type {
+export enum PlanConfig_ChangeDatabaseConfig_Type {
   TYPE_UNSPECIFIED = 0,
   /**
    * BASELINE - Used for establishing schema baseline, this is used when
@@ -100,59 +100,59 @@ export enum PlanWorkflow_ChangeDatabaseConfig_Type {
   UNRECOGNIZED = -1,
 }
 
-export function planWorkflow_ChangeDatabaseConfig_TypeFromJSON(object: any): PlanWorkflow_ChangeDatabaseConfig_Type {
+export function planConfig_ChangeDatabaseConfig_TypeFromJSON(object: any): PlanConfig_ChangeDatabaseConfig_Type {
   switch (object) {
     case 0:
     case "TYPE_UNSPECIFIED":
-      return PlanWorkflow_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED;
+      return PlanConfig_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED;
     case 1:
     case "BASELINE":
-      return PlanWorkflow_ChangeDatabaseConfig_Type.BASELINE;
+      return PlanConfig_ChangeDatabaseConfig_Type.BASELINE;
     case 2:
     case "MIGRATE":
-      return PlanWorkflow_ChangeDatabaseConfig_Type.MIGRATE;
+      return PlanConfig_ChangeDatabaseConfig_Type.MIGRATE;
     case 3:
     case "MIGRATE_SDL":
-      return PlanWorkflow_ChangeDatabaseConfig_Type.MIGRATE_SDL;
+      return PlanConfig_ChangeDatabaseConfig_Type.MIGRATE_SDL;
     case 4:
     case "MIGRATE_GHOST":
-      return PlanWorkflow_ChangeDatabaseConfig_Type.MIGRATE_GHOST;
+      return PlanConfig_ChangeDatabaseConfig_Type.MIGRATE_GHOST;
     case 5:
     case "BRANCH":
-      return PlanWorkflow_ChangeDatabaseConfig_Type.BRANCH;
+      return PlanConfig_ChangeDatabaseConfig_Type.BRANCH;
     case 6:
     case "DATA":
-      return PlanWorkflow_ChangeDatabaseConfig_Type.DATA;
+      return PlanConfig_ChangeDatabaseConfig_Type.DATA;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return PlanWorkflow_ChangeDatabaseConfig_Type.UNRECOGNIZED;
+      return PlanConfig_ChangeDatabaseConfig_Type.UNRECOGNIZED;
   }
 }
 
-export function planWorkflow_ChangeDatabaseConfig_TypeToJSON(object: PlanWorkflow_ChangeDatabaseConfig_Type): string {
+export function planConfig_ChangeDatabaseConfig_TypeToJSON(object: PlanConfig_ChangeDatabaseConfig_Type): string {
   switch (object) {
-    case PlanWorkflow_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED:
+    case PlanConfig_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case PlanWorkflow_ChangeDatabaseConfig_Type.BASELINE:
+    case PlanConfig_ChangeDatabaseConfig_Type.BASELINE:
       return "BASELINE";
-    case PlanWorkflow_ChangeDatabaseConfig_Type.MIGRATE:
+    case PlanConfig_ChangeDatabaseConfig_Type.MIGRATE:
       return "MIGRATE";
-    case PlanWorkflow_ChangeDatabaseConfig_Type.MIGRATE_SDL:
+    case PlanConfig_ChangeDatabaseConfig_Type.MIGRATE_SDL:
       return "MIGRATE_SDL";
-    case PlanWorkflow_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
+    case PlanConfig_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
       return "MIGRATE_GHOST";
-    case PlanWorkflow_ChangeDatabaseConfig_Type.BRANCH:
+    case PlanConfig_ChangeDatabaseConfig_Type.BRANCH:
       return "BRANCH";
-    case PlanWorkflow_ChangeDatabaseConfig_Type.DATA:
+    case PlanConfig_ChangeDatabaseConfig_Type.DATA:
       return "DATA";
-    case PlanWorkflow_ChangeDatabaseConfig_Type.UNRECOGNIZED:
+    case PlanConfig_ChangeDatabaseConfig_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export interface PlanWorkflow_RestoreDatabaseConfig {
+export interface PlanConfig_RestoreDatabaseConfig {
   /**
    * The resource name of the target to restore.
    * Format: instances/{instance}/databases/{database}
@@ -160,7 +160,7 @@ export interface PlanWorkflow_RestoreDatabaseConfig {
   target: string;
   /** create_database_config is present if the user wants to restore to a new database. */
   createDatabaseConfig?:
-    | PlanWorkflow_CreateDatabaseConfig
+    | PlanConfig_CreateDatabaseConfig
     | undefined;
   /**
    * FIXME: format TBD
@@ -173,22 +173,22 @@ export interface PlanWorkflow_RestoreDatabaseConfig {
   pointInTime?: Date | undefined;
 }
 
-function createBasePlanWorkflow(): PlanWorkflow {
+function createBasePlanConfig(): PlanConfig {
   return { steps: [] };
 }
 
-export const PlanWorkflow = {
-  encode(message: PlanWorkflow, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PlanConfig = {
+  encode(message: PlanConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.steps) {
-      PlanWorkflow_Step.encode(v!, writer.uint32(10).fork()).ldelim();
+      PlanConfig_Step.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanWorkflow {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanWorkflow();
+    const message = createBasePlanConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -197,7 +197,7 @@ export const PlanWorkflow = {
             break;
           }
 
-          message.steps.push(PlanWorkflow_Step.decode(reader, reader.uint32()));
+          message.steps.push(PlanConfig_Step.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -208,47 +208,47 @@ export const PlanWorkflow = {
     return message;
   },
 
-  fromJSON(object: any): PlanWorkflow {
-    return { steps: Array.isArray(object?.steps) ? object.steps.map((e: any) => PlanWorkflow_Step.fromJSON(e)) : [] };
+  fromJSON(object: any): PlanConfig {
+    return { steps: Array.isArray(object?.steps) ? object.steps.map((e: any) => PlanConfig_Step.fromJSON(e)) : [] };
   },
 
-  toJSON(message: PlanWorkflow): unknown {
+  toJSON(message: PlanConfig): unknown {
     const obj: any = {};
     if (message.steps) {
-      obj.steps = message.steps.map((e) => e ? PlanWorkflow_Step.toJSON(e) : undefined);
+      obj.steps = message.steps.map((e) => e ? PlanConfig_Step.toJSON(e) : undefined);
     } else {
       obj.steps = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<PlanWorkflow>): PlanWorkflow {
-    return PlanWorkflow.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanConfig>): PlanConfig {
+    return PlanConfig.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<PlanWorkflow>): PlanWorkflow {
-    const message = createBasePlanWorkflow();
-    message.steps = object.steps?.map((e) => PlanWorkflow_Step.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<PlanConfig>): PlanConfig {
+    const message = createBasePlanConfig();
+    message.steps = object.steps?.map((e) => PlanConfig_Step.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBasePlanWorkflow_Step(): PlanWorkflow_Step {
+function createBasePlanConfig_Step(): PlanConfig_Step {
   return { specs: [] };
 }
 
-export const PlanWorkflow_Step = {
-  encode(message: PlanWorkflow_Step, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PlanConfig_Step = {
+  encode(message: PlanConfig_Step, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.specs) {
-      PlanWorkflow_Spec.encode(v!, writer.uint32(10).fork()).ldelim();
+      PlanConfig_Spec.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanWorkflow_Step {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_Step {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanWorkflow_Step();
+    const message = createBasePlanConfig_Step();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -257,7 +257,7 @@ export const PlanWorkflow_Step = {
             break;
           }
 
-          message.specs.push(PlanWorkflow_Spec.decode(reader, reader.uint32()));
+          message.specs.push(PlanConfig_Spec.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -268,32 +268,32 @@ export const PlanWorkflow_Step = {
     return message;
   },
 
-  fromJSON(object: any): PlanWorkflow_Step {
-    return { specs: Array.isArray(object?.specs) ? object.specs.map((e: any) => PlanWorkflow_Spec.fromJSON(e)) : [] };
+  fromJSON(object: any): PlanConfig_Step {
+    return { specs: Array.isArray(object?.specs) ? object.specs.map((e: any) => PlanConfig_Spec.fromJSON(e)) : [] };
   },
 
-  toJSON(message: PlanWorkflow_Step): unknown {
+  toJSON(message: PlanConfig_Step): unknown {
     const obj: any = {};
     if (message.specs) {
-      obj.specs = message.specs.map((e) => e ? PlanWorkflow_Spec.toJSON(e) : undefined);
+      obj.specs = message.specs.map((e) => e ? PlanConfig_Spec.toJSON(e) : undefined);
     } else {
       obj.specs = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<PlanWorkflow_Step>): PlanWorkflow_Step {
-    return PlanWorkflow_Step.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanConfig_Step>): PlanConfig_Step {
+    return PlanConfig_Step.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<PlanWorkflow_Step>): PlanWorkflow_Step {
-    const message = createBasePlanWorkflow_Step();
-    message.specs = object.specs?.map((e) => PlanWorkflow_Spec.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<PlanConfig_Step>): PlanConfig_Step {
+    const message = createBasePlanConfig_Step();
+    message.specs = object.specs?.map((e) => PlanConfig_Spec.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBasePlanWorkflow_Spec(): PlanWorkflow_Spec {
+function createBasePlanConfig_Spec(): PlanConfig_Spec {
   return {
     earliestAllowedTime: undefined,
     createDatabaseConfig: undefined,
@@ -302,27 +302,27 @@ function createBasePlanWorkflow_Spec(): PlanWorkflow_Spec {
   };
 }
 
-export const PlanWorkflow_Spec = {
-  encode(message: PlanWorkflow_Spec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PlanConfig_Spec = {
+  encode(message: PlanConfig_Spec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.earliestAllowedTime !== undefined) {
       Timestamp.encode(toTimestamp(message.earliestAllowedTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.createDatabaseConfig !== undefined) {
-      PlanWorkflow_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).ldelim();
+      PlanConfig_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).ldelim();
     }
     if (message.changeDatabaseConfig !== undefined) {
-      PlanWorkflow_ChangeDatabaseConfig.encode(message.changeDatabaseConfig, writer.uint32(18).fork()).ldelim();
+      PlanConfig_ChangeDatabaseConfig.encode(message.changeDatabaseConfig, writer.uint32(18).fork()).ldelim();
     }
     if (message.restoreDatabaseConfig !== undefined) {
-      PlanWorkflow_RestoreDatabaseConfig.encode(message.restoreDatabaseConfig, writer.uint32(26).fork()).ldelim();
+      PlanConfig_RestoreDatabaseConfig.encode(message.restoreDatabaseConfig, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanWorkflow_Spec {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_Spec {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanWorkflow_Spec();
+    const message = createBasePlanConfig_Spec();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -338,21 +338,21 @@ export const PlanWorkflow_Spec = {
             break;
           }
 
-          message.createDatabaseConfig = PlanWorkflow_CreateDatabaseConfig.decode(reader, reader.uint32());
+          message.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.changeDatabaseConfig = PlanWorkflow_ChangeDatabaseConfig.decode(reader, reader.uint32());
+          message.changeDatabaseConfig = PlanConfig_ChangeDatabaseConfig.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.restoreDatabaseConfig = PlanWorkflow_RestoreDatabaseConfig.decode(reader, reader.uint32());
+          message.restoreDatabaseConfig = PlanConfig_RestoreDatabaseConfig.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -363,60 +363,60 @@ export const PlanWorkflow_Spec = {
     return message;
   },
 
-  fromJSON(object: any): PlanWorkflow_Spec {
+  fromJSON(object: any): PlanConfig_Spec {
     return {
       earliestAllowedTime: isSet(object.earliestAllowedTime)
         ? fromJsonTimestamp(object.earliestAllowedTime)
         : undefined,
       createDatabaseConfig: isSet(object.createDatabaseConfig)
-        ? PlanWorkflow_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
+        ? PlanConfig_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
         : undefined,
       changeDatabaseConfig: isSet(object.changeDatabaseConfig)
-        ? PlanWorkflow_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig)
+        ? PlanConfig_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig)
         : undefined,
       restoreDatabaseConfig: isSet(object.restoreDatabaseConfig)
-        ? PlanWorkflow_RestoreDatabaseConfig.fromJSON(object.restoreDatabaseConfig)
+        ? PlanConfig_RestoreDatabaseConfig.fromJSON(object.restoreDatabaseConfig)
         : undefined,
     };
   },
 
-  toJSON(message: PlanWorkflow_Spec): unknown {
+  toJSON(message: PlanConfig_Spec): unknown {
     const obj: any = {};
     message.earliestAllowedTime !== undefined && (obj.earliestAllowedTime = message.earliestAllowedTime.toISOString());
     message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
-      ? PlanWorkflow_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
+      ? PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
       : undefined);
     message.changeDatabaseConfig !== undefined && (obj.changeDatabaseConfig = message.changeDatabaseConfig
-      ? PlanWorkflow_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig)
+      ? PlanConfig_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig)
       : undefined);
     message.restoreDatabaseConfig !== undefined && (obj.restoreDatabaseConfig = message.restoreDatabaseConfig
-      ? PlanWorkflow_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig)
+      ? PlanConfig_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig)
       : undefined);
     return obj;
   },
 
-  create(base?: DeepPartial<PlanWorkflow_Spec>): PlanWorkflow_Spec {
-    return PlanWorkflow_Spec.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanConfig_Spec>): PlanConfig_Spec {
+    return PlanConfig_Spec.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<PlanWorkflow_Spec>): PlanWorkflow_Spec {
-    const message = createBasePlanWorkflow_Spec();
+  fromPartial(object: DeepPartial<PlanConfig_Spec>): PlanConfig_Spec {
+    const message = createBasePlanConfig_Spec();
     message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
-      ? PlanWorkflow_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
+      ? PlanConfig_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
       : undefined;
     message.changeDatabaseConfig = (object.changeDatabaseConfig !== undefined && object.changeDatabaseConfig !== null)
-      ? PlanWorkflow_ChangeDatabaseConfig.fromPartial(object.changeDatabaseConfig)
+      ? PlanConfig_ChangeDatabaseConfig.fromPartial(object.changeDatabaseConfig)
       : undefined;
     message.restoreDatabaseConfig =
       (object.restoreDatabaseConfig !== undefined && object.restoreDatabaseConfig !== null)
-        ? PlanWorkflow_RestoreDatabaseConfig.fromPartial(object.restoreDatabaseConfig)
+        ? PlanConfig_RestoreDatabaseConfig.fromPartial(object.restoreDatabaseConfig)
         : undefined;
     return message;
   },
 };
 
-function createBasePlanWorkflow_CreateDatabaseConfig(): PlanWorkflow_CreateDatabaseConfig {
+function createBasePlanConfig_CreateDatabaseConfig(): PlanConfig_CreateDatabaseConfig {
   return {
     target: "",
     database: "",
@@ -430,8 +430,8 @@ function createBasePlanWorkflow_CreateDatabaseConfig(): PlanWorkflow_CreateDatab
   };
 }
 
-export const PlanWorkflow_CreateDatabaseConfig = {
-  encode(message: PlanWorkflow_CreateDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PlanConfig_CreateDatabaseConfig = {
+  encode(message: PlanConfig_CreateDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.target !== "") {
       writer.uint32(10).string(message.target);
     }
@@ -457,16 +457,15 @@ export const PlanWorkflow_CreateDatabaseConfig = {
       writer.uint32(66).string(message.backup);
     }
     Object.entries(message.labels).forEach(([key, value]) => {
-      PlanWorkflow_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork())
-        .ldelim();
+      PlanConfig_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
     });
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanWorkflow_CreateDatabaseConfig {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_CreateDatabaseConfig {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanWorkflow_CreateDatabaseConfig();
+    const message = createBasePlanConfig_CreateDatabaseConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -531,7 +530,7 @@ export const PlanWorkflow_CreateDatabaseConfig = {
             break;
           }
 
-          const entry9 = PlanWorkflow_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
+          const entry9 = PlanConfig_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
           if (entry9.value !== undefined) {
             message.labels[entry9.key] = entry9.value;
           }
@@ -545,7 +544,7 @@ export const PlanWorkflow_CreateDatabaseConfig = {
     return message;
   },
 
-  fromJSON(object: any): PlanWorkflow_CreateDatabaseConfig {
+  fromJSON(object: any): PlanConfig_CreateDatabaseConfig {
     return {
       target: isSet(object.target) ? String(object.target) : "",
       database: isSet(object.database) ? String(object.database) : "",
@@ -564,7 +563,7 @@ export const PlanWorkflow_CreateDatabaseConfig = {
     };
   },
 
-  toJSON(message: PlanWorkflow_CreateDatabaseConfig): unknown {
+  toJSON(message: PlanConfig_CreateDatabaseConfig): unknown {
     const obj: any = {};
     message.target !== undefined && (obj.target = message.target);
     message.database !== undefined && (obj.database = message.database);
@@ -583,12 +582,12 @@ export const PlanWorkflow_CreateDatabaseConfig = {
     return obj;
   },
 
-  create(base?: DeepPartial<PlanWorkflow_CreateDatabaseConfig>): PlanWorkflow_CreateDatabaseConfig {
-    return PlanWorkflow_CreateDatabaseConfig.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanConfig_CreateDatabaseConfig>): PlanConfig_CreateDatabaseConfig {
+    return PlanConfig_CreateDatabaseConfig.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<PlanWorkflow_CreateDatabaseConfig>): PlanWorkflow_CreateDatabaseConfig {
-    const message = createBasePlanWorkflow_CreateDatabaseConfig();
+  fromPartial(object: DeepPartial<PlanConfig_CreateDatabaseConfig>): PlanConfig_CreateDatabaseConfig {
+    const message = createBasePlanConfig_CreateDatabaseConfig();
     message.target = object.target ?? "";
     message.database = object.database ?? "";
     message.table = object.table ?? "";
@@ -607,12 +606,12 @@ export const PlanWorkflow_CreateDatabaseConfig = {
   },
 };
 
-function createBasePlanWorkflow_CreateDatabaseConfig_LabelsEntry(): PlanWorkflow_CreateDatabaseConfig_LabelsEntry {
+function createBasePlanConfig_CreateDatabaseConfig_LabelsEntry(): PlanConfig_CreateDatabaseConfig_LabelsEntry {
   return { key: "", value: "" };
 }
 
-export const PlanWorkflow_CreateDatabaseConfig_LabelsEntry = {
-  encode(message: PlanWorkflow_CreateDatabaseConfig_LabelsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PlanConfig_CreateDatabaseConfig_LabelsEntry = {
+  encode(message: PlanConfig_CreateDatabaseConfig_LabelsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
     }
@@ -622,10 +621,10 @@ export const PlanWorkflow_CreateDatabaseConfig_LabelsEntry = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanWorkflow_CreateDatabaseConfig_LabelsEntry {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_CreateDatabaseConfig_LabelsEntry {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanWorkflow_CreateDatabaseConfig_LabelsEntry();
+    const message = createBasePlanConfig_CreateDatabaseConfig_LabelsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -652,39 +651,37 @@ export const PlanWorkflow_CreateDatabaseConfig_LabelsEntry = {
     return message;
   },
 
-  fromJSON(object: any): PlanWorkflow_CreateDatabaseConfig_LabelsEntry {
+  fromJSON(object: any): PlanConfig_CreateDatabaseConfig_LabelsEntry {
     return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
   },
 
-  toJSON(message: PlanWorkflow_CreateDatabaseConfig_LabelsEntry): unknown {
+  toJSON(message: PlanConfig_CreateDatabaseConfig_LabelsEntry): unknown {
     const obj: any = {};
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
-  create(
-    base?: DeepPartial<PlanWorkflow_CreateDatabaseConfig_LabelsEntry>,
-  ): PlanWorkflow_CreateDatabaseConfig_LabelsEntry {
-    return PlanWorkflow_CreateDatabaseConfig_LabelsEntry.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanConfig_CreateDatabaseConfig_LabelsEntry>): PlanConfig_CreateDatabaseConfig_LabelsEntry {
+    return PlanConfig_CreateDatabaseConfig_LabelsEntry.fromPartial(base ?? {});
   },
 
   fromPartial(
-    object: DeepPartial<PlanWorkflow_CreateDatabaseConfig_LabelsEntry>,
-  ): PlanWorkflow_CreateDatabaseConfig_LabelsEntry {
-    const message = createBasePlanWorkflow_CreateDatabaseConfig_LabelsEntry();
+    object: DeepPartial<PlanConfig_CreateDatabaseConfig_LabelsEntry>,
+  ): PlanConfig_CreateDatabaseConfig_LabelsEntry {
+    const message = createBasePlanConfig_CreateDatabaseConfig_LabelsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
     return message;
   },
 };
 
-function createBasePlanWorkflow_ChangeDatabaseConfig(): PlanWorkflow_ChangeDatabaseConfig {
+function createBasePlanConfig_ChangeDatabaseConfig(): PlanConfig_ChangeDatabaseConfig {
   return { target: "", sheet: "", type: 0, schemaVersion: "", rollbackEnabled: false };
 }
 
-export const PlanWorkflow_ChangeDatabaseConfig = {
-  encode(message: PlanWorkflow_ChangeDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PlanConfig_ChangeDatabaseConfig = {
+  encode(message: PlanConfig_ChangeDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.target !== "") {
       writer.uint32(10).string(message.target);
     }
@@ -703,10 +700,10 @@ export const PlanWorkflow_ChangeDatabaseConfig = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanWorkflow_ChangeDatabaseConfig {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_ChangeDatabaseConfig {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanWorkflow_ChangeDatabaseConfig();
+    const message = createBasePlanConfig_ChangeDatabaseConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -754,32 +751,32 @@ export const PlanWorkflow_ChangeDatabaseConfig = {
     return message;
   },
 
-  fromJSON(object: any): PlanWorkflow_ChangeDatabaseConfig {
+  fromJSON(object: any): PlanConfig_ChangeDatabaseConfig {
     return {
       target: isSet(object.target) ? String(object.target) : "",
       sheet: isSet(object.sheet) ? String(object.sheet) : "",
-      type: isSet(object.type) ? planWorkflow_ChangeDatabaseConfig_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? planConfig_ChangeDatabaseConfig_TypeFromJSON(object.type) : 0,
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
       rollbackEnabled: isSet(object.rollbackEnabled) ? Boolean(object.rollbackEnabled) : false,
     };
   },
 
-  toJSON(message: PlanWorkflow_ChangeDatabaseConfig): unknown {
+  toJSON(message: PlanConfig_ChangeDatabaseConfig): unknown {
     const obj: any = {};
     message.target !== undefined && (obj.target = message.target);
     message.sheet !== undefined && (obj.sheet = message.sheet);
-    message.type !== undefined && (obj.type = planWorkflow_ChangeDatabaseConfig_TypeToJSON(message.type));
+    message.type !== undefined && (obj.type = planConfig_ChangeDatabaseConfig_TypeToJSON(message.type));
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
     return obj;
   },
 
-  create(base?: DeepPartial<PlanWorkflow_ChangeDatabaseConfig>): PlanWorkflow_ChangeDatabaseConfig {
-    return PlanWorkflow_ChangeDatabaseConfig.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanConfig_ChangeDatabaseConfig>): PlanConfig_ChangeDatabaseConfig {
+    return PlanConfig_ChangeDatabaseConfig.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<PlanWorkflow_ChangeDatabaseConfig>): PlanWorkflow_ChangeDatabaseConfig {
-    const message = createBasePlanWorkflow_ChangeDatabaseConfig();
+  fromPartial(object: DeepPartial<PlanConfig_ChangeDatabaseConfig>): PlanConfig_ChangeDatabaseConfig {
+    const message = createBasePlanConfig_ChangeDatabaseConfig();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
     message.type = object.type ?? 0;
@@ -789,17 +786,17 @@ export const PlanWorkflow_ChangeDatabaseConfig = {
   },
 };
 
-function createBasePlanWorkflow_RestoreDatabaseConfig(): PlanWorkflow_RestoreDatabaseConfig {
+function createBasePlanConfig_RestoreDatabaseConfig(): PlanConfig_RestoreDatabaseConfig {
   return { target: "", createDatabaseConfig: undefined, backup: undefined, pointInTime: undefined };
 }
 
-export const PlanWorkflow_RestoreDatabaseConfig = {
-  encode(message: PlanWorkflow_RestoreDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PlanConfig_RestoreDatabaseConfig = {
+  encode(message: PlanConfig_RestoreDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.target !== "") {
       writer.uint32(10).string(message.target);
     }
     if (message.createDatabaseConfig !== undefined) {
-      PlanWorkflow_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(18).fork()).ldelim();
+      PlanConfig_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(18).fork()).ldelim();
     }
     if (message.backup !== undefined) {
       writer.uint32(26).string(message.backup);
@@ -810,10 +807,10 @@ export const PlanWorkflow_RestoreDatabaseConfig = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanWorkflow_RestoreDatabaseConfig {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_RestoreDatabaseConfig {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanWorkflow_RestoreDatabaseConfig();
+    const message = createBasePlanConfig_RestoreDatabaseConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -829,7 +826,7 @@ export const PlanWorkflow_RestoreDatabaseConfig = {
             break;
           }
 
-          message.createDatabaseConfig = PlanWorkflow_CreateDatabaseConfig.decode(reader, reader.uint32());
+          message.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -854,37 +851,37 @@ export const PlanWorkflow_RestoreDatabaseConfig = {
     return message;
   },
 
-  fromJSON(object: any): PlanWorkflow_RestoreDatabaseConfig {
+  fromJSON(object: any): PlanConfig_RestoreDatabaseConfig {
     return {
       target: isSet(object.target) ? String(object.target) : "",
       createDatabaseConfig: isSet(object.createDatabaseConfig)
-        ? PlanWorkflow_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
+        ? PlanConfig_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
         : undefined,
       backup: isSet(object.backup) ? String(object.backup) : undefined,
       pointInTime: isSet(object.pointInTime) ? fromJsonTimestamp(object.pointInTime) : undefined,
     };
   },
 
-  toJSON(message: PlanWorkflow_RestoreDatabaseConfig): unknown {
+  toJSON(message: PlanConfig_RestoreDatabaseConfig): unknown {
     const obj: any = {};
     message.target !== undefined && (obj.target = message.target);
     message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
-      ? PlanWorkflow_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
+      ? PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
       : undefined);
     message.backup !== undefined && (obj.backup = message.backup);
     message.pointInTime !== undefined && (obj.pointInTime = message.pointInTime.toISOString());
     return obj;
   },
 
-  create(base?: DeepPartial<PlanWorkflow_RestoreDatabaseConfig>): PlanWorkflow_RestoreDatabaseConfig {
-    return PlanWorkflow_RestoreDatabaseConfig.fromPartial(base ?? {});
+  create(base?: DeepPartial<PlanConfig_RestoreDatabaseConfig>): PlanConfig_RestoreDatabaseConfig {
+    return PlanConfig_RestoreDatabaseConfig.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<PlanWorkflow_RestoreDatabaseConfig>): PlanWorkflow_RestoreDatabaseConfig {
-    const message = createBasePlanWorkflow_RestoreDatabaseConfig();
+  fromPartial(object: DeepPartial<PlanConfig_RestoreDatabaseConfig>): PlanConfig_RestoreDatabaseConfig {
+    const message = createBasePlanConfig_RestoreDatabaseConfig();
     message.target = object.target ?? "";
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
-      ? PlanWorkflow_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
+      ? PlanConfig_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
       : undefined;
     message.backup = object.backup ?? undefined;
     message.pointInTime = object.pointInTime ?? undefined;

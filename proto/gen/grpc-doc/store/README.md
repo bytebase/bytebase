@@ -59,15 +59,15 @@
     - [IssuePayload](#bytebase-store-IssuePayload)
   
 - [store/plan.proto](#store_plan-proto)
-    - [PlanWorkflow](#bytebase-store-PlanWorkflow)
-    - [PlanWorkflow.ChangeDatabaseConfig](#bytebase-store-PlanWorkflow-ChangeDatabaseConfig)
-    - [PlanWorkflow.CreateDatabaseConfig](#bytebase-store-PlanWorkflow-CreateDatabaseConfig)
-    - [PlanWorkflow.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanWorkflow-CreateDatabaseConfig-LabelsEntry)
-    - [PlanWorkflow.RestoreDatabaseConfig](#bytebase-store-PlanWorkflow-RestoreDatabaseConfig)
-    - [PlanWorkflow.Spec](#bytebase-store-PlanWorkflow-Spec)
-    - [PlanWorkflow.Step](#bytebase-store-PlanWorkflow-Step)
+    - [PlanConfig](#bytebase-store-PlanConfig)
+    - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
+    - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
+    - [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry)
+    - [PlanConfig.RestoreDatabaseConfig](#bytebase-store-PlanConfig-RestoreDatabaseConfig)
+    - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
+    - [PlanConfig.Step](#bytebase-store-PlanConfig-Step)
   
-    - [PlanWorkflow.ChangeDatabaseConfig.Type](#bytebase-store-PlanWorkflow-ChangeDatabaseConfig-Type)
+    - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
   
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
@@ -908,24 +908,24 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-PlanWorkflow"></a>
+<a name="bytebase-store-PlanConfig"></a>
 
-### PlanWorkflow
+### PlanConfig
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| steps | [PlanWorkflow.Step](#bytebase-store-PlanWorkflow-Step) | repeated |  |
+| steps | [PlanConfig.Step](#bytebase-store-PlanConfig-Step) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-store-PlanWorkflow-ChangeDatabaseConfig"></a>
+<a name="bytebase-store-PlanConfig-ChangeDatabaseConfig"></a>
 
-### PlanWorkflow.ChangeDatabaseConfig
+### PlanConfig.ChangeDatabaseConfig
 
 
 
@@ -933,7 +933,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target. Format: projects/{project}/logicalDatabases/{ldb1}. Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}. Format: instances/{xxx}/databases/{db1}. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: sheets/{sheet} |
-| type | [PlanWorkflow.ChangeDatabaseConfig.Type](#bytebase-store-PlanWorkflow-ChangeDatabaseConfig-Type) |  |  |
+| type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
 | rollback_enabled | [bool](#bool) |  | If RollbackEnabled, build the RollbackSheetID of the task. |
 
@@ -942,9 +942,9 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-PlanWorkflow-CreateDatabaseConfig"></a>
+<a name="bytebase-store-PlanConfig-CreateDatabaseConfig"></a>
 
-### PlanWorkflow.CreateDatabaseConfig
+### PlanConfig.CreateDatabaseConfig
 
 
 
@@ -958,16 +958,16 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
 | backup | [string](#string) |  | backup is the resource name of the backup. FIXME: backup v1 API is not ready yet, write the format here when it&#39;s ready. |
-| labels | [PlanWorkflow.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanWorkflow-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
+| labels | [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
 
 
 
 
 
 
-<a name="bytebase-store-PlanWorkflow-CreateDatabaseConfig-LabelsEntry"></a>
+<a name="bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry"></a>
 
-### PlanWorkflow.CreateDatabaseConfig.LabelsEntry
+### PlanConfig.CreateDatabaseConfig.LabelsEntry
 
 
 
@@ -981,16 +981,16 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-PlanWorkflow-RestoreDatabaseConfig"></a>
+<a name="bytebase-store-PlanConfig-RestoreDatabaseConfig"></a>
 
-### PlanWorkflow.RestoreDatabaseConfig
+### PlanConfig.RestoreDatabaseConfig
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target to restore. Format: instances/{instance}/databases/{database} |
-| create_database_config | [PlanWorkflow.CreateDatabaseConfig](#bytebase-store-PlanWorkflow-CreateDatabaseConfig) | optional | create_database_config is present if the user wants to restore to a new database. |
+| create_database_config | [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig) | optional | create_database_config is present if the user wants to restore to a new database. |
 | backup | [string](#string) |  | FIXME: format TBD Restore from a backup. |
 | point_in_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | After the PITR operations, the database will be recovered to the state at this time. |
 
@@ -999,33 +999,33 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-PlanWorkflow-Spec"></a>
+<a name="bytebase-store-PlanConfig-Spec"></a>
 
-### PlanWorkflow.Spec
+### PlanConfig.Spec
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
-| create_database_config | [PlanWorkflow.CreateDatabaseConfig](#bytebase-store-PlanWorkflow-CreateDatabaseConfig) |  |  |
-| change_database_config | [PlanWorkflow.ChangeDatabaseConfig](#bytebase-store-PlanWorkflow-ChangeDatabaseConfig) |  |  |
-| restore_database_config | [PlanWorkflow.RestoreDatabaseConfig](#bytebase-store-PlanWorkflow-RestoreDatabaseConfig) |  |  |
+| create_database_config | [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig) |  |  |
+| change_database_config | [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig) |  |  |
+| restore_database_config | [PlanConfig.RestoreDatabaseConfig](#bytebase-store-PlanConfig-RestoreDatabaseConfig) |  |  |
 
 
 
 
 
 
-<a name="bytebase-store-PlanWorkflow-Step"></a>
+<a name="bytebase-store-PlanConfig-Step"></a>
 
-### PlanWorkflow.Step
+### PlanConfig.Step
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| specs | [PlanWorkflow.Spec](#bytebase-store-PlanWorkflow-Spec) | repeated |  |
+| specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
 
 
 
@@ -1034,9 +1034,9 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
  
 
 
-<a name="bytebase-store-PlanWorkflow-ChangeDatabaseConfig-Type"></a>
+<a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-Type"></a>
 
-### PlanWorkflow.ChangeDatabaseConfig.Type
+### PlanConfig.ChangeDatabaseConfig.Type
 Type is the database change type.
 
 | Name | Number | Description |
