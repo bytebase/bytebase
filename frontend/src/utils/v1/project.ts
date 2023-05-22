@@ -54,6 +54,12 @@ export const isOwnerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
   return roleListInProjectV1(iamPolicy, user).includes(PresetRoleType.OWNER);
 };
 
+export const isDeveloperOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
+  return roleListInProjectV1(iamPolicy, user).includes(
+    PresetRoleType.DEVELOPER
+  );
+};
+
 export const memberListInProjectV1 = (
   project: Project,
   iamPolicy: IamPolicy
