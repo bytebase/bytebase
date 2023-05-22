@@ -1850,7 +1850,7 @@
     "overuse-warning": "{neededPlan} puede estar restringido en {currentPlan}, actualice ahora para asegurar un uso adecuado.",
     "overuse-modal": {
       "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones.",
-      "instance-count-exceeds": "El número de instancias excedió el límite {count}"
+      "instance-count-exceeds": "El número de instancias {count} excedió el límite {limit}"
     },
     "features": {
       "bb-feature-task-schedule-time": {
