@@ -6,7 +6,7 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/store";
 
-message PlanWorkflow {
+message PlanConfig {
   repeated Step steps = 1;
 
   message Step {
