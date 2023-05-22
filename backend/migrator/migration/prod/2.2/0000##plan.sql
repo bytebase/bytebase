@@ -6,12 +6,15 @@ CREATE TABLE plan (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
+    pipeline_id INTEGER REFERENCES pipeline (id),
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     config JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_plan_project_id ON plan(project_id);
+
+CREATE INDEX idx_plan_pipeline_id ON plan(pipeline_id);
 
 ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
