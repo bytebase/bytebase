@@ -40,6 +40,7 @@ type sheetRaw struct {
 	Visibility api.SheetVisibility
 	Source     api.SheetSource
 	Type       api.SheetType
+	Payload    string
 	Size       int64
 }
 
@@ -69,6 +70,7 @@ func (raw *sheetRaw) toSheet() *api.Sheet {
 		Visibility: raw.Visibility,
 		Source:     raw.Source,
 		Type:       raw.Type,
+		Payload:    raw.Payload,
 		Size:       raw.Size,
 	}
 }
@@ -313,10 +315,11 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 			statement,
 			visibility,
 			source,
-			type
+			type,
+			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, payload, LENGTH(statement)
 	`, common.MaxSheetSize)
 	var sheetRaw sheetRaw
 	databaseID := sql.NullInt32{}
@@ -330,6 +333,7 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 		create.Visibility,
 		create.Source,
 		create.Type,
+		create.Payload,
 	).Scan(
 		&sheetRaw.ID,
 		&sheetRaw.RowStatus,
@@ -344,6 +348,7 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 		&sheetRaw.Visibility,
 		&sheetRaw.Source,
 		&sheetRaw.Type,
+		&sheetRaw.Payload,
 		&sheetRaw.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -391,7 +396,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetR
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, payload, LENGTH(statement)
 	`, len(args), common.MaxSheetSize),
 		args...,
 	).Scan(
@@ -408,6 +413,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetR
 		&sheetRaw.Visibility,
 		&sheetRaw.Source,
 		&sheetRaw.Type,
+		&sheetRaw.Payload,
 		&sheetRaw.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -486,6 +492,7 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 			visibility,
 			source,
 			type,
+			payload,
 			LENGTH(statement)
 		FROM sheet
 		WHERE %s`, statementField, strings.Join(where, " AND ")),
@@ -514,6 +521,7 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 			&sheetRaw.Visibility,
 			&sheetRaw.Source,
 			&sheetRaw.Type,
+			&sheetRaw.Payload,
 			&sheetRaw.Size,
 		); err != nil {
 			return nil, err
@@ -557,6 +565,7 @@ type SheetMessage struct {
 	Visibility api.SheetVisibility
 	Source     api.SheetSource
 	Type       api.SheetType
+	Payload    string
 
 	// Output only fields
 	UID         int
@@ -773,6 +782,7 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *api.SheetFind, currentPr
 			sheet.visibility,
 			sheet.source,
 			sheet.type,
+			sheet.payload,
 			LENGTH(sheet.statement),
 			COALESCE(sheet_organizer.starred, FALSE),
 			COALESCE(sheet_organizer.pinned, FALSE)
@@ -803,6 +813,7 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *api.SheetFind, currentPr
 			&sheet.Visibility,
 			&sheet.Source,
 			&sheet.Type,
+			&sheet.Payload,
 			&sheet.Size,
 			&sheet.Starred,
 			&sheet.Pinned,
@@ -839,7 +850,8 @@ func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*Sheet
 			statement,
 			visibility,
 			source,
-			type
+			type,
+			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement)
@@ -863,6 +875,7 @@ func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*Sheet
 		create.Visibility,
 		create.Source,
 		create.Type,
+		create.Payload,
 	).Scan(
 		&sheet.UID,
 		&sheet.rowStatus,
@@ -878,6 +891,7 @@ func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*Sheet
 		&sheet.Source,
 		&sheet.Type,
 		&sheet.Size,
+		&sheet.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -905,6 +919,8 @@ type PatchSheetMessage struct {
 	Name       *string
 	Statement  *string
 	Visibility *string
+	// TODO(zp): update the payload.
+	Payload *string
 }
 
 // PatchSheetV2 updates a sheet.
@@ -918,6 +934,9 @@ func (s *Store) PatchSheetV2(ctx context.Context, patch *PatchSheetMessage) (*Sh
 	}
 	if v := patch.Visibility; v != nil {
 		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
 
 	args = append(args, patch.ID)
@@ -933,7 +952,7 @@ func (s *Store) PatchSheetV2(ctx context.Context, patch *PatchSheetMessage) (*Sh
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, payload, LENGTH(statement)
 	`, len(args), common.MaxSheetSize),
 		args...,
 	).Scan(
@@ -950,6 +969,7 @@ func (s *Store) PatchSheetV2(ctx context.Context, patch *PatchSheetMessage) (*Sh
 		&sheet.Visibility,
 		&sheet.Source,
 		&sheet.Type,
+		&sheet.Payload,
 		&sheet.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
