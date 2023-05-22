@@ -1,4 +1,5 @@
 export * from "./environment";
+export * from "./database";
 export * from "./project";
 export * from "./projectIamPolicy";
 export * from "./projectWebhook";

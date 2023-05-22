@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 
 import { IamPolicy } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
-import { Database, MaybeRef, PresetRoleType } from "@/types";
+import { ComposedDatabase, Database, MaybeRef, PresetRoleType } from "@/types";
 import { useLegacyProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
@@ -231,6 +231,52 @@ export const useCurrentUserIamPolicy = () => {
     return false;
   };
 
+  const allowToQueryDatabaseV1 = (database: ComposedDatabase) => {
+    if (hasWorkspaceSuperPrivilege) {
+      return true;
+    }
+
+    const policy = database.projectEntity.iamPolicy;
+    for (const binding of policy.bindings) {
+      if (
+        binding.role === PresetRoleType.OWNER &&
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        return true;
+      }
+      if (
+        binding.role === PresetRoleType.QUERIER &&
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        const expressionList = binding.condition?.expression.split(" && ");
+        if (expressionList && expressionList.length > 0) {
+          let hasDatabaseField = false;
+          for (const expression of expressionList) {
+            const fields = expression.split(" ");
+            if (fields[0] === "resource.database") {
+              hasDatabaseField = true;
+              for (const url of JSON.parse(fields[2])) {
+                if (url === database.name) {
+                  return true;
+                }
+              }
+            }
+          }
+          if (!hasDatabaseField) {
+            return true;
+          }
+        } else {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   const allowToExportDatabase = (database: Database) => {
     if (hasWorkspaceSuperPrivilege) {
       return true;
@@ -276,6 +322,7 @@ export const useCurrentUserIamPolicy = () => {
     isProjectOwnerOrDeveloper,
     allowToChangeDatabaseOfProject,
     allowToQueryDatabase,
+    allowToQueryDatabaseV1,
     allowToExportDatabase,
   };
 };

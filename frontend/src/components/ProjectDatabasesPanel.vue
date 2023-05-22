@@ -16,7 +16,9 @@
           :include-all="true"
           :filter="filterInstance"
           :environment="state.environment"
-          @update:instance="state.instance = $event ?? UNKNOWN_ID"
+          @update:instance="
+            state.instance = $event ? String($event) : String(UNKNOWN_ID)
+          "
         />
         <SearchBox
           :value="state.keyword"
@@ -27,7 +29,7 @@
     </div>
 
     <template v-if="databaseList.length > 0">
-      <DatabaseTable
+      <DatabaseV1Table
         mode="PROJECT"
         table-class="border"
         :database-list="filteredDatabaseList"
@@ -51,58 +53,64 @@ import { reactive, PropType, computed } from "vue";
 import { NInputGroup } from "naive-ui";
 import { uniqBy } from "lodash-es";
 
-import { Database, Instance, InstanceId, UNKNOWN_ID } from "../types";
-import { filterDatabaseByKeyword } from "@/utils";
-import DatabaseTable from "../components/DatabaseTable.vue";
+import { ComposedDatabase, Instance, UNKNOWN_ID } from "../types";
+import { filterDatabaseV1ByKeyword } from "@/utils";
+import { DatabaseV1Table } from "./v2";
 import { EnvironmentTabFilter, InstanceSelect, SearchBox } from "./v2";
 
 interface LocalState {
   environment: string;
-  instance: InstanceId;
+  instance: string;
   keyword: string;
 }
 
 const props = defineProps({
   databaseList: {
     required: true,
-    type: Object as PropType<Database[]>,
+    type: Object as PropType<ComposedDatabase[]>,
   },
 });
 
 const state = reactive<LocalState>({
   environment: String(UNKNOWN_ID),
-  instance: UNKNOWN_ID,
+  instance: String(UNKNOWN_ID),
   keyword: "",
 });
 
 const filteredDatabaseList = computed(() => {
-  return props.databaseList
-    .filter((db) => {
-      return (
-        state.environment === String(UNKNOWN_ID) ||
-        String(db.instance.environment.id) === state.environment
-      );
-    })
-    .filter((db) => {
-      return state.instance === UNKNOWN_ID || db.instance.id === state.instance;
-    })
-    .filter((db) => {
-      return filterDatabaseByKeyword(db, state.keyword, [
+  let list = [...props.databaseList];
+  if (state.environment !== String(UNKNOWN_ID)) {
+    list = list.filter(
+      (db) => db.instanceEntity.environmentEntity.uid === state.environment
+    );
+  }
+  if (state.instance !== String(UNKNOWN_ID)) {
+    list = list.filter((db) => db.instanceEntity.uid === state.instance);
+  }
+  const keyword = state.keyword.trim().toLowerCase();
+  if (keyword) {
+    list = list.filter((db) =>
+      filterDatabaseV1ByKeyword(db, keyword, [
         "name",
         "environment",
         "instance",
-      ]);
-    });
+      ])
+    );
+  }
+  return list;
 });
 
 const instanceList = computed(() => {
   return uniqBy(
-    props.databaseList.map((db) => db.instance),
-    (instance) => instance.id
+    props.databaseList.map((db) => db.instanceEntity),
+    (instance) => instance.uid
   );
 });
 
 const filterInstance = (instance: Instance) => {
-  return instanceList.value.findIndex((inst) => inst.id === instance.id) >= 0;
+  return (
+    instanceList.value.findIndex((inst) => inst.uid === String(instance.id)) >=
+    0
+  );
 };
 </script>

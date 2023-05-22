@@ -15,6 +15,7 @@ import {
 } from "@/store";
 import { DEFAULT_PROJECT_ID } from "../types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useInstanceV1Store } from "@/store/modules/v1/instance";
 
 export default defineComponent({
   name: "ProvideDashboardContext",
@@ -24,6 +25,7 @@ export default defineComponent({
       useRoleStore().fetchRoleList(),
       useUserStore().fetchUserList(),
       useEnvironmentV1Store().fetchEnvironments(),
+      useInstanceV1Store().fetchInstances(),
       useProjectV1Store().fetchProjectList(true),
       // The default project hosts databases not explicitly assigned to other users project.
       useLegacyProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),

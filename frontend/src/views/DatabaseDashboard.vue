@@ -46,7 +46,11 @@
       </div>
     </div>
 
-    <DatabaseTable pagination-class="mb-4" :database-list="filteredList" />
+    <DatabaseV1Table
+      pagination-class="mb-4"
+      :database-list="filteredV1List"
+      :show-placeholder="true"
+    />
 
     <div
       v-if="state.loading"
@@ -67,22 +71,25 @@ import {
   InstanceSelect,
   SearchBox,
 } from "@/components/v2";
-import DatabaseTable from "../components/DatabaseTable.vue";
+import { DatabaseV1Table } from "../components/v2";
 import {
-  type Database,
+  type Database as LegacyDatabase,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   InstanceId,
   UNKNOWN_USER_NAME,
+  ComposedDatabase,
 } from "../types";
 import {
-  filterDatabaseByKeyword,
+  filterDatabaseV1ByKeyword,
   hasWorkspacePermissionV1,
   sortDatabaseListByEnvironmentV1,
+  sortDatabaseV1ListByEnvironmentV1,
 } from "../utils";
 import {
   useCurrentUserV1,
   useDatabaseStore,
+  useDatabaseV1Store,
   useEnvironmentV1Store,
   useUIStateStore,
 } from "@/store";
@@ -90,7 +97,8 @@ import {
 interface LocalState {
   instanceFilter: InstanceId;
   searchText: string;
-  databaseList: Database[];
+  databaseList: LegacyDatabase[];
+  databaseV1List: ComposedDatabase[];
   loading: boolean;
 }
 
@@ -103,11 +111,13 @@ const state = reactive<LocalState>({
   instanceFilter: UNKNOWN_ID,
   searchText: "",
   databaseList: [],
+  databaseV1List: [],
   loading: false,
 });
 
 const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseStore();
+const databaseV1Store = useDatabaseV1Store();
 
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
@@ -136,6 +146,17 @@ const prepareDatabaseList = async () => {
   // It will also be called when user logout
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
     state.loading = true;
+    await databaseV1Store.fetchDatabaseList({
+      parent: "instances/-",
+    });
+    const databaseV1List = databaseV1Store.databaseListByUser(
+      currentUserV1.value
+    );
+    state.databaseV1List = sortDatabaseV1ListByEnvironmentV1(
+      databaseV1List,
+      environmentV1Store.getEnvironmentList()
+    );
+
     await databaseStore.fetchDatabaseList();
     const databaseList = databaseStore.getDatabaseListByUser(
       currentUserV1.value
@@ -165,26 +186,30 @@ const changeSearchText = (searchText: string) => {
   state.searchText = searchText;
 };
 
-const filteredList = computed(() => {
-  const { databaseList, searchText } = state;
-  let list = [...databaseList];
+const filteredV1List = computed(() => {
+  let list = [...state.databaseV1List];
   const environment = selectedEnvironment.value;
-  if (environment && parseInt(environment.uid, 10) !== UNKNOWN_ID) {
+  if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
     list = list.filter(
-      (db) => String(db.instance.environment.id) === environment.uid
+      (db) => db.instanceEntity.environment === environment.name
     );
   }
   if (state.instanceFilter !== UNKNOWN_ID) {
-    list = list.filter((db) => db.instance.id === state.instanceFilter);
+    list = list.filter(
+      (db) => db.instanceEntity.uid === String(state.instanceFilter)
+    );
   }
-  list = list.filter((db) =>
-    filterDatabaseByKeyword(db, searchText, [
-      "name",
-      "environment",
-      "instance",
-      "project",
-    ])
-  );
+  const keyword = state.searchText.trim().toLowerCase();
+  if (keyword) {
+    list = list.filter((db) =>
+      filterDatabaseV1ByKeyword(db, keyword, [
+        "name",
+        "environment",
+        "instance",
+        "project",
+      ])
+    );
+  }
   return list;
 });
 </script>

@@ -5,10 +5,12 @@ import {
   ComposedProject,
   emptyProject,
   EMPTY_ID,
+  EMPTY_PROJECT_NAME,
   MaybeRef,
   ResourceId,
   unknownProject,
   UNKNOWN_ID,
+  UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { projectServiceClient } from "@/grpcweb";
 import { Project } from "@/types/proto/v1/project_service";
@@ -65,6 +67,11 @@ export const useProjectV1Store = defineStore("project_v1", () => {
         });
       });
     });
+  };
+  const getProjectByName = (name: string) => {
+    if (name === EMPTY_PROJECT_NAME) return emptyProject();
+    if (name === UNKNOWN_PROJECT_NAME) return unknownProject();
+    return projectMapByName.get(name) ?? unknownProject();
   };
   const getProjectByUID = (uid: string) => {
     if (uid === String(EMPTY_ID)) {
@@ -144,6 +151,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     fetchProjectList,
     fetchProjectByName,
     fetchProjectByUID,
+    getProjectByName,
     getOrFetchProjectByName,
     getOrFetchProjectByUID,
     createProject,

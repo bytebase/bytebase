@@ -1,5 +1,9 @@
 import DatabaseName from "./DatabaseName.vue";
+import DatabaseV1Name from "./DatabaseV1Name.vue";
+import DatabaseV1Table from "./DatabaseV1Table.vue";
 import InstanceName from "./InstanceName.vue";
+import InstanceV1Name from "./InstanceV1Name.vue";
+import InstanceV1EngineIcon from "./InstanceV1EngineIcon.vue";
 import EnvironmentName from "./EnvironmentName.vue";
 import EnvironmentV1Name from "./EnvironmentV1Name.vue";
 import EnvironmentV1Table from "./EnvironmentV1Table.vue";
@@ -10,7 +14,11 @@ import ProjectV1Table from "./ProjectV1Table.vue";
 
 export {
   DatabaseName,
+  DatabaseV1Name,
+  DatabaseV1Table,
   InstanceName,
+  InstanceV1Name,
+  InstanceV1EngineIcon,
   EnvironmentName,
   EnvironmentV1Name,
   EnvironmentV1Table,
