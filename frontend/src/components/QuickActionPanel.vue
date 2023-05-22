@@ -32,66 +32,68 @@
         </h3>
       </div>
 
-      <div
-        v-if="quickAction === 'quickaction.bb.database.create'"
-        class="flex flex-col items-center w-24"
-        data-label="bb-quick-action-new-db"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="createDatabase">
-          <heroicons-outline:database class="w-5 h-5" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+      <template v-if="shouldShowAlterDatabaseEntries">
+        <div
+          v-if="quickAction === 'quickaction.bb.database.create'"
+          class="flex flex-col items-center w-24"
+          data-label="bb-quick-action-new-db"
         >
-          {{ $t("quick-action.new-db") }}
-        </h3>
-      </div>
+          <button class="btn-icon-primary p-3" @click.prevent="createDatabase">
+            <heroicons-outline:database class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("quick-action.new-db") }}
+          </h3>
+        </div>
 
-      <div
-        v-if="quickAction === 'quickaction.bb.database.request'"
-        class="flex flex-col items-center w-24"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="requestDatabase">
-          <heroicons-outline:database class="w-5 h-5" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        <div
+          v-if="quickAction === 'quickaction.bb.database.request'"
+          class="flex flex-col items-center w-24"
         >
-          {{ $t("quick-action.request-db") }}
-        </h3>
-      </div>
+          <button class="btn-icon-primary p-3" @click.prevent="requestDatabase">
+            <heroicons-outline:database class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("quick-action.request-db") }}
+          </h3>
+        </div>
 
-      <div
-        v-if="quickAction === 'quickaction.bb.database.schema.update'"
-        class="flex flex-col items-center w-24"
-      >
-        <button
-          class="btn-icon-primary p-3"
-          data-label="bb-alter-schema-button"
-          @click.prevent="alterSchema"
+        <div
+          v-if="quickAction === 'quickaction.bb.database.schema.update'"
+          class="flex flex-col items-center w-24"
         >
-          <heroicons-outline:pencil-alt class="w-5 h-5" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("database.alter-schema") }}
-        </h3>
-      </div>
+          <button
+            class="btn-icon-primary p-3"
+            data-label="bb-alter-schema-button"
+            @click.prevent="alterSchema"
+          >
+            <heroicons-outline:pencil-alt class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("database.alter-schema") }}
+          </h3>
+        </div>
 
-      <div
-        v-if="quickAction === 'quickaction.bb.database.data.update'"
-        class="flex flex-col items-center w-24"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="changeData">
-          <heroicons-outline:pencil class="w-5 h-5" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        <div
+          v-if="quickAction === 'quickaction.bb.database.data.update'"
+          class="flex flex-col items-center w-24"
         >
-          {{ $t("database.change-data") }}
-        </h3>
-      </div>
+          <button class="btn-icon-primary p-3" @click.prevent="changeData">
+            <heroicons-outline:pencil class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("database.change-data") }}
+          </h3>
+        </div>
+      </template>
 
       <div
         v-if="isDev() && quickAction === 'quickaction.bb.database.troubleshoot'"
@@ -310,7 +312,9 @@ import { QuickActionType } from "../types";
 import { idFromSlug, isDev } from "../utils";
 import {
   useCommandStore,
+  useCurrentUserIamPolicy,
   useInstanceStore,
+  useProjectV1ListByCurrentUser,
   useRouterStore,
   useSubscriptionStore,
 } from "@/store";
@@ -344,6 +348,7 @@ const route = useRoute();
 const routerStore = useRouterStore();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionStore();
+
 const hasCustomRoleFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.custom-role");
 });
@@ -363,6 +368,19 @@ const projectId = computed((): string | undefined => {
     return String(idFromSlug(parts[parts.length - 1]));
   }
   return undefined;
+});
+
+// Only show alter schema and change data if the user has permission to alter schema of at least one project.
+const shouldShowAlterDatabaseEntries = computed(() => {
+  const { projectList } = useProjectV1ListByCurrentUser();
+  const currentUserIamPolicy = useCurrentUserIamPolicy();
+  return projectList.value
+    .map((project) => {
+      return currentUserIamPolicy.allowToChangeDatabaseOfProject(
+        `projects/${project.name}`
+      );
+    })
+    .includes(true);
 });
 
 watch(route, () => {

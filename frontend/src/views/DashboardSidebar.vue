@@ -40,6 +40,7 @@
         {{ $t("sql-editor.self") }}
       </a>
       <router-link
+        v-if="shouldShowSyncSchemaEntry"
         to="/sync-schema"
         class="outline-item group flex items-center px-2 py-2 capitalize"
       >
@@ -75,6 +76,11 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
+import {
+  useCurrentUserIamPolicy,
+  useProjectV1ListByCurrentUser,
+} from "@/store";
 import { useKBarHandler } from "@bytebase/vue-kbar";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import BookmarkListSidePanel from "@/components/BookmarkListSidePanel.vue";
@@ -84,6 +90,19 @@ import DatabaseListSidePanel from "@/components/DatabaseListSidePanel.vue";
 const isMac = navigator.platform.match(/mac/i);
 
 const handler = useKBarHandler();
+
+// Only show sync schema if the user has permission to alter schema of at least one project.
+const shouldShowSyncSchemaEntry = computed(() => {
+  const { projectList } = useProjectV1ListByCurrentUser();
+  const currentUserIamPolicy = useCurrentUserIamPolicy();
+  return projectList.value
+    .map((project) => {
+      return currentUserIamPolicy.allowToChangeDatabaseOfProject(
+        `projects/${project.name}`
+      );
+    })
+    .includes(true);
+});
 
 const onClickSearchButton = () => {
   handler.value.show();

@@ -10,7 +10,9 @@ import { useCurrentUserV1 } from "../auth";
 import {
   getDatabaseNameById,
   hasWorkspacePermissionV1,
+  isDeveloperOfProjectV1,
   isMemberOfProjectV1,
+  isOwnerOfProjectV1,
   parseConditionExpressionString,
 } from "@/utils";
 
@@ -153,27 +155,23 @@ export const useCurrentUserIamPolicy = () => {
     return isMemberOfProjectV1(policy, currentUser.value);
   };
 
-  const allowToChangeDatabaseOfProject = (projectName: string) => {
+  const isProjectOwnerOrDeveloper = (projectName: string) => {
     if (hasWorkspaceSuperPrivilege) {
       return true;
     }
 
-    const policy = iamPolicyStore.getProjectIamPolicy(projectName);
+    const policy = iamPolicyStore.policyMap.get(projectName);
     if (!policy) {
       return false;
     }
-    for (const binding of policy.bindings) {
-      if (
-        (binding.role === PresetRoleType.OWNER ||
-          binding.role === PresetRoleType.DEVELOPER) &&
-        binding.members.find(
-          (member) => member === `user:${currentUser.value.email}`
-        )
-      ) {
-        return true;
-      }
-    }
-    return false;
+    return (
+      isOwnerOfProjectV1(policy, currentUser.value) ||
+      isDeveloperOfProjectV1(policy, currentUser.value)
+    );
+  };
+
+  const allowToChangeDatabaseOfProject = (projectName: string) => {
+    return isProjectOwnerOrDeveloper(projectName);
   };
 
   const allowToQueryDatabase = (database: Database) => {
@@ -275,6 +273,7 @@ export const useCurrentUserIamPolicy = () => {
 
   return {
     isMemberOfProject,
+    isProjectOwnerOrDeveloper,
     allowToChangeDatabaseOfProject,
     allowToQueryDatabase,
     allowToExportDatabase,
