@@ -302,26 +302,25 @@ func getAffectedRowsForMysql(ctx context.Context, dbType db.Type, sqlDB *sql.DB,
 		}
 		if dbType == db.OceanBase {
 			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", node.Text()), getAffectedRowsCountForOceanBase)
-		} else {
-			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()), getAffectedRowsCountForMysql)
 		}
+		return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()), getAffectedRowsCountForMysql)
 	default:
 		return 0, nil
 	}
 }
 
-// OceanBaseQueryPlan represents the query plan of OceanBase
+// OceanBaseQueryPlan represents the query plan of OceanBase.
 type OceanBaseQueryPlan struct {
-	ID       int         `json:"ID"`
-	Operator string      `json:"OPERATOR"`
-	Name     string      `json:"NAME"`
-	EstRows  int64       `json:"EST.ROWS"`
-	Cost     int         `json:"COST"`
-	OutPut   interface{} `json:"output"`
+	ID       int    `json:"ID"`
+	Operator string `json:"OPERATOR"`
+	Name     string `json:"NAME"`
+	EstRows  int64  `json:"EST.ROWS"`
+	Cost     int    `json:"COST"`
+	OutPut   any    `json:"output"`
 }
 
-// Unmarshal parses data and stores the result to current OceanBaseQueryPlan
-func (plan *OceanBaseQueryPlan) Unmarshal(data interface{}) error {
+// Unmarshal parses data and stores the result to current OceanBaseQueryPlan.
+func (plan *OceanBaseQueryPlan) Unmarshal(data any) error {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -345,15 +344,15 @@ func getAffectedRowsCountForOceanBase(res []any) (int64, error) {
 		return 0, errors.Errorf("not found any data")
 	}
 
-	plan, ok := rowList[0].([]interface{})
+	plan, ok := rowList[0].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []interface but got %t", rowList[0])
+		return 0, errors.Errorf("expected []any but got %t", rowList[0])
 	}
 	planString, ok := plan[0].(string)
 	if !ok {
 		return 0, errors.Errorf("expected string but got %t", plan[0])
 	}
-	var planValue map[string]interface{}
+	var planValue map[string]any
 	_ = json.Unmarshal([]byte(planString), &planValue)
 	if len(planValue) > 0 {
 		queryPlan := OceanBaseQueryPlan{}
@@ -433,10 +432,10 @@ func getAffectedRowsCountForMysql(res []any) (int64, error) {
 	return 0, errors.Errorf("failed to extract rows from query plan")
 }
 
-type AffectedRowsCountExtractor func(res []any) (int64, error)
+type affectedRowsCountExtractor func(res []any) (int64, error)
 
-func getAffectedRowsCount(ctx context.Context, sqlDB *sql.DB, explainSql string, extractor AffectedRowsCountExtractor) (int64, error) {
-	res, err := query(ctx, sqlDB, explainSql)
+func getAffectedRowsCount(ctx context.Context, sqlDB *sql.DB, explainSQL string, extractor affectedRowsCountExtractor) (int64, error) {
+	res, err := query(ctx, sqlDB, explainSQL)
 	if err != nil {
 		return 0, err
 	}
