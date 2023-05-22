@@ -99,8 +99,16 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.
 	switch instance.Engine {
 	case db.Postgres:
 		return reportStatementAffectedRowsForPostgres(ctx, sqlDB, renderedStatement)
-	case db.MySQL:
-		return reportStatementAffectedRowsForMySQL(ctx, sqlDB, renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation)
+	case db.MySQL, db.MariaDB, db.OceanBase:
+		return reportStatementAffectedRowsForMySQL(ctx, instance.Engine, sqlDB, renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation)
+	case db.TiDB:
+		return []api.TaskCheckResult{{
+			Status:    api.TaskCheckStatusSuccess,
+			Namespace: api.BBNamespace,
+			Code:      common.Ok.Int(),
+			Title:     "OK",
+			Content:   "0",
+		}}, nil
 	default:
 		return nil, errors.New("unsupported db type")
 	}
@@ -151,40 +159,14 @@ func reportStatementAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, 
 
 func getAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, node ast.Node) (int64, error) {
 	switch node := node.(type) {
-	case *ast.InsertStmt:
-		return getInsertAffectedRowsForPostgres(ctx, sqlDB, node)
-	case *ast.UpdateStmt, *ast.DeleteStmt:
-		return getUpdateOrDeleteAffectedRowsForPostgres(ctx, sqlDB, node)
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+		if node, ok := node.(*ast.InsertStmt); ok && len(node.ValueList) > 0 {
+			return int64(len(node.ValueList)), nil
+		}
+		return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()), getAffectedRowsCountForPostgres)
 	default:
 		return 0, nil
 	}
-}
-
-func getInsertAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, node *ast.InsertStmt) (int64, error) {
-	if len(node.ValueList) > 0 {
-		return int64(len(node.ValueList)), nil
-	}
-	res, err := query(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()))
-	if err != nil {
-		return 0, err
-	}
-	rowCount, err := getAffectedRowsCountForPostgres(res)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get affected rows count for postgres, res %+v", res)
-	}
-	return rowCount, nil
-}
-
-func getUpdateOrDeleteAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, node ast.Node) (int64, error) {
-	res, err := query(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()))
-	if err != nil {
-		return 0, err
-	}
-	rowCount, err := getAffectedRowsCountForPostgres(res)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get affected rows count for postgres, res %+v", res)
-	}
-	return rowCount, nil
 }
 
 func getAffectedRowsCountForPostgres(res []any) (int64, error) {
@@ -234,7 +216,7 @@ func getAffectedRowsCountForPostgres(res []any) (int64, error) {
 
 // MySQL
 
-func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, statement, charset, collation string) ([]api.TaskCheckResult, error) {
+func reportStatementAffectedRowsForMySQL(ctx context.Context, dbType db.Type, sqlDB *sql.DB, statement, charset, collation string) ([]api.TaskCheckResult, error) {
 	singleSQLs, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -289,7 +271,7 @@ func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, sta
 			})
 			continue
 		}
-		affectedRows, err := getAffectedRowsForMysql(ctx, sqlDB, root[0])
+		affectedRows, err := getAffectedRowsForMysql(ctx, dbType, sqlDB, root[0])
 		if err != nil {
 			result = append(result, api.TaskCheckResult{
 				Status:    api.TaskCheckStatusError,
@@ -312,42 +294,82 @@ func reportStatementAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, sta
 	return result, nil
 }
 
-func getAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, node tidbast.StmtNode) (int64, error) {
+func getAffectedRowsForMysql(ctx context.Context, dbType db.Type, sqlDB *sql.DB, node tidbast.StmtNode) (int64, error) {
 	switch node := node.(type) {
-	case *tidbast.InsertStmt:
-		return getInsertAffectedRowsForMysql(ctx, sqlDB, node)
-	case *tidbast.UpdateStmt, *tidbast.DeleteStmt:
-		return getUpdateOrDeleteAffectedRowsForMysql(ctx, sqlDB, node)
+	case *tidbast.InsertStmt, *tidbast.UpdateStmt, *tidbast.DeleteStmt:
+		if node, ok := node.(*tidbast.InsertStmt); ok && node.Select == nil {
+			return int64(len(node.Lists)), nil
+		}
+		if dbType == db.OceanBase {
+			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", node.Text()), getAffectedRowsCountForOceanBase)
+		} else {
+			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()), getAffectedRowsCountForMysql)
+		}
 	default:
 		return 0, nil
 	}
 }
 
-func getInsertAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, node *tidbast.InsertStmt) (int64, error) {
-	if node.Select == nil {
-		return int64(len(node.Lists)), nil
-	}
-	res, err := query(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()))
-	if err != nil {
-		return 0, err
-	}
-	rowCount, err := getAffectedRowsCountForMysql(res)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get insert affected rows count for mysql, res %+v", res)
-	}
-	return rowCount, nil
+// OceanBaseQueryPlan represents the query plan of OceanBase
+type OceanBaseQueryPlan struct {
+	ID       int         `json:"ID"`
+	Operator string      `json:"OPERATOR"`
+	Name     string      `json:"NAME"`
+	EstRows  int64       `json:"EST.ROWS"`
+	Cost     int         `json:"COST"`
+	OutPut   interface{} `json:"output"`
 }
 
-func getUpdateOrDeleteAffectedRowsForMysql(ctx context.Context, sqlDB *sql.DB, node tidbast.StmtNode) (int64, error) {
-	res, err := query(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()))
+// Unmarshal parses data and stores the result to current OceanBaseQueryPlan
+func (plan *OceanBaseQueryPlan) Unmarshal(data interface{}) error {
+	b, err := json.Marshal(data)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	rowCount, err := getAffectedRowsCountForMysql(res)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get update or delete affected rows count for mysql, res %+v", res)
+	if b != nil {
+		return json.Unmarshal(b, &plan)
 	}
-	return rowCount, nil
+	return nil
+}
+
+func getAffectedRowsCountForOceanBase(res []any) (int64, error) {
+	// the res struct is []any{columnName, columnTable, rowDataList}
+	if len(res) != 3 {
+		return 0, errors.Errorf("expected 3 but got %d", len(res))
+	}
+	rowList, ok := res[2].([]any)
+	if !ok {
+		return 0, errors.Errorf("expected []any but got %t", res[2])
+	}
+	if len(rowList) < 1 {
+		return 0, errors.Errorf("not found any data")
+	}
+
+	plan, ok := rowList[0].([]interface{})
+	if !ok {
+		return 0, errors.Errorf("expected []interface but got %t", rowList[0])
+	}
+	planString, ok := plan[0].(string)
+	if !ok {
+		return 0, errors.Errorf("expected string but got %t", plan[0])
+	}
+	var planValue map[string]interface{}
+	_ = json.Unmarshal([]byte(planString), &planValue)
+	if len(planValue) > 0 {
+		queryPlan := OceanBaseQueryPlan{}
+		_ = queryPlan.Unmarshal(planValue)
+		if queryPlan.Operator != "" {
+			return queryPlan.EstRows, nil
+		}
+		for _, v := range planValue {
+			child := OceanBaseQueryPlan{}
+			_ = child.Unmarshal(v)
+			if child.Operator != "" {
+				return child.EstRows, nil
+			}
+		}
+	}
+	return 0, errors.Errorf("failed to extract 'EST.ROWS' from query plan")
 }
 
 func getAffectedRowsCountForMysql(res []any) (int64, error) {
@@ -409,6 +431,20 @@ func getAffectedRowsCountForMysql(res []any) (int64, error) {
 	}
 
 	return 0, errors.Errorf("failed to extract rows from query plan")
+}
+
+type AffectedRowsCountExtractor func(res []any) (int64, error)
+
+func getAffectedRowsCount(ctx context.Context, sqlDB *sql.DB, explainSql string, extractor AffectedRowsCountExtractor) (int64, error) {
+	res, err := query(ctx, sqlDB, explainSql)
+	if err != nil {
+		return 0, err
+	}
+	rowCount, err := extractor(res)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get affected rows count, res %+v", res)
+	}
+	return rowCount, nil
 }
 
 // Query runs the EXPLAIN or SELECT statements for advisors.

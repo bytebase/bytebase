@@ -171,7 +171,7 @@ func IsStatementTypeCheckSupported(dbType db.Type) bool {
 // IsTaskCheckReportSupported checks if the task report supports the engine type.
 func IsTaskCheckReportSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.Postgres, db.TiDB, db.MySQL:
+	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB, db.OceanBase:
 		return true
 	default:
 		return false
