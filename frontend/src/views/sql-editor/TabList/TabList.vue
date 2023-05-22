@@ -87,6 +87,10 @@ const handleRemoveTab = async (tab: TabInfo, index: number) => {
       title: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.title"),
       content: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.content"),
       type: "info",
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
       onPositiveClick() {
         remove(index);
         $dialog.destroy();
