@@ -503,6 +503,10 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
         positiveText: t("common.confirm"),
         negativeText: t("common.cancel"),
         title: t("issue.override-current-statement"),
+        autoFocus: false,
+        closable: false,
+        maskClosable: false,
+        closeOnEsc: false,
         onNegativeClick: () => {
           state.isUploadingFile = false;
           reject();

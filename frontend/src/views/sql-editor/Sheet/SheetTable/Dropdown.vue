@@ -81,6 +81,10 @@ const handleAction = async (key: string) => {
     const dialogInstance = dialog.create({
       title: t("sheet.hint-tips.confirm-to-delete-this-sheet"),
       type: "info",
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
       async onPositiveClick() {
         await sheetStore.deleteSheetById(sheet.id);
         dialogInstance.destroy();
@@ -109,6 +113,10 @@ const handleAction = async (key: string) => {
     const dialogInstance = dialog.create({
       title: t("sheet.hint-tips.confirm-to-duplicate-sheet"),
       type: "info",
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
       async onPositiveClick() {
         const sheetCreate: SheetCreate = {
           projectId: sheet.projectId,
