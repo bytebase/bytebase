@@ -6,6 +6,7 @@
         :disabled="disabled"
         :options="items"
         :value="value"
+        :consistent-menu-width="false"
         @update:value="$emit('update:value', $event)"
       />
     </div>
