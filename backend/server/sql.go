@@ -219,6 +219,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		principalID := c.Get(getPrincipalIDContextKey()).(int)
 		role := c.Get(getRoleContextKey()).(api.Role)
+		user, err := s.store.GetUserByID(ctx, principalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Principal not found").SetInternal(err)
+		}
 
 		exec := &api.SQLExecute{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, exec); err != nil {
@@ -336,6 +340,16 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				newPolicy := removeExportBinding(principalID, usedExpression, projectPolicy)
 				if _, err := s.store.SetProjectIAMPolicy(ctx, newPolicy, api.SystemBotID, project.UID); err != nil {
 					return err
+				}
+				// Post project IAM policy update activity.
+				if _, err := s.ActivityManager.CreateActivity(ctx, &api.ActivityCreate{
+					CreatorID:   api.SystemBotID,
+					ContainerID: project.UID,
+					Type:        api.ActivityProjectMemberCreate,
+					Level:       api.ActivityInfo,
+					Comment:     fmt.Sprintf("Granted %s to %s (%s).", user.Name, user.Email, api.Role(common.ProjectExporter)),
+				}, &activity.Metadata{}); err != nil {
+					log.Warn("Failed to create project activity", zap.Error(err))
 				}
 			}
 		}

@@ -167,12 +167,39 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 				},
 			},
 		},
+		// Complex Case 3
+		{
+			name: "Complex Case 3",
+			input: Input{
+				oldPolicy: map[api.Role][]int{
+					api.Owner:          {1, 2, 7},
+					api.Developer:      {1, 3, 4, 8},
+					api.Role("Tester"): {5},
+				},
+				newPolicy: map[api.Role][]int{
+					api.Owner:          {2, 4, 5, 7, 8},
+					api.Developer:      {1, 3, 6, 7},
+					api.Role("Tester"): {5, 8},
+				},
+			},
+			result: Result{
+				deletesPolicy: map[api.Role][]int{
+					api.Owner:     {1},
+					api.Developer: {4, 8},
+				},
+				createsPolicy: map[api.Role][]int{
+					api.Owner:          {4, 5, 8},
+					api.Developer:      {6, 7},
+					api.Role("Tester"): {8},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		oldPolicyMessage := buildPolicyMessageFromInputPolicy(tc.input.oldPolicy)
 		newPolicyMessage := buildPolicyMessageFromInputPolicy(tc.input.newPolicy)
-		deletes, creates := getIAMPolicyDiff(oldPolicyMessage, newPolicyMessage)
+		deletes, creates := GetIAMPolicyDiff(oldPolicyMessage, newPolicyMessage)
 
 		deletesPolicy := extractPolicyFromIAMPolicyMessage(deletes)
 		for role, memberIDs := range deletesPolicy {
