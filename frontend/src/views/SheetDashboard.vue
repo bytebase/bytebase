@@ -254,6 +254,10 @@ const handleSyncSheetFromVCS = () => {
   const dialogInstance = dialog.create({
     title: t("sheet.hint-tips.confirm-to-sync-sheet"),
     type: "info",
+    autoFocus: false,
+    closable: false,
+    maskClosable: false,
+    closeOnEsc: false,
     async onPositiveClick() {
       dialogInstance.closable = false;
       dialogInstance.loading = true;
@@ -263,7 +267,6 @@ const handleSyncSheetFromVCS = () => {
     },
     positiveText: t("common.confirm"),
     showIcon: true,
-    maskClosable: false,
   });
 };
 </script>
