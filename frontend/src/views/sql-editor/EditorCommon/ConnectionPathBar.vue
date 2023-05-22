@@ -82,7 +82,6 @@ import { useRouter } from "vue-router";
 import { useTabStore, useInstanceById, useDatabaseById } from "@/store";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import { instanceSlug } from "@/utils";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 
 const router = useRouter();
 const tabStore = useTabStore();
@@ -99,7 +98,7 @@ const selectedDatabase = useDatabaseById(
 
 const isProductionEnvironment = computed(() => {
   const instance = selectedInstance.value;
-  return instance.environment.tier === EnvironmentTier.PROTECTED;
+  return instance.environment.tier === "PROTECTED";
 });
 
 const isAdminMode = computed(() => {

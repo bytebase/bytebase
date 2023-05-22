@@ -19,7 +19,6 @@ import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
 import { AuditLog, AuditActivityType, AuditActivityLevel } from "./auditLog";
 import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -171,7 +170,7 @@ const makeUnknown = (type: ResourceType) => {
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
-    tier: EnvironmentTier.UNPROTECTED,
+    tier: "UNPROTECTED",
   };
 
   const UNKNOWN_PROJECT: Project = {
@@ -480,7 +479,7 @@ const makeEmpty = (type: ResourceType) => {
     rowStatus: "NORMAL",
     name: "",
     order: 0,
-    tier: EnvironmentTier.UNPROTECTED,
+    tier: "UNPROTECTED",
   };
 
   const EMPTY_PROJECT: Project = {
