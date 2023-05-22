@@ -1861,7 +1861,7 @@
     "overuse-warning": "{neededPlan}在{currentPlan}将会受限，请尽快升级以确保正常使用。",
     "overuse-modal": {
       "description": "您正在使用当前「{plan}」不包含的功能。立即升级避免影响使用。",
-      "instance-count-exceeds": "实例数量超出了限制 {count}"
+      "instance-count-exceeds": "实例数量 {count} 超出了限制 {limit}"
     },
     "features": {
       "bb-feature-task-schedule-time": {
