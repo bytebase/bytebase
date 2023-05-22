@@ -140,6 +140,10 @@ const rawUserList = computed(() => {
       return false;
     }
 
+    if (user.userType === UserType.SYSTEM_BOT && !props.includeSystemBot) {
+      return false;
+    }
+
     return true;
   });
 });
