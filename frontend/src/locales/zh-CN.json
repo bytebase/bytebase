@@ -1267,7 +1267,7 @@
     "sql-review-ci-enable": "开启 SQL 审核 CI",
     "sql-review-ci-enable-gitlab": "基于 GitLab CI 开启 SQL 审核",
     "sql-review-ci-enable-github": "基于 GitHub Action 开启 SQL 审核",
-    "sql-review-ci-description": "Bytebase 会发起{pr}为您的代码仓库配置 SQL 审核 在每一个 {pr} 中，基于环境的 SQL 审核策略将应用于任何匹配上「{pathTemplate}」的文件修改。",
+    "sql-review-ci-description": "Bytebase 会发起 {pr} 为您的代码仓库配置 SQL 审核 CI。在每一个 {pr} 中，任何匹配上「{pathTemplate}」的文件修改将被赋予对应环境的 SQL 审核策略。",
     "sql-review-ci-setup": "配置 SQL 审核 CI",
     "sql-review-ci-setup-failed": "SQL 审核 CI 创建失败",
     "sql-review-ci-setup-pr": "查看{pr}",
