@@ -871,6 +871,11 @@ export interface DatabaseGroup {
    * Format: projects/{project}/databaseGroups/{databaseGroup}
    */
   name: string;
+  /**
+   * The short name used in actual databases specified by users.
+   * For example, the placeholder for db1_2010, db1_2021, db1_2023 will be "db1".
+   */
+  databasePlaceholder: string;
   /** The condition that is associated with this database group. */
   databaseExpr?: Expr;
 }
@@ -3694,7 +3699,7 @@ export const DeleteDatabaseGroupRequest = {
 };
 
 function createBaseDatabaseGroup(): DatabaseGroup {
-  return { name: "", databaseExpr: undefined };
+  return { name: "", databasePlaceholder: "", databaseExpr: undefined };
 }
 
 export const DatabaseGroup = {
@@ -3702,8 +3707,11 @@ export const DatabaseGroup = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.databasePlaceholder !== "") {
+      writer.uint32(18).string(message.databasePlaceholder);
+    }
     if (message.databaseExpr !== undefined) {
-      Expr.encode(message.databaseExpr, writer.uint32(18).fork()).ldelim();
+      Expr.encode(message.databaseExpr, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -3727,6 +3735,13 @@ export const DatabaseGroup = {
             break;
           }
 
+          message.databasePlaceholder = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.databaseExpr = Expr.decode(reader, reader.uint32());
           continue;
       }
@@ -3741,6 +3756,7 @@ export const DatabaseGroup = {
   fromJSON(object: any): DatabaseGroup {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      databasePlaceholder: isSet(object.databasePlaceholder) ? String(object.databasePlaceholder) : "",
       databaseExpr: isSet(object.databaseExpr) ? Expr.fromJSON(object.databaseExpr) : undefined,
     };
   },
@@ -3748,6 +3764,7 @@ export const DatabaseGroup = {
   toJSON(message: DatabaseGroup): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.databasePlaceholder !== undefined && (obj.databasePlaceholder = message.databasePlaceholder);
     message.databaseExpr !== undefined &&
       (obj.databaseExpr = message.databaseExpr ? Expr.toJSON(message.databaseExpr) : undefined);
     return obj;
@@ -3760,6 +3777,7 @@ export const DatabaseGroup = {
   fromPartial(object: DeepPartial<DatabaseGroup>): DatabaseGroup {
     const message = createBaseDatabaseGroup();
     message.name = object.name ?? "";
+    message.databasePlaceholder = object.databasePlaceholder ?? "";
     message.databaseExpr = (object.databaseExpr !== undefined && object.databaseExpr !== null)
       ? Expr.fromPartial(object.databaseExpr)
       : undefined;
