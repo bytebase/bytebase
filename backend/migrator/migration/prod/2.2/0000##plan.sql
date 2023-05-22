@@ -20,3 +20,7 @@ BEFORE
 UPDATE
     ON plan FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
+
+ALTER TABLE issue ADD COLUMN plan_id BIGINT REFERENCES plan (id);
+
+CREATE INDEX idx_issue_plan_id ON issue (plan_id);

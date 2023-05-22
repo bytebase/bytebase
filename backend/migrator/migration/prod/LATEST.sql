@@ -714,6 +714,7 @@ CREATE TABLE issue (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
+    plan_id BIGINT REFERENCES plan (id),
     pipeline_id INTEGER REFERENCES pipeline (id),
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
@@ -726,6 +727,8 @@ CREATE TABLE issue (
 );
 
 CREATE INDEX idx_issue_project_id ON issue(project_id);
+
+CREATE INDEX idx_issue_plan_id ON issue(plan_id);
 
 CREATE INDEX idx_issue_pipeline_id ON issue(pipeline_id);
 
