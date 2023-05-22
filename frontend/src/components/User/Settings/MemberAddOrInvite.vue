@@ -110,6 +110,7 @@ import {
 } from "@/store";
 import { RoleSelect, RoleRadioSelect } from "@/components/v2";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
+import { copyServiceKeyToClipboardIfNeeded } from "./common";
 
 interface LocalState {
   userList: User[];
@@ -226,6 +227,7 @@ const addOrInvite = async () => {
     userCreate.password = randomString(20);
 
     const createdUser = await userStore.createUser(userCreate);
+    copyServiceKeyToClipboardIfNeeded(createdUser);
 
     if (createdUser.userRole !== userCreate.userRole) {
       const userPatch = cloneDeep(createdUser);

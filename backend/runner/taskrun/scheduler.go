@@ -784,6 +784,9 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 			return err
 		}
 		if issue != nil {
+			if issue.Status != api.IssueOpen {
+				continue
+			}
 			approved, err := utils.CheckIssueApproved(issue)
 			if err != nil {
 				log.Warn("taskrun scheduler: failed to check if the issue is approved when scheduling auto-deployed tasks", zap.Int("taskID", task.ID), zap.Int("issueID", issue.UID), zap.Error(err))

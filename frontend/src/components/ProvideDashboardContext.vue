@@ -11,6 +11,7 @@ import {
   useLegacyProjectStore,
   useDebugStore,
   useUserStore,
+  useProjectV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_ID } from "../types";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
@@ -23,6 +24,7 @@ export default defineComponent({
       useRoleStore().fetchRoleList(),
       useUserStore().fetchUserList(),
       useEnvironmentV1Store().fetchEnvironments(),
+      useProjectV1Store().fetchProjectList(true),
       // The default project hosts databases not explicitly assigned to other users project.
       useLegacyProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),
       useLegacyProjectStore().fetchAllProjectList(), // TODO(Jim): For legacy API support only. Remove this after refactored

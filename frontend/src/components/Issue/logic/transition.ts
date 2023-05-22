@@ -17,12 +17,15 @@ import {
   TASK_STATUS_TRANSITION_LIST,
   isDatabaseRelatedIssueType,
   extractUserUID,
+  hasWorkspacePermissionV1,
+  isOwnerOfProjectV1,
 } from "@/utils";
 import {
   allowUserToBeAssignee,
   useCurrentRollOutPolicyForActiveEnvironment,
 } from "./";
 import { useIssueLogic } from ".";
+import { User } from "@/types/proto/v1/auth_service";
 
 export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
   const { create, activeTaskOfPipeline, allowApplyTaskStatusTransition } =
@@ -159,14 +162,9 @@ export const calcApplicableIssueStatusTransitionList = (
 ): IssueStatusTransition[] => {
   const issueEntity = issue as Issue;
   const transitionTypeList: IssueStatusTransitionType[] = [];
-  const currentUserUID = extractUserUID(useCurrentUserV1().value.name);
+  const currentUserV1 = useCurrentUserV1();
 
-  // The creator and the assignee can apply issue status transition
-  // including resolve, cancel, reopen
-  if (
-    currentUserUID === String(issueEntity.creator?.id) ||
-    currentUserUID === String(issueEntity.assignee?.id)
-  ) {
+  if (allowUserToApplyIssueStatusTransition(issueEntity, currentUserV1.value)) {
     const actions = APPLICABLE_ISSUE_ACTION_LIST.get(issueEntity.status);
     if (actions) {
       transitionTypeList.push(...actions);
@@ -214,3 +212,36 @@ export function isApplicableTransition<
     }) >= 0
   );
 }
+
+const allowUserToApplyIssueStatusTransition = (issue: Issue, user: User) => {
+  // Workspace level high-privileged user (DBA/OWNER) are always allowed.
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      user.userRole
+    )
+  ) {
+    return true;
+  }
+
+  // Project owners are also allowed
+  const projectV1 = useProjectV1Store().getProjectByUID(
+    String(issue.project.id)
+  );
+  if (isOwnerOfProjectV1(projectV1.iamPolicy, user)) {
+    return true;
+  }
+
+  // The creator and the assignee can apply issue status transition
+
+  const currentUserUID = extractUserUID(user.name);
+
+  if (currentUserUID === String(issue.creator?.id)) {
+    return true;
+  }
+  if (currentUserUID === String(issue.assignee?.id)) {
+    return true;
+  }
+
+  return false;
+};
