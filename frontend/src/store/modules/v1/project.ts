@@ -160,7 +160,10 @@ export const useProjectV1List = (
   const store = useProjectV1Store();
   const ready = ref(false);
   watchEffect(() => {
-    if (!unref(forceUpdate)) return;
+    if (!unref(forceUpdate)) {
+      ready.value = true;
+      return;
+    }
     ready.value = false;
     store.fetchProjectList(unref(showDeleted)).then(() => {
       ready.value = true;
