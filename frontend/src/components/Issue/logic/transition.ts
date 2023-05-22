@@ -17,6 +17,7 @@ import {
   TASK_STATUS_TRANSITION_LIST,
   isDatabaseRelatedIssueType,
   extractUserUID,
+  hasWorkspacePermissionV1,
 } from "@/utils";
 import {
   allowUserToBeAssignee,
@@ -159,13 +160,18 @@ export const calcApplicableIssueStatusTransitionList = (
 ): IssueStatusTransition[] => {
   const issueEntity = issue as Issue;
   const transitionTypeList: IssueStatusTransitionType[] = [];
-  const currentUserUID = extractUserUID(useCurrentUserV1().value.name);
+  const currentUserV1 = useCurrentUserV1();
+  const currentUserUID = extractUserUID(currentUserV1.value.name);
 
   // The creator and the assignee can apply issue status transition
   // including resolve, cancel, reopen
   if (
     currentUserUID === String(issueEntity.creator?.id) ||
-    currentUserUID === String(issueEntity.assignee?.id)
+    currentUserUID === String(issueEntity.assignee?.id) ||
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      currentUserV1.value.userRole
+    )
   ) {
     const actions = APPLICABLE_ISSUE_ACTION_LIST.get(issueEntity.status);
     if (actions) {
