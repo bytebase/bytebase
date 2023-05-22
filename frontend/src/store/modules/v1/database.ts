@@ -72,24 +72,22 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
 export const useDatabaseV1List = (
   args: MaybeRef<Partial<ListDatabasesRequest>>,
-  filter: (database: ComposedDatabase) => boolean = () => true,
-  immediate = true
+  filter: (database: ComposedDatabase) => boolean = () => true
 ) => {
   const store = useDatabaseV1Store();
-  const ready = ref(!immediate);
+  const ready = ref(false);
+  const databaseList = ref<ComposedDatabase[]>([]);
   watch(
     () => JSON.stringify(unref(args)),
     () => {
       ready.value = false;
-      store.fetchDatabaseList(unref(args)).then(() => {
+      store.fetchDatabaseList(unref(args)).then((list) => {
+        databaseList.value = list.filter(filter);
         ready.value = true;
       });
     },
-    { immediate }
+    { immediate: true }
   );
-  const databaseList = computed(() => {
-    return store.databaseList.filter(filter);
-  });
 
   return { databaseList, ready };
 };

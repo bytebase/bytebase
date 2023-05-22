@@ -125,7 +125,7 @@ const v1Args = computed(() => ({
   parent: "instances/-",
   filter: `project == "${projectV1.value.name}"`,
 }));
-const { databaseList: databaseV1ListByProject } = useDatabaseV1List(
+const { databaseList: databaseV1ListOfProject } = useDatabaseV1List(
   v1Args,
   (db) => {
     return db.project === projectV1.value.name && db.syncState === State.ACTIVE;
@@ -143,7 +143,7 @@ const databaseList = computed(() => {
 
 const databaseV1List = computed(() => {
   // const list = databaseV1Store.databaseListByProject(projectV1.value.name);
-  const list = [...databaseV1ListByProject.value];
+  const list = [...databaseV1ListOfProject.value];
   return sortDatabaseV1ListByEnvironmentV1(list, environmentList.value);
 });
 

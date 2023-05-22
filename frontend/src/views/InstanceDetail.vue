@@ -58,10 +58,10 @@
           </div>
         </div>
         <div v-if="state.selectedIndex == DATABASE_TAB">
-          <DatabaseTable
+          <DatabaseV1Table
             mode="INSTANCE"
             :scroll-on-page-change="false"
-            :database-list="databaseList"
+            :database-list="databaseV1List"
           />
         </div>
         <InstanceUserTable
@@ -152,13 +152,11 @@ import {
   isMemberOfProjectV1,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
-import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
 import InstanceUserTable from "../components/InstanceUserTable.vue";
 import InstanceForm from "../components/InstanceForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
-  Database,
   Instance,
   InstanceMigration,
   MigrationSchemaStatus,
@@ -174,9 +172,10 @@ import {
   useSubscriptionStore,
   useSQLStore,
   useDBSchemaStore,
-  useProjectV1Store,
   useCurrentUserV1,
+  useDatabaseV1List,
 } from "@/store";
+import { DatabaseV1Table } from "@/components/v2";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -289,10 +288,13 @@ const attentionActionText = computed((): string => {
 
 const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
-const databaseList = computed(() => {
-  const list = useDatabaseStore().getDatabaseListByInstanceId(
-    instance.value.id
-  );
+const { databaseList: databaseV1ListOfInstance } = useDatabaseV1List(
+  computed(() => ({
+    parent: `instances/${instance.value.resourceId}`,
+  }))
+);
+const databaseV1List = computed(() => {
+  const list = [...databaseV1ListOfInstance.value];
 
   if (
     hasWorkspacePermissionV1(
@@ -306,17 +308,9 @@ const databaseList = computed(() => {
   // In edge case when the user is no longer an Owner or DBA, we only want to display the database
   // belonging to the project which the user is a member of. The returned list above may contain
   // databases not meeting this criteria and we need to filter out them.
-  const filteredList: Database[] = [];
-  for (const database of list) {
-    const projectV1 = useProjectV1Store().getProjectByUID(
-      String(database.project.id)
-    );
-    if (isMemberOfProjectV1(projectV1.iamPolicy, currentUserV1.value)) {
-      filteredList.push(database);
-    }
-  }
-
-  return filteredList;
+  return list.filter((db) => {
+    return isMemberOfProjectV1(db.projectEntity.iamPolicy, currentUserV1.value);
+  });
 });
 
 const instanceUserList = computed(() => {
