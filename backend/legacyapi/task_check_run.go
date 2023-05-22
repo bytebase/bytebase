@@ -161,7 +161,7 @@ func IsSQLReviewSupported(dbType db.Type) bool {
 // IsStatementTypeCheckSupported checks the engine type if statement type check supports it.
 func IsStatementTypeCheckSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB:
+	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB, db.OceanBase:
 		return true
 	default:
 		return false
