@@ -186,6 +186,7 @@ import {
 } from "@/store";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import { copyServiceKeyToClipboardIfNeeded } from "./common";
 
 const columnList = computed(() => [
   {
@@ -367,18 +368,12 @@ const resetServiceKey = () => {
   userStore
     .updateUser({
       user,
-      updateMask: [],
+      updateMask: ["service_key"],
       regenerateRecoveryCodes: false,
       regenerateTempMfaSecret: false,
     })
     .then((updatedUser) => {
-      toClipboard(updatedUser.serviceKey);
-
-      pushNotification({
-        module: "bytebase",
-        style: "INFO",
-        title: t("settings.members.service-key-copied"),
-      });
+      copyServiceKeyToClipboardIfNeeded(updatedUser);
     });
 };
 </script>
