@@ -183,8 +183,7 @@ export const useSubscriptionStore = defineStore("subscription", {
         {
           plan: planType,
           days: this.trialingDays,
-          // Same as config.MaximumInstanceForFreePlan.
-          instanceCount: 10,
+          instanceCount: -1,
         }
       );
       this.setSubscription(subscription);
