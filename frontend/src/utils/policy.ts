@@ -2,7 +2,6 @@ import { hasFeature, useCurrentUserIamPolicy } from "@/store";
 import type { Database, Instance } from "@/types";
 import { hasWorkspacePermissionV1 } from "./role";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { User } from "@/types/proto/v1/auth_service";
 
 export const isInstanceAccessible = (instance: Instance, user: User) => {
@@ -25,7 +24,7 @@ export const isInstanceAccessible = (instance: Instance, user: User) => {
 
   // See if the instance is in a production environment
   const { environment } = instance;
-  if (environment.tier === EnvironmentTier.UNPROTECTED) {
+  if (environment.tier === "UNPROTECTED") {
     return true;
   }
 
@@ -55,7 +54,7 @@ export const isDatabaseAccessible = (
   }
 
   const { environment } = database.instance;
-  if (environment.tier === EnvironmentTier.UNPROTECTED) {
+  if (environment.tier === "UNPROTECTED") {
     return true;
   }
 
