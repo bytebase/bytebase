@@ -376,9 +376,7 @@ const shouldShowAlterDatabaseEntries = computed(() => {
   const currentUserIamPolicy = useCurrentUserIamPolicy();
   return projectList.value
     .map((project) => {
-      return currentUserIamPolicy.allowToChangeDatabaseOfProject(
-        `projects/${project.name}`
-      );
+      return currentUserIamPolicy.allowToChangeDatabaseOfProject(project.name);
     })
     .includes(true);
 });
