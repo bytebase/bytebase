@@ -304,6 +304,7 @@ const tryChangeStep = async (
         positiveText: t("common.confirm"),
         negativeText: t("common.cancel"),
         title: t("deployment-config.confirm-to-revert"),
+        autoFocus: false,
         closable: false,
         maskClosable: false,
         closeOnEsc: false,
