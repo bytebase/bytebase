@@ -58,6 +58,24 @@
     - [GrantRequest](#bytebase-store-GrantRequest)
     - [IssuePayload](#bytebase-store-IssuePayload)
   
+- [store/plan.proto](#store_plan-proto)
+    - [PlanWorkflow](#bytebase-store-PlanWorkflow)
+    - [PlanWorkflow.ChangeDatabaseConfig](#bytebase-store-PlanWorkflow-ChangeDatabaseConfig)
+    - [PlanWorkflow.CreateDatabaseConfig](#bytebase-store-PlanWorkflow-CreateDatabaseConfig)
+    - [PlanWorkflow.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanWorkflow-CreateDatabaseConfig-LabelsEntry)
+    - [PlanWorkflow.RestoreDatabaseConfig](#bytebase-store-PlanWorkflow-RestoreDatabaseConfig)
+    - [PlanWorkflow.Spec](#bytebase-store-PlanWorkflow-Spec)
+    - [PlanWorkflow.Step](#bytebase-store-PlanWorkflow-Step)
+  
+    - [PlanWorkflow.ChangeDatabaseConfig.Type](#bytebase-store-PlanWorkflow-ChangeDatabaseConfig-Type)
+  
+- [store/plan_check_run.proto](#store_plan_check_run-proto)
+    - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
+    - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
+  
+    - [PlanCheckRunResult.Result.Namespace](#bytebase-store-PlanCheckRunResult-Result-Namespace)
+    - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
+  
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
@@ -874,6 +892,243 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_plan-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/plan.proto
+
+
+
+<a name="bytebase-store-PlanWorkflow"></a>
+
+### PlanWorkflow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| steps | [PlanWorkflow.Step](#bytebase-store-PlanWorkflow-Step) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanWorkflow-ChangeDatabaseConfig"></a>
+
+### PlanWorkflow.ChangeDatabaseConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| target | [string](#string) |  | The resource name of the target. Format: projects/{project}/logicalDatabases/{ldb1}. Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}. Format: instances/{xxx}/databases/{db1}. |
+| sheet | [string](#string) |  | The resource name of the sheet. Format: sheets/{sheet} |
+| type | [PlanWorkflow.ChangeDatabaseConfig.Type](#bytebase-store-PlanWorkflow-ChangeDatabaseConfig-Type) |  |  |
+| schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
+| rollback_enabled | [bool](#bool) |  | If RollbackEnabled, build the RollbackSheetID of the task. |
+
+
+
+
+
+
+<a name="bytebase-store-PlanWorkflow-CreateDatabaseConfig"></a>
+
+### PlanWorkflow.CreateDatabaseConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| target | [string](#string) |  | The resource name of the instance on which the database is created. Format: instances/{instance} |
+| database | [string](#string) |  | The name of the database to create. |
+| table | [string](#string) |  | table is the name of the table, if it is not empty, Bytebase should create a table after creating the database. For example, in MongoDB, it only creates the database when we first store data in that database. |
+| character_set | [string](#string) |  | character_set is the character set of the database. |
+| collation | [string](#string) |  | collation is the collation of the database. |
+| cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
+| owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
+| backup | [string](#string) |  | backup is the resource name of the backup. FIXME: backup v1 API is not ready yet, write the format here when it&#39;s ready. |
+| labels | [PlanWorkflow.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanWorkflow-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
+
+
+
+
+
+
+<a name="bytebase-store-PlanWorkflow-CreateDatabaseConfig-LabelsEntry"></a>
+
+### PlanWorkflow.CreateDatabaseConfig.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanWorkflow-RestoreDatabaseConfig"></a>
+
+### PlanWorkflow.RestoreDatabaseConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| target | [string](#string) |  | The resource name of the target to restore. Format: instances/{instance}/databases/{database} |
+| create_database_config | [PlanWorkflow.CreateDatabaseConfig](#bytebase-store-PlanWorkflow-CreateDatabaseConfig) | optional | create_database_config is present if the user wants to restore to a new database. |
+| backup | [string](#string) |  | FIXME: format TBD Restore from a backup. |
+| point_in_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | After the PITR operations, the database will be recovered to the state at this time. |
+
+
+
+
+
+
+<a name="bytebase-store-PlanWorkflow-Spec"></a>
+
+### PlanWorkflow.Spec
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
+| create_database_config | [PlanWorkflow.CreateDatabaseConfig](#bytebase-store-PlanWorkflow-CreateDatabaseConfig) |  |  |
+| change_database_config | [PlanWorkflow.ChangeDatabaseConfig](#bytebase-store-PlanWorkflow-ChangeDatabaseConfig) |  |  |
+| restore_database_config | [PlanWorkflow.RestoreDatabaseConfig](#bytebase-store-PlanWorkflow-RestoreDatabaseConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanWorkflow-Step"></a>
+
+### PlanWorkflow.Step
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| specs | [PlanWorkflow.Spec](#bytebase-store-PlanWorkflow-Spec) | repeated |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-PlanWorkflow-ChangeDatabaseConfig-Type"></a>
+
+### PlanWorkflow.ChangeDatabaseConfig.Type
+Type is the database change type.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| BASELINE | 1 | Used for establishing schema baseline, this is used when 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema. 2. Had schema drift and need to re-establish the baseline. |
+| MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
+| MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
+| MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
+| BRANCH | 5 | Used when restoring from a backup (the restored database branched from the original backup). |
+| DATA | 6 | Used for DML change. |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_plan_check_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/plan_check_run.proto
+
+
+
+<a name="bytebase-store-PlanCheckRunResult"></a>
+
+### PlanCheckRunResult
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| detail | [string](#string) |  |  |
+| results | [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result"></a>
+
+### PlanCheckRunResult.Result
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| namespace | [PlanCheckRunResult.Result.Namespace](#bytebase-store-PlanCheckRunResult-Result-Namespace) |  |  |
+| code | [int64](#int64) |  |  |
+| status | [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status) |  |  |
+| title | [string](#string) |  |  |
+| content | [string](#string) |  |  |
+| line | [int64](#int64) |  |  |
+| detail | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result-Namespace"></a>
+
+### PlanCheckRunResult.Result.Namespace
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| NAMESPACE_UNSPECIFIED | 0 |  |
+| BYTEBASE | 1 |  |
+| ADVISOR | 2 |  |
+
+
+
+<a name="bytebase-store-PlanCheckRunResult-Result-Status"></a>
+
+### PlanCheckRunResult.Result.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+| SUCCESS | 3 |  |
+
 
  
 
