@@ -162,7 +162,12 @@ const overusedFeatureList = computed(() => {
     list.push(t(`subscription.features.${feature.split(".").join("-")}.title`));
   }
   if (instanceStore.instanceById.size > subscriptionStore.instanceCount) {
-    list.push(t("subscription.overuse-modal.instance-count-exceeds"));
+    list.push(
+      t("subscription.overuse-modal.instance-count-exceeds", {
+        count: instanceStore.instanceById.size,
+        limit: subscriptionStore.instanceCount,
+      })
+    );
   }
   return list;
 });
