@@ -247,7 +247,7 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 		return err
 	}
 	// Deletes and inserts don't have condition in *expr.Expr because we use rawCondition string for updates.
-	deletes, inserts := getIAMPolicyDiff(oldPolicy, set)
+	deletes, inserts := GetIAMPolicyDiff(oldPolicy, set)
 	if len(deletes.Bindings) > 0 {
 		if err := s.deleteProjectIAMPolicyImpl(ctx, tx, projectUID, deletes); err != nil {
 			return err
@@ -304,76 +304,81 @@ func (*Store) deleteProjectIAMPolicyImpl(ctx context.Context, tx *Tx, projectUID
 	return nil
 }
 
-func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) (*IAMPolicyMessage, *IAMPolicyMessage) {
-	oldUserIDToProjectRoleMap := make(map[int]map[roleConditionKey]bool)
-	oldUserIDToUserMap := make(map[int]*UserMessage)
-	newUserIDToProjectRoleMap := make(map[int]map[roleConditionKey]bool)
-	newUserIDToUserMap := make(map[int]*UserMessage)
+// GetIAMPolicyDiff returns the diff between old and new policy (remove and add).
+// TODO(d): make minimal diff.
+func GetIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) (*IAMPolicyMessage, *IAMPolicyMessage) {
+	oldMap, newMap := make(map[roleConditionKey][]*UserMessage), make(map[roleConditionKey][]*UserMessage)
 
 	for _, binding := range oldPolicy.Bindings {
 		key := roleConditionKey{role: binding.Role, rawCondition: binding.rawCondition}
-		for _, member := range binding.Members {
-			oldUserIDToUserMap[member.ID] = member
-			if _, ok := oldUserIDToProjectRoleMap[member.ID]; !ok {
-				oldUserIDToProjectRoleMap[member.ID] = make(map[roleConditionKey]bool)
-			}
-			oldUserIDToProjectRoleMap[member.ID][key] = true
-		}
+		oldMap[key] = binding.Members
 	}
 	for _, binding := range newPolicy.Bindings {
 		key := roleConditionKey{role: binding.Role, rawCondition: binding.rawCondition}
-		for _, member := range binding.Members {
-			newUserIDToUserMap[member.ID] = member
-			if _, ok := newUserIDToProjectRoleMap[member.ID]; !ok {
-				newUserIDToProjectRoleMap[member.ID] = make(map[roleConditionKey]bool)
-			}
-			newUserIDToProjectRoleMap[member.ID][key] = true
-		}
+		newMap[key] = binding.Members
 	}
 
-	deletes := make(map[roleConditionKey][]*UserMessage)
-	inserts := make(map[roleConditionKey][]*UserMessage)
+	remove, add := &IAMPolicyMessage{}, &IAMPolicyMessage{}
 	// Delete member that no longer exists.
-	for oldUserID, oldRoleMap := range oldUserIDToProjectRoleMap {
-		for oldRole := range oldRoleMap {
-			if newRoleMap, ok := newUserIDToProjectRoleMap[oldUserID]; !ok || !newRoleMap[oldRole] {
-				deletes[oldRole] = append(deletes[oldRole], oldUserIDToUserMap[oldUserID])
+	for key, oldMembers := range oldMap {
+		newMembers, ok := newMap[key]
+		if !ok {
+			remove.Bindings = append(remove.Bindings, &PolicyBinding{
+				Role: key.role,
+				// We escape the condition because it's not useful for updates.
+				rawCondition: key.rawCondition,
+				Members:      oldMembers,
+			})
+		} else {
+			// Reconcile members.
+			oldUserMap, newUserMap := make(map[int]*UserMessage), make(map[int]*UserMessage)
+			for _, oldMember := range oldMembers {
+				oldUserMap[oldMember.ID] = oldMember
+			}
+			for _, newMember := range newMembers {
+				newUserMap[newMember.ID] = newMember
+			}
+			var removeMembers, addMembers []*UserMessage
+			for oldID, oldMember := range oldUserMap {
+				if _, ok := newUserMap[oldID]; !ok {
+					removeMembers = append(removeMembers, oldMember)
+				}
+			}
+			for newID, newMember := range newUserMap {
+				if _, ok := oldUserMap[newID]; !ok {
+					addMembers = append(addMembers, newMember)
+				}
+			}
+			if len(removeMembers) > 0 {
+				remove.Bindings = append(remove.Bindings, &PolicyBinding{
+					Role: key.role,
+					// We escape the condition because it's not useful for updates.
+					rawCondition: key.rawCondition,
+					Members:      removeMembers,
+				})
+			}
+			if len(addMembers) > 0 {
+				add.Bindings = append(add.Bindings, &PolicyBinding{
+					Role: key.role,
+					// We escape the condition because it's not useful for updates.
+					rawCondition: key.rawCondition,
+					Members:      addMembers,
+				})
 			}
 		}
 	}
 
 	// Create member if not exist in old policy.
-	for newUserID, newRoleMap := range newUserIDToProjectRoleMap {
-		for newRole := range newRoleMap {
-			if oldRoleMap, ok := oldUserIDToProjectRoleMap[newUserID]; !ok || !oldRoleMap[newRole] {
-				inserts[newRole] = append(inserts[newRole], newUserIDToUserMap[newUserID])
-			}
+	for key, members := range newMap {
+		if _, ok := oldMap[key]; !ok {
+			add.Bindings = append(add.Bindings, &PolicyBinding{
+				Role: key.role,
+				// We escape the condition because it's not useful for updates.
+				rawCondition: key.rawCondition,
+				Members:      members,
+			})
 		}
 	}
 
-	var deleteBindings []*PolicyBinding
-	for rc, users := range deletes {
-		deleteBindings = append(deleteBindings, &PolicyBinding{
-			Role:    rc.role,
-			Members: users,
-			// We escape the condition because it's not useful for updates.
-			rawCondition: rc.rawCondition,
-		})
-	}
-
-	var upsertBindings []*PolicyBinding
-	for rc, users := range inserts {
-		upsertBindings = append(upsertBindings, &PolicyBinding{
-			Role:    rc.role,
-			Members: users,
-			// We escape the condition because it's not useful for updates.
-			rawCondition: rc.rawCondition,
-		})
-	}
-
-	return &IAMPolicyMessage{
-			Bindings: deleteBindings,
-		}, &IAMPolicyMessage{
-			Bindings: upsertBindings,
-		}
+	return remove, add
 }
