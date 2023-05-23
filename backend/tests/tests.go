@@ -193,11 +193,11 @@ type config struct {
 
 var (
 	mu       sync.Mutex
-	nextPort = 1234
+	nextPort = time.Now().Second()*200 + 5010
 
 	// Shared external PG server variables.
 	externalPgUser     = "bbexternal"
-	externalPgPort     = time.Now().Second()*200 + 5113
+	externalPgPort     = time.Now().Second()*200 + 5000
 	externalPgBinDir   string
 	externalPgDataDir  string
 	nextDatabaseNumber = 20210113
