@@ -1249,7 +1249,11 @@
     },
     "transfer": {
       "source-project": "Source project",
-      "target-project": "Target project"
+      "target-project": "Target project",
+      "errors": {
+        "select-target-project": "Select target project",
+        "select-at-least-one-database": "Select at least one database"
+      }
     }
   },
   "repository": {
