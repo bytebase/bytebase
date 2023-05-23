@@ -105,10 +105,10 @@ export interface DatabaseState {
   // In those cases, we will iterate through this map and compute the list on the fly.
   // We save it by instance because database belongs to instance and saving this way
   // follows that hierarchy.
-  databaseListByInstanceId: Map<InstanceId, Database[]>;
+  databaseListByInstanceId: Map<string, Database[]>;
   // Used exclusively for project panel, we do this to avoid interference from databaseListByInstanceId
   // where updating databaseListByInstanceId will cause reloading project related UI due to reactivity
-  databaseListByProjectId: Map<ProjectId, Database[]>;
+  databaseListByProjectId: Map<string, Database[]>;
 }
 
 export interface DBSchemaState {
