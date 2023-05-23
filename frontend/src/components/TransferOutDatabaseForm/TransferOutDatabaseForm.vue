@@ -1,13 +1,13 @@
 <template>
   <div class="w-[60rem] space-y-2">
     <div class="flex items-center justify-between">
-      <div class="flex items-center gap-x-2">
+      <div class="flex-1 flex items-center gap-x-2">
         <label class="textlabel">
           {{ $t("database.transfer.source-project") }}
         </label>
         <ProjectV1Name :project="sourceProject" :link="false" />
       </div>
-      <div class="flex items-center gap-x-2">
+      <div class="flex-1 flex items-center gap-x-2">
         <label class="textlabel">
           {{ $t("database.transfer.target-project") }}
         </label>
@@ -31,9 +31,23 @@
     />
     <div class="flex items-center justify-end gap-x-2">
       <NButton @click="$emit('dismiss')">{{ $t("common.cancel") }}</NButton>
-      <NButton type="primary" :disabled="!allowTransfer" @click="doTransfer">
-        {{ $t("common.transfer") }}
-      </NButton>
+      <NTooltip :disabled="allowTransfer">
+        <template #trigger>
+          <NButton
+            type="primary"
+            :disabled="!allowTransfer"
+            tag="div"
+            @click="doTransfer"
+          >
+            {{ $t("common.transfer") }}
+          </NButton>
+        </template>
+        <ul>
+          <li v-for="(error, i) in validationErrors" :key="i">
+            {{ error }}
+          </li>
+        </ul>
+      </NTooltip>
     </div>
     <div
       v-if="loading"
@@ -52,7 +66,9 @@ import {
   TreeOption,
   TransferRenderSourceList,
   NButton,
+  NTooltip,
 } from "naive-ui";
+import { useI18n } from "vue-i18n";
 
 import { Database, UNKNOWN_ID } from "@/types";
 import {
@@ -78,6 +94,7 @@ const emit = defineEmits<{
   (e: "dismiss"): void;
 }>();
 
+const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseStore();
 const loading = ref(false);
@@ -105,9 +122,19 @@ const targetProject = computed(() => {
 
 const { project: sourceProject } = useProjectV1ByUID(toRef(props, "projectId"));
 
+const validationErrors = computed(() => {
+  const errors: string[] = [];
+  if (!targetProject.value) {
+    errors.push(t("database.transfer.errors.select-target-project"));
+  }
+  if (selectedDatabaseList.value.length === 0) {
+    errors.push(t("database.transfer.errors.select-at-least-one-database"));
+  }
+  return errors;
+});
+
 const allowTransfer = computed(() => {
-  if (!targetProject.value) return false;
-  return selectedDatabaseList.value.length > 0;
+  return validationErrors.value.length === 0;
 });
 
 const sourceTreeOptions = computed(() => {
