@@ -25,7 +25,9 @@
         <div v-else>{{ debugLog.Role }}</div>
       </BBTableCell>
       <BBTableCell class="table-cell pt-3">
-        <EllipsisText :line-clamp="2">{{ debugLog.Error }}</EllipsisText>
+        <EllipsisText class="max-w-full" :line-clamp="2">{{
+          debugLog.Error
+        }}</EllipsisText>
       </BBTableCell>
       <BBTableCell class="table-cell w-28">
         <div class="tooltip-wrapper">
