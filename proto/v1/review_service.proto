@@ -178,7 +178,7 @@ message ApprovalTemplate {
   string title = 2;
   string description = 3;
   // The name of the creator in users/{email} format.
-  string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 4;
 }
 
 message ApprovalFlow {

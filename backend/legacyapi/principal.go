@@ -7,6 +7,9 @@ import (
 // SystemBotID is the ID of the system robot.
 const SystemBotID = 1
 
+// SystemBotEmail is the email of the system robot.
+const SystemBotEmail = "support@bytebase.com"
+
 // PrincipalType is the type of a principal.
 type PrincipalType string
 
