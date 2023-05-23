@@ -14,6 +14,7 @@ export const databaseNamePrefix = "databases/";
 export const idpNamePrefix = "idps/";
 export const policyNamePrefix = "policies/";
 export const settingNamePrefix = "settings/";
+export const sheetNamePrefix = "sheets/";
 
 export const getNameParentTokens = (
   name: string,
@@ -43,8 +44,25 @@ export const getUserId = (name: string): number => {
   return userId;
 };
 
+export const getProjectAndSheetId = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    sheetNamePrefix,
+  ]);
+
+  return tokens;
+};
+
+export const getDatabaseId = (name: string): string => {
+  const sections = name.split(databaseNamePrefix);
+  if (sections.length != 2) {
+    return "";
+  }
+  return sections[1];
+};
+
 export const getUserEmailFromIdentifier = (identifier: string): string => {
-  return identifier.replace(/^user:/, "");
+  return identifier.replace(/^(user:|users\/)/, "");
 };
 
 export const getIdentityProviderResourceId = (name: string): ResourceId => {

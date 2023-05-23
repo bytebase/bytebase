@@ -864,6 +864,7 @@ type ApprovalTemplate struct {
 	Title       string        `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Description string        `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	// The name of the creator in users/{email} format.
+	// TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator.
 	Creator string `protobuf:"bytes,4,opt,name=creator,proto3" json:"creator,omitempty"`
 }
 

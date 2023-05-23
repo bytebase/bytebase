@@ -319,6 +319,8 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 			}
 			stringVisibility := string(visibility)
 			sheetPatch.Visibility = &stringVisibility
+		case "payload":
+			sheetPatch.Name = &request.Sheet.Payload
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
 		}
@@ -661,6 +663,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		Source:      source,
 		Type:        tp,
 		Starred:     sheet.Starred,
+		Payload:     sheet.Payload,
 	}, nil
 }
 
@@ -705,6 +708,7 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		Visibility: visibility,
 		Source:     source,
 		Type:       tp,
+		Payload:    sheet.Payload,
 	}, nil
 }
 

@@ -102,7 +102,6 @@ import { useI18n } from "vue-i18n";
 import RoleDescription from "./RoleDescription.vue";
 import { cloneDeep, isEqual, uniq } from "lodash-es";
 import { State } from "@/types/proto/v1/common";
-import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import { ComposedProjectMember } from "./types";
 
 export interface FormattedCondition {
@@ -204,8 +203,7 @@ const allowRemoveRole = (role: string) => {
     );
     const members = (binding?.members || [])
       .map((userIdentifier) => {
-        const email = getUserEmailFromIdentifier(userIdentifier);
-        return userStore.getUserByEmail(email);
+        return userStore.getUserByIdentifier(userIdentifier);
       })
       .filter((user) => user?.state === State.ACTIVE);
     if (!binding || members.length === 1) {

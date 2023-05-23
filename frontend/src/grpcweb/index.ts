@@ -15,6 +15,7 @@ import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
 import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { ReviewServiceDefinition } from "@/types/proto/v1/review_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
+import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -79,6 +80,10 @@ export const riskServiceClient = clientFactory.create(
 
 export const settingServiceClient = clientFactory.create(
   SettingServiceDefinition,
+  channel
+);
+export const sheetServiceClient = clientFactory.create(
+  SheetServiceDefinition,
   channel
 );
 

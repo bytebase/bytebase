@@ -16,10 +16,13 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
 
-import type { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
+import { Sheet } from "@/types/proto/v1/sheet_service";
+import type { SheetCreate, SheetOrganizerUpsert } from "@/types";
 import type { SheetViewMode } from "../types";
-import { getDefaultSheetPayloadWithSource, isSheetWritable } from "@/utils";
-import { useSheetStore } from "@/store";
+import { getDefaultSheetPayloadWithSource, isSheetWritableV1 } from "@/utils";
+import { useSheetStore, useProjectV1Store } from "@/store";
+import { getProjectAndSheetId, getDatabaseId } from "@/store/modules/v1/common";
+import { useSheetV1Store } from "@/store/modules/v1/sheet";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -50,7 +53,7 @@ const options = computed(() => {
     });
   }
 
-  const canDeleteSheet = isSheetWritable(sheet);
+  const canDeleteSheet = isSheetWritableV1(sheet);
   if (view === "my") {
     if (canDeleteSheet) {
       options.push({
@@ -86,7 +89,7 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
-        await sheetStore.deleteSheetById(sheet.id);
+        await useSheetV1Store().deleteSheetByName(sheet.name);
         dialogInstance.destroy();
       },
       onNegativeClick() {
@@ -97,8 +100,9 @@ const handleAction = async (key: string) => {
       showIcon: true,
     });
   } else if (key === "star" || key === "unstar") {
+    const [_, uid] = getProjectAndSheetId(sheet.name);
     const sheetOrganizerUpsert: SheetOrganizerUpsert = {
-      sheeId: sheet.id,
+      sheeId: uid,
     };
 
     if (key === "star") {
@@ -118,16 +122,19 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
+        const [projectId, _] = getProjectAndSheetId(sheet.name);
+        const projectV1 = useProjectV1Store().getProjectByName(projectId);
+
         const sheetCreate: SheetCreate = {
-          projectId: sheet.projectId,
-          name: sheet.name,
-          statement: sheet.statement,
+          projectId: projectV1.uid,
+          name: sheet.title,
+          statement: new TextDecoder().decode(sheet.content.buffer),
           visibility: "PRIVATE",
           payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
           source: "BYTEBASE",
         };
-        if (sheet.databaseId) {
-          sheetCreate.databaseId = sheet.databaseId;
+        if (sheet.database) {
+          sheetCreate.databaseId = getDatabaseId(sheet.database);
         }
         await sheetStore.createSheet(sheetCreate);
         dialogInstance.destroy();
