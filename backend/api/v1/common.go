@@ -163,6 +163,14 @@ func getUserID(name string) (int, error) {
 	return userID, nil
 }
 
+func getUserEmail(name string) (string, error) {
+	tokens, err := getNameParentTokens(name, userNamePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
+}
+
 func getSettingName(name string) (string, error) {
 	token, err := getNameParentTokens(name, settingNamePrefix)
 	if err != nil {

@@ -4,7 +4,7 @@ import {
   ApprovalNode_Type,
   ApprovalStep_Type,
   ApprovalTemplate,
-} from "@/types/proto/store/approval";
+} from "@/types/proto/v1/review_service";
 
 const validateApprovalFlow = (flow: ApprovalFlow) => {
   const SupportedStepTypes = new Set([
@@ -47,7 +47,7 @@ const validateApprovalFlow = (flow: ApprovalFlow) => {
 };
 
 export const validateApprovalTemplate = (
-  template: Omit<ApprovalTemplate, "creatorId">
+  template: Omit<ApprovalTemplate, "creator">
 ) => {
   const { title = "", description = "", flow } = template;
   if (title.trim().length === 0) return false;
