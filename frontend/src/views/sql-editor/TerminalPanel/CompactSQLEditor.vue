@@ -39,6 +39,12 @@ import {
 } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import { useInstanceEditorLanguage } from "@/utils";
+import {
+  checkCursorAtFirstLine,
+  checkCursorAtLast,
+  checkCursorAtLastLine,
+  checkEndsWithSemicolon,
+} from "./utils";
 
 const props = defineProps({
   sql: {
@@ -217,35 +223,19 @@ const handleEditorReady = async () => {
   // Create an editor context value to check if the SQL ends with semicolon ";"
   const endsWithSemicolon = editor?.createContextKey<boolean>(
     "endsWithSemicolon",
-    false
+    checkEndsWithSemicolon(editor)
   );
   editor?.onDidChangeModelContent(() => {
-    const value = editor.getValue();
-    if (value.endsWith(";")) {
-      endsWithSemicolon?.set(true);
-    } else {
-      endsWithSemicolon?.set(false);
-    }
+    endsWithSemicolon?.set(checkEndsWithSemicolon(editor));
   });
   // Another editor context value to check if the cursor is at the end of the
   // editor.
-  const cursorAtLast = editor?.createContextKey<boolean>("cursorAtLast", false);
+  const cursorAtLast = editor?.createContextKey<boolean>(
+    "cursorAtLast",
+    checkCursorAtLast(editor)
+  );
   editor?.onDidChangeCursorPosition(() => {
-    const model = editor.getModel();
-    if (model) {
-      const maxLine = model.getLineCount();
-      const maxColumn = model.getLineMaxColumn(maxLine);
-      const cursor = editor.getPosition();
-      const isCursorAtLast = !!cursor?.equals({
-        lineNumber: maxLine,
-        column: maxColumn,
-      });
-      if (isCursorAtLast) {
-        cursorAtLast?.set(true);
-        return;
-      }
-    }
-    cursorAtLast?.set(false);
+    cursorAtLast?.set(checkCursorAtLast(editor));
   });
   editor?.addCommand(
     monaco.KeyCode.Enter,
@@ -266,26 +256,18 @@ const handleEditorReady = async () => {
 
   const cursorAtFirstLine = editor?.createContextKey<boolean>(
     "cursorAtFirstLine",
-    false
+    checkCursorAtFirstLine(editor)
   );
   const cursorAtLastLine = editor?.createContextKey<boolean>(
     "cursorAtLastLine",
-    false
+    checkCursorAtLastLine(editor)
   );
-  const updateCursorPosition = () => {
-    if (!editor) return;
-    const model = editor.getModel();
-    if (model) {
-      const maxLine = model.getLineCount();
-      const cursor = editor.getPosition();
-      cursorAtFirstLine?.set(cursor?.lineNumber === 1);
-      cursorAtLastLine?.set(cursor?.lineNumber === maxLine);
-      return;
-    }
-    cursorAtLast?.set(false);
-  };
-  updateCursorPosition();
-  editor?.onDidChangeCursorPosition(updateCursorPosition);
+  editor?.onDidChangeCursorPosition(() => {
+    cursorAtFirstLine?.set(checkCursorAtFirstLine(editor));
+  });
+  editor?.onDidChangeCursorPosition(() => {
+    cursorAtLastLine?.set(checkCursorAtLastLine(editor));
+  });
   editor?.addCommand(
     monaco.KeyCode.UpArrow,
     () => {
