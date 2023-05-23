@@ -101,15 +101,6 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.
 		return reportStatementAffectedRowsForPostgres(ctx, sqlDB, renderedStatement)
 	case db.MySQL, db.MariaDB, db.OceanBase:
 		return reportStatementAffectedRowsForMySQL(ctx, instance.Engine, sqlDB, renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation)
-	case db.TiDB:
-		// TODO deal with Tidb explain response  https://docs.pingcap.com/tidb/dev/sql-statement-explain
-		return []api.TaskCheckResult{{
-			Status:    api.TaskCheckStatusSuccess,
-			Namespace: api.BBNamespace,
-			Code:      common.Ok.Int(),
-			Title:     "OK",
-			Content:   "0",
-		}}, nil
 	default:
 		return nil, errors.New("unsupported db type")
 	}
@@ -353,18 +344,27 @@ func getAffectedRowsCountForOceanBase(res []any) (int64, error) {
 	if !ok {
 		return 0, errors.Errorf("expected string but got %t", plan[0])
 	}
-	var planValue map[string]any
-	_ = json.Unmarshal([]byte(planString), &planValue)
+	var planValue map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(planString), &planValue); err != nil {
+		return 0, errors.Wrapf(err, "failed to parse query plan from string: %+v", planString)
+	}
 	if len(planValue) > 0 {
 		queryPlan := OceanBaseQueryPlan{}
-		_ = queryPlan.Unmarshal(planValue)
+		if err := queryPlan.Unmarshal(planValue); err != nil {
+			return 0, errors.Wrapf(err, "failed to parse query plan from map: %+v", planValue)
+		}
 		if queryPlan.Operator != "" {
 			return queryPlan.EstRows, nil
 		}
 		count := int64(-1)
-		for _, v := range planValue {
+		for k, v := range planValue {
+			if !strings.HasPrefix(k, "CHILD_") {
+				continue
+			}
 			child := OceanBaseQueryPlan{}
-			_ = child.Unmarshal(v)
+			if err := child.Unmarshal(v); err != nil {
+				return 0, errors.Wrapf(err, "failed to parse field '%s', value: %+v", k, v)
+			}
 			if child.Operator != "" && child.EstRows > count {
 				count = child.EstRows
 			}
