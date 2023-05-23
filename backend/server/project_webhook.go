@@ -256,7 +256,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 				Link:         fmt.Sprintf("%s/project/%s/webhook/%s", setting.ExternalUrl, getProjectSlug(project), api.ProjectWebhookSlug(webhook.Title, webhook.ID)),
 				CreatorID:    api.SystemBotID,
 				CreatorName:  "Bytebase",
-				CreatorEmail: "support@bytebase.com",
+				CreatorEmail: api.SystemBotEmail,
 				CreatedTs:    time.Now().Unix(),
 				Project:      &webhookPlugin.Project{Name: project.Title},
 			},
