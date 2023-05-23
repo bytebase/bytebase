@@ -489,9 +489,14 @@ func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	find := &store.FindInstanceMessage{
-		ResourceID: &instanceID,
+	find := &store.FindInstanceMessage{}
+	instanceUID, isNumber := isNumber(instanceID)
+	if isNumber {
+		find.UID = &instanceUID
+	} else {
+		find.ResourceID = &instanceID
 	}
+
 	instance, err := s.store.GetInstanceV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

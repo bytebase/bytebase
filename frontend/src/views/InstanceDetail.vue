@@ -1,6 +1,6 @@
 <template>
   <div class="py-4 space-y-4">
-    <ArchiveBanner v-if="instance.rowStatus == 'ARCHIVED'" />
+    <ArchiveBanner v-if="instanceV1.state === State.DELETED" />
     <BBAttention
       v-else-if="state.migrationSetupStatus != 'OK'"
       :style="'WARN'"
@@ -10,12 +10,15 @@
       @click-action="state.showCreateMigrationSchemaModal = true"
     />
     <div class="px-6 space-y-6">
-      <InstanceForm :instance="instance" />
+      <!-- <InstanceForm :instance="instance" /> -->
+      <div class="text-red-500">should be InstanceForm</div>
+      <div class="text-read-500">{{ instanceV1 }}</div>
       <div
         v-if="hasDataSourceFeature"
         class="py-6 space-y-4 border-t divide-control-border"
       >
-        <DataSourceTable :instance="instance" />
+        <!-- <DataSourceTable :instance="instance" /> -->
+        <div class="text-red-500">Should be DataSourceTable</div>
       </div>
       <div v-else>
         <div class="mb-4 flex items-center justify-between">
@@ -46,8 +49,8 @@
             </button>
             <button
               v-if="
-                instance.rowStatus == 'NORMAL' &&
-                instanceHasCreateDatabase(instance)
+                instanceV1.state === State.ACTIVE &&
+                instanceV1HasCreateDatabase(instanceV1)
               "
               type="button"
               class="btn-primary"
@@ -70,14 +73,14 @@
         />
       </div>
       <template v-if="allowArchiveOrRestore">
-        <template v-if="instance.rowStatus == 'NORMAL'">
+        <template v-if="instanceV1.state === State.ACTIVE">
           <BBButtonConfirm
             :style="'ARCHIVE'"
             :button-text="$t('instance.archive-this-instance')"
             :ok-text="$t('common.archive')"
             :require-confirm="true"
             :confirm-title="
-              $t('instance.archive-instance-instance-name', [instance.name])
+              $t('instance.archive-instance-instance-name', [instanceV1.title])
             "
             :confirm-description="
               $t(
@@ -87,7 +90,7 @@
             @confirm="doArchive"
           />
         </template>
-        <template v-else-if="instance.rowStatus == 'ARCHIVED'">
+        <template v-else-if="instanceV1.state === State.DELETED">
           <BBButtonConfirm
             :style="'RESTORE'"
             :button-text="$t('instance.restore-this-instance')"
@@ -95,7 +98,7 @@
             :require-confirm="true"
             :confirm-title="
               $t('instance.restore-instance-instance-name-to-normal-state', [
-                instance.name,
+                instanceV1.title,
               ])
             "
             :confirm-description="''"
@@ -131,8 +134,8 @@
     @close="state.showCreateDatabaseModal = false"
   >
     <CreateDatabasePrepForm
-      :environment-id="String(instance.environment.id)"
-      :instance-id="instance.id"
+      :environment-id="environment?.uid"
+      :instance-id="instanceId"
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </BBModal>
@@ -148,7 +151,7 @@ import { computed, reactive, watchEffect } from "vue";
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
-  instanceHasCreateDatabase,
+  instanceV1HasCreateDatabase,
   isMemberOfProjectV1,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
@@ -176,7 +179,10 @@ import {
   useDBSchemaStore,
   useProjectV1Store,
   useCurrentUserV1,
+  useInstanceV1Store,
+  useEnvironmentV1Store,
 } from "@/store";
+import { State } from "@/types/proto/v1/common";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -199,6 +205,7 @@ const props = defineProps({
 });
 
 const instanceStore = useInstanceStore();
+const instanceV1Store = useInstanceV1Store();
 const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 
@@ -215,13 +222,26 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-const instance = computed((): Instance => {
-  return instanceStore.getInstanceById(idFromSlug(props.instanceSlug));
+// const instance = computed((): Instance => {
+//   return instanceStore.getInstanceById(idFromSlug(props.instanceSlug));
+// });
+const instanceId = computed(() => {
+  return idFromSlug(props.instanceSlug);
 });
+const instanceV1 = computed(() => {
+  return instanceV1Store.getInstanceByUID(String(instanceId.value));
+});
+const environment = computed(() => {
+  return useEnvironmentV1Store().getEnvironmentByName(
+    instanceV1.value.environment
+  );
+});
+
+watchEffect(() => console.log(JSON.stringify(instanceV1.value)));
 
 const checkMigrationSetup = () => {
   instanceStore
-    .checkMigrationSetup(instance.value.id)
+    .checkMigrationSetup(instanceId.value)
     .then((migration: InstanceMigration) => {
       state.migrationSetupStatus = migration.status;
     });
@@ -290,9 +310,7 @@ const attentionActionText = computed((): string => {
 const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
 const databaseList = computed(() => {
-  const list = useDatabaseStore().getDatabaseListByInstanceId(
-    instance.value.id
-  );
+  const list = useDatabaseStore().getDatabaseListByInstanceId(instanceId.value);
 
   if (
     hasWorkspacePermissionV1(
@@ -320,12 +338,12 @@ const databaseList = computed(() => {
 });
 
 const instanceUserList = computed(() => {
-  return instanceStore.getInstanceUserListById(instance.value.id);
+  return instanceStore.getInstanceUserListById(instanceId.value);
 });
 
 const allowEdit = computed(() => {
   return (
-    instance.value.rowStatus == "NORMAL" &&
+    instanceV1.value.state === State.ACTIVE &&
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
       currentUserV1.value.userRole
@@ -356,7 +374,7 @@ const tabItemList = computed((): BBTabFilterItem[] => {
 const doArchive = () => {
   instanceStore
     .patchInstance({
-      instanceId: instance.value.id,
+      instanceId: instanceId.value,
       instancePatch: {
         rowStatus: "ARCHIVED",
       },
@@ -381,7 +399,7 @@ const doRestore = () => {
   }
   instanceStore
     .patchInstance({
-      instanceId: instance.value.id,
+      instanceId: instanceId.value,
       instancePatch: {
         rowStatus: "NORMAL",
       },
@@ -401,7 +419,7 @@ const doRestore = () => {
 const doCreateMigrationSchema = () => {
   state.creatingMigrationSchema = true;
   instanceStore
-    .createMigrationSetup(instance.value.id)
+    .createMigrationSetup(instanceId.value)
     .then((resultSet: SQLResultSet) => {
       state.creatingMigrationSchema = false;
       if (resultSet.error) {
@@ -410,7 +428,7 @@ const doCreateMigrationSchema = () => {
           style: "CRITICAL",
           title: t(
             "instance.failed-to-create-migration-schema-for-instance-instance-value-name",
-            [instance.value.name]
+            [instanceV1.value.title]
           ),
           description: resultSet.error,
         });
@@ -421,7 +439,7 @@ const doCreateMigrationSchema = () => {
           style: "SUCCESS",
           title: t(
             "instance.successfully-created-migration-schema-for-instance-value-name",
-            [instance.value.name]
+            [instanceV1.value.title]
           ),
         });
       }
@@ -432,7 +450,7 @@ const doCreateMigrationSchema = () => {
 const syncSchema = () => {
   state.syncingSchema = true;
   sqlStore
-    .syncSchema(instance.value.id)
+    .syncSchema(instanceId.value)
     .then((resultSet: SQLResultSet) => {
       state.syncingSchema = false;
       if (resultSet.error) {
@@ -441,7 +459,7 @@ const syncSchema = () => {
           style: "CRITICAL",
           title: t(
             "instance.failed-to-sync-schema-for-instance-instance-value-name",
-            [instance.value.name]
+            [instanceV1.value.title]
           ),
           description: resultSet.error,
         });
@@ -451,7 +469,7 @@ const syncSchema = () => {
           style: "SUCCESS",
           title: t(
             "instance.successfully-synced-schema-for-instance-instance-value-name",
-            [instance.value.name]
+            [instanceV1.value.title]
           ),
           description: resultSet.error,
         });
@@ -461,7 +479,7 @@ const syncSchema = () => {
       // So we will re-fetch new values when needed.
       const dbSchemaStore = useDBSchemaStore();
       const databaseList = useDatabaseStore().getDatabaseListByInstanceId(
-        instance.value.id
+        instanceId.value
       );
       databaseList.forEach((database) =>
         dbSchemaStore.removeCacheByDatabaseId(database.id)
