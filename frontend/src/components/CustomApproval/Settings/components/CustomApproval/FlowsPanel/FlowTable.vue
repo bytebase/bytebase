@@ -20,7 +20,7 @@
         </template>
       </div>
       <div class="bb-grid-cell">
-        {{ creatorOfRule(rule).name }}
+        {{ creatorOfRule(rule).title }}
       </div>
       <div class="bb-grid-cell justify-center">
         <NButton
