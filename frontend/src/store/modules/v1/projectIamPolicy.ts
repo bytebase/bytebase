@@ -191,7 +191,7 @@ export const useCurrentUserIamPolicy = () => {
     if (!policy) {
       return false;
     }
-    for (const binding of policy.bindings) {
+    const iamPolicyCheckResult = policy.bindings.map((binding) => {
       if (
         binding.role === PresetRoleType.OWNER &&
         binding.members.find(
@@ -216,7 +216,13 @@ export const useCurrentUserIamPolicy = () => {
           return true;
         }
       }
+      return false;
+    });
+    // If one of the binding is true, then the user is allowed to query the database.
+    if (iamPolicyCheckResult.includes(true)) {
+      return true;
     }
+
     return false;
   };
 
@@ -231,7 +237,7 @@ export const useCurrentUserIamPolicy = () => {
     if (!policy) {
       return false;
     }
-    for (const binding of policy.bindings) {
+    const iamPolicyCheckResult = policy.bindings.map((binding) => {
       if (
         binding.role === PresetRoleType.OWNER &&
         binding.members.find(
@@ -256,7 +262,12 @@ export const useCurrentUserIamPolicy = () => {
           return true;
         }
       }
+    });
+    // If one of the binding is true, then the user is allowed to export the database.
+    if (iamPolicyCheckResult.includes(true)) {
+      return true;
     }
+
     return false;
   };
 
