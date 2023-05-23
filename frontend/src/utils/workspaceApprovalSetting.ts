@@ -38,10 +38,7 @@ import {
   WorkspaceApprovalSetting,
   WorkspaceApprovalSetting_Rule as ApprovalRule,
 } from "@/types/proto/v1/setting_service";
-import {
-  userNamePrefix,
-  getUserEmailFromIdentifier,
-} from "@/store/modules/v1/common";
+import { userNamePrefix } from "@/store/modules/v1/common";
 
 export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
   const name = approvalNode_GroupValueToJSON(group);
@@ -322,8 +319,9 @@ export const seedWorkspaceApprovalSetting = () => {
 export const creatorOfRule = (rule: LocalApprovalRule) => {
   const creatorName = rule.template.creator ?? UNKNOWN_USER_NAME;
   if (creatorName === UNKNOWN_USER_NAME) return unknownUser();
+
   return (
-    useUserStore().getUserByEmail(getUserEmailFromIdentifier(creatorName)) ??
+    useUserStore().getUserByEmail(creatorName.replace(/^users\//, "")) ??
     unknownUser()
   );
 };
