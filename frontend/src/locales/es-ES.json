@@ -1241,7 +1241,11 @@
     },
     "transfer": {
       "source-project": "Proyecto fuente",
-      "target-project": "proyecto de destino"
+      "target-project": "proyecto de destino",
+      "errors": {
+        "select-target-project": "Seleccionar proyecto de destino",
+        "select-at-least-one-database": "Seleccione al menos una base de datos"
+      }
     }
   },
   "repository": {
