@@ -20,8 +20,7 @@ export function idFromSlug(slug: string): IdType {
 }
 
 export function migrationHistoryIdFromSlug(slug: string): MigrationHistoryId {
-  const parts = slug.split("-").slice(1);
-  return parts.join("-");
+  return String(idFromSlug(slug));
 }
 
 export function indexFromSlug(slug: string): number {
