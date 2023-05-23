@@ -22,8 +22,8 @@ export function idFromSlug(slug: string): IdType {
 }
 
 export function migrationHistoryIdFromSlug(slug: string): MigrationHistoryId {
-  const parts = slug.split("-").slice(1);
-  return parts.join("-");
+  const parts = slug.split("-");
+  return parts[parts.length - 1];
 }
 
 export function indexFromSlug(slug: string): number {
