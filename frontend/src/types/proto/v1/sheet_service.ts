@@ -146,6 +146,8 @@ export interface Sheet {
   type: Sheet_Type;
   /** starred indicates whether the sheet is starred by the current authenticated user. */
   starred: boolean;
+  /** TODO: deprecate this field. */
+  payload: string;
 }
 
 export enum Sheet_Visibility {
@@ -802,6 +804,7 @@ function createBaseSheet(): Sheet {
     source: 0,
     type: 0,
     starred: false,
+    payload: "",
   };
 }
 
@@ -842,6 +845,9 @@ export const Sheet = {
     }
     if (message.starred === true) {
       writer.uint32(96).bool(message.starred);
+    }
+    if (message.payload !== "") {
+      writer.uint32(106).string(message.payload);
     }
     return writer;
   },
@@ -937,6 +943,13 @@ export const Sheet = {
 
           message.starred = reader.bool();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.payload = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -960,6 +973,7 @@ export const Sheet = {
       source: isSet(object.source) ? sheet_SourceFromJSON(object.source) : 0,
       type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
       starred: isSet(object.starred) ? Boolean(object.starred) : false,
+      payload: isSet(object.payload) ? String(object.payload) : "",
     };
   },
 
@@ -978,6 +992,7 @@ export const Sheet = {
     message.source !== undefined && (obj.source = sheet_SourceToJSON(message.source));
     message.type !== undefined && (obj.type = sheet_TypeToJSON(message.type));
     message.starred !== undefined && (obj.starred = message.starred);
+    message.payload !== undefined && (obj.payload = message.payload);
     return obj;
   },
 
@@ -999,6 +1014,7 @@ export const Sheet = {
     message.source = object.source ?? 0;
     message.type = object.type ?? 0;
     message.starred = object.starred ?? false;
+    message.payload = object.payload ?? "";
     return message;
   },
 };
