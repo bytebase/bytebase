@@ -22,11 +22,17 @@ export const useProjectIamPolicyStore = defineStore(
     const policyMap = ref(new Map<string, IamPolicy>());
     const requestCache = new Map<string, Promise<IamPolicy>>();
 
-    const fetchProjectIamPolicy = async (project: string) => {
-      const cache = requestCache.get(project);
-      if (cache) {
-        return cache;
+    const fetchProjectIamPolicy = async (
+      project: string,
+      skipCache = false
+    ) => {
+      if (!skipCache) {
+        const cache = requestCache.get(project);
+        if (cache) {
+          return cache;
+        }
       }
+
       const request = projectServiceClient
         .getIamPolicy({
           project,
