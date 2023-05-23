@@ -146,7 +146,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	case api.SettingWorkspaceProfile:
 		payload := new(storepb.WorkspaceProfileSetting)
 		if err := convertV1PbToStorePb(request.Setting.Value.GetWorkspaceProfileSettingValue(), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", err, apiSettingName)
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
 		if payload.ExternalUrl != "" {
 			externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
@@ -171,15 +171,14 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
 			return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
 		}
-		payload := new(storepb.WorkspaceApprovalSetting)
-		if err := convertV1PbToStorePb(request.Setting.Value.GetWorkspaceApprovalSettingValue(), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", err, apiSettingName)
-		}
+
 		e, err := cel.NewEnv(approval.ApprovalFactors...)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create cel env: %v", err)
 		}
-		for _, rule := range payload.Rules {
+
+		payload := &storepb.WorkspaceApprovalSetting{}
+		for _, rule := range request.Setting.Value.GetWorkspaceApprovalSettingValue().Rules {
 			if rule.Expression != nil && rule.Expression.Expr != nil {
 				ast := cel.ParsedExprToAst(rule.Expression)
 				_, issues := e.Check(ast)
@@ -190,6 +189,40 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			if err := validateApprovalTemplate(rule.Template); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid approval template: %v, err: %v", rule.Template, err)
 			}
+
+			creatorID := 0
+			email, err := getUserEmail(rule.Template.Creator)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to get creator: %v", err))
+			}
+			if email == api.SystemBotEmail {
+				creatorID = api.SystemBotID
+			} else {
+				creator, err := s.store.GetUser(ctx, &store.FindUserMessage{
+					Email: &email,
+				})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
+				}
+				if creator == nil {
+					return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("creator %s not found", rule.Template.Creator))
+				}
+				creatorID = creator.ID
+			}
+
+			flow := new(storepb.ApprovalFlow)
+			if err := convertV1PbToStorePb(rule.Template.Flow, flow); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to unmarshal approval flow with error: %v", err)
+			}
+			payload.Rules = append(payload.Rules, &storepb.WorkspaceApprovalSetting_Rule{
+				Expression: rule.Expression,
+				Template: &storepb.ApprovalTemplate{
+					Flow:        flow,
+					Title:       rule.Template.Title,
+					Description: rule.Template.Description,
+					CreatorId:   int32(creatorID),
+				},
+			})
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
@@ -258,7 +291,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	case api.SettingPluginAgent:
 		payload := new(storepb.AgentPluginSetting)
 		if err := convertV1PbToStorePb(request.Setting.Value.GetAgentPluginSettingValue(), payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", err, apiSettingName)
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
 
 		bytes, err := protojson.Marshal(payload)
@@ -497,7 +530,7 @@ func settingInWhitelist(name api.SettingName) bool {
 	return false
 }
 
-func validateApprovalTemplate(template *storepb.ApprovalTemplate) error {
+func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {
 	if template.Flow == nil {
 		return errors.Errorf("approval template cannot be nil")
 	}
@@ -505,7 +538,7 @@ func validateApprovalTemplate(template *storepb.ApprovalTemplate) error {
 		return errors.Errorf("approval template cannot have 0 step")
 	}
 	for _, step := range template.Flow.Steps {
-		if step.Type != storepb.ApprovalStep_ANY {
+		if step.Type != v1pb.ApprovalStep_ANY {
 			return errors.Errorf("invalid approval step type: %v", step.Type)
 		}
 		if len(step.Nodes) != 1 {

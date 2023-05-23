@@ -625,7 +625,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 			Link:         fmt.Sprintf("%s/project/%s/webhook/%s", setting.ExternalUrl, fmt.Sprintf("%s-%d", slug.Make(project.Title), project.UID), fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
 			CreatorID:    api.SystemBotID,
 			CreatorName:  "Bytebase",
-			CreatorEmail: "support@bytebase.com",
+			CreatorEmail: api.SystemBotEmail,
 			CreatedTs:    time.Now().Unix(),
 			Project:      &webhookPlugin.Project{Name: project.Title},
 		},
