@@ -33,6 +33,7 @@ const (
 	externalVersionControlPrefix = "externalVersionControls/"
 	riskPrefix                   = "risks/"
 	reviewPrefix                 = "reviews/"
+	planPrefix                   = "plans/"
 	rolePrefix                   = "roles/"
 	secretNamePrefix             = "secrets/"
 	webhookIDPrefix              = "webhooks/"
@@ -237,6 +238,18 @@ func getReviewID(name string) (int, error) {
 		return 0, errors.Errorf("invalid review ID %q", tokens[1])
 	}
 	return reviewID, nil
+}
+
+func getPlanID(name string) (int64, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, planPrefix)
+	if err != nil {
+		return 0, err
+	}
+	planID, err := strconv.ParseInt(tokens[1], 10, 64)
+	if err != nil {
+		return 0, errors.Errorf("invalid plan ID %q", tokens[1])
+	}
+	return planID, nil
 }
 
 func getRoleID(name string) (string, error) {
