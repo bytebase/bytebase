@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, PropType, ref, watchEffect } from "vue";
+import { computed, onMounted, PropType, ref, watchEffect, watch } from "vue";
 import { useDialog } from "naive-ui";
 
 import IssueBanner from "../IssueBanner.vue";
@@ -63,7 +63,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { defaultTemplate, templateForType } from "@/plugins";
-import { useProjectV1Store } from "@/store";
+import { useProjectIamPolicyStore, useProjectV1Store } from "@/store";
 import {
   provideIssueLogic,
   IssueLogic,
@@ -73,6 +73,7 @@ import { useGrantRequestIssueLogic } from "../logic/grantRequest";
 import GrantRequestIssueSidebar from "../GrantRequestIssueSidebar.vue";
 import GrantRequestExporterForm from "../form/GrantRequestExporterForm.vue";
 import GrantRequestQuerierForm from "../form/GrantRequestQuerierForm.vue";
+import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
 
 const props = defineProps({
   create: {
@@ -95,9 +96,8 @@ const create = computed(() => props.create);
 const issue = computed(() => props.issue);
 
 const dialog = useDialog();
-
 const { project, createIssue } = useGrantRequestIssueLogic({ issue, create });
-
+const reviewContext = useIssueReviewContext();
 const issueLogic = ref<IssueLogic>();
 
 watchEffect(() => {
@@ -141,6 +141,19 @@ onMounted(() => {
 });
 
 const onStatusChanged = (eager: boolean) => emit("status-changed", eager);
+
+watch(
+  () => reviewContext.done.value,
+  () => {
+    // After the grant request issue's review is done, we need to fetch the latest project IAM policy.
+    if (reviewContext.done.value) {
+      useProjectIamPolicyStore().fetchProjectIamPolicy(
+        project.value.name,
+        true /* Skip cache */
+      );
+    }
+  }
+);
 
 provideIssueLogic(
   {
