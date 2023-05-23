@@ -214,54 +214,6 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheet;
     },
-    async fetchMySheetList() {
-      const resData = (await axios.get(`/api/sheet/my`)).data;
-      const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
-        const sheet = convertSheet(rawData, resData.included);
-        this.setSheetById({
-          sheetId: sheet.id,
-          sheet: sheet,
-        });
-        return sheet;
-      });
-
-      sheetList.sort((a, b) => b.createdTs - a.createdTs);
-      this.setSheetList(sheetList);
-
-      return sheetList;
-    },
-    async fetchSharedSheetList() {
-      const resData = (await axios.get(`/api/sheet/shared`)).data;
-      const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
-        const sheet = convertSheet(rawData, resData.included);
-        this.setSheetById({
-          sheetId: sheet.id,
-          sheet: sheet,
-        });
-        return sheet;
-      });
-
-      sheetList.sort((a, b) => b.createdTs - a.createdTs);
-      this.setSheetList(sheetList);
-
-      return sheetList;
-    },
-    async fetchStarredSheetList() {
-      const resData = (await axios.get(`/api/sheet/starred`)).data;
-      const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
-        const sheet = convertSheet(rawData, resData.included);
-        this.setSheetById({
-          sheetId: sheet.id,
-          sheet: sheet,
-        });
-        return sheet;
-      });
-
-      sheetList.sort((a, b) => b.createdTs - a.createdTs);
-      this.setSheetList(sheetList);
-
-      return sheetList;
-    },
     async fetchSheetById(sheetId: SheetId) {
       try {
         const data = (await axios.get(`/api/sheet/${sheetId}`)).data;

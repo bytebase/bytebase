@@ -7,7 +7,11 @@ import {
   UserType,
 } from "@/types/proto/v1/auth_service";
 import { isEqual, isUndefined } from "lodash-es";
-import { getUserId, userNamePrefix } from "./v1/common";
+import {
+  getUserId,
+  userNamePrefix,
+  getUserEmailFromIdentifier,
+} from "./v1/common";
 import { Principal, PrincipalType, RoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { extractUserUID } from "@/utils";
@@ -90,6 +94,9 @@ export const useUserStore = defineStore("user", {
     },
     getUserById(uid: string) {
       return this.userMapByName.get(getUserNameWithUserId(uid));
+    },
+    getUserByIdentifier(identifier: string) {
+      return this.getUserByEmail(getUserEmailFromIdentifier(identifier));
     },
     getUserByEmail(email: string) {
       return [...this.userMapByName.values()].find(
