@@ -23,6 +23,10 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 		return "", err
 	}
 
+	if len(schemas) == 0 {
+		return "", nil
+	}
+
 	var quotedSchemas []string
 	for _, schema := range schemas {
 		quotedSchemas = append(quotedSchemas, fmt.Sprintf("'%s'", schema))
