@@ -102,6 +102,7 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.
 	case db.MySQL, db.MariaDB, db.OceanBase:
 		return reportStatementAffectedRowsForMySQL(ctx, instance.Engine, sqlDB, renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation)
 	case db.TiDB:
+		// TODO deal with Tidb explain response  https://docs.pingcap.com/tidb/dev/sql-statement-explain
 		return []api.TaskCheckResult{{
 			Status:    api.TaskCheckStatusSuccess,
 			Namespace: api.BBNamespace,
@@ -360,12 +361,16 @@ func getAffectedRowsCountForOceanBase(res []any) (int64, error) {
 		if queryPlan.Operator != "" {
 			return queryPlan.EstRows, nil
 		}
+		count := int64(-1)
 		for _, v := range planValue {
 			child := OceanBaseQueryPlan{}
 			_ = child.Unmarshal(v)
-			if child.Operator != "" {
-				return child.EstRows, nil
+			if child.Operator != "" && child.EstRows > count {
+				count = child.EstRows
 			}
+		}
+		if count >= 0 {
+			return count, nil
 		}
 	}
 	return 0, errors.Errorf("failed to extract 'EST.ROWS' from query plan")
