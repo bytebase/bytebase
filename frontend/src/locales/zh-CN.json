@@ -1245,7 +1245,11 @@
     },
     "transfer": {
       "source-project": "源项目",
-      "target-project": "目标项目"
+      "target-project": "目标项目",
+      "errors": {
+        "select-target-project": "选择目标项目",
+        "select-at-least-one-database": "至少选择一个数据库"
+      }
     }
   },
   "repository": {
