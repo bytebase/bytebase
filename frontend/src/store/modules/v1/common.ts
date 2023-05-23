@@ -44,7 +44,7 @@ export const getUserId = (name: string): number => {
 };
 
 export const getUserEmailFromIdentifier = (identifier: string): string => {
-  return identifier.replace(/^users\//, "");
+  return identifier.replace(/^user:/, "");
 };
 
 export const getIdentityProviderResourceId = (name: string): ResourceId => {
