@@ -90,7 +90,7 @@ func (s *StatementTypeReportExecutor) Run(ctx context.Context, _ *store.TaskChec
 	switch instance.Engine {
 	case db.Postgres:
 		return reportStatementTypeForPostgres(renderedStatement)
-	case db.MySQL:
+	case db.MySQL, db.MariaDB, db.OceanBase, db.TiDB:
 		return reportStatementTypeForMySQL(renderedStatement, charset, collation)
 	default:
 		return nil, errors.New("unsupported db type")
