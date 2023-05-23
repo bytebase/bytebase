@@ -217,7 +217,10 @@ export interface ApprovalTemplate {
   flow?: ApprovalFlow;
   title: string;
   description: string;
-  /** The name of the creator in users/{email} format. */
+  /**
+   * The name of the creator in users/{email} format.
+   * TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator.
+   */
   creator: string;
 }
 
