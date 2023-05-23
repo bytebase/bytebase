@@ -54,22 +54,21 @@ export const isDatabaseAccessible = (
   }
 
   const { environment } = database.instance;
-  if (environment.tier === "UNPROTECTED") {
-    return true;
+  if (environment.tier === "PROTECTED") {
+    const policy = policyList.find((policy) => {
+      const { type, resourceUid, enforce } = policy;
+      return (
+        type === PolicyType.ACCESS_CONTROL &&
+        resourceUid === `${database.id}` &&
+        enforce
+      );
+    });
+    if (policy) {
+      // The database is in the allowed list
+      return true;
+    }
   }
 
-  const policy = policyList.find((policy) => {
-    const { type, resourceUid, enforce } = policy;
-    return (
-      type === PolicyType.ACCESS_CONTROL &&
-      resourceUid === `${database.id}` &&
-      enforce
-    );
-  });
-  if (policy) {
-    // The database is in the allowed list
-    return true;
-  }
   const currentUserIamPolicy = useCurrentUserIamPolicy();
   if (currentUserIamPolicy.allowToQueryDatabase(database)) {
     return true;
