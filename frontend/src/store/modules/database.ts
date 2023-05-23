@@ -303,7 +303,6 @@ export const useDatabaseStore = defineStore("database", {
           }
         }
       }
-      console.log("2", this.getDatabaseList());
     },
     async fetchDatabaseList(databaseFind?: DatabaseFind) {
       const queryList = [];
@@ -329,7 +328,6 @@ export const useDatabaseStore = defineStore("database", {
       databaseList.sort(databaseSorter);
 
       this.upsertDatabaseList({ databaseList });
-      console.log("4", databaseList, this.getDatabaseList());
 
       return databaseList;
     },
