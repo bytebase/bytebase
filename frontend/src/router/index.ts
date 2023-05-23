@@ -58,6 +58,7 @@ import {
   useProjectWebhookV1Store,
   useEnvironmentV1Store,
   useCurrentUserV1,
+  useDatabaseV1Store,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -1507,8 +1508,9 @@ router.beforeEach((to, from, next) => {
       next();
       return;
     }
-    databaseStore
-      .fetchDatabaseById(idFromSlug(databaseSlug))
+    useDatabaseV1Store()
+      .fetchDatabaseByUID(String(idFromSlug(databaseSlug)))
+      .then(() => databaseStore.fetchDatabaseById(idFromSlug(databaseSlug)))
       .then((database: Database) => {
         dbSchemaStore
           .getOrFetchDatabaseMetadataById(database.id, true)

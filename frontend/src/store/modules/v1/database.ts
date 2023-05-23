@@ -5,9 +5,13 @@ import { uniq } from "lodash-es";
 import { databaseServiceClient } from "@/grpcweb";
 import {
   ComposedDatabase,
+  emptyDatabase,
+  EMPTY_ID,
   MaybeRef,
+  unknownDatabase,
   unknownEnvironment,
   unknownInstance,
+  UNKNOWN_ID,
 } from "@/types";
 import {
   Database,
@@ -61,12 +65,35 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseListByProject = (project: string) => {
     return databaseList.value.filter((db) => db.project === project);
   };
+  const getDatabaseByUID = (uid: string) => {
+    if (uid === String(EMPTY_ID)) {
+      return emptyDatabase();
+    }
+    return databaseMapByUID.get(uid) ?? unknownDatabase();
+  };
+  const fetchDatabaseByUID = async (uid: string) => {
+    const database = await databaseServiceClient.getDatabase({
+      name: `instances/-/databases/${uid}`,
+    });
+    const [composed] = await upsertDatabaseMap([database]);
+
+    return composed;
+  };
+  // async getOrFetchDatabaseById(databaseId: DatabaseId) {
+  //   const storedDatabase = this.getDatabaseById(databaseId);
+  //   if (storedDatabase.id !== UNKNOWN_ID) {
+  //     return storedDatabase;
+  //   }
+  //   return this.fetchDatabaseById(databaseId);
+  // },
 
   return {
     databaseList,
     fetchDatabaseList,
     databaseListByUser,
     databaseListByProject,
+    fetchDatabaseByUID,
+    getDatabaseByUID,
   };
 });
 
@@ -90,6 +117,31 @@ export const useDatabaseV1List = (
   );
 
   return { databaseList, ready };
+};
+
+export const useDatabaseV1ByUID = (uid: MaybeRef<string>) => {
+  const store = useDatabaseV1Store();
+  const ready = ref(true);
+  watch(
+    () => unref(uid),
+    (uid) => {
+      if (uid !== String(UNKNOWN_ID)) {
+        if (store.getDatabaseByUID(uid).uid === String(UNKNOWN_ID)) {
+          ready.value = false;
+          store.fetchDatabaseByUID(uid).then(() => {
+            ready.value = true;
+          });
+        }
+      }
+    },
+    { immediate: true }
+  );
+  const database = computed(() => store.getDatabaseByUID(unref(uid)));
+
+  return {
+    database,
+    ready,
+  };
 };
 
 const batchComposeDatabase = async (databaseList: Database[]) => {

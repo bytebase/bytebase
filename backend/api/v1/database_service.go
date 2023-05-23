@@ -79,10 +79,15 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
-	})
+	find := &store.FindDatabaseMessage{}
+	databaseUID, isNumber := isNumber(databaseName)
+	if isNumber {
+		find.UID = &databaseUID
+	} else {
+		find.InstanceID = &instanceID
+		find.DatabaseName = &databaseName
+	}
+	database, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
