@@ -160,16 +160,18 @@ export const useDatabaseStore = defineStore("database", {
       return list;
     },
     getDatabaseListByInstanceId(instanceId: InstanceId): Database[] {
-      return this.databaseListByInstanceId.get(instanceId) || [];
+      return this.databaseListByInstanceId.get(String(instanceId)) || [];
     },
     async getOrFetchDatabaseListByInstanceId(
       instanceId: InstanceId
     ): Promise<Database[]> {
-      const databaseList = this.databaseListByInstanceId.get(instanceId);
+      const databaseList = this.databaseListByInstanceId.get(
+        String(instanceId)
+      );
       if (isUndefined(databaseList)) {
-        await this.fetchDatabaseListByInstanceId(instanceId);
+        await this.fetchDatabaseListByInstanceId(String(instanceId));
       }
-      return this.databaseListByInstanceId.get(instanceId) || [];
+      return this.databaseListByInstanceId.get(String(instanceId)) || [];
     },
     getDatabaseListByUser(user: User): Database[] {
       const canManageDatabase = hasWorkspacePermissionV1(
@@ -204,7 +206,7 @@ export const useDatabaseStore = defineStore("database", {
       return list;
     },
     getDatabaseListByProjectId(projectId: string): Database[] {
-      return this.databaseListByProjectId.get(parseInt(projectId, 10)) || [];
+      return this.databaseListByProjectId.get(projectId) || [];
     },
     getDatabaseById(databaseId: DatabaseId, instanceId?: InstanceId): Database {
       if (databaseId == EMPTY_ID) {
@@ -212,7 +214,8 @@ export const useDatabaseStore = defineStore("database", {
       }
 
       if (instanceId) {
-        const list = this.databaseListByInstanceId.get(instanceId) || [];
+        const list =
+          this.databaseListByInstanceId.get(String(instanceId)) || [];
         return (
           list.find((item) => item.id == databaseId) ||
           (unknown("DATABASE") as Database)
@@ -240,7 +243,7 @@ export const useDatabaseStore = defineStore("database", {
     removeDatabaseListFromProject(databaseList: Database[]) {
       for (const database of databaseList) {
         const listByProject = this.databaseListByProjectId.get(
-          database.project.id
+          String(database.project.id)
         );
         if (listByProject) {
           const i = listByProject.findIndex(
@@ -260,11 +263,11 @@ export const useDatabaseStore = defineStore("database", {
       instanceId?: InstanceId;
     }) {
       if (instanceId) {
-        this.databaseListByInstanceId.set(instanceId, databaseList);
+        this.databaseListByInstanceId.set(String(instanceId), databaseList);
       } else {
         for (const database of databaseList) {
           const listByInstance = this.databaseListByInstanceId.get(
-            database.instance.id
+            String(database.instance.id)
           );
           if (listByInstance) {
             const i = listByInstance.findIndex(
@@ -276,11 +279,13 @@ export const useDatabaseStore = defineStore("database", {
               listByInstance.push(database);
             }
           } else {
-            this.databaseListByInstanceId.set(database.instance.id, [database]);
+            this.databaseListByInstanceId.set(String(database.instance.id), [
+              database,
+            ]);
           }
 
           const listByProject = this.databaseListByProjectId.get(
-            database.project.id
+            String(database.project.id)
           );
           if (listByProject) {
             const i = listByProject.findIndex(
@@ -292,10 +297,13 @@ export const useDatabaseStore = defineStore("database", {
               listByProject.push(database);
             }
           } else {
-            this.databaseListByProjectId.set(database.project.id, [database]);
+            this.databaseListByProjectId.set(String(database.project.id), [
+              database,
+            ]);
           }
         }
       }
+      console.log("2", this.getDatabaseList());
     },
     async fetchDatabaseList(databaseFind?: DatabaseFind) {
       const queryList = [];
@@ -321,6 +329,7 @@ export const useDatabaseStore = defineStore("database", {
       databaseList.sort(databaseSorter);
 
       this.upsertDatabaseList({ databaseList });
+      console.log("4", databaseList, this.getDatabaseList());
 
       return databaseList;
     },
@@ -328,7 +337,7 @@ export const useDatabaseStore = defineStore("database", {
       const databaseList = await this.fetchDatabaseList({
         instanceId,
       });
-      this.databaseListByInstanceId.set(instanceId, databaseList);
+      this.databaseListByInstanceId.set(String(instanceId), databaseList);
       return databaseList;
     },
     async fetchDatabaseByInstanceIdAndName({
