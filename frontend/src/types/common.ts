@@ -22,6 +22,7 @@ import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
+// System bot email
 export const SYSTEM_BOT_EMAIL = "support@bytebase.com";
 
 // The project to hold those databases synced from the instance but haven't been assigned an application
