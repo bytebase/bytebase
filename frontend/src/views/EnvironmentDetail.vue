@@ -160,7 +160,7 @@ const doUpdate = (environmentPatch: Environment) => {
   }
   if (environmentPatch.tier !== pendingUpdate.tier) {
     if (
-      pendingUpdate.tier !== defaultEnvironmentTier &&
+      environmentPatch.tier !== defaultEnvironmentTier &&
       !hasFeature("bb.feature.environment-tier-policy")
     ) {
       state.missingRequiredFeature = "bb.feature.environment-tier-policy";
