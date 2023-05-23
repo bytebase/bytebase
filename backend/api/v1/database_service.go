@@ -82,8 +82,10 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	find := &store.FindDatabaseMessage{}
 	databaseUID, isNumber := isNumber(databaseName)
 	if isNumber {
+		// Expected format: "instances/{ignored_value}/database/{uid}"
 		find.UID = &databaseUID
 	} else {
+		// Expected format: "instances/{instance}/database/{database}"
 		find.InstanceID = &instanceID
 		find.DatabaseName = &databaseName
 	}
