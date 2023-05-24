@@ -74,6 +74,14 @@ export const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
+
+  "resource.database": uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+  ]),
+  "resource.schema": uniq([...EqualityOperatorList, ...CollectionOperatorList]),
+  "resource.table": uniq([...EqualityOperatorList, ...CollectionOperatorList]),
+  "request.time": uniq([...CompareOperatorList]),
 };
 
 export const getOperatorListByFactor = (factor: Factor) => {

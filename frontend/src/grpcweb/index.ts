@@ -16,6 +16,7 @@ import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { ReviewServiceDefinition } from "@/types/proto/v1/review_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
+import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -92,7 +93,15 @@ export const reviewServiceClient = clientFactory.create(
   channel
 );
 
-export const sqlClient = clientFactory.create(SQLServiceDefinition, channel);
+export const sqlServiceClient = clientFactory.create(
+  SQLServiceDefinition,
+  channel
+);
+
+export const celServiceClient = clientFactory.create(
+  CelServiceDefinition,
+  channel
+);
 
 // e.g. How to use `authServiceClient`?
 //
