@@ -1,7 +1,7 @@
 /// Define a simplified version (less nested) of CEL Expr.
 /// Convenient for local editing.
 
-import { NumberFactor, StringFactor } from "./factor";
+import { NumberFactor, StringFactor, TimestampFactor } from "./factor";
 import {
   type LogicalOperator,
   type EqualityOperator,
@@ -22,7 +22,7 @@ export type EqualityExpr = {
 
 export type CompareExpr = {
   operator: CompareOperator;
-  args: [NumberFactor, number];
+  args: [NumberFactor | TimestampFactor, number | Date];
 };
 
 export type CollectionExpr = {
