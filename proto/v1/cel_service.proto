@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/expr/v1alpha1/syntax.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "generated-go/v1";
+
+service CelService {
+  rpc Parse(ParseRequest) returns (ParseResponse) {
+    option (google.api.http) = {
+      post: "/v1/cel/parse"
+      body: "*"
+    };
+  }
+  rpc Deparse(DeparseRequest) returns (DeparseResponse) {
+    option (google.api.http) = {
+      post: "/v1/cel/deparse"
+      body: "*"
+    };
+  }
+}
+
+message ParseRequest {
+  string expression = 1;
+}
+
+message ParseResponse {
+  google.api.expr.v1alpha1.ParsedExpr expression = 1;
+}
+
+message DeparseRequest {
+  google.api.expr.v1alpha1.ParsedExpr expression = 1;
+}
+
+message DeparseResponse {
+  string expression = 1;
+}
