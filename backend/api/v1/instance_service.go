@@ -91,6 +91,28 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
+	// Test connection.
+	if request.ValidateOnly {
+		for _, ds := range instanceMessage.DataSources {
+			err := func() error {
+				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage.Engine, ds, "", "", 0, ds.Type == api.RO)
+				if err != nil {
+					return err
+				}
+				defer driver.Close(ctx)
+				if err := driver.Ping(ctx); err != nil {
+					return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", ds.Type, err)
+				}
+				return nil
+			}()
+			if err != nil {
+				return nil, err
+			}
+		}
+		return convertToInstance(instanceMessage), nil
+	}
+
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	instance, err := s.store.CreateInstanceV2(ctx,
 		instanceMessage,
@@ -336,8 +358,26 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	// Test connection.
+	if request.ValidateOnly {
+		err := func() error {
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance.Engine, dataSource, "", "", 0, dataSource.Type == api.RO)
+			if err != nil {
+				return err
+			}
+			defer driver.Close(ctx)
+			if err := driver.Ping(ctx); err != nil {
+				return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", dataSource.Type, err)
+			}
+			return nil
+		}()
+		if err != nil {
+			return nil, err
+		}
+		return convertToInstance(instance), nil
+	}
 
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, instance.ResourceID, dataSource); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -413,6 +453,19 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	if instance.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
+	// We create a new variable dataSource to not modify existing data source in the memory.
+	var dataSource store.DataSourceMessage
+	found := false
+	for _, ds := range instance.DataSources {
+		if ds.Type == tp {
+			dataSource = *ds
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, status.Errorf(codes.NotFound, "data source not found")
+	}
 
 	patch := &store.UpdateDataSourceMessage{
 		UpdaterID:   ctx.Value(common.PrincipalIDContextKey).(int),
@@ -425,31 +478,61 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		switch path {
 		case "username":
 			patch.Username = &request.DataSources.Username
+			dataSource.Username = *patch.Username
 		case "password":
 			obfuscated := common.Obfuscate(request.DataSources.Password, s.secret)
 			patch.ObfuscatedPassword = &obfuscated
+			dataSource.ObfuscatedPassword = obfuscated
 		case "ssl_ca":
 			obfuscated := common.Obfuscate(request.DataSources.SslCa, s.secret)
 			patch.ObfuscatedSslCa = &obfuscated
+			dataSource.ObfuscatedSslCa = obfuscated
 		case "ssl_cert":
 			obfuscated := common.Obfuscate(request.DataSources.SslCert, s.secret)
 			patch.ObfuscatedSslCert = &obfuscated
+			dataSource.ObfuscatedSslCert = obfuscated
 		case "ssl_key":
 			obfuscated := common.Obfuscate(request.DataSources.SslKey, s.secret)
 			patch.ObfuscatedSslKey = &obfuscated
+			dataSource.ObfuscatedSslKey = obfuscated
 		case "host":
 			patch.Host = &request.DataSources.Host
+			dataSource.Host = request.DataSources.Host
 		case "port":
 			patch.Port = &request.DataSources.Port
+			dataSource.Port = request.DataSources.Port
 		case "srv":
 			patch.SRV = &request.DataSources.Srv
+			dataSource.SRV = request.DataSources.Srv
 		case "authentication_database":
 			patch.AuthenticationDatabase = &request.DataSources.AuthenticationDatabase
+			dataSource.AuthenticationDatabase = request.DataSources.AuthenticationDatabase
 		case "sid":
 			patch.SID = &request.DataSources.Sid
+			dataSource.SID = request.DataSources.Sid
 		case "service_name":
-			patch.SID = &request.DataSources.ServiceName
+			patch.ServiceName = &request.DataSources.ServiceName
+			dataSource.ServiceName = request.DataSources.ServiceName
 		}
+	}
+
+	// Test connection.
+	if request.ValidateOnly {
+		err := func() error {
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance.Engine, &dataSource, "", "", 0, dataSource.Type == api.RO)
+			if err != nil {
+				return err
+			}
+			defer driver.Close(ctx)
+			if err := driver.Ping(ctx); err != nil {
+				return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", dataSource.Type, err)
+			}
+			return nil
+		}()
+		if err != nil {
+			return nil, err
+		}
+		return convertToInstance(instance), nil
 	}
 
 	if err := s.store.UpdateDataSourceV2(ctx, patch); err != nil {
