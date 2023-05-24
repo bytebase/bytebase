@@ -18,12 +18,12 @@ import { SelectOption } from "naive-ui";
 import {
   type ConditionExpr,
   type Factor,
-  FactorList,
   isHighLevelFactor,
 } from "@/plugins/cel";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { useExprEditorContext } from "../context";
 import { factorText } from "../../utils";
+import { FactorList } from "../factor";
 
 const props = defineProps<{
   expr: ConditionExpr;

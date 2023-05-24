@@ -1,5 +1,3 @@
-import { uniq, without } from "lodash-es";
-
 export const NumberFactorList = ["affected_rows", "level", "source"] as const;
 export type NumberFactor = typeof NumberFactorList[number];
 
@@ -29,15 +27,6 @@ export type Factor =
   | StringFactor
   | TimestampFactor
   | HighLevelFactor;
-
-export const FactorList = {
-  DDL: uniq([...HighLevelFactorList, ...StringFactorList]),
-  DML: uniq([...HighLevelFactorList, ...NumberFactorList, ...StringFactorList]),
-  CreateDatabase: without(
-    [...HighLevelFactorList, ...StringFactorList],
-    "sql_type"
-  ),
-};
 
 export const isNumberFactor = (factor: string): factor is NumberFactor => {
   return NumberFactorList.includes(factor as NumberFactor);
