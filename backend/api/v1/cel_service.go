@@ -46,7 +46,6 @@ func (*CelService) Parse(_ context.Context, request *v1pb.ParseRequest) (*v1pb.P
 	return &v1pb.ParseResponse{
 		Expression: expr,
 	}, nil
-
 }
 
 // Deparse deparses a parsed CEL expression.
