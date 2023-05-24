@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -73,7 +74,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project not found for id: %d", projectID)
+		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
 	planMessage := &store.PlanMessage{
 		ProjectID:   projectID,
@@ -91,7 +92,13 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	return convertToPlan(plan), nil
 }
 
+func validateSteps() {
+	// targets should be unique
+	// if deploymentConfig is used, only one spec is allowed.
+}
+
 func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Plan_Step, project *store.ProjectMessage) (*api.PipelineCreate, error) {
+	// handle deploymentConfig
 	pipelineCreate := &api.PipelineCreate{}
 	for _, step := range steps {
 		stageCreate := api.StageCreate{}
@@ -115,16 +122,23 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 }
 
 func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.Plan_Spec, project *store.ProjectMessage) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
-	useme := spec.Id
+
+	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
+		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
+			return nil, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+		}
+	}
 
 	switch config := spec.Config.(type) {
 	case *v1pb.Plan_Spec_CreateDatabaseConfig:
 		return s.getTaskCreatesFromCreateDatabaseConfig(ctx, spec, config.CreateDatabaseConfig, project)
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
-		return s.getTaskCreatesFromChangeDatabaseConfig(ctx, spec, config.ChangeDatabaseConfig)
+		return s.getTaskCreatesFromChangeDatabaseConfig(ctx, spec, config.ChangeDatabaseConfig, project)
 	case *v1pb.Plan_Spec_RestoreDatabaseConfig:
-		return s.getTaskCreatesFromRestoreDatabaseConfig(ctx, config.RestoreDatabaseConfig)
+		return s.getTaskCreatesFromRestoreDatabaseConfig(ctx, spec, config.RestoreDatabaseConfig, project)
 	}
+
+	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
 func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_CreateDatabaseConfig, project *store.ProjectMessage) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
@@ -266,6 +280,252 @@ func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Cont
 	}
 
 	return taskCreates, nil, nil
+}
+
+func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_ChangeDatabaseConfig, project *store.ProjectMessage) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+	// possible target:
+	// 1. instances/{instance}/databases/{database}
+	instanceID, databaseName, err := getInstanceDatabaseID(c.Target)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get instance database id from target %q", c.Target)
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+	}
+	if instance == nil {
+		return nil, nil, errors.Errorf("instance %q not found", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+	}
+	if database == nil {
+		return nil, nil, errors.Errorf("database %q not found", databaseName)
+	}
+
+	switch c.Type {
+	case v1pb.Plan_ChangeDatabaseConfig_BASELINE:
+		payload := api.TaskDatabaseSchemaBaselinePayload{
+			SpecID:        spec.Id,
+			SchemaVersion: c.SchemaVersion,
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database schema baseline payload").SetInternal(err)
+		}
+		payloadString := string(bytes)
+		taskCreate := api.TaskCreate{
+			Name:              fmt.Sprintf("Establish baseline for database %q", database),
+			InstanceID:        instance.UID,
+			DatabaseID:        &database.UID,
+			Status:            api.TaskPendingApproval,
+			Type:              api.TaskDatabaseSchemaBaseline,
+			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			Payload:           payloadString,
+		}
+		return []api.TaskCreate{taskCreate}, nil, nil
+
+	case v1pb.Plan_ChangeDatabaseConfig_MIGRATE:
+		_, sheetIDStr, err := getProjectResourceIDSheetID(c.Sheet)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+		}
+		sheetID, err := strconv.Atoi(sheetIDStr)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
+		}
+		sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
+		}
+		if sheet == nil {
+			return nil, nil, errors.Errorf("sheet %q not found", sheetID)
+		}
+		payload := api.TaskDatabaseSchemaUpdatePayload{
+			SpecID:        spec.Id,
+			SheetID:       sheetID,
+			SchemaVersion: c.SchemaVersion,
+			VCSPushEvent:  nil,
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database schema update payload").SetInternal(err)
+		}
+		payloadString := string(bytes)
+		taskCreate := api.TaskCreate{
+			Name:              fmt.Sprintf("DDL(schema) for database %q", database.DatabaseName),
+			InstanceID:        instance.UID,
+			DatabaseID:        &database.UID,
+			Status:            api.TaskPendingApproval,
+			Type:              api.TaskDatabaseSchemaUpdate,
+			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			Payload:           payloadString,
+		}
+		return []api.TaskCreate{taskCreate}, nil, nil
+
+	case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL:
+		_, sheetIDStr, err := getProjectResourceIDSheetID(c.Sheet)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+		}
+		sheetID, err := strconv.Atoi(sheetIDStr)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
+		}
+		sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
+		}
+		if sheet == nil {
+			return nil, nil, errors.Errorf("sheet %q not found", sheetID)
+		}
+		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
+			SheetID:       sheetID,
+			SchemaVersion: c.SchemaVersion,
+			VCSPushEvent:  nil,
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database schema update SDL payload").SetInternal(err)
+		}
+		payloadString := string(bytes)
+		taskCreate := api.TaskCreate{
+			Name:              fmt.Sprintf("SDL for database %q", database.DatabaseName),
+			InstanceID:        instance.UID,
+			DatabaseID:        &database.UID,
+			Status:            api.TaskPendingApproval,
+			Type:              api.TaskDatabaseSchemaUpdateSDL,
+			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			Payload:           payloadString,
+		}
+		return []api.TaskCreate{taskCreate}, nil, nil
+
+	case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST:
+		_, sheetIDStr, err := getProjectResourceIDSheetID(c.Sheet)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+		}
+		sheetID, err := strconv.Atoi(sheetIDStr)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
+		}
+		sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
+		}
+		if sheet == nil {
+			return nil, nil, errors.Errorf("sheet %q not found", sheetID)
+		}
+		var taskCreateList []api.TaskCreate
+		// task "sync"
+		payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
+			SpecID:        spec.Id,
+			SheetID:       sheetID,
+			SchemaVersion: c.SchemaVersion,
+			VCSPushEvent:  nil,
+		}
+		bytesSync, err := json.Marshal(payloadSync)
+		if err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update gh-ost sync payload, error: %v", err))
+		}
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:              fmt.Sprintf("Update schema gh-ost sync for database %q", database.DatabaseName),
+			InstanceID:        instance.UID,
+			DatabaseID:        &database.UID,
+			Status:            api.TaskPendingApproval,
+			Type:              api.TaskDatabaseSchemaUpdateGhostSync,
+			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			Payload:           string(bytesSync),
+		})
+
+		// task "cutover"
+		payloadCutover := api.TaskDatabaseSchemaUpdateGhostCutoverPayload{
+			SpecID: spec.Id,
+		}
+		bytesCutover, err := json.Marshal(payloadCutover)
+		if err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost cutover payload, error: %v", err))
+		}
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:              fmt.Sprintf("Update schema gh-ost cutover for database %q", database.DatabaseName),
+			InstanceID:        instance.UID,
+			DatabaseID:        &database.UID,
+			Status:            api.TaskPendingApproval,
+			Type:              api.TaskDatabaseSchemaUpdateGhostCutover,
+			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			Payload:           string(bytesCutover),
+		})
+
+		// The below list means that taskCreateList[0] blocks taskCreateList[1].
+		// In other words, task "sync" blocks task "cutover".
+		taskIndexDAGList := []api.TaskIndexDAG{
+			{FromIndex: 0, ToIndex: 1},
+		}
+		return taskCreateList, taskIndexDAGList, nil
+
+	case v1pb.Plan_ChangeDatabaseConfig_DATA:
+		_, sheetIDStr, err := getProjectResourceIDSheetID(c.Sheet)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+		}
+		sheetID, err := strconv.Atoi(sheetIDStr)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
+		}
+		sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
+		}
+		if sheet == nil {
+			return nil, nil, errors.Errorf("sheet %q not found", sheetID)
+		}
+		payload := api.TaskDatabaseDataUpdatePayload{
+			SheetID:           sheetID,
+			SchemaVersion:     c.SchemaVersion,
+			VCSPushEvent:      nil,
+			RollbackEnabled:   c.RollbackEnabled,
+			RollbackSQLStatus: api.RollbackSQLStatusPending,
+		}
+		if c.RollbackDetail != nil {
+			reviewID, err := getReviewID(c.RollbackDetail.RollbackFromReview)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get review id from review %q", c.RollbackDetail.RollbackFromReview)
+			}
+			payload.RollbackFromIssueID = reviewID
+			taskID, err := getTaskID(c.RollbackDetail.RollbackFromTask)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get task id from task %q", c.RollbackDetail.RollbackFromTask)
+			}
+			payload.RollbackFromTaskID = taskID
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database data update payload").SetInternal(err)
+		}
+		payloadString := string(bytes)
+		taskCreate := api.TaskCreate{
+			Name:              fmt.Sprintf("DML(data) for database %q", database.DatabaseName),
+			InstanceID:        instance.UID,
+			DatabaseID:        &database.UID,
+			Status:            api.TaskPendingApproval,
+			Type:              api.TaskDatabaseDataUpdate,
+			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			Payload:           payloadString,
+		}
+		return []api.TaskCreate{taskCreate}, nil, nil
+	default:
+		return nil, nil, errors.Errorf("unsupported change database config type %q", c.Type)
+	}
+}
+
+func (s *RolloutService) getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_RestoreDatabaseConfig, project *store.ProjectMessage) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+	panic("TBD")
 }
 
 func convertToPlan(plan *store.PlanMessage) *v1pb.Plan {
