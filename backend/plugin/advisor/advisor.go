@@ -335,6 +335,9 @@ const (
 
 	// Oracle Advisor.
 
+	// OracleSyntax is an advisor type for Oracle syntax.
+	OracleSyntax Type = "bb.plugin.advisor.oracle.syntax"
+
 	// OracleTableRequirePK is an advisor type for Oracle table require primary key.
 	OracleTableRequirePK Type = "bb.plugin.advisor.oracle.table.require-pk"
 
@@ -510,7 +513,7 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) (adviceL
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres:
+	case db.MySQL, db.TiDB, db.MariaDB, db.Postgres, db.Oracle:
 		return true
 	}
 	return false
