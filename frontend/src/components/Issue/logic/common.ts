@@ -247,7 +247,7 @@ export const useCommonLogic = () => {
       };
       // Create a new sheet to save statement.
       if (!taskCreate.sheetId || taskCreate.sheetId === UNKNOWN_ID) {
-        const sheet = await useSheetStore().createSheet({
+        const sheet = await sheetStore.createSheet({
           projectId: issueCreate.projectId,
           name: issueCreate.name + " - " + db.name,
           statement: statement,
