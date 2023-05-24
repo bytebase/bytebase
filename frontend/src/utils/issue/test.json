@@ -1,0 +1,73 @@
+{
+  "operator": "_&&_",
+  "args": [
+    {
+      "operator": "_||_",
+      "args": [
+        {
+          "operator": "_||_",
+          "args": [
+            {
+              "operator": "@in",
+              "args": [
+                "resource.database",
+                [
+                  "instances/ins-nzq-bohu/databases/db3",
+                  "instances/ins-nzq-bohu/databases/employee"
+                ]
+              ]
+            },
+            {
+              "operator": "_&&_",
+              "args": [
+                {
+                  "operator": "_==_",
+                  "args": [
+                    "resource.database",
+                    "instances/newinstance-2jkh/databases/test"
+                  ]
+                },
+                {
+                  "operator": "@in",
+                  "args": ["resource.schema", ["test"]]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "operator": "_&&_",
+          "args": [
+            {
+              "operator": "_&&_",
+              "args": [
+                {
+                  "operator": "_==_",
+                  "args": [
+                    "resource.database",
+                    "instances/newinstance-2jkh/databases/postgres"
+                  ]
+                },
+                {
+                  "operator": "_==_",
+                  "args": ["resource.schema", "myschema"]
+                }
+              ]
+            },
+            {
+              "operator": "@in",
+              "args": [
+                "resource.table",
+                ["comments0", "comments10", "comments1"]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "operator": "_<_",
+      "args": ["request.time", "2023-05-31T08:55:58.170Z"]
+    }
+  ]
+}

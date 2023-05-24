@@ -122,13 +122,19 @@
     </div>
   </div>
 
-  <DatabasesSelectPanel
+  <BBModal
     v-if="state.showSelectDatabasePanel && state.projectId"
-    :project-id="state.projectId"
-    :selected-database-id-list="state.selectedDatabaseIdList"
+    class="relative overflow-hidden"
+    :title="$t('issue.grant-request.manually-select')"
     @close="state.showSelectDatabasePanel = false"
-    @update="handleSelectedDatabaseIdListChanged"
-  />
+  >
+    <SelectDatabaseResourceForm
+      :project-id="state.projectId"
+      :selected-database-resource-list="state.selectedDatabaseResourceList"
+      @close="state.showSelectDatabasePanel = false"
+      @update="handleSelectedDatabaseResourceChanged"
+    />
+  </BBModal>
 </template>
 
 <script lang="ts" setup>
@@ -156,8 +162,10 @@ import {
   useDatabaseStore,
   useProjectV1Store,
 } from "@/store";
+import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import RequiredStar from "@/components/RequiredStar.vue";
-import DatabasesSelectPanel from "../../DatabasesSelectPanel.vue";
+import SelectDatabaseResourceForm from "./SelectDatabaseResourceForm/index.vue";
+import { stringifyDatabaseResources } from "@/utils/issue/cel";
 
 interface LocalState {
   showSelectDatabasePanel: boolean;
@@ -165,6 +173,7 @@ interface LocalState {
   projectId?: string;
   allDatabases: boolean;
   selectedDatabaseIdList: DatabaseId[];
+  selectedDatabaseResourceList: DatabaseResource[];
   expireDays: number;
   customDays: number;
   // For reviewing
@@ -179,6 +188,7 @@ const state = reactive<LocalState>({
   projectId: undefined,
   allDatabases: true,
   selectedDatabaseIdList: [],
+  selectedDatabaseResourceList: [],
   expireDays: 7,
   customDays: 7,
   expiredAt: "",
@@ -261,14 +271,18 @@ const handleManuallySelectClick = () => {
   }
 };
 
-const handleSelectedDatabaseIdListChanged = (databaseIdList: DatabaseId[]) => {
-  state.selectedDatabaseIdList = databaseIdList;
+const handleSelectedDatabaseResourceChanged = (
+  databaseResourceList: DatabaseResource[]
+) => {
+  state.selectedDatabaseResourceList = databaseResourceList;
   state.showSelectDatabasePanel = false;
   state.allDatabases = false;
+  stringifyDatabaseResources(databaseResourceList);
+
   if (create.value) {
     (
       (issue.value as IssueCreate).createContext as GrantRequestContext
-    ).databases = databaseIdList as string[];
+    ).databaseResources = databaseResourceList;
   }
 };
 
