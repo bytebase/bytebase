@@ -29,6 +29,7 @@ var queryAttributes = []cel.EnvOption{
 	cel.Variable("request.export_format", cel.StringType),
 }
 
+// Parse parses a CEL expression.
 func (*CelService) Parse(ctx context.Context, request *v1pb.ParseRequest) (*v1pb.ParseResponse, error) {
 	e, err := cel.NewEnv(queryAttributes...)
 	if err != nil {
@@ -48,6 +49,7 @@ func (*CelService) Parse(ctx context.Context, request *v1pb.ParseRequest) (*v1pb
 
 }
 
+// Deparse deparses a parsed CEL expression.
 func (*CelService) Deparse(ctx context.Context, request *v1pb.DeparseRequest) (*v1pb.DeparseResponse, error) {
 	ast := cel.ParsedExprToAst(request.Expression)
 	expressionStr, err := cel.AstToString(ast)
