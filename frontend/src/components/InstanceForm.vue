@@ -1,13 +1,22 @@
 <template>
-  <div class="space-y-6 divide-y divide-block-border">
-    <div class="divide-y divide-block-border w-[850px]">
+  <div
+    class="space-y-6 divide-y divide-block-border"
+    :class="
+      modal && ['max-h-[calc(100vh-10rem)] overflow-hidden flex flex-col']
+    "
+  >
+    <div
+      class="divide-y divide-block-border w-[850px]"
+      :class="modal && ['flex-1 overflow-y-auto']"
+    >
+      <div>{{ basicInfo }}</div>
+
       <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
         <template v-for="engine in engineList" :key="engine">
           <div
             class="flex relative justify-start p-2 border rounded cursor-pointer hover:bg-control-bg-hover"
             :class="
-              basicInformation.engine === engine &&
-              'font-medium bg-control-bg-hover'
+              basicInfo.engine === engine && 'font-medium bg-control-bg-hover'
             "
             @click.capture="changeInstanceEngine(engine)"
           >
@@ -15,14 +24,15 @@
               <input
                 type="radio"
                 class="btn mr-2"
-                :checked="basicInformation.engine == engine"
+                :checked="basicInfo.engine === engine"
               />
               <img
+                v-if="EngineIconPath[engine]"
                 class="w-5 h-auto max-h-[20px] object-contain mr-1"
                 :src="EngineIconPath[engine]"
               />
               <p class="text-center text-sm">
-                {{ engineName(engine) }}
+                {{ engineNameV1(engine) }}
               </p>
               <template v-if="isEngineBeta(engine)">
                 <BBBetaBadge
@@ -47,27 +57,26 @@
           </label>
           <input
             id="name"
+            v-model="basicInfo.title"
             required
             name="name"
             type="text"
             class="textfield mt-1 w-full"
             :disabled="!allowEdit"
-            :value="basicInformation.name"
-            @input="handleInstanceNameInput"
           />
         </div>
 
         <div
-          :key="basicInformation.environmentId"
+          :key="basicInfo.environment"
           class="sm:col-span-3 sm:col-start-1 -mt-4"
         >
           <ResourceIdField
             ref="resourceIdField"
+            v-model:value="resourceId"
             class="max-w-full flex-nowrap"
             resource-type="instance"
             :readonly="!isCreating"
-            :value="basicInformation.resourceId"
-            :resource-title="basicInformation.name"
+            :resource-title="basicInfo.title"
             :validate="validateResourceId"
           />
         </div>
@@ -81,19 +90,15 @@
             class="mt-1 w-full"
             name="environment"
             :disabled="!isCreating"
-            :selected-id="basicInformation.environmentId"
-            @select-environment-id="
-              (environmentId) => {
-                basicInformation.environmentId = environmentId;
-              }
-            "
+            :selected-id="environment.uid"
+            @select-environment-id="handleSelectEnvironmentUID"
           />
         </div>
 
         <div class="sm:col-span-3 sm:col-start-1">
-          <template v-if="basicInformation.engine !== 'SPANNER'">
+          <template v-if="basicInfo.engine !== Engine.SPANNER">
             <label for="host" class="textlabel block">
-              <template v-if="basicInformation.engine == 'SNOWFLAKE'">
+              <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
                 {{ $t("instance.account-name") }}
                 <span class="text-red-600 mr-2">*</span>
               </template>
@@ -104,21 +109,20 @@
             </label>
             <input
               id="host"
+              v-model="adminDataSource.host"
               required
               type="text"
               name="host"
               :placeholder="
-                basicInformation.engine == 'SNOWFLAKE'
+                basicInfo.engine === Engine.SNOWFLAKE
                   ? $t('instance.your-snowflake-account-name')
                   : $t('instance.sentence.host.snowflake')
               "
               class="textfield mt-1 w-full"
               :disabled="!allowEdit"
-              :value="adminDataSource.host"
-              @input="handleInstanceHostInput"
             />
             <div
-              v-if="basicInformation.engine == 'SNOWFLAKE'"
+              v-if="basicInfo.engine === Engine.SNOWFLAKE"
               class="mt-2 textinfolabel"
             >
               {{ $t("instance.sentence.proxy.snowflake") }}
@@ -126,33 +130,31 @@
           </template>
           <SpannerHostInput
             v-else
-            :host="adminDataSource.host"
+            v-model:host="adminDataSource.host"
             :allow-edit="allowEdit"
-            @update:host="handleUpdateSpannerHost"
           />
         </div>
 
-        <template v-if="basicInformation.engine !== 'SPANNER'">
+        <template v-if="basicInfo.engine !== Engine.SPANNER">
           <div class="sm:col-span-1">
-            <label for="port" class="textlabel block">{{
-              $t("instance.port")
-            }}</label>
+            <label for="port" class="textlabel block">
+              {{ $t("instance.port") }}
+            </label>
             <input
               id="port"
+              v-model="adminDataSource.port"
               type="number"
               name="port"
               class="textfield mt-1 w-full"
               :placeholder="defaultPort"
               :disabled="!allowEdit || !allowEditPort"
-              :value="adminDataSource.port"
-              @wheel="handleInstancePortWheelScroll"
-              @input="handleInstancePortInput"
+              @wheel="(e: WheelEvent) => (e.target as HTMLInputElement).blur()"
             />
           </div>
         </template>
 
         <div
-          v-if="basicInformation.engine === 'MONGODB'"
+          v-if="basicInfo.engine === Engine.MONGODB"
           class="sm:col-span-4 sm:col-start-1"
         >
           <label
@@ -182,10 +184,10 @@
 
         <!--Do not show external link on create to reduce cognitive load-->
         <div v-if="!isCreating" class="sm:col-span-3 sm:col-start-1">
-          <label for="externallink" class="textlabel inline-flex">
+          <label for="external-link" class="textlabel inline-flex">
             <span class>
               {{
-                basicInformation.engine == "SNOWFLAKE"
+                basicInfo.engine === Engine.SNOWFLAKE
                   ? $t("instance.snowflake-web-console")
                   : $t("instance.external-link")
               }}
@@ -198,11 +200,11 @@
               <heroicons-outline:external-link class="w-4 h-4" />
             </button>
           </label>
-          <template v-if="basicInformation.engine == 'SNOWFLAKE'">
+          <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
             <input
-              id="externallink"
+              id="external-link"
               required
-              name="externallink"
+              name="external-link"
               type="text"
               class="textfield mt-1 w-full"
               disabled="true"
@@ -214,15 +216,14 @@
               {{ $t("instance.sentence.console.snowflake") }}
             </div>
             <input
-              id="externallink"
+              id="external-link"
+              v-model="basicInfo.externalLink"
               required
-              name="externallink"
+              name="external-link"
               type="text"
               :disabled="!allowEdit"
-              :value="basicInformation.externalLink"
               class="textfield mt-1 w-full"
               :placeholder="snowflakeExtraLinkPlaceHolder"
-              @input="handleInstanceExternalLinkInput"
             />
           </template>
         </div>
@@ -232,6 +233,8 @@
       <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
         {{ $t("instance.connection-info") }}
       </p>
+
+      <div>{{ currentDataSource }}</div>
       <div
         v-if="!isCreating && !hasReadOnlyDataSource"
         class="mt-2 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3"
@@ -239,9 +242,9 @@
         <heroicons-outline:exclamation
           class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
         />
-        <span class="text-yellow-800 text-sm">{{
-          $t("instance.no-read-only-data-source-warn")
-        }}</span>
+        <span class="text-yellow-800 text-sm">
+          {{ $t("instance.no-read-only-data-source-warn") }}
+        </span>
         <button
           type="button"
           class="btn-normal ml-4 text-sm"
@@ -256,19 +259,24 @@
       >
         <NTabs
           v-if="!isCreating"
+          v-model:value="state.currentDataSourceType"
           class="sm:col-span-3"
           type="line"
-          :value="state.currentDataSourceType"
-          @update:value="handleDataSourceTypeChange"
         >
-          <NTab name="ADMIN">Admin</NTab>
-          <NTab name="RO" class="relative" :disabled="!hasReadOnlyDataSource">
-            <span>Read only</span>
+          <NTab :name="DataSourceType.ADMIN">
+            {{ $t("common.admin") }}
+          </NTab>
+          <NTab
+            :name="DataSourceType.READ_ONLY"
+            class="relative"
+            :disabled="!hasReadOnlyDataSource"
+          >
+            <span>{{ $t("common.read-only") }}</span>
             <BBButtonConfirm
               v-if="hasReadOnlyDataSource"
               :style="'DELETE'"
               class="absolute left-full ml-1"
-              :require-confirm="readonlyDataSource?.id !== UNKNOWN_ID"
+              :require-confirm="!readonlyDataSource?.pendingCreate"
               :ok-text="$t('common.delete')"
               :confirm-title="
                 $t('data-source.delete-read-only-data-source') + '?'
@@ -278,11 +286,11 @@
           </NTab>
         </NTabs>
 
-        <template v-if="basicInformation.engine !== 'SPANNER'">
+        <template v-if="basicInfo.engine !== Engine.SPANNER">
           <CreateDataSourceExample
             class-name="sm:col-span-3 border-none mt-2"
             :create-instance-flag="isCreating"
-            :engine-type="basicInformation.engine"
+            :engine="basicInfo.engine"
             :data-source-type="state.currentDataSourceType"
           />
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
@@ -294,17 +302,16 @@
               thus we make it REQUIRED here.-->
             <input
               id="username"
+              v-model="currentDataSource.username"
               name="username"
               type="text"
               class="textfield mt-1 w-full"
               :disabled="!allowEdit"
               :placeholder="
-                basicInformation.engine == 'CLICKHOUSE'
+                basicInfo.engine === Engine.CLICKHOUSE
                   ? $t('common.default')
                   : ''
               "
-              :value="currentDataSource.username"
-              @input="handleCurrentDataSourceNameInput"
             />
           </div>
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
@@ -316,7 +323,7 @@
                 v-if="!isCreating && allowUsingEmptyPassword"
                 :title="$t('common.empty')"
                 :value="currentDataSource.useEmptyPassword"
-                @toggle="handleToggleUseEmptyPassword"
+                @toggle="toggleUseEmptyPassword"
               />
             </div>
             <input
@@ -336,22 +343,25 @@
                   ? ''
                   : currentDataSource.updatedPassword
               "
-              @input="handleCurrentDataSourcePasswordInput"
+              @input="
+                currentDataSource.updatedPassword = trimInputValue(
+                  $event.target
+                )
+              "
             />
           </div>
         </template>
         <SpannerCredentialInput
           v-else
-          :value="currentDataSource.updatedPassword"
+          v-model:value="currentDataSource.updatedPassword"
           :write-only="!isCreating"
           class="mt-2 sm:col-span-3 sm:col-start-1"
-          @update:value="handleUpdateSpannerCredential"
         />
 
-        <template v-if="basicInformation.engine === 'ORACLE'">
+        <template v-if="basicInfo.engine === Engine.ORACLE">
           <OracleSIDAndServiceNameInput
-            v-model:sid="currentDataSource.options.sid"
-            v-model:service-name="currentDataSource.options.serviceName"
+            v-model:sid="currentDataSource.sid"
+            v-model:service-name="currentDataSource.serviceName"
             :allow-edit="allowEdit"
           />
         </template>
@@ -370,15 +380,19 @@
               class="textfield mt-1 w-full"
               autocomplete="off"
               placeholder="admin"
-              :value="currentDataSource.options.authenticationDatabase"
-              @input="handleInstanceAuthenticationDatabaseInput"
+              :value="currentDataSource.authenticationDatabase"
+              @input="
+                currentDataSource.authenticationDatabase = trimInputValue(
+                  $event.target
+                )
+              "
             />
           </div>
         </template>
 
         <template
           v-if="
-            state.currentDataSourceType === 'RO' &&
+            state.currentDataSourceType === DataSourceType.READ_ONLY &&
             (hasReadonlyReplicaHost || hasReadonlyReplicaPort)
           "
         >
@@ -390,7 +404,6 @@
               <label for="host" class="textlabel block">
                 {{ $t("data-source.read-replica-host") }}
               </label>
-              <span class="textinfolabel">({{ $t("common.optional") }})</span>
             </div>
             <input
               id="host"
@@ -411,7 +424,6 @@
               <label for="port" class="textlabel block">
                 {{ $t("data-source.read-replica-port") }}
               </label>
-              <span class="textinfolabel">({{ $t("common.optional") }})</span>
             </div>
             <input
               id="port"
@@ -446,7 +458,7 @@
               {{ $t("data-source.ssl-connection") }}
             </label>
           </div>
-          <template v-if="currentDataSource.id === UNKNOWN_ID">
+          <template v-if="currentDataSource.pendingCreate">
             <SslCertificateForm
               :value="currentDataSource"
               @change="handleCurrentDataSourceSslChange"
@@ -477,10 +489,25 @@
               class="text-accent"
             />
           </div>
-          <SshConnectionForm
-            :value="currentDataSource.options"
-            @change="handleCurrentDataSourceSshChange"
-          />
+          <template v-if="currentDataSource.pendingCreate">
+            <SshConnectionForm
+              :value="currentDataSource"
+              @change="handleCurrentDataSourceSshChange"
+            />
+          </template>
+          <template v-else>
+            <template v-if="currentDataSource.updateSsh">
+              <SshConnectionForm
+                :value="currentDataSource"
+                @change="handleCurrentDataSourceSshChange"
+              />
+            </template>
+            <template v-else>
+              <button class="btn-normal mt-2" @click.prevent="handleEditSsh">
+                {{ $t("common.edit") }} - {{ $t("common.write-only") }}
+              </button>
+            </template>
+          </template>
         </div>
       </div>
 
@@ -498,7 +525,7 @@
             type="button"
             class="btn-normal whitespace-nowrap items-center"
             :disabled="!allowCreate || state.isRequesting"
-            @click.prevent="testConnection"
+            @click.prevent="testConnectionV1"
           >
             <BBSpin v-if="state.isTestingConnection" />
             {{ $t("instance.test-connection") }}
@@ -574,52 +601,45 @@
 
 <script lang="ts" setup>
 import { computed, reactive, PropType, ref, watch, onMounted } from "vue";
-import { cloneDeep, isEqual, isEmpty, omit } from "lodash-es";
+import { cloneDeep, isEqual, omit } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { Status } from "nice-grpc-common";
 import { useRouter } from "vue-router";
 
 import {
   hasWorkspacePermissionV1,
-  instanceHasSSL,
-  instanceHasSSH,
-  instanceSlug,
   isDev,
   isValidSpannerHost,
-  supportedEngineList,
+  extractInstanceResourceName,
+  engineNameV1,
+  instanceV1HasSSL,
+  instanceV1HasSSH,
+  supportedEngineV1List,
+  instanceV1Slug,
+  calcUpdateMask,
 } from "../utils";
 import {
-  InstancePatch,
-  DataSourceType,
-  Instance,
-  ConnectionInfo,
-  DataSource,
   UNKNOWN_ID,
-  DataSourceCreate,
-  DataSourcePatch,
-  EngineType,
-  engineName,
-  InstanceId,
   ResourceId,
-  RowStatus,
-  InstanceCreate,
-  unknown,
   ValidatedMessage,
   DataSourceOptions,
+  emptyDataSource,
+  UNKNOWN_INSTANCE_NAME,
+  UNKNOWN_ENVIRONMENT_NAME,
+  unknownEnvironment,
 } from "../types";
 import {
   hasFeature,
   pushNotification,
   useCurrentUserV1,
-  useDatabaseStore,
-  useDataSourceStore,
-  useInstanceStore,
+  useSettingV1Store,
   useActuatorStore,
-  useSQLStore,
+  useEnvironmentV1Store,
+  useInstanceStore,
+  useDatabaseStore,
 } from "@/store";
 import { getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import FeatureBadge from "./FeatureBadge.vue";
 import {
   SpannerHostInput,
@@ -631,12 +651,22 @@ import {
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import {} from "@/store/modules/v1/setting";
+import {
+  DataSource,
+  DataSourceType,
+  Instance,
+} from "@/types/proto/v1/instance_service";
+import { Engine, State } from "@/types/proto/v1/common";
 
 const props = defineProps({
   instance: {
     type: Object as PropType<Instance>,
     default: undefined,
+  },
+  modal: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -647,19 +677,14 @@ const cancel = () => {
 };
 
 interface EditDataSource extends DataSource {
+  pendingCreate: boolean;
   updatedPassword: string;
-  useEmptyPassword: boolean;
+  useEmptyPassword?: boolean;
+  updateSsl?: boolean;
+  updateSsh?: boolean;
 }
 
-interface BasicInformation {
-  id: InstanceId;
-  resourceId: ResourceId;
-  rowStatus: RowStatus;
-  name: string;
-  engine: EngineType;
-  externalLink?: string;
-  environmentId: string;
-}
+type BasicInfo = Omit<Instance, "dataSources" | "engineVersion">;
 
 interface LocalState {
   currentDataSourceType: DataSourceType;
@@ -672,16 +697,13 @@ interface LocalState {
 
 const { t } = useI18n();
 const router = useRouter();
-const instanceStore = useInstanceStore();
 const instanceV1Store = useInstanceV1Store();
-const dataSourceStore = useDataSourceStore();
-const currentUserV1 = useCurrentUserV1();
-const sqlStore = useSQLStore();
 const settingV1Store = useSettingV1Store();
+const currentUserV1 = useCurrentUserV1();
 const actuatorStore = useActuatorStore();
 
 const state = reactive<LocalState>({
-  currentDataSourceType: "ADMIN",
+  currentDataSourceType: DataSourceType.ADMIN,
   showFeatureModal: false,
   isTestingConnection: false,
   isRequesting: false,
@@ -689,57 +711,100 @@ const state = reactive<LocalState>({
   createInstanceWarning: "",
 });
 
-const basicInformation = ref<BasicInformation>({
-  id: props.instance?.id || UNKNOWN_ID,
-  resourceId: props.instance?.resourceId || "",
-  rowStatus: props.instance?.rowStatus || "NORMAL",
-  name: props.instance?.name || t("instance.new-instance"),
-  engine: props.instance?.engine || "MYSQL",
-  environmentId: String(props.instance?.environment.id || UNKNOWN_ID),
+const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
+  return {
+    uid: instance?.uid ?? String(UNKNOWN_ID),
+    name: instance?.name ?? UNKNOWN_INSTANCE_NAME,
+    state: instance?.state ?? State.ACTIVE,
+    title: instance?.title ?? t("instance.new-instance"),
+    engine: instance?.engine ?? Engine.MYSQL,
+    externalLink: instance?.externalLink ?? "",
+    environment: instance?.environment ?? UNKNOWN_ENVIRONMENT_NAME,
+  };
+};
+
+const basicInfo = ref<BasicInfo>(extractBasicInfo(props.instance));
+
+const environment = computed(() => {
+  return (
+    useEnvironmentV1Store().getEnvironmentByName(basicInfo.value.environment) ??
+    unknownEnvironment()
+  );
 });
 
+const resourceId = computed({
+  get() {
+    const id = extractInstanceResourceName(basicInfo.value.name);
+    if (id === String(UNKNOWN_ID)) return "";
+    return id;
+  },
+  set(id) {
+    basicInfo.value.name = `instances/${id}`;
+  },
+});
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
-const getDataSourceWithType = (type: DataSourceType) =>
-  props.instance?.dataSourceList.find((ds) => ds.type === type);
+const getDataSourceByType = (
+  instance: Instance | undefined,
+  type: DataSourceType
+) => {
+  return instance?.dataSources.find((ds) => ds.type === type);
+};
 
+const extractAdminDataSource = (
+  instance: Instance | undefined
+): EditDataSource => {
+  const ds = getDataSourceByType(instance, DataSourceType.ADMIN);
+  return {
+    ...cloneDeep(ds ?? emptyDataSource()),
+    pendingCreate: ds === undefined,
+    updatedPassword: "",
+    useEmptyPassword: false,
+  };
+};
 // We only support one admin data source and one read-only data source.
-const adminDataSource = ref<EditDataSource>({
-  ...cloneDeep(getDataSourceWithType("ADMIN") || unknown("DATA_SOURCE")),
-  updatedPassword: "",
-  useEmptyPassword: false,
-});
-
-const readonlyDataSource = ref<EditDataSource | undefined>(
-  getDataSourceWithType("RO")
-    ? ({
-        ...cloneDeep(getDataSourceWithType("RO")),
-        updatedPassword: "",
-        useEmptyPassword: false,
-      } as EditDataSource)
-    : undefined
+const adminDataSource = ref<EditDataSource>(
+  extractAdminDataSource(props.instance)
 );
 
-const getDefaultPort = (engine: EngineType) => {
-  if (engine == "CLICKHOUSE") {
+const extractReadOnlyDataSource = (
+  instance: Instance | undefined
+): EditDataSource | undefined => {
+  const ds = getDataSourceByType(instance, DataSourceType.READ_ONLY);
+  if (ds) {
+    return {
+      ...cloneDeep(ds),
+      pendingCreate: ds === undefined,
+      updatedPassword: "",
+      useEmptyPassword: false,
+    };
+  }
+  return undefined;
+};
+const readonlyDataSource = ref<EditDataSource | undefined>(
+  extractReadOnlyDataSource(props.instance)
+);
+
+const getDefaultPort = (engine: Engine) => {
+  if (engine === Engine.CLICKHOUSE) {
     return "9000";
-  } else if (engine == "POSTGRES") {
+  } else if (engine === Engine.POSTGRES) {
     return "5432";
-  } else if (engine == "SNOWFLAKE") {
+  } else if (engine === Engine.SNOWFLAKE) {
     return "443";
-  } else if (engine == "TIDB") {
+  } else if (engine === Engine.TIDB) {
     return "4000";
-  } else if (engine == "MONGODB") {
+  } else if (engine === Engine.MONGODB) {
     return "27017";
-  } else if (engine === "REDIS") {
+  } else if (engine === Engine.REDIS) {
     return "6379";
-  } else if (engine === "ORACLE") {
+  } else if (engine === Engine.ORACLE) {
     return "1521";
-  } else if (engine === "MSSQL") {
+  } else if (engine === Engine.MSSQL) {
     return "1433";
-  } else if (engine === "REDSHIFT") {
+  } else if (engine === Engine.REDSHIFT) {
     return "5439";
-  } else if (engine === "OCEANBASE") {
+  } else if (engine === Engine.OCEANBASE) {
     return "2883";
   }
   return "3306";
@@ -750,19 +815,17 @@ const isCreating = computed(() => props.instance === undefined);
 onMounted(async () => {
   if (isCreating.value) {
     adminDataSource.value.host = isDev() ? "127.0.0.1" : "host.docker.internal";
-    adminDataSource.value.options.srv = false;
-    adminDataSource.value.options.authenticationDatabase = "";
+    adminDataSource.value.srv = false;
+    adminDataSource.value.authenticationDatabase = "";
   }
   await settingV1Store.fetchSettingList();
 });
 
 watch(
-  () => basicInformation.value.engine,
+  () => basicInfo.value.engine,
   () => {
     if (isCreating.value) {
-      adminDataSource.value.port = getDefaultPort(
-        basicInformation.value.engine
-      );
+      adminDataSource.value.port = getDefaultPort(basicInfo.value.engine);
     }
   },
   {
@@ -771,7 +834,7 @@ watch(
 );
 
 const engineList = computed(() => {
-  return supportedEngineList();
+  return supportedEngineV1List();
 });
 
 const outboundIpList = computed(() => {
@@ -781,41 +844,43 @@ const outboundIpList = computed(() => {
   return settingV1Store.workspaceProfileSetting.outboundIpList.join(",");
 });
 
-const EngineIconPath = {
-  MYSQL: new URL("../assets/db-mysql.png", import.meta.url).href,
-  POSTGRES: new URL("../assets/db-postgres.png", import.meta.url).href,
-  TIDB: new URL("../assets/db-tidb.png", import.meta.url).href,
-  SNOWFLAKE: new URL("../assets/db-snowflake.png", import.meta.url).href,
-  CLICKHOUSE: new URL("../assets/db-clickhouse.png", import.meta.url).href,
-  MONGODB: new URL("../assets/db-mongodb.png", import.meta.url).href,
-  SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
-  REDIS: new URL("../assets/db-redis.png", import.meta.url).href,
-  ORACLE: new URL("../assets/db-oracle.svg", import.meta.url).href,
-  MSSQL: new URL("../assets/db-mssql.svg", import.meta.url).href,
-  REDSHIFT: new URL("../assets/db-redshift.svg", import.meta.url).href,
-  MARIADB: new URL("../assets/db-mariadb.png", import.meta.url).href,
-  OCEANBASE: new URL("../assets/db-oceanbase.png", import.meta.url).href,
+const EngineIconPath: Record<number, string> = {
+  [Engine.MYSQL]: new URL("@/assets/db-mysql.png", import.meta.url).href,
+  [Engine.POSTGRES]: new URL("@/assets/db-postgres.png", import.meta.url).href,
+  [Engine.TIDB]: new URL("@/assets/db-tidb.png", import.meta.url).href,
+  [Engine.SNOWFLAKE]: new URL("@/assets/db-snowflake.png", import.meta.url)
+    .href,
+  [Engine.CLICKHOUSE]: new URL("@/assets/db-clickhouse.png", import.meta.url)
+    .href,
+  [Engine.MONGODB]: new URL("@/assets/db-mongodb.png", import.meta.url).href,
+  [Engine.SPANNER]: new URL("@/assets/db-spanner.png", import.meta.url).href,
+  [Engine.REDIS]: new URL("@/assets/db-redis.png", import.meta.url).href,
+  [Engine.ORACLE]: new URL("@/assets/db-oracle.svg", import.meta.url).href,
+  [Engine.MSSQL]: new URL("@/assets/db-mssql.svg", import.meta.url).href,
+  [Engine.REDSHIFT]: new URL("@/assets/db-redshift.svg", import.meta.url).href,
+  [Engine.MARIADB]: new URL("@/assets/db-mariadb.png", import.meta.url).href,
+  [Engine.OCEANBASE]: new URL("@/assets/db-oceanbase.png", import.meta.url)
+    .href,
 };
 
 const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
 
 const currentMongoDBConnectionSchema = computed(() => {
-  return adminDataSource.value.options.srv === false
+  return adminDataSource.value.srv === false
     ? mongodbConnectionStringSchemaList[0]
     : mongodbConnectionStringSchemaList[1];
 });
-
 const allowCreate = computed(() => {
-  if (basicInformation.value.engine === "SPANNER") {
+  if (basicInfo.value.engine === Engine.SPANNER) {
     return (
-      basicInformation.value.name.trim() &&
+      basicInfo.value.title.trim() &&
       isValidSpannerHost(adminDataSource.value.host) &&
       adminDataSource.value.updatedPassword
     );
   }
 
   return (
-    basicInformation.value.name.trim() &&
+    basicInfo.value.title.trim() &&
     resourceIdField.value?.resourceId &&
     resourceIdField.value?.isValidated &&
     adminDataSource.value.host
@@ -824,7 +889,7 @@ const allowCreate = computed(() => {
 
 const allowEdit = computed(() => {
   return (
-    basicInformation.value.rowStatus == "NORMAL" &&
+    basicInfo.value.state === State.ACTIVE &&
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
       currentUserV1.value.userRole
@@ -835,70 +900,33 @@ const allowEdit = computed(() => {
 const allowEditPort = computed(() => {
   // MongoDB doesn't support specify port if using srv record.
   return !(
-    basicInformation.value.engine === "MONGODB" &&
-    currentDataSource.value.options.srv
+    basicInfo.value.engine === Engine.MONGODB && currentDataSource.value.srv
   );
 });
 
 const allowUsingEmptyPassword = computed(() => {
-  return basicInformation.value.engine !== "SPANNER";
+  return basicInfo.value.engine !== Engine.SPANNER;
 });
 
 const valueChanged = computed(() => {
-  return !isEqual(
-    {
-      basicInformation: basicInformation.value,
-      adminDataSource: adminDataSource.value,
-      readonlyDataSource: readonlyDataSource.value,
-    },
-    getInstanceStateData()
-  );
-});
-
-const connectionInfoChanged = computed(() => {
-  if (!valueChanged.value) {
-    return false;
-  }
-
-  return (
-    !isEqual(adminDataSource.value, getInstanceStateData().adminDataSource) ||
-    !isEqual(
-      readonlyDataSource.value,
-      getInstanceStateData().readonlyDataSource
-    )
-  );
+  const original = getOriginalEditState();
+  const editing = {
+    basicInfo: basicInfo.value,
+    adminDataSource: adminDataSource.value,
+    readonlyDataSource: readonlyDataSource.value,
+  };
+  return !isEqual(editing, original);
 });
 
 const defaultPort = computed(() => {
-  if (basicInformation.value.engine == "CLICKHOUSE") {
-    return "9000";
-  } else if (basicInformation.value.engine == "POSTGRES") {
-    return "5432";
-  } else if (basicInformation.value.engine == "SNOWFLAKE") {
-    return "443";
-  } else if (basicInformation.value.engine == "TIDB") {
-    return "4000";
-  } else if (basicInformation.value.engine == "MONGODB") {
-    // MongoDB doesn't support specify port if using srv record.
-    if (currentDataSource.value.options.srv) {
-      return "";
-    }
-    return "27017";
-  } else if (basicInformation.value.engine == "REDSHIFT") {
-    return "5439";
-  } else if (basicInformation.value.engine == "MARIADB") {
-    return "3306";
-  } else if (basicInformation.value.engine == "OCEANBASE") {
-    return "2883";
-  }
-  return "3306";
+  return getDefaultPort(basicInfo.value.engine);
 });
 
-const currentDataSource = computed(() => {
-  if (state.currentDataSourceType === "ADMIN") {
+const currentDataSource = computed((): EditDataSource => {
+  if (state.currentDataSourceType === DataSourceType.ADMIN) {
     return adminDataSource.value;
-  } else if (state.currentDataSourceType === "RO") {
-    return readonlyDataSource.value as EditDataSource;
+  } else if (state.currentDataSourceType === DataSourceType.READ_ONLY) {
+    return readonlyDataSource.value!;
   } else {
     throw new Error("Unknown data source type");
   }
@@ -912,49 +940,47 @@ const snowflakeExtraLinkPlaceHolder =
   "https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false";
 
 const instanceLink = computed(() => {
-  if (basicInformation.value.engine == "SNOWFLAKE") {
+  if (basicInfo.value.engine === Engine.SNOWFLAKE) {
     if (adminDataSource.value.host) {
       return `https://${
         adminDataSource.value.host.split("@")[0]
       }.snowflakecomputing.com/console`;
     }
   }
-  return basicInformation.value.externalLink || "";
+  return basicInfo.value.externalLink ?? "";
 });
 
 const hasReadonlyReplicaHost = computed((): boolean => {
-  return basicInformation.value.engine !== "SPANNER";
+  return basicInfo.value.engine !== Engine.SPANNER;
 });
 
 const hasReadonlyReplicaPort = computed((): boolean => {
-  return basicInformation.value.engine !== "SPANNER";
+  return basicInfo.value.engine !== Engine.SPANNER;
 });
 
 const showDatabase = computed((): boolean => {
   return (
-    (basicInformation.value.engine === "POSTGRES" ||
-      basicInformation.value.engine === "REDSHIFT") &&
-    state.currentDataSourceType === "ADMIN"
+    (basicInfo.value.engine === Engine.POSTGRES ||
+      basicInfo.value.engine === Engine.REDSHIFT) &&
+    state.currentDataSourceType === DataSourceType.ADMIN
   );
 });
-
+const showAuthenticationDatabase = computed((): boolean => {
+  return basicInfo.value.engine === Engine.MONGODB;
+});
 const showSSL = computed((): boolean => {
-  return instanceHasSSL(basicInformation.value.engine);
+  return instanceV1HasSSL(basicInfo.value.engine);
 });
 
 const showSSH = computed((): boolean => {
-  return instanceHasSSH(basicInformation.value.engine);
-});
-
-const showAuthenticationDatabase = computed((): boolean => {
-  return basicInformation.value.engine === "MONGODB";
+  return instanceV1HasSSH(basicInfo.value.engine);
 });
 
 const allowUpdate = computed((): boolean => {
   if (!valueChanged.value) {
     return false;
   }
-  if (basicInformation.value.engine === "SPANNER") {
+  if (basicInfo.value.engine === Engine.SPANNER) {
     if (!isValidSpannerHost(adminDataSource.value.host)) {
       return false;
     }
@@ -968,16 +994,25 @@ const allowUpdate = computed((): boolean => {
   return true;
 });
 
-const isEngineBeta = (engine: EngineType): boolean => {
-  return ["ORACLE", "MSSQL", "REDSHIFT", "MARIADB", "OCEANBASE"].includes(
-    engine
-  );
+const isEngineBeta = (engine: Engine): boolean => {
+  return [
+    Engine.ORACLE,
+    Engine.MSSQL,
+    Engine.REDSHIFT,
+    Engine.MARIADB,
+    Engine.OCEANBASE,
+  ].includes(engine);
+};
+
+const handleSelectEnvironmentUID = (uid: number | string) => {
+  const environment = useEnvironmentV1Store().getEnvironmentByUID(String(uid));
+  basicInfo.value.environment = environment.name;
 };
 
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
-const changeInstanceEngine = (engine: EngineType) => {
-  if (engine === "SNOWFLAKE" || engine === "SPANNER") {
+const changeInstanceEngine = (engine: Engine) => {
+  if (engine === Engine.SNOWFLAKE || engine === Engine.SPANNER) {
     if (
       adminDataSource.value.host == "127.0.0.1" ||
       adminDataSource.value.host == "host.docker.internal"
@@ -991,107 +1026,63 @@ const changeInstanceEngine = (engine: EngineType) => {
         : "host.docker.internal";
     }
   }
-  basicInformation.value.engine = engine;
+  basicInfo.value.engine = engine;
 };
 
-const handleInstanceNameInput = (event: Event) => {
-  basicInformation.value.name = (event.target as HTMLInputElement).value;
-};
-
-const handleInstanceHostInput = (event: Event) => {
-  adminDataSource.value.host = (event.target as HTMLInputElement).value;
-};
-
-const handleUpdateSpannerHost = (host: string) => {
-  adminDataSource.value.host = host;
-};
-
-const handleInstancePortWheelScroll = (event: MouseEvent) => {
-  (event.target as HTMLInputElement).blur();
-};
-
-const handleInstancePortInput = (event: Event) => {
-  currentDataSource.value.port = (event.target as HTMLInputElement).value;
-};
-
-const handleInstanceExternalLinkInput = (event: Event) => {
-  basicInformation.value.externalLink = (
-    event.target as HTMLInputElement
-  ).value.trim();
-};
-
-const handleDataSourceTypeChange = (value: string) => {
-  state.currentDataSourceType = value as DataSourceType;
-};
-
-const handleCurrentDataSourceNameInput = (event: Event) => {
-  const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.username = str;
-};
-
-const handleToggleUseEmptyPassword = (on: boolean) => {
-  currentDataSource.value.useEmptyPassword = on;
-};
-
-const handleCurrentDataSourcePasswordInput = (event: Event) => {
-  const password = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.updatedPassword = password;
-};
-
-const handleUpdateSpannerCredential = (credential: string) => {
-  currentDataSource.value.updatedPassword = credential;
-};
-
-const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
-  const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.options.authenticationDatabase = str;
+const trimInputValue = (target: Event["target"]) => {
+  return ((target as HTMLInputElement)?.value ?? "").trim();
 };
 
 const handleMongodbConnectionStringSchemaChange = (event: Event) => {
   switch ((event.target as HTMLInputElement).value) {
     case mongodbConnectionStringSchemaList[0]:
-      currentDataSource.value.options.srv = false;
+      currentDataSource.value.srv = false;
       break;
     case mongodbConnectionStringSchemaList[1]:
       // MongoDB doesn't support specify port if using srv record.
       currentDataSource.value.port = "";
-      currentDataSource.value.options.srv = true;
+      currentDataSource.value.srv = true;
       break;
     default:
-      currentDataSource.value.options.srv = false;
+      currentDataSource.value.srv = false;
   }
 };
 
 const handleCurrentDataSourceHostInput = (event: Event) => {
-  if (currentDataSource.value.type === "RO") {
+  if (currentDataSource.value.type === DataSourceType.READ_ONLY) {
     if (!hasFeature("bb.feature.read-replica-connection")) {
       if (currentDataSource.value.host || currentDataSource.value.port) {
-        currentDataSource.value.host = "";
-        currentDataSource.value.port = "";
+        currentDataSource.value.host = adminDataSource.value.host;
+        currentDataSource.value.port = adminDataSource.value.port;
         state.showFeatureModal = true;
         return;
       }
     }
   }
 
-  const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.host = str;
+  currentDataSource.value.host = trimInputValue(event.target);
 };
 
 const handleCurrentDataSourcePortInput = (event: Event) => {
-  if (currentDataSource.value.type === "RO") {
+  if (currentDataSource.value.type === DataSourceType.READ_ONLY) {
     if (!hasFeature("bb.feature.read-replica-connection")) {
       if (currentDataSource.value.host || currentDataSource.value.port) {
-        currentDataSource.value.host = "";
-        currentDataSource.value.port = "";
+        currentDataSource.value.host = adminDataSource.value.host;
+        currentDataSource.value.port = adminDataSource.value.port;
         state.showFeatureModal = true;
         return;
       }
     }
   }
 
-  const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.port = str;
+  currentDataSource.value.port = trimInputValue(event.target);
+};
+
+const toggleUseEmptyPassword = (on: boolean) => {
+  currentDataSource.value.useEmptyPassword = on;
+  if (on) {
+    currentDataSource.value.updatedPassword = "";
+  }
 };
 
 const handleEditSsl = () => {
@@ -1102,8 +1093,18 @@ const handleEditSsl = () => {
   curr.updateSsl = true;
 };
 
+const handleEditSsh = () => {
+  const curr = currentDataSource.value;
+  curr.sshHost = "";
+  curr.sshPort = "";
+  curr.sshUser = "";
+  curr.sshPassword = "";
+  curr.sshPrivateKey = "";
+  curr.updateSsh = true;
+};
+
 const handleCurrentDataSourceSslChange = (
-  value: Pick<DataSource, "sslCa" | "sslCert" | "sslKey">
+  value: Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey">>
 ) => {
   Object.assign(currentDataSource.value, value);
   currentDataSource.value.updateSsl = true;
@@ -1117,7 +1118,7 @@ const handleCurrentDataSourceSshChange = (
     >
   >
 ) => {
-  Object.assign(currentDataSource.value.options, value);
+  Object.assign(currentDataSource.value, value);
   currentDataSource.value.updateSsh = true;
 };
 
@@ -1126,30 +1127,24 @@ const handleCreateRODataSource = () => {
     return;
   }
 
-  const tempDataSource = {
-    id: UNKNOWN_ID,
-    instanceId: props.instance!.id,
-    databaseId: adminDataSource.value.databaseId,
-    name: `Read-only data source`,
-    type: "RO",
-    username: "",
-    password: "",
-    options: {
-      authenticationDatabase: "",
-      srv: false,
-      sid: "",
-      serviceName: "",
-    },
-  } as DataSource;
-  if (basicInformation.value.engine === "SPANNER") {
+  const tempDataSource: DataSource = {
+    ...emptyDataSource(),
+    title: "Read-only data source",
+    type: DataSourceType.READ_ONLY,
+    host: adminDataSource.value.host,
+    port: adminDataSource.value.port,
+    database: adminDataSource.value.database,
+  };
+  if (basicInfo.value.engine === Engine.SPANNER) {
     tempDataSource.host = adminDataSource.value.host;
   }
   readonlyDataSource.value = {
     ...tempDataSource,
+    pendingCreate: true,
     updatedPassword: "",
     useEmptyPassword: false,
   };
-  state.currentDataSourceType = "RO";
+  state.currentDataSourceType = DataSourceType.READ_ONLY;
 };
 
 const handleDeleteRODataSource = async () => {
@@ -1157,16 +1152,19 @@ const handleDeleteRODataSource = async () => {
     return;
   }
 
-  if (readonlyDataSource.value.id === UNKNOWN_ID) {
+  if (readonlyDataSource.value.pendingCreate) {
+    state.currentDataSourceType = DataSourceType.ADMIN;
     readonlyDataSource.value = undefined;
   } else {
-    await dataSourceStore.deleteDataSourceById({
-      databaseId: readonlyDataSource.value.databaseId,
-      dataSourceId: readonlyDataSource.value.id,
-    });
-    await updateInstanceState();
+    const { instance } = props;
+    if (!instance) return;
+    const ds = getDataSourceByType(instance, DataSourceType.READ_ONLY);
+    if (!ds) return;
+
+    const updated = await instanceV1Store.deleteDataSource(instance, ds);
+    state.currentDataSourceType = DataSourceType.ADMIN;
+    await updateEditState(updated);
   }
-  state.currentDataSourceType = "ADMIN";
 };
 
 const validateResourceId = async (
@@ -1198,45 +1196,18 @@ const validateResourceId = async (
   return [];
 };
 
-const updateInstanceState = async () => {
-  if (!props.instance) {
-    return;
-  }
+const updateEditState = async (instance: Instance) => {
+  basicInfo.value = extractBasicInfo(instance);
+  adminDataSource.value = extractAdminDataSource(instance);
+  readonlyDataSource.value = extractReadOnlyDataSource(instance);
 
-  const instance = await instanceStore.fetchInstanceById(props.instance.id);
-  basicInformation.value = {
-    id: instance.id,
-    resourceId: instance.resourceId,
-    rowStatus: instance.rowStatus,
-    name: instance.name,
-    engine: instance.engine,
-    environmentId: String(instance.environment.id),
-  };
-  adminDataSource.value = {
-    ...cloneDeep(instance.dataSourceList.find((ds) => ds.type === "ADMIN")!),
-    updatedPassword: "",
-    useEmptyPassword: false,
-  } as EditDataSource;
-  if (instance.dataSourceList.find((ds) => ds.type === "RO")) {
-    readonlyDataSource.value = {
-      ...(cloneDeep(
-        instance.dataSourceList.find((ds) => ds.type === "RO")!
-      ) as EditDataSource),
-      updatedPassword: "",
-      useEmptyPassword: false,
-    };
-  }
-  useDatabaseStore().fetchDatabaseListByInstanceId(instance.id);
-  instanceStore.fetchInstanceUserListById(instance.id);
-
-  const reloadDatabaseAndUser = connectionInfoChanged.value;
   // Backend will sync the schema when connection info changed, so we need to fetch the synced schema here.
-  if (reloadDatabaseAndUser) {
-    await useDatabaseStore().fetchDatabaseListByInstanceId(instance.id);
-    await instanceStore.fetchInstanceUserListById(instance.id);
-  }
+  instanceV1Store.fetchInstanceRoleListByName(instance.name);
 
-  return instance;
+  // Legacy API compatibility
+  useInstanceStore().fetchInstanceById(Number(instance.uid));
+  useDatabaseStore().fetchDatabaseListByInstanceId(Number(instance.uid));
+  useInstanceStore().fetchInstanceUserListById(Number(instance.uid));
 };
 
 const handleWarningModalOkClick = async () => {
@@ -1245,22 +1216,73 @@ const handleWarningModalOkClick = async () => {
 };
 
 const tryCreate = async () => {
-  const connectionContext = getTestConnectionContext();
-  state.isTestingConnection = true;
-  try {
-    const resultSet = await sqlStore.ping(connectionContext);
-    state.isTestingConnection = false;
-    if (isEmpty(resultSet.error)) {
-      await doCreate();
-    } else {
-      state.createInstanceWarning = t("instance.unable-to-connect", [
-        resultSet.error,
-      ]);
-      state.showCreateInstanceWarningModal = true;
-    }
-  } catch (error) {
-    state.isTestingConnection = false;
+  doCreate();
+
+  // const connectionContext = getTestConnectionContext();
+  // state.isTestingConnection = true;
+  // try {
+  //   const resultSet = await sqlStore.ping(connectionContext);
+  //   state.isTestingConnection = false;
+  //   if (isEmpty(resultSet.error)) {
+  //     await doCreate();
+  //   } else {
+  //     state.createInstanceWarning = t("instance.unable-to-connect", [
+  //       resultSet.error,
+  //     ]);
+  //     state.showCreateInstanceWarningModal = true;
+  //   }
+  // } catch (error) {
+  //   state.isTestingConnection = false;
+  // }
+};
+
+const extractDataSourceFromEdit = (
+  instance: Instance,
+  edit: EditDataSource
+): DataSource => {
+  const ds = cloneDeep(
+    omit(
+      edit,
+      "pendingCreate",
+      "updatedPassword",
+      "useEmptyPassword",
+      "updateSsl",
+      "updateSsh"
+    )
+  );
+  if (edit.updatedPassword) {
+    ds.password = edit.updatedPassword;
   }
+  if (edit.useEmptyPassword) {
+    ds.password = "";
+  }
+
+  // Clean up unused fields for certain engine types.
+  if (!showDatabase.value) {
+    ds.database = "";
+  }
+  if (instance.engine !== Engine.ORACLE) {
+    ds.sid = "";
+    ds.serviceName = "";
+  }
+  if (instance.engine !== Engine.MONGODB) {
+    ds.srv = false;
+    ds.authenticationDatabase = "";
+  }
+  if (!showSSH.value) {
+    ds.sshHost = "";
+    ds.sshPort = "";
+    ds.sshUser = "";
+    ds.sshPassword = "";
+    ds.sshPrivateKey = "";
+  }
+  if (!showSSL.value) {
+    ds.sslCa = "";
+    ds.sslCert = "";
+    ds.sslKey = "";
+  }
+
+  return ds;
 };
 
 // We will also create the database * denoting all databases
@@ -1271,365 +1293,299 @@ const doCreate = async () => {
   if (!isCreating.value) {
     return;
   }
-
-  const instanceCreate: InstanceCreate = {
-    resourceId: resourceIdField.value?.resourceId as string,
-    name: basicInformation.value.name.trim(),
-    engine: basicInformation.value.engine,
-    externalLink: basicInformation.value.externalLink,
-    environmentId: parseInt(basicInformation.value.environmentId, 10),
-    host: adminDataSource.value.host,
-    port: adminDataSource.value.port,
-    database: adminDataSource.value.database,
-    username: adminDataSource.value.username,
-    password: adminDataSource.value.updatedPassword,
-    sslCa: adminDataSource.value.sslCa,
-    sslCert: adminDataSource.value.sslCert,
-    sslKey: adminDataSource.value.sslKey,
-    srv: adminDataSource.value.options.srv,
-    authenticationDatabase:
-      adminDataSource.value.options.authenticationDatabase,
-    sid: "",
-    serviceName: "",
-    sshHost: "",
-    sshPort: "",
-    sshUser: "",
-    sshPassword: "",
-    sshPrivateKey: "",
+  const instanceCreate: Instance = {
+    ...basicInfo.value,
+    engineVersion: "",
+    dataSources: [],
   };
-
-  if (
-    instanceCreate.engine !== "POSTGRES" &&
-    instanceCreate.engine !== "MONGODB" &&
-    instanceCreate.engine !== "REDSHIFT"
-  ) {
-    // Clear the `database` field if not needed.
-    instanceCreate.database = "";
-  }
-
-  if (instanceCreate.engine === "ORACLE") {
-    instanceCreate.sid = adminDataSource.value.options.sid;
-    instanceCreate.serviceName = adminDataSource.value.options.serviceName;
-  }
-
-  if (showSSH.value) {
-    // Default to "NONE"
-    instanceCreate.sshHost = adminDataSource.value.options.sshHost ?? "";
-    instanceCreate.sshPort = adminDataSource.value.options.sshPort ?? "";
-    instanceCreate.sshUser = adminDataSource.value.options.sshUser ?? "";
-    instanceCreate.sshPassword =
-      adminDataSource.value.options.sshPassword ?? "";
-    instanceCreate.sshPrivateKey =
-      adminDataSource.value.options.sshPrivateKey ?? "";
-  }
+  const adminDataSourceCreate = extractDataSourceFromEdit(
+    instanceCreate,
+    adminDataSource.value
+  );
+  instanceCreate.dataSources = [adminDataSourceCreate];
 
   state.isRequesting = true;
-  const createdInstance = await instanceStore.createInstance(instanceCreate);
-  state.isRequesting = false;
-
-  router.push(`/instance/${instanceSlug(createdInstance)}`);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("instance.successfully-created-instance-createdinstance-name", [
-      createdInstance.name,
-    ]),
-  });
-  emit("dismiss");
+  try {
+    const createdInstance = await instanceV1Store.createInstance(
+      instanceCreate
+    );
+    router.push(`/instance/${instanceV1Slug(createdInstance)}`);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("instance.successfully-created-instance-createdinstance-name", [
+        createdInstance.title,
+      ]),
+    });
+  } finally {
+    state.isRequesting = false;
+    emit("dismiss");
+  }
 };
 
 const doUpdate = async () => {
-  if (!props.instance) {
+  const { instance } = props;
+  if (!instance) {
     return;
   }
-  const patchedInstance: InstancePatch = {};
-  let instanceInfoChanged = false;
-  let dataSourceListChanged = false;
 
-  if (basicInformation.value.name.trim() != props.instance.name) {
-    patchedInstance.name = basicInformation.value.name.trim();
-    instanceInfoChanged = true;
-  }
-  if (basicInformation.value.externalLink != props.instance.externalLink) {
-    patchedInstance.externalLink = basicInformation.value.externalLink;
-    instanceInfoChanged = true;
-  }
-
-  const instance = await instanceStore.getOrFetchInstanceById(
-    props.instance.id
-  );
-  const originAdminDataSource = instance.dataSourceList.find(
-    (ds) => ds.type === "ADMIN"
-  ) as DataSource;
-  const originReadonlyDataSource = instance.dataSourceList.find(
-    (ds) => ds.type === "RO"
-  );
-  if (
-    !isEqual(
-      originAdminDataSource,
-      convertEditDataSource(adminDataSource.value)
-    ) ||
-    !isEqual(
-      originReadonlyDataSource,
-      readonlyDataSource.value
-        ? convertEditDataSource(readonlyDataSource.value)
-        : undefined
-    )
-  ) {
-    dataSourceListChanged = true;
-  }
-
-  if (instanceInfoChanged || dataSourceListChanged) {
-    state.isRequesting = true;
-    const requests: Promise<any>[] = [];
-
-    if (dataSourceListChanged) {
-      if (
-        !isEqual(
-          originAdminDataSource,
-          convertEditDataSource(adminDataSource.value)
-        )
-      ) {
-        const dataSource = convertEditDataSource(adminDataSource.value);
-        const dataSourcePatch: DataSourcePatch = {
-          ...dataSource,
-        };
-        requests.push(
-          dataSourceStore.patchDataSource({
-            databaseId: dataSource.databaseId,
-            dataSourceId: dataSource.id,
-            dataSourcePatch: dataSourcePatch,
-          })
-        );
-      }
-
-      if (
-        !isEqual(
-          originReadonlyDataSource,
-          readonlyDataSource.value
-            ? convertEditDataSource(readonlyDataSource.value)
-            : undefined
-        )
-      ) {
-        if (readonlyDataSource.value) {
-          const dataSource = convertEditDataSource(readonlyDataSource.value);
-          if (dataSource.id === UNKNOWN_ID) {
-            const dataSourceCreate: DataSourceCreate = {
-              ...readonlyDataSource.value,
-              databaseId: adminDataSource.value.databaseId,
-              instanceId: props.instance.id,
-              name: dataSource.name,
-              type: "RO",
-              username: dataSource.username,
-              password: dataSource.password,
-              host: dataSource.host,
-              port: dataSource.port,
-              database: dataSource.database,
-            };
-            if (typeof dataSource.sslCa !== "undefined") {
-              dataSourceCreate.sslCa = dataSource.sslCa;
-            }
-            if (typeof dataSource.sslKey !== "undefined") {
-              dataSourceCreate.sslKey = dataSource.sslKey;
-            }
-            if (typeof dataSource.sslCert !== "undefined") {
-              dataSourceCreate.sslCert = dataSource.sslCert;
-            }
-            requests.push(dataSourceStore.createDataSource(dataSourceCreate));
-          } else {
-            const dataSourcePatch: DataSourcePatch = {
-              ...dataSource,
-            };
-            requests.push(
-              dataSourceStore.patchDataSource({
-                databaseId: dataSource.databaseId,
-                dataSourceId: dataSource.id,
-                dataSourcePatch: dataSourcePatch,
-              })
-            );
-          }
-        }
-      }
+  // When clicking **Update** we may have more than one thing to do (if needed)
+  // 1. Patch the instance itself.
+  // 2. Update the admin datasource.
+  // 3. Create OR update a read-only data source.
+  const maybeUpdateInstance = async () => {
+    const instancePatch = {
+      ...instance,
+      ...basicInfo.value,
+    };
+    const updateMask: string[] = [];
+    if (instancePatch.title !== instance.title) {
+      updateMask.push("title");
     }
-
-    if (instanceInfoChanged) {
-      requests.push(
-        instanceStore.patchInstance({
-          instanceId: basicInformation.value.id,
-          instancePatch: patchedInstance,
-        })
+    if (instancePatch.externalLink !== instance.externalLink) {
+      updateMask.push("external_link");
+    }
+    return await instanceV1Store.updateInstance(instancePatch, updateMask);
+  };
+  const updateDataSource = async (
+    editing: DataSource,
+    original: DataSource | undefined,
+    editState: EditDataSource
+  ) => {
+    if (!original) return;
+    const updateMask = new Set(
+      calcUpdateMask(editing, original, true /* toSnakeCase */)
+    );
+    const { useEmptyPassword, updateSsh, updateSsl } = editState;
+    if (useEmptyPassword) {
+      // We need to implicitly set "password" need to be updated
+      // if the "use empty password" option if checked
+      editing.password = "";
+      updateMask.add("password");
+    }
+    if (updateSsl) {
+      updateMask.add("ssl_ca");
+      updateMask.add("ssl_key");
+      updateMask.add("ssl_cert");
+    }
+    if (updateSsh) {
+      updateMask.add("ssh_host");
+      updateMask.add("ssh_port");
+      updateMask.add("ssh_user");
+      updateMask.add("ssh_password");
+      updateMask.add("ssh_private_key");
+    }
+    if (updateMask.size === 0) {
+      return;
+    }
+    return await instanceV1Store.updateDataSource(
+      instance,
+      editing,
+      Array.from(updateMask)
+    );
+  };
+  const maybeUpdateAdminDataSource = async () => {
+    const original = instance.dataSources.find(
+      (ds) => ds.type === DataSourceType.ADMIN
+    );
+    const editing = extractDataSourceFromEdit(instance, adminDataSource.value);
+    return await updateDataSource(editing, original, adminDataSource.value);
+  };
+  const maybeUpsertReadonlyDataSource = async () => {
+    if (!readonlyDataSource.value) return;
+    const editing = extractDataSourceFromEdit(
+      instance,
+      readonlyDataSource.value
+    );
+    if (readonlyDataSource.value.pendingCreate) {
+      return await instanceV1Store.createDataSource(instance, editing);
+    } else {
+      const original = instance.dataSources.find(
+        (ds) => ds.type === DataSourceType.READ_ONLY
+      );
+      return await updateDataSource(
+        editing,
+        original,
+        readonlyDataSource.value
       );
     }
+  };
 
-    await Promise.all(requests);
-    await updateInstanceState();
+  state.isRequesting = true;
+  try {
+    await maybeUpdateInstance();
+    await maybeUpdateAdminDataSource();
+    await maybeUpsertReadonlyDataSource();
+
+    const updatedInstance = instanceV1Store.getInstanceByName(instance.name);
+    await updateEditState(updatedInstance);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("instance.successfully-updated-instance-instance-name", [
-        basicInformation.value.name.trim(),
+        updatedInstance.title,
       ]),
     });
+  } finally {
     state.isRequesting = false;
   }
 };
 
-const getTestConnectionContext = () => {
-  const dataSource = currentDataSource.value;
-  let connectionHost = adminDataSource.value.host;
-  let connectionPort = adminDataSource.value.port;
-  if (dataSource.type === "RO") {
-    if (dataSource.host) {
-      connectionHost = dataSource.host;
-    }
-    if (dataSource.port) {
-      connectionPort = dataSource.port;
-    }
-  }
-
-  const connectionInfo: ConnectionInfo = {
-    ...basicInformation.value,
-    host: connectionHost,
-    port: connectionPort,
-    username: dataSource.username,
-    password: dataSource.useEmptyPassword ? "" : dataSource.updatedPassword,
-    useEmptyPassword: dataSource.useEmptyPassword,
-    database: dataSource.database,
-    srv: dataSource.options.srv,
-    authenticationDatabase: dataSource.options.authenticationDatabase,
-    sid: "",
-    serviceName: "",
-    sshHost: "",
-    sshPort: "",
-    sshUser: "",
-    sshPassword: "",
-    sshPrivateKey: "",
-  };
-
-  if (!isCreating.value) {
-    connectionInfo.instanceId = basicInformation.value.id;
-  }
-
-  if (basicInformation.value.engine === "ORACLE") {
-    connectionInfo.sid = dataSource.options.sid;
-    connectionInfo.serviceName = dataSource.options.serviceName;
-  }
-
-  if (showSSL.value) {
-    // Default to "NONE"
-    connectionInfo.sslCa = adminDataSource.value.sslCa ?? "";
-    connectionInfo.sslKey = adminDataSource.value.sslKey ?? "";
-    connectionInfo.sslCert = adminDataSource.value.sslCert ?? "";
-
-    if (typeof dataSource.sslCa !== "undefined") {
-      connectionInfo.sslCa = dataSource.sslCa;
-    }
-    if (typeof dataSource.sslKey !== "undefined") {
-      connectionInfo.sslKey = dataSource.sslKey;
-    }
-    if (typeof dataSource.sslCert !== "undefined") {
-      connectionInfo.sslCert = dataSource.sslCert;
-    }
-  }
-
-  if (showSSH.value) {
-    // Default to "NONE"
-    connectionInfo.sshHost = adminDataSource.value.options.sshHost ?? "";
-    connectionInfo.sshPort = adminDataSource.value.options.sshPort ?? "";
-    connectionInfo.sshUser = adminDataSource.value.options.sshUser ?? "";
-    connectionInfo.sshPassword =
-      adminDataSource.value.options.sshPassword ?? "";
-    connectionInfo.sshPrivateKey =
-      adminDataSource.value.options.sshPrivateKey ?? "";
-
-    if (typeof dataSource.options.sshHost !== "undefined") {
-      connectionInfo.sshHost = dataSource.options.sshHost;
-    }
-    if (typeof dataSource.options.sshPort !== "undefined") {
-      connectionInfo.sshPort = dataSource.options.sshPort;
-    }
-    if (typeof dataSource.options.sshUser !== "undefined") {
-      connectionInfo.sshUser = dataSource.options.sshUser;
-    }
-    if (typeof dataSource.options.sshPassword !== "undefined") {
-      connectionInfo.sshPassword = dataSource.options.sshPassword;
-    }
-    if (typeof dataSource.options.sshPrivateKey !== "undefined") {
-      connectionInfo.sshPrivateKey = dataSource.options.sshPrivateKey;
-    }
-  }
-  return connectionInfo;
-};
-
-const testConnection = async () => {
-  const connectionContext = getTestConnectionContext();
-  state.isTestingConnection = true;
-  const resultSet = await sqlStore.ping(connectionContext);
-  if (isEmpty(resultSet.error)) {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("instance.successfully-connected-instance"),
-    });
+const testConnectionV1 = async () => {
+  // In different scenes, we use different methods to test connection.
+  if (isCreating.value) {
+    // When creating new instance, use
+    // CreateInstanceRequest.validateOnly = true
+    const instance: Instance = {
+      ...basicInfo.value,
+      engineVersion: "",
+      dataSources: [],
+    };
+    const adminDataSourceCreate = extractDataSourceFromEdit(
+      instance,
+      adminDataSource.value
+    );
+    instance.dataSources = [adminDataSourceCreate];
+    debugger;
+    // const result = await instanceServiceClient.createInstance({
+    //   instance,
+    //   validateOnly: true,
+    // });
+    // debugger;
   } else {
-    let title = t("instance.failed-to-connect-instance");
-    if (
-      connectionContext.host == "localhost" ||
-      connectionContext.host == "127.0.0.1"
-    ) {
-      title = t("instance.failed-to-connect-instance-localhost");
-    }
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: title,
-      description: resultSet.error,
-      // Manual hide, because user may need time to inspect the error
-      manualHide: true,
-    });
+    // Editing existed instance.
+    // When a data source (admin or read-only) has been edited, use
+    // UpdateDataSourceRequest.validateOnly = true
+    // TODO
+    // When read-only data source is about to be created, use
+    // AddDataSourceRequest.validateOnly = true
+    // TODO
   }
-  state.isTestingConnection = false;
 };
 
-// getInstanceStateData returns the origin instance data including
+// const getTestConnectionContext = () => {
+//   const dataSource = currentDataSource.value;
+//   let connectionHost = adminDataSource.value.host;
+//   let connectionPort = adminDataSource.value.port;
+//   if (dataSource.type === DataSourceType.READ_ONLY) {
+//     if (dataSource.host) {
+//       connectionHost = dataSource.host;
+//     }
+//     if (dataSource.port) {
+//       connectionPort = dataSource.port;
+//     }
+//   }
+
+//   const connectionInfo: ConnectionInfo = {
+//     ...basicInfoV1.value,
+//     engine: engineToJSON(basicInfoV1.value.engine) as EngineType,
+//     host: connectionHost,
+//     port: connectionPort,
+//     username: dataSource.username,
+//     password: dataSource.useEmptyPassword ? "" : dataSource.updatedPassword,
+//     useEmptyPassword: dataSource.useEmptyPassword,
+//     database: dataSource.database,
+//     srv: dataSource.srv,
+//     authenticationDatabase: dataSource.authenticationDatabase,
+//     sid: "",
+//     serviceName: "",
+//     sshHost: "",
+//     sshPort: "",
+//     sshUser: "",
+//     sshPassword: "",
+//     sshPrivateKey: "",
+//   };
+
+//   if (!isCreating.value) {
+//     connectionInfo.instanceId = Number(basicInfoV1.value.uid);
+//   }
+
+//   if (basicInfoV1.value.engine === Engine.ORACLE) {
+//     connectionInfo.sid = dataSource.sid;
+//     connectionInfo.serviceName = dataSource.serviceName;
+//   }
+
+//   if (showSSL.value) {
+//     // Default to "NONE"
+//     connectionInfo.sslCa = adminDataSource.value.sslCa ?? "";
+//     connectionInfo.sslKey = adminDataSource.value.sslKey ?? "";
+//     connectionInfo.sslCert = adminDataSource.value.sslCert ?? "";
+
+//     if (typeof dataSource.sslCa !== "undefined") {
+//       connectionInfo.sslCa = dataSource.sslCa;
+//     }
+//     if (typeof dataSource.sslKey !== "undefined") {
+//       connectionInfo.sslKey = dataSource.sslKey;
+//     }
+//     if (typeof dataSource.sslCert !== "undefined") {
+//       connectionInfo.sslCert = dataSource.sslCert;
+//     }
+//   }
+
+//   if (showSSH.value) {
+//     // Default to "NONE"
+//     connectionInfo.sshHost = adminDataSource.value.sshHost ?? "";
+//     connectionInfo.sshPort = adminDataSource.value.sshPort ?? "";
+//     connectionInfo.sshUser = adminDataSource.value.sshUser ?? "";
+//     connectionInfo.sshPassword = adminDataSource.value.sshPassword ?? "";
+//     connectionInfo.sshPrivateKey = adminDataSource.value.sshPrivateKey ?? "";
+
+//     if (typeof dataSource.sshHost !== "undefined") {
+//       connectionInfo.sshHost = dataSource.sshHost;
+//     }
+//     if (typeof dataSource.sshPort !== "undefined") {
+//       connectionInfo.sshPort = dataSource.sshPort;
+//     }
+//     if (typeof dataSource.sshUser !== "undefined") {
+//       connectionInfo.sshUser = dataSource.sshUser;
+//     }
+//     if (typeof dataSource.sshPassword !== "undefined") {
+//       connectionInfo.sshPassword = dataSource.sshPassword;
+//     }
+//     if (typeof dataSource.sshPrivateKey !== "undefined") {
+//       connectionInfo.sshPrivateKey = dataSource.sshPrivateKey;
+//     }
+//   }
+//   return connectionInfo;
+// };
+
+// const testConnection = async () => {
+//   const connectionContext = getTestConnectionContext();
+//   state.isTestingConnection = true;
+//   const resultSet = await sqlStore.ping(connectionContext);
+//   if (isEmpty(resultSet.error)) {
+//     pushNotification({
+//       module: "bytebase",
+//       style: "SUCCESS",
+//       title: t("instance.successfully-connected-instance"),
+//     });
+//   } else {
+//     let title = t("instance.failed-to-connect-instance");
+//     if (
+//       connectionContext.host === "localhost" ||
+//       connectionContext.host === "127.0.0.1"
+//     ) {
+//       title = t("instance.failed-to-connect-instance-localhost");
+//     }
+//     pushNotification({
+//       module: "bytebase",
+//       style: "CRITICAL",
+//       title: title,
+//       description: resultSet.error,
+//       // Manual hide, because user may need time to inspect the error
+//       manualHide: true,
+//     });
+//   }
+//   state.isTestingConnection = false;
+// };
+
+// getOriginalEditState returns the origin instance data including
 // basic information, admin data source and read-only data source.
-const getInstanceStateData = () => {
-  const instanceData: {
-    basicInformation: BasicInformation;
-    adminDataSource: EditDataSource;
-    readonlyDataSource?: EditDataSource;
-  } = {
-    basicInformation: {
-      id: props.instance?.id || UNKNOWN_ID,
-      resourceId: props.instance?.resourceId || "",
-      rowStatus: props.instance?.rowStatus || "NORMAL",
-      name: props.instance?.name || t("instance.new-instance"),
-      engine: props.instance?.engine || "MYSQL",
-      environmentId: String(props.instance?.environment.id || UNKNOWN_ID),
-    },
-    adminDataSource: {
-      ...(getDataSourceWithType("ADMIN") || unknown("DATA_SOURCE")),
-      updatedPassword: "",
-      useEmptyPassword: false,
-    },
-    readonlyDataSource: getDataSourceWithType("RO")
-      ? ({
-          ...getDataSourceWithType("RO"),
-          updatedPassword: "",
-          useEmptyPassword: false,
-        } as EditDataSource)
-      : undefined,
-  };
-  return instanceData;
-};
-
-const convertEditDataSource = (editDataSource: EditDataSource): DataSource => {
-  const password = editDataSource.useEmptyPassword
-    ? ""
-    : editDataSource.updatedPassword || editDataSource.password;
+const getOriginalEditState = () => {
   return {
-    ...omit(editDataSource, ["updatedPassword", "useEmptyPassword"]),
-    password: password,
+    basicInfoV1: extractBasicInfo(props.instance),
+    adminDataSource: extractAdminDataSource(props.instance),
+    readonlyDataSource: extractReadOnlyDataSource(props.instance),
   };
 };
 </script>

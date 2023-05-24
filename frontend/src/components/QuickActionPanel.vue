@@ -237,7 +237,7 @@
     <template
       v-else-if="state.quickActionType == 'quickaction.bb.instance.create'"
     >
-      <InstanceForm @dismiss="state.showModal = false" />
+      <InstanceForm :modal="true" @dismiss="state.showModal = false" />
     </template>
     <template
       v-else-if="

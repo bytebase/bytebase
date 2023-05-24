@@ -51,6 +51,25 @@ export const sortInstanceV1ListByEnvironmentV1 = <T extends Instance>(
   });
 };
 
+export const supportedEngineV1List = () => {
+  const engines: Engine[] = [
+    Engine.MYSQL,
+    Engine.POSTGRES,
+    Engine.TIDB,
+    Engine.SNOWFLAKE,
+    Engine.CLICKHOUSE,
+    Engine.MONGODB,
+    Engine.REDIS,
+    Engine.SPANNER,
+    Engine.ORACLE,
+    Engine.OCEANBASE,
+    Engine.MARIADB,
+    Engine.MSSQL,
+    Engine.REDSHIFT,
+  ];
+  return engines;
+};
+
 // export const useInstanceEditorLanguage = (
 //   instance: MaybeRef<Instance | undefined>
 // ) => {
@@ -160,4 +179,36 @@ export const engineOfInstanceV1 = (instanceOrEngine: Instance | Engine) => {
     return instanceOrEngine;
   }
   return instanceOrEngine.engine;
+};
+
+export const engineNameV1 = (type: Engine): string => {
+  switch (type) {
+    case Engine.CLICKHOUSE:
+      return "ClickHouse";
+    case Engine.MYSQL:
+      return "MySQL";
+    case Engine.POSTGRES:
+      return "PostgreSQL";
+    case Engine.SNOWFLAKE:
+      return "Snowflake";
+    case Engine.TIDB:
+      return "TiDB";
+    case Engine.MONGODB:
+      return "MongoDB";
+    case Engine.SPANNER:
+      return "Spanner";
+    case Engine.REDIS:
+      return "Redis";
+    case Engine.ORACLE:
+      return "Oracle";
+    case Engine.MSSQL:
+      return "MSSQL";
+    case Engine.REDSHIFT:
+      return "Redshift";
+    case Engine.MARIADB:
+      return "MariaDB";
+    case Engine.OCEANBASE:
+      return "OceanBase";
+  }
+  return "";
 };

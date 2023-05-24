@@ -2,7 +2,7 @@ import { computed, reactive, ref, unref, watch } from "vue";
 import { defineStore } from "pinia";
 import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
 
-import { Instance } from "@/types/proto/v1/instance_service";
+import { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { State } from "@/types/proto/v1/common";
 import { extractInstanceResourceName } from "@/utils";
 import {
@@ -57,6 +57,30 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     const composed = await upsertInstances([createdInstance]);
 
+    return composed[0];
+  };
+  const updateInstance = async (instance: Instance, updateMask: string[]) => {
+    const updatedInstance = await instanceServiceClient.updateInstance({
+      instance,
+      updateMask,
+    });
+    const composed = await upsertInstances([updatedInstance]);
+    return composed[0];
+  };
+  const archiveInstance = async (instance: Instance) => {
+    await instanceServiceClient.deleteInstance({
+      name: instance.name,
+    });
+    instance.state = State.DELETED;
+    const composed = await upsertInstances([instance]);
+    return composed[0];
+  };
+  const restoreInstance = async (instance: Instance) => {
+    await instanceServiceClient.undeleteInstance({
+      name: instance.name,
+    });
+    instance.state = State.ACTIVE;
+    const composed = await upsertInstances([instance]);
     return composed[0];
   };
   const fetchInstanceByName = async (name: string) => {
@@ -116,11 +140,49 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   const getInstanceRoleListByName = (name: string) => {
     return instanceRoleListMapByName.get(name) ?? [];
   };
+  const createDataSource = async (
+    instance: Instance,
+    dataSource: DataSource
+  ) => {
+    const updatedInstance = await instanceServiceClient.addDataSource({
+      instance: instance.name,
+      dataSources: dataSource,
+    });
+    const [composed] = await upsertInstances([updatedInstance]);
+    return composed;
+  };
+  const updateDataSource = async (
+    instance: Instance,
+    dataSource: DataSource,
+    updateMask: string[]
+  ) => {
+    const updatedInstance = await instanceServiceClient.updateDataSource({
+      instance: instance.name,
+      dataSources: dataSource,
+      updateMask,
+    });
+    const [composed] = await upsertInstances([updatedInstance]);
+    return composed;
+  };
+  const deleteDataSource = async (
+    instance: Instance,
+    dataSource: DataSource
+  ) => {
+    const updatedInstance = await instanceServiceClient.removeDataSource({
+      instance: instance.name,
+      dataSources: dataSource,
+    });
+    const [composed] = await upsertInstances([updatedInstance]);
+    return composed;
+  };
 
   return {
     instanceList,
     activeInstanceList,
     createInstance,
+    updateInstance,
+    archiveInstance,
+    restoreInstance,
     fetchInstanceList,
     fetchInstanceByName,
     getInstanceByName,
@@ -130,6 +192,9 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     getOrFetchInstanceByUID,
     fetchInstanceRoleListByName,
     getInstanceRoleListByName,
+    createDataSource,
+    updateDataSource,
+    deleteDataSource,
   };
 });
 
@@ -170,9 +235,9 @@ export const useInstanceV1List = (showDeleted: MaybeRef<boolean> = false) => {
   );
   const instanceList = computed(() => {
     if (unref(showDeleted)) {
-      return store.activeInstanceList;
+      return store.instanceList;
     }
-    return store.instanceList;
+    return store.activeInstanceList;
   });
   return { instanceList, ready };
 };

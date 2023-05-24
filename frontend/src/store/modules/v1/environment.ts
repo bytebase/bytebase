@@ -7,7 +7,7 @@ import {
   Environment,
   EnvironmentTier,
 } from "@/types/proto/v1/environment_service";
-import { ResourceId } from "@/types";
+import { ResourceId, unknownEnvironment } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 
@@ -130,9 +130,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
     getEnvironmentByUID(uid: string) {
       return (
         this.environmentList.find((env) => env.uid == uid) ??
-        Environment.fromJSON({
-          uid: "-1",
-        })
+        unknownEnvironment()
       );
     },
   },

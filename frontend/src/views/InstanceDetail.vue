@@ -1,6 +1,6 @@
 <template>
   <div class="py-4 space-y-4">
-    <ArchiveBanner v-if="instanceV1.state === State.DELETED" />
+    <ArchiveBanner v-if="instance.state === State.DELETED" />
     <BBAttention
       v-else-if="state.migrationSetupStatus != 'OK'"
       :style="'WARN'"
@@ -10,15 +10,16 @@
       @click-action="state.showCreateMigrationSchemaModal = true"
     />
     <div class="px-6 space-y-6">
-      <!-- <InstanceForm :instance="instance" /> -->
-      <div class="text-red-500">should be InstanceForm</div>
-      <div class="text-read-500">{{ instanceV1 }}</div>
+      <InstanceForm :instance="instance" />
       <div
         v-if="hasDataSourceFeature"
         class="py-6 space-y-4 border-t divide-control-border"
       >
+        <!-- 
+          it's always false here,
+          we could postpone to migrate DataSourceTable to v1
+        -->
         <!-- <DataSourceTable :instance="instance" /> -->
-        <div class="text-red-500">Should be DataSourceTable</div>
       </div>
       <div v-else>
         <div class="mb-4 flex items-center justify-between">
@@ -49,8 +50,8 @@
             </button>
             <button
               v-if="
-                instanceV1.state === State.ACTIVE &&
-                instanceV1HasCreateDatabase(instanceV1)
+                instance.state === State.ACTIVE &&
+                instanceV1HasCreateDatabase(instance)
               "
               type="button"
               class="btn-primary"
@@ -72,14 +73,14 @@
         </div>
       </div>
       <template v-if="allowArchiveOrRestore">
-        <template v-if="instanceV1.state === State.ACTIVE">
+        <template v-if="instance.state === State.ACTIVE">
           <BBButtonConfirm
             :style="'ARCHIVE'"
             :button-text="$t('instance.archive-this-instance')"
             :ok-text="$t('common.archive')"
             :require-confirm="true"
             :confirm-title="
-              $t('instance.archive-instance-instance-name', [instanceV1.title])
+              $t('instance.archive-instance-instance-name', [instance.title])
             "
             :confirm-description="
               $t(
@@ -89,7 +90,7 @@
             @confirm="doArchive"
           />
         </template>
-        <template v-else-if="instanceV1.state === State.DELETED">
+        <template v-else-if="instance.state === State.DELETED">
           <BBButtonConfirm
             :style="'RESTORE'"
             :button-text="$t('instance.restore-this-instance')"
@@ -97,7 +98,7 @@
             :require-confirm="true"
             :confirm-title="
               $t('instance.restore-instance-instance-name-to-normal-state', [
-                instanceV1.title,
+                instance.title,
               ])
             "
             :confirm-description="''"
@@ -155,13 +156,11 @@ import {
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import DataSourceTable from "../components/DataSourceTable.vue";
 import { InstanceRoleTable } from "@/components/v2";
 import InstanceForm from "../components/InstanceForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
   Database,
-  Instance,
   InstanceMigration,
   MigrationSchemaStatus,
   SQLResultSet,
@@ -180,6 +179,7 @@ import {
   useCurrentUserV1,
   useInstanceV1Store,
   useEnvironmentV1Store,
+  useGracefulRequest,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
 
@@ -221,22 +221,17 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-// const instance = computed((): Instance => {
-//   return instanceStore.getInstanceById(idFromSlug(props.instanceSlug));
-// });
 const instanceId = computed(() => {
   return idFromSlug(props.instanceSlug);
 });
-const instanceV1 = computed(() => {
+const instance = computed(() => {
   return instanceV1Store.getInstanceByUID(String(instanceId.value));
 });
 const environment = computed(() => {
   return useEnvironmentV1Store().getEnvironmentByName(
-    instanceV1.value.environment
+    instance.value.environment
   );
 });
-
-watchEffect(() => console.log(JSON.stringify(instanceV1.value)));
 
 const checkMigrationSetup = () => {
   instanceStore
@@ -337,12 +332,12 @@ const databaseList = computed(() => {
 });
 
 const instanceRoleList = computed(() => {
-  return instanceV1Store.getInstanceRoleListByName(instanceV1.value.name);
+  return instanceV1Store.getInstanceRoleListByName(instance.value.name);
 });
 
 const allowEdit = computed(() => {
   return (
-    instanceV1.value.state === State.ACTIVE &&
+    instance.value.state === State.ACTIVE &&
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
       currentUserV1.value.userRole
@@ -370,49 +365,41 @@ const tabItemList = computed((): BBTabFilterItem[] => {
   ];
 });
 
-const doArchive = () => {
-  instanceStore
-    .patchInstance({
-      instanceId: instanceId.value,
-      instancePatch: {
-        rowStatus: "ARCHIVED",
-      },
-    })
-    .then((updatedInstance) => {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t(
-          "instance.successfully-archived-instance-updatedinstance-name",
-          [updatedInstance.name]
-        ),
-      });
+const doArchive = async () => {
+  await useGracefulRequest(async () => {
+    await instanceV1Store.archiveInstance(instance.value);
+    // Legacy compatibility
+    await instanceStore.fetchInstanceById(Number(instance.value.uid));
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("instance.successfully-archived-instance-updatedinstance-name", [
+        instance.value.title,
+      ]),
     });
+  });
 };
 
-const doRestore = () => {
-  const instanceList = instanceStore.getInstanceList(["NORMAL"]);
+const doRestore = async () => {
+  const instanceList = instanceV1Store.activeInstanceList;
   if (subscriptionStore.instanceCount <= instanceList.length) {
     state.showFeatureModal = true;
     return;
   }
-  instanceStore
-    .patchInstance({
-      instanceId: instanceId.value,
-      instancePatch: {
-        rowStatus: "NORMAL",
-      },
-    })
-    .then((updatedInstance) => {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t(
-          "instance.successfully-restored-instance-updatedinstance-name",
-          [updatedInstance.name]
-        ),
-      });
+  await useGracefulRequest(async () => {
+    await instanceV1Store.restoreInstance(instance.value);
+    // Legacy compatibility
+    await instanceStore.fetchInstanceById(Number(instance.value.uid));
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("instance.successfully-archived-instance-updatedinstance-name", [
+        instance.value.title,
+      ]),
     });
+  });
 };
 
 const doCreateMigrationSchema = () => {
@@ -427,7 +414,7 @@ const doCreateMigrationSchema = () => {
           style: "CRITICAL",
           title: t(
             "instance.failed-to-create-migration-schema-for-instance-instance-value-name",
-            [instanceV1.value.title]
+            [instance.value.title]
           ),
           description: resultSet.error,
         });
@@ -438,7 +425,7 @@ const doCreateMigrationSchema = () => {
           style: "SUCCESS",
           title: t(
             "instance.successfully-created-migration-schema-for-instance-value-name",
-            [instanceV1.value.title]
+            [instance.value.title]
           ),
         });
       }
@@ -458,7 +445,7 @@ const syncSchema = () => {
           style: "CRITICAL",
           title: t(
             "instance.failed-to-sync-schema-for-instance-instance-value-name",
-            [instanceV1.value.title]
+            [instance.value.title]
           ),
           description: resultSet.error,
         });
@@ -468,7 +455,7 @@ const syncSchema = () => {
           style: "SUCCESS",
           title: t(
             "instance.successfully-synced-schema-for-instance-instance-value-name",
-            [instanceV1.value.title]
+            [instance.value.title]
           ),
           description: resultSet.error,
         });
