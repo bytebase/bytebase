@@ -19,7 +19,7 @@ type SyntaxAdvisor struct {
 }
 
 // Check checks for syntax.
-func (*SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*SyntaxAdvisor) Check(_ advisor.Context, statement string) ([]advisor.Advice, error) {
 	if _, errAdvice := parseStatement(statement); errAdvice != nil {
 		return errAdvice, nil
 	}
