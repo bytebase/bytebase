@@ -67,10 +67,9 @@
             :database-list="databaseList"
           />
         </div>
-        <InstanceUserTable
-          v-else-if="state.selectedIndex == USER_TAB"
-          :instance-user-list="instanceUserList"
-        />
+        <div v-else-if="state.selectedIndex === USER_TAB">
+          <InstanceRoleTable :instance-role-list="instanceRoleList" />
+        </div>
       </div>
       <template v-if="allowArchiveOrRestore">
         <template v-if="instanceV1.state === State.ACTIVE">
@@ -157,7 +156,7 @@ import {
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
-import InstanceUserTable from "../components/InstanceUserTable.vue";
+import { InstanceRoleTable } from "@/components/v2";
 import InstanceForm from "../components/InstanceForm.vue";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
@@ -337,8 +336,8 @@ const databaseList = computed(() => {
   return filteredList;
 });
 
-const instanceUserList = computed(() => {
-  return instanceStore.getInstanceUserListById(instanceId.value);
+const instanceRoleList = computed(() => {
+  return instanceV1Store.getInstanceRoleListByName(instanceV1.value.name);
 });
 
 const allowEdit = computed(() => {

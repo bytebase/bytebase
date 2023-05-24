@@ -1,15 +1,54 @@
 import slug from "slug";
-import { Instance } from "@/types/proto/v1/instance_service";
-import { Engine } from "@/types/proto/v1/common";
+import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
+import { Engine, State } from "@/types/proto/v1/common";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { keyBy } from "lodash-es";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");
 };
 
+export function instanceV1Name(instance: Instance) {
+  let name = instance.title;
+  if (instance.state === State.DELETED) {
+    name += " (Archived)";
+  }
+  return name;
+}
+
 export const extractInstanceResourceName = (name: string) => {
   const pattern = /(?:^|\/)instances\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
+};
+
+export const hostPortOfInstanceV1 = (instance: Instance) => {
+  const ds =
+    instance.dataSources.find((ds) => ds.type === DataSourceType.ADMIN) ??
+    instance.dataSources[0];
+  if (!ds) {
+    return "";
+  }
+  const parts = [ds.host];
+  if (ds.port) {
+    parts.push(ds.port);
+  }
+  return parts.join(":");
+};
+
+// Sort the list to put prod items first.
+export const sortInstanceV1ListByEnvironmentV1 = <T extends Instance>(
+  list: T[],
+  environmentList: Environment[]
+): T[] => {
+  const environmentMap = keyBy(environmentList, (env) => env.name);
+
+  return list.sort((a, b) => {
+    const aEnvOrder = environmentMap[a.environment]?.order ?? -1;
+    const bEnvOrder = environmentMap[b.environment]?.order ?? -1;
+
+    return -(aEnvOrder - bEnvOrder);
+  });
 };
 
 // export const useInstanceEditorLanguage = (

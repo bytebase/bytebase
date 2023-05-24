@@ -1,21 +1,26 @@
 import { computed, reactive, ref, unref, watch } from "vue";
 import { defineStore } from "pinia";
-import { instanceServiceClient } from "@/grpcweb";
+import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
 
 import { Instance } from "@/types/proto/v1/instance_service";
 import { State } from "@/types/proto/v1/common";
 import { extractInstanceResourceName } from "@/utils";
 import {
+  ComposedInstance,
   emptyInstance,
   EMPTY_ID,
   MaybeRef,
+  unknownEnvironment,
   unknownInstance,
   UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
+import { useEnvironmentV1Store } from "./environment";
+import { InstanceRole } from "@/types/proto/v1/instance_role_service";
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
-  const instanceMapByName = reactive(new Map<string, Instance>());
+  const instanceMapByName = reactive(new Map<string, ComposedInstance>());
+  const instanceRoleListMapByName = reactive(new Map<string, InstanceRole[]>());
 
   // Getters
   const instanceList = computed(() => {
@@ -23,39 +28,43 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     return list;
   });
   const activeInstanceList = computed(() => {
-    return instanceList.value.map((instance) => {
+    return instanceList.value.filter((instance) => {
       return instance.state === State.ACTIVE;
     });
   });
 
   // Actions
   const upsertInstances = async (list: Instance[]) => {
-    list.forEach((instance) => {
-      instanceMapByName.set(instance.name, instance);
-    });
+    const composedInstances: ComposedInstance[] = [];
+    for (let i = 0; i < list.length; i++) {
+      const composed = await composeInstance(list[i]);
+      instanceMapByName.set(composed.name, composed);
+      composedInstances.push(composed);
+    }
+    return composedInstances;
   };
   const fetchInstanceList = async (showDeleted = false) => {
     const { instances } = await instanceServiceClient.listInstances({
       showDeleted,
     });
-    await upsertInstances(instances);
-    return instances;
+    const composed = await upsertInstances(instances);
+    return composed;
   };
   const createInstance = async (instance: Instance) => {
     const createdInstance = await instanceServiceClient.createInstance({
       instance,
       instanceId: extractInstanceResourceName(instance.name),
     });
-    await upsertInstances([createdInstance]);
+    const composed = await upsertInstances([createdInstance]);
 
-    return createdInstance;
+    return composed[0];
   };
   const fetchInstanceByName = async (name: string) => {
     const instance = await instanceServiceClient.getInstance({
       name,
     });
-    upsertInstances([instance]);
-    return instance;
+    const composed = await upsertInstances([instance]);
+    return composed[0];
   };
   const getInstanceByName = (name: string) => {
     return instanceMapByName.get(name) ?? unknownInstance();
@@ -91,6 +100,22 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     await fetchInstanceByUID(uid);
     return getInstanceByUID(uid);
   };
+  const fetchInstanceRoleListByName = async (name: string) => {
+    // TODO: ListInstanceRoles will return error if instance is archived
+    // We temporarily suppress errors here now.
+    try {
+      const { roles } = await instanceRoleServiceClient.listInstanceRoles({
+        parent: name,
+      });
+      instanceRoleListMapByName.set(name, roles);
+      return roles;
+    } catch {
+      return [];
+    }
+  };
+  const getInstanceRoleListByName = (name: string) => {
+    return instanceRoleListMapByName.get(name) ?? [];
+  };
 
   return {
     instanceList,
@@ -103,6 +128,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     fetchInstanceByUID,
     getInstanceByUID,
     getOrFetchInstanceByUID,
+    fetchInstanceRoleListByName,
+    getInstanceRoleListByName,
   };
 });
 
@@ -126,4 +153,35 @@ export const useInstanceV1ByUID = (uid: MaybeRef<string>) => {
 
   const instance = computed(() => store.getInstanceByUID(unref(uid)));
   return { instance, ready };
+};
+
+export const useInstanceV1List = (showDeleted: MaybeRef<boolean> = false) => {
+  const store = useInstanceV1Store();
+  const ready = ref(false);
+  watch(
+    () => unref(showDeleted),
+    (showDeleted) => {
+      ready.value = false;
+      store.fetchInstanceList(showDeleted).then(() => {
+        ready.value = true;
+      });
+    },
+    { immediate: true }
+  );
+  const instanceList = computed(() => {
+    if (unref(showDeleted)) {
+      return store.activeInstanceList;
+    }
+    return store.instanceList;
+  });
+  return { instanceList, ready };
+};
+
+const composeInstance = async (instance: Instance) => {
+  const composed = instance as ComposedInstance;
+  const environmentEntity =
+    useEnvironmentV1Store().getEnvironmentByName(instance.environment) ??
+    unknownEnvironment();
+  composed.environmentEntity = environmentEntity;
+  return composed;
 };
