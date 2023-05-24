@@ -95,6 +95,8 @@ export interface CreateInstanceRequest {
    * are /[a-z][0-9]-/.
    */
   instanceId: string;
+  /** Validate only also tests the data source connection. */
+  validateOnly: boolean;
 }
 
 export interface UpdateInstanceRequest {
@@ -138,6 +140,8 @@ export interface AddDataSourceRequest {
    * Only READ_ONLY data source can be added.
    */
   dataSources?: DataSource;
+  /** Validate only also tests the data source connection. */
+  validateOnly: boolean;
 }
 
 export interface RemoveDataSourceRequest {
@@ -163,6 +167,8 @@ export interface UpdateDataSourceRequest {
   dataSources?: DataSource;
   /** The list of fields to update. */
   updateMask?: string[];
+  /** Validate only also tests the data source connection. */
+  validateOnly: boolean;
 }
 
 export interface SyncSlowQueriesRequest {
@@ -449,7 +455,7 @@ export const ListInstancesResponse = {
 };
 
 function createBaseCreateInstanceRequest(): CreateInstanceRequest {
-  return { instance: undefined, instanceId: "" };
+  return { instance: undefined, instanceId: "", validateOnly: false };
 }
 
 export const CreateInstanceRequest = {
@@ -459,6 +465,9 @@ export const CreateInstanceRequest = {
     }
     if (message.instanceId !== "") {
       writer.uint32(18).string(message.instanceId);
+    }
+    if (message.validateOnly === true) {
+      writer.uint32(24).bool(message.validateOnly);
     }
     return writer;
   },
@@ -484,6 +493,13 @@ export const CreateInstanceRequest = {
 
           message.instanceId = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.validateOnly = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -497,6 +513,7 @@ export const CreateInstanceRequest = {
     return {
       instance: isSet(object.instance) ? Instance.fromJSON(object.instance) : undefined,
       instanceId: isSet(object.instanceId) ? String(object.instanceId) : "",
+      validateOnly: isSet(object.validateOnly) ? Boolean(object.validateOnly) : false,
     };
   },
 
@@ -504,6 +521,7 @@ export const CreateInstanceRequest = {
     const obj: any = {};
     message.instance !== undefined && (obj.instance = message.instance ? Instance.toJSON(message.instance) : undefined);
     message.instanceId !== undefined && (obj.instanceId = message.instanceId);
+    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
     return obj;
   },
 
@@ -517,6 +535,7 @@ export const CreateInstanceRequest = {
       ? Instance.fromPartial(object.instance)
       : undefined;
     message.instanceId = object.instanceId ?? "";
+    message.validateOnly = object.validateOnly ?? false;
     return message;
   },
 };
@@ -722,7 +741,7 @@ export const UndeleteInstanceRequest = {
 };
 
 function createBaseAddDataSourceRequest(): AddDataSourceRequest {
-  return { instance: "", dataSources: undefined };
+  return { instance: "", dataSources: undefined, validateOnly: false };
 }
 
 export const AddDataSourceRequest = {
@@ -732,6 +751,9 @@ export const AddDataSourceRequest = {
     }
     if (message.dataSources !== undefined) {
       DataSource.encode(message.dataSources, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.validateOnly === true) {
+      writer.uint32(24).bool(message.validateOnly);
     }
     return writer;
   },
@@ -757,6 +779,13 @@ export const AddDataSourceRequest = {
 
           message.dataSources = DataSource.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.validateOnly = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -770,6 +799,7 @@ export const AddDataSourceRequest = {
     return {
       instance: isSet(object.instance) ? String(object.instance) : "",
       dataSources: isSet(object.dataSources) ? DataSource.fromJSON(object.dataSources) : undefined,
+      validateOnly: isSet(object.validateOnly) ? Boolean(object.validateOnly) : false,
     };
   },
 
@@ -778,6 +808,7 @@ export const AddDataSourceRequest = {
     message.instance !== undefined && (obj.instance = message.instance);
     message.dataSources !== undefined &&
       (obj.dataSources = message.dataSources ? DataSource.toJSON(message.dataSources) : undefined);
+    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
     return obj;
   },
 
@@ -791,6 +822,7 @@ export const AddDataSourceRequest = {
     message.dataSources = (object.dataSources !== undefined && object.dataSources !== null)
       ? DataSource.fromPartial(object.dataSources)
       : undefined;
+    message.validateOnly = object.validateOnly ?? false;
     return message;
   },
 };
@@ -870,7 +902,7 @@ export const RemoveDataSourceRequest = {
 };
 
 function createBaseUpdateDataSourceRequest(): UpdateDataSourceRequest {
-  return { instance: "", dataSources: undefined, updateMask: undefined };
+  return { instance: "", dataSources: undefined, updateMask: undefined, validateOnly: false };
 }
 
 export const UpdateDataSourceRequest = {
@@ -883,6 +915,9 @@ export const UpdateDataSourceRequest = {
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.validateOnly === true) {
+      writer.uint32(32).bool(message.validateOnly);
     }
     return writer;
   },
@@ -915,6 +950,13 @@ export const UpdateDataSourceRequest = {
 
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.validateOnly = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -929,6 +971,7 @@ export const UpdateDataSourceRequest = {
       instance: isSet(object.instance) ? String(object.instance) : "",
       dataSources: isSet(object.dataSources) ? DataSource.fromJSON(object.dataSources) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      validateOnly: isSet(object.validateOnly) ? Boolean(object.validateOnly) : false,
     };
   },
 
@@ -938,6 +981,7 @@ export const UpdateDataSourceRequest = {
     message.dataSources !== undefined &&
       (obj.dataSources = message.dataSources ? DataSource.toJSON(message.dataSources) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
     return obj;
   },
 
@@ -952,6 +996,7 @@ export const UpdateDataSourceRequest = {
       ? DataSource.fromPartial(object.dataSources)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    message.validateOnly = object.validateOnly ?? false;
     return message;
   },
 };

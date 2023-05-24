@@ -3122,6 +3122,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
 | data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be added. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
 
 
@@ -3140,6 +3141,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | instance_id | [string](#string) |  | The ID to use for the instance, which will become the final component of the instance&#39;s resource name.
 
 This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
 
 
@@ -3325,6 +3327,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | instance | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
 | data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
 
 
