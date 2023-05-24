@@ -134,6 +134,8 @@ message Plan {
   message Spec {
     // earliest_allowed_time the earliest execution time of the change.
     google.protobuf.Timestamp earliest_allowed_time = 4;
+    // A UUID4 string that uniquely identifies the Spec.
+    string id = 5;
 
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
@@ -353,6 +355,23 @@ message Task {
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string title = 3;
 
+  // A UUID4 string that uniquely identifies the Spec.
+  // Could be empty if the rollout of the task does not have an associating plan.
+  string spec_id = 12;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING_APPROVAL = 1;
+    PENDING = 2;
+    RUNNING = 3;
+    DONE = 4;
+    FAILED = 5;
+    CANCELED = 6;
+  }
+  // Status is the status of the task.
+  // TODO(p0ny): migrate old task status and use this field as a summary of the task runs.
+  Status status = 13;
+
   enum Type {
     TYPE_UNSPECIFIED = 0;
     GENERAL = 1;
@@ -506,7 +525,7 @@ message TaskRun {
     STATUS_UNSPECIFIED = 0;
     PENDING = 1;
     RUNNING = 2;
-    COMPLETED = 3;
+    DONE = 3;
     FAILED = 4;
     CANCELED = 5;
     SKIPPED = 6;
