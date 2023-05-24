@@ -192,7 +192,7 @@
             </span>
             <button
               class="ml-1 btn-icon"
-              :disabled="instanceLink.trim().length == 0"
+              :disabled="instanceLink.trim().length === 0"
               @click.prevent="window.open(urlfy(instanceLink), '_blank')"
             >
               <heroicons-outline:external-link class="w-4 h-4" />
@@ -1012,8 +1012,8 @@ const handleSelectEnvironmentUID = (uid: number | string) => {
 const changeInstanceEngine = (engine: Engine) => {
   if (engine === Engine.SNOWFLAKE || engine === Engine.SPANNER) {
     if (
-      adminDataSource.value.host == "127.0.0.1" ||
-      adminDataSource.value.host == "host.docker.internal"
+      adminDataSource.value.host === "127.0.0.1" ||
+      adminDataSource.value.host === "host.docker.internal"
     ) {
       adminDataSource.value.host = "";
     }
