@@ -122,7 +122,7 @@ export const getSheetIssueBacktracePayloadV1 = (sheet: Sheet) => {
 export const sheetNameOfTask = (task: Task) => {
   const project = task.database?.project;
   if (!project) {
-    return undefined;
+    return "";
   }
 
   let sheetId: SheetId;
@@ -147,11 +147,11 @@ export const sheetNameOfTask = (task: Task) => {
         "";
       break;
     default:
-      return undefined;
+      return "";
   }
 
   if (!sheetId) {
-    return undefined;
+    return "";
   }
 
   return getSheetPathByLegacyProject(project, sheetId);

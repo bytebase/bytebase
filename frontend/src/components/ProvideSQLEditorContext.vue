@@ -218,10 +218,18 @@ const prepareSheet = async () => {
     // Open the sheet in a "temp" tab otherwise.
     tabStore.selectOrAddTempTab();
 
-    const [instanceName, databaseId] = getInstanceAndDatabaseId(sheet.database);
-    const ins = await useInstanceV1Store().getOrFetchInstanceByName(
-      `instances/${instanceName}`
-    );
+    let insId = UNKNOWN_ID,
+      dbId = UNKNOWN_ID;
+    if (sheet.database) {
+      const [instanceName, databaseId] = getInstanceAndDatabaseId(
+        sheet.database
+      );
+      const ins = await useInstanceV1Store().getOrFetchInstanceByName(
+        `instances/${instanceName}`
+      );
+      insId = Number(ins.uid);
+      dbId = Number(databaseId);
+    }
 
     tabStore.updateCurrentTab({
       sheetName,
@@ -231,8 +239,8 @@ const prepareSheet = async () => {
       connection: {
         ...emptyConnection(),
         // TODO: legacy instance id.
-        instanceId: Number(ins.uid),
-        databaseId: Number(databaseId),
+        instanceId: insId,
+        databaseId: dbId,
       },
     });
   }
