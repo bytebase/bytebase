@@ -2,7 +2,6 @@
   <BBGrid
     :column-list="columnList"
     :data-source="instanceRoleList"
-    class="border"
     :row-clickable="false"
   >
     <template #item="{ item: instanceRole }: { item: InstanceRole }">
