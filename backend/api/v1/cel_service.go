@@ -30,7 +30,7 @@ var queryAttributes = []cel.EnvOption{
 }
 
 // Parse parses a CEL expression.
-func (*CelService) Parse(ctx context.Context, request *v1pb.ParseRequest) (*v1pb.ParseResponse, error) {
+func (*CelService) Parse(_ context.Context, request *v1pb.ParseRequest) (*v1pb.ParseResponse, error) {
 	e, err := cel.NewEnv(queryAttributes...)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create CEL environment: %v", err)
@@ -50,7 +50,7 @@ func (*CelService) Parse(ctx context.Context, request *v1pb.ParseRequest) (*v1pb
 }
 
 // Deparse deparses a parsed CEL expression.
-func (*CelService) Deparse(ctx context.Context, request *v1pb.DeparseRequest) (*v1pb.DeparseResponse, error) {
+func (*CelService) Deparse(_ context.Context, request *v1pb.DeparseRequest) (*v1pb.DeparseResponse, error) {
 	ast := cel.ParsedExprToAst(request.Expression)
 	expressionStr, err := cel.AstToString(ast)
 	if err != nil {
