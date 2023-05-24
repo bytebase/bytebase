@@ -22,55 +22,45 @@
         <!-- <DataSourceTable :instance="instance" /> -->
       </div>
       <div v-else>
-        <div class="mb-4 flex items-center justify-between">
-          <BBTabFilter
-            :tab-item-list="tabItemList"
-            :selected-index="state.selectedIndex"
-            @select-index="
-              (index: number) => {
-                state.selectedIndex = index;
-              }
-            "
-          />
-          <div class="flex items-center space-x-4">
-            <div>
-              <BBSpin
-                v-if="state.syncingSchema"
-                :title="$t('instance.syncing')"
-              />
+        <NTabs>
+          <template #suffix>
+            <div class="flex items-center gap-x-4">
+              <NButton
+                v-if="allowEdit"
+                :loading="state.syncingSchema"
+                @click.prevent="syncSchema"
+              >
+                <template v-if="state.syncingSchema">
+                  {{ $t("instance.syncing") }}
+                </template>
+                <template v-else>
+                  {{ $t("common.sync-now") }}
+                </template>
+              </NButton>
+              <NButton
+                v-if="
+                  instance.state === State.ACTIVE &&
+                  instanceV1HasCreateDatabase(instance)
+                "
+                type="primary"
+                @click.prevent="createDatabase"
+              >
+                {{ $t("instance.new-database") }}
+              </NButton>
             </div>
-            <button
-              v-if="allowEdit"
-              :disabled="state.syncingSchema"
-              type="button"
-              class="btn-normal"
-              @click.prevent="syncSchema"
-            >
-              {{ $t("common.sync-now") }}
-            </button>
-            <button
-              v-if="
-                instance.state === State.ACTIVE &&
-                instanceV1HasCreateDatabase(instance)
-              "
-              type="button"
-              class="btn-primary"
-              @click.prevent="createDatabase"
-            >
-              {{ $t("instance.new-database") }}
-            </button>
-          </div>
-        </div>
-        <div v-if="state.selectedIndex == DATABASE_TAB">
-          <DatabaseTable
-            mode="INSTANCE"
-            :scroll-on-page-change="false"
-            :database-list="databaseList"
-          />
-        </div>
-        <div v-else-if="state.selectedIndex === USER_TAB">
-          <InstanceRoleTable :instance-role-list="instanceRoleList" />
-        </div>
+          </template>
+
+          <NTabPane name="DATABASES" :tab="$t('common.databases')">
+            <DatabaseTable
+              mode="INSTANCE"
+              :scroll-on-page-change="false"
+              :database-list="databaseList"
+            />
+          </NTabPane>
+          <NTabPane name="USERS" :tab="$t('instance.users')">
+            <InstanceRoleTable :instance-role-list="instanceRoleList" />
+          </NTabPane>
+        </NTabs>
       </div>
       <template v-if="allowArchiveOrRestore">
         <template v-if="instance.state === State.ACTIVE">
@@ -148,6 +138,9 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
+import { NButton, NTabPane, NTabs } from "naive-ui";
+import { useI18n } from "vue-i18n";
+
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
@@ -165,8 +158,6 @@ import {
   MigrationSchemaStatus,
   SQLResultSet,
 } from "../types";
-import { BBTabFilterItem } from "../bbkit/types";
-import { useI18n } from "vue-i18n";
 import {
   featureToRef,
   pushNotification,
@@ -183,11 +174,7 @@ import {
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
 
-const DATABASE_TAB = 0;
-const USER_TAB = 1;
-
 interface LocalState {
-  selectedIndex: number;
   migrationSetupStatus: MigrationSchemaStatus;
   showCreateMigrationSchemaModal: boolean;
   creatingMigrationSchema: boolean;
@@ -212,7 +199,6 @@ const currentUserV1 = useCurrentUserV1();
 const sqlStore = useSQLStore();
 
 const state = reactive<LocalState>({
-  selectedIndex: DATABASE_TAB,
   migrationSetupStatus: "OK",
   showCreateMigrationSchemaModal: false,
   creatingMigrationSchema: false,
@@ -350,19 +336,6 @@ const allowArchiveOrRestore = computed(() => {
     "bb.permission.workspace.manage-instance",
     currentUserV1.value.userRole
   );
-});
-
-const tabItemList = computed((): BBTabFilterItem[] => {
-  return [
-    {
-      title: t("common.databases"),
-      alert: false,
-    },
-    {
-      title: t("instance.users"),
-      alert: false,
-    },
-  ];
 });
 
 const doArchive = async () => {
