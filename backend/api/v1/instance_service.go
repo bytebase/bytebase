@@ -513,6 +513,23 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "service_name":
 			patch.ServiceName = &request.DataSources.ServiceName
 			dataSource.ServiceName = request.DataSources.ServiceName
+		case "ssh_host":
+			patch.SSHHost = &request.DataSources.SshHost
+			dataSource.SSHHost = request.DataSources.SshHost
+		case "ssh_port":
+			patch.SSHPort = &request.DataSources.SshPort
+			dataSource.SSHPort = request.DataSources.SshPort
+		case "ssh_user":
+			patch.SSHUser = &request.DataSources.SshUser
+			dataSource.SSHUser = request.DataSources.SshUser
+		case "ssh_password":
+			obfuscated := common.Obfuscate(request.DataSources.SshPassword, s.secret)
+			patch.SSHObfuscatedPassword = &obfuscated
+			dataSource.SSHObfuscatedPassword = obfuscated
+		case "ssh_private_key":
+			obfuscated := common.Obfuscate(request.DataSources.SshPrivateKey, s.secret)
+			patch.SSHObfuscatedPrivateKey = &obfuscated
+			dataSource.SSHObfuscatedPrivateKey = obfuscated
 		}
 	}
 
