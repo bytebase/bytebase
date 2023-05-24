@@ -591,6 +591,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store))
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store))
+	v1pb.RegisterCelServiceServer(s.grpcServer, v1.NewCelService())
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
