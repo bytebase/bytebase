@@ -20,9 +20,11 @@ import { Sheet } from "@/types/proto/v1/sheet_service";
 import type { SheetCreate, SheetOrganizerUpsert } from "@/types";
 import type { SheetViewMode } from "../types";
 import { getDefaultSheetPayloadWithSource, isSheetWritableV1 } from "@/utils";
-import { useSheetStore, useProjectV1Store } from "@/store";
-import { getProjectAndSheetId, getDatabaseId } from "@/store/modules/v1/common";
-import { useSheetV1Store } from "@/store/modules/v1/sheet";
+import { useSheetStore, useSheetV1Store, useProjectV1Store } from "@/store";
+import {
+  getProjectAndSheetId,
+  getInstanceAndDatabaseId,
+} from "@/store/modules/v1/common";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -128,13 +130,13 @@ const handleAction = async (key: string) => {
         const sheetCreate: SheetCreate = {
           projectId: projectV1.uid,
           name: sheet.title,
-          statement: new TextDecoder().decode(sheet.content.buffer),
+          statement: new TextDecoder().decode(sheet.content),
           visibility: "PRIVATE",
           payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
           source: "BYTEBASE",
         };
         if (sheet.database) {
-          sheetCreate.databaseId = getDatabaseId(sheet.database);
+          sheetCreate.databaseId = getInstanceAndDatabaseId(sheet.database)[1];
         }
         await sheetStore.createSheet(sheetCreate);
         dialogInstance.destroy();

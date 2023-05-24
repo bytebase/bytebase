@@ -26,6 +26,7 @@ import {
   useSQLEditorStore,
   useDatabaseStore,
   useSheetStore,
+  useSheetV1Store,
   useInstanceById,
   useDBSchemaStore,
   useUIStateStore,
@@ -57,7 +58,7 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
 const dbSchemaStore = useDBSchemaStore();
 const sqlEditorStore = useSQLEditorStore();
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 const uiStateStore = useUIStateStore();
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
@@ -79,7 +80,7 @@ const selectedDialect = computed((): SQLDialect => {
   const engine = selectedInstance.value.engine;
   return dialectOfEngine(engine);
 });
-const readonly = computed(() => sheetStore.isReadOnly);
+const readonly = computed(() => sheetV1Store.isReadOnly);
 const currentTabId = computed(() => tabStore.currentTabId);
 const isSwitchingTab = ref(false);
 

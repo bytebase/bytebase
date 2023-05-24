@@ -9,6 +9,7 @@ import {
   PrincipalId,
   IssueId,
 } from ".";
+import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 
 export type SheetVisibility = "PRIVATE" | "PROJECT" | "PUBLIC";
 
@@ -111,5 +112,5 @@ export interface SheetPatch {
 export type AccessOption = {
   label: string;
   description: string;
-  value: SheetVisibility;
+  value: Sheet_Visibility;
 };

@@ -26,6 +26,7 @@ import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
 import type { TabInfo } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { useSheetStore, useTabStore } from "@/store";
+import { getProjectAndSheetId } from "@/store/modules/v1/common";
 
 type LocalState = {
   editing: boolean;
@@ -71,10 +72,11 @@ const confirmEdit = () => {
   }
 
   tab.name = name;
+  const sheetId = getProjectAndSheetId(tab.sheetName ?? "")[1];
 
-  if (tab.sheetId && tab.sheetId !== UNKNOWN_ID) {
+  if (sheetId) {
     sheetStore.patchSheetById({
-      id: tab.sheetId,
+      id: sheetId,
       name,
     });
   }

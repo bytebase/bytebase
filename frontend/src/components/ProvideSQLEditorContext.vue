@@ -10,13 +10,14 @@ import {
   useDatabaseStore,
   useSQLEditorStore,
   useTabStore,
-  useSheetStore,
   useDebugStore,
   useInstanceStore,
   pushNotification,
   useConnectionTreeStore,
   useProjectV1Store,
   useCurrentUserV1,
+  useSheetV1Store,
+  useInstanceV1Store,
 } from "@/store";
 import {
   Connection,
@@ -30,9 +31,10 @@ import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
 import {
   emptyConnection,
   idFromSlug,
-  sheetSlug as makeSheetSlug,
+  sheetNameFromSlug,
+  sheetSlugV1,
   connectionSlug as makeConnectionSlug,
-  isSheetReadable,
+  isSheetReadableV1,
   isDatabaseAccessible,
   getDefaultTabNameFromConnection,
   isSimilarTab,
@@ -45,6 +47,7 @@ import {
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
 
 const route = useRoute();
 const router = useRouter();
@@ -57,7 +60,7 @@ const policyV1Store = usePolicyV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const connectionTreeStore = useConnectionTreeStore();
 const tabStore = useTabStore();
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 
 const prepareAccessControlPolicy = async () => {
   connectionTreeStore.accessControlPolicyList =
@@ -180,29 +183,27 @@ const prepareConnectionTree = async () => {
 
 const prepareSheet = async () => {
   const sheetSlug = (route.params.sheetSlug as string) || "";
-  const sheetId = idFromSlug(sheetSlug);
-  if (Number.isNaN(sheetId)) {
-    return false;
-  }
+
+  const sheetName = sheetNameFromSlug(sheetSlug);
   const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheetId === sheetId
+    (tab) => tab.sheetName == sheetName
   );
 
   sqlEditorStore.isFetchingSheet = true;
-  const sheet = await sheetStore.getOrFetchSheetById(sheetId);
+  const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);
   sqlEditorStore.isFetchingSheet = false;
 
-  if (sheet.id === UNKNOWN_ID) {
+  if (!sheet) {
     if (openingSheetTab) {
       // If a sheet is open in a tab but it returns 404 NOT_FOUND
       // that means the sheet has been deleted somewhere else.
       // We need to turn the sheet to an unsaved tab.
-      openingSheetTab.sheetId = undefined;
+      openingSheetTab.sheetName = undefined;
       openingSheetTab.isSaved = false;
     }
     return false;
   }
-  if (!isSheetReadable(sheet)) {
+  if (!isSheetReadableV1(sheet)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -216,15 +217,22 @@ const prepareSheet = async () => {
   } else {
     // Open the sheet in a "temp" tab otherwise.
     tabStore.selectOrAddTempTab();
+
+    const [instanceName, databaseId] = getInstanceAndDatabaseId(sheet.database);
+    const ins = await useInstanceV1Store().getOrFetchInstanceByName(
+      `instances/${instanceName}`
+    );
+
     tabStore.updateCurrentTab({
-      sheetId: sheet.id,
+      sheetName,
       name: sheet.name,
-      statement: sheet.statement,
+      statement: new TextDecoder().decode(sheet.content),
       isSaved: true,
       connection: {
         ...emptyConnection(),
-        instanceId: sheet.database?.instanceId || UNKNOWN_ID,
-        databaseId: sheet.databaseId || UNKNOWN_ID,
+        // TODO: legacy instance id.
+        instanceId: Number(ins.uid),
+        databaseId: Number(databaseId),
       },
     });
   }
@@ -244,7 +252,7 @@ const prepareConnectionSlug = async () => {
 
   const connect = (connection: Connection) => {
     const tab = tabStore.currentTab;
-    if (tab.sheetId) {
+    if (tab.sheetName) {
       // Don't touch a saved sheet.
       tabStore.selectOrAddTempTab();
       return;
@@ -315,22 +323,22 @@ const syncURLWithConnection = () => {
     [
       () => connection.value.instanceId,
       () => connection.value.databaseId,
-      () => tabStore.currentTab.sheetId,
+      () => tabStore.currentTab.sheetName,
     ],
-    ([instanceId, databaseId, sheetId]) => {
-      if (sheetId && sheetId !== UNKNOWN_ID) {
-        const sheet = sheetStore.sheetById.get(sheetId);
+    ([instanceId, databaseId, sheetName]) => {
+      if (sheetName) {
+        const sheet = sheetV1Store.getSheetByName(sheetName);
         if (sheet) {
           router.replace({
             name: "sql-editor.share",
             params: {
-              sheetSlug: makeSheetSlug(sheet),
+              sheetSlug: sheetSlugV1(sheet),
             },
           });
         } else {
           // A sheet is not found, fallback to an unsaved tab.
           tabStore.updateCurrentTab({
-            sheetId: undefined,
+            sheetName: undefined,
             isSaved: false,
           });
         }
