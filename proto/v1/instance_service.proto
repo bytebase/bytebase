@@ -162,7 +162,6 @@ message AddDataSourceRequest {
   // Only READ_ONLY data source can be added.
   DataSource data_sources = 2 [(google.api.field_behavior) = REQUIRED];
 
-
   // Validate only also tests the data source connection.
   bool validate_only = 3;
 }
