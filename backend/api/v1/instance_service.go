@@ -553,6 +553,10 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 	if err != nil {
 		return nil, err
 	}
+	environmentID, err := getEnvironmentID(instance.Environment)
+	if err != nil {
+		return nil, err
+	}
 
 	return &store.InstanceMessage{
 		ResourceID:    instanceID,
@@ -560,7 +564,7 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 		Engine:        convertEngine(instance.Engine),
 		ExternalLink:  instance.ExternalLink,
 		DataSources:   datasources,
-		EnvironmentID: instance.Environment,
+		EnvironmentID: environmentID,
 	}, nil
 }
 
