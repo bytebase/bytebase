@@ -4,8 +4,6 @@ import { GrantRequestContext, IssueCreate } from "@/types";
 import { useCurrentUserV1, useDatabaseStore, useProjectV1Store } from "@/store";
 import { provideIssueLogic, useCommonLogic, useIssueLogic } from "./index";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
-import { celServiceClient } from "@/grpcweb";
-import { resolveCELExpr } from "@/plugins/cel";
 
 export default defineComponent({
   name: "GrantRequestModeProvider",
@@ -80,15 +78,7 @@ export default defineComponent({
         },
       };
       issueCreate.createContext = {};
-
-      console.log("celExpressionString", celExpressionString);
-
-      const { expression: celExpr } = await celServiceClient.parse({
-        expression: `((resource.database in ["instances/ins-nzq-bohu/databases/employee","instances/ins-nzq-bohu/databases/db3"]) || (resource.database == "instances/newinstance-2jkh/databases/postgres" && resource.schema in ["public","s1"]) || (resource.database == "instances/newinstance-2jkh/databases/test" && resource.schema == "public" && resource.table in ["candy"])) && request.time < timestamp("2023-05-31T09:34:46.803Z")`,
-      });
-      console.log("123", resolveCELExpr(celExpr!.expr!));
-
-      // createIssue(issueCreate);
+      createIssue(issueCreate);
     };
 
     const logic = {

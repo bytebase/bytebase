@@ -46,36 +46,34 @@
               {{ $t("common.select") }}
             </button>
             <div
-              v-if="selectedDatabaseList.length > 0"
+              v-if="state.selectedDatabaseResourceList.length > 0"
               class="ml-6 flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
             >
               <div
-                v-for="database in selectedDatabaseList"
-                :key="database.id"
+                v-for="databaseResource in state.selectedDatabaseResourceList"
+                :key="`${databaseResource.databaseId}`"
                 class="flex flex-row justify-start items-center"
               >
-                <InstanceEngineIcon
-                  class="mr-1"
-                  :instance="database.instance"
-                />
-                {{ database.name }}
+                <DatabaseResourceView :database-resource="databaseResource" />
               </div>
             </div>
           </div>
         </NRadioGroup>
       </div>
-      <div v-else class="flex flex-row justify-start items-start gap-4">
-        <span v-if="state.selectedDatabaseIdList.length === 0">{{
+      <div
+        v-else
+        class="flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
+      >
+        <span v-if="state.selectedDatabaseResourceList.length === 0">{{
           $t("issue.grant-request.all-databases")
         }}</span>
         <div
-          v-for="database in selectedDatabaseList"
+          v-for="databaseResource in state.selectedDatabaseResourceList"
           v-else
-          :key="database.id"
+          :key="`${databaseResource.databaseId}`"
           class="flex flex-row justify-start items-center"
         >
-          <InstanceEngineIcon class="mr-1" :instance="database.instance" />
-          {{ database.name }}
+          <DatabaseResourceView :database-resource="databaseResource" />
         </div>
       </div>
     </div>
@@ -152,20 +150,17 @@ import {
   PresetRoleType,
   UNKNOWN_ID,
 } from "@/types";
-import {
-  getDatabaseIdByName,
-  memberListInProjectV1,
-  parseConditionExpressionString,
-} from "@/utils";
+import { getDatabaseIdByName, memberListInProjectV1 } from "@/utils";
 import {
   convertUserToPrincipal,
   useDatabaseStore,
   useProjectV1Store,
 } from "@/store";
+import { converFromCEL, stringifyDatabaseResources } from "@/utils/issue/cel";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import RequiredStar from "@/components/RequiredStar.vue";
 import SelectDatabaseResourceForm from "./SelectDatabaseResourceForm/index.vue";
-import { stringifyDatabaseResources } from "@/utils/issue/cel";
+import DatabaseResourceView from "./DatabaseResourceView.vue";
 
 interface LocalState {
   showSelectDatabasePanel: boolean;
@@ -196,12 +191,6 @@ const state = reactive<LocalState>({
 
 const projectId = computed(() => {
   return create.value ? state.projectId : (issue.value as Issue).project.id;
-});
-
-const selectedDatabaseList = computed(() => {
-  return state.selectedDatabaseIdList.map((id) => {
-    return databaseStore.getDatabaseById(id);
-  });
 });
 
 const expireDaysOptions = computed(() => [
@@ -313,7 +302,7 @@ watch(
         throw "Only support QUERIER role";
       }
 
-      const conditionExpression = parseConditionExpressionString(
+      const conditionExpression = await converFromCEL(
         payload.condition.expression
       );
       if (conditionExpression.expiredTime !== undefined) {
@@ -333,6 +322,13 @@ watch(
           }
         }
         state.selectedDatabaseIdList = uniq(databaseIdList);
+      }
+      if (
+        conditionExpression.databaseResources !== undefined &&
+        conditionExpression.databaseResources.length > 0
+      ) {
+        state.selectedDatabaseResourceList =
+          conditionExpression.databaseResources;
       }
     }
   },

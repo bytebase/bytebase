@@ -1,8 +1,9 @@
-import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
-import { useDatabaseStore } from "@/store";
-import { getDatabaseNameById } from "./expr";
+import { cloneDeep, last } from "lodash-es";
+import { getDatabaseIdByName, getDatabaseNameById } from "./expr";
 import { celServiceClient } from "@/grpcweb";
-import { resolveCELExpr } from "@/plugins/cel";
+import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
+import { useDatabaseStore } from "@/store";
+import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
 
 interface DatabaseLevelCondition {
   database: string[];
@@ -130,14 +131,96 @@ const convertToCEL = (
   return `(${topLevelCondition})`;
 };
 
-const converFromCEL = async (cel: string) => {
+interface ConditionExpression {
+  databases?: string[];
+  databaseResources?: DatabaseResource[];
+  expiredTime?: string;
+  statement?: string;
+  rowLimit?: number;
+  exportFormat?: string;
+}
+
+export const converFromCEL = async (
+  cel: string
+): Promise<ConditionExpression> => {
   const { expression: celExpr } = await celServiceClient.parse({
     expression: cel,
   });
-  if (celExpr && celExpr.expr) {
-    const simpleExpr = resolveCELExpr(celExpr.expr);
-    console.log("simpleExpr", simpleExpr);
+
+  if (!celExpr || !celExpr.expr) {
+    return {};
   }
+
+  const simpleExpr = resolveCELExpr(celExpr.expr);
+  const conditionExpression: ConditionExpression = {
+    databaseResources: [],
+  };
+
+  async function processCondition(expr: SimpleExpr) {
+    if (expr.operator === "_&&_" || expr.operator === "_||_") {
+      for (const arg of expr.args) {
+        await processCondition(arg);
+      }
+    } else if (expr.operator === "@in") {
+      const [property, values] = expr.args;
+      if (typeof property === "string" && Array.isArray(values)) {
+        if (property === "resource.database") {
+          for (const value of values) {
+            const databaseId = await getDatabaseIdByName(value as string);
+            const databaseResource: DatabaseResource = {
+              databaseId: databaseId,
+            };
+            conditionExpression.databaseResources!.push(databaseResource);
+          }
+        } else if (property === "resource.schema") {
+          const databaseResource = conditionExpression.databaseResources?.pop();
+          if (databaseResource) {
+            for (const value of values) {
+              const temp: DatabaseResource = cloneDeep(
+                databaseResource
+              ) as DatabaseResource;
+              temp.schema = value as string;
+              conditionExpression.databaseResources!.push(temp);
+            }
+          }
+        } else if (property === "resource.table") {
+          const databaseResource = conditionExpression.databaseResources?.pop();
+          if (databaseResource) {
+            for (const value of values) {
+              const temp: DatabaseResource = cloneDeep(
+                databaseResource
+              ) as DatabaseResource;
+              temp.table = value as string;
+              conditionExpression.databaseResources!.push(temp);
+            }
+          }
+        }
+      }
+    } else if (expr.operator === "_==_") {
+      const [left, right] = expr.args;
+      if (typeof left === "string" && typeof right === "string") {
+        if (left === "resource.database") {
+          const databaseId = await getDatabaseIdByName(right);
+          const databaseResource: DatabaseResource = {
+            databaseId: databaseId,
+          };
+          conditionExpression.databaseResources!.push(databaseResource);
+        } else if (left === "resource.schema") {
+          const databaseResource = last(conditionExpression.databaseResources);
+          if (databaseResource) {
+            databaseResource.schema = right;
+          }
+        }
+      }
+    } else if (expr.operator === "_<_") {
+      const [left, right] = expr.args;
+      if (left === "request.time") {
+        conditionExpression.expiredTime = (right as Date).toISOString();
+      }
+    }
+  }
+  await processCondition(simpleExpr);
+  return conditionExpression;
 };
 
 const mergeDatabaseLevelConditions = (
