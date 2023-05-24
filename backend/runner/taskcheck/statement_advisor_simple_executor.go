@@ -79,6 +79,8 @@ func (e *StatementAdvisorSimpleExecutor) Run(ctx context.Context, taskCheckRun *
 			advisorType = advisor.MySQLSyntax
 		case db.Postgres:
 			advisorType = advisor.PostgreSQLSyntax
+		case db.Oracle:
+			advisorType = advisor.OracleSyntax
 		default:
 			return nil, common.Errorf(common.Invalid, "invalid database type: %s for syntax statement advisor", instance.Engine)
 		}
