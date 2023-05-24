@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { computed, unref, watchEffect } from "vue";
 import axios, { type AxiosRequestConfig } from "axios";
 import {
   Sheet,
@@ -13,9 +14,9 @@ import {
   UNKNOWN_ID,
   SheetCreate,
   SheetOrganizerUpsert,
-  ProjectId,
   SheetUpsert,
   SheetPayload,
+  MaybeRef,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useDatabaseStore } from "./database";
@@ -207,8 +208,16 @@ export const useSheetStore = defineStore("sheet", {
         },
       });
     },
-    async syncSheetFromVCS(projectId: ProjectId) {
-      await axios.post(`/api/project/${projectId}/sync-sheet`);
-    },
   },
 });
+
+export const useSheetById = (sheetId: MaybeRef<SheetId>) => {
+  const store = useSheetStore();
+  watchEffect(async () => {
+    await store.getOrFetchSheetById(unref(sheetId));
+  });
+
+  return computed(() => {
+    return store.getSheetById(unref(sheetId));
+  });
+};

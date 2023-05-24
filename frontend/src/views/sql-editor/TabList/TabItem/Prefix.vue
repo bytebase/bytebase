@@ -43,5 +43,6 @@ const sheet = computed(() => {
       return sheet;
     }
   }
+  return null;
 });
 </script>

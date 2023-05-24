@@ -258,7 +258,7 @@ export const useCommonLogic = () => {
         migrationDetail.sheetId = sheet.id;
       } else {
         const sheetId = taskCreate.sheetId;
-        const sheet = sheetStore.getSheetById(sheetId);
+        const sheet = await sheetStore.getOrFetchSheetById(sheetId);
         if (sheet.statement.length === sheet.size) {
           await sheetStore.patchSheetById({
             id: sheetId,

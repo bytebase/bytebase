@@ -25,7 +25,6 @@ import {
   useTabStore,
   useSQLEditorStore,
   useDatabaseStore,
-  useSheetStore,
   useSheetV1Store,
   useInstanceById,
   useDBSchemaStore,
