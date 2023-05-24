@@ -136,8 +136,8 @@ github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651 h1:NpoTuRY6Ckj37
 github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651/go.mod h1:/HsnX0+34LXVz3MxtZoW15GiwEOXz/PrEhutjb3icfE=
 github.com/bytebase/pg_query_go/v2 v2.0.0-20221123093650-17425d1d18b7 h1:RDN6UnjTq4HR4LKrN8Yav4XfwUoGRjTocvWmzGr6Usc=
 github.com/bytebase/pg_query_go/v2 v2.0.0-20221123093650-17425d1d18b7/go.mod h1:XAxmVqz1tEGqizcQ3YSdN90vCOHBWjJi8URL1er5+cA=
-github.com/bytebase/plsql-parser v0.0.0-20230508042408-11706c020b1c h1:QNwsznuwbcZSLyCsjEAYmDerUSPMEhUTEujU8bY/rqY=
-github.com/bytebase/plsql-parser v0.0.0-20230508042408-11706c020b1c/go.mod h1:Mxor1eHkrVYgLF5D62T7nMKyZqCovaT4Srt3ru84Sc0=
+github.com/bytebase/plsql-parser v0.0.0-20230524061712-9ad525245954 h1:/ho8xJ2VOHcpgCRWd7nWaaQ0kqGCW4/ZCYEFcrUCEN0=
+github.com/bytebase/plsql-parser v0.0.0-20230524061712-9ad525245954/go.mod h1:Mxor1eHkrVYgLF5D62T7nMKyZqCovaT4Srt3ru84Sc0=
 github.com/bytebase/tidb v0.0.0-20230329095902-fe196d3c77d0 h1:h0LzCFbiCKWy/TbnE5amjDf+/j+06chImQwEhe+TbHc=
 github.com/bytebase/tidb v0.0.0-20230329095902-fe196d3c77d0/go.mod h1:xrVXE+0V54QRGgrD9o+tuZmBDDx8vJpQgrPtRQvodWo=
 github.com/bytebase/tidb/parser v0.0.0-20230329095902-fe196d3c77d0 h1:Xdq53fvcG9qeUKkxdNbR9B1JLbfeIjhW2N0xxFbaZNg=
