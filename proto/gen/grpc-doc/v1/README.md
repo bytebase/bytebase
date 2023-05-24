@@ -380,6 +380,7 @@
     - [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status)
     - [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type)
     - [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus)
+    - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
@@ -5649,6 +5650,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
+| id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
 | restore_database_config | [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig) |  |  |
@@ -5765,6 +5767,8 @@ FIXME(d/xz): support spec with deployment config
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | title | [string](#string) |  |  |
+| spec_id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. Could be empty if the rollout of the task does not have an associating plan. |
+| status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. TODO(p0ny): migrate old task status and use this field as a summary of the task runs. |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
 | blocked_by_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
@@ -6047,6 +6051,23 @@ Type is the database change type.
 
 
 
+<a name="bytebase-v1-Task-Status"></a>
+
+### Task.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING_APPROVAL | 1 |  |
+| PENDING | 2 |  |
+| RUNNING | 3 |  |
+| DONE | 4 |  |
+| FAILED | 5 |  |
+| CANCELED | 6 |  |
+
+
+
 <a name="bytebase-v1-Task-Type"></a>
 
 ### Task.Type
@@ -6079,7 +6100,7 @@ Type is the database change type.
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
 | RUNNING | 2 |  |
-| COMPLETED | 3 |  |
+| DONE | 3 |  |
 | FAILED | 4 |  |
 | CANCELED | 5 |  |
 | SKIPPED | 6 |  |

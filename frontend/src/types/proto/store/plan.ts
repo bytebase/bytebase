@@ -15,6 +15,8 @@ export interface PlanConfig_Step {
 export interface PlanConfig_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
   earliestAllowedTime?: Date;
+  /** A UUID4 string that uniquely identifies the Spec. */
+  id: string;
   createDatabaseConfig?: PlanConfig_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: PlanConfig_ChangeDatabaseConfig | undefined;
   restoreDatabaseConfig?: PlanConfig_RestoreDatabaseConfig | undefined;
@@ -296,6 +298,7 @@ export const PlanConfig_Step = {
 function createBasePlanConfig_Spec(): PlanConfig_Spec {
   return {
     earliestAllowedTime: undefined,
+    id: "",
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     restoreDatabaseConfig: undefined,
@@ -306,6 +309,9 @@ export const PlanConfig_Spec = {
   encode(message: PlanConfig_Spec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.earliestAllowedTime !== undefined) {
       Timestamp.encode(toTimestamp(message.earliestAllowedTime), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.id !== "") {
+      writer.uint32(42).string(message.id);
     }
     if (message.createDatabaseConfig !== undefined) {
       PlanConfig_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).ldelim();
@@ -332,6 +338,13 @@ export const PlanConfig_Spec = {
           }
 
           message.earliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.id = reader.string();
           continue;
         case 1:
           if (tag !== 10) {
@@ -368,6 +381,7 @@ export const PlanConfig_Spec = {
       earliestAllowedTime: isSet(object.earliestAllowedTime)
         ? fromJsonTimestamp(object.earliestAllowedTime)
         : undefined,
+      id: isSet(object.id) ? String(object.id) : "",
       createDatabaseConfig: isSet(object.createDatabaseConfig)
         ? PlanConfig_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
         : undefined,
@@ -383,6 +397,7 @@ export const PlanConfig_Spec = {
   toJSON(message: PlanConfig_Spec): unknown {
     const obj: any = {};
     message.earliestAllowedTime !== undefined && (obj.earliestAllowedTime = message.earliestAllowedTime.toISOString());
+    message.id !== undefined && (obj.id = message.id);
     message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
       ? PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
       : undefined);
@@ -402,6 +417,7 @@ export const PlanConfig_Spec = {
   fromPartial(object: DeepPartial<PlanConfig_Spec>): PlanConfig_Spec {
     const message = createBasePlanConfig_Spec();
     message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
+    message.id = object.id ?? "";
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
       ? PlanConfig_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
       : undefined;
