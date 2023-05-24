@@ -100,7 +100,7 @@ import {
 import { useIssueLogic } from "./logic";
 import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
 import MonacoEditor from "../MonacoEditor";
-import { sqlClient } from "@/grpcweb";
+import { sqlServiceClient } from "@/grpcweb";
 import { convertEngineType } from "@/types";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 import { useSilentRequest } from "@/plugins/silent-request";
@@ -185,7 +185,7 @@ const useSDLState = () => {
     };
     const diffDDL = await useSilentRequest(getSchemaDiff);
 
-    const { currentSchema, expectedSchema } = await sqlClient.pretty({
+    const { currentSchema, expectedSchema } = await sqlServiceClient.pretty({
       engine: convertEngineType(database.instance.engine),
       currentSchema: previousSDL ?? "",
       expectedSchema: expectedSDL ?? "",

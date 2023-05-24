@@ -127,7 +127,6 @@ import {
   type ConditionExpr,
   type ConditionGroupExpr,
   type LogicalOperator,
-  StringFactorList,
   StringOperatorList,
   LogicalOperatorList,
   isConditionGroupExpr,
@@ -135,6 +134,7 @@ import {
 } from "@/plugins/cel";
 import Condition from "./Condition.vue";
 import { useExprEditorContext } from "./context";
+import { StringFactorList } from "./factor";
 
 const props = defineProps<{
   expr: ConditionGroupExpr;
