@@ -61,6 +61,7 @@
 - [store/plan.proto](#store_plan-proto)
     - [PlanConfig](#bytebase-store-PlanConfig)
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
+    - [PlanConfig.ChangeDatabaseConfig.RollbackDetail](#bytebase-store-PlanConfig-ChangeDatabaseConfig-RollbackDetail)
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
     - [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry)
     - [PlanConfig.RestoreDatabaseConfig](#bytebase-store-PlanConfig-RestoreDatabaseConfig)
@@ -925,10 +926,27 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target. Format: projects/{project}/logicalDatabases/{ldb1}. Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}. Format: instances/{xxx}/databases/{db1}. |
-| sheet | [string](#string) |  | The resource name of the sheet. Format: sheets/{sheet} |
+| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
 | rollback_enabled | [bool](#bool) |  | If RollbackEnabled, build the RollbackSheetID of the task. |
+| rollback_detail | [PlanConfig.ChangeDatabaseConfig.RollbackDetail](#bytebase-store-PlanConfig-ChangeDatabaseConfig-RollbackDetail) | optional |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-RollbackDetail"></a>
+
+### PlanConfig.ChangeDatabaseConfig.RollbackDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rollback_from_task | [string](#string) |  | rollback_from_task is the task from which the rollback SQL statement is generated for this task. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| rollback_from_review | [string](#string) |  | rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task. Format: projects/{project}/reviews/{review} |
 
 
 

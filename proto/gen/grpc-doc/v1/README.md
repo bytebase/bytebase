@@ -362,6 +362,7 @@
     - [ListPlansResponse](#bytebase-v1-ListPlansResponse)
     - [Plan](#bytebase-v1-Plan)
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
+    - [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry)
     - [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig)
@@ -5672,10 +5673,27 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target. Format: projects/{project}/logicalDatabases/{ldb1}. Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}. Format: instances/{xxx}/databases/{db1}. |
-| sheet | [string](#string) |  | The resource name of the sheet. Format: sheets/{sheet} |
+| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | type | [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
 | rollback_enabled | [bool](#bool) |  | If RollbackEnabled, build the RollbackSheetID of the task. |
+| rollback_detail | [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail) | optional |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail"></a>
+
+### Plan.ChangeDatabaseConfig.RollbackDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rollback_from_task | [string](#string) |  | rollback_from_task is the task from which the rollback SQL statement is generated for this task. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| rollback_from_review | [string](#string) |  | rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task. Format: projects/{project}/reviews/{review} |
 
 
 
@@ -5786,7 +5804,7 @@ FIXME(d/xz): support spec with deployment config
 | type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
 | status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
 | target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | detail | [string](#string) |  |  |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
 
@@ -5907,7 +5925,7 @@ FIXME(d/xz): support spec with deployment config
 | project | [string](#string) |  | The project owning the database. Format: projects/{project} |
 | database | [string](#string) |  | database name |
 | table | [string](#string) |  | table name |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | character_set | [string](#string) |  |  |
 | collection | [string](#string) |  |  |
 | labels | [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry) | repeated |  |
@@ -5941,7 +5959,7 @@ FIXME(d/xz): support spec with deployment config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | schema_version | [string](#string) |  |  |
 | rollback_enabled | [bool](#bool) |  | Build the rollback SQL if rollback_enabled. |
 | rollback_sql_status | [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus) |  | The status of the rollback SQL generation. |
@@ -5953,7 +5971,7 @@ FIXME(d/xz): support spec with deployment config
 | binlog_position_start | [int64](#int64) |  |  |
 | binlog_position_end | [int64](#int64) |  |  |
 | rollback_error | [string](#string) |  |  |
-| rollback_sheet | [string](#string) |  | rollback_sheet is the resource name of the sheet that stores the generated rollback SQL statement. Format: sheets/{sheet} |
+| rollback_sheet | [string](#string) |  | rollback_sheet is the resource name of the sheet that stores the generated rollback SQL statement. Format: projects/{project}/sheets/{sheet} |
 | rollback_from_review | [string](#string) |  | rollback_from_review is the resource name of the review that the rollback SQL statement is generated from. Format: projects/{project}/reviews/{review} |
 | rollback_from_task | [string](#string) |  | rollback_from_task is the resource name of the task that the rollback SQL statement is generated from. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 
@@ -6002,7 +6020,7 @@ FIXME(d/xz): support spec with deployment config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | schema_version | [string](#string) |  |  |
 
 
