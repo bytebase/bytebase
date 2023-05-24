@@ -23,7 +23,7 @@ import (
 
 const (
 	// The chosen interval is a balance between anomaly staleness tolerance and background load.
-	anomalyScanInterval = time.Duration(1) * time.Minute
+	anomalyScanInterval = time.Duration(10) * time.Minute
 )
 
 // NewScanner creates a anomaly scanner.
