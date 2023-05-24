@@ -19,7 +19,7 @@ func parseStatement(statement string) (antlr.Tree, []advisor.Advice) {
 		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
 			return nil, []advisor.Advice{
 				{
-					Status:  advisor.Error,
+					Status:  advisor.Warn,
 					Code:    advisor.StatementSyntaxError,
 					Title:   advisor.SyntaxErrorTitle,
 					Content: syntaxErr.Message,
@@ -29,7 +29,7 @@ func parseStatement(statement string) (antlr.Tree, []advisor.Advice) {
 		}
 		return nil, []advisor.Advice{
 			{
-				Status:  advisor.Error,
+				Status:  advisor.Warn,
 				Code:    advisor.Internal,
 				Title:   "Parse error",
 				Content: err.Error(),
