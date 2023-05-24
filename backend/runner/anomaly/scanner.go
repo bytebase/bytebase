@@ -23,7 +23,7 @@ import (
 
 const (
 	// The chosen interval is a balance between anomaly staleness tolerance and background load.
-	anomalyScanInterval = time.Duration(10) * time.Minute
+	anomalyScanInterval = time.Duration(1) * time.Minute
 )
 
 // NewScanner creates a anomaly scanner.
@@ -500,11 +500,9 @@ func disableBackupAnomalyCheck(dbTp db.Type) bool {
 func disableSchemaDriftAnomalyCheck(dbTp db.Type) bool {
 	m := map[db.Type]struct{}{
 		db.MongoDB:  {},
-		db.Spanner:  {},
 		db.Redis:    {},
 		db.Oracle:   {},
 		db.MSSQL:    {},
-		db.MariaDB:  {},
 		db.Redshift: {},
 	}
 	_, ok := m[dbTp]
