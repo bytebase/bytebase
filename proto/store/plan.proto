@@ -56,7 +56,7 @@ message PlanConfig {
     // Format: instances/{xxx}/databases/{db1}.
     string target = 1;
     // The resource name of the sheet.
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;
     // Type is the database change type.
     enum Type {

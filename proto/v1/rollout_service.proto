@@ -175,7 +175,7 @@ message Plan {
     // Format: instances/{xxx}/databases/{db1}.
     string target = 1;
     // The resource name of the sheet.
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;
     // Type is the database change type.
     enum Type {
@@ -284,7 +284,7 @@ message PlanCheckRun {
 
   // Format: instances/{instance}/databases/{database}
   string target = 5;
-  // Format: sheets/{sheet}
+  // Format: projects/{project}/sheets/{sheet}
   string sheet = 6;
 
   string detail = 7;
@@ -412,7 +412,7 @@ message Task {
     string database = 2;
     // table name
     string table = 3;
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string sheet = 4;
     string character_set = 5;
     string collection = 6;
@@ -424,13 +424,13 @@ message Task {
   }
 
   message DatabaseSchemaUpdate {
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string sheet = 1;
     string schema_version = 2;
   }
 
   message DatabaseDataUpdate {
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string sheet = 1;
     string schema_version = 2;
 
@@ -463,7 +463,7 @@ message Task {
     string rollback_error = 12;
     // rollback_sheet is the resource name of
     // the sheet that stores the generated rollback SQL statement.
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string rollback_sheet = 13;
     // rollback_from_review is the resource name of the review that
     // the rollback SQL statement is generated from.
