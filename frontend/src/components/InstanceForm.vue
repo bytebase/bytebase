@@ -9,8 +9,6 @@
       class="divide-y divide-block-border w-[850px]"
       :class="modal && ['flex-1 overflow-y-auto']"
     >
-      <div>{{ basicInfo }}</div>
-
       <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
         <template v-for="engine in engineList" :key="engine">
           <div
@@ -1583,7 +1581,7 @@ const testConnectionV1 = async () => {
 // basic information, admin data source and read-only data source.
 const getOriginalEditState = () => {
   return {
-    basicInfoV1: extractBasicInfo(props.instance),
+    basicInfo: extractBasicInfo(props.instance),
     adminDataSource: extractAdminDataSource(props.instance),
     readonlyDataSource: extractReadOnlyDataSource(props.instance),
   };
