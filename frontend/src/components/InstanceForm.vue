@@ -535,45 +535,31 @@
     <!-- Action Button Group -->
     <div class="pt-4">
       <div class="w-full flex justify-between items-center">
-        <div class="w-full flex justify-end items-center">
-          <div>
-            <BBSpin v-if="state.isRequesting" />
-          </div>
-          <div class="ml-2">
-            <template v-if="isCreating">
-              <button
-                type="button"
-                class="btn-normal py-2 px-4"
-                :disabled="state.isRequesting"
-                @click.prevent="cancel"
-              >
-                {{ $t("common.cancel") }}
-              </button>
-              <button
-                type="button"
-                class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-                :disabled="!allowCreate || state.isRequesting"
-                @click.prevent="tryCreate"
-              >
-                {{ $t("common.create") }}
-              </button>
-            </template>
-            <template v-else>
-              <button
-                v-if="allowEdit"
-                type="button"
-                :disabled="!allowUpdate || state.isRequesting"
-                :class="
-                  !allowUpdate || state.isRequesting
-                    ? 'btn-normal'
-                    : 'btn-primary'
-                "
-                @click.prevent="doUpdate"
-              >
-                {{ $t("common.update") }}
-              </button>
-            </template>
-          </div>
+        <div class="w-full flex justify-end items-center gap-x-4">
+          <template v-if="isCreating">
+            <NButton :disabled="state.isRequesting" @click.prevent="cancel">
+              {{ $t("common.cancel") }}
+            </NButton>
+            <NButton
+              :disabled="!allowCreate || state.isRequesting"
+              :loading="state.isRequesting"
+              type="primary"
+              @click.prevent="tryCreate"
+            >
+              {{ $t("common.create") }}
+            </NButton>
+          </template>
+          <template v-else>
+            <NButton
+              v-if="allowEdit"
+              :disabled="!allowUpdate || state.isRequesting"
+              :loading="state.isRequesting"
+              type="primary"
+              @click.prevent="doUpdate"
+            >
+              {{ $t("common.update") }}
+            </NButton>
+          </template>
         </div>
       </div>
     </div>
@@ -600,6 +586,7 @@
 <script lang="ts" setup>
 import { computed, reactive, PropType, ref, watch, onMounted } from "vue";
 import { cloneDeep, isEqual, omit } from "lodash-es";
+import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { Status } from "nice-grpc-common";
 import { useRouter } from "vue-router";
