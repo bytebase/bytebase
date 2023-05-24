@@ -92,6 +92,7 @@ const handleAction = async (key: string) => {
       closeOnEsc: false,
       async onPositiveClick() {
         await useSheetV1Store().deleteSheetByName(sheet.name);
+        emit("refresh");
         dialogInstance.destroy();
       },
       onNegativeClick() {
@@ -139,6 +140,7 @@ const handleAction = async (key: string) => {
           sheetCreate.databaseId = getInstanceAndDatabaseId(sheet.database)[1];
         }
         await sheetStore.createSheet(sheetCreate);
+        emit("refresh");
         dialogInstance.destroy();
       },
       onNegativeClick() {
