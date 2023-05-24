@@ -60,6 +60,14 @@
   
     - [BookmarkService](#bytebase-v1-BookmarkService)
   
+- [v1/cel_service.proto](#v1_cel_service-proto)
+    - [DeparseRequest](#bytebase-v1-DeparseRequest)
+    - [DeparseResponse](#bytebase-v1-DeparseResponse)
+    - [ParseRequest](#bytebase-v1-ParseRequest)
+    - [ParseResponse](#bytebase-v1-ParseResponse)
+  
+    - [CelService](#bytebase-v1-CelService)
+  
 - [v1/database_service.proto](#v1_database_service-proto)
     - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
     - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
@@ -1189,6 +1197,93 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 | CreateBookmark | [CreateBookmarkRequest](#bytebase-v1-CreateBookmarkRequest) | [Bookmark](#bytebase-v1-Bookmark) | CreateBookmark creates a new bookmark. |
 | DeleteBookmark | [DeleteBookmarkRequest](#bytebase-v1-DeleteBookmarkRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | DeleteBookmark deletes a bookmark. |
 | ListBookmarks | [ListBookmarksRequest](#bytebase-v1-ListBookmarksRequest) | [ListBookmarksResponse](#bytebase-v1-ListBookmarksResponse) | ListBookmark lists bookmarks. |
+
+ 
+
+
+
+<a name="v1_cel_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/cel_service.proto
+
+
+
+<a name="bytebase-v1-DeparseRequest"></a>
+
+### DeparseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeparseResponse"></a>
+
+### DeparseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expression | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ParseRequest"></a>
+
+### ParseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expression | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ParseResponse"></a>
+
+### ParseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-CelService"></a>
+
+### CelService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Parse | [ParseRequest](#bytebase-v1-ParseRequest) | [ParseResponse](#bytebase-v1-ParseResponse) |  |
+| Deparse | [DeparseRequest](#bytebase-v1-DeparseRequest) | [DeparseResponse](#bytebase-v1-DeparseResponse) |  |
 
  
 
