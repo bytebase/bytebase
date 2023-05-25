@@ -1,7 +1,7 @@
 import { cloneDeep } from "lodash-es";
 import { defineComponent, onMounted } from "vue";
 import { GrantRequestContext, IssueCreate } from "@/types";
-import { useCurrentUserV1, useDatabaseStore, useProjectV1Store } from "@/store";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { provideIssueLogic, useCommonLogic, useIssueLogic } from "./index";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 
@@ -9,7 +9,6 @@ export default defineComponent({
   name: "GrantRequestModeProvider",
   setup() {
     const { issue, createIssue } = useIssueLogic();
-    const databaseStore = useDatabaseStore();
 
     onMounted(() => {
       useProjectV1Store().fetchProjectList();
@@ -21,7 +20,6 @@ export default defineComponent({
 
       const context: GrantRequestContext = {
         ...{
-          databases: [],
           databaseResources: [],
           expireDays: 7,
           maxRowCount: 1000,
@@ -46,20 +44,18 @@ export default defineComponent({
         );
       } else if (context.role === "EXPORTER") {
         if (
-          !Array.isArray(context.databases) ||
-          context.databases.length === 0
+          !Array.isArray(context.databaseResources) ||
+          context.databaseResources.length === 0
         ) {
           throw "Exporter must have at least one database";
         }
-        const databaseId = context.databases[0];
-        const database = await databaseStore.getOrFetchDatabaseById(databaseId);
-        const databaseNames = [];
-        databaseNames.push(
-          `instances/${database.instance.resourceId}/databases/${database.name}`
-        );
-        expression.push(
-          `resource.database in ${JSON.stringify(databaseNames)}`
-        );
+        if (
+          Array.isArray(context.databaseResources) &&
+          context.databaseResources.length > 0
+        ) {
+          const cel = stringifyDatabaseResources(context.databaseResources);
+          expression.push(cel);
+        }
         expression.push(`request.statement == "${btoa(context.statement)}"`);
         expression.push(`request.row_limit == ${context.maxRowCount}`);
         expression.push(`request.export_format == "${context.exportFormat}"`);
