@@ -510,8 +510,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
 	s.registerOAuthRoutes(apiGroup)
-	s.registerPrincipalRoutes(apiGroup)
-	s.registerMemberRoutes(apiGroup)
 	s.registerProjectRoutes(apiGroup)
 	s.registerProjectWebhookRoutes(apiGroup)
 	s.registerEnvironmentRoutes(apiGroup)
