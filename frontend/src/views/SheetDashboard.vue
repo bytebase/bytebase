@@ -92,13 +92,13 @@ import { last } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { t } from "@/plugins/i18n";
 
-import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   hasFeature,
   useUserStore,
+  useSheetV1Store,
   useProjectV1ListByCurrentUser,
 } from "@/store";
-import { useSheetV1Store } from "@/store/modules/v1/sheet";
 import { getSheetIssueBacktracePayloadV1 } from "@/utils";
 import {
   type SheetViewMode,
@@ -109,7 +109,7 @@ import { Workflow } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   isLoading: boolean;
-  sheetList: SheetV1[];
+  sheetList: Sheet[];
   showFeatureModal: boolean;
 }
 
@@ -156,10 +156,7 @@ const shownSheetList = computed(() => {
     list = list.filter((sheet) => {
       return (
         sheet.name.toLowerCase().includes(keyword) ||
-        new TextDecoder()
-          .decode(sheet.content.buffer)
-          .toLowerCase()
-          .includes(keyword)
+        new TextDecoder().decode(sheet.content).toLowerCase().includes(keyword)
       );
     });
   }
@@ -215,7 +212,7 @@ const currentSheetViewMode = computed((): SheetViewMode => {
 const fetchSheetData = async () => {
   await useUserStore().fetchUserList();
 
-  let sheetList: SheetV1[] = [];
+  let sheetList: Sheet[] = [];
   if (currentSheetViewMode.value === "my") {
     sheetList = await sheetV1Store.fetchMySheetList();
   } else if (currentSheetViewMode.value === "starred") {

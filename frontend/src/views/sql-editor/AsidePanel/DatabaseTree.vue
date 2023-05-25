@@ -60,7 +60,6 @@ import type {
   CoreTabInfo,
   DatabaseId,
   InstanceId,
-  SheetId,
 } from "@/types";
 import { ConnectionTreeState, TabMode, UNKNOWN_ID } from "@/types";
 import {
@@ -189,8 +188,8 @@ const treeData = computed(() => connectionTreeStore.tree.data);
 
 const setConnection = (
   option: ConnectionAtom,
-  extra: { sheetId?: SheetId; mode: TabMode } = {
-    sheetId: undefined,
+  extra: { sheetName?: string; mode: TabMode } = {
+    sheetName: undefined,
     mode: TabMode.ReadOnly,
   }
 ) => {

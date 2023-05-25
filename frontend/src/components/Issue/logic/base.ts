@@ -29,6 +29,7 @@ import {
   useIssueStore,
   useProjectV1Store,
   useSheetStore,
+  useSheetById,
 } from "@/store";
 import { flattenTaskList, TaskTypeWithStatement } from "./common";
 import { maybeCreateBackTraceComments } from "../rollback/common";
@@ -229,12 +230,12 @@ export const useBaseIssueLogic = (params: {
     if (create.value) {
       const taskCreate = task as TaskCreate;
       if (taskCreate.sheetId && taskCreate.sheetId !== UNKNOWN_ID) {
-        return sheetStore.getSheetById(taskCreate.sheetId)?.statement || "";
+        return useSheetById(taskCreate.sheetId).value?.statement || "";
       }
       return (task as TaskCreate).statement;
     }
     return (
-      sheetStore.getSheetById(sheetIdOfTask(task as Task) || UNKNOWN_ID)
+      useSheetById(sheetIdOfTask(task as Task) || UNKNOWN_ID).value
         ?.statement || ""
     );
   });
