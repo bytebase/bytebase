@@ -44,9 +44,10 @@ import { computed, shallowRef, watch } from "vue";
 import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import type { ComposedSlowQueryLog } from "@/types";
+import { ComposedSlowQueryLog, UNKNOWN_ID } from "@/types";
 import {
   pushNotification,
+  useGracefulRequest,
   useInstanceStore,
   useSlowQueryPolicyStore,
   useSlowQueryStore,
@@ -111,23 +112,27 @@ const selectSlowQueryLog = (log: ComposedSlowQueryLog) => {
 const syncNow = async () => {
   syncing.value = true;
   try {
-    const instanceStore = useInstanceStore();
-    await instanceStore.fetchInstanceList(["NORMAL"]);
-    const policyList = await useSlowQueryPolicyStore().fetchPolicyList();
-    const requestList = policyList
-      .filter((policy) => {
-        return policy.slowQueryPolicy?.active;
-      })
-      .map((policy) => {
-        const instanceId = policy.resourceUid;
-        const instance = instanceStore.getInstanceById(instanceId);
-        return slowQueryStore.syncSlowQueriesByInstance(instance);
+    await useGracefulRequest(async () => {
+      const instanceStore = useInstanceStore();
+      const policyList = await useSlowQueryPolicyStore().fetchPolicyList();
+      const requestList = policyList
+        .filter((policy) => {
+          return policy.slowQueryPolicy?.active;
+        })
+        .map(async (policy) => {
+          const instanceId = policy.resourceUid;
+          const instance = await instanceStore.getOrFetchInstanceById(
+            Number(instanceId)
+          );
+          if (instance.id === UNKNOWN_ID) return;
+          return slowQueryStore.syncSlowQueriesByInstance(instance);
+        });
+      await Promise.all(requestList);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("slow-query.sync-job-started"),
       });
-    await Promise.all(requestList);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("slow-query.sync-job-started"),
     });
   } finally {
     syncing.value = false;
