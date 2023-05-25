@@ -525,7 +525,143 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 }
 
 func (s *RolloutService) getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_RestoreDatabaseConfig, project *store.ProjectMessage) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
-	panic("TBD")
+	if c.Source == nil {
+		return nil, nil, errors.Errorf("missing source in restore database config")
+	}
+	instanceID, databaseName, err := getInstanceDatabaseID(c.Target)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get instance and database id from target %q", c.Target)
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+	}
+	if instance == nil {
+		return nil, nil, errors.Errorf("instance %q not found", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+	}
+	if database == nil {
+		return nil, nil, errors.Errorf("database %q not found", databaseName)
+	}
+	if database.ProjectID != project.ResourceID {
+		return nil, nil, errors.Errorf("database %q is not in project %q", databaseName, project.ResourceID)
+	}
+
+	var taskCreates []api.TaskCreate
+
+	if c.CreateDatabaseConfig != nil {
+		restorePayload := api.TaskDatabasePITRRestorePayload{
+			ProjectID: project.UID,
+		}
+		// restore to a new database
+		targetInstanceID, err := getInstanceID(c.CreateDatabaseConfig.Target)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to get instance id from %q", c.CreateDatabaseConfig.Target)
+		}
+		targetInstance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &targetInstanceID})
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to find the instance with ID %q", targetInstanceID)
+		}
+
+		// task 1: create the database
+		createDatabaseTasks, _, err := s.getTaskCreatesFromCreateDatabaseConfig(ctx, spec, c.CreateDatabaseConfig, project)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to create the database create task list")
+		}
+		if len(createDatabaseTasks) != 1 {
+			return nil, nil, errors.Errorf("expected 1 task to create the database, got %d", len(createDatabaseTasks))
+		}
+		taskCreates = append(taskCreates, createDatabaseTasks[0])
+
+		// task 2: restore the database
+		switch source := c.Source.(type) {
+		case *v1pb.Plan_RestoreDatabaseConfig_Backup:
+			// FIXME
+			panic("TBD")
+			restorePayload.BackupID = nil
+		case *v1pb.Plan_RestoreDatabaseConfig_PointInTime:
+			ts := source.PointInTime.GetSeconds()
+			restorePayload.PointInTimeTs = &ts
+		}
+		restorePayload.TargetInstanceID = &targetInstance.UID
+		restorePayload.DatabaseName = &c.CreateDatabaseConfig.Database
+
+		restorePayloadBytes, err := json.Marshal(restorePayload)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to create PITR restore task, unable to marshal payload")
+		}
+
+		restoreTaskCreate := api.TaskCreate{
+			Name:       fmt.Sprintf("Restore to new database %q", *restorePayload.DatabaseName),
+			Status:     api.TaskPendingApproval,
+			Type:       api.TaskDatabaseRestorePITRRestore,
+			InstanceID: instance.UID,
+			DatabaseID: &database.UID,
+			Payload:    string(restorePayloadBytes),
+		}
+		taskCreates = append(taskCreates, restoreTaskCreate)
+	} else {
+		// in-place restore
+
+		// task 1: restore
+		restorePayload := api.TaskDatabasePITRRestorePayload{
+			ProjectID: project.UID,
+		}
+		switch source := c.Source.(type) {
+		case *v1pb.Plan_RestoreDatabaseConfig_Backup:
+			// FIXME
+			panic("TBD")
+			restorePayload.BackupID = nil
+		case *v1pb.Plan_RestoreDatabaseConfig_PointInTime:
+			ts := source.PointInTime.GetSeconds()
+			restorePayload.PointInTimeTs = &ts
+		}
+		restorePayloadBytes, err := json.Marshal(restorePayload)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to create PITR restore task, unable to marshal payload")
+		}
+
+		restoreTaskCreate := api.TaskCreate{
+			Name:       fmt.Sprintf("Restore to PITR database %q", database.DatabaseName),
+			Status:     api.TaskPendingApproval,
+			Type:       api.TaskDatabaseRestorePITRRestore,
+			InstanceID: instance.UID,
+			DatabaseID: &database.UID,
+			Payload:    string(restorePayloadBytes),
+		}
+
+		taskCreates = append(taskCreates, restoreTaskCreate)
+
+		// task 2: cutover
+		cutoverPayload := api.TaskDatabasePITRCutoverPayload{}
+		cutoverPayloadBytes, err := json.Marshal(cutoverPayload)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to create PITR cutover task, unable to marshal payload")
+		}
+		taskCreates = append(taskCreates, api.TaskCreate{
+			Name:       fmt.Sprintf("Swap PITR and the original database %q", database.DatabaseName),
+			InstanceID: instance.UID,
+			DatabaseID: &database.UID,
+			Status:     api.TaskPendingApproval,
+			Type:       api.TaskDatabaseRestorePITRCutover,
+			Payload:    string(cutoverPayloadBytes),
+		})
+	}
+
+	// We make sure that we will always return 2 tasks.
+	taskIndexDAGs := []api.TaskIndexDAG{
+		{
+			FromIndex: 0,
+			ToIndex:   1,
+		},
+	}
+	return taskCreates, taskIndexDAGs, nil
 }
 
 func convertToPlan(plan *store.PlanMessage) *v1pb.Plan {
