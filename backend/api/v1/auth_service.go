@@ -148,12 +148,27 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
 	}
-	user, err := s.store.CreateUser(ctx, &store.UserMessage{
+	userMessage := &store.UserMessage{
 		Email:        request.User.Email,
 		Name:         request.User.Title,
 		Type:         principalType,
 		PasswordHash: string(passwordHash),
-	}, api.SystemBotID)
+	}
+	if request.User.UserRole != v1pb.UserRole_USER_ROLE_UNSPECIFIED {
+		rolePtr := ctx.Value(common.RoleContextKey)
+		// Allow workspace owner to create user with role.
+		if rolePtr != nil && rolePtr.(api.Role) == api.Owner {
+			userRole := convertUserRole(request.User.UserRole)
+			if userRole == api.UnknownRole {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
+			}
+			userMessage.Role = userRole
+		} else {
+			return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can create user with role")
+		}
+	}
+
+	user, err := s.store.CreateUser(ctx, userMessage, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/tests/fake"
-	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
@@ -52,17 +53,17 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	// Create a DBA account.
-	dba, err := ctl.createPrincipal(api.PrincipalCreate{
-		Type:  api.EndUser,
-		Name:  "DBA",
-		Email: "dba@dba.com",
+	dbaUser, err := ctl.authServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
+		User: &v1pb.User{
+			Title:    "DBA",
+			Email:    "dba@dba.com",
+			UserRole: v1pb.UserRole_DBA,
+			UserType: v1pb.UserType_USER,
+			Password: "dbapass",
+		},
 	})
 	a.NoError(err)
-
-	_, err = ctl.createMember(api.MemberCreate{
-		Role:        api.DBA,
-		PrincipalID: dba.ID,
-	})
+	dbaUserUID, err := strconv.Atoi(strings.TrimPrefix(dbaUser.Name, "users/"))
 	a.NoError(err)
 
 	err = ctl.feishuProvider.RegisterEmails("demo@example.com", "dba@dba.com")
@@ -148,13 +149,13 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    dba.ID,
+		AssigneeID:    dbaUserUID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
 
 	for {
-		review, err := ctl.reviewServiceClient.GetReview(ctx, &v1.GetReviewRequest{
+		review, err := ctl.reviewServiceClient.GetReview(ctx, &v1pb.GetReviewRequest{
 			Name: fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID),
 		})
 		a.NoError(err)
@@ -227,17 +228,18 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	// Create a DBA account.
-	dba, err := ctl.createPrincipal(api.PrincipalCreate{
-		Type:  api.EndUser,
-		Name:  "DBA",
-		Email: "dba@dba.com",
+	// Create a DBA account.
+	dbaUser, err := ctl.authServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
+		User: &v1pb.User{
+			Title:    "DBA",
+			Email:    "dba@dba.com",
+			UserRole: v1pb.UserRole_DBA,
+			UserType: v1pb.UserType_USER,
+			Password: "dbapass",
+		},
 	})
 	a.NoError(err)
-
-	_, err = ctl.createMember(api.MemberCreate{
-		Role:        api.DBA,
-		PrincipalID: dba.ID,
-	})
+	dbaUserUID, err := strconv.Atoi(strings.TrimPrefix(dbaUser.Name, "users/"))
 	a.NoError(err)
 
 	err = ctl.feishuProvider.RegisterEmails("dba@dba.com")
@@ -323,13 +325,13 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 		Name:          fmt.Sprintf("update schema for database %q", databaseName),
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		AssigneeID:    dba.ID,
+		AssigneeID:    dbaUserUID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
 
 	for {
-		review, err := ctl.reviewServiceClient.GetReview(ctx, &v1.GetReviewRequest{
+		review, err := ctl.reviewServiceClient.GetReview(ctx, &v1pb.GetReviewRequest{
 			Name: fmt.Sprintf("projects/%d/reviews/%d", issue.ProjectID, issue.ID),
 		})
 		a.NoError(err)
