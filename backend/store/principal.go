@@ -311,6 +311,8 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	// Grant the member Owner role if there is no existing member.
 	if firstMember {
 		role = api.Owner
+	} else if create.Role != "" {
+		role = create.Role
 	}
 
 	if _, err := tx.ExecContext(ctx, `
