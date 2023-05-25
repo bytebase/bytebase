@@ -36,12 +36,6 @@ export const isDatabaseAccessible = (
   policyList: Policy[],
   user: User
 ) => {
-  if (!hasFeature("bb.feature.access-control")) {
-    // The current plan doesn't have access control feature.
-    // Fallback to true.
-    return true;
-  }
-
   if (
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-access-control",
@@ -53,19 +47,21 @@ export const isDatabaseAccessible = (
     return true;
   }
 
-  const { environment } = database.instance;
-  if (environment.tier === "PROTECTED") {
-    const policy = policyList.find((policy) => {
-      const { type, resourceUid, enforce } = policy;
-      return (
-        type === PolicyType.ACCESS_CONTROL &&
-        resourceUid === `${database.id}` &&
-        enforce
-      );
-    });
-    if (policy) {
-      // The database is in the allowed list
-      return true;
+  if (hasFeature("bb.feature.access-control")) {
+    const { environment } = database.instance;
+    if (environment.tier === "PROTECTED") {
+      const policy = policyList.find((policy) => {
+        const { type, resourceUid, enforce } = policy;
+        return (
+          type === PolicyType.ACCESS_CONTROL &&
+          resourceUid === `${database.id}` &&
+          enforce
+        );
+      });
+      if (policy) {
+        // The database is in the allowed list
+        return true;
+      }
     }
   }
 
