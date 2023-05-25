@@ -3,6 +3,7 @@ import { defineComponent, onMounted } from "vue";
 import { GrantRequestContext, IssueCreate } from "@/types";
 import { useCurrentUserV1, useDatabaseStore, useProjectV1Store } from "@/store";
 import { provideIssueLogic, useCommonLogic, useIssueLogic } from "./index";
+import { stringifyDatabaseResources } from "@/utils/issue/cel";
 
 export default defineComponent({
   name: "GrantRequestModeProvider",
@@ -21,6 +22,7 @@ export default defineComponent({
       const context: GrantRequestContext = {
         ...{
           databases: [],
+          databaseResources: [],
           expireDays: 7,
           maxRowCount: 1000,
           statement: "",
@@ -30,19 +32,12 @@ export default defineComponent({
       };
       const expression: string[] = [];
       if (context.role === "QUERIER") {
-        if (Array.isArray(context.databases) && context.databases.length > 0) {
-          const databaseNames = [];
-          for (const databaseId of context.databases) {
-            const database = await databaseStore.getOrFetchDatabaseById(
-              databaseId
-            );
-            databaseNames.push(
-              `instances/${database.instance.resourceId}/databases/${database.name}`
-            );
-          }
-          expression.push(
-            `resource.database in ${JSON.stringify(databaseNames)}`
-          );
+        if (
+          Array.isArray(context.databaseResources) &&
+          context.databaseResources.length > 0
+        ) {
+          const cel = stringifyDatabaseResources(context.databaseResources);
+          expression.push(cel);
         }
         expression.push(
           `request.time < timestamp("${new Date(
@@ -72,17 +67,17 @@ export default defineComponent({
         throw "Invalid role";
       }
 
+      const celExpressionString = expression.join(" && ");
       issueCreate.payload = {
         grantRequest: {
           role: `roles/${context.role}`,
           user: currentUser.value.name,
           condition: {
-            expression: expression.join(" && "),
+            expression: celExpressionString,
           },
         },
       };
       issueCreate.createContext = {};
-
       createIssue(issueCreate);
     };
 
