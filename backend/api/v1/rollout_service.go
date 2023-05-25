@@ -89,10 +89,13 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
+	if err := validateSteps(request.Plan.Steps); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to validate plan steps, error: %v", err)
+	}
 
 	pipelineCreate, err := s.getPipelineCreate(ctx, request.Plan.Steps, project)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
 	if len(pipelineCreate.StageList) == 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "no database matched for deployment")
@@ -222,9 +225,11 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	return convertToPlan(plan), nil
 }
 
-func validateSteps() {
+func validateSteps(_ []*v1pb.Plan_Step) error {
+	// FIXME: impl this func
 	// targets should be unique
 	// if deploymentConfig is used, only one spec is allowed.
+	return nil
 }
 
 func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Plan_Step, project *store.ProjectMessage) (*api.PipelineCreate, error) {
