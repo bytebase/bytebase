@@ -6,7 +6,6 @@ CREATE TABLE db_group (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     resource_id TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
     placeholder TEXT NOT NULL DEFAULT '',
     expression JSONB NOT NULL DEFAULT '{}'
 );
@@ -30,7 +29,6 @@ CREATE TABLE schema_group (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     db_group_id INTEGER NOT NULL REFERENCES db_group (id),
     resource_id TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
     placeholder TEXT NOT NULL DEFAULT '',
     expression JSONB NOT NULL DEFAULT '{}'
 );
