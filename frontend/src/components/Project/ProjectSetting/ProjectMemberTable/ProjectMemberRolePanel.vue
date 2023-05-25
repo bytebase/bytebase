@@ -8,7 +8,7 @@
     <NDrawerContent
       :title="panelTitle"
       :closable="true"
-      class="w-[44rem] max-w-[100vw] relative"
+      class="w-[60rem] max-w-[100vw] relative"
     >
       <div v-for="role in roleList" :key="role.role" class="mb-4">
         <template v-if="role.formattedConditionList.length > 0">
