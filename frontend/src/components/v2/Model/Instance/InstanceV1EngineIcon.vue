@@ -1,5 +1,5 @@
 <template>
-  <NTooltip v-if="icon">
+  <NTooltip v-if="icon" :disabled="!tooltip">
     <template #trigger>
       <div class="relative w-4" v-bind="$attrs">
         <img class="h-4 w-auto mx-auto" :src="icon" />
@@ -29,6 +29,10 @@ const props = defineProps({
   showStatus: {
     type: Boolean,
     default: false,
+  },
+  tooltip: {
+    type: Boolean,
+    default: true,
   },
 });
 

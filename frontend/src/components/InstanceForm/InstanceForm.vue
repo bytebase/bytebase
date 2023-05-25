@@ -49,7 +49,10 @@
             {{ $t("instance.instance-name") }}
             <span class="text-red-600 mr-2">*</span>
             <template v-if="props.instance">
-              <InstanceEngineIcon :instance="props.instance" />
+              <InstanceV1EngineIcon
+                :instance="props.instance"
+                :tooltip="false"
+              />
               <span class="ml-1">{{ props.instance.engineVersion }}</span>
             </template>
           </label>
@@ -648,6 +651,7 @@ import SpannerHostInput from "./SpannerHostInput.vue";
 import SpannerCredentialInput from "./SpannerCredentialInput.vue";
 import OracleSIDAndServiceNameInput from "./OracleSIDAndServiceNameInput.vue";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
+import { InstanceV1EngineIcon } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
   DataSource,
