@@ -75,7 +75,7 @@ func (s *RolloutService) GetPlan(ctx context.Context, request *v1pb.GetPlanReque
 
 // CreatePlan creates a new plan.
 func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRequest) (*v1pb.Plan, error) {
-	principalUID := ctx.Value(common.PrincipalIDContextKey).(int)
+	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
 	projectID, err := getProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -101,21 +101,19 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 
 	issueCreateMessage := &store.IssueMessage{
 		Project:     project,
-		Title:       fmt.Sprintf("FIXMYNAME, plan %s", request.Plan.Title),
+		Title:       request.Plan.Title,
 		Type:        api.IssueDatabaseGeneral,
-		Description: fmt.Sprintf("FIXME, plan %s", request.Plan.Title),
+		Description: request.Plan.Description,
 		Assignee:    nil,
 	}
 
-	// Try to find a more appropriate assignee if the current assignee is the system bot, indicating that the caller might not be sure about who should be the assignee.
-	// if 1 == 1 || (assigneeID == api.SystemBotID) {
-	{
-		assignee, err := s.taskScheduler.GetDefaultAssignee(ctx, firstEnvironmentID, issueCreateMessage.Project.UID, issueCreateMessage.Type)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
-		}
-		issueCreateMessage.Assignee = assignee
+	// Find an assignee.
+	assignee, err := s.taskScheduler.GetDefaultAssignee(ctx, firstEnvironmentID, issueCreateMessage.Project.UID, issueCreateMessage.Type)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
 	}
+	issueCreateMessage.Assignee = assignee
+
 	// ok, err := s.taskScheduler.CanPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, project.UID, issueCreate.Type)
 	// if err != nil {
 	// 	return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
@@ -137,10 +135,8 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
 	}
-
 	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
 
-	creatorID := principalUID
 	pipeline, err := s.createPipeline(ctx, creatorID, pipelineCreate)
 	if err != nil {
 		return nil, err
@@ -219,7 +215,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	}
 	planMessage.PipelineUID = &pipeline.ID
 
-	plan, err := s.store.CreatePlan(ctx, planMessage, principalUID)
+	plan, err := s.store.CreatePlan(ctx, planMessage, creatorID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create plan, error: %v", err)
 	}
