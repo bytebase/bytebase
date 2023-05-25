@@ -266,22 +266,26 @@ const doCreate = async (
       updateMask: ["payload"],
       policy: backupPolicy,
     }),
-    policyV1Store.upsertPolicy({
-      parentPath: environment.name,
-      updateMask: ["payload", "inherit_from_parent"],
-      policy: {
-        type: PolicyType.ACCESS_CONTROL,
-        inheritFromParent: false,
-        accessControlPolicy: {
-          disallowRules: [
-            {
-              fullDatabase: environmentTier === EnvironmentTier.PROTECTED,
-            },
-          ],
-        },
-      },
-    }),
   ];
+  if (environmentTier === EnvironmentTier.PROTECTED) {
+    requests.push(
+      policyV1Store.upsertPolicy({
+        parentPath: environment.name,
+        updateMask: ["payload", "inherit_from_parent"],
+        policy: {
+          type: PolicyType.ACCESS_CONTROL,
+          inheritFromParent: true,
+          accessControlPolicy: {
+            disallowRules: [
+              {
+                fullDatabase: environmentTier === EnvironmentTier.PROTECTED,
+              },
+            ],
+          },
+        },
+      })
+    );
+  }
   await Promise.all(requests);
   state.showCreateModal = false;
   selectEnvironment(environment.order);

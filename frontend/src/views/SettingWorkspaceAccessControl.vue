@@ -330,11 +330,7 @@ const handleAddRule = async (databaseList: Database[]) => {
           type: PolicyType.ACCESS_CONTROL,
           inheritFromParent: false,
           accessControlPolicy: {
-            disallowRules: [
-              {
-                fullDatabase: true,
-              },
-            ],
+            disallowRules: [],
           },
         },
       });
