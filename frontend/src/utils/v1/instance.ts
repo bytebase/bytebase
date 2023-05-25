@@ -85,13 +85,13 @@ export const supportedEngineV1List = () => {
 //   return RE.test(host);
 // };
 
-// export const instanceHasAlterSchema = (
-//   instanceOrEngine: Instance | EngineType
-// ): boolean => {
-//   const engine = engineOfInstance(instanceOrEngine);
-//   if (engine === "REDIS") return false;
-//   return true;
-// };
+export const instanceV1HasAlterSchema = (
+  instanceOrEngine: Instance | Engine
+): boolean => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  if (engine === Engine.REDIS) return false;
+  return true;
+};
 
 // export const instanceHasBackupRestore = (
 //   instanceOrEngine: Instance | EngineType

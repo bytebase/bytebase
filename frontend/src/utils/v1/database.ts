@@ -21,6 +21,8 @@ import {
 } from "@/store";
 import { hasWorkspacePermissionV1 } from "../role";
 import { Instance } from "@/types/proto/v1/instance_service";
+import { Engine } from "@/types/proto/v1/common";
+import { semverCompare } from "../util";
 
 export const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");
@@ -184,4 +186,21 @@ export function filterDatabaseV1ByKeyword(
   }
 
   return false;
+}
+
+const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.7.0";
+
+export function allowGhostMigrationV1(
+  databaseList: ComposedDatabase[]
+): boolean {
+  return databaseList.every((db) => {
+    return (
+      db.instanceEntity.engine === Engine.MYSQL &&
+      semverCompare(
+        db.instanceEntity.engineVersion,
+        MIN_GHOST_SUPPORT_MYSQL_VERSION,
+        "gte"
+      )
+    );
+  });
 }

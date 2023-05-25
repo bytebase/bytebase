@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4 max-w-min overflow-x-hidden">
     <div class="overflow-x-auto">
-      <div class="w-[calc(100vw-8rem)] lg:w-[56rem]">
+      <div v-if="ready" class="w-[calc(100vw-8rem)] lg:w-[56rem]">
         <template v-if="projectId">
           <template v-if="isTenantProject">
             <!-- tenant mode project -->
@@ -33,15 +33,16 @@
                   class="overflow-y-auto"
                   style="max-height: calc(100vh - 400px)"
                 >
-                  <DatabaseTable
+                  <DatabaseV1Table
                     mode="PROJECT_SHORT"
                     table-class="border"
                     :custom-click="true"
                     :database-list="schemaDatabaseList"
                     :show-selection-column="true"
                     @select-database="
-                    (db: Database) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
-                  "
+                      (db) =>
+                        toggleDatabaseSelection(db, !isDatabaseSelected(db))
+                    "
                   >
                     <template
                       #selection-all="{ databaseList: renderedDatabaseList }"
@@ -67,7 +68,7 @@
                         @input="(e: any) => toggleDatabaseSelection(database, e.target.checked)"
                       />
                     </template>
-                  </DatabaseTable>
+                  </DatabaseV1Table>
                   <SchemalessDatabaseTable
                     v-if="isAlterSchema"
                     mode="PROJECT"
@@ -132,7 +133,7 @@
           </aside>
           <!-- a simple table -->
           <div class="overflow-y-auto" style="max-height: calc(100vh - 340px)">
-            <DatabaseTable
+            <DatabaseV1Table
               mode="ALL_SHORT"
               table-class="border"
               :custom-click="true"
@@ -148,6 +149,12 @@
           </div>
         </template>
       </div>
+      <div
+        v-if="!ready"
+        class="w-[calc(100vw-8rem)] lg:w-[56rem] h-[20rem] flex items-center justify-center"
+      >
+        <BBSpin />
+      </div>
     </div>
 
     <!-- Create button group -->
@@ -156,12 +163,12 @@
     >
       <div>
         <div
-          v-if="flattenSelectedDatabaseIdList.length > 0"
+          v-if="flattenSelectedDatabaseUidList.length > 0"
           class="textinfolabel"
         >
           {{
             $t("database.selected-n-databases", {
-              n: flattenSelectedDatabaseIdList.length,
+              n: flattenSelectedDatabaseUidList.length,
             })
           }}
         </div>
@@ -220,35 +227,37 @@ import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 
-import DatabaseTable from "../DatabaseTable.vue";
-import { Database, DatabaseId, UNKNOWN_ID } from "@/types";
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import {
-  allowGhostMigration,
-  allowUsingSchemaEditor,
-  instanceHasAlterSchema,
-  filterDatabaseByKeyword,
-  sortDatabaseListByEnvironmentV1,
+  allowGhostMigrationV1,
+  allowUsingSchemaEditorV1,
+  instanceV1HasAlterSchema,
+  filterDatabaseV1ByKeyword,
+  sortDatabaseV1ListByEnvironmentV1,
 } from "@/utils";
 import {
   hasFeature,
   useCurrentUserV1,
-  useDatabaseStore,
+  useDatabaseV1List,
+  useDatabaseV1Store,
   useEnvironmentV1List,
   useProjectV1Store,
 } from "@/store";
 import ProjectStandardView, {
-  State as ProjectStandardState,
+  ProjectStandardViewState,
 } from "./ProjectStandardView.vue";
 import ProjectTenantView, {
-  State as ProjectTenantState,
+  ProjectTenantViewState,
 } from "./ProjectTenantView.vue";
 import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
 import GhostDialog from "./GhostDialog.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
+import { DatabaseV1Table } from "../v2";
 import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import { State } from "@/types/proto/v1/common";
 
-type LocalState = ProjectStandardState &
-  ProjectTenantState & {
+type LocalState = ProjectStandardViewState &
+  ProjectTenantViewState & {
     project?: Project;
     searchText: string;
     showSchemaLessDatabaseList: boolean;
@@ -275,10 +284,11 @@ const router = useRouter();
 
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
+const databaseV1Store = useDatabaseV1Store();
 
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const schemaEditorContext = ref<{
-  databaseIdList: DatabaseId[];
+  databaseIdList: string[];
 }>({
   databaseIdList: [],
 });
@@ -294,8 +304,8 @@ const state = reactive<LocalState>({
     ? projectV1Store.getProjectByUID(props.projectId)
     : undefined,
   alterType: "MULTI_DB",
-  selectedDatabaseIdListForEnvironment: new Map(),
-  selectedDatabaseIdListForTenantMode: new Set<number>(),
+  selectedDatabaseUidListForEnvironment: new Map(),
+  selectedDatabaseIdListForTenantMode: new Set<string>(),
   deployingTenantDatabaseList: [],
   label: "bb.environment",
   searchText: "",
@@ -321,37 +331,36 @@ if (isTenantProject.value) {
 
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
+const { ready } = useDatabaseV1List({
+  parent: "instances/-",
+});
+
 const databaseList = computed(() => {
-  const databaseStore = useDatabaseStore();
-  let list;
+  let list: ComposedDatabase[] = [];
   if (props.projectId) {
-    list = databaseStore.getDatabaseListByProjectId(props.projectId);
+    const project = projectV1Store.getProjectByUID(props.projectId);
+    list = [...databaseV1Store.databaseListByProject(project.name)];
   } else {
-    list = databaseStore.getDatabaseListByUser(currentUserV1.value);
+    list = [...databaseV1Store.databaseListByUser(currentUserV1.value)];
   }
+  list = list.filter((db) => (db.syncState = State.ACTIVE));
 
-  list = list.filter((db) => db.syncStatus === "OK");
-
-  const keyword = state.searchText.trim();
-  list = list.filter((db) =>
-    filterDatabaseByKeyword(db, keyword, [
+  list = list.filter((db) => {
+    return filterDatabaseV1ByKeyword(db, state.searchText.trim(), [
       "name",
       "environment",
       "instance",
       "project",
-    ])
-  );
+    ]);
+  });
 
-  return sortDatabaseListByEnvironmentV1(
-    cloneDeep(list),
-    environmentList.value
-  );
+  return sortDatabaseV1ListByEnvironmentV1(list, environmentList.value);
 });
 
 const schemaDatabaseList = computed(() => {
   if (isAlterSchema.value) {
     return databaseList.value.filter((db) =>
-      instanceHasAlterSchema(db.instance)
+      instanceV1HasAlterSchema(db.instanceEntity)
     );
   }
 
@@ -360,18 +369,18 @@ const schemaDatabaseList = computed(() => {
 
 const schemalessDatabaseList = computed(() => {
   return databaseList.value.filter(
-    (db) => !instanceHasAlterSchema(db.instance)
+    (db) => !instanceV1HasAlterSchema(db.instanceEntity)
   );
 });
 
-const flattenSelectedDatabaseIdList = computed(() => {
-  const flattenDatabaseIdList: DatabaseId[] = [];
+const flattenSelectedDatabaseUidList = computed(() => {
+  const flattenDatabaseIdList: string[] = [];
   if (isTenantProject.value && state.alterType === "MULTI_DB") {
     for (const db of state.selectedDatabaseIdListForTenantMode) {
       flattenDatabaseIdList.push(db);
     }
   } else {
-    for (const databaseIdList of state.selectedDatabaseIdListForEnvironment.values()) {
+    for (const databaseIdList of state.selectedDatabaseUidListForEnvironment.values()) {
       flattenDatabaseIdList.push(...databaseIdList);
     }
   }
@@ -384,15 +393,19 @@ const showGenerateMultiDb = computed(() => {
 });
 
 const allowGenerateMultiDb = computed(() => {
-  return flattenSelectedDatabaseIdList.value.length > 0;
+  return flattenSelectedDatabaseUidList.value.length > 0;
 });
 
 // 'normal' -> normal migration
 // 'online' -> online migration
 // false -> user clicked cancel button
-const isUsingGhostMigration = async (databaseList: Database[]) => {
+const isUsingGhostMigration = async (databaseList: ComposedDatabase[]) => {
   // Gh-ost is not available for tenant mode yet.
-  if (databaseList.some((db) => db.project.tenantMode === "TENANT")) {
+  if (
+    databaseList.some(
+      (db) => db.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
+    )
+  ) {
     return "normal";
   }
 
@@ -402,7 +415,7 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
   }
 
   // check if all selected databases supports gh-ost
-  if (allowGhostMigration(databaseList)) {
+  if (allowGhostMigrationV1(databaseList)) {
     // open the dialog to ask the user
     const { result, mode } = await ghostDialog.value!.open();
     if (!result) {
@@ -417,14 +430,14 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 
 // Also works when single db selected.
 const generateMultiDb = async () => {
-  const selectedDatabaseIdList = [...flattenSelectedDatabaseIdList.value];
+  const selectedDatabaseIdList = [...flattenSelectedDatabaseUidList.value];
   const selectedDatabaseList = selectedDatabaseIdList.map(
-    (id) => schemaDatabaseList.value.find((db) => db.id === id)!
+    (id) => schemaDatabaseList.value.find((db) => db.uid === id)!
   );
 
-  if (isAlterSchema.value && allowUsingSchemaEditor(selectedDatabaseList)) {
+  if (isAlterSchema.value && allowUsingSchemaEditorV1(selectedDatabaseList)) {
     schemaEditorContext.value.databaseIdList = cloneDeep(
-      flattenSelectedDatabaseIdList.value
+      flattenSelectedDatabaseUidList.value
     );
     state.showSchemaEditorModal = true;
     return;
@@ -438,7 +451,7 @@ const generateMultiDb = async () => {
   const query: Record<string, any> = {
     template: props.type,
     name: generateIssueName(
-      selectedDatabaseList.map((db) => db.name),
+      selectedDatabaseList.map((db) => db.databaseName),
       mode === "online"
     ),
     project: props.projectId,
@@ -483,12 +496,12 @@ const allowGenerateTenant = computed(() => {
 });
 
 const getAllSelectionState = (
-  databaseList: Database[]
+  databaseList: ComposedDatabase[]
 ): { checked: boolean; indeterminate: boolean } => {
   const set = state.selectedDatabaseIdListForTenantMode;
 
-  const checked = databaseList.every((db) => set.has(db.id));
-  const indeterminate = !checked && databaseList.some((db) => set.has(db.id));
+  const checked = databaseList.every((db) => set.has(db.uid));
+  const indeterminate = !checked && databaseList.some((db) => set.has(db.uid));
 
   return {
     checked,
@@ -497,30 +510,30 @@ const getAllSelectionState = (
 };
 
 const toggleAllDatabasesSelection = (
-  databaseList: Database[],
+  databaseList: ComposedDatabase[],
   on: boolean
 ): void => {
   const set = state.selectedDatabaseIdListForTenantMode;
   if (on) {
     databaseList.forEach((db) => {
-      set.add(db.id);
+      set.add(db.uid);
     });
   } else {
     databaseList.forEach((db) => {
-      set.delete(db.id);
+      set.delete(db.uid);
     });
   }
 };
 
-const isDatabaseSelected = (database: Database): boolean => {
-  return state.selectedDatabaseIdListForTenantMode.has(database.id);
+const isDatabaseSelected = (database: ComposedDatabase): boolean => {
+  return state.selectedDatabaseIdListForTenantMode.has(database.uid);
 };
 
-const toggleDatabaseSelection = (database: Database, on: boolean) => {
+const toggleDatabaseSelection = (database: ComposedDatabase, on: boolean) => {
   if (on) {
-    state.selectedDatabaseIdListForTenantMode.add(database.id);
+    state.selectedDatabaseIdListForTenantMode.add(database.uid);
   } else {
-    state.selectedDatabaseIdListForTenantMode.delete(database.id);
+    state.selectedDatabaseIdListForTenantMode.delete(database.uid);
   }
 };
 
@@ -543,31 +556,29 @@ const generateTenant = async () => {
     mode: "tenant",
   };
   if (state.alterType === "TENANT") {
-    const databaseList = useDatabaseStore().getDatabaseListByProjectId(
-      project.uid
-    );
-    if (isAlterSchema.value && allowUsingSchemaEditor(databaseList)) {
+    const databaseList = databaseV1Store.databaseListByProject(project.name);
+    if (isAlterSchema.value && allowUsingSchemaEditorV1(databaseList)) {
       schemaEditorContext.value.databaseIdList = databaseList
-        .filter((database) => database.syncStatus === "OK")
-        .map((database) => database.id);
+        .filter((database) => database.syncState === State.ACTIVE)
+        .map((database) => database.uid);
       state.showSchemaEditorModal = true;
       return;
     }
     // In tenant deploy pipeline, we use project name instead of database name
     // if more than one databases are to be deployed.
-    const name = databaseList.length > 1 ? project.name : databaseList[0].name;
+    const name =
+      databaseList.length > 1 ? project.title : databaseList[0].databaseName;
     query.name = generateIssueName([name], false);
     query.databaseName = "";
   } else {
-    const databaseList: Database[] = [];
-    const databaseStore = useDatabaseStore();
+    const databaseList: ComposedDatabase[] = [];
     for (const databaseId of state.selectedDatabaseIdListForTenantMode) {
-      const database = databaseStore.getDatabaseById(databaseId);
-      if (database.syncStatus === "OK") {
-        databaseList.push(databaseStore.getDatabaseById(databaseId));
+      const database = databaseV1Store.getDatabaseByUID(databaseId);
+      if (database.syncState === State.ACTIVE) {
+        databaseList.push(database);
       }
     }
-    if (isAlterSchema.value && allowUsingSchemaEditor(databaseList)) {
+    if (isAlterSchema.value && allowUsingSchemaEditorV1(databaseList)) {
       schemaEditorContext.value.databaseIdList = Array.from(
         state.selectedDatabaseIdListForTenantMode.values()
       );
@@ -576,7 +587,7 @@ const generateTenant = async () => {
     }
 
     query.name = generateIssueName(
-      databaseList.map((database) => database.name),
+      databaseList.map((database) => database.databaseName),
       false
     );
     query.databaseList = Array.from(
@@ -595,13 +606,13 @@ const generateTenant = async () => {
   });
 };
 
-const selectDatabase = async (database: Database) => {
+const selectDatabase = async (database: ComposedDatabase) => {
   if (
     isAlterSchema.value &&
-    database.syncStatus === "OK" &&
-    allowUsingSchemaEditor([database])
+    database.syncState === State.ACTIVE &&
+    allowUsingSchemaEditorV1([database])
   ) {
-    schemaEditorContext.value.databaseIdList = [database.id];
+    schemaEditorContext.value.databaseIdList = [database.uid];
     state.showSchemaEditorModal = true;
     return;
   }
@@ -614,9 +625,9 @@ const selectDatabase = async (database: Database) => {
 
   const query: Record<string, any> = {
     template: props.type,
-    name: generateIssueName([database.name], mode === "online"),
-    project: database.project.id,
-    databaseList: database.id,
+    name: generateIssueName([database.databaseName], mode === "online"),
+    project: database.projectEntity.uid,
+    databaseList: database.uid,
   };
   if (mode === "online") {
     query.ghost = "1";
