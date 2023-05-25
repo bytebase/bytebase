@@ -133,7 +133,7 @@ import {
 import MonacoEditor from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
-import { converFromCEL } from "@/utils/issue/cel";
+import { convertFromCEL } from "@/utils/issue/cel";
 
 interface LocalState {
   // For creating
@@ -272,7 +272,7 @@ watch(
         throw "Only support EXPORTER role";
       }
 
-      const conditionExpression = await converFromCEL(
+      const conditionExpression = await convertFromCEL(
         payload.condition.expression
       );
       if (
