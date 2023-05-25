@@ -42,16 +42,19 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	if err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
+	if user != nil {
+		// Store workspace role into context.
+		ctx = context.WithValue(ctx, common.RoleContextKey, user.Role)
+	}
+
 	if auth.IsAuthenticationAllowed(serverInfo.FullMethod) {
 		return handler(ctx, request)
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
-	// Store workspace role into context.
-	childCtx := context.WithValue(ctx, common.RoleContextKey, user.Role)
 	if isOwnerOrDBA(user.Role) {
-		return handler(childCtx, request)
+		return handler(ctx, request)
 	}
 
 	methodName := getShortMethodName(serverInfo.FullMethod)
@@ -91,7 +94,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		}
 	}
 
-	return handler(childCtx, request)
+	return handler(ctx, request)
 }
 
 func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, error) {
