@@ -157,11 +157,13 @@ export interface Review {
    * The plan associated with the review.
    * Can be empty.
    * If plan is set in CreateReviewRequest, we will build the rollout from the plan and link to the review.
+   * Format: projects/{project}/plans/{plan}
    */
   plan: string;
   /**
    * The rollout associated with the review.
    * Can be empty.
+   * Format: projects/{project}/rollouts/{rollout}
    */
   rollout: string;
   description: string;

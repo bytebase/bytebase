@@ -5111,8 +5111,8 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | name | [string](#string) |  | The name of the review. `review` is a system generated ID. Format: projects/{project}/reviews/{review} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | title | [string](#string) |  |  |
-| plan | [string](#string) |  | The plan associated with the review. Can be empty. If plan is set in CreateReviewRequest, we will build the rollout from the plan and link to the review. |
-| rollout | [string](#string) |  | The rollout associated with the review. Can be empty. |
+| plan | [string](#string) |  | The plan associated with the review. Can be empty. If plan is set in CreateReviewRequest, we will build the rollout from the plan and link to the review. Format: projects/{project}/plans/{plan} |
+| rollout | [string](#string) |  | The rollout associated with the review. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | description | [string](#string) |  |  |
 | status | [ReviewStatus](#bytebase-v1-ReviewStatus) |  |  |
 | assignee | [string](#string) |  | Format: users/hello@world.com |

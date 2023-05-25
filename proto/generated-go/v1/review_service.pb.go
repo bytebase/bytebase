@@ -759,9 +759,11 @@ type Review struct {
 	// The plan associated with the review.
 	// Can be empty.
 	// If plan is set in CreateReviewRequest, we will build the rollout from the plan and link to the review.
+	// Format: projects/{project}/plans/{plan}
 	Plan string `protobuf:"bytes,16,opt,name=plan,proto3" json:"plan,omitempty"`
 	// The rollout associated with the review.
 	// Can be empty.
+	// Format: projects/{project}/rollouts/{rollout}
 	Rollout     string       `protobuf:"bytes,17,opt,name=rollout,proto3" json:"rollout,omitempty"`
 	Description string       `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	Status      ReviewStatus `protobuf:"varint,5,opt,name=status,proto3,enum=bytebase.v1.ReviewStatus" json:"status,omitempty"`
