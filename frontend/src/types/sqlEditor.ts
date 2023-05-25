@@ -1,6 +1,7 @@
 import type * as monaco from "monaco-editor";
 import { InstanceId, DatabaseId, ActivityId, EngineType } from "../types";
 import { Principal } from "./principal";
+import { Engine } from "./proto/v1/common";
 
 export type EditorModel = monaco.editor.ITextModel;
 export type EditorPosition = monaco.Position;
@@ -23,6 +24,17 @@ export const languageOfEngine = (engine?: EngineType | "unknown"): Language => {
     return "javascript";
   }
   if (engine === "REDIS") {
+    return "redis";
+  }
+
+  return "sql";
+};
+
+export const languageOfEngineV1 = (engine?: Engine): Language => {
+  if (engine === Engine.MONGODB) {
+    return "javascript";
+  }
+  if (engine === Engine.REDIS) {
     return "redis";
   }
 
