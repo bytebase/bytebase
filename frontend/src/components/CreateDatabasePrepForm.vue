@@ -126,14 +126,14 @@
           {{ $t("create-db.database-owner-name") }}
           <span class="text-red-600">*</span>
         </label>
-        <InstanceUserSelect
+        <InstanceRoleSelect
           id="instance-user"
           class="mt-1"
           name="instance-user"
-          :instance-id="Number(state.instanceId)"
-          :selected-id="state.instanceUserId"
-          :filter="filterInstanceUser"
-          @select="selectInstanceUser"
+          :instance-id="state.instanceId"
+          :role="state.instanceRole"
+          :filter="filterInstanceRole"
+          @select="selectInstanceRole"
         />
       </div>
 
@@ -242,10 +242,11 @@ import {
   DatabaseNameTemplateTips,
   useDBNameTemplateInputState,
 } from "./CreateDatabasePrepForm/";
-import InstanceSelect from "../components/InstanceSelect.vue";
-import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import ProjectSelect from "../components/ProjectSelect.vue";
-import MemberSelect from "../components/MemberSelect.vue";
+import InstanceSelect from "./InstanceSelect.vue";
+import EnvironmentSelect from "./EnvironmentSelect.vue";
+import ProjectSelect from "./ProjectSelect.vue";
+import MemberSelect from "./MemberSelect.vue";
+import InstanceRoleSelect from "./InstanceRoleSelect.vue";
 import {
   IssueCreate,
   SYSTEM_BOT_ID,
@@ -255,16 +256,12 @@ import {
   DatabaseLabel,
   CreateDatabaseContext,
   UNKNOWN_ID,
-  InstanceUserId,
   PITRContext,
   ComposedInstance,
   unknownInstance,
 } from "../types";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import {
-  type InstanceUser,
-  INTERNAL_RDS_INSTANCE_USER_LIST,
-} from "@/types/InstanceUser";
+import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import {
   extractEnvironmentResourceName,
   hasWorkspacePermissionV1,
@@ -284,12 +281,13 @@ import {
 import { UserRole } from "@/types/proto/v1/auth_service";
 import { Engine } from "@/types/proto/v1/common";
 import { InstanceV1EngineIcon } from "./v2";
+import { InstanceRole } from "@/types/proto/v1/instance_role_service";
 
 interface LocalState {
   projectId?: string;
   environmentId?: string;
   instanceId?: string;
-  instanceUserId?: InstanceUserId;
+  instanceRole?: string;
   labelList: DatabaseLabel[];
   databaseName: string;
   tableName: string;
@@ -456,7 +454,7 @@ const validDatabaseOwnerName = computed((): boolean => {
     return true;
   }
 
-  return state.instanceUserId !== undefined;
+  return state.instanceRole !== undefined;
 });
 
 useDBNameTemplateInputState(project, {
@@ -477,16 +475,16 @@ const selectInstance = (instanceId: string | undefined) => {
   state.instanceId = instanceId;
 };
 
-const selectInstanceUser = (instanceUserId?: InstanceUserId) => {
-  state.instanceUserId = instanceUserId;
+const selectInstanceRole = (name?: string) => {
+  state.instanceRole = name;
 };
 
 const selectAssignee = (assigneeId: string) => {
   state.assigneeId = assigneeId;
 };
 
-const filterInstanceUser = (user: InstanceUser) => {
-  if (INTERNAL_RDS_INSTANCE_USER_LIST.includes(user.name)) {
+const filterInstanceRole = (user: InstanceRole) => {
+  if (INTERNAL_RDS_INSTANCE_USER_LIST.includes(user.roleName)) {
     return false;
   }
   return true;
@@ -507,12 +505,11 @@ const create = async () => {
   const tableName = state.tableName;
   const instanceId = Number(state.instanceId);
   let owner = "";
-  if (requireDatabaseOwnerName.value && state.instanceUserId) {
-    const instanceUser = await useInstanceStore().fetchInstanceUser(
-      instanceId,
-      state.instanceUserId
+  if (requireDatabaseOwnerName.value && state.instanceRole) {
+    const instanceUser = await instanceV1Store.fetchInstanceRoleByName(
+      state.instanceRole
     );
-    owner = instanceUser.name;
+    owner = instanceUser.roleName;
   }
 
   if (isTenantProject.value) {
