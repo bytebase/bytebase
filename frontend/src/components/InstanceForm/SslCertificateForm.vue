@@ -58,16 +58,13 @@ import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 
 import DroppableTextarea from "../misc/DroppableTextarea.vue";
+import { DataSource } from "@/types/proto/v1/instance_service";
 
 const SslTypes = ["NONE", "CA", "CA+KEY+CERT"] as const;
 
 type SslType = "NONE" | "CA" | "CA+KEY+CERT";
 
-type WithSslOptions = {
-  sslCa?: string;
-  sslCert?: string;
-  sslKey?: string;
-};
+type WithSslOptions = Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey">>;
 
 type LocalState = {
   type: SslType;

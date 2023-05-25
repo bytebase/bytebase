@@ -59,6 +59,7 @@ import {
   useProjectWebhookV1Store,
   useEnvironmentV1Store,
   useCurrentUserV1,
+  useInstanceV1Store,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -1565,6 +1566,11 @@ router.beforeEach((to, from, next) => {
   if (instanceSlug) {
     instanceStore
       .fetchInstanceById(idFromSlug(instanceSlug))
+      .then(() =>
+        useInstanceV1Store().getOrFetchInstanceByUID(
+          String(idFromSlug(instanceSlug))
+        )
+      )
       .then(() => {
         next();
       })
