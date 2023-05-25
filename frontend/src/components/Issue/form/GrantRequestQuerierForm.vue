@@ -136,13 +136,12 @@
 </template>
 
 <script lang="ts" setup>
-import { head, uniq } from "lodash-es";
+import { head } from "lodash-es";
 import { NRadioGroup, NRadio, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useIssueLogic } from "../logic";
 import {
-  DatabaseId,
   GrantRequestContext,
   GrantRequestPayload,
   Issue,
@@ -150,13 +149,13 @@ import {
   PresetRoleType,
   UNKNOWN_ID,
 } from "@/types";
-import { getDatabaseIdByName, memberListInProjectV1 } from "@/utils";
+import { memberListInProjectV1 } from "@/utils";
 import {
   convertUserToPrincipal,
   useDatabaseStore,
   useProjectV1Store,
 } from "@/store";
-import { converFromCEL, stringifyDatabaseResources } from "@/utils/issue/cel";
+import { convertFromCEL } from "@/utils/issue/cel";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import RequiredStar from "@/components/RequiredStar.vue";
 import SelectDatabaseResourceForm from "./SelectDatabaseResourceForm/index.vue";
@@ -167,7 +166,6 @@ interface LocalState {
   // For creating
   projectId?: string;
   allDatabases: boolean;
-  selectedDatabaseIdList: DatabaseId[];
   selectedDatabaseResourceList: DatabaseResource[];
   expireDays: number;
   customDays: number;
@@ -182,7 +180,6 @@ const state = reactive<LocalState>({
   showSelectDatabasePanel: false,
   projectId: undefined,
   allDatabases: true,
-  selectedDatabaseIdList: [],
   selectedDatabaseResourceList: [],
   expireDays: 7,
   customDays: 7,
@@ -248,14 +245,15 @@ const handleProjectSelect = async (projectId: string) => {
     const ownerPrincipal = convertUserToPrincipal(projectOwner.user);
     (issue.value as IssueCreate).assigneeId = ownerPrincipal.id;
   }
-  state.selectedDatabaseIdList = state.selectedDatabaseIdList.filter((id) => {
-    const database = databaseStore.getDatabaseById(id);
-    return String(database.project.id) === projectId;
-  });
+  state.selectedDatabaseResourceList =
+    state.selectedDatabaseResourceList.filter((resource) => {
+      const database = databaseStore.getDatabaseById(resource.databaseId);
+      return String(database.project.id) === projectId;
+    });
 };
 
 const handleManuallySelectClick = () => {
-  if (state.selectedDatabaseIdList.length === 0) {
+  if (state.selectedDatabaseResourceList.length === 0) {
     state.showSelectDatabasePanel = true;
   }
 };
@@ -266,7 +264,6 @@ const handleSelectedDatabaseResourceChanged = (
   state.selectedDatabaseResourceList = databaseResourceList;
   state.showSelectDatabasePanel = false;
   state.allDatabases = false;
-  stringifyDatabaseResources(databaseResourceList);
 
   if (create.value) {
     (
@@ -302,26 +299,13 @@ watch(
         throw "Only support QUERIER role";
       }
 
-      const conditionExpression = await converFromCEL(
+      const conditionExpression = await convertFromCEL(
         payload.condition.expression
       );
       if (conditionExpression.expiredTime !== undefined) {
         state.expiredAt = new Date(
           conditionExpression.expiredTime
         ).toLocaleString();
-      }
-      if (
-        conditionExpression.databases !== undefined &&
-        conditionExpression.databases.length > 0
-      ) {
-        const databaseIdList = [];
-        for (const databaseName of conditionExpression.databases) {
-          const id = await getDatabaseIdByName(databaseName);
-          if (id && id !== UNKNOWN_ID) {
-            databaseIdList.push(id);
-          }
-        }
-        state.selectedDatabaseIdList = uniq(databaseIdList);
       }
       if (
         conditionExpression.databaseResources !== undefined &&
