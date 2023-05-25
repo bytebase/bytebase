@@ -1,14 +1,7 @@
 <template>
   <div class="py-4 space-y-4">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
-    <BBAttention
-      v-else-if="state.migrationSetupStatus != 'OK'"
-      :style="'WARN'"
-      :title="attentionTitle"
-      :description="attentionText"
-      :action-text="attentionActionText"
-      @click-action="state.showCreateMigrationSchemaModal = true"
-    />
+
     <div class="px-6 space-y-6">
       <InstanceForm :instance="instance" />
       <div
@@ -99,25 +92,6 @@
     </div>
   </div>
 
-  <BBAlert
-    v-if="state.showCreateMigrationSchemaModal"
-    :style="'INFO'"
-    :ok-text="$t('common.create')"
-    :title="$t('instance.create-migration-schema') + '?'"
-    :description="
-      $t(
-        'instance.bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance'
-      )
-    "
-    :in-progress="state.creatingMigrationSchema"
-    @ok="
-      () => {
-        doCreateMigrationSchema();
-      }
-    "
-    @cancel="state.showCreateMigrationSchemaModal = false"
-  ></BBAlert>
-
   <BBModal
     v-if="state.showCreateDatabaseModal"
     :title="$t('quick-action.create-db')"
@@ -129,6 +103,7 @@
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </BBModal>
+
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.instance-count"
@@ -137,7 +112,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
@@ -152,12 +127,7 @@ import DatabaseTable from "../components/DatabaseTable.vue";
 import { InstanceRoleTable } from "@/components/v2";
 import InstanceForm from "../components/InstanceForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
-import {
-  Database,
-  InstanceMigration,
-  MigrationSchemaStatus,
-  SQLResultSet,
-} from "../types";
+import { Database, MigrationSchemaStatus, SQLResultSet } from "../types";
 import {
   featureToRef,
   pushNotification,
@@ -217,74 +187,6 @@ const environment = computed(() => {
   return useEnvironmentV1Store().getEnvironmentByName(
     instance.value.environment
   );
-});
-
-const checkMigrationSetup = () => {
-  instanceStore
-    .checkMigrationSetup(instanceId.value)
-    .then((migration: InstanceMigration) => {
-      state.migrationSetupStatus = migration.status;
-    });
-};
-
-const prepareMigrationSchemaStatus = () => {
-  checkMigrationSetup();
-};
-watchEffect(prepareMigrationSchemaStatus);
-
-const attentionTitle = computed((): string => {
-  if (state.migrationSetupStatus == "NOT_EXIST") {
-    return t("instance.missing-migration-schema");
-  } else if (state.migrationSetupStatus == "UNKNOWN") {
-    return t("instance.unable-to-connect-instance-to-check-migration-schema");
-  }
-  return "";
-});
-
-const attentionText = computed((): string => {
-  if (state.migrationSetupStatus == "NOT_EXIST") {
-    return (
-      t(
-        "instance.bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance"
-      ) +
-      (hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-instance",
-        currentUserV1.value.userRole
-      )
-        ? ""
-        : " " + t("instance.please-contact-your-dba-to-configure-it"))
-    );
-  } else if (state.migrationSetupStatus == "UNKNOWN") {
-    return (
-      t(
-        "instance.bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance"
-      ) +
-      (hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-instance",
-        currentUserV1.value.userRole
-      )
-        ? " " +
-          t("instance.please-check-the-instance-connection-info-is-correct")
-        : " " + t("instance.please-contact-your-dba-to-configure-it"))
-    );
-  }
-  return "";
-});
-
-const attentionActionText = computed((): string => {
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      currentUserV1.value.userRole
-    )
-  ) {
-    if (state.migrationSetupStatus == "NOT_EXIST") {
-      return t("instance.create-migration-schema");
-    } else if (state.migrationSetupStatus == "UNKNOWN") {
-      return "";
-    }
-  }
-  return "";
 });
 
 const hasDataSourceFeature = featureToRef("bb.feature.data-source");
@@ -373,37 +275,6 @@ const doRestore = async () => {
       ]),
     });
   });
-};
-
-const doCreateMigrationSchema = () => {
-  state.creatingMigrationSchema = true;
-  instanceStore
-    .createMigrationSetup(instanceId.value)
-    .then((resultSet: SQLResultSet) => {
-      state.creatingMigrationSchema = false;
-      if (resultSet.error) {
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t(
-            "instance.failed-to-create-migration-schema-for-instance-instance-value-name",
-            [instance.value.title]
-          ),
-          description: resultSet.error,
-        });
-      } else {
-        checkMigrationSetup();
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t(
-            "instance.successfully-created-migration-schema-for-instance-value-name",
-            [instance.value.title]
-          ),
-        });
-      }
-      state.showCreateMigrationSchemaModal = false;
-    });
 };
 
 const syncSchema = () => {
