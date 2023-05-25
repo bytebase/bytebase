@@ -568,10 +568,10 @@
       "description": "配置邮件信息可以让用户接收到数据库相关报告的电子邮件，如慢查询周报。",
       "field": {
         "smtp-server-host": "SMTP 服务器主机",
-        "from": "发送自",
+        "from": "发件人地址",
         "smtp-username": "SMTP 用户名",
         "smtp-password": "SMTP 密码",
-        "send-test-email-to": "发送测试邮件给",
+        "send-test-email-to": "收件人测试地址",
         "authentication-method": "验证方式",
         "encryption": "加密方式",
         "smtp-server-port": "SMTP 服务器端口",
