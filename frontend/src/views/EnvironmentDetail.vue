@@ -190,7 +190,7 @@ const doUpdate = (environmentPatch: Environment) => {
       } else {
         policyV1Store
           .getOrFetchPolicyByParentAndType({
-            parentPath: state.environment.name,
+            parentPath: environment.name,
             policyType: PolicyTypeV1.ACCESS_CONTROL,
           })
           .then((existingPolicy) => {
