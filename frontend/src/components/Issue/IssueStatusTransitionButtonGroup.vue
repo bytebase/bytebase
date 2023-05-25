@@ -581,7 +581,7 @@ const allowCreate = computed(() => {
     const createContext = newIssue.createContext as GrantRequestContext;
     if (createContext.role === "EXPORTER") {
       return (
-        createContext.databaseResources.length === 1 &&
+        createContext.databaseResources.length > 0 &&
         createContext.statement !== ""
       );
     }
