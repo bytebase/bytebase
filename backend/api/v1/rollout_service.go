@@ -744,9 +744,31 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		// task 2: restore the database
 		switch source := c.Source.(type) {
 		case *v1pb.Plan_RestoreDatabaseConfig_Backup:
-			// FIXME
-			panic("TBD")
-			restorePayload.BackupID = nil
+			backupInstanceID, backupDatabaseName, backupName, err := getInstanceDatabaseIDBackupName(source.Backup)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to parse backup name %q", source.Backup)
+			}
+			backupDatabase, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &backupInstanceID,
+				DatabaseName: &backupDatabaseName,
+			})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get database %q", backupDatabaseName)
+			}
+			if backupDatabase == nil {
+				return nil, nil, errors.Errorf("failed to find database %q where backup %q is created", backupDatabaseName, source.Backup)
+			}
+			backup, err := s.GetBackupV2(ctx, &store.FindBackupMessage{
+				DatabaseUID: &backupDatabase.UID,
+				Name:        &backupName,
+			})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get backup %q", backupName)
+			}
+			if backup == nil {
+				return nil, nil, errors.Errorf("failed to find backup %q", backupName)
+			}
+			restorePayload.BackupID = &backup.UID
 		case *v1pb.Plan_RestoreDatabaseConfig_PointInTime:
 			ts := source.PointInTime.GetSeconds()
 			restorePayload.PointInTimeTs = &ts
@@ -777,9 +799,31 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		}
 		switch source := c.Source.(type) {
 		case *v1pb.Plan_RestoreDatabaseConfig_Backup:
-			// FIXME
-			panic("TBD")
-			restorePayload.BackupID = nil
+			backupInstanceID, backupDatabaseName, backupName, err := getInstanceDatabaseIDBackupName(source.Backup)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to parse backup name %q", source.Backup)
+			}
+			backupDatabase, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &backupInstanceID,
+				DatabaseName: &backupDatabaseName,
+			})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get database %q", backupDatabaseName)
+			}
+			if backupDatabase == nil {
+				return nil, nil, errors.Errorf("failed to find database %q where backup %q is created", backupDatabaseName, source.Backup)
+			}
+			backup, err := s.GetBackupV2(ctx, &store.FindBackupMessage{
+				DatabaseUID: &backupDatabase.UID,
+				Name:        &backupName,
+			})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get backup %q", backupName)
+			}
+			if backup == nil {
+				return nil, nil, errors.Errorf("failed to find backup %q", backupName)
+			}
+			restorePayload.BackupID = &backup.UID
 		case *v1pb.Plan_RestoreDatabaseConfig_PointInTime:
 			ts := source.PointInTime.GetSeconds()
 			restorePayload.PointInTimeTs = &ts

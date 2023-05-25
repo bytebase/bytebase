@@ -572,8 +572,8 @@ func (s *Store) CreateBackupV2(ctx context.Context, create *BackupMessage, datab
 	return &backup, nil
 }
 
-// GetBackupV2 gets the backup for the given database.
-func (s *Store) GetBackupV2(ctx context.Context, backupUID int) (*BackupMessage, error) {
+// GetBackupByUID gets the backup for the given database by backup UID.
+func (s *Store) GetBackupByUID(ctx context.Context, backupUID int) (*BackupMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
@@ -595,6 +595,33 @@ func (s *Store) GetBackupV2(ctx context.Context, backupUID int) (*BackupMessage,
 	}
 	if len(backupList) > 1 {
 		return nil, errors.Errorf("found %d backup with backup uid %d", len(backupList), backupUID)
+	}
+
+	return backupList[0], nil
+}
+
+// GetBackupV2 gets the backup for the given database.
+func (s *Store) GetBackupV2(ctx context.Context, find *FindBackupMessage) (*BackupMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	backupList, err := s.listBackupImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find backup with %+v", find)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	if len(backupList) == 0 {
+		return nil, nil
+	}
+	if len(backupList) > 1 {
+		return nil, errors.Errorf("found %d backup with backup find %+v", len(backupList), find)
 	}
 
 	return backupList[0], nil
