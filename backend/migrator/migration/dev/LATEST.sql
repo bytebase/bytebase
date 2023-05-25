@@ -1223,6 +1223,7 @@ CREATE TABLE db_group (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    project_id INTEGER NOT NULL REFERENCES project (id),
     resource_id TEXT NOT NULL,
     placeholder TEXT NOT NULL DEFAULT '',
     expression JSONB NOT NULL DEFAULT '{}'
