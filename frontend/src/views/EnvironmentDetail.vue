@@ -78,7 +78,6 @@ import {
   Environment,
   EnvironmentTier,
 } from "@/types/proto/v1/environment_service";
-import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
 import { State } from "@/types/proto/v1/common";
 
 interface LocalState {
@@ -173,10 +172,9 @@ const doUpdate = (environmentPatch: Environment) => {
   environmentV1Store.updateEnvironment(pendingUpdate).then((environment) => {
     assignEnvironment(environment);
 
-    // TODO(ed): update the access control policy.
     const disallowed = environment.tier === EnvironmentTier.PROTECTED;
-    await policyV1Store.upsertPolicy({
-      parentPath: getEnvironmentPathByLegacyEnvironment(environment),
+    return policyV1Store.upsertPolicy({
+      parentPath: environment.name,
       updateMask: ["payload", "inherit_from_parent"],
       policy: {
         type: PolicyTypeV1.ACCESS_CONTROL,
@@ -186,12 +184,12 @@ const doUpdate = (environmentPatch: Environment) => {
         },
       },
     });
-
+  }).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("environment.successfully-updated-environment", {
-        name: environment.title,
+        name: state.environment.title,
       }),
     });
   });
