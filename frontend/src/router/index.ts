@@ -27,6 +27,7 @@ import {
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
   idFromSlug,
+  sheetNameFromSlug,
   migrationHistoryIdFromSlug,
   roleListInProjectV1,
 } from "../utils";
@@ -41,7 +42,7 @@ import {
   useDataSourceStore,
   useSQLReviewStore,
   useLegacyProjectStore,
-  useSheetStore,
+  useSheetV1Store,
   useAuthStore,
   useActuatorStore,
   useDatabaseStore,
@@ -1612,9 +1613,9 @@ router.beforeEach((to, from, next) => {
   }
 
   if (sheetSlug) {
-    const sheetId = idFromSlug(sheetSlug);
-    useSheetStore()
-      .fetchSheetById(sheetId)
+    const sheetName = sheetNameFromSlug(sheetSlug);
+    useSheetV1Store()
+      .fetchSheetByName(sheetName)
       .then(() => next())
       .catch(() => next());
     return;

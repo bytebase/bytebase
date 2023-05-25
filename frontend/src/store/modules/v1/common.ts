@@ -3,7 +3,9 @@ import {
   UNKNOWN_ID,
   Instance,
   Database,
+  Project,
   Environment,
+  SheetId,
 } from "@/types";
 
 export const userNamePrefix = "users/";
@@ -50,15 +52,24 @@ export const getProjectAndSheetId = (name: string): string[] => {
     sheetNamePrefix,
   ]);
 
+  if (tokens.length != 2) {
+    return ["", ""];
+  }
+
   return tokens;
 };
 
-export const getDatabaseId = (name: string): string => {
-  const sections = name.split(databaseNamePrefix);
-  if (sections.length != 2) {
-    return "";
+export const getInstanceAndDatabaseId = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [
+    instanceNamePrefix,
+    databaseNamePrefix,
+  ]);
+
+  if (tokens.length != 2) {
+    return ["", ""];
   }
-  return sections[1];
+
+  return tokens;
 };
 
 export const getUserEmailFromIdentifier = (identifier: string): string => {
@@ -84,4 +95,11 @@ export const getDatabasePathByLegacyDatabase = (database: Database): string => {
   return `${getInstancePathByLegacyInstance(
     database.instance
   )}/${databaseNamePrefix}${database.name}`;
+};
+
+export const getSheetPathByLegacyProject = (
+  project: Project,
+  sheetId: SheetId
+): string => {
+  return `${projectNamePrefix}${project.resourceId}/${sheetNamePrefix}${sheetId}`;
 };

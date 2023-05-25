@@ -24,7 +24,7 @@ import {
   findTaskById,
   issueActivityActionSentence,
 } from "@/utils";
-import { useSheetStore } from "@/store";
+import { useSheetStore, useSheetById } from "@/store";
 import TaskName from "./TaskName.vue";
 import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
 import StageName from "./StageName.vue";
@@ -184,10 +184,10 @@ const renderActionSentence = () => {
     case "bb.pipeline.task.statement.update": {
       const payload = activity.payload as ActivityTaskStatementUpdatePayload;
       const oldStatement =
-        sheetStore.getSheetById(payload.oldSheetId || UNKNOWN_ID).statement ||
+        useSheetById(payload.oldSheetId || UNKNOWN_ID).value.statement ||
         payload.oldStatement;
       const newStatement =
-        sheetStore.getSheetById(payload.newSheetId || UNKNOWN_ID).statement ||
+        useSheetById(payload.newSheetId || UNKNOWN_ID).value.statement ||
         payload.newStatement;
       return h(
         "span",

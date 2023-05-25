@@ -1,6 +1,6 @@
 import { isUndefined, uniq } from "lodash-es";
 
-import { useCurrentUserV1, useProjectV1Store, useSheetStore } from "@/store";
+import { useSheetStore } from "@/store";
 import {
   Issue,
   Sheet,
@@ -15,95 +15,7 @@ import {
   TaskDatabaseSchemaUpdatePayload,
   TaskDatabaseSchemaUpdateSDLPayload,
 } from "@/types";
-import {
-  extractUserUID,
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
-  isMemberOfProjectV1,
-} from "../utils";
 import { flattenTaskList } from "@/components/Issue/logic";
-
-export const isSheetReadable = (sheet: Sheet) => {
-  const currentUserV1 = useCurrentUserV1();
-
-  // readable to
-  // PRIVATE: the creator only
-  // PROJECT: the creator and members in the project, workspace Owner and DBA
-  // PUBLIC: everyone
-
-  if (String(sheet.creator.id) === extractUserUID(currentUserV1.value.name)) {
-    // Always readable to the creator
-    return true;
-  }
-  const { visibility } = sheet;
-  if (visibility === "PRIVATE") {
-    return false;
-  }
-  if (visibility === "PROJECT") {
-    if (
-      hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-project",
-        currentUserV1.value.userRole
-      )
-    ) {
-      return true;
-    }
-
-    const projectV1 = useProjectV1Store().getProjectByUID(
-      String(sheet.project.id)
-    );
-    return isMemberOfProjectV1(projectV1.iamPolicy, currentUserV1.value);
-  }
-  // visibility === "PUBLIC"
-  return true;
-};
-
-export const isSheetWritable = (sheet: Sheet) => {
-  // If the sheet is linked to an issue, it's NOT writable
-  if (getSheetIssueBacktracePayload(sheet)) {
-    return false;
-  }
-
-  const currentUserV1 = useCurrentUserV1();
-
-  // writable to
-  // PRIVATE: the creator only
-  // PROJECT: the creator or project role can manage sheet, workspace Owner and DBA
-  // PUBLIC: the creator only
-
-  if (String(sheet.creator.id) === extractUserUID(currentUserV1.value.name)) {
-    // Always writable to the creator
-    return true;
-  }
-  const { visibility } = sheet;
-  if (visibility === "PRIVATE") {
-    return false;
-  }
-  if (visibility === "PROJECT") {
-    if (
-      hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-project",
-        currentUserV1.value.userRole
-      )
-    ) {
-      return true;
-    }
-
-    const projectV1 = useProjectV1Store().getProjectByUID(
-      String(sheet.project.id)
-    );
-    const isCurrentUserProjectOwner = () => {
-      return hasPermissionInProjectV1(
-        projectV1.iamPolicy,
-        currentUserV1.value,
-        "bb.permission.project.manage-sheet"
-      );
-    };
-    return isCurrentUserProjectOwner();
-  }
-  // visibility === "PUBLIC"
-  return false;
-};
 
 // getDefaultSheetPayloadWithSource gets the default payload with sheet source.
 export const getDefaultSheetPayloadWithSource = (
