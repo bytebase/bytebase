@@ -57,69 +57,6 @@
         {{ selectedDatabase.name }}
       </div>
     </div>
-    <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center textlabel shrink-0 !leading-6">
-        {{ $t("db.tables") }}
-        <RequiredStar />
-      </span>
-      <div v-if="create">
-        <NRadioGroup
-          v-model:value="state.allTables"
-          class="w-full !flex flex-row justify-start items-start gap-4"
-          name="radiogroup"
-        >
-          <NRadio
-            class="!leading-6 whitespace-nowrap"
-            :value="true"
-            :label="$t('issue.grant-request.all-tables')"
-          />
-          <div class="flex flex-row justify-start flex-wrap gap-y-2">
-            <NRadio
-              class="!leading-6"
-              :value="false"
-              :disabled="!state.projectId || !state.databaseId"
-              :label="$t('issue.grant-request.manually-select')"
-              @click="handleManuallySelectClick"
-            />
-            <button
-              v-if="state.projectId && state.databaseId"
-              class="ml-2 normal-link h-6 disabled:cursor-not-allowed"
-              @click="state.showSelectDatabasePanel = true"
-            >
-              {{ $t("common.select") }}
-            </button>
-            <div
-              v-if="state.selectedDatabaseResourceList.length > 0"
-              class="ml-6 flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
-            >
-              <div
-                v-for="databaseResource in state.selectedDatabaseResourceList"
-                :key="`${databaseResource.databaseId}`"
-                class="flex flex-row justify-start items-center"
-              >
-                <DatabaseResourceView :database-resource="databaseResource" />
-              </div>
-            </div>
-          </div>
-        </NRadioGroup>
-      </div>
-      <div
-        v-else
-        class="flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
-      >
-        <span v-if="state.selectedDatabaseResourceList.length === 0">{{
-          $t("issue.grant-request.all-databases")
-        }}</span>
-        <div
-          v-for="databaseResource in state.selectedDatabaseResourceList"
-          v-else
-          :key="`${databaseResource.databaseId}`"
-          class="flex flex-row justify-start items-center"
-        >
-          <DatabaseResourceView :database-resource="databaseResource" />
-        </div>
-      </div>
-    </div>
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center textlabel !leading-6">
         {{ $t("issue.grant-request.export-rows") }}
@@ -170,21 +107,6 @@
       </div>
     </div>
   </div>
-
-  <BBModal
-    v-if="state.showSelectDatabasePanel && state.projectId && state.databaseId"
-    class="relative overflow-hidden"
-    :title="$t('issue.grant-request.manually-select')"
-    @close="state.showSelectDatabasePanel = false"
-  >
-    <SelectDatabaseResourceForm
-      :project-id="state.projectId"
-      :database-id="state.databaseId"
-      :selected-database-resource-list="state.selectedDatabaseResourceList"
-      @close="state.showSelectDatabasePanel = false"
-      @update="handleSelectedDatabaseResourceChanged"
-    />
-  </BBModal>
 </template>
 
 <script lang="ts" setup>
@@ -211,7 +133,6 @@ import {
 import MonacoEditor from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
-import SelectDatabaseResourceForm from "./SelectDatabaseResourceForm/index.vue";
 import { converFromCEL } from "@/utils/issue/cel";
 
 interface LocalState {
@@ -220,7 +141,6 @@ interface LocalState {
   projectId?: string;
   environmentId?: string;
   databaseId?: DatabaseId;
-  allTables: boolean;
   selectedDatabaseResourceList: DatabaseResource[];
   maxRowCount: number;
   exportFormat: "CSV" | "JSON";
@@ -231,7 +151,6 @@ const { create, issue } = useIssueLogic();
 const databaseStore = useDatabaseStore();
 const state = reactive<LocalState>({
   showSelectDatabasePanel: false,
-  allTables: true,
   selectedDatabaseResourceList: [],
   maxRowCount: 1000,
   exportFormat: "CSV",
@@ -310,26 +229,6 @@ const handleDatabaseSelect = (databaseId: DatabaseId) => {
   }
 };
 
-const handleManuallySelectClick = () => {
-  if (state.selectedDatabaseResourceList.length === 0) {
-    state.showSelectDatabasePanel = true;
-  }
-};
-
-const handleSelectedDatabaseResourceChanged = (
-  databaseResourceList: DatabaseResource[]
-) => {
-  state.selectedDatabaseResourceList = databaseResourceList;
-  state.showSelectDatabasePanel = false;
-  state.allTables = false;
-
-  if (create.value) {
-    (
-      (issue.value as IssueCreate).createContext as GrantRequestContext
-    ).databaseResources = databaseResourceList;
-  }
-};
-
 const handleStatementChange = (value: string) => {
   state.statement = value;
 };
@@ -337,7 +236,6 @@ const handleStatementChange = (value: string) => {
 watch(
   () => [
     state.databaseId,
-    state.allTables,
     state.selectedDatabaseResourceList,
     state.maxRowCount,
     state.exportFormat,
@@ -348,15 +246,11 @@ watch(
       const context = (issue.value as IssueCreate)
         .createContext as GrantRequestContext;
       if (state.databaseId) {
-        if (state.allTables) {
-          context.databaseResources = [
-            {
-              databaseId: state.databaseId,
-            },
-          ];
-        } else {
-          context.databaseResources = state.selectedDatabaseResourceList || [];
-        }
+        context.databaseResources = [
+          {
+            databaseId: state.databaseId,
+          },
+        ];
       } else {
         context.databaseResources = [];
       }
@@ -387,13 +281,6 @@ watch(
         conditionExpression.databaseResources !== undefined &&
         conditionExpression.databaseResources.length > 0
       ) {
-        const isAllTables = conditionExpression.databaseResources.find(
-          (resource) => resource.schema === undefined
-        );
-        if (!isAllTables) {
-          state.selectedDatabaseResourceList =
-            conditionExpression.databaseResources;
-        }
         const resource = head(conditionExpression.databaseResources);
         if (resource) {
           state.databaseId = resource.databaseId;
