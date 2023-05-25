@@ -44,6 +44,11 @@ export function convertEntityList<T, K extends string>(
   });
 }
 
+export const extractGrpcErrorMessage = (err: unknown) => {
+  const description = err instanceof ClientError ? err.details : String(err);
+  return description;
+};
+
 export const useGracefulRequest = async <T>(
   fn: () => Promise<T>
 ): Promise<T> => {
@@ -51,7 +56,7 @@ export const useGracefulRequest = async <T>(
     const result = await fn();
     return result;
   } catch (err) {
-    const description = err instanceof ClientError ? err.details : String(err);
+    const description = extractGrpcErrorMessage(err);
     if (err instanceof ClientError) {
       pushNotification({
         module: "bytebase",

@@ -140,13 +140,14 @@
             </label>
             <input
               id="port"
-              v-model="adminDataSource.port"
-              type="number"
+              type="text"
               name="port"
               class="textfield mt-1 w-full"
+              :value="adminDataSource.port"
               :placeholder="defaultPort"
               :disabled="!allowEdit || !allowEditPort"
               @wheel="(e: WheelEvent) => (e.target as HTMLInputElement).blur()"
+              @input="adminDataSource.port = trimInputValue($event.target)"
             />
           </div>
         </template>
@@ -232,9 +233,8 @@
         {{ $t("instance.connection-info") }}
       </p>
 
-      <div>{{ currentDataSource }}</div>
       <div
-        v-if="!isCreating && !hasReadOnlyDataSource"
+        v-if="!isCreating && !hasReadOnlyDataSource && allowEdit"
         class="mt-2 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3"
       >
         <heroicons-outline:exclamation
@@ -321,6 +321,7 @@
                 v-if="!isCreating && allowUsingEmptyPassword"
                 :title="$t('common.empty')"
                 :value="currentDataSource.useEmptyPassword"
+                :disabled="!allowEdit"
                 @toggle="toggleUseEmptyPassword"
               />
             </div>
@@ -470,7 +471,11 @@
               />
             </template>
             <template v-else>
-              <button class="btn-normal mt-2" @click.prevent="handleEditSsl">
+              <button
+                class="btn-normal mt-2"
+                :disabled="!allowEdit"
+                @click.prevent="handleEditSsl"
+              >
                 {{ $t("common.edit") }} - {{ $t("common.write-only") }}
               </button>
             </template>
@@ -501,7 +506,11 @@
               />
             </template>
             <template v-else>
-              <button class="btn-normal mt-2" @click.prevent="handleEditSsh">
+              <button
+                class="btn-normal mt-2"
+                :disabled="!allowEdit"
+                @click.prevent="handleEditSsh"
+              >
                 {{ $t("common.edit") }} - {{ $t("common.write-only") }}
               </button>
             </template>
@@ -521,12 +530,12 @@
         <div class="flex flex-row space-x-2">
           <button
             type="button"
-            class="btn-normal whitespace-nowrap items-center"
-            :disabled="!allowCreate || state.isRequesting"
-            @click.prevent="testConnectionV1"
+            class="btn-normal whitespace-nowrap flex items-center gap-x-1"
+            :disabled="!allowCreate || state.isRequesting || !allowEdit"
+            @click.prevent="testConnection(false /* !silent */)"
           >
             <BBSpin v-if="state.isTestingConnection" />
-            {{ $t("instance.test-connection") }}
+            <span>{{ $t("instance.test-connection") }}</span>
           </button>
         </div>
       </div>
@@ -537,11 +546,16 @@
       <div class="w-full flex justify-between items-center">
         <div class="w-full flex justify-end items-center gap-x-4">
           <template v-if="isCreating">
-            <NButton :disabled="state.isRequesting" @click.prevent="cancel">
+            <NButton
+              :disabled="state.isRequesting || state.isTestingConnection"
+              @click.prevent="cancel"
+            >
               {{ $t("common.cancel") }}
             </NButton>
             <NButton
-              :disabled="!allowCreate || state.isRequesting"
+              :disabled="
+                !allowCreate || state.isRequesting || state.isTestingConnection
+              "
               :loading="state.isRequesting"
               type="primary"
               @click.prevent="tryCreate"
@@ -622,6 +636,7 @@ import {
   useEnvironmentV1Store,
   useInstanceStore,
   useDatabaseStore,
+  extractGrpcErrorMessage,
 } from "@/store";
 import { getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
@@ -643,6 +658,7 @@ import {
   Instance,
 } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto/v1/common";
+import { instanceServiceClient } from "@/grpcweb";
 
 const props = defineProps({
   instance: {
@@ -874,7 +890,7 @@ const allowCreate = computed(() => {
 
 const allowEdit = computed(() => {
   return (
-    basicInfo.value.state === State.ACTIVE &&
+    props.instance?.state === State.ACTIVE &&
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
       currentUserV1.value.userRole
@@ -956,7 +972,6 @@ const showAuthenticationDatabase = computed((): boolean => {
 const showSSL = computed((): boolean => {
   return instanceV1HasSSL(basicInfo.value.engine);
 });
-
 const showSSH = computed((): boolean => {
   return instanceV1HasSSH(basicInfo.value.engine);
 });
@@ -1201,24 +1216,15 @@ const handleWarningModalOkClick = async () => {
 };
 
 const tryCreate = async () => {
-  doCreate();
-
-  // const connectionContext = getTestConnectionContext();
-  // state.isTestingConnection = true;
-  // try {
-  //   const resultSet = await sqlStore.ping(connectionContext);
-  //   state.isTestingConnection = false;
-  //   if (isEmpty(resultSet.error)) {
-  //     await doCreate();
-  //   } else {
-  //     state.createInstanceWarning = t("instance.unable-to-connect", [
-  //       resultSet.error,
-  //     ]);
-  //     state.showCreateInstanceWarningModal = true;
-  //   }
-  // } catch (error) {
-  //   state.isTestingConnection = false;
-  // }
+  const testResult = await testConnection(true /* silent */);
+  if (testResult.success) {
+    doCreate();
+  } else {
+    state.createInstanceWarning = t("instance.unable-to-connect", [
+      testResult.message,
+    ]);
+    state.showCreateInstanceWarningModal = true;
+  }
 };
 
 const extractDataSourceFromEdit = (
@@ -1338,35 +1344,14 @@ const doUpdate = async () => {
     editState: EditDataSource
   ) => {
     if (!original) return;
-    const updateMask = new Set(
-      calcUpdateMask(editing, original, true /* toSnakeCase */)
-    );
-    const { useEmptyPassword, updateSsh, updateSsl } = editState;
-    if (useEmptyPassword) {
-      // We need to implicitly set "password" need to be updated
-      // if the "use empty password" option if checked
-      editing.password = "";
-      updateMask.add("password");
-    }
-    if (updateSsl) {
-      updateMask.add("ssl_ca");
-      updateMask.add("ssl_key");
-      updateMask.add("ssl_cert");
-    }
-    if (updateSsh) {
-      updateMask.add("ssh_host");
-      updateMask.add("ssh_port");
-      updateMask.add("ssh_user");
-      updateMask.add("ssh_password");
-      updateMask.add("ssh_private_key");
-    }
-    if (updateMask.size === 0) {
+    const updateMask = calcDataSourceUpdateMask(editing, original, editState);
+    if (updateMask.length === 0) {
       return;
     }
     return await instanceV1Store.updateDataSource(
       instance,
       editing,
-      Array.from(updateMask)
+      updateMask
     );
   };
   const maybeUpdateAdminDataSource = async () => {
@@ -1416,8 +1401,46 @@ const doUpdate = async () => {
   }
 };
 
-const testConnectionV1 = async () => {
+const testConnection = async (
+  silent = false
+): Promise<{ success: boolean; message: string }> => {
   // In different scenes, we use different methods to test connection.
+
+  const ok = () => {
+    if (!silent) {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("instance.successfully-connected-instance"),
+      });
+    }
+
+    state.isTestingConnection = false;
+    return { success: true, message: "" };
+  };
+  const fail = (host: string, err: unknown) => {
+    const error = extractGrpcErrorMessage(err);
+    if (!silent) {
+      let title = t("instance.failed-to-connect-instance");
+      if (host === "localhost" || host === "127.0.0.1") {
+        title = t("instance.failed-to-connect-instance-localhost");
+      }
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title,
+        description: error,
+        // Manual hide, because user may need time to inspect the error
+        manualHide: true,
+      });
+    }
+
+    state.isTestingConnection = false;
+    return { success: false, message: error };
+  };
+
+  state.isTestingConnection = true;
+  await new Promise((r) => setTimeout(r, 1000));
   if (isCreating.value) {
     // When creating new instance, use
     // CreateInstanceRequest.validateOnly = true
@@ -1431,138 +1454,58 @@ const testConnectionV1 = async () => {
       adminDataSource.value
     );
     instance.dataSources = [adminDataSourceCreate];
-    debugger;
-    // const result = await instanceServiceClient.createInstance({
-    //   instance,
-    //   validateOnly: true,
-    // });
-    // debugger;
+    try {
+      await instanceServiceClient.createInstance({
+        instance,
+        instanceId: extractInstanceResourceName(instance.name),
+        validateOnly: true,
+      });
+      return ok();
+    } catch (err) {
+      return fail(adminDataSourceCreate.host, err);
+    }
   } else {
     // Editing existed instance.
-    // When a data source (admin or read-only) has been edited, use
-    // UpdateDataSourceRequest.validateOnly = true
-    // TODO
-    // When read-only data source is about to be created, use
-    // AddDataSourceRequest.validateOnly = true
-    // TODO
+    const instance = props.instance!;
+    const ds = extractDataSourceFromEdit(instance, currentDataSource.value);
+    if (currentDataSource.value.pendingCreate) {
+      // When read-only data source is about to be created, use
+      // AddDataSourceRequest.validateOnly = true
+      try {
+        await instanceServiceClient.addDataSource({
+          instance: instance.name,
+          dataSources: ds,
+          validateOnly: true,
+        });
+        return ok();
+      } catch (err) {
+        return fail(ds.host, err);
+      }
+    } else {
+      // When a data source (admin or read-only) has been edited, use
+      // UpdateDataSourceRequest.validateOnly = true
+      try {
+        const original = instance.dataSources.find(
+          (ds) => ds.type === currentDataSource.value.type
+        )!;
+        const updateMask = calcDataSourceUpdateMask(
+          ds,
+          original,
+          currentDataSource.value
+        );
+        await instanceServiceClient.updateDataSource({
+          instance: instance.name,
+          dataSources: ds,
+          updateMask,
+          validateOnly: true,
+        });
+        return ok();
+      } catch (err) {
+        return fail(ds.host, err);
+      }
+    }
   }
 };
-
-// const getTestConnectionContext = () => {
-//   const dataSource = currentDataSource.value;
-//   let connectionHost = adminDataSource.value.host;
-//   let connectionPort = adminDataSource.value.port;
-//   if (dataSource.type === DataSourceType.READ_ONLY) {
-//     if (dataSource.host) {
-//       connectionHost = dataSource.host;
-//     }
-//     if (dataSource.port) {
-//       connectionPort = dataSource.port;
-//     }
-//   }
-
-//   const connectionInfo: ConnectionInfo = {
-//     ...basicInfoV1.value,
-//     engine: engineToJSON(basicInfoV1.value.engine) as EngineType,
-//     host: connectionHost,
-//     port: connectionPort,
-//     username: dataSource.username,
-//     password: dataSource.useEmptyPassword ? "" : dataSource.updatedPassword,
-//     useEmptyPassword: dataSource.useEmptyPassword,
-//     database: dataSource.database,
-//     srv: dataSource.srv,
-//     authenticationDatabase: dataSource.authenticationDatabase,
-//     sid: "",
-//     serviceName: "",
-//     sshHost: "",
-//     sshPort: "",
-//     sshUser: "",
-//     sshPassword: "",
-//     sshPrivateKey: "",
-//   };
-
-//   if (!isCreating.value) {
-//     connectionInfo.instanceId = Number(basicInfoV1.value.uid);
-//   }
-
-//   if (basicInfoV1.value.engine === Engine.ORACLE) {
-//     connectionInfo.sid = dataSource.sid;
-//     connectionInfo.serviceName = dataSource.serviceName;
-//   }
-
-//   if (showSSL.value) {
-//     // Default to "NONE"
-//     connectionInfo.sslCa = adminDataSource.value.sslCa ?? "";
-//     connectionInfo.sslKey = adminDataSource.value.sslKey ?? "";
-//     connectionInfo.sslCert = adminDataSource.value.sslCert ?? "";
-
-//     if (typeof dataSource.sslCa !== "undefined") {
-//       connectionInfo.sslCa = dataSource.sslCa;
-//     }
-//     if (typeof dataSource.sslKey !== "undefined") {
-//       connectionInfo.sslKey = dataSource.sslKey;
-//     }
-//     if (typeof dataSource.sslCert !== "undefined") {
-//       connectionInfo.sslCert = dataSource.sslCert;
-//     }
-//   }
-
-//   if (showSSH.value) {
-//     // Default to "NONE"
-//     connectionInfo.sshHost = adminDataSource.value.sshHost ?? "";
-//     connectionInfo.sshPort = adminDataSource.value.sshPort ?? "";
-//     connectionInfo.sshUser = adminDataSource.value.sshUser ?? "";
-//     connectionInfo.sshPassword = adminDataSource.value.sshPassword ?? "";
-//     connectionInfo.sshPrivateKey = adminDataSource.value.sshPrivateKey ?? "";
-
-//     if (typeof dataSource.sshHost !== "undefined") {
-//       connectionInfo.sshHost = dataSource.sshHost;
-//     }
-//     if (typeof dataSource.sshPort !== "undefined") {
-//       connectionInfo.sshPort = dataSource.sshPort;
-//     }
-//     if (typeof dataSource.sshUser !== "undefined") {
-//       connectionInfo.sshUser = dataSource.sshUser;
-//     }
-//     if (typeof dataSource.sshPassword !== "undefined") {
-//       connectionInfo.sshPassword = dataSource.sshPassword;
-//     }
-//     if (typeof dataSource.sshPrivateKey !== "undefined") {
-//       connectionInfo.sshPrivateKey = dataSource.sshPrivateKey;
-//     }
-//   }
-//   return connectionInfo;
-// };
-
-// const testConnection = async () => {
-//   const connectionContext = getTestConnectionContext();
-//   state.isTestingConnection = true;
-//   const resultSet = await sqlStore.ping(connectionContext);
-//   if (isEmpty(resultSet.error)) {
-//     pushNotification({
-//       module: "bytebase",
-//       style: "SUCCESS",
-//       title: t("instance.successfully-connected-instance"),
-//     });
-//   } else {
-//     let title = t("instance.failed-to-connect-instance");
-//     if (
-//       connectionContext.host === "localhost" ||
-//       connectionContext.host === "127.0.0.1"
-//     ) {
-//       title = t("instance.failed-to-connect-instance-localhost");
-//     }
-//     pushNotification({
-//       module: "bytebase",
-//       style: "CRITICAL",
-//       title: title,
-//       description: resultSet.error,
-//       // Manual hide, because user may need time to inspect the error
-//       manualHide: true,
-//     });
-//   }
-//   state.isTestingConnection = false;
-// };
 
 // getOriginalEditState returns the origin instance data including
 // basic information, admin data source and read-only data source.
@@ -1572,6 +1515,37 @@ const getOriginalEditState = () => {
     adminDataSource: extractAdminDataSource(props.instance),
     readonlyDataSource: extractReadOnlyDataSource(props.instance),
   };
+};
+
+const calcDataSourceUpdateMask = (
+  editing: DataSource,
+  original: DataSource,
+  editState: EditDataSource
+) => {
+  const updateMask = new Set(
+    calcUpdateMask(editing, original, true /* toSnakeCase */)
+  );
+  const { useEmptyPassword, updateSsh, updateSsl } = editState;
+  if (useEmptyPassword) {
+    // We need to implicitly set "password" need to be updated
+    // if the "use empty password" option if checked
+    editing.password = "";
+    updateMask.add("password");
+  }
+  if (updateSsl) {
+    updateMask.add("ssl_ca");
+    updateMask.add("ssl_key");
+    updateMask.add("ssl_cert");
+  }
+  if (updateSsh) {
+    updateMask.add("ssh_host");
+    updateMask.add("ssh_port");
+    updateMask.add("ssh_user");
+    updateMask.add("ssh_password");
+    updateMask.add("ssh_private_key");
+  }
+
+  return Array.from(updateMask);
 };
 </script>
 
