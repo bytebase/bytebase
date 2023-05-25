@@ -1217,7 +1217,7 @@ UPDATE
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 CREATE TABLE db_group (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
@@ -1238,7 +1238,7 @@ UPDATE
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 CREATE TABLE schema_group (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
