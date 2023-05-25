@@ -651,7 +651,6 @@ import {
 } from "./";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import {} from "@/store/modules/v1/setting";
 import {
   DataSource,
   DataSourceType,
