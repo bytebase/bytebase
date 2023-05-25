@@ -11,16 +11,21 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/runner/taskcheck"
+	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -30,17 +35,25 @@ import (
 // RolloutService represents a service for managing rollout.
 type RolloutService struct {
 	v1pb.UnimplementedRolloutServiceServer
-	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
-	dbFactory      *dbfactory.DBFactory
+	store              *store.Store
+	licenseService     enterpriseAPI.LicenseService
+	dbFactory          *dbfactory.DBFactory
+	taskScheduler      *taskrun.Scheduler
+	taskCheckScheduler *taskcheck.Scheduler
+	stateCfg           *state.State
+	activityManager    *activity.Manager
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory) *RolloutService {
+func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, taskScheduler *taskrun.Scheduler, taskCheckScheduler *taskcheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
 	return &RolloutService{
-		store:          store,
-		licenseService: licenseService,
-		dbFactory:      dbFactory,
+		store:              store,
+		licenseService:     licenseService,
+		dbFactory:          dbFactory,
+		taskScheduler:      taskScheduler,
+		taskCheckScheduler: taskCheckScheduler,
+		stateCfg:           stateCfg,
+		activityManager:    activityManager,
 	}
 }
 
@@ -76,6 +89,125 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
+
+	pipelineCreate, err := s.getPipelineCreate(ctx, request.Plan.Steps, project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if len(pipelineCreate.StageList) == 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "no database matched for deployment")
+	}
+	firstEnvironmentID := pipelineCreate.StageList[0].EnvironmentID
+
+	issueCreateMessage := &store.IssueMessage{
+		Project:     project,
+		Title:       fmt.Sprintf("FIXMYNAME, plan %s", request.Plan.Title),
+		Type:        api.IssueDatabaseGeneral,
+		Description: fmt.Sprintf("FIXME, plan %s", request.Plan.Title),
+		Assignee:    nil,
+	}
+
+	// Try to find a more appropriate assignee if the current assignee is the system bot, indicating that the caller might not be sure about who should be the assignee.
+	// if 1 == 1 || (assigneeID == api.SystemBotID) {
+	{
+		assignee, err := s.taskScheduler.GetDefaultAssignee(ctx, firstEnvironmentID, issueCreateMessage.Project.UID, issueCreateMessage.Type)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
+		}
+		issueCreateMessage.Assignee = assignee
+	}
+	// ok, err := s.taskScheduler.CanPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, project.UID, issueCreate.Type)
+	// if err != nil {
+	// 	return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
+	// }
+	// if !ok {
+	// 	return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
+	// }
+
+	issueCreatePayload := &storepb.IssuePayload{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: false,
+		},
+	}
+	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
+		issueCreatePayload.Approval.ApprovalFindingDone = true
+	}
+
+	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
+	}
+
+	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
+
+	creatorID := principalUID
+	pipeline, err := s.createPipeline(ctx, creatorID, pipelineCreate)
+	if err != nil {
+		return nil, err
+	}
+	issueCreateMessage.PipelineUID = &pipeline.ID
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
+	}
+	composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.taskCheckScheduler.SchedulePipelineTaskCheck(ctx, pipeline.ID); err != nil {
+		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Title)
+	}
+
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+
+	createActivityPayload := api.ActivityIssueCreatePayload{
+		IssueName: issue.Title,
+	}
+
+	bytes, err := json.Marshal(createActivityPayload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   creatorID,
+		ContainerID: issue.UID,
+		Type:        api.ActivityIssueCreate,
+		Level:       api.ActivityInfo,
+		Payload:     string(bytes),
+	}
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: issue,
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+
+	if len(composedIssue.Pipeline.StageList) > 0 {
+		stage := composedIssue.Pipeline.StageList[0]
+		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+			StageID:               stage.ID,
+			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
+			IssueName:             issue.Title,
+			StageName:             stage.Name,
+		}
+		bytes, err := json.Marshal(createActivityPayload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
+		}
+		activityCreate := &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: *issue.PipelineUID,
+			Type:        api.ActivityPipelineStageStatusUpdate,
+			Level:       api.ActivityInfo,
+			Payload:     string(bytes),
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
+		}
+	}
+
 	planMessage := &store.PlanMessage{
 		ProjectID:   projectID,
 		PipelineUID: nil,
@@ -85,6 +217,8 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 			Steps: convertPlanSteps(request.Plan.Steps),
 		},
 	}
+	planMessage.PipelineUID = &pipeline.ID
+
 	plan, err := s.store.CreatePlan(ctx, planMessage, principalUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create plan, error: %v", err)
@@ -102,8 +236,14 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 	pipelineCreate := &api.PipelineCreate{}
 	for _, step := range steps {
 		stageCreate := api.StageCreate{}
+
+		specEnvironmentIDs := map[string]bool{}
+		registerEnvironmentID := func(environmentID string) {
+			specEnvironmentIDs[environmentID] = true
+		}
+
 		for _, spec := range step.Specs {
-			taskCreates, taskIndexDAGCreates, err := s.getTaskCreatesFromSpec(ctx, spec, project)
+			taskCreates, taskIndexDAGCreates, err := s.getTaskCreatesFromSpec(ctx, spec, project, registerEnvironmentID)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to get task creates from spec")
 			}
@@ -116,13 +256,28 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 			}
 			stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, taskIndexDAGCreates...)
 		}
+
+		if len(specEnvironmentIDs) != 1 {
+			return nil, errors.Errorf("expect 1 environment in a step, got %d", len(specEnvironmentIDs))
+		}
+
+		var environmentID string
+		for k := range specEnvironmentIDs {
+			environmentID = k
+		}
+
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get environment")
+		}
+		stageCreate.EnvironmentID = environment.UID
+
 		pipelineCreate.StageList = append(pipelineCreate.StageList, stageCreate)
 	}
 	return pipelineCreate, nil
 }
 
-func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.Plan_Spec, project *store.ProjectMessage) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
-
+func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.Plan_Spec, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
 			return nil, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
@@ -131,17 +286,17 @@ func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.
 
 	switch config := spec.Config.(type) {
 	case *v1pb.Plan_Spec_CreateDatabaseConfig:
-		return s.getTaskCreatesFromCreateDatabaseConfig(ctx, spec, config.CreateDatabaseConfig, project)
+		return s.getTaskCreatesFromCreateDatabaseConfig(ctx, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
-		return s.getTaskCreatesFromChangeDatabaseConfig(ctx, spec, config.ChangeDatabaseConfig, project)
+		return s.getTaskCreatesFromChangeDatabaseConfig(ctx, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
 	case *v1pb.Plan_Spec_RestoreDatabaseConfig:
-		return s.getTaskCreatesFromRestoreDatabaseConfig(ctx, spec, config.RestoreDatabaseConfig, project)
+		return s.getTaskCreatesFromRestoreDatabaseConfig(ctx, spec, config.RestoreDatabaseConfig, project, registerEnvironmentID)
 	}
 
 	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_CreateDatabaseConfig, project *store.ProjectMessage) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	if c.Database == "" {
 		return nil, nil, errors.Errorf("database name is required")
 	}
@@ -166,6 +321,8 @@ func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Cont
 	if environment == nil {
 		return nil, nil, errors.Errorf("environment ID not found %v", instance.EnvironmentID)
 	}
+
+	registerEnvironmentID(environment.ResourceID)
 
 	if instance.Engine == db.MongoDB && c.Table == "" {
 		return nil, nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collection name missing for MongoDB")
@@ -283,7 +440,7 @@ func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Cont
 	return taskCreates, nil, nil
 }
 
-func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_ChangeDatabaseConfig, project *store.ProjectMessage) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	// possible target:
 	// 1. instances/{instance}/databases/{database}
 	instanceID, databaseName, err := getInstanceDatabaseID(c.Target)
@@ -309,6 +466,8 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 	if database == nil {
 		return nil, nil, errors.Errorf("database %q not found", databaseName)
 	}
+
+	registerEnvironmentID(database.EnvironmentID)
 
 	switch c.Type {
 	case v1pb.Plan_ChangeDatabaseConfig_BASELINE:
@@ -525,7 +684,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 	}
 }
 
-func (s *RolloutService) getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_RestoreDatabaseConfig, project *store.ProjectMessage) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func (s *RolloutService) getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_RestoreDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	if c.Source == nil {
 		return nil, nil, errors.Errorf("missing source in restore database config")
 	}
@@ -554,6 +713,8 @@ func (s *RolloutService) getTaskCreatesFromRestoreDatabaseConfig(ctx context.Con
 		return nil, nil, errors.Errorf("database %q is not in project %q", databaseName, project.ResourceID)
 	}
 
+	registerEnvironmentID(database.EnvironmentID)
+
 	var taskCreates []api.TaskCreate
 
 	if c.CreateDatabaseConfig != nil {
@@ -571,7 +732,7 @@ func (s *RolloutService) getTaskCreatesFromRestoreDatabaseConfig(ctx context.Con
 		}
 
 		// task 1: create the database
-		createDatabaseTasks, _, err := s.getTaskCreatesFromCreateDatabaseConfig(ctx, spec, c.CreateDatabaseConfig, project)
+		createDatabaseTasks, _, err := s.getTaskCreatesFromCreateDatabaseConfig(ctx, spec, c.CreateDatabaseConfig, project, registerEnvironmentID)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to create the database create task list")
 		}
@@ -1021,4 +1182,56 @@ func getCreateDatabaseStatement(dbType db.Type, c *v1pb.Plan_CreateDatabaseConfi
 		return fmt.Sprintf("%s;", stmt), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
+}
+
+func (s *RolloutService) createPipeline(ctx context.Context, creatorID int, pipelineCreate *api.PipelineCreate) (*store.PipelineMessage, error) {
+	pipelineCreated, err := s.store.CreatePipelineV2(ctx, &store.PipelineMessage{Name: pipelineCreate.Name}, creatorID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create pipeline for issue")
+	}
+
+	var stageCreates []*store.StageMessage
+	for _, stage := range pipelineCreate.StageList {
+		stageCreates = append(stageCreates, &store.StageMessage{
+			Name:          stage.Name,
+			EnvironmentID: stage.EnvironmentID,
+			PipelineID:    pipelineCreated.ID,
+		})
+	}
+	createdStages, err := s.store.CreateStageV2(ctx, stageCreates, creatorID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create stages for issue")
+	}
+	if len(createdStages) != len(stageCreates) {
+		return nil, errors.Errorf("failed to create stages, expect to have created %d stages, got %d", len(stageCreates), len(createdStages))
+	}
+
+	for i, stageCreate := range pipelineCreate.StageList {
+		createdStage := createdStages[i]
+
+		var taskCreateList []*api.TaskCreate
+		for _, taskCreate := range stageCreate.TaskList {
+			c := taskCreate
+			c.CreatorID = creatorID
+			c.PipelineID = pipelineCreated.ID
+			c.StageID = createdStage.ID
+			taskCreateList = append(taskCreateList, &c)
+		}
+		tasks, err := s.store.CreateTasksV2(ctx, taskCreateList...)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create tasks for issue")
+		}
+
+		// TODO(p0ny): create task dags in batch.
+		for _, indexDAG := range stageCreate.TaskIndexDAGList {
+			if err := s.store.CreateTaskDAGV2(ctx, &store.TaskDAGMessage{
+				FromTaskID: tasks[indexDAG.FromIndex].ID,
+				ToTaskID:   tasks[indexDAG.ToIndex].ID,
+			}); err != nil {
+				return nil, errors.Wrap(err, "failed to create task DAG for issue")
+			}
+		}
+	}
+
+	return pipelineCreated, nil
 }

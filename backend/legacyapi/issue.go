@@ -35,6 +35,9 @@ const (
 	IssueDatabaseRestorePITR IssueType = "bb.issue.database.restore.pitr"
 	// IssueGrantRequest is the issue type for requesting grant.
 	IssueGrantRequest IssueType = "bb.issue.grant.request"
+
+	// IssueDatabaseGeneral is the issue type for general database issues.
+	IssueDatabaseGeneral IssueType = "bb.issue.database.general"
 )
 
 // IssueFieldID is the field ID for an issue.
