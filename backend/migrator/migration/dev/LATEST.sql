@@ -1223,7 +1223,7 @@ CREATE TABLE db_group (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    project_resource_id INTEGER NOT NULL REFERENCES project (resource_id),
+    project_resource_id TEXT NOT NULL REFERENCES project (resource_id),
     resource_id TEXT NOT NULL,
     placeholder TEXT NOT NULL DEFAULT '',
     expression JSONB NOT NULL DEFAULT '{}'
@@ -1246,7 +1246,7 @@ CREATE TABLE schema_group (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    db_group_resource_id INTEGER NOT NULL REFERENCES db_group (resource_id),
+    db_group_resource_id TEXT NOT NULL REFERENCES db_group (resource_id),
     resource_id TEXT NOT NULL,
     placeholder TEXT NOT NULL DEFAULT '',
     expression JSONB NOT NULL DEFAULT '{}'
