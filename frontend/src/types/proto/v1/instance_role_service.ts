@@ -36,6 +36,8 @@ export interface ListInstanceRolesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** Refresh will refresh and return the latest data. */
+  refresh: boolean;
 }
 
 export interface ListInstanceRolesResponse {
@@ -173,7 +175,7 @@ export const GetInstanceRoleRequest = {
 };
 
 function createBaseListInstanceRolesRequest(): ListInstanceRolesRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", refresh: false };
 }
 
 export const ListInstanceRolesRequest = {
@@ -186,6 +188,9 @@ export const ListInstanceRolesRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.refresh === true) {
+      writer.uint32(32).bool(message.refresh);
     }
     return writer;
   },
@@ -218,6 +223,13 @@ export const ListInstanceRolesRequest = {
 
           message.pageToken = reader.string();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.refresh = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -232,6 +244,7 @@ export const ListInstanceRolesRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      refresh: isSet(object.refresh) ? Boolean(object.refresh) : false,
     };
   },
 
@@ -240,6 +253,7 @@ export const ListInstanceRolesRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.refresh !== undefined && (obj.refresh = message.refresh);
     return obj;
   },
 
@@ -252,6 +266,7 @@ export const ListInstanceRolesRequest = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.refresh = object.refresh ?? false;
     return message;
   },
 };
