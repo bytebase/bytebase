@@ -294,13 +294,16 @@ const disableAutoBackupContent = computed(() => {
 });
 
 const disableEnvironmentAutoBackup = async () => {
-  await backupStore.upsertBackupSettingByEnvironmentId(state.environment.uid, {
-    enabled: false,
-    hour: 0,
-    dayOfWeek: 0,
-    retentionPeriodTs: 0,
-    hookUrl: "",
-  });
+  await policyV1Store
+    .getOrFetchPolicyByParentAndType({
+      parentPath: state.environment.name,
+      policyType: PolicyTypeV1.BACKUP_PLAN,
+    })
+    .then((existingPolicy) => {
+      if (existingPolicy) {
+        policyV1Store.deletePolicy(existingPolicy.name);
+      }
+    });
   success();
   state.showDisableAutoBackupModal = false;
 };
