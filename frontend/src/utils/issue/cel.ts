@@ -198,17 +198,30 @@ export const converFromCEL = async (
       }
     } else if (expr.operator === "_==_") {
       const [left, right] = expr.args;
-      if (typeof left === "string" && typeof right === "string") {
-        if (left === "resource.database") {
-          const databaseId = await getDatabaseIdByName(right);
-          const databaseResource: DatabaseResource = {
-            databaseId: databaseId,
-          };
-          conditionExpression.databaseResources!.push(databaseResource);
-        } else if (left === "resource.schema") {
-          const databaseResource = last(conditionExpression.databaseResources);
-          if (databaseResource) {
-            databaseResource.schema = right;
+      if (typeof left === "string") {
+        if (typeof right === "string") {
+          if (left === "resource.database") {
+            const databaseId = await getDatabaseIdByName(right);
+            const databaseResource: DatabaseResource = {
+              databaseId: databaseId,
+            };
+            conditionExpression.databaseResources!.push(databaseResource);
+          } else if (left === "resource.schema") {
+            const databaseResource = last(
+              conditionExpression.databaseResources
+            );
+            if (databaseResource) {
+              databaseResource.schema = right;
+            }
+          } else if (left === "request.statement") {
+            const statement = atob(right);
+            conditionExpression.statement = statement;
+          } else if (left === "request.export_format") {
+            conditionExpression.exportFormat = right;
+          }
+        } else if (typeof right === "number") {
+          if (left === "request.row_limit") {
+            conditionExpression.rowLimit = right;
           }
         }
       }
