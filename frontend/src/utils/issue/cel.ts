@@ -25,6 +25,14 @@ type DatabaseResourceCondition =
   | SchemaLevelCondition
   | TableLevelCondition;
 
+interface ConditionExpression {
+  databaseResources?: DatabaseResource[];
+  expiredTime?: string;
+  statement?: string;
+  rowLimit?: number;
+  exportFormat?: string;
+}
+
 export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
   const conditionList: DatabaseResourceCondition[] = [];
 
@@ -83,6 +91,39 @@ export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
   return cel;
 };
 
+export const stringifyConditionExpression = (
+  conditionExpression: ConditionExpression
+): string => {
+  const expression: string[] = [];
+  if (
+    conditionExpression.databaseResources !== undefined &&
+    conditionExpression.databaseResources.length > 0
+  ) {
+    expression.push(
+      stringifyDatabaseResources(conditionExpression.databaseResources)
+    );
+  }
+  if (conditionExpression.expiredTime !== undefined) {
+    expression.push(
+      `request.time < timestamp("${conditionExpression.expiredTime}")`
+    );
+  }
+  if (conditionExpression.statement !== undefined) {
+    expression.push(
+      `request.statement == "${btoa(conditionExpression.statement)}"`
+    );
+  }
+  if (conditionExpression.rowLimit !== undefined) {
+    expression.push(`request.row_limit == ${conditionExpression.rowLimit}`);
+  }
+  if (conditionExpression.exportFormat !== undefined) {
+    expression.push(
+      `request.export_format == "${conditionExpression.exportFormat}"`
+    );
+  }
+  return expression.join(" && ");
+};
+
 const convertToCEL = (
   conditions: (
     | DatabaseLevelCondition
@@ -127,20 +168,10 @@ const convertToCEL = (
   }
 
   const topLevelCondition = buildGroup(conditions);
-
   return `(${topLevelCondition})`;
 };
 
-interface ConditionExpression {
-  databases?: string[];
-  databaseResources?: DatabaseResource[];
-  expiredTime?: string;
-  statement?: string;
-  rowLimit?: number;
-  exportFormat?: string;
-}
-
-export const converFromCEL = async (
+export const convertFromCEL = async (
   cel: string
 ): Promise<ConditionExpression> => {
   const { expression: celExpr } = await celServiceClient.parse({
