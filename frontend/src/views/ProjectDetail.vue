@@ -7,7 +7,7 @@
       v-if="isTenantProject"
       id="deployment-config"
       :project="projectV1"
-      :database-list="databaseList"
+      :database-list="databaseV1List"
       :allow-edit="allowEdit"
     />
     <ProjectDatabasesPanel v-else :database-list="databaseV1List" />
@@ -56,15 +56,10 @@
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
-import { cloneDeep } from "lodash-es";
 import { useRoute } from "vue-router";
 
 import { DEFAULT_PROJECT_ID } from "@/types";
-import {
-  idFromSlug,
-  sortDatabaseListByEnvironmentV1,
-  sortDatabaseV1ListByEnvironmentV1,
-} from "../utils";
+import { idFromSlug, sortDatabaseV1ListByEnvironmentV1 } from "../utils";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
 import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
@@ -131,15 +126,6 @@ const { databaseList: databaseV1ListOfProject } = useDatabaseV1List(
     return db.project === projectV1.value.name && db.syncState === State.ACTIVE;
   }
 );
-
-const databaseList = computed(() => {
-  const list = cloneDeep(
-    databaseStore
-      .getDatabaseListByProjectId(String(project.value.id))
-      .filter((db) => db.syncStatus === "OK")
-  );
-  return sortDatabaseListByEnvironmentV1(list, environmentList.value);
-});
 
 const databaseV1List = computed(() => {
   // const list = databaseV1Store.databaseListByProject(projectV1.value.name);

@@ -99,21 +99,22 @@
 <script lang="ts" setup>
 import { groupBy } from "lodash-es";
 import { computed, withDefaults } from "vue";
-import type { Database, LabelKeyType } from "../../types";
+import type { ComposedDatabase, LabelKeyType } from "../../types";
 import {
   hidePrefix,
-  getLabelValue,
-  getLabelValuesFromDatabaseList,
+  getLabelValueV1,
+  getLabelValuesFromDatabaseV1List,
   getPipelineFromDeploymentScheduleV1,
 } from "../../utils";
 import { NPopover } from "naive-ui";
 import { DeploymentStage } from "../DeploymentConfigTool";
+import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
 import { Environment } from "@/types/proto/v1/environment_service";
 
 const props = withDefaults(
   defineProps<{
-    databaseList: Database[];
+    databaseList: ComposedDatabase[];
     label: LabelKeyType;
     environmentList: Environment[];
     deployment: DeploymentConfig;
@@ -127,7 +128,7 @@ const props = withDefaults(
 );
 
 const yAxisValueList = computed(() => {
-  return getLabelValuesFromDatabaseList(
+  return getLabelValuesFromDatabaseV1List(
     props.label,
     props.databaseList,
     true /* withEmptyValue */
@@ -142,7 +143,7 @@ const xAxisValueList = computed(() => {
 
 const databaseGroupList = computed(() => {
   const key = props.label;
-  const dict = groupBy(props.databaseList, (db) => getLabelValue(db, key));
+  const dict = groupBy(props.databaseList, (db) => getLabelValueV1(db, key));
   const rows = yAxisValueList.value.map((labelValue) => {
     const databaseList = dict[labelValue] || [];
     return {
@@ -165,10 +166,10 @@ const groupedStageList = computed(() => {
       databaseList,
       props.deployment.schedule
     );
-    const affectedIds = stages.flatMap((dbs) => dbs.map((db) => db.id));
+    const affectedIds = stages.flatMap((dbs) => dbs.map((db) => db.uid));
     const dict = new Set(affectedIds);
     const rest = props.showRest
-      ? databaseList.filter((db) => !dict.has(db.id))
+      ? databaseList.filter((db) => !dict.has(db.uid))
       : [];
 
     return {

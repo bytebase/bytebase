@@ -59,7 +59,9 @@
                 {{
                   $t("database.last-sync-status-long", [
                     "NOT_FOUND",
-                    humanizeTs(database.successfulSyncTime?.getTime() ?? 0),
+                    humanizeTs(
+                      (database.successfulSyncTime?.getTime() ?? 0) / 1000
+                    ),
                   ])
                 }}
               </div>
