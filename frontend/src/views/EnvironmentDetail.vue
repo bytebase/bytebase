@@ -53,7 +53,7 @@ import { computed, reactive, watchEffect } from "vue";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import { idFromSlug } from "../utils";
-import { hasFeature, pushNotification } from "@/store";
+import { hasFeature, pushNotification, useBackupStore } from "@/store";
 import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 import BBModal from "@/bbkit/BBModal.vue";
@@ -104,6 +104,7 @@ const emit = defineEmits(["archive"]);
 
 const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
+const backupStore = useBackupStore();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
@@ -293,16 +294,13 @@ const disableAutoBackupContent = computed(() => {
 });
 
 const disableEnvironmentAutoBackup = async () => {
-  await policyV1Store
-    .getOrFetchPolicyByParentAndType({
-      parentPath: state.environment.name,
-      policyType: PolicyTypeV1.BACKUP_PLAN,
-    })
-    .then((existingPolicy) => {
-      if (existingPolicy) {
-        policyV1Store.deletePolicy(existingPolicy.name);
-      }
-    });
+  await backupStore.upsertBackupSettingByEnvironmentId(state.environment.uid, {
+    enabled: false,
+    hour: 0,
+    dayOfWeek: 0,
+    retentionPeriodTs: 0,
+    hookUrl: "",
+  });
   success();
   state.showDisableAutoBackupModal = false;
 };
