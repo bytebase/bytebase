@@ -18,7 +18,12 @@ import {
   SheetId,
   UNKNOWN_ID,
 } from "@/types";
-import { useDatabaseStore, useSheetStore, useTaskStore } from "@/store";
+import {
+  useDatabaseStore,
+  useSheetStore,
+  useSheetById,
+  useTaskStore,
+} from "@/store";
 import { sheetIdOfTask } from "@/utils";
 
 export default defineComponent({
@@ -37,7 +42,6 @@ export default defineComponent({
     } = useIssueLogic();
     const databaseStore = useDatabaseStore();
     const taskStore = useTaskStore();
-    const sheetStore = useSheetStore();
 
     const selectedStatement = computed(() => {
       if (isTenantMode.value) {
@@ -46,15 +50,14 @@ export default defineComponent({
           const issueCreate = issue.value as IssueCreate;
           const context = issueCreate.createContext as MigrationContext;
           return (
-            sheetStore.getSheetById(context.detailList[0].sheetId)?.statement ||
-            ""
+            useSheetById(context.detailList[0].sheetId).value?.statement || ""
           );
         } else {
           const issueEntity = issue.value as Issue;
           const task = issueEntity.pipeline.stageList[0].taskList[0];
           const payload =
             task.payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
-          return sheetStore.getSheetById(payload.sheetId)?.statement || "";
+          return useSheetById(payload.sheetId).value?.statement || "";
         }
       } else {
         // In standard pipeline, each ghost-sync task can hold its own
@@ -65,13 +68,13 @@ export default defineComponent({
             let statement = (task as TaskCreate).statement;
             if ((task as TaskCreate).sheetId !== UNKNOWN_ID) {
               statement =
-                sheetStore.getSheetById((task as TaskCreate).sheetId)
-                  ?.statement || "";
+                useSheetById((task as TaskCreate).sheetId).value?.statement ||
+                "";
             }
             return statement;
           } else {
             return (
-              sheetStore.getSheetById(sheetIdOfTask(task as Task) || UNKNOWN_ID)
+              useSheetById(sheetIdOfTask(task as Task) || UNKNOWN_ID).value
                 ?.statement || ""
             );
           }

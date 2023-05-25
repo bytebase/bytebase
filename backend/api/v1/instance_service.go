@@ -441,6 +441,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	if request.DataSources == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "datasource is required")
 	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
 	tp, err := convertDataSourceTp(request.DataSources.Type)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())

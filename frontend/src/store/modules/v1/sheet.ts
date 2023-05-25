@@ -3,14 +3,8 @@ import { sheetServiceClient } from "@/grpcweb";
 import { isEqual, isUndefined, isEmpty } from "lodash-es";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { useTabStore } from "../tab";
-import { SheetId, UNKNOWN_ID } from "@/types";
 import { useCurrentUserV1 } from "../auth";
-import {
-  getUserEmailFromIdentifier,
-  sheetNamePrefix,
-  projectNamePrefix,
-  getProjectAndSheetId,
-} from "./common";
+import { getUserEmailFromIdentifier, projectNamePrefix } from "./common";
 import { isSheetReadableV1 } from "@/utils";
 
 interface SheetState {
@@ -30,14 +24,11 @@ export const useSheetV1Store = defineStore("sheet_v1", {
         return;
       }
 
-      // TODO: use resource id instead
-      const sheetId = currentTab.sheetId || UNKNOWN_ID;
-      for (const [_, sheet] of state.sheetByName) {
-        const [_, uid] = getProjectAndSheetId(sheet.name);
-        if (uid == sheetId) {
-          return sheet;
-        }
+      const sheetName = currentTab.sheetName;
+      if (!sheetName) {
+        return;
       }
+      return state.sheetByName.get(sheetName);
     },
     isCreator() {
       const currentUserV1 = useCurrentUserV1();
@@ -89,18 +80,26 @@ export const useSheetV1Store = defineStore("sheet_v1", {
       this.sheetByName.set(createdSheet.name, createdSheet);
       return createdSheet;
     },
-    async upsertSheet(parentPath: string, sheet: Partial<Sheet>) {
-      if (sheet.name) {
-        const exist = this.sheetByName.get(sheet.name);
-        if (!exist) {
-          return;
-        }
-        return this.patchSheetById(getUpdateMaskForSheet(exist, sheet), sheet);
+    async patchSheet(sheet: Partial<Sheet>) {
+      if (!sheet.name) {
+        return;
+      }
+      const exist = this.sheetByName.get(sheet.name);
+      if (!exist) {
+        return;
       }
 
-      return this.createSheet(parentPath, sheet);
+      const updatedSheet = await this.patchSheetWithUpdateMask(
+        getUpdateMaskForSheet(exist, sheet),
+        sheet
+      );
+      this.sheetByName.set(updatedSheet.name, updatedSheet);
+      return updatedSheet;
     },
-    async patchSheetById(updateMask: string[], sheet: Partial<Sheet>) {
+    async patchSheetWithUpdateMask(
+      updateMask: string[],
+      sheet: Partial<Sheet>
+    ) {
       const updatedSheet = await sheetServiceClient.updateSheet({
         sheet,
         updateMask,
@@ -108,35 +107,27 @@ export const useSheetV1Store = defineStore("sheet_v1", {
       this.sheetByName.set(updatedSheet.name, updatedSheet);
       return updatedSheet;
     },
-    async fetchSheetById({
-      parentPath,
-      sheetId,
-    }: {
-      parentPath: string;
-      sheetId: SheetId;
-    }) {
-      const sheet = await sheetServiceClient.getSheet({
-        name: `${parentPath}/${sheetNamePrefix}${sheetId}`,
-      });
-      this.sheetByName.set(sheet.name, sheet);
+    async fetchSheetByName(name: string) {
+      try {
+        const sheet = await sheetServiceClient.getSheet({
+          name,
+        });
+        this.sheetByName.set(sheet.name, sheet);
+        return sheet;
+      } catch {
+        return;
+      }
+    },
+    getSheetByName(name: string) {
+      const sheet = this.sheetByName.get(name);
       return sheet;
     },
-    async getOrFetchSheetById({
-      parentPath,
-      sheetId,
-    }: {
-      parentPath: string;
-      sheetId: SheetId;
-    }) {
-      const name = `${parentPath}/${sheetNamePrefix}${sheetId}`;
+    async getOrFetchSheetByName(name: string) {
       const storedSheet = this.sheetByName.get(name);
       if (storedSheet) {
         return storedSheet;
       }
-      return this.fetchSheetById({
-        parentPath,
-        sheetId,
-      });
+      return this.fetchSheetByName(name);
     },
     async fetchSharedSheetList() {
       const currentUserV1 = useCurrentUserV1();

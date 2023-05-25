@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
+import { computed, unref, watchEffect } from "vue";
 import axios, { type AxiosRequestConfig } from "axios";
-import { isEmpty } from "lodash-es";
 import {
   Sheet,
   SheetId,
@@ -14,20 +14,14 @@ import {
   UNKNOWN_ID,
   SheetCreate,
   SheetOrganizerUpsert,
-  ProjectId,
   SheetUpsert,
   SheetPayload,
+  MaybeRef,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
-import { useCurrentUserV1 } from "./auth";
 import { useDatabaseStore } from "./database";
 import { useLegacyProjectStore } from "./project";
-import { useTabStore } from "./tab";
-import {
-  extractUserUID,
-  getDefaultSheetPayloadWithSource,
-  isSheetWritable,
-} from "@/utils";
+import { getDefaultSheetPayloadWithSource } from "@/utils";
 
 function convertSheetPayload(
   resourceObj: ResourceObject,
@@ -91,59 +85,6 @@ export const useSheetStore = defineStore("sheet", {
     sheetList: [],
     sheetById: new Map(),
   }),
-
-  getters: {
-    currentSheet(state) {
-      const currentTab = useTabStore().currentTab;
-
-      if (!currentTab || isEmpty(currentTab)) {
-        return unknown("SHEET");
-      }
-
-      const sheetId = currentTab.sheetId || UNKNOWN_ID;
-
-      return state.sheetById.get(sheetId) || unknown("SHEET");
-    },
-    isCreator() {
-      const currentUserV1 = useCurrentUserV1();
-      const currentSheet = this.currentSheet as Sheet;
-
-      if (!currentSheet) return false;
-
-      return (
-        extractUserUID(currentUserV1.value.name) ===
-        String(currentSheet.creator.id)
-      );
-    },
-    /**
-     * Check the sheet whether is read-only.
-     * 1. If the sheet is not created yet, it cannot be edited.
-     * 2. If the sheet is created by the current user, it can be edited.
-     * 3. If the sheet is created by other user, will be checked the visibility of the sheet.
-     *   a) If the sheet's visibility is private or public, it can be edited only if the current user is the creator of the sheet.
-     *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
-     */
-    isReadOnly() {
-      const currentSheet = this.currentSheet as Sheet;
-
-      // We don't have a selected sheet, we've got nothing to edit.
-      if (!currentSheet) {
-        return true;
-      }
-
-      // The tab is not saved yet, it is editable.
-      if (currentSheet.id === UNKNOWN_ID) {
-        return false;
-      }
-
-      // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.
-      if (currentSheet.statement.length !== currentSheet.size) {
-        return true;
-      }
-
-      return !isSheetWritable(currentSheet);
-    },
-  },
 
   actions: {
     getSheetById(sheetId: SheetId) {
@@ -267,20 +208,16 @@ export const useSheetStore = defineStore("sheet", {
         },
       });
     },
-    async deleteSheetById(sheetId: SheetId) {
-      await axios.delete(`/api/sheet/${sheetId}`);
-
-      const idx = this.sheetList.findIndex((sheet) => sheet.id === sheetId);
-      if (idx !== -1) {
-        this.sheetList.splice(idx, 1);
-      }
-
-      if (this.sheetById.has(sheetId)) {
-        this.sheetById.delete(sheetId);
-      }
-    },
-    async syncSheetFromVCS(projectId: ProjectId) {
-      await axios.post(`/api/project/${projectId}/sync-sheet`);
-    },
   },
 });
+
+export const useSheetById = (sheetId: MaybeRef<SheetId>) => {
+  const store = useSheetStore();
+  watchEffect(async () => {
+    await store.getOrFetchSheetById(unref(sheetId));
+  });
+
+  return computed(() => {
+    return store.getSheetById(unref(sheetId));
+  });
+};
