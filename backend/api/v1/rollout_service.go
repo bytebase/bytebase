@@ -98,7 +98,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
 	if len(pipelineCreate.StageList) == 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "no database matched for deployment")
+		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment")
 	}
 	firstEnvironmentID := pipelineCreate.StageList[0].EnvironmentID
 
@@ -113,7 +113,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	// Find an assignee.
 	assignee, err := s.taskScheduler.GetDefaultAssignee(ctx, firstEnvironmentID, issueCreateMessage.Project.UID, issueCreateMessage.Type)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
+		return nil, status.Errorf(codes.Internal, "failed to find a default assignee, error: %v", err)
 	}
 	issueCreateMessage.Assignee = assignee
 
@@ -136,7 +136,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 
 	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue payload").SetInternal(err)
+		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
 	}
 	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
 
@@ -321,7 +321,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, nil, errors.Errorf("instance ID not found %v", instanceID)
 	}
 	if instance.Engine == db.Oracle {
-		return nil, nil, echo.NewHTTPError(http.StatusBadRequest, "Creating Oracle database is not supported")
+		return nil, nil, errors.Errorf("creating Oracle database is not supported")
 	}
 	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 	if err != nil {
@@ -336,7 +336,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	}
 
 	if instance.Engine == db.MongoDB && c.Table == "" {
-		return nil, nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collection name missing for MongoDB")
+		return nil, nil, errors.Errorf("collection name is required for MongoDB")
 	}
 
 	taskCreates, err := func() ([]api.TaskCreate, error) {
@@ -344,7 +344,8 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			return nil, err
 		}
 		if c.Database == "" {
-			return nil, common.Errorf(common.Invalid, "Failed to create issue, database name missing")
+			return nil, errors.Errorf("database name is required")
+
 		}
 		if instance.Engine == db.Snowflake {
 			// Snowflake needs to use upper case of DatabaseName.
@@ -356,7 +357,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		// Validate the labels. Labels are set upon task completion.
 		labelsJSON, err := convertDatabaseLabels(c.Labels)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error: %v", c.Labels, err))
+			return nil, errors.Wrapf(err, "invalid database label %q", c.Labels)
 		}
 
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
