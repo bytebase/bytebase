@@ -124,11 +124,7 @@ import {
   UNKNOWN_ID,
   dialectOfEngine,
 } from "@/types";
-import {
-  getDatabaseIdByName,
-  memberListInProjectV1,
-  parseConditionExpressionString,
-} from "@/utils";
+import { memberListInProjectV1 } from "@/utils";
 import {
   convertUserToPrincipal,
   useDatabaseStore,
@@ -136,12 +132,15 @@ import {
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
+import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
+import { converFromCEL } from "@/utils/issue/cel";
 
 interface LocalState {
   // For creating
   projectId?: string;
   environmentId?: string;
   databaseId?: DatabaseId;
+  selectedDatabaseResourceList: DatabaseResource[];
   maxRowCount: number;
   exportFormat: "CSV" | "JSON";
   statement: string;
@@ -150,6 +149,7 @@ interface LocalState {
 const { create, issue } = useIssueLogic();
 const databaseStore = useDatabaseStore();
 const state = reactive<LocalState>({
+  selectedDatabaseResourceList: [],
   maxRowCount: 1000,
   exportFormat: "CSV",
   statement: "",
@@ -234,6 +234,7 @@ const handleStatementChange = (value: string) => {
 watch(
   () => [
     state.databaseId,
+    state.selectedDatabaseResourceList,
     state.maxRowCount,
     state.exportFormat,
     state.statement,
@@ -243,9 +244,13 @@ watch(
       const context = (issue.value as IssueCreate)
         .createContext as GrantRequestContext;
       if (state.databaseId) {
-        context.databases = [state.databaseId as string];
+        context.databaseResources = [
+          {
+            databaseId: state.databaseId,
+          },
+        ];
       } else {
-        context.databases = [];
+        context.databaseResources = [];
       }
       context.maxRowCount = state.maxRowCount;
       context.exportFormat = state.exportFormat;
@@ -267,24 +272,20 @@ watch(
         throw "Only support EXPORTER role";
       }
 
-      const conditionExpression = parseConditionExpressionString(
+      const conditionExpression = await converFromCEL(
         payload.condition.expression
       );
+      if (
+        conditionExpression.databaseResources !== undefined &&
+        conditionExpression.databaseResources.length > 0
+      ) {
+        const resource = head(conditionExpression.databaseResources);
+        if (resource) {
+          state.databaseId = resource.databaseId;
+        }
+      }
       if (conditionExpression.statement !== undefined) {
         state.statement = conditionExpression.statement;
-      }
-      if (
-        conditionExpression.databases !== undefined &&
-        conditionExpression.databases.length > 0
-      ) {
-        const databaseIdList = [];
-        for (const databaseName of conditionExpression.databases) {
-          const id = await getDatabaseIdByName(databaseName);
-          if (id && id !== UNKNOWN_ID) {
-            databaseIdList.push(id);
-          }
-        }
-        state.databaseId = head(databaseIdList);
       }
       if (conditionExpression.rowLimit !== undefined) {
         state.maxRowCount = conditionExpression.rowLimit;

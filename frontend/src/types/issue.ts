@@ -92,7 +92,6 @@ export type EmptyContext = {};
 export interface GrantRequestContext {
   role: "EXPORTER" | "QUERIER";
   // Conditions in CEL expression.
-  databases: string[];
   databaseResources: DatabaseResource[];
   expireDays: number;
   maxRowCount: number;

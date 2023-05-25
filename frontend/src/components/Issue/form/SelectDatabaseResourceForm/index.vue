@@ -45,9 +45,11 @@ import {
 import Label from "./Label.vue";
 import { watch } from "vue";
 import { uniq } from "lodash-es";
+import { IdType } from "@/types";
 
 const props = defineProps<{
   projectId: string;
+  databaseId?: IdType;
   selectedDatabaseResourceList: DatabaseResource[];
 }>();
 
@@ -95,7 +97,10 @@ onMounted(async () => {
 });
 
 const databaseList = computed(() => {
-  return databaseStore.getDatabaseListByProjectId(props.projectId);
+  const list = databaseStore.getDatabaseListByProjectId(props.projectId);
+  return props.databaseId
+    ? list.filter((item) => item.id === props.databaseId)
+    : list;
 });
 
 const allowConfirm = computed(() => {

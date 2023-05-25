@@ -1,4 +1,12 @@
-export const NumberFactorList = ["affected_rows", "level", "source"] as const;
+export const NumberFactorList = [
+  // Risk related factors
+  "affected_rows",
+  "level",
+  "source",
+
+  // Grant request issue related factors
+  "request.row_limit",
+] as const;
 export type NumberFactor = typeof NumberFactorList[number];
 
 export const StringFactorList = [
@@ -13,6 +21,8 @@ export const StringFactorList = [
   "resource.database",
   "resource.schema",
   "resource.table",
+  "request.statement",
+  "request.export_format",
 ] as const;
 export type StringFactor = typeof StringFactorList[number];
 
