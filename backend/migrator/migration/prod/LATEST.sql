@@ -1222,11 +1222,13 @@ CREATE TABLE db_group (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    name TEXT NOT NULL,
+    resource_id TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     placeholder TEXT NOT NULL DEFAULT '',
     expression JSONB NOT NULL DEFAULT '{}'
 );
+
+CREATE UNIQUE INDEX idx_db_group_unique_resource_id ON db_group(resource_id);
 
 ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
 
@@ -1244,11 +1246,13 @@ CREATE TABLE schema_group (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     db_group_id INTEGER NOT NULL REFERENCES db_group (id),
-    name TEXT NOT NULL,
+    resource_id TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     placeholder TEXT NOT NULL DEFAULT '',
     expression JSONB NOT NULL DEFAULT '{}'
 );
+
+CREATE UNIQUE INDEX idx_schema_group_unique_resource_id ON schema_group(resource_id);
 
 ALTER SEQUENCE schema_group_id_seq RESTART WITH 101;
 
