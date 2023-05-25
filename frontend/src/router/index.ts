@@ -27,6 +27,7 @@ import {
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
   idFromSlug,
+  sheetNameFromSlug,
   migrationHistoryIdFromSlug,
   roleListInProjectV1,
 } from "../utils";
@@ -41,7 +42,7 @@ import {
   useDataSourceStore,
   useSQLReviewStore,
   useLegacyProjectStore,
-  useSheetStore,
+  useSheetV1Store,
   useAuthStore,
   useActuatorStore,
   useDatabaseStore,
@@ -58,6 +59,7 @@ import {
   useProjectWebhookV1Store,
   useEnvironmentV1Store,
   useCurrentUserV1,
+  useInstanceV1Store,
   useDatabaseV1Store,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
@@ -1566,6 +1568,11 @@ router.beforeEach((to, from, next) => {
   if (instanceSlug) {
     instanceStore
       .fetchInstanceById(idFromSlug(instanceSlug))
+      .then(() =>
+        useInstanceV1Store().getOrFetchInstanceByUID(
+          String(idFromSlug(instanceSlug))
+        )
+      )
       .then(() => {
         next();
       })
@@ -1614,9 +1621,9 @@ router.beforeEach((to, from, next) => {
   }
 
   if (sheetSlug) {
-    const sheetId = idFromSlug(sheetSlug);
-    useSheetStore()
-      .fetchSheetById(sheetId)
+    const sheetName = sheetNameFromSlug(sheetSlug);
+    useSheetV1Store()
+      .fetchSheetByName(sheetName)
       .then(() => next())
       .catch(() => next());
     return;

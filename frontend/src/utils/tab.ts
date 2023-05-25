@@ -33,7 +33,7 @@ export const getDefaultTab = (): TabInfo => {
 export const INITIAL_TAB = getDefaultTab();
 
 export const isTempTab = (tab: TabInfo): boolean => {
-  if (tab.sheetId) return false;
+  if (tab.sheetName) return false;
   if (!tab.isSaved) return false;
   if (tab.statement) return false;
   return true;
@@ -46,7 +46,7 @@ export const isSameConnection = (a: Connection, b: Connection): boolean => {
 export const isSimilarTab = (a: CoreTabInfo, b: CoreTabInfo): boolean => {
   return (
     isSameConnection(a.connection, b.connection) &&
-    a.sheetId === b.sheetId &&
+    a.sheetName === b.sheetName &&
     a.mode === b.mode
   );
 };

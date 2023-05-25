@@ -203,4 +203,7 @@ message Sheet {
 
   // starred indicates whether the sheet is starred by the current authenticated user.
   bool starred = 12;
+
+  // TODO: deprecate this field.
+  string payload = 13;
 }

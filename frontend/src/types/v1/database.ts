@@ -1,14 +1,8 @@
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
 import { Database } from "../proto/v1/database_service";
-import { Environment } from "../proto/v1/environment_service";
-import { Instance } from "../proto/v1/instance_service";
-import { emptyInstance, unknownInstance } from "./instance";
+import { ComposedInstance, emptyInstance, unknownInstance } from "./instance";
 import { ComposedProject, emptyProject, unknownProject } from "./project";
-
-export interface ComposedInstance extends Instance {
-  environmentEntity: Environment;
-}
 
 export interface ComposedDatabase extends Database {
   /** related project entity */

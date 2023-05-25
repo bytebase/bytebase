@@ -8,6 +8,7 @@ import {
 import { pushNotification } from "./notification";
 import { t } from "@/plugins/i18n";
 import { ClientError } from "nice-grpc-web";
+import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 type ConvertEntityFn<T> = (
   data: ResourceObject,
@@ -51,7 +52,7 @@ export const useGracefulRequest = async <T>(
     const result = await fn();
     return result;
   } catch (err) {
-    const description = err instanceof ClientError ? err.details : String(err);
+    const description = extractGrpcErrorMessage(err);
     if (err instanceof ClientError) {
       pushNotification({
         module: "bytebase",

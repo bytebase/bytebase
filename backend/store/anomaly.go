@@ -42,6 +42,7 @@ func (a *AnomalyMessage) ToAPIAnomaly() *api.Anomaly {
 		DatabaseID: a.DatabaseUID,
 		Type:       a.Type,
 		Payload:    a.Payload,
+		Severity:   api.AnomalySeverityFromType(a.Type),
 	}
 }
 

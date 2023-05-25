@@ -122,6 +122,9 @@ message CreateInstanceRequest {
   // This value should be 4-63 characters, and valid characters
   // are /[a-z][0-9]-/.
   string instance_id = 2;
+
+  // Validate only also tests the data source connection.
+  bool validate_only = 3;
 }
 
 message UpdateInstanceRequest {
@@ -158,6 +161,9 @@ message AddDataSourceRequest {
   // Identified by type.
   // Only READ_ONLY data source can be added.
   DataSource data_sources = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Validate only also tests the data source connection.
+  bool validate_only = 3;
 }
 
 message RemoveDataSourceRequest {
@@ -180,6 +186,9 @@ message UpdateDataSourceRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 3;
+
+  // Validate only also tests the data source connection.
+  bool validate_only = 4;
 }
 
 message SyncSlowQueriesRequest {

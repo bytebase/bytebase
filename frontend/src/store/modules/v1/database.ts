@@ -12,6 +12,7 @@ import {
   unknownEnvironment,
   unknownInstance,
   UNKNOWN_ID,
+  UNKNOWN_INSTANCE_NAME,
 } from "@/types";
 import {
   Database,
@@ -21,7 +22,6 @@ import {
   extractDatabaseResourceName,
   hasWorkspacePermissionV1,
   isMemberOfProjectV1,
-  UNKNOWN_INSTANCE_NAME,
 } from "@/utils";
 import { useInstanceV1Store } from "./instance";
 import { useProjectV1Store } from "./project";

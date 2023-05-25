@@ -320,8 +320,5 @@ export const creatorOfRule = (rule: LocalApprovalRule) => {
   const creatorName = rule.template.creator ?? UNKNOWN_USER_NAME;
   if (creatorName === UNKNOWN_USER_NAME) return unknownUser();
 
-  return (
-    useUserStore().getUserByEmail(creatorName.replace(/^users\//, "")) ??
-    unknownUser()
-  );
+  return useUserStore().getUserByIdentifier(creatorName) ?? unknownUser();
 };

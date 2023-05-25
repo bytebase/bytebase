@@ -40,7 +40,11 @@
           >
             {{
               $t("database.backuppolicy-backup-enforced-and-cant-be-disabled", [
-                $t(`database.backup-policy.${backupPolicy}`),
+                $t(
+                  `database.backup-policy.${backupPlanScheduleToJSON(
+                    backupPolicy
+                  )}`
+                ),
               ])
             }}
           </router-link>
@@ -165,7 +169,10 @@ import {
   BackupSettingEdit,
 } from "./utils";
 import { pushNotification, useBackupStore } from "@/store";
-import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
+import {
+  BackupPlanSchedule,
+  backupPlanScheduleToJSON,
+} from "@/types/proto/v1/org_policy_service";
 
 type LocalState = {
   setting: BackupSettingEdit;

@@ -19,6 +19,7 @@ import { State } from "@/types/proto/v1/common";
 import { User } from "@/types/proto/v1/auth_service";
 import { useCurrentUserV1 } from "../auth";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import { projectNamePrefix } from "./common";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
@@ -90,7 +91,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     return project as ComposedProject;
   };
   const fetchProjectByUID = async (uid: string) => {
-    return fetchProjectByName(`projects/${uid}`);
+    return fetchProjectByName(`${projectNamePrefix}${uid}`);
   };
   const getOrFetchProjectByName = async (name: string) => {
     const cachedData = projectMapByName.get(name);
@@ -148,10 +149,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     getProjectListByUser,
     upsertProjectMap,
     getProjectByUID,
+    getProjectByName,
     fetchProjectList,
     fetchProjectByName,
     fetchProjectByUID,
-    getProjectByName,
     getOrFetchProjectByName,
     getOrFetchProjectByUID,
     createProject,

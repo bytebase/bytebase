@@ -1,12 +1,17 @@
 import { keyBy } from "lodash-es";
 import slug from "slug";
 
-import { ComposedDatabase, unknownEnvironment, UNKNOWN_ID } from "@/types";
+import {
+  ComposedDatabase,
+  unknownEnvironment,
+  UNKNOWN_ID,
+  UNKNOWN_INSTANCE_NAME,
+} from "@/types";
 import {
   Environment,
   EnvironmentTier,
 } from "@/types/proto/v1/environment_service";
-import { instanceV1Slug, UNKNOWN_INSTANCE_NAME } from "./instance";
+import { instanceV1Slug } from "./instance";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
 import { User } from "@/types/proto/v1/auth_service";
 import {

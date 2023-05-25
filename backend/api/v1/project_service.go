@@ -308,7 +308,10 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if err != nil {
 		return nil, err
 	}
-	remove, add := store.GetIAMPolicyDiff(oldPolicy, policy)
+	remove, add, err := store.GetIAMPolicyDiff(oldPolicy, policy)
+	if err != nil {
+		return nil, err
+	}
 	s.CreateIAMPolicyUpdateActivity(ctx, remove, add, project, creatorUID)
 
 	iamPolicy, err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID)

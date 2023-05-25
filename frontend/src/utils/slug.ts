@@ -9,19 +9,31 @@ import {
   Project,
   VCS,
   SQLReviewPolicy,
-  Sheet,
   UNKNOWN_ID,
 } from "../types";
 import { IdType } from "../types/id";
+import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
+import {
+  getProjectAndSheetId,
+  projectNamePrefix,
+  sheetNamePrefix,
+} from "@/store/modules/v1/common";
 
 export function idFromSlug(slug: string): IdType {
   const parts = slug.split("-");
   return parseInt(parts[parts.length - 1]);
 }
 
+export function sheetNameFromSlug(slug: string): string {
+  const parts = slug.split("-");
+  return `${projectNamePrefix}${parts
+    .slice(0, -1)
+    .join("-")}/${sheetNamePrefix}${parts[parts.length - 1]}`;
+}
+
 export function migrationHistoryIdFromSlug(slug: string): MigrationHistoryId {
-  const parts = slug.split("-").slice(1);
-  return parts.join("-");
+  const parts = slug.split("-");
+  return parts[parts.length - 1];
 }
 
 export function indexFromSlug(slug: string): number {
@@ -96,6 +108,7 @@ export function connectionSlug(
   return parts.join("_");
 }
 
-export function sheetSlug(sheet: Sheet): string {
-  return [slug(sheet.name), sheet.id].join("-");
+export function sheetSlugV1(sheet: SheetV1): string {
+  const [projectName, uid] = getProjectAndSheetId(sheet.name);
+  return [projectName, uid].join("-");
 }

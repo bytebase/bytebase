@@ -60,6 +60,14 @@
   
     - [BookmarkService](#bytebase-v1-BookmarkService)
   
+- [v1/cel_service.proto](#v1_cel_service-proto)
+    - [DeparseRequest](#bytebase-v1-DeparseRequest)
+    - [DeparseResponse](#bytebase-v1-DeparseResponse)
+    - [ParseRequest](#bytebase-v1-ParseRequest)
+    - [ParseResponse](#bytebase-v1-ParseResponse)
+  
+    - [CelService](#bytebase-v1-CelService)
+  
 - [v1/database_service.proto](#v1_database_service-proto)
     - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
     - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
@@ -380,6 +388,7 @@
     - [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status)
     - [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type)
     - [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus)
+    - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
@@ -1189,6 +1198,93 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 | CreateBookmark | [CreateBookmarkRequest](#bytebase-v1-CreateBookmarkRequest) | [Bookmark](#bytebase-v1-Bookmark) | CreateBookmark creates a new bookmark. |
 | DeleteBookmark | [DeleteBookmarkRequest](#bytebase-v1-DeleteBookmarkRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | DeleteBookmark deletes a bookmark. |
 | ListBookmarks | [ListBookmarksRequest](#bytebase-v1-ListBookmarksRequest) | [ListBookmarksResponse](#bytebase-v1-ListBookmarksResponse) | ListBookmark lists bookmarks. |
+
+ 
+
+
+
+<a name="v1_cel_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/cel_service.proto
+
+
+
+<a name="bytebase-v1-DeparseRequest"></a>
+
+### DeparseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeparseResponse"></a>
+
+### DeparseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expression | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ParseRequest"></a>
+
+### ParseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expression | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ParseResponse"></a>
+
+### ParseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-CelService"></a>
+
+### CelService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Parse | [ParseRequest](#bytebase-v1-ParseRequest) | [ParseResponse](#bytebase-v1-ParseResponse) |  |
+| Deparse | [DeparseRequest](#bytebase-v1-DeparseRequest) | [DeparseResponse](#bytebase-v1-DeparseResponse) |  |
 
  
 
@@ -3121,6 +3217,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
 | data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be added. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
 
 
@@ -3139,6 +3236,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | instance_id | [string](#string) |  | The ID to use for the instance, which will become the final component of the instance&#39;s resource name.
 
 This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
 
 
@@ -3324,6 +3422,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | instance | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
 | data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
 
 
@@ -4881,7 +4980,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | flow | [ApprovalFlow](#bytebase-v1-ApprovalFlow) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| creator | [string](#string) |  | The name of the creator in users/{email} format. |
+| creator | [string](#string) |  | The name of the creator in users/{email} format. TODO: we should mark it as OUTPUT_ONLY, but currently the frontend will post the approval setting with creator. |
 
 
 
@@ -5649,6 +5748,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
+| id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
 | restore_database_config | [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig) |  |  |
@@ -5765,6 +5865,8 @@ FIXME(d/xz): support spec with deployment config
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | title | [string](#string) |  |  |
+| spec_id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. Could be empty if the rollout of the task does not have an associating plan. |
+| status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. TODO(p0ny): migrate old task status and use this field as a summary of the task runs. |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
 | blocked_by_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
@@ -6047,6 +6149,23 @@ Type is the database change type.
 
 
 
+<a name="bytebase-v1-Task-Status"></a>
+
+### Task.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING_APPROVAL | 1 |  |
+| PENDING | 2 |  |
+| RUNNING | 3 |  |
+| DONE | 4 |  |
+| FAILED | 5 |  |
+| CANCELED | 6 |  |
+
+
+
 <a name="bytebase-v1-Task-Type"></a>
 
 ### Task.Type
@@ -6079,7 +6198,7 @@ Type is the database change type.
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
 | RUNNING | 2 |  |
-| COMPLETED | 3 |  |
+| DONE | 3 |  |
 | FAILED | 4 |  |
 | CANCELED | 5 |  |
 | SKIPPED | 6 |  |
@@ -6689,6 +6808,7 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | source | [Sheet.Source](#bytebase-v1-Sheet-Source) |  | The source of the sheet. |
 | type | [Sheet.Type](#bytebase-v1-Sheet-Type) |  | The type of the sheet. |
 | starred | [bool](#bool) |  | starred indicates whether the sheet is starred by the current authenticated user. |
+| payload | [string](#string) |  | TODO: deprecate this field. |
 
 
 

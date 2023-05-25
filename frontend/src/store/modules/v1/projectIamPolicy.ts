@@ -191,7 +191,7 @@ export const useCurrentUserIamPolicy = () => {
     if (!policy) {
       return false;
     }
-    for (const binding of policy.bindings) {
+    const iamPolicyCheckResult = policy.bindings.map((binding) => {
       if (
         binding.role === PresetRoleType.OWNER &&
         binding.members.find(
@@ -206,34 +206,23 @@ export const useCurrentUserIamPolicy = () => {
           (member) => member === `user:${currentUser.value.email}`
         )
       ) {
-        const expressionList = binding.condition?.expression.split(" && ");
-        if (expressionList && expressionList.length > 0) {
-          let hasDatabaseField = false;
-          for (const expression of expressionList) {
-            const fields = expression.split(" ");
-            if (fields[0] === "resource.database") {
-              hasDatabaseField = true;
-              for (const url of JSON.parse(fields[2])) {
-                const value = url.split("/");
-                const instanceName = value[1] || "";
-                const databaseName = value[3] || "";
-                if (
-                  database.instance.resourceId === instanceName &&
-                  database.name === databaseName
-                ) {
-                  return true;
-                }
-              }
-            }
-          }
-          if (!hasDatabaseField) {
-            return true;
-          }
+        const conditionExpression = parseConditionExpressionString(
+          binding.condition?.expression || ""
+        );
+        if (conditionExpression.databases) {
+          const databaseResourceName = getDatabaseNameById(database.id);
+          return conditionExpression.databases.includes(databaseResourceName);
         } else {
           return true;
         }
       }
+      return false;
+    });
+    // If one of the binding is true, then the user is allowed to query the database.
+    if (iamPolicyCheckResult.includes(true)) {
+      return true;
     }
+
     return false;
   };
 
@@ -294,7 +283,7 @@ export const useCurrentUserIamPolicy = () => {
     if (!policy) {
       return false;
     }
-    for (const binding of policy.bindings) {
+    const iamPolicyCheckResult = policy.bindings.map((binding) => {
       if (
         binding.role === PresetRoleType.OWNER &&
         binding.members.find(
@@ -319,7 +308,12 @@ export const useCurrentUserIamPolicy = () => {
           return true;
         }
       }
+    });
+    // If one of the binding is true, then the user is allowed to export the database.
+    if (iamPolicyCheckResult.includes(true)) {
+      return true;
     }
+
     return false;
   };
 

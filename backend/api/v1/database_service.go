@@ -554,9 +554,11 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	if !s.licenseService.IsFeatureEnabled(api.FeatureEncryptedSecrets) {
 		return nil, status.Errorf(codes.PermissionDenied, api.FeatureEncryptedSecrets.AccessErrorMessage())
 	}
-
 	if request.Secret == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "secret is required")
+	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
 	instanceID, databaseName, updateSecretName, err := getInstanceDatabaseIDSecretName(request.Secret.Name)

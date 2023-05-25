@@ -390,7 +390,7 @@ func convertToReview(ctx context.Context, s *store.Store, issue *store.IssueMess
 	}
 
 	review := &v1pb.Review{
-		Name:              fmt.Sprintf("%s%d", reviewPrefix, issue.UID),
+		Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, reviewPrefix, issue.UID),
 		Uid:               fmt.Sprintf("%d", issue.UID),
 		Title:             issue.Title,
 		Description:       issue.Description,

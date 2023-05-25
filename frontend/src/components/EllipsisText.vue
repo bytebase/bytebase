@@ -31,5 +31,6 @@ const tooltipStyle = `
   padding-bottom: 0.25rem;
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity));
+  max-width: 80vw;
 `;
 </script>
