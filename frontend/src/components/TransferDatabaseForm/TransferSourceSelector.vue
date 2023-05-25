@@ -105,7 +105,7 @@ const state = reactive<LocalState>({
 
 const nonEmptyInstanceIdSet = computed(() => {
   const instanceList = props.rawDatabaseList.map((db) => db.instance);
-  return new Set(instanceList.map((instance) => instance.id));
+  return new Set(instanceList.map((instance) => String(instance.id)));
 });
 
 const changeInstanceFilter = (instanceId: InstanceId | undefined) => {
@@ -117,7 +117,7 @@ const changeInstanceFilter = (instanceId: InstanceId | undefined) => {
 
 const filterInstance = (instance: ComposedInstance) => {
   if (instance.uid === String(UNKNOWN_ID)) return true; // "ALL" can be displayed.
-  return nonEmptyInstanceIdSet.value.has(Number(instance.uid));
+  return nonEmptyInstanceIdSet.value.has(instance.uid);
 };
 
 watch(

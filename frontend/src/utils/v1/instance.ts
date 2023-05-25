@@ -161,19 +161,19 @@ export const instanceV1HasSSH = (
   ].includes(engine);
 };
 
-// export const instanceHasCollationAndCharacterSet = (
-//   instanceOrEngine: Instance | EngineType
-// ) => {
-//   const engine = engineOfInstance(instanceOrEngine);
+export const instanceV1HasCollationAndCharacterSet = (
+  instanceOrEngine: Instance | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
 
-//   const excludedList: EngineType[] = [
-//     "MONGODB",
-//     "CLICKHOUSE",
-//     "SNOWFLAKE",
-//     "REDSHIFT",
-//   ];
-//   return !excludedList.includes(engine);
-// };
+  const excludedList: Engine[] = [
+    Engine.MONGODB,
+    Engine.CLICKHOUSE,
+    Engine.SNOWFLAKE,
+    Engine.REDSHIFT,
+  ];
+  return !excludedList.includes(engine);
+};
 
 export const engineOfInstanceV1 = (instanceOrEngine: Instance | Engine) => {
   if (typeof instanceOrEngine === "number") {

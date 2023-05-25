@@ -53,7 +53,7 @@ import { reactive, PropType, computed } from "vue";
 import { NInputGroup } from "naive-ui";
 import { uniqBy } from "lodash-es";
 
-import { ComposedDatabase, Instance, UNKNOWN_ID } from "../types";
+import { ComposedDatabase, ComposedInstance, UNKNOWN_ID } from "../types";
 import { filterDatabaseV1ByKeyword } from "@/utils";
 import { DatabaseV1Table } from "./v2";
 import { EnvironmentTabFilter, InstanceSelect, SearchBox } from "./v2";
@@ -107,10 +107,7 @@ const instanceList = computed(() => {
   );
 });
 
-const filterInstance = (instance: Instance) => {
-  return (
-    instanceList.value.findIndex((inst) => inst.uid === String(instance.id)) >=
-    0
-  );
+const filterInstance = (instance: ComposedInstance) => {
+  return instanceList.value.findIndex((inst) => inst.uid === instance.uid) >= 0;
 };
 </script>

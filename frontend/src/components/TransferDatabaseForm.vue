@@ -93,7 +93,7 @@ const hasWorkspaceManageDatabasePermission = useWorkspacePermissionV1(
 const { project } = useProjectV1ByUID(toRef(props, "projectId"));
 
 const prepare = async () => {
-  await databaseStore.fetchDatabaseListByProjectId(String(DEFAULT_PROJECT_ID));
+  await databaseStore.fetchDatabaseList();
 };
 
 onBeforeMount(prepare);

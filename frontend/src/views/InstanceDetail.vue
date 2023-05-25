@@ -99,7 +99,7 @@
   >
     <CreateDatabasePrepForm
       :environment-id="environment?.uid"
-      :instance-id="instanceId"
+      :instance-id="instance.uid"
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </BBModal>

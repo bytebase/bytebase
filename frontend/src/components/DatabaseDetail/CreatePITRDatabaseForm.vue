@@ -65,17 +65,13 @@
 
   <div class="space-y-2">
     <label class="textlabel w-full flex items-center gap-1">
-      <InstanceEngineIcon
-        v-if="state.context.instanceId"
-        :instance="selectedInstance"
-      />
       <label for="instance" class="textlabel">
         {{ $t("common.instance") }} <span class="text-red-600">*</span>
       </label>
     </label>
     <InstanceSelect
       class="mt-1"
-      :selected-id="state.context.instanceId"
+      :selected-id="String(state.context.instanceId)"
       :environment-id="state.context.environmentId"
       :filter="instanceFilter"
       @select-instance-id="(id: number) => (state.context.instanceId = id)"
@@ -136,7 +132,13 @@ import {
   watch,
 } from "vue";
 import { cloneDeep, isEmpty } from "lodash-es";
-import { Database, Instance, defaultCharset, defaultCollation } from "@/types";
+import {
+  ComposedInstance,
+  Database,
+  Instance,
+  defaultCharset,
+  defaultCollation,
+} from "@/types";
 import { CreatePITRDatabaseContext } from "./utils";
 import {
   DatabaseLabelForm,
@@ -144,7 +146,7 @@ import {
   useDBNameTemplateInputState,
 } from "@/components/CreateDatabasePrepForm";
 import { useInstanceStore, useDBSchemaStore, useProjectV1ByUID } from "@/store";
-import { isPITRAvailableOnInstance } from "@/plugins/pitr";
+import { isPITRAvailableOnInstanceV1 } from "@/plugins/pitr";
 import { TenantMode } from "@/types/proto/v1/project_service";
 
 interface LocalState {
@@ -224,8 +226,8 @@ const selectedInstance = computed((): Instance => {
   return instanceStore.getInstanceById(state.context.instanceId);
 });
 
-const instanceFilter = (instance: Instance): boolean => {
-  return isPITRAvailableOnInstance(instance);
+const instanceFilter = (instance: ComposedInstance): boolean => {
+  return isPITRAvailableOnInstanceV1(instance);
 };
 
 useDBNameTemplateInputState(project, {

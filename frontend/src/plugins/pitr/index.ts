@@ -15,6 +15,8 @@ import {
 } from "@/store";
 import { useI18n } from "vue-i18n";
 import { extractUserUID, semverCompare } from "@/utils";
+import { Instance as InstanceV1 } from "@/types/proto/v1/instance_service";
+import { Engine } from "@/types/proto/v1/common";
 
 export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
@@ -22,6 +24,13 @@ export const isPITRAvailableOnInstance = (instance: Instance): boolean => {
   const { engine, engineVersion } = instance;
   return (
     engine === "MYSQL" &&
+    semverCompare(engineVersion, MIN_PITR_SUPPORT_MYSQL_VERSION)
+  );
+};
+export const isPITRAvailableOnInstanceV1 = (instance: InstanceV1): boolean => {
+  const { engine, engineVersion } = instance;
+  return (
+    engine === Engine.MYSQL &&
     semverCompare(engineVersion, MIN_PITR_SUPPORT_MYSQL_VERSION)
   );
 };
