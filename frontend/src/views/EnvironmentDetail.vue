@@ -180,7 +180,7 @@ const doUpdate = (environmentPatch: Environment) => {
         updateMask: ["payload", "inherit_from_parent"],
         policy: {
           type: PolicyTypeV1.ACCESS_CONTROL,
-          inheritFromParent: false,
+          inheritFromParent: true,
           accessControlPolicy: {
             disallowRules: [{ fullDatabase: disallowed }],
           },
