@@ -642,13 +642,11 @@ import {
 import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
 import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
 import FeatureBadge from "@/components/FeatureBadge.vue";
-import {
-  SpannerHostInput,
-  SpannerCredentialInput,
-  SslCertificateForm,
-  SshConnectionForm,
-  OracleSIDAndServiceNameInput,
-} from "./";
+import SslCertificateForm from "./SslCertificateForm.vue";
+import SshConnectionForm from "./SshConnectionForm.vue";
+import SpannerHostInput from "./SpannerHostInput.vue";
+import SpannerCredentialInput from "./SpannerCredentialInput.vue";
+import OracleSIDAndServiceNameInput from "./OracleSIDAndServiceNameInput.vue";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
@@ -888,6 +886,8 @@ const allowCreate = computed(() => {
 });
 
 const allowEdit = computed(() => {
+  if (isCreating.value) return true;
+
   return (
     props.instance?.state === State.ACTIVE &&
     hasWorkspacePermissionV1(
