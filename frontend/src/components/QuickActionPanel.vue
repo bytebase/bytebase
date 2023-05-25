@@ -319,7 +319,7 @@ import {
   useSubscriptionStore,
 } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
-import InstanceForm from "../components/InstanceForm.vue";
+import InstanceForm from "../components/InstanceForm/";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";

@@ -616,7 +616,7 @@ import {
   supportedEngineV1List,
   instanceV1Slug,
   calcUpdateMask,
-} from "../utils";
+} from "@/utils";
 import {
   UNKNOWN_ID,
   ResourceId,
@@ -626,7 +626,7 @@ import {
   UNKNOWN_INSTANCE_NAME,
   UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
-} from "../types";
+} from "@/types";
 import {
   hasFeature,
   pushNotification,
@@ -635,21 +635,20 @@ import {
   useActuatorStore,
   useEnvironmentV1Store,
   useInstanceStore,
+  useInstanceV1Store,
   useDatabaseStore,
-  extractGrpcErrorMessage,
   useGracefulRequest,
 } from "@/store";
-import { getErrorCode } from "@/utils/grpcweb";
-import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import FeatureBadge from "./FeatureBadge.vue";
+import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
+import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
+import FeatureBadge from "@/components/FeatureBadge.vue";
 import {
   SpannerHostInput,
   SpannerCredentialInput,
   SslCertificateForm,
   SshConnectionForm,
   OracleSIDAndServiceNameInput,
-} from "./InstanceForm";
-import { useInstanceV1Store } from "@/store/modules/v1/instance";
+} from "./";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {} from "@/store/modules/v1/setting";

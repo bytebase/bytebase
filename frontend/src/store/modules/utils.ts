@@ -8,6 +8,7 @@ import {
 import { pushNotification } from "./notification";
 import { t } from "@/plugins/i18n";
 import { ClientError } from "nice-grpc-web";
+import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 type ConvertEntityFn<T> = (
   data: ResourceObject,
@@ -43,11 +44,6 @@ export function convertEntityList<T, K extends string>(
     return convert(obj, responseData.included ?? []);
   });
 }
-
-export const extractGrpcErrorMessage = (err: unknown) => {
-  const description = err instanceof ClientError ? err.details : String(err);
-  return description;
-};
 
 export const useGracefulRequest = async <T>(
   fn: () => Promise<T>

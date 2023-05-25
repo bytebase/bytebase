@@ -150,7 +150,7 @@ import {
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import { InstanceRoleTable } from "@/components/v2";
-import InstanceForm from "../components/InstanceForm.vue";
+import InstanceForm from "../components/InstanceForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
   Database,
