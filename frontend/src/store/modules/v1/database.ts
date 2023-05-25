@@ -66,9 +66,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return databaseList.value.filter((db) => db.project === project);
   };
   const getDatabaseByUID = (uid: string) => {
-    if (uid === String(EMPTY_ID)) {
-      return emptyDatabase();
-    }
+    if (uid === String(EMPTY_ID)) return emptyDatabase();
+    if (uid === String(UNKNOWN_ID)) return unknownDatabase();
+
     return databaseMapByUID.get(uid) ?? unknownDatabase();
   };
   const fetchDatabaseByUID = async (uid: string) => {
@@ -79,13 +79,17 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
     return composed;
   };
-  // async getOrFetchDatabaseById(databaseId: DatabaseId) {
-  //   const storedDatabase = this.getDatabaseById(databaseId);
-  //   if (storedDatabase.id !== UNKNOWN_ID) {
-  //     return storedDatabase;
-  //   }
-  //   return this.fetchDatabaseById(databaseId);
-  // },
+  const getOrFetchDatabaseByUID = async (uid: string) => {
+    if (uid === String(EMPTY_ID)) return emptyDatabase();
+    if (uid === String(UNKNOWN_ID)) return unknownDatabase();
+
+    const existed = databaseList.value.find((db) => db.uid === uid);
+    if (existed) {
+      return existed;
+    }
+    await fetchDatabaseByUID(uid);
+    return getDatabaseByUID(uid);
+  };
 
   return {
     databaseList,
@@ -94,6 +98,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     databaseListByProject,
     fetchDatabaseByUID,
     getDatabaseByUID,
+    getOrFetchDatabaseByUID,
   };
 });
 

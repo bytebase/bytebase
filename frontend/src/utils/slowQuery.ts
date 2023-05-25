@@ -1,4 +1,6 @@
 import type { EngineType, Instance } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { Instance as InstanceV1 } from "@/types/proto/v1/instance_service";
 import { semverCompare } from "./util";
 
 export const InstanceListSupportSlowQuery: [EngineType, string][] = [
@@ -9,6 +11,24 @@ export const InstanceListSupportSlowQuery: [EngineType, string][] = [
 export const instanceSupportSlowQuery = (instance: Instance) => {
   const { engine } = instance;
   const item = InstanceListSupportSlowQuery.find((item) => item[0] === engine);
+  if (item) {
+    const [_, minVersion] = item;
+    if (minVersion === "0") return true;
+    return semverCompare(instance.engineVersion, minVersion, "gte");
+  }
+  return false;
+};
+
+export const InstanceV1ListSupportSlowQuery: [Engine, string][] = [
+  [Engine.MYSQL, "5.7"],
+  [Engine.POSTGRES, "0"],
+];
+
+export const instanceV1SupportSlowQuery = (instance: InstanceV1) => {
+  const { engine } = instance;
+  const item = InstanceV1ListSupportSlowQuery.find(
+    (item) => item[0] === engine
+  );
   if (item) {
     const [_, minVersion] = item;
     if (minVersion === "0") return true;

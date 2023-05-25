@@ -1,8 +1,9 @@
 import slug from "slug";
+import { keyBy } from "lodash-es";
+
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { keyBy } from "lodash-es";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");

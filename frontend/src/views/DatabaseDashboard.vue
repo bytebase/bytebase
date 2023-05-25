@@ -34,7 +34,9 @@
             :instance="state.instanceFilter"
             :include-all="true"
             :environment="selectedEnvironment?.uid"
-            @update:instance="state.instanceFilter = $event ?? UNKNOWN_ID"
+            @update:instance="
+              state.instanceFilter = $event ?? String(UNKNOWN_ID)
+            "
           />
           <SearchBox
             :value="state.searchText"
@@ -76,7 +78,6 @@ import {
   type Database as LegacyDatabase,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
-  InstanceId,
   UNKNOWN_USER_NAME,
   ComposedDatabase,
 } from "../types";
@@ -95,7 +96,7 @@ import {
 } from "@/store";
 
 interface LocalState {
-  instanceFilter: InstanceId;
+  instanceFilter: string;
   searchText: string;
   databaseList: LegacyDatabase[];
   databaseV1List: ComposedDatabase[];
@@ -108,7 +109,7 @@ const router = useRouter();
 const route = useRoute();
 
 const state = reactive<LocalState>({
-  instanceFilter: UNKNOWN_ID,
+  instanceFilter: String(UNKNOWN_ID),
   searchText: "",
   databaseList: [],
   databaseV1List: [],
@@ -194,7 +195,7 @@ const filteredV1List = computed(() => {
       (db) => db.instanceEntity.environment === environment.name
     );
   }
-  if (state.instanceFilter !== UNKNOWN_ID) {
+  if (state.instanceFilter !== String(UNKNOWN_ID)) {
     list = list.filter(
       (db) => db.instanceEntity.uid === String(state.instanceFilter)
     );

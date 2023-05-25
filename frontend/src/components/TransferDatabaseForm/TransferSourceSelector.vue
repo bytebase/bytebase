@@ -34,7 +34,7 @@
       </div>
       <NInputGroup style="width: auto">
         <InstanceSelect
-          :instance="instanceFilter?.id ?? UNKNOWN_ID"
+          :instance="String(instanceFilter?.id ?? UNKNOWN_ID)"
           :include-all="true"
           :filter="filterInstance"
           @update:instance="changeInstanceFilter"
@@ -60,6 +60,7 @@ import {
   UNKNOWN_ID,
   InstanceId,
   Database,
+  ComposedInstance,
 } from "@/types";
 import { InstanceSelect, SearchBox } from "@/components/v2";
 import { useInstanceStore } from "@/store";
@@ -114,9 +115,9 @@ const changeInstanceFilter = (instanceId: InstanceId | undefined) => {
   emit("select-instance", useInstanceStore().getInstanceById(instanceId));
 };
 
-const filterInstance = (instance: Instance) => {
-  if (instance.id === UNKNOWN_ID) return true; // "ALL" can be displayed.
-  return nonEmptyInstanceIdSet.value.has(instance.id);
+const filterInstance = (instance: ComposedInstance) => {
+  if (instance.uid === String(UNKNOWN_ID)) return true; // "ALL" can be displayed.
+  return nonEmptyInstanceIdSet.value.has(Number(instance.uid));
 };
 
 watch(
