@@ -98,6 +98,8 @@ export interface Plan_Step {
 export interface Plan_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
   earliestAllowedTime?: Date;
+  /** A UUID4 string that uniquely identifies the Spec. */
+  id: string;
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   restoreDatabaseConfig?: Plan_RestoreDatabaseConfig | undefined;
@@ -579,6 +581,16 @@ export interface Task {
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
   title: string;
+  /**
+   * A UUID4 string that uniquely identifies the Spec.
+   * Could be empty if the rollout of the task does not have an associating plan.
+   */
+  specId: string;
+  /**
+   * Status is the status of the task.
+   * TODO(p0ny): migrate old task status and use this field as a summary of the task runs.
+   */
+  status: Task_Status;
   type: Task_Type;
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
   blockedByTasks: string[];
@@ -589,6 +601,69 @@ export interface Task {
   databaseSchemaUpdate?: Task_DatabaseSchemaUpdate | undefined;
   databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
   databaseRestoreRestore?: Task_DatabaseRestoreRestore | undefined;
+}
+
+export enum Task_Status {
+  STATUS_UNSPECIFIED = 0,
+  PENDING_APPROVAL = 1,
+  PENDING = 2,
+  RUNNING = 3,
+  DONE = 4,
+  FAILED = 5,
+  CANCELED = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function task_StatusFromJSON(object: any): Task_Status {
+  switch (object) {
+    case 0:
+    case "STATUS_UNSPECIFIED":
+      return Task_Status.STATUS_UNSPECIFIED;
+    case 1:
+    case "PENDING_APPROVAL":
+      return Task_Status.PENDING_APPROVAL;
+    case 2:
+    case "PENDING":
+      return Task_Status.PENDING;
+    case 3:
+    case "RUNNING":
+      return Task_Status.RUNNING;
+    case 4:
+    case "DONE":
+      return Task_Status.DONE;
+    case 5:
+    case "FAILED":
+      return Task_Status.FAILED;
+    case 6:
+    case "CANCELED":
+      return Task_Status.CANCELED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Task_Status.UNRECOGNIZED;
+  }
+}
+
+export function task_StatusToJSON(object: Task_Status): string {
+  switch (object) {
+    case Task_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
+    case Task_Status.PENDING_APPROVAL:
+      return "PENDING_APPROVAL";
+    case Task_Status.PENDING:
+      return "PENDING";
+    case Task_Status.RUNNING:
+      return "RUNNING";
+    case Task_Status.DONE:
+      return "DONE";
+    case Task_Status.FAILED:
+      return "FAILED";
+    case Task_Status.CANCELED:
+      return "CANCELED";
+    case Task_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export enum Task_Type {
@@ -876,7 +951,7 @@ export enum TaskRun_Status {
   STATUS_UNSPECIFIED = 0,
   PENDING = 1,
   RUNNING = 2,
-  COMPLETED = 3,
+  DONE = 3,
   FAILED = 4,
   CANCELED = 5,
   SKIPPED = 6,
@@ -895,8 +970,8 @@ export function taskRun_StatusFromJSON(object: any): TaskRun_Status {
     case "RUNNING":
       return TaskRun_Status.RUNNING;
     case 3:
-    case "COMPLETED":
-      return TaskRun_Status.COMPLETED;
+    case "DONE":
+      return TaskRun_Status.DONE;
     case 4:
     case "FAILED":
       return TaskRun_Status.FAILED;
@@ -921,8 +996,8 @@ export function taskRun_StatusToJSON(object: TaskRun_Status): string {
       return "PENDING";
     case TaskRun_Status.RUNNING:
       return "RUNNING";
-    case TaskRun_Status.COMPLETED:
-      return "COMPLETED";
+    case TaskRun_Status.DONE:
+      return "DONE";
     case TaskRun_Status.FAILED:
       return "FAILED";
     case TaskRun_Status.CANCELED:
@@ -1482,6 +1557,7 @@ export const Plan_Step = {
 function createBasePlan_Spec(): Plan_Spec {
   return {
     earliestAllowedTime: undefined,
+    id: "",
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     restoreDatabaseConfig: undefined,
@@ -1492,6 +1568,9 @@ export const Plan_Spec = {
   encode(message: Plan_Spec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.earliestAllowedTime !== undefined) {
       Timestamp.encode(toTimestamp(message.earliestAllowedTime), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.id !== "") {
+      writer.uint32(42).string(message.id);
     }
     if (message.createDatabaseConfig !== undefined) {
       Plan_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).ldelim();
@@ -1518,6 +1597,13 @@ export const Plan_Spec = {
           }
 
           message.earliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.id = reader.string();
           continue;
         case 1:
           if (tag !== 10) {
@@ -1554,6 +1640,7 @@ export const Plan_Spec = {
       earliestAllowedTime: isSet(object.earliestAllowedTime)
         ? fromJsonTimestamp(object.earliestAllowedTime)
         : undefined,
+      id: isSet(object.id) ? String(object.id) : "",
       createDatabaseConfig: isSet(object.createDatabaseConfig)
         ? Plan_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
         : undefined,
@@ -1569,6 +1656,7 @@ export const Plan_Spec = {
   toJSON(message: Plan_Spec): unknown {
     const obj: any = {};
     message.earliestAllowedTime !== undefined && (obj.earliestAllowedTime = message.earliestAllowedTime.toISOString());
+    message.id !== undefined && (obj.id = message.id);
     message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
       ? Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
       : undefined);
@@ -1588,6 +1676,7 @@ export const Plan_Spec = {
   fromPartial(object: DeepPartial<Plan_Spec>): Plan_Spec {
     const message = createBasePlan_Spec();
     message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
+    message.id = object.id ?? "";
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
       ? Plan_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
       : undefined;
@@ -2812,6 +2901,8 @@ function createBaseTask(): Task {
     name: "",
     uid: "",
     title: "",
+    specId: "",
+    status: 0,
     type: 0,
     blockedByTasks: [],
     target: "",
@@ -2833,6 +2924,12 @@ export const Task = {
     }
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
+    }
+    if (message.specId !== "") {
+      writer.uint32(98).string(message.specId);
+    }
+    if (message.status !== 0) {
+      writer.uint32(104).int32(message.status);
     }
     if (message.type !== 0) {
       writer.uint32(32).int32(message.type);
@@ -2888,6 +2985,20 @@ export const Task = {
           }
 
           message.title = reader.string();
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.specId = reader.string();
+          continue;
+        case 13:
+          if (tag !== 104) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
           continue;
         case 4:
           if (tag !== 32) {
@@ -2959,6 +3070,8 @@ export const Task = {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
       title: isSet(object.title) ? String(object.title) : "",
+      specId: isSet(object.specId) ? String(object.specId) : "",
+      status: isSet(object.status) ? task_StatusFromJSON(object.status) : 0,
       type: isSet(object.type) ? task_TypeFromJSON(object.type) : 0,
       blockedByTasks: Array.isArray(object?.blockedByTasks) ? object.blockedByTasks.map((e: any) => String(e)) : [],
       target: isSet(object.target) ? String(object.target) : "",
@@ -2983,6 +3096,8 @@ export const Task = {
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
     message.title !== undefined && (obj.title = message.title);
+    message.specId !== undefined && (obj.specId = message.specId);
+    message.status !== undefined && (obj.status = task_StatusToJSON(message.status));
     message.type !== undefined && (obj.type = task_TypeToJSON(message.type));
     if (message.blockedByTasks) {
       obj.blockedByTasks = message.blockedByTasks.map((e) => e);
@@ -3016,6 +3131,8 @@ export const Task = {
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
     message.title = object.title ?? "";
+    message.specId = object.specId ?? "";
+    message.status = object.status ?? 0;
     message.type = object.type ?? 0;
     message.blockedByTasks = object.blockedByTasks?.map((e) => e) || [];
     message.target = object.target ?? "";

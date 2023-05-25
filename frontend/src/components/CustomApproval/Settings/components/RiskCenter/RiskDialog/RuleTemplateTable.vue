@@ -7,7 +7,7 @@
     row-key="key"
   >
     <template #item="{ item: tpl }: { item: RuleTemplate }">
-      <div class="bb-grid-cell !pl-2 !pr-1">
+      <div class="bb-grid-cell !pl-2 !pr-1 break-normal">
         {{ titleOfTemplate(tpl) }}
       </div>
       <div class="bb-grid-cell gap-x-1 !pl-1 !pr-2">

@@ -15,6 +15,8 @@ message PlanConfig {
   message Spec {
     // earliest_allowed_time the earliest execution time of the change.
     google.protobuf.Timestamp earliest_allowed_time = 4;
+    // A UUID4 string that uniquely identifies the Spec.
+    string id = 5;
 
     oneof config {
       CreateDatabaseConfig create_database_config = 1;

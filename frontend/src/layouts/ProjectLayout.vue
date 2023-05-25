@@ -40,7 +40,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, reactive, watch } from "vue";
+import { computed, defineComponent, nextTick, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import { startCase } from "lodash-es";
 
@@ -231,9 +231,11 @@ export default defineComponent({
     };
 
     watch(
-      () => router.currentRoute.value.hash,
+      () => [router.currentRoute.value.hash],
       () => {
-        selectProjectTabOnHash();
+        nextTick(() => {
+          selectProjectTabOnHash();
+        });
       },
       {
         immediate: true,

@@ -70,6 +70,9 @@ func (s *ExternalVersionControlService) CreateExternalVersionControl(ctx context
 
 // UpdateExternalVersionControl updates an existing external version control.
 func (s *ExternalVersionControlService) UpdateExternalVersionControl(ctx context.Context, request *v1pb.UpdateExternalVersionControlRequest) (*v1pb.ExternalVersionControl, error) {
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
 	externalVersionControlUID, err := getExternalVersionControlID(request.ExternalVersionControl.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())

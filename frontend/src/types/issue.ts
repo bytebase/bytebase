@@ -13,6 +13,7 @@ import { Principal } from "./principal";
 import { Project } from "./project";
 import { MigrationType } from "./instance";
 import { Expr } from "./proto/google/type/expr";
+import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
 
 type IssueTypeGeneral = "bb.issue.general";
 
@@ -92,6 +93,7 @@ export interface GrantRequestContext {
   role: "EXPORTER" | "QUERIER";
   // Conditions in CEL expression.
   databases: string[];
+  databaseResources: DatabaseResource[];
   expireDays: number;
   maxRowCount: number;
   statement: string;

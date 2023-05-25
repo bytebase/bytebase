@@ -37,10 +37,7 @@ func AnomalySeverityFromType(anomalyType AnomalyType) AnomalySeverity {
 		return AnomalySeverityMedium
 	case AnomalyDatabaseBackupMissing:
 		return AnomalySeverityHigh
-	case AnomalyInstanceConnection:
-	case AnomalyInstanceMigrationSchema:
-	case AnomalyDatabaseConnection:
-	case AnomalyDatabaseSchemaDrift:
+	case AnomalyInstanceConnection, AnomalyInstanceMigrationSchema, AnomalyDatabaseConnection, AnomalyDatabaseSchemaDrift:
 		return AnomalySeverityCritical
 	}
 	return AnomalySeverityCritical
