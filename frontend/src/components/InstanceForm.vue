@@ -637,6 +637,7 @@ import {
   useInstanceStore,
   useDatabaseStore,
   extractGrpcErrorMessage,
+  useGracefulRequest,
 } from "@/store";
 import { getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
@@ -1248,16 +1249,19 @@ const doCreate = async () => {
 
   state.isRequesting = true;
   try {
-    const createdInstance = await instanceV1Store.createInstance(
-      instanceCreate
-    );
-    router.push(`/instance/${instanceV1Slug(createdInstance)}`);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("instance.successfully-created-instance-createdinstance-name", [
-        createdInstance.title,
-      ]),
+    await useGracefulRequest(async () => {
+      const createdInstance = await instanceV1Store.createInstance(
+        instanceCreate
+      );
+      router.push(`/instance/${instanceV1Slug(createdInstance)}`);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t(
+          "instance.successfully-created-instance-createdinstance-name",
+          [createdInstance.title]
+        ),
+      });
     });
   } finally {
     state.isRequesting = false;
@@ -1334,18 +1338,20 @@ const doUpdate = async () => {
 
   state.isRequesting = true;
   try {
-    await maybeUpdateInstance();
-    await maybeUpdateAdminDataSource();
-    await maybeUpsertReadonlyDataSource();
+    await useGracefulRequest(async () => {
+      await maybeUpdateInstance();
+      await maybeUpdateAdminDataSource();
+      await maybeUpsertReadonlyDataSource();
 
-    const updatedInstance = instanceV1Store.getInstanceByName(instance.name);
-    await updateEditState(updatedInstance);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("instance.successfully-updated-instance-instance-name", [
-        updatedInstance.title,
-      ]),
+      const updatedInstance = instanceV1Store.getInstanceByName(instance.name);
+      await updateEditState(updatedInstance);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("instance.successfully-updated-instance-instance-name", [
+          updatedInstance.title,
+        ]),
+      });
     });
   } finally {
     state.isRequesting = false;
