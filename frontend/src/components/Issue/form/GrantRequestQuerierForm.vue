@@ -155,7 +155,7 @@ import {
   useDatabaseStore,
   useProjectV1Store,
 } from "@/store";
-import { converFromCEL } from "@/utils/issue/cel";
+import { convertFromCEL } from "@/utils/issue/cel";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import RequiredStar from "@/components/RequiredStar.vue";
 import SelectDatabaseResourceForm from "./SelectDatabaseResourceForm/index.vue";
@@ -299,7 +299,7 @@ watch(
         throw "Only support QUERIER role";
       }
 
-      const conditionExpression = await converFromCEL(
+      const conditionExpression = await convertFromCEL(
         payload.condition.expression
       );
       if (conditionExpression.expiredTime !== undefined) {
