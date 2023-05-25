@@ -274,7 +274,7 @@ const doCreate = async (
         updateMask: ["payload", "inherit_from_parent"],
         policy: {
           type: PolicyType.ACCESS_CONTROL,
-          inheritFromParent: false,
+          inheritFromParent: true,
           accessControlPolicy: {
             disallowRules: [
               {
