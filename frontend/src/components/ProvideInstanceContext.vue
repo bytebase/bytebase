@@ -3,11 +3,7 @@
 </template>
 
 <script lang="ts">
-import {
-  useDatabaseStore,
-  useInstanceStore,
-  useInstanceV1Store,
-} from "@/store";
+import { useDatabaseStore, useInstanceV1Store } from "@/store";
 import { defineComponent, watchEffect } from "vue";
 import { idFromSlug } from "../utils";
 
