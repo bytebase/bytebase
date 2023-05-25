@@ -43,10 +43,6 @@ export interface PlanConfig_CreateDatabaseConfig {
   cluster: string;
   /** owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>". */
   owner: string;
-  /**
-   * backup is the resource name of the backup.
-   * FIXME: backup v1 API is not ready yet, write the format here when it's ready.
-   */
   backup: string;
   /** labels of the database. */
   labels: { [key: string]: string };
@@ -179,8 +175,8 @@ export interface PlanConfig_RestoreDatabaseConfig {
     | PlanConfig_CreateDatabaseConfig
     | undefined;
   /**
-   * FIXME: format TBD
    * Restore from a backup.
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
    */
   backup?:
     | string

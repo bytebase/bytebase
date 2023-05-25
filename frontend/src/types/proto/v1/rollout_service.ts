@@ -128,7 +128,7 @@ export interface Plan_CreateDatabaseConfig {
   owner: string;
   /**
    * backup is the resource name of the backup.
-   * FIXME: backup v1 API is not ready yet, write the format here when it's ready.
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
    */
   backup: string;
   /** labels of the database. */
@@ -258,13 +258,7 @@ export interface Plan_RestoreDatabaseConfig {
    */
   target: string;
   /** create_database_config is present if the user wants to restore to a new database. */
-  createDatabaseConfig?:
-    | Plan_CreateDatabaseConfig
-    | undefined;
-  /**
-   * FIXME: format TBD
-   * Restore from a backup.
-   */
+  createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   backup?:
     | string
     | undefined;
@@ -916,7 +910,7 @@ export function task_DatabaseDataUpdate_RollbackSqlStatusToJSON(
 export interface Task_DatabaseBackup {
   /**
    * The resource name of the backup.
-   * FIXME: format TBD.
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
    */
   backup: string;
 }
@@ -930,7 +924,10 @@ export interface Task_DatabaseRestoreRestore {
    * Format: instances/{instance}/databases/database
    */
   target: string;
-  /** Only used when doing restore full backup only. */
+  /**
+   * Only used when doing restore full backup only.
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
+   */
   backup?:
     | string
     | undefined;

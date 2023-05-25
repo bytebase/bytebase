@@ -5715,7 +5715,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | collation | [string](#string) |  | collation is the collation of the database. |
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
-| backup | [string](#string) |  | backup is the resource name of the backup. FIXME: backup v1 API is not ready yet, write the format here when it&#39;s ready. |
+| backup | [string](#string) |  | backup is the resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 | labels | [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
 
 
@@ -5749,7 +5749,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target to restore. Format: instances/{instance}/databases/{database} |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) | optional | create_database_config is present if the user wants to restore to a new database. |
-| backup | [string](#string) |  | FIXME: format TBD Restore from a backup. |
+| backup | [string](#string) |  |  |
 | point_in_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | After the PITR operations, the database will be recovered to the state at this time. |
 
 
@@ -5907,7 +5907,7 @@ FIXME(d/xz): support spec with deployment config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| backup | [string](#string) |  | The resource name of the backup. FIXME: format TBD. |
+| backup | [string](#string) |  | The resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 
 
 
@@ -5989,7 +5989,7 @@ FIXME(d/xz): support spec with deployment config
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | Target is only used when doing restore to a new database now. It is empty for the case of in-place restore. Target {instance} must be within the same environment as the instance of the original database. {database} is the target database name. Format: instances/{instance}/databases/database |
-| backup | [string](#string) |  | Only used when doing restore full backup only. |
+| backup | [string](#string) |  | Only used when doing restore full backup only. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 | point_in_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | After the PITR operations, the database will be recovered to the state at this time. |
 
 
