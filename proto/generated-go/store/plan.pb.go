@@ -318,9 +318,7 @@ type PlanConfig_CreateDatabaseConfig struct {
 	// cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>".
 	Cluster string `protobuf:"bytes,6,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
-	Owner string `protobuf:"bytes,7,opt,name=owner,proto3" json:"owner,omitempty"`
-	// backup is the resource name of the backup.
-	// FIXME: backup v1 API is not ready yet, write the format here when it's ready.
+	Owner  string `protobuf:"bytes,7,opt,name=owner,proto3" json:"owner,omitempty"`
 	Backup string `protobuf:"bytes,8,opt,name=backup,proto3" json:"backup,omitempty"`
 	// labels of the database.
 	Labels map[string]string `protobuf:"bytes,9,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
@@ -610,8 +608,8 @@ type isPlanConfig_RestoreDatabaseConfig_Source interface {
 }
 
 type PlanConfig_RestoreDatabaseConfig_Backup struct {
-	// FIXME: format TBD
 	// Restore from a backup.
+	// Format: instances/{instance}/databases/{database}/backups/{backup-name}
 	Backup string `protobuf:"bytes,3,opt,name=backup,proto3,oneof"`
 }
 

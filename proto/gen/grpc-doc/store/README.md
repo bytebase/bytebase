@@ -967,8 +967,10 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | character_set | [string](#string) |  | character_set is the character set of the database. |
 | collation | [string](#string) |  | collation is the collation of the database. |
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
-| owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
-| backup | [string](#string) |  | backup is the resource name of the backup. FIXME: backup v1 API is not ready yet, write the format here when it&#39;s ready. |
+| owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;.
+
+backup is the resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
+| backup | [string](#string) |  |  |
 | labels | [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
 
 
@@ -1002,7 +1004,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target to restore. Format: instances/{instance}/databases/{database} |
 | create_database_config | [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig) | optional | create_database_config is present if the user wants to restore to a new database. |
-| backup | [string](#string) |  | FIXME: format TBD Restore from a backup. |
+| backup | [string](#string) |  | Restore from a backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 | point_in_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | After the PITR operations, the database will be recovered to the state at this time. |
 
 

@@ -1942,7 +1942,7 @@ type Plan_CreateDatabaseConfig struct {
 	// owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
 	Owner string `protobuf:"bytes,7,opt,name=owner,proto3" json:"owner,omitempty"`
 	// backup is the resource name of the backup.
-	// FIXME: backup v1 API is not ready yet, write the format here when it's ready.
+	// Format: instances/{instance}/databases/{database}/backups/{backup-name}
 	Backup string `protobuf:"bytes,8,opt,name=backup,proto3" json:"backup,omitempty"`
 	// labels of the database.
 	Labels map[string]string `protobuf:"bytes,9,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
@@ -2232,8 +2232,6 @@ type isPlan_RestoreDatabaseConfig_Source interface {
 }
 
 type Plan_RestoreDatabaseConfig_Backup struct {
-	// FIXME: format TBD
-	// Restore from a backup.
 	Backup string `protobuf:"bytes,3,opt,name=backup,proto3,oneof"`
 }
 
@@ -2787,7 +2785,7 @@ type Task_DatabaseBackup struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The resource name of the backup.
-	// FIXME: format TBD.
+	// Format: instances/{instance}/databases/{database}/backups/{backup-name}
 	Backup string `protobuf:"bytes,1,opt,name=backup,proto3" json:"backup,omitempty"`
 }
 
@@ -2914,6 +2912,7 @@ type isTask_DatabaseRestoreRestore_Source interface {
 
 type Task_DatabaseRestoreRestore_Backup struct {
 	// Only used when doing restore full backup only.
+	// Format: instances/{instance}/databases/{database}/backups/{backup-name}
 	Backup string `protobuf:"bytes,2,opt,name=backup,proto3,oneof"`
 }
 
