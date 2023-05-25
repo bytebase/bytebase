@@ -24,6 +24,39 @@ interface ConditionExpression {
   exportFormat?: string;
 }
 
+export const stringifyConditionExpression = (
+  conditionExpression: ConditionExpression
+) => {
+  const expression: string[] = [];
+  if (
+    conditionExpression.databases !== undefined &&
+    conditionExpression.databases.length > 0
+  ) {
+    expression.push(
+      `resource.database in ${JSON.stringify(conditionExpression.databases)}`
+    );
+  }
+  if (conditionExpression.expiredTime !== undefined) {
+    expression.push(
+      `request.time < timestamp("${conditionExpression.expiredTime}")`
+    );
+  }
+  if (conditionExpression.statement !== undefined) {
+    expression.push(
+      `request.statement == "${btoa(conditionExpression.statement)}"`
+    );
+  }
+  if (conditionExpression.rowLimit !== undefined) {
+    expression.push(`request.row_limit == ${conditionExpression.rowLimit}`);
+  }
+  if (conditionExpression.exportFormat !== undefined) {
+    expression.push(
+      `request.export_format == "${conditionExpression.exportFormat}"`
+    );
+  }
+  return expression.join(" && ");
+};
+
 export const parseConditionExpressionString = (
   conditionExpressionString: string
 ): ConditionExpression => {
