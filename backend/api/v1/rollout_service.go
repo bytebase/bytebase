@@ -265,12 +265,13 @@ func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Cont
 
 		return []api.TaskCreate{
 			{
-				InstanceID:   instance.UID,
-				Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-				Status:       api.TaskPendingApproval,
-				Type:         api.TaskDatabaseCreate,
-				DatabaseName: payload.DatabaseName,
-				Payload:      string(bytes),
+				InstanceID:        instance.UID,
+				Name:              fmt.Sprintf("Create database %v", payload.DatabaseName),
+				Status:            api.TaskPendingApproval,
+				Type:              api.TaskDatabaseCreate,
+				DatabaseName:      payload.DatabaseName,
+				Payload:           string(bytes),
+				EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
 			},
 		}, nil
 	}()
@@ -326,7 +327,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 			DatabaseID:        &database.UID,
 			Status:            api.TaskPendingApproval,
 			Type:              api.TaskDatabaseSchemaBaseline,
-			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
 			Payload:           payloadString,
 		}
 		return []api.TaskCreate{taskCreate}, nil, nil
@@ -364,7 +365,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 			DatabaseID:        &database.UID,
 			Status:            api.TaskPendingApproval,
 			Type:              api.TaskDatabaseSchemaUpdate,
-			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
 			Payload:           payloadString,
 		}
 		return []api.TaskCreate{taskCreate}, nil, nil
@@ -401,7 +402,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 			DatabaseID:        &database.UID,
 			Status:            api.TaskPendingApproval,
 			Type:              api.TaskDatabaseSchemaUpdateSDL,
-			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
 			Payload:           payloadString,
 		}
 		return []api.TaskCreate{taskCreate}, nil, nil
@@ -440,7 +441,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 			DatabaseID:        &database.UID,
 			Status:            api.TaskPendingApproval,
 			Type:              api.TaskDatabaseSchemaUpdateGhostSync,
-			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
 			Payload:           string(bytesSync),
 		})
 
@@ -458,7 +459,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 			DatabaseID:        &database.UID,
 			Status:            api.TaskPendingApproval,
 			Type:              api.TaskDatabaseSchemaUpdateGhostCutover,
-			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
 			Payload:           string(bytesCutover),
 		})
 
@@ -515,7 +516,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 			DatabaseID:        &database.UID,
 			Status:            api.TaskPendingApproval,
 			Type:              api.TaskDatabaseDataUpdate,
-			EarliestAllowedTs: spec.EarliestAllowedTime.AsTime().Unix(),
+			EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
 			Payload:           payloadString,
 		}
 		return []api.TaskCreate{taskCreate}, nil, nil
