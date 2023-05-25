@@ -53,7 +53,7 @@ import { computed, reactive, watchEffect } from "vue";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import { idFromSlug } from "../utils";
-import { hasFeature, pushNotification, useBackupStore } from "@/store";
+import { hasFeature, pushNotification } from "@/store";
 import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 import BBModal from "@/bbkit/BBModal.vue";
@@ -104,7 +104,6 @@ const emit = defineEmits(["archive"]);
 
 const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
-const backupStore = useBackupStore();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
