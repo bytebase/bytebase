@@ -1227,55 +1227,6 @@ const tryCreate = async () => {
   }
 };
 
-const extractDataSourceFromEdit = (
-  instance: Instance,
-  edit: EditDataSource
-): DataSource => {
-  const ds = cloneDeep(
-    omit(
-      edit,
-      "pendingCreate",
-      "updatedPassword",
-      "useEmptyPassword",
-      "updateSsl",
-      "updateSsh"
-    )
-  );
-  if (edit.updatedPassword) {
-    ds.password = edit.updatedPassword;
-  }
-  if (edit.useEmptyPassword) {
-    ds.password = "";
-  }
-
-  // Clean up unused fields for certain engine types.
-  if (!showDatabase.value) {
-    ds.database = "";
-  }
-  if (instance.engine !== Engine.ORACLE) {
-    ds.sid = "";
-    ds.serviceName = "";
-  }
-  if (instance.engine !== Engine.MONGODB) {
-    ds.srv = false;
-    ds.authenticationDatabase = "";
-  }
-  if (!showSSH.value) {
-    ds.sshHost = "";
-    ds.sshPort = "";
-    ds.sshUser = "";
-    ds.sshPassword = "";
-    ds.sshPrivateKey = "";
-  }
-  if (!showSSL.value) {
-    ds.sslCa = "";
-    ds.sslCert = "";
-    ds.sslKey = "";
-  }
-
-  return ds;
-};
-
 // We will also create the database * denoting all databases
 // and its RW data source. The username, password is actually
 // stored in that data source object instead of in the instance self.
@@ -1405,7 +1356,6 @@ const testConnection = async (
   silent = false
 ): Promise<{ success: boolean; message: string }> => {
   // In different scenes, we use different methods to test connection.
-
   const ok = () => {
     if (!silent) {
       pushNotification({
@@ -1440,7 +1390,6 @@ const testConnection = async (
   };
 
   state.isTestingConnection = true;
-  await new Promise((r) => setTimeout(r, 1000));
   if (isCreating.value) {
     // When creating new instance, use
     // CreateInstanceRequest.validateOnly = true
@@ -1546,5 +1495,54 @@ const calcDataSourceUpdateMask = (
   }
 
   return Array.from(updateMask);
+};
+
+const extractDataSourceFromEdit = (
+  instance: Instance,
+  edit: EditDataSource
+): DataSource => {
+  const ds = cloneDeep(
+    omit(
+      edit,
+      "pendingCreate",
+      "updatedPassword",
+      "useEmptyPassword",
+      "updateSsl",
+      "updateSsh"
+    )
+  );
+  if (edit.updatedPassword) {
+    ds.password = edit.updatedPassword;
+  }
+  if (edit.useEmptyPassword) {
+    ds.password = "";
+  }
+
+  // Clean up unused fields for certain engine types.
+  if (!showDatabase.value) {
+    ds.database = "";
+  }
+  if (instance.engine !== Engine.ORACLE) {
+    ds.sid = "";
+    ds.serviceName = "";
+  }
+  if (instance.engine !== Engine.MONGODB) {
+    ds.srv = false;
+    ds.authenticationDatabase = "";
+  }
+  if (!showSSH.value) {
+    ds.sshHost = "";
+    ds.sshPort = "";
+    ds.sshUser = "";
+    ds.sshPassword = "";
+    ds.sshPrivateKey = "";
+  }
+  if (!showSSL.value) {
+    ds.sslCa = "";
+    ds.sslCert = "";
+    ds.sslKey = "";
+  }
+
+  return ds;
 };
 </script>
