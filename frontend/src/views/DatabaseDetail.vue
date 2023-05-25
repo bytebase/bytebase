@@ -180,7 +180,7 @@
         />
       </template>
       <template v-if="selectedTabItem?.hash === 'slow-query'">
-        <DatabaseSlowQueryPanel :database="database" />
+        <DatabaseSlowQueryPanel :database="databaseV1" />
       </template>
       <template v-if="selectedTabItem?.hash === 'settings'">
         <DatabaseSettingsPanel :database="database" />
@@ -348,6 +348,7 @@ import {
   useCurrentUserIamPolicy,
   useCurrentUserV1,
   useDatabaseStore,
+  useDatabaseV1Store,
   useDBSchemaStore,
   useProjectV1ByUID,
   useSQLStore,
@@ -381,6 +382,7 @@ const props = defineProps({
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseStore();
+const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaStore();
 const sqlStore = useSQLStore();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
@@ -414,6 +416,11 @@ const currentUserIamPolicy = useCurrentUserIamPolicy();
 
 const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
+});
+const databaseV1 = computed(() => {
+  return databaseV1Store.getDatabaseByUID(
+    String(idFromSlug(props.databaseSlug))
+  );
 });
 const { project: projectV1 } = useProjectV1ByUID(
   computed(() => {
