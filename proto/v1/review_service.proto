@@ -16,6 +16,14 @@ service ReviewService {
     option (google.api.method_signature) = "name";
   }
 
+  rpc CreateReview(CreateReviewRequest) returns (Review) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/reviews"
+      body: "review"
+    };
+    option (google.api.method_signature) = "parent,review";
+  }
+
   rpc ListReviews(ListReviewsRequest) returns (ListReviewsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/reviews"};
     option (google.api.method_signature) = "parent";
@@ -48,6 +56,15 @@ message GetReviewRequest {
   // The name of the review to retrieve.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message CreateReviewRequest {
+  // The parent, which owns this collection of reviews.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The review to create.
+  Review review = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListReviewsRequest {
@@ -123,6 +140,16 @@ message Review {
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 3;
+
+  // The plan associated with the review.
+  // Can be empty.
+  // Format: projects/{project}/plans/{plan}
+  string plan = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The rollout associated with the review.
+  // Can be empty.
+  // Format: projects/{project}/rollouts/{rollout}
+  string rollout = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string description = 4;
 
