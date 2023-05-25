@@ -1,16 +1,26 @@
 import { isUndefined } from "lodash-es";
 
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
-import { SheetIssueBacktracePayload } from "@/types";
+import {
+  Task,
+  SheetIssueBacktracePayload,
+  TaskDatabaseCreatePayload,
+  TaskDatabaseDataUpdatePayload,
+  TaskDatabaseSchemaUpdateGhostSyncPayload,
+  TaskDatabaseSchemaUpdatePayload,
+  TaskDatabaseSchemaUpdateSDLPayload,
+  SheetId,
+} from "@/types";
 import {
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
   isMemberOfProjectV1,
-} from "../utils";
+} from "../../utils";
 import { Sheet, Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 import {
   getUserEmailFromIdentifier,
   getProjectAndSheetId,
+  getSheetPathByLegacyProject,
 } from "@/store/modules/v1/common";
 
 export const isSheetReadableV1 = (sheet: Sheet) => {
@@ -107,4 +117,42 @@ export const getSheetIssueBacktracePayloadV1 = (sheet: Sheet) => {
   }
 
   return undefined;
+};
+
+export const sheetNameOfTask = (task: Task) => {
+  const project = task.database?.project;
+  if (!project) {
+    return "";
+  }
+
+  let sheetId: SheetId;
+
+  switch (task.type) {
+    case "bb.task.database.create":
+      sheetId = (task.payload as TaskDatabaseCreatePayload).sheetId || "";
+      break;
+    case "bb.task.database.schema.update":
+      sheetId = (task.payload as TaskDatabaseSchemaUpdatePayload).sheetId || "";
+      break;
+    case "bb.task.database.schema.update-sdl":
+      sheetId =
+        (task.payload as TaskDatabaseSchemaUpdateSDLPayload).sheetId || "";
+      break;
+    case "bb.task.database.data.update":
+      sheetId = (task.payload as TaskDatabaseDataUpdatePayload).sheetId || "";
+      break;
+    case "bb.task.database.schema.update.ghost.sync":
+      sheetId =
+        (task.payload as TaskDatabaseSchemaUpdateGhostSyncPayload).sheetId ||
+        "";
+      break;
+    default:
+      return "";
+  }
+
+  if (!sheetId) {
+    return "";
+  }
+
+  return getSheetPathByLegacyProject(project, sheetId);
 };

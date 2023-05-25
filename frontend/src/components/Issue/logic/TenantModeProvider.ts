@@ -1,6 +1,11 @@
 import { computed, defineComponent } from "vue";
 import { cloneDeep, head } from "lodash-es";
-import { useDatabaseStore, useSheetStore, useTaskStore } from "@/store";
+import {
+  useDatabaseStore,
+  useSheetStore,
+  useTaskStore,
+  useSheetById,
+} from "@/store";
 import {
   Issue,
   IssueCreate,
@@ -50,9 +55,8 @@ export default defineComponent({
         const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
         const selectedTaskSheetId = sheetIdOfTask(selectedTask.value as Task);
         return (
-          useSheetStore().getSheetById(
-            selectedTaskSheetId || payload.sheetId || UNKNOWN_ID
-          )?.statement || ""
+          useSheetById(selectedTaskSheetId || payload.sheetId || UNKNOWN_ID)
+            .value?.statement || ""
         );
       }
     });

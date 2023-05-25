@@ -1,11 +1,11 @@
 <template>
-  <template v-if="sheet.id !== UNKNOWN_ID">
+  <template v-if="sheet">
     <heroicons-outline:user-group
-      v-if="sheet.visibility === 'PROJECT'"
+      v-if="sheet.visibility === Sheet_Visibility.VISIBILITY_PROJECT"
       class="w-4 h-4"
     />
     <heroicons-outline:globe
-      v-if="sheet.visibility === 'PUBLIC'"
+      v-if="sheet.visibility === Sheet_Visibility.VISIBILITY_PUBLIC"
       class="w-4 h-4"
     />
   </template>
@@ -18,8 +18,9 @@
 import { computed, PropType } from "vue";
 
 import type { TabInfo } from "@/types";
-import { TabMode, unknown, UNKNOWN_ID } from "@/types";
-import { useSheetStore } from "@/store";
+import { TabMode } from "@/types";
+import { useSheetV1Store } from "@/store";
+import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 
 const props = defineProps({
   tab: {
@@ -32,16 +33,16 @@ const props = defineProps({
   },
 });
 
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 
 const sheet = computed(() => {
-  const { sheetId } = props.tab;
-  if (sheetId) {
-    const sheet = sheetStore.sheetById.get(sheetId);
+  const { sheetName } = props.tab;
+  if (sheetName) {
+    const sheet = sheetV1Store.getSheetByName(sheetName);
     if (sheet) {
       return sheet;
     }
   }
-  return unknown("SHEET");
+  return null;
 });
 </script>

@@ -18,7 +18,6 @@ export * from "./tab";
 export * from "./task";
 export * from "./policy";
 export * from "./sheet";
-export * from "./sheetV1";
 export * from "./pev2";
 export * from "./web-storage";
 export * from "./dom";

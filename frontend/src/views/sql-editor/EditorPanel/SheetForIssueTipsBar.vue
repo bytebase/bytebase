@@ -33,29 +33,29 @@
 </template>
 
 <script lang="ts" setup>
-import { useIssueStore, useSheetStore, useTabStore } from "@/store";
+import { useIssueStore, useSheetV1Store, useTabStore } from "@/store";
 import { Issue } from "@/types";
-import { getSheetIssueBacktracePayload } from "@/utils";
+import { getSheetIssueBacktracePayloadV1 } from "@/utils";
 import { NTooltip } from "naive-ui";
 import { shallowRef } from "vue";
 import { computed, ref, watch } from "vue";
 
 const tabStore = useTabStore();
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 const issueStore = useIssueStore();
 const tab = computed(() => tabStore.currentTab);
 const loading = ref(true);
 const issue = shallowRef<Issue>();
 
 const sheet = computed(() => {
-  const { sheetId } = tab.value;
-  if (!sheetId) return undefined;
-  return sheetStore.getSheetById(sheetId);
+  const { sheetName } = tab.value;
+  if (!sheetName) return undefined;
+  return sheetV1Store.getSheetByName(sheetName);
 });
 
 const payload = computed(() => {
   if (!sheet.value) return undefined;
-  return getSheetIssueBacktracePayload(sheet.value);
+  return getSheetIssueBacktracePayloadV1(sheet.value);
 });
 
 watch(
