@@ -136,7 +136,6 @@ import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import { converFromCEL } from "@/utils/issue/cel";
 
 interface LocalState {
-  showSelectDatabasePanel: boolean;
   // For creating
   projectId?: string;
   environmentId?: string;
@@ -150,7 +149,6 @@ interface LocalState {
 const { create, issue } = useIssueLogic();
 const databaseStore = useDatabaseStore();
 const state = reactive<LocalState>({
-  showSelectDatabasePanel: false,
   selectedDatabaseResourceList: [],
   maxRowCount: 1000,
   exportFormat: "CSV",
