@@ -234,8 +234,16 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 		stageCreate := api.StageCreate{}
 
 		specEnvironmentIDs := map[string]bool{}
-		registerEnvironmentID := func(environmentID string) {
-			specEnvironmentIDs[environmentID] = true
+		var stageEnvironmentID string
+		registerEnvironmentID := func(environmentID string) error {
+			if stageEnvironmentID == "" {
+				stageEnvironmentID = environmentID
+				return nil
+			}
+			if stageEnvironmentID != environmentID {
+				return errors.Errorf("expect only one environment in a stage, got %s and %s", stageEnvironmentID, environmentID)
+			}
+			return nil
 		}
 
 		for _, spec := range step.Specs {
@@ -273,7 +281,7 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 	return pipelineCreate, nil
 }
 
-func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.Plan_Spec, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.Plan_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
 			return nil, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
@@ -292,7 +300,7 @@ func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.
 	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *v1pb.Plan_Spec, c *v1pb.Plan_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *v1pb.Plan_Spec, c *v1pb.Plan_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	if c.Database == "" {
 		return nil, nil, errors.Errorf("database name is required")
 	}
@@ -318,7 +326,9 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, nil, errors.Errorf("environment ID not found %v", instance.EnvironmentID)
 	}
 
-	registerEnvironmentID(environment.ResourceID)
+	if err := registerEnvironmentID(environment.ResourceID); err != nil {
+		return nil, nil, err
+	}
 
 	if instance.Engine == db.MongoDB && c.Table == "" {
 		return nil, nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collection name missing for MongoDB")
@@ -436,7 +446,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	return taskCreates, nil, nil
 }
 
-func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *v1pb.Plan_Spec, c *v1pb.Plan_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *v1pb.Plan_Spec, c *v1pb.Plan_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	// possible target:
 	// 1. instances/{instance}/databases/{database}
 	instanceID, databaseName, err := getInstanceDatabaseID(c.Target)
@@ -463,7 +473,9 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, nil, errors.Errorf("database %q not found", databaseName)
 	}
 
-	registerEnvironmentID(database.EnvironmentID)
+	if err := registerEnvironmentID(database.EnvironmentID); err != nil {
+		return nil, nil, err
+	}
 
 	switch c.Type {
 	case v1pb.Plan_ChangeDatabaseConfig_BASELINE:
@@ -680,7 +692,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	}
 }
 
-func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *v1pb.Plan_Spec, c *v1pb.Plan_RestoreDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *v1pb.Plan_Spec, c *v1pb.Plan_RestoreDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	if c.Source == nil {
 		return nil, nil, errors.Errorf("missing source in restore database config")
 	}
@@ -709,7 +721,9 @@ func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store
 		return nil, nil, errors.Errorf("database %q is not in project %q", databaseName, project.ResourceID)
 	}
 
-	registerEnvironmentID(database.EnvironmentID)
+	if err := registerEnvironmentID(database.EnvironmentID); err != nil {
+		return nil, nil, err
+	}
 
 	var taskCreates []api.TaskCreate
 
