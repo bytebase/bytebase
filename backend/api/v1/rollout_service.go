@@ -232,7 +232,7 @@ func validateSteps() {
 }
 
 func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Plan_Step, project *store.ProjectMessage) (*api.PipelineCreate, error) {
-	// handle deploymentConfig
+	// FIXME: handle deploymentConfig
 	pipelineCreate := &api.PipelineCreate{}
 	for _, step := range steps {
 		stageCreate := api.StageCreate{}
