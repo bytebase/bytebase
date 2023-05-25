@@ -286,17 +286,17 @@ func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.
 
 	switch config := spec.Config.(type) {
 	case *v1pb.Plan_Spec_CreateDatabaseConfig:
-		return s.getTaskCreatesFromCreateDatabaseConfig(ctx, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s.store, s.licenseService, s.dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
-		return s.getTaskCreatesFromChangeDatabaseConfig(ctx, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromChangeDatabaseConfig(ctx, s.store, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
 	case *v1pb.Plan_Spec_RestoreDatabaseConfig:
-		return s.getTaskCreatesFromRestoreDatabaseConfig(ctx, spec, config.RestoreDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromRestoreDatabaseConfig(ctx, s.store, s.licenseService, s.dbFactory, spec, config.RestoreDatabaseConfig, project, registerEnvironmentID)
 	}
 
 	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *v1pb.Plan_Spec, c *v1pb.Plan_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	if c.Database == "" {
 		return nil, nil, errors.Errorf("database name is required")
 	}
@@ -304,7 +304,7 @@ func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Cont
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get instance id from %q", c.Target)
 	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -314,7 +314,7 @@ func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Cont
 	if instance.Engine == db.Oracle {
 		return nil, nil, echo.NewHTTPError(http.StatusBadRequest, "Creating Oracle database is not supported")
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -350,7 +350,7 @@ func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Cont
 
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
-			if !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
+			if !licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 			}
 		}
@@ -369,7 +369,7 @@ func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Cont
 			// For MySQL, we need to use different case of DatabaseName depends on the variable `lower_case_table_names`.
 			// https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
 			// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
-			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+			driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 			if err != nil {
 				log.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", zap.Error(err), zap.String("instance", instance.Title))
 				break
@@ -391,7 +391,7 @@ func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Cont
 		if err != nil {
 			return nil, err
 		}
-		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
+		sheet, err := s.CreateSheet(ctx, &api.SheetCreate{
 			CreatorID:  api.SystemBotID,
 			ProjectID:  project.UID,
 			Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
@@ -440,14 +440,14 @@ func (s *RolloutService) getTaskCreatesFromCreateDatabaseConfig(ctx context.Cont
 	return taskCreates, nil, nil
 }
 
-func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *v1pb.Plan_Spec, c *v1pb.Plan_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	// possible target:
 	// 1. instances/{instance}/databases/{database}
 	instanceID, databaseName, err := getInstanceDatabaseID(c.Target)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get instance database id from target %q", c.Target)
 	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
 	if err != nil {
@@ -456,7 +456,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 	if instance == nil {
 		return nil, nil, errors.Errorf("instance %q not found", instanceID)
 	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 	})
@@ -500,7 +500,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -538,7 +538,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -575,7 +575,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -638,7 +638,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to convert sheet id %q to int", sheetIDStr)
 		}
-		sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
+		sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetID}, api.SystemBotID)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet %q", sheetID)
 		}
@@ -684,7 +684,7 @@ func (s *RolloutService) getTaskCreatesFromChangeDatabaseConfig(ctx context.Cont
 	}
 }
 
-func (s *RolloutService) getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, spec *v1pb.Plan_Spec, c *v1pb.Plan_RestoreDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, spec *v1pb.Plan_Spec, c *v1pb.Plan_RestoreDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(environmentID string)) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	if c.Source == nil {
 		return nil, nil, errors.Errorf("missing source in restore database config")
 	}
@@ -692,14 +692,14 @@ func (s *RolloutService) getTaskCreatesFromRestoreDatabaseConfig(ctx context.Con
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get instance and database id from target %q", c.Target)
 	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
 	}
 	if instance == nil {
 		return nil, nil, errors.Errorf("instance %q not found", instanceID)
 	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 	})
@@ -726,13 +726,13 @@ func (s *RolloutService) getTaskCreatesFromRestoreDatabaseConfig(ctx context.Con
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get instance id from %q", c.CreateDatabaseConfig.Target)
 		}
-		targetInstance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &targetInstanceID})
+		targetInstance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &targetInstanceID})
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to find the instance with ID %q", targetInstanceID)
 		}
 
 		// task 1: create the database
-		createDatabaseTasks, _, err := s.getTaskCreatesFromCreateDatabaseConfig(ctx, spec, c.CreateDatabaseConfig, project, registerEnvironmentID)
+		createDatabaseTasks, _, err := getTaskCreatesFromCreateDatabaseConfig(ctx, s, licenseService, dbFactory, spec, c.CreateDatabaseConfig, project, registerEnvironmentID)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to create the database create task list")
 		}
