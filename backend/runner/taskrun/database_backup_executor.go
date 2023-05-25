@@ -61,7 +61,7 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *store.Tas
 	if err != nil {
 		return true, nil, err
 	}
-	backup, err := exec.store.GetBackupV2(ctx, payload.BackupID)
+	backup, err := exec.store.GetBackupByUID(ctx, payload.BackupID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to find backup with ID %d", payload.BackupID)
 	}
