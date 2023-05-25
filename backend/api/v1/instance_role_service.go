@@ -80,6 +80,21 @@ func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, request *v1
 		return nil, err
 	}
 
+	if !request.Refresh {
+		instanceUsers, err := s.store.ListInstanceUsers(ctx, &store.FindInstanceUserMessage{InstanceUID: instance.UID})
+		if err != nil {
+			return nil, err
+		}
+		response := &v1pb.ListInstanceRolesResponse{}
+		for _, u := range instanceUsers {
+			response.Roles = append(response.Roles, &v1pb.InstanceRole{
+				Name:      fmt.Sprintf("instances/%s/roles/%s", instance.ResourceID, u.Name),
+				RoleName:  u.Name,
+				Attribute: &u.Grant,
+			})
+		}
+	}
+
 	roleList, err := func() ([]*db.DatabaseRoleMessage, error) {
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
