@@ -47,6 +47,8 @@ type InstanceChangeHistoryMessage struct {
 	IssueProjectID string
 }
 
+const instanceChangeHistoryTruncateLength = 10240
+
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
 type FindInstanceChangeHistoryMessage struct {
 	ID         *int64
@@ -56,6 +58,9 @@ type FindInstanceChangeHistoryMessage struct {
 	Version    *string
 	Limit      *int
 	Offset     *int
+
+	// Truncate Statement, Schema, SchemaPrev unless ShowFull.
+	ShowFull bool
 }
 
 // UpdateInstanceChangeHistoryMessage is for updating an instance change history.
@@ -260,6 +265,7 @@ func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.Migr
 		Source:     find.Source,
 		Version:    find.Version,
 		Limit:      find.Limit,
+		ShowFull:   true,
 	}
 	if v := find.ID; v != nil {
 		id, err := strconv.ParseInt(*v, 10, 64)
@@ -323,7 +329,20 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, *v)
 	}
 
-	query := `
+	statementField := fmt.Sprintf("LEFT(instance_change_history.statement, %d)", instanceChangeHistoryTruncateLength)
+	if find.ShowFull {
+		statementField = "instance_change_history.statement"
+	}
+	schemaField := fmt.Sprintf("LEFT(instance_change_history.schema, %d)", instanceChangeHistoryTruncateLength)
+	if find.ShowFull {
+		schemaField = "instance_change_history.schema"
+	}
+	schemaPrevField := fmt.Sprintf("LEFT(instance_change_history.schema_prev, %d)", instanceChangeHistoryTruncateLength)
+	if find.ShowFull {
+		schemaPrevField = "instance_change_history.schema_prev"
+	}
+
+	query := fmt.Sprintf(`
 		SELECT
 			instance_change_history.id,
 			instance_change_history.row_status,
@@ -341,9 +360,9 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			instance_change_history.status,
 			instance_change_history.version,
 			instance_change_history.description,
-			instance_change_history.statement,
-			instance_change_history.schema,
-			instance_change_history.schema_prev,
+			%s,
+			%s,
+			%s,
 			instance_change_history.execution_duration_ns,
 			instance_change_history.payload,
 			COALESCE(instance.resource_id, ''),
@@ -351,7 +370,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		FROM instance_change_history
 		LEFT JOIN instance on instance.id = instance_change_history.instance_id
 		LEFT JOIN db on db.id = instance_change_history.database_id
-		WHERE ` + strings.Join(where, " AND ") + ` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`, statementField, schemaField, schemaPrevField)
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}

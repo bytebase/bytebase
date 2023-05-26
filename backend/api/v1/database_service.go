@@ -567,12 +567,16 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	limitPlusOne := limit + 1
 	offset := int(pageToken.Offset)
 
-	changeHistories, err := s.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+	find := &store.FindInstanceChangeHistoryMessage{
 		InstanceID: &instance.UID,
 		DatabaseID: &database.UID,
 		Limit:      &limitPlusOne,
 		Offset:     &offset,
-	})
+	}
+	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
+		find.ShowFull = true
+	}
+	changeHistories, err := s.store.ListInstanceChangeHistory(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
 	}
@@ -626,11 +630,15 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	changeHistory, err := s.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+	find := &store.FindInstanceChangeHistoryMessage{
 		InstanceID: &instance.UID,
 		DatabaseID: &database.UID,
 		ID:         &changeHistoryID,
-	})
+	}
+	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
+		find.ShowFull = true
+	}
+	changeHistory, err := s.store.ListInstanceChangeHistory(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
 	}
