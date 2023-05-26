@@ -73,11 +73,9 @@ func TestTenant(t *testing.T) {
 		a.NoError(err)
 		prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 	}
-	environments, err := ctl.getEnvironments()
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
-	testEnvironment, err := findEnvironment(environments, "Test")
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, testEnvironmentUID, err := ctl.getEnvironment(ctx, "test")
 	a.NoError(err)
 
 	// Add the provisioned instances.
@@ -86,7 +84,7 @@ func TestTenant(t *testing.T) {
 	for i, testInstanceDir := range testInstanceDirs {
 		instance, err := ctl.addInstance(api.InstanceCreate{
 			ResourceID:    generateRandomString("instance", 10),
-			EnvironmentID: testEnvironment.ID,
+			EnvironmentID: testEnvironmentUID,
 			Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 			Engine:        db.SQLite,
 			Host:          testInstanceDir,
@@ -97,7 +95,7 @@ func TestTenant(t *testing.T) {
 	for i, prodInstanceDir := range prodInstanceDirs {
 		instance, err := ctl.addInstance(api.InstanceCreate{
 			ResourceID:    generateRandomString("instance", 10),
-			EnvironmentID: prodEnvironment.ID,
+			EnvironmentID: prodEnvironmentUID,
 			Name:          fmt.Sprintf("%s-%d", prodInstanceName, i),
 			Engine:        db.SQLite,
 			Host:          prodInstanceDir,
@@ -373,11 +371,9 @@ func TestTenantVCS(t *testing.T) {
 				a.NoError(err)
 				prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 			}
-			environments, err := ctl.getEnvironments()
+			_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
-			testEnvironment, err := findEnvironment(environments, "Test")
-			a.NoError(err)
-			prodEnvironment, err := findEnvironment(environments, "Prod")
+			_, testEnvironmentUID, err := ctl.getEnvironment(ctx, "test")
 			a.NoError(err)
 
 			// Add the provisioned instances.
@@ -387,7 +383,7 @@ func TestTenantVCS(t *testing.T) {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
 						ResourceID:    generateRandomString("instance", 10),
-						EnvironmentID: testEnvironment.ID,
+						EnvironmentID: testEnvironmentUID,
 						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
 						Host:          testInstanceDir,
@@ -400,7 +396,7 @@ func TestTenantVCS(t *testing.T) {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
 						ResourceID:    generateRandomString("instance", 10),
-						EnvironmentID: prodEnvironment.ID,
+						EnvironmentID: prodEnvironmentUID,
 						Name:          fmt.Sprintf("%s-%d", prodInstanceName, i),
 						Engine:        db.SQLite,
 						Host:          prodInstanceDir,
@@ -552,17 +548,15 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	prodInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, prodInstanceName)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
-	testEnvironment, err := findEnvironment(environments, "Test")
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, testEnvironmentUID, err := ctl.getEnvironment(ctx, "test")
 	a.NoError(err)
 
 	// Add the provisioned instances.
 	testInstance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: testEnvironment.ID,
+		EnvironmentID: testEnvironmentUID,
 		Name:          testInstanceName,
 		Engine:        db.SQLite,
 		Host:          testInstanceDir,
@@ -570,7 +564,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.NoError(err)
 	prodInstance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
+		EnvironmentID: prodEnvironmentUID,
 		Name:          prodInstanceName,
 		Engine:        db.SQLite,
 		Host:          prodInstanceDir,
@@ -836,11 +830,9 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				a.NoError(err)
 				prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 			}
-			environments, err := ctl.getEnvironments()
+			_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
-			testEnvironment, err := findEnvironment(environments, "Test")
-			a.NoError(err)
-			prodEnvironment, err := findEnvironment(environments, "Prod")
+			_, testEnvironmentUID, err := ctl.getEnvironment(ctx, "test")
 			a.NoError(err)
 
 			// Add the provisioned instances.
@@ -850,7 +842,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
 						ResourceID:    generateRandomString("instance", 10),
-						EnvironmentID: testEnvironment.ID,
+						EnvironmentID: testEnvironmentUID,
 						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
 						Host:          testInstanceDir,
@@ -863,7 +855,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
 						ResourceID:    generateRandomString("instance", 10),
-						EnvironmentID: prodEnvironment.ID,
+						EnvironmentID: prodEnvironmentUID,
 						Name:          fmt.Sprintf("%s-%d", prodInstanceName, i),
 						Engine:        db.SQLite,
 						Host:          prodInstanceDir,
@@ -1162,9 +1154,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				a.NoError(err)
 				testInstanceDirs = append(testInstanceDirs, instanceDir)
 			}
-			environments, err := ctl.getEnvironments()
-			a.NoError(err)
-			testEnvironment, err := findEnvironment(environments, "Test")
+			_, testEnvironmentUID, err := ctl.getEnvironment(ctx, "test")
 			a.NoError(err)
 
 			// Add the provisioned instances.
@@ -1173,7 +1163,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
 						ResourceID:    generateRandomString("instance", 10),
-						EnvironmentID: testEnvironment.ID,
+						EnvironmentID: testEnvironmentUID,
 						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
 						Host:          testInstanceDir,
@@ -1446,9 +1436,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 				require.NoError(t, err)
 				testInstanceDirs = append(testInstanceDirs, instanceDir)
 			}
-			environments, err := ctl.getEnvironments()
-			require.NoError(t, err)
-			testEnvironment, err := findEnvironment(environments, "Test")
+			_, testEnvironmentUID, err := ctl.getEnvironment(ctx, "test")
 			require.NoError(t, err)
 
 			// Add the provisioned instances.
@@ -1457,7 +1445,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
 						ResourceID:    generateRandomString("instance", 10),
-						EnvironmentID: testEnvironment.ID,
+						EnvironmentID: testEnvironmentUID,
 						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
 						Host:          testInstanceDir,
