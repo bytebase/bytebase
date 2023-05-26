@@ -72,13 +72,14 @@ message QueryRow {
   repeated string values = 1;
 }
 
-enum Status {
-  STATUS_SUCCESS = 0;
-  STATUS_WARN = 1;
-  STATUS_ERROR = 2;
-}
-
 message Advice {
+  enum Status {
+    // Unspecified.
+    STATUS_UNSPECIFIED = 0;
+    SUCCESS = 1;
+    WARN = 2;
+    ERROR = 3;
+  }
   // The advice status.
   Status status = 1;
 

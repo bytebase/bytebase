@@ -5,45 +5,6 @@ import { Engine, engineFromJSON, engineToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
-export enum Status {
-  STATUS_SUCCESS = 0,
-  STATUS_WARN = 1,
-  STATUS_ERROR = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function statusFromJSON(object: any): Status {
-  switch (object) {
-    case 0:
-    case "STATUS_SUCCESS":
-      return Status.STATUS_SUCCESS;
-    case 1:
-    case "STATUS_WARN":
-      return Status.STATUS_WARN;
-    case 2:
-    case "STATUS_ERROR":
-      return Status.STATUS_ERROR;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Status.UNRECOGNIZED;
-  }
-}
-
-export function statusToJSON(object: Status): string {
-  switch (object) {
-    case Status.STATUS_SUCCESS:
-      return "STATUS_SUCCESS";
-    case Status.STATUS_WARN:
-      return "STATUS_WARN";
-    case Status.STATUS_ERROR:
-      return "STATUS_ERROR";
-    case Status.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export interface QueryRequest {
   /**
    * The name is the instance name to execute the query against.
@@ -89,7 +50,7 @@ export interface QueryRow {
 
 export interface Advice {
   /** The advice status. */
-  status: Status;
+  status: Advice_Status;
   /** The advice code. */
   code: number;
   /** The advice title. */
@@ -100,6 +61,52 @@ export interface Advice {
   line: number;
   /** The advice detail. */
   detail: string;
+}
+
+export enum Advice_Status {
+  /** STATUS_UNSPECIFIED - Unspecified. */
+  STATUS_UNSPECIFIED = 0,
+  SUCCESS = 1,
+  WARN = 2,
+  ERROR = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function advice_StatusFromJSON(object: any): Advice_Status {
+  switch (object) {
+    case 0:
+    case "STATUS_UNSPECIFIED":
+      return Advice_Status.STATUS_UNSPECIFIED;
+    case 1:
+    case "SUCCESS":
+      return Advice_Status.SUCCESS;
+    case 2:
+    case "WARN":
+      return Advice_Status.WARN;
+    case 3:
+    case "ERROR":
+      return Advice_Status.ERROR;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Advice_Status.UNRECOGNIZED;
+  }
+}
+
+export function advice_StatusToJSON(object: Advice_Status): string {
+  switch (object) {
+    case Advice_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
+    case Advice_Status.SUCCESS:
+      return "SUCCESS";
+    case Advice_Status.WARN:
+      return "WARN";
+    case Advice_Status.ERROR:
+      return "ERROR";
+    case Advice_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface PrettyRequest {
@@ -581,7 +588,7 @@ export const Advice = {
 
   fromJSON(object: any): Advice {
     return {
-      status: isSet(object.status) ? statusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? advice_StatusFromJSON(object.status) : 0,
       code: isSet(object.code) ? Number(object.code) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       content: isSet(object.content) ? String(object.content) : "",
@@ -592,7 +599,7 @@ export const Advice = {
 
   toJSON(message: Advice): unknown {
     const obj: any = {};
-    message.status !== undefined && (obj.status = statusToJSON(message.status));
+    message.status !== undefined && (obj.status = advice_StatusToJSON(message.status));
     message.code !== undefined && (obj.code = Math.round(message.code));
     message.title !== undefined && (obj.title = message.title);
     message.content !== undefined && (obj.content = message.content);

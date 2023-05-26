@@ -456,7 +456,7 @@
     - [QueryResult](#bytebase-v1-QueryResult)
     - [QueryRow](#bytebase-v1-QueryRow)
   
-    - [Status](#bytebase-v1-Status)
+    - [Advice.Status](#bytebase-v1-Advice-Status)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -6977,7 +6977,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [Status](#bytebase-v1-Status) |  | The advice status. |
+| status | [Advice.Status](#bytebase-v1-Advice-Status) |  | The advice status. |
 | code | [int32](#int32) |  | The advice code. |
 | title | [string](#string) |  | The advice title. |
 | content | [string](#string) |  | The advice content. |
@@ -7092,16 +7092,17 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
  
 
 
-<a name="bytebase-v1-Status"></a>
+<a name="bytebase-v1-Advice-Status"></a>
 
-### Status
+### Advice.Status
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| STATUS_SUCCESS | 0 |  |
-| STATUS_WARN | 1 |  |
-| STATUS_ERROR | 2 |  |
+| STATUS_UNSPECIFIED | 0 | Unspecified. |
+| SUCCESS | 1 |  |
+| WARN | 2 |  |
+| ERROR | 3 |  |
 
 
  
