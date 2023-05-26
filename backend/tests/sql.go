@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,9 +36,13 @@ func (ctl *controller) executeSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet,
 	return sqlResultSet, nil
 }
 
-func (ctl *controller) query(instance *api.Instance, databaseName, query string) (string, error) {
+func (ctl *controller) query(instance *v1pb.Instance, databaseName, query string) (string, error) {
+	instanceUID, err := strconv.Atoi(instance.Uid)
+	if err != nil {
+		return "", err
+	}
 	sqlResultSet, err := ctl.executeSQL(api.SQLExecute{
-		InstanceID:   instance.ID,
+		InstanceID:   instanceUID,
 		DatabaseName: databaseName,
 		Statement:    query,
 		Readonly:     true,
@@ -71,9 +76,14 @@ func (ctl *controller) adminExecuteSQL(sqlExecute api.SQLExecute) (*api.SQLResul
 	return sqlResultSet, nil
 }
 
-func (ctl *controller) adminQuery(instance *api.Instance, databaseName, query string) ([]api.SingleSQLResult, error) {
+func (ctl *controller) adminQuery(instance *v1pb.Instance, databaseName, query string) ([]api.SingleSQLResult, error) {
+	instanceUID, err := strconv.Atoi(instance.Uid)
+	if err != nil {
+		return nil, err
+	}
+
 	sqlResultSet, err := ctl.adminExecuteSQL(api.SQLExecute{
-		InstanceID:   instance.ID,
+		InstanceID:   instanceUID,
 		DatabaseName: databaseName,
 		Statement:    query,
 	})
