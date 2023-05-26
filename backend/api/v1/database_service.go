@@ -520,8 +520,81 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 }
 
 // ListChangeHistories lists the change histories of a database.
-func (s *DatabaseService) ListChangeHistories(context.Context, *v1pb.ListChangeHistoriesRequest) (*v1pb.ListChangeHistoriesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListChangeHistories not implemented")
+func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb.ListChangeHistoriesRequest) (*v1pb.ListChangeHistoriesResponse, error) {
+	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+
+	var pageToken storepb.PageToken
+	if request.PageToken != "" {
+		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+		}
+		if pageToken.Limit != request.PageSize {
+			return nil, status.Errorf(codes.InvalidArgument, "request page size does not match the page token")
+		}
+	} else {
+		pageToken.Limit = request.PageSize
+	}
+
+	limit := int(pageToken.Limit)
+	if limit == 0 {
+		limit = 50
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	limitPlusOne := limit + 1
+	offset := int(pageToken.Offset)
+
+	changeHistories, err := s.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		InstanceID: &instance.UID,
+		DatabaseID: &database.UID,
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
+	}
+
+	if len(changeHistories) == limitPlusOne {
+		nextPageToken, err := marshalPageToken(&storepb.PageToken{
+			Limit:  int32(limit),
+			Offset: int32(limit + offset),
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+		return &v1pb.ListChangeHistoriesResponse{
+			ChangeHistories: convertToChangeHistories(changeHistories[:limit]),
+			NextPageToken:   nextPageToken,
+		}, nil
+	}
+
+	// no subsequent pages
+	return &v1pb.ListChangeHistoriesResponse{
+		ChangeHistories: convertToChangeHistories(changeHistories),
+	}, nil
 }
 
 // GetChangeHistory gets a change history.
@@ -566,6 +639,14 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 		return nil, status.Errorf(codes.Internal, "expect to find one change history, got %d", len(changeHistory))
 	}
 	return convertToChangeHistory(changeHistory[0]), nil
+}
+
+func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) []*v1pb.ChangeHistory {
+	var changeHistories []*v1pb.ChangeHistory
+	for _, history := range h {
+		changeHistories = append(changeHistories, convertToChangeHistory(history))
+	}
+	return changeHistories
 }
 
 func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) *v1pb.ChangeHistory {
