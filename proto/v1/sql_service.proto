@@ -3,8 +3,8 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
-import "google/api/field_behavior.proto";
 import "google/api/client.proto";
+import "google/api/field_behavior.proto";
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
@@ -18,7 +18,7 @@ service SQLService {
   }
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
-    post: "/v1/{instance=instances/*}/sql:query"
+      post: "/v1/{instance=instances/*}/sql:query"
       body: "*"
     };
     option (google.api.method_signature) = "instance";
@@ -29,15 +29,15 @@ message QueryRequest {
   // The instance to execute the query against.
   // Format: instances/{instance}
   string instance = 1 [(google.api.field_behavior) = REQUIRED];
-  
+
   // The connection database name to execute the query against.
   // For PostgreSQL, it's required.
   // For other database engines, it's optional. Use empty string to execute against without specifying a database.
   string connection_database = 2;
-  
+
   // The SQL statement to execute.
   string statement = 3;
-  
+
   // The maximum number of rows to return.
   int32 limit = 4;
 }
@@ -45,7 +45,7 @@ message QueryRequest {
 message QueryResponse {
   // The query result.
   repeated QueryResult result = 1;
-  
+
   // The query advice.
   repeated Advice advice = 2;
 }
@@ -53,16 +53,16 @@ message QueryResponse {
 message QueryResult {
   // The column names of the query result.
   repeated string column_names = 1;
-  
+
   // The column types of the query result.
   repeated string column_type_names = 2;
 
   // The data of the query result.
   repeated string data = 3;
-  
+
   // The column is masked or not.
   repeated bool masked = 4;
-  
+
   // The error message if the query failed.
   string error = 5;
 }
@@ -73,20 +73,20 @@ message Advice {
   // - SUCCESS
   // - WARN
   // - ERROR
-  string status = 1; 
-  
+  string status = 1;
+
   // The advice code.
   int32 code = 2;
-  
+
   // The advice title.
   string title = 3;
-  
+
   // The advice content.
   string content = 4;
-  
+
   // The advice line number in the SQL statement.
   int32 line = 5;
-  
+
   // The advice details.
   string details = 6;
 }
