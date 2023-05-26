@@ -1,6 +1,7 @@
 <template>
   <NSelect
-    :value="user"
+    :multiple="multiple"
+    :value="value"
     :options="options"
     :filterable="true"
     :filter="filterByTitle"
@@ -10,7 +11,12 @@
     :placeholder="$t('principal.select')"
     class="bb-user-select"
     style="width: 12rem"
-    @update:value="$emit('update:user', $event)"
+    @update:value="
+      (event) => {
+        $emit('update:user', event);
+        $emit('update:users', event);
+      }
+    "
   />
 </template>
 
@@ -42,7 +48,9 @@ interface UserSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
+    multiple: boolean;
     user?: string;
+    users?: string[];
     project?: string;
     includeAll?: boolean;
     includeSystemBot?: boolean;
@@ -54,7 +62,9 @@ const props = withDefaults(
     filter?: (user: User, index: number) => boolean;
   }>(),
   {
+    multiple: false,
     user: undefined,
+    users: undefined,
     project: undefined,
     includeAll: false,
     includeSystemBot: false,
@@ -76,11 +86,20 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (event: "update:user", value: string | undefined): void;
+  (event: "update:users", value: string[]): void;
 }>();
 
 const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const userStore = useUserStore();
+
+const value = computed(() => {
+  if (props.multiple) {
+    return props.users || [];
+  } else {
+    return props.user;
+  }
+});
 
 const prepare = () => {
   if (props.project && String(props.project) !== String(UNKNOWN_ID)) {
@@ -253,9 +272,13 @@ const resetInvalidSelection = () => {
   }
 };
 
-watch([() => props.user, combinedUserList], resetInvalidSelection, {
-  immediate: true,
-});
+watch(
+  [() => props.user, props.users, combinedUserList],
+  resetInvalidSelection,
+  {
+    immediate: true,
+  }
+);
 </script>
 
 <style>
