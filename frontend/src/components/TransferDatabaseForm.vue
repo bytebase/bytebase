@@ -77,7 +77,6 @@ const emit = defineEmits<{
   (e: "dismiss"): void;
 }>();
 
-// const legacyDatabaseStore = useDatabaseStore();
 const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 

@@ -963,8 +963,9 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return useDatabaseStore().getDatabaseById(idFromSlug(slug))
-                      .name;
+                    return useDatabaseV1Store().getDatabaseByUID(
+                      String(idFromSlug(slug))
+                    ).databaseName;
                   },
                   allowBookmark: true,
                 },
