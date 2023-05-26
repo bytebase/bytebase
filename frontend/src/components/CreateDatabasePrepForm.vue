@@ -40,7 +40,7 @@
           v-if="isDbNameTemplateMode"
           :project="project"
           :name="state.databaseName"
-          :labels="state.labelList"
+          :labels="state.labels"
         />
       </div>
 
@@ -77,7 +77,7 @@
         v-if="isTenantProject"
         ref="labelForm"
         :project="project"
-        :labels="state.labelList"
+        :labels="state.labels"
         filter="required"
       />
 
@@ -142,7 +142,7 @@
         v-if="isTenantProject"
         class="w-full"
         :project="project"
-        :labels="state.labelList"
+        :labels="state.labels"
         filter="optional"
       />
 
@@ -253,7 +253,6 @@ import {
   Backup,
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
-  DatabaseLabel,
   CreateDatabaseContext,
   UNKNOWN_ID,
   PITRContext,
@@ -288,7 +287,7 @@ interface LocalState {
   environmentId?: string;
   instanceId?: string;
   instanceRole?: string;
-  labelList: DatabaseLabel[];
+  labels: Record<string, string>;
   databaseName: string;
   tableName: string;
   characterSet: string;
@@ -357,7 +356,7 @@ const state = reactive<LocalState>({
   projectId: props.projectId,
   environmentId: props.environmentId,
   instanceId: props.instanceId,
-  labelList: [],
+  labels: {},
   tableName: "",
   characterSet: "",
   collation: "",
@@ -459,7 +458,7 @@ const validDatabaseOwnerName = computed((): boolean => {
 
 useDBNameTemplateInputState(project, {
   databaseName: toRef(state, "databaseName"),
-  labels: toRef(state, "labelList"),
+  labels: toRef(state, "labels"),
 });
 
 const selectProject = (projectId: string) => {
@@ -519,7 +518,12 @@ const create = async () => {
     }
   }
   // Do not submit non-selected optional labels
-  const labelList = state.labelList.filter((label) => !!label.value);
+  const labels = Object.keys(state.labels)
+    .map((key) => {
+      const value = state.labels[key];
+      return { key, value };
+    })
+    .filter((kv) => !!kv.value);
 
   const createDatabaseContext: CreateDatabaseContext = {
     instanceId,
@@ -533,7 +537,7 @@ const create = async () => {
       state.collation ||
       defaultCollationOfEngineV1(selectedInstance.value.engine),
     cluster: state.cluster,
-    labels: JSON.stringify(labelList),
+    labels: JSON.stringify(labels),
   };
 
   if (props.backup) {
@@ -590,22 +594,14 @@ const create = async () => {
 // update `state.labelList` when selected Environment changed
 watchEffect(() => {
   const envId = state.environmentId;
-  const { labelList } = state;
+  const { labels } = state;
   const key = "bb.environment";
-  const index = labelList.findIndex((label) => label.key === key);
   if (envId) {
     const env = useEnvironmentV1Store().getEnvironmentByUID(envId);
     const resourceId = extractEnvironmentResourceName(env.name);
-    if (index >= 0) {
-      labelList[index].value = resourceId;
-    } else {
-      labelList.unshift({
-        key,
-        value: resourceId,
-      });
-    }
+    labels[key] = resourceId;
   } else {
-    if (index >= 0) labelList.splice(index, 1);
+    delete labels[key];
   }
 });
 </script>
