@@ -143,9 +143,8 @@ export interface Plan_CreateDatabaseConfig_LabelsEntry {
 export interface Plan_ChangeDatabaseConfig {
   /**
    * The resource name of the target.
-   * Format: projects/{project}/logicalDatabases/{ldb1}.
-   * Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}.
-   * Format: instances/{xxx}/databases/{db1}.
+   * Format: instances/{instance-id}/databases/{database-name}.
+   * Format: projects/{project}/deploymentConfig.
    */
   target: string;
   /**
