@@ -21,7 +21,7 @@ import {
 } from "@/store";
 import { hasWorkspacePermissionV1 } from "../role";
 import { Instance } from "@/types/proto/v1/instance_service";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine, State } from "@/types/proto/v1/common";
 import { semverCompare } from "../util";
 
 export const databaseV1Slug = (db: ComposedDatabase) => {
@@ -80,6 +80,16 @@ export const sortDatabaseV1ListByEnvironmentV1 = (
 export const isPITRDatabaseV1 = (db: ComposedDatabase): boolean => {
   // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
   return !!db.databaseName.match(/^(.+?)_pitr_(\d+)(_del)?$/);
+};
+
+export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
+  if (db.instanceEntity.state === State.DELETED) {
+    return true;
+  }
+  if (db.instanceEntity.environmentEntity.state === State.DELETED) {
+    return true;
+  }
+  return false;
 };
 
 export const isDatabaseV1Accessible = (

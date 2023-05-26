@@ -17,6 +17,7 @@ import {
 import {
   Database,
   ListDatabasesRequest,
+  UpdateDatabaseRequest,
 } from "@/types/proto/v1/database_service";
 import {
   extractDatabaseResourceName,
@@ -90,6 +91,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     await fetchDatabaseByUID(uid);
     return getDatabaseByUID(uid);
   };
+  const updateDatabase = async (params: UpdateDatabaseRequest) => {
+    const updated = await databaseServiceClient.updateDatabase(params);
+    const [composed] = await upsertDatabaseMap([updated]);
+
+    return composed;
+  };
 
   return {
     databaseList,
@@ -99,6 +106,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     fetchDatabaseByUID,
     getDatabaseByUID,
     getOrFetchDatabaseByUID,
+    updateDatabase,
   };
 });
 

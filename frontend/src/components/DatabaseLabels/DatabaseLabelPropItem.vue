@@ -46,25 +46,25 @@
 <script lang="ts" setup>
 import { nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { Database, LabelKeyType, LabelValueType } from "../../types";
+import { ComposedDatabase } from "../../types";
 import { LABEL_VALUE_EMPTY, MAX_LABEL_VALUE_LENGTH } from "../../utils";
 
 type LocalState = {
   editing: boolean;
-  value: LabelValueType | undefined;
+  value: string | undefined;
   error: string | undefined;
   changed: boolean;
 };
 
 const props = defineProps<{
-  labelKey: LabelKeyType;
-  value: LabelValueType | undefined;
-  database: Database;
+  labelKey: string;
+  value: string | undefined;
+  database: ComposedDatabase;
   allowEdit: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: "update:value", value: LabelValueType): void;
+  (e: "update:value", value: string): void;
 }>();
 
 const { t } = useI18n();

@@ -4,6 +4,7 @@
       <div
         class="flex items-center text-sm"
         :class="classes"
+        v-bind="$attrs"
         @click.stop.prevent="gotoSQLEditor"
       >
         <span v-if="label" class="mr-1">{{ $t("sql-editor.self") }}</span>
