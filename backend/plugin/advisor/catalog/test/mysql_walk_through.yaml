@@ -4,6 +4,7 @@
     type: 407
     content: '[types:1292]Incorrect datetime value: '''''
     line: 1
+    payload: null
 - statement: |-
     CREATE TABLE t(a TEXT);
     ALTER TABLE t ALTER COLUMN a SET DEFAULT '1';
@@ -12,12 +13,14 @@
     type: 407
     content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
     line: 2
+    payload: null
 - statement: '      CREATE TABLE t(a TEXT DEFAULT ''1'')'
   want: null
   err:
     type: 407
     content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
     line: 1
+    payload: null
 - statement: |-
     CREATE TABLE t(a INT NOT NULL);
     ALTER TABLE t ALTER COLUMN a SET DEFAULT NULL;
@@ -26,72 +29,84 @@
     type: 406
     content: Invalid default value for column `a`
     line: 2
+    payload: null
 - statement: '      CREATE TABLE t(a INT NOT NULL DEFAULT NULL)'
   want: null
   err:
     type: 406
     content: Invalid default value for column `a`
     line: 1
+    payload: null
 - statement: '      CREATE TABLE t(a int ON UPDATE NOW())'
   want: null
   err:
     type: 405
     content: Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP
     line: 1
+    payload: null
 - statement: '      CREATE TABLE t(a int auto_increment, b int auto_increment);'
   want: null
   err:
     type: 404
     content: There can be only one auto column for table `t`
     line: 1
+    payload: null
 - statement: '      CREATE TABLE t as select * from t1;'
   want: null
   err:
     type: 303
     content: Disallow the CREATE TABLE AS statement but "CREATE TABLE t as select * from t1;" uses
     line: 1
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tCREATE INDEX idx_c on t(c);\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
     line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t MODIFY COLUMN c int;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
     line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t CHANGE COLUMN c aa int;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
     line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t DROP COLUMN c;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
     line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t RENAME COLUMN c TO cc;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
     line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t RENAME COLUMN c TO cc;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
     line: 3
+    payload: null
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t ALTER COLUMN c DROP DEFAULT;\n\t\t\t"
   want: null
   err:
     type: 402
     content: Column `c` does not exist in table `t`
     line: 3
+    payload: null
 - statement: |-
     ALTER DATABASE CHARACTER SET = utf8mb4;
     ALTER DATABASE test COLLATE utf8mb4_polish_ci;
@@ -101,6 +116,7 @@
         - name: ""
           tables: []
           views: []
+          functions: []
     characterset: utf8mb4
     collation: utf8mb4_polish_ci
     extensions: []
@@ -317,6 +333,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -435,6 +452,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -488,6 +506,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -502,6 +521,7 @@
         - name: ""
           tables: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -512,6 +532,7 @@
     type: 302
     content: Table `t1` does not exist
     line: 1
+    payload: null
 - statement: |-
     CREATE TABLE t(a int);
     RENAME TABLE t to other_db.t1
@@ -521,6 +542,7 @@
         - name: ""
           tables: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -554,6 +576,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -567,6 +590,7 @@
     type: 202
     content: Database `test` is deleted
     line: 3
+    payload: null
 - statement: |-
     CREATE TABLE t(
       a int PRIMARY KEY DEFAULT 1,
@@ -693,6 +717,7 @@
               comment: This is a table comment
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -811,6 +836,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -864,6 +890,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
