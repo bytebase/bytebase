@@ -367,6 +367,7 @@ func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.V
 	histories, err := storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 		// Metadata database has instanceID nil;
 		InstanceID: nil,
+		ShowFull:   true,
 	})
 	if err != nil {
 		return semver.Version{}, errors.Wrap(err, "failed to get migration history")
@@ -529,6 +530,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 		h, err := storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 			// Metadata database has instanceID nil;
 			InstanceID: nil,
+			ShowFull:   true,
 		})
 		if err != nil {
 			return err
