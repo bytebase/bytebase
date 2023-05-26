@@ -197,7 +197,8 @@ func (d *DatabaseState) convertToSchemaMetadataList() []*storepb.SchemaMetadata 
 			Name:   schema.name,
 			Tables: schema.convertToTableMetadataList(),
 			// TODO(rebelice): convert views if needed.
-			Views: []*storepb.ViewMetadata{},
+			Views:     []*storepb.ViewMetadata{},
+			Functions: []*storepb.FunctionMetadata{},
 		}
 
 		result = append(result, schemaMeta)
