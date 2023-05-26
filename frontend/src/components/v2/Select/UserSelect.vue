@@ -11,12 +11,7 @@
     :placeholder="$t('principal.select')"
     class="bb-user-select"
     style="width: 12rem"
-    @update:value="
-      (event) => {
-        $emit('update:user', event);
-        $emit('update:users', event);
-      }
-    "
+    @update:value="handleValueUpdated"
   />
 </template>
 
@@ -203,6 +198,14 @@ const combinedUserList = computed(() => {
 
   return list;
 });
+
+const handleValueUpdated = () => {
+  if (props.multiple) {
+    emit("update:users", value.value as string[]);
+  } else {
+    emit("update:user", value.value as string);
+  }
+};
 
 const renderAvatar = (user: User) => {
   if (user.name === UNKNOWN_USER_NAME) {
