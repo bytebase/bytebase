@@ -335,7 +335,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 		if c.Database == "" {
 			return nil, errors.Errorf("database name is required")
-
 		}
 		if instance.Engine == db.Snowflake {
 			// Snowflake needs to use upper case of DatabaseName.
