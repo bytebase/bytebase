@@ -38,6 +38,7 @@ const (
 	secretNamePrefix             = "secrets/"
 	webhookIDPrefix              = "webhooks/"
 	sheetIDPrefix                = "sheets/"
+	databaseGroupNamePrefix      = "databaseGroups/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
