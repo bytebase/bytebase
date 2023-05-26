@@ -7,7 +7,7 @@ import {
   useCurrentUserV1,
   useDatabaseStore,
   useIssueStore,
-  useSheetStore,
+  useSheetV1Store,
   useTaskStore,
   useUIStateStore,
 } from "@/store";
@@ -41,6 +41,15 @@ import {
 } from "@/utils";
 import { maybeApplyRollbackParams } from "@/plugins/issue/logic/initialize/standard";
 import { t } from "@/plugins/i18n";
+import {
+  getSheetPathByLegacyProject,
+  getProjectPathByLegacyProject,
+} from "@/store/modules/v1/common";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 
 export const useCommonLogic = () => {
   const { create, issue, selectedTask, createIssue, onStatusChanged, dialog } =
@@ -50,7 +59,7 @@ export const useCommonLogic = () => {
   const databaseStore = useDatabaseStore();
   const issueStore = useIssueStore();
   const taskStore = useTaskStore();
-  const sheetStore = useSheetStore();
+  const sheetV1Store = useSheetV1Store();
 
   const patchIssue = (
     issuePatch: IssuePatch,
@@ -201,17 +210,22 @@ export const useCommonLogic = () => {
       if (patchingTaskList.length === 0) return;
 
       // Create a new sheet instead of reusing the old one.
-      const sheet = await sheetStore.createSheet({
-        projectId: issueEntity.project.id,
-        name: uuidv4(),
-        statement: newStatement,
-        visibility: "PROJECT",
-        source: "BYTEBASE_ARTIFACT",
-        payload: getBacktracePayloadWithIssue(issue.value as Issue),
-      });
+      const sheet = await sheetV1Store.createSheet(
+        getProjectPathByLegacyProject(issueEntity.project),
+        {
+          title: uuidv4(),
+          content: new TextEncoder().encode(newStatement),
+          visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+          source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+          type: Sheet_Type.TYPE_SQL,
+          payload: JSON.stringify(
+            getBacktracePayloadWithIssue(issue.value as Issue)
+          ),
+        }
+      );
 
       const patchRequestList = patchingTaskList.map((task) => {
-        patchTask(task.id, { sheetId: sheet.id });
+        patchTask(task.id, { sheetId: sheetV1Store.getSheetUid(sheet.name) });
       });
       await Promise.allSettled(patchRequestList);
     }
@@ -247,22 +261,30 @@ export const useCommonLogic = () => {
       };
       // Create a new sheet to save statement.
       if (!taskCreate.sheetId || taskCreate.sheetId === UNKNOWN_ID) {
-        const sheet = await sheetStore.createSheet({
-          projectId: issueCreate.projectId,
-          name: issueCreate.name + " - " + db.name,
-          statement: statement,
-          visibility: "PROJECT",
-          source: "BYTEBASE_ARTIFACT",
-          payload: {},
-        });
-        migrationDetail.sheetId = sheet.id;
+        const sheet = await sheetV1Store.createSheet(
+          getProjectPathByLegacyProject(db.project),
+          {
+            title: issueCreate.name + " - " + db.name,
+            content: new TextEncoder().encode(statement),
+            visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+            source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+            type: Sheet_Type.TYPE_SQL,
+            payload: "{}",
+          }
+        );
+        migrationDetail.sheetId = sheetV1Store.getSheetUid(sheet.name);
       } else {
-        const sheetId = taskCreate.sheetId;
-        const sheet = await sheetStore.getOrFetchSheetById(sheetId);
-        if (sheet.statement.length === sheet.size) {
-          await sheetStore.patchSheetById({
-            id: sheetId,
-            statement: statement,
+        const sheetName = getSheetPathByLegacyProject(
+          db.project,
+          taskCreate.sheetId
+        );
+        const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);
+        if (
+          new TextDecoder().decode(sheet?.content).length === sheet?.contentSize
+        ) {
+          await sheetV1Store.patchSheet({
+            name: sheetName,
+            content: new TextEncoder().encode(statement),
           });
         }
       }

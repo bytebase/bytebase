@@ -120,7 +120,6 @@
 </template>
 
 <script lang="ts" setup>
-import { isNumber } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { onMounted, reactive, watch, computed, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -128,7 +127,6 @@ import {
   hasFeature,
   pushNotification,
   useDBSchemaStore,
-  useSheetStore,
   useUIStateStore,
   useDatabaseStore,
   useSheetV1Store,
@@ -138,7 +136,6 @@ import {
   Database,
   dialectOfEngine,
   Issue,
-  SheetCreate,
   SQLDialect,
   Task,
   TaskCreate,
@@ -154,7 +151,15 @@ import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 import UploadProgressButton from "../misc/UploadProgressButton.vue";
-import { getSheetPathByLegacyProject } from "@/store/modules/v1/common";
+import {
+  getSheetPathByLegacyProject,
+  getProjectPathByLegacyProject,
+} from "@/store/modules/v1/common";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 
 interface LocalState {
   taskSheetName?: string;
@@ -196,7 +201,6 @@ const { t } = useI18n();
 const overrideSQLDialog = useDialog();
 const uiStateStore = useUIStateStore();
 const dbSchemaStore = useDBSchemaStore();
-const sheetStore = useSheetStore();
 const sheetV1Store = useSheetV1Store();
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -482,39 +486,31 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
   }
 
   state.isUploadingFile = true;
-  const projectId = selectedDatabase.value.projectId;
+  const projectName = getProjectPathByLegacyProject(
+    selectedDatabase.value.project
+  );
   const { filename, content: statement } = await handleUploadFileEvent(
     event,
     100
   );
 
   const uploadStatementAsSheet = async (statement: string) => {
-    const sheetCreate: SheetCreate = {
-      projectId: projectId,
-      name: filename,
-      statement,
-      visibility: "PROJECT",
-      source: "BYTEBASE_ARTIFACT",
-      payload: {},
-    };
+    let payload = {};
     if (!create.value) {
-      sheetCreate.payload = getBacktracePayloadWithIssue(issue.value as Issue);
+      payload = getBacktracePayloadWithIssue(issue.value as Issue);
     }
-    const sheet = await sheetStore.createSheet(sheetCreate, {
-      timeout: 10 * 60 * 1000, // 10 minutes
-      onUploadProgress: (event) => {
-        console.debug("upload progress", event);
-        const progress = event.progress;
-        if (isNumber(progress)) {
-          tick(progress * 100);
-        } else {
-          tick(-1); // -1 to show a simple spinner instead of progress
-        }
-      },
+    // TODO: upload process
+    const sheet = await sheetV1Store.createSheet(projectName, {
+      title: filename,
+      content: new TextEncoder().encode(statement),
+      visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+      source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+      type: Sheet_Type.TYPE_SQL,
+      payload: JSON.stringify(payload),
     });
     state.isUploadingFile = false;
 
-    updateSheetId(sheet.id);
+    updateSheetId(sheetV1Store.getSheetUid(sheet.name));
     await updateStatement(statement);
     state.editing = false;
     if (selectedTask.value) {

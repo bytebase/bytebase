@@ -1,11 +1,18 @@
 import { defineStore } from "pinia";
+import { computed, unref, watchEffect } from "vue";
 import { sheetServiceClient } from "@/grpcweb";
 import { isEqual, isUndefined, isEmpty } from "lodash-es";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Sheet, SheetOrganizer } from "@/types/proto/v1/sheet_service";
 import { useTabStore } from "../tab";
 import { useCurrentUserV1 } from "../auth";
-import { getUserEmailFromIdentifier, projectNamePrefix } from "./common";
+import {
+  getUserEmailFromIdentifier,
+  projectNamePrefix,
+  sheetNamePrefix,
+  getProjectAndSheetId,
+} from "./common";
 import { isSheetReadableV1 } from "@/utils";
+import { UNKNOWN_ID, SheetId, MaybeRef, SYSTEM_BOT_EMAIL } from "@/types";
 
 interface SheetState {
   sheetByName: Map<string, Sheet>;
@@ -67,6 +74,21 @@ export const useSheetV1Store = defineStore("sheet_v1", {
   },
 
   actions: {
+    getSheetUid(name: string): number {
+      const [_, sheetId] = getProjectAndSheetId(name);
+      if (Number.isNaN(sheetId)) {
+        return UNKNOWN_ID;
+      }
+      return Number(sheetId);
+    },
+    getProjectResourceId(name: string): string {
+      const [projectId, _] = getProjectAndSheetId(name);
+      return projectId;
+    },
+    getSheetParentPath(name: string): string {
+      const projectId = this.getProjectResourceId(name);
+      return `${projectNamePrefix}${projectId}`;
+    },
     setSheetList(sheets: Sheet[]) {
       for (const sheet of sheets) {
         this.sheetByName.set(sheet.name, sheet);
@@ -89,8 +111,12 @@ export const useSheetV1Store = defineStore("sheet_v1", {
         return;
       }
 
+      const updateMask = getUpdateMaskForSheet(exist, sheet);
+      if (updateMask.length === 0) {
+        return exist;
+      }
       const updatedSheet = await this.patchSheetWithUpdateMask(
-        getUpdateMaskForSheet(exist, sheet),
+        updateMask,
         sheet
       );
       this.sheetByName.set(updatedSheet.name, updatedSheet);
@@ -121,6 +147,29 @@ export const useSheetV1Store = defineStore("sheet_v1", {
     getSheetByName(name: string) {
       const sheet = this.sheetByName.get(name);
       return sheet;
+    },
+    getSheetByUid(uid: SheetId) {
+      for (const [name, sheet] of this.sheetByName) {
+        if (`${this.getSheetUid(name)}` === `${uid}`) {
+          return sheet;
+        }
+      }
+    },
+    async getOrFetchSheetByUid(uid: SheetId) {
+      const sheet = this.getSheetByUid(uid);
+      if (sheet) {
+        return sheet;
+      }
+
+      try {
+        const sheet = await sheetServiceClient.getSheet({
+          name: `${projectNamePrefix}-/${sheetNamePrefix}${uid}`,
+        });
+        this.sheetByName.set(sheet.name, sheet);
+        return sheet;
+      } catch {
+        return;
+      }
     },
     async getOrFetchSheetByName(name: string) {
       const storedSheet = this.sheetByName.get(name);
@@ -164,6 +213,13 @@ export const useSheetV1Store = defineStore("sheet_v1", {
         parent: project,
       });
     },
+    async upsertSheetOrganizer(organizer: Partial<SheetOrganizer>) {
+      await sheetServiceClient.updateSheetOrganizer({
+        organizer,
+        // for now we only support change the `starred` field.
+        updateMask: ["starred"],
+      });
+    },
   },
 });
 
@@ -200,4 +256,17 @@ const getUpdateMaskForSheet = (
     updateMask.push("payload");
   }
   return updateMask;
+};
+
+export const useSheetStatementByUid = (sheetId: MaybeRef<SheetId>) => {
+  const store = useSheetV1Store();
+  watchEffect(async () => {
+    await store.getOrFetchSheetByUid(unref(sheetId));
+  });
+
+  return computed(() => {
+    return new TextDecoder().decode(
+      store.getSheetByUid(unref(sheetId))?.content
+    );
+  });
 };

@@ -97,9 +97,15 @@ export const getDatabasePathByLegacyDatabase = (database: Database): string => {
   )}/${databaseNamePrefix}${database.name}`;
 };
 
+export const getProjectPathByLegacyProject = (project: Project): string => {
+  return `${projectNamePrefix}${project.resourceId}`;
+};
+
 export const getSheetPathByLegacyProject = (
   project: Project,
   sheetId: SheetId
 ): string => {
-  return `${projectNamePrefix}${project.resourceId}/${sheetNamePrefix}${sheetId}`;
+  return `${getProjectPathByLegacyProject(
+    project
+  )}/${sheetNamePrefix}${sheetId}`;
 };

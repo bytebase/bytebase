@@ -24,7 +24,6 @@ export * from "./principal";
 export * from "./project";
 export * from "./repository";
 export * from "./router";
-export * from "./sheet";
 export * from "./stage";
 export * from "./sql";
 export * from "./sqlEditor";

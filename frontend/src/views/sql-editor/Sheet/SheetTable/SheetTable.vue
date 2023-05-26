@@ -49,12 +49,12 @@ import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { getProjectAndSheetId } from "@/store/modules/v1/common";
 import { SheetViewMode } from "../types";
 import Dropdown from "./Dropdown.vue";
 import { useRouter } from "vue-router";
 import { sheetSlugV1 } from "@/utils";
-import { useUserStore } from "@/store";
+import { useUserStore, useSheetV1Store } from "@/store";
+import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 
 const props = withDefaults(
   defineProps<{
@@ -74,6 +74,7 @@ defineEmits<{
 
 const { t } = useI18n();
 const router = useRouter();
+const sheetV1Store = useSheetV1Store();
 
 const showCreator = computed(() => {
   return props.view === "shared" || props.view === "starred";
@@ -120,7 +121,15 @@ const headers = computed(() => {
 });
 
 const getValueList = (sheet: Sheet) => {
-  const [projName, _] = getProjectAndSheetId(sheet.name);
+  const projName = sheetV1Store.getProjectResourceId(sheet.name);
+  let visibility = t("sql-editor.private");
+  switch (sheet.visibility) {
+    case Sheet_Visibility.VISIBILITY_PROJECT:
+      visibility = t("common.project");
+      break;
+    case Sheet_Visibility.VISIBILITY_PUBLIC:
+      visibility = t("sql-editor.public");
+  }
   const valueList = [
     {
       key: "name",
@@ -132,7 +141,7 @@ const getValueList = (sheet: Sheet) => {
     },
     {
       key: "visibility",
-      value: sheet.visibility,
+      value: visibility,
     },
   ];
 

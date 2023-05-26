@@ -49,6 +49,39 @@ export interface UpdateSheetRequest {
   updateMask?: string[];
 }
 
+export interface UpdateSheetOrganizerRequest {
+  /**
+   * The organizer to update.
+   *
+   * The organizer's `sheet` field is used to identify the sheet.
+   * Format: projects/{project}/sheets/{sheet}
+   */
+  organizer?: SheetOrganizer;
+  /**
+   * The list of fields to be updated.
+   * Fields are specified relative to the sheet.
+   * (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
+   * Only support update the following fields for now:
+   * - `title`
+   * - `statement`
+   * - `starred`
+   * - `visibility`
+   */
+  updateMask?: string[];
+}
+
+export interface SheetOrganizer {
+  /**
+   * The name of the sheet.
+   * Format: projects/{project}/sheets/{sheet}
+   */
+  sheet: string;
+  /** starred means if the sheet is starred. */
+  starred: boolean;
+  /** pinned means if the sheet is pinned. */
+  pinned: boolean;
+}
+
 export interface DeleteSheetRequest {
   /**
    * The name of the sheet to delete.
@@ -502,6 +535,164 @@ export const UpdateSheetRequest = {
     const message = createBaseUpdateSheetRequest();
     message.sheet = (object.sheet !== undefined && object.sheet !== null) ? Sheet.fromPartial(object.sheet) : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateSheetOrganizerRequest(): UpdateSheetOrganizerRequest {
+  return { organizer: undefined, updateMask: undefined };
+}
+
+export const UpdateSheetOrganizerRequest = {
+  encode(message: UpdateSheetOrganizerRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.organizer !== undefined) {
+      SheetOrganizer.encode(message.organizer, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateSheetOrganizerRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateSheetOrganizerRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.organizer = SheetOrganizer.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateSheetOrganizerRequest {
+    return {
+      organizer: isSet(object.organizer) ? SheetOrganizer.fromJSON(object.organizer) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateSheetOrganizerRequest): unknown {
+    const obj: any = {};
+    message.organizer !== undefined &&
+      (obj.organizer = message.organizer ? SheetOrganizer.toJSON(message.organizer) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateSheetOrganizerRequest>): UpdateSheetOrganizerRequest {
+    return UpdateSheetOrganizerRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<UpdateSheetOrganizerRequest>): UpdateSheetOrganizerRequest {
+    const message = createBaseUpdateSheetOrganizerRequest();
+    message.organizer = (object.organizer !== undefined && object.organizer !== null)
+      ? SheetOrganizer.fromPartial(object.organizer)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
+function createBaseSheetOrganizer(): SheetOrganizer {
+  return { sheet: "", starred: false, pinned: false };
+}
+
+export const SheetOrganizer = {
+  encode(message: SheetOrganizer, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.sheet !== "") {
+      writer.uint32(10).string(message.sheet);
+    }
+    if (message.starred === true) {
+      writer.uint32(16).bool(message.starred);
+    }
+    if (message.pinned === true) {
+      writer.uint32(24).bool(message.pinned);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SheetOrganizer {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSheetOrganizer();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sheet = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.starred = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.pinned = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SheetOrganizer {
+    return {
+      sheet: isSet(object.sheet) ? String(object.sheet) : "",
+      starred: isSet(object.starred) ? Boolean(object.starred) : false,
+      pinned: isSet(object.pinned) ? Boolean(object.pinned) : false,
+    };
+  },
+
+  toJSON(message: SheetOrganizer): unknown {
+    const obj: any = {};
+    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.starred !== undefined && (obj.starred = message.starred);
+    message.pinned !== undefined && (obj.pinned = message.pinned);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SheetOrganizer>): SheetOrganizer {
+    return SheetOrganizer.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SheetOrganizer>): SheetOrganizer {
+    const message = createBaseSheetOrganizer();
+    message.sheet = object.sheet ?? "";
+    message.starred = object.starred ?? false;
+    message.pinned = object.pinned ?? false;
     return message;
   },
 };
@@ -1246,6 +1437,112 @@ export const SheetServiceDefinition = {
         },
       },
     },
+    updateSheetOrganizer: {
+      name: "UpdateSheetOrganizer",
+      requestType: UpdateSheetOrganizerRequest,
+      requestStream: false,
+      responseType: SheetOrganizer,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [
+            new Uint8Array([
+              21,
+              111,
+              114,
+              103,
+              97,
+              110,
+              105,
+              122,
+              101,
+              114,
+              44,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              95,
+              109,
+              97,
+              115,
+              107,
+            ]),
+          ],
+          578365826: [
+            new Uint8Array([
+              64,
+              58,
+              9,
+              111,
+              114,
+              103,
+              97,
+              110,
+              105,
+              122,
+              101,
+              114,
+              26,
+              51,
+              47,
+              118,
+              49,
+              47,
+              123,
+              111,
+              114,
+              103,
+              97,
+              110,
+              105,
+              122,
+              101,
+              114,
+              46,
+              115,
+              104,
+              101,
+              101,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              115,
+              104,
+              101,
+              101,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              111,
+              114,
+              103,
+              97,
+              110,
+              105,
+              122,
+              101,
+              114,
+            ]),
+          ],
+        },
+      },
+    },
     deleteSheet: {
       name: "DeleteSheet",
       requestType: DeleteSheetRequest,
@@ -1360,6 +1657,10 @@ export interface SheetServiceImplementation<CallContextExt = {}> {
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<SearchSheetsResponse>>;
   updateSheet(request: UpdateSheetRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Sheet>>;
+  updateSheetOrganizer(
+    request: UpdateSheetOrganizerRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<SheetOrganizer>>;
   deleteSheet(request: DeleteSheetRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
   syncSheets(request: SyncSheetsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
 }
@@ -1372,6 +1673,10 @@ export interface SheetServiceClient<CallOptionsExt = {}> {
     options?: CallOptions & CallOptionsExt,
   ): Promise<SearchSheetsResponse>;
   updateSheet(request: DeepPartial<UpdateSheetRequest>, options?: CallOptions & CallOptionsExt): Promise<Sheet>;
+  updateSheetOrganizer(
+    request: DeepPartial<UpdateSheetOrganizerRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<SheetOrganizer>;
   deleteSheet(request: DeepPartial<DeleteSheetRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
   syncSheets(request: DeepPartial<SyncSheetsRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }

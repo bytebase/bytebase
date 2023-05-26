@@ -93,7 +93,6 @@ p, DEVELOPER, /sheet/starred, GET
 p, DEVELOPER, /sheet/{sheetID}, GET
 p, DEVELOPER, /sheet/{sheetID}, PATCH
 p, DEVELOPER, /sheet/{sheetID}, DELETE
-p, DEVELOPER, /sheet/{sheetID}/organizer, PATCH
 p, DEVELOPER, /debug, GET
 p, DEVELOPER, /debug/log, GET
 p, DEVELOPER, /anomaly, GET

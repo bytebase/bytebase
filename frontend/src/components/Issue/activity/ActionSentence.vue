@@ -17,14 +17,13 @@ import {
   ActivityTaskStatusUpdatePayload,
   Issue,
   SYSTEM_BOT_ID,
-  UNKNOWN_ID,
 } from "@/types";
 import {
   findStageById,
   findTaskById,
   issueActivityActionSentence,
 } from "@/utils";
-import { useSheetStore, useSheetById } from "@/store";
+import { useSheetV1Store, useSheetStatementByUid } from "@/store";
 import TaskName from "./TaskName.vue";
 import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
 import StageName from "./StageName.vue";
@@ -43,7 +42,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 
 const renderActionSentence = () => {
   const renderSpan = (content: string, props?: object) => {
@@ -184,10 +183,10 @@ const renderActionSentence = () => {
     case "bb.pipeline.task.statement.update": {
       const payload = activity.payload as ActivityTaskStatementUpdatePayload;
       const oldStatement =
-        useSheetById(payload.oldSheetId || UNKNOWN_ID).value.statement ||
+        useSheetStatementByUid(payload.oldSheetId).value ||
         payload.oldStatement;
       const newStatement =
-        useSheetById(payload.newSheetId || UNKNOWN_ID).value.statement ||
+        useSheetStatementByUid(payload.newSheetId).value ||
         payload.newStatement;
       return h(
         "span",
@@ -275,10 +274,10 @@ watch(
     const activity = props.activity;
     // Prepare sheet data for renderering.
     if (activity.type === "bb.pipeline.task.statement.update") {
-      sheetStore.getOrFetchSheetById(
+      sheetV1Store.getOrFetchSheetByUid(
         (activity.payload as ActivityTaskStatementUpdatePayload).newSheetId
       );
-      sheetStore.getOrFetchSheetById(
+      sheetV1Store.getOrFetchSheetByUid(
         (activity.payload as ActivityTaskStatementUpdatePayload).oldSheetId
       );
     }
