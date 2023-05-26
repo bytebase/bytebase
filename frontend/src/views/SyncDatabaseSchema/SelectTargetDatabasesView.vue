@@ -358,7 +358,7 @@ const handleUnselectDatabase = (database: Database) => {
 
 const onCopyStatement = () => {
   const editStatement = state.selectedDatabaseId
-    ? databaseSchemaCache[state.selectedDatabaseId]
+    ? databaseDiffCache[state.selectedDatabaseId].edited
     : "";
 
   toClipboard(editStatement).then(() => {
