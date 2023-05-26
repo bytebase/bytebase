@@ -236,7 +236,7 @@
 
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
-    :database-id-list="[Number(database.uid)]"
+    :database-id-list="[database.uid]"
     alter-type="SINGLE_DB"
     @close="state.showSchemaEditorModal = false"
   />
