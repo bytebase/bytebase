@@ -559,7 +559,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 
 	limit := int(pageToken.Limit)
 	if limit == 0 {
-		limit = 50
+		limit = 10
 	}
 	if limit > 1000 {
 		limit = 1000
