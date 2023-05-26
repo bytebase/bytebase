@@ -3588,8 +3588,8 @@ type ListChangeHistoriesRequest struct {
 	// The parent of the change histories.
 	// Format: instances/{instance}/databases/{database}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Not used. The maximum number of change histories to return. The service may return fewer than this value.
-	// If unspecified, at most 50 change histories will be returned.
+	// The maximum number of change histories to return. The service may return fewer than this value.
+	// If unspecified, at most 10 change histories will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// Not used. A page token, received from a previous `ListChangeHistories` call.
@@ -3668,7 +3668,7 @@ type ListChangeHistoriesResponse struct {
 
 	// The list of change histories.
 	ChangeHistories []*ChangeHistory `protobuf:"bytes,1,rep,name=change_histories,json=changeHistories,proto3" json:"change_histories,omitempty"`
-	// Not used. A token, which can be sent as `page_token` to retrieve the next page.
+	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 }

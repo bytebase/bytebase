@@ -960,8 +960,8 @@ export interface ListChangeHistoriesRequest {
    */
   parent: string;
   /**
-   * Not used. The maximum number of change histories to return. The service may return fewer than this value.
-   * If unspecified, at most 50 change histories will be returned.
+   * The maximum number of change histories to return. The service may return fewer than this value.
+   * If unspecified, at most 10 change histories will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
@@ -980,7 +980,7 @@ export interface ListChangeHistoriesResponse {
   /** The list of change histories. */
   changeHistories: ChangeHistory[];
   /**
-   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
+   * A token, which can be sent as `page_token` to retrieve the next page.
    * If this field is omitted, there are no subsequent pages.
    */
   nextPageToken: string;
