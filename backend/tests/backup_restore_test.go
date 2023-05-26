@@ -301,14 +301,12 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	defer dstStopFn()
 	dstConnCfg := getMySQLConnectionConfig(strconv.Itoa(dstPort), "")
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 	dstInstance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID: generateRandomString("instance", 10),
 		// The target instance must be within the same environment as the instance of the original database now.
-		EnvironmentID: prodEnvironment.ID,
+		EnvironmentID: prodEnvironmentUID,
 		Name:          "DestinationInstance",
 		Engine:        db.MySQL,
 		Host:          dstConnCfg.Host,
@@ -430,13 +428,11 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	prodEnvironment, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+		Parent: prodEnvironment.Name,
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_BACKUP_PLAN,
 			Policy: &v1pb.Policy_BackupPlanPolicy{
@@ -456,7 +452,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
+		EnvironmentID: prodEnvironmentUID,
 		Name:          baseName + "_Instance",
 		Engine:        db.MySQL,
 		Host:          connCfg.Host,
