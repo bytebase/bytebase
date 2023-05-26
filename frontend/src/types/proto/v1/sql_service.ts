@@ -5,6 +5,65 @@ import { Engine, engineFromJSON, engineToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
+export interface QueryRequest {
+  /**
+   * The instance to execute the query against.
+   * Format: instances/{instance}
+   */
+  instance: string;
+  /**
+   * The connection database name to execute the query against.
+   * For PostgreSQL, it's required.
+   * For other database engines, it's optional. Use empty string to execute against without specifying a database.
+   */
+  connectionDatabase: string;
+  /** The SQL statement to execute. */
+  statement: string;
+  /** The maximum number of rows to return. */
+  limit: number;
+}
+
+export interface QueryResponse {
+  /** The query result. */
+  result: QueryResult[];
+  /** The query advice. */
+  advice: Advice[];
+}
+
+export interface QueryResult {
+  /** The column names of the query result. */
+  columnNames: string[];
+  /** The column types of the query result. */
+  columnTypeNames: string[];
+  /** The data of the query result. */
+  data: string[];
+  /** The column is masked or not. */
+  masked: boolean[];
+  /** The error message if the query failed. */
+  error: string;
+}
+
+export interface Advice {
+  /**
+   * The advice status.
+   * Should be one of the following:
+   * - SUCCESS
+   * - WARN
+   * - ERROR
+   */
+  status: string;
+  /** The advice code. */
+  code: number;
+  /** The advice title. */
+  title: string;
+  /** The advice content. */
+  content: string;
+  /** The advice line number in the SQL statement. */
+  line: number;
+  /** The advice details. */
+  details: string;
+}
+
 export interface PrettyRequest {
   engine: Engine;
   /**
@@ -22,6 +81,443 @@ export interface PrettyResponse {
   /** The expected SDL schema after normalizing. */
   expectedSchema: string;
 }
+
+function createBaseQueryRequest(): QueryRequest {
+  return { instance: "", connectionDatabase: "", statement: "", limit: 0 };
+}
+
+export const QueryRequest = {
+  encode(message: QueryRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.instance !== "") {
+      writer.uint32(10).string(message.instance);
+    }
+    if (message.connectionDatabase !== "") {
+      writer.uint32(18).string(message.connectionDatabase);
+    }
+    if (message.statement !== "") {
+      writer.uint32(26).string(message.statement);
+    }
+    if (message.limit !== 0) {
+      writer.uint32(32).int32(message.limit);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): QueryRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.instance = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.connectionDatabase = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.limit = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryRequest {
+    return {
+      instance: isSet(object.instance) ? String(object.instance) : "",
+      connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
+      statement: isSet(object.statement) ? String(object.statement) : "",
+      limit: isSet(object.limit) ? Number(object.limit) : 0,
+    };
+  },
+
+  toJSON(message: QueryRequest): unknown {
+    const obj: any = {};
+    message.instance !== undefined && (obj.instance = message.instance);
+    message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
+    message.statement !== undefined && (obj.statement = message.statement);
+    message.limit !== undefined && (obj.limit = Math.round(message.limit));
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryRequest>): QueryRequest {
+    return QueryRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<QueryRequest>): QueryRequest {
+    const message = createBaseQueryRequest();
+    message.instance = object.instance ?? "";
+    message.connectionDatabase = object.connectionDatabase ?? "";
+    message.statement = object.statement ?? "";
+    message.limit = object.limit ?? 0;
+    return message;
+  },
+};
+
+function createBaseQueryResponse(): QueryResponse {
+  return { result: [], advice: [] };
+}
+
+export const QueryResponse = {
+  encode(message: QueryResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.result) {
+      QueryResult.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.advice) {
+      Advice.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): QueryResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result.push(QueryResult.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.advice.push(Advice.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryResponse {
+    return {
+      result: Array.isArray(object?.result) ? object.result.map((e: any) => QueryResult.fromJSON(e)) : [],
+      advice: Array.isArray(object?.advice) ? object.advice.map((e: any) => Advice.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: QueryResponse): unknown {
+    const obj: any = {};
+    if (message.result) {
+      obj.result = message.result.map((e) => e ? QueryResult.toJSON(e) : undefined);
+    } else {
+      obj.result = [];
+    }
+    if (message.advice) {
+      obj.advice = message.advice.map((e) => e ? Advice.toJSON(e) : undefined);
+    } else {
+      obj.advice = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryResponse>): QueryResponse {
+    return QueryResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<QueryResponse>): QueryResponse {
+    const message = createBaseQueryResponse();
+    message.result = object.result?.map((e) => QueryResult.fromPartial(e)) || [];
+    message.advice = object.advice?.map((e) => Advice.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseQueryResult(): QueryResult {
+  return { columnNames: [], columnTypeNames: [], data: [], masked: [], error: "" };
+}
+
+export const QueryResult = {
+  encode(message: QueryResult, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.columnNames) {
+      writer.uint32(10).string(v!);
+    }
+    for (const v of message.columnTypeNames) {
+      writer.uint32(18).string(v!);
+    }
+    for (const v of message.data) {
+      writer.uint32(26).string(v!);
+    }
+    writer.uint32(34).fork();
+    for (const v of message.masked) {
+      writer.bool(v);
+    }
+    writer.ldelim();
+    if (message.error !== "") {
+      writer.uint32(42).string(message.error);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): QueryResult {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.columnNames.push(reader.string());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.columnTypeNames.push(reader.string());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data.push(reader.string());
+          continue;
+        case 4:
+          if (tag === 32) {
+            message.masked.push(reader.bool());
+
+            continue;
+          }
+
+          if (tag === 34) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.masked.push(reader.bool());
+            }
+
+            continue;
+          }
+
+          break;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryResult {
+    return {
+      columnNames: Array.isArray(object?.columnNames) ? object.columnNames.map((e: any) => String(e)) : [],
+      columnTypeNames: Array.isArray(object?.columnTypeNames) ? object.columnTypeNames.map((e: any) => String(e)) : [],
+      data: Array.isArray(object?.data) ? object.data.map((e: any) => String(e)) : [],
+      masked: Array.isArray(object?.masked) ? object.masked.map((e: any) => Boolean(e)) : [],
+      error: isSet(object.error) ? String(object.error) : "",
+    };
+  },
+
+  toJSON(message: QueryResult): unknown {
+    const obj: any = {};
+    if (message.columnNames) {
+      obj.columnNames = message.columnNames.map((e) => e);
+    } else {
+      obj.columnNames = [];
+    }
+    if (message.columnTypeNames) {
+      obj.columnTypeNames = message.columnTypeNames.map((e) => e);
+    } else {
+      obj.columnTypeNames = [];
+    }
+    if (message.data) {
+      obj.data = message.data.map((e) => e);
+    } else {
+      obj.data = [];
+    }
+    if (message.masked) {
+      obj.masked = message.masked.map((e) => e);
+    } else {
+      obj.masked = [];
+    }
+    message.error !== undefined && (obj.error = message.error);
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryResult>): QueryResult {
+    return QueryResult.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<QueryResult>): QueryResult {
+    const message = createBaseQueryResult();
+    message.columnNames = object.columnNames?.map((e) => e) || [];
+    message.columnTypeNames = object.columnTypeNames?.map((e) => e) || [];
+    message.data = object.data?.map((e) => e) || [];
+    message.masked = object.masked?.map((e) => e) || [];
+    message.error = object.error ?? "";
+    return message;
+  },
+};
+
+function createBaseAdvice(): Advice {
+  return { status: "", code: 0, title: "", content: "", line: 0, details: "" };
+}
+
+export const Advice = {
+  encode(message: Advice, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.status !== "") {
+      writer.uint32(10).string(message.status);
+    }
+    if (message.code !== 0) {
+      writer.uint32(16).int32(message.code);
+    }
+    if (message.title !== "") {
+      writer.uint32(26).string(message.title);
+    }
+    if (message.content !== "") {
+      writer.uint32(34).string(message.content);
+    }
+    if (message.line !== 0) {
+      writer.uint32(40).int32(message.line);
+    }
+    if (message.details !== "") {
+      writer.uint32(50).string(message.details);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Advice {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAdvice();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.code = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.content = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.line = reader.int32();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.details = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Advice {
+    return {
+      status: isSet(object.status) ? String(object.status) : "",
+      code: isSet(object.code) ? Number(object.code) : 0,
+      title: isSet(object.title) ? String(object.title) : "",
+      content: isSet(object.content) ? String(object.content) : "",
+      line: isSet(object.line) ? Number(object.line) : 0,
+      details: isSet(object.details) ? String(object.details) : "",
+    };
+  },
+
+  toJSON(message: Advice): unknown {
+    const obj: any = {};
+    message.status !== undefined && (obj.status = message.status);
+    message.code !== undefined && (obj.code = Math.round(message.code));
+    message.title !== undefined && (obj.title = message.title);
+    message.content !== undefined && (obj.content = message.content);
+    message.line !== undefined && (obj.line = Math.round(message.line));
+    message.details !== undefined && (obj.details = message.details);
+    return obj;
+  },
+
+  create(base?: DeepPartial<Advice>): Advice {
+    return Advice.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Advice>): Advice {
+    const message = createBaseAdvice();
+    message.status = object.status ?? "";
+    message.code = object.code ?? 0;
+    message.title = object.title ?? "";
+    message.content = object.content ?? "";
+    message.line = object.line ?? 0;
+    message.details = object.details ?? "";
+    return message;
+  },
+};
 
 function createBasePrettyRequest(): PrettyRequest {
   return { engine: 0, currentSchema: "", expectedSchema: "" };
@@ -197,15 +693,75 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    query: {
+      name: "Query",
+      requestType: QueryRequest,
+      requestStream: false,
+      responseType: QueryResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([8, 105, 110, 115, 116, 97, 110, 99, 101])],
+          578365826: [
+            new Uint8Array([
+              41,
+              58,
+              1,
+              42,
+              34,
+              36,
+              47,
+              118,
+              49,
+              47,
+              123,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              115,
+              113,
+              108,
+              58,
+              113,
+              117,
+              101,
+              114,
+              121,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
 export interface SQLServiceImplementation<CallContextExt = {}> {
   pretty(request: PrettyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<PrettyResponse>>;
+  query(request: QueryRequest, context: CallContext & CallContextExt): Promise<DeepPartial<QueryResponse>>;
 }
 
 export interface SQLServiceClient<CallOptionsExt = {}> {
   pretty(request: DeepPartial<PrettyRequest>, options?: CallOptions & CallOptionsExt): Promise<PrettyResponse>;
+  query(request: DeepPartial<QueryRequest>, options?: CallOptions & CallOptionsExt): Promise<QueryResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
