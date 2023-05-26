@@ -627,7 +627,9 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 	changeHistory, err := s.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		ID: &changeHistoryID,
+		InstanceID: &instance.UID,
+		DatabaseID: &database.UID,
+		ID:         &changeHistoryID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
