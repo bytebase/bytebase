@@ -87,7 +87,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find database for the backup")
 	}
-	backup, err := stores.GetBackupV2(ctx, *payload.BackupID)
+	backup, err := stores.GetBackupByUID(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
 	}
@@ -347,7 +347,7 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 		return nil, errors.Errorf("PITR for Postgres is not implemented")
 	}
 
-	backup, err := stores.GetBackupV2(ctx, *payload.BackupID)
+	backup, err := stores.GetBackupByUID(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
 	}
