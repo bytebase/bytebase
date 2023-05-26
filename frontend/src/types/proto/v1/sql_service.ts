@@ -67,7 +67,7 @@ export enum Advice_Status {
   /** STATUS_UNSPECIFIED - Unspecified. */
   STATUS_UNSPECIFIED = 0,
   SUCCESS = 1,
-  WARN = 2,
+  WARNING = 2,
   ERROR = 3,
   UNRECOGNIZED = -1,
 }
@@ -81,8 +81,8 @@ export function advice_StatusFromJSON(object: any): Advice_Status {
     case "SUCCESS":
       return Advice_Status.SUCCESS;
     case 2:
-    case "WARN":
-      return Advice_Status.WARN;
+    case "WARNING":
+      return Advice_Status.WARNING;
     case 3:
     case "ERROR":
       return Advice_Status.ERROR;
@@ -99,8 +99,8 @@ export function advice_StatusToJSON(object: Advice_Status): string {
       return "STATUS_UNSPECIFIED";
     case Advice_Status.SUCCESS:
       return "SUCCESS";
-    case Advice_Status.WARN:
-      return "WARN";
+    case Advice_Status.WARNING:
+      return "WARNING";
     case Advice_Status.ERROR:
       return "ERROR";
     case Advice_Status.UNRECOGNIZED:
@@ -806,7 +806,6 @@ export const SQLServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([8, 105, 110, 115, 116, 97, 110, 99, 101])],
           578365826: [
             new Uint8Array([
               33,

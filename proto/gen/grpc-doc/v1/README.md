@@ -7101,7 +7101,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 | Unspecified. |
 | SUCCESS | 1 |  |
-| WARN | 2 |  |
+| WARNING | 2 |  |
 | ERROR | 3 |  |
 
 

@@ -21,7 +21,6 @@ service SQLService {
       post: "/v1/{name=instances/*}:query"
       body: "*"
     };
-    option (google.api.method_signature) = "instance";
   }
 }
 
@@ -77,7 +76,7 @@ message Advice {
     // Unspecified.
     STATUS_UNSPECIFIED = 0;
     SUCCESS = 1;
-    WARN = 2;
+    WARNING = 2;
     ERROR = 3;
   }
   // The advice status.
