@@ -817,7 +817,7 @@ message ChangeHistory {
   enum Status {
     STATUS_UNSPECIFIED = 0;
     PENDING = 1;
-    COMPLETED = 2;
+    DONE = 2;
     FAILED = 3;
   }
   Status status = 10;
