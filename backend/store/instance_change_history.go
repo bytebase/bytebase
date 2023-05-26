@@ -306,21 +306,21 @@ func (s *Store) FindInstanceChangeHistoryList(ctx context.Context, find *db.Migr
 func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance_change_history.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance_change_history.instance_id = $%d", len(args)+1)), append(args, *v)
 	} else {
-		where = append(where, "instance_id is NULL AND database_id is NULL")
+		where = append(where, "instance_change_history.instance_id is NULL AND instance_change_history.database_id is NULL")
 	}
 	if v := find.DatabaseID; v != nil {
-		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance_change_history.database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Source; v != nil {
-		where, args = append(where, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance_change_history.source = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Version; v != nil {
-		where, args = append(where, fmt.Sprintf("version = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, *v)
 	}
 
 	query := `
@@ -347,11 +347,11 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			instance_change_history.execution_duration_ns,
 			instance_change_history.payload,
 			COALESCE(instance.resource_id, ''),
-			COALESCE(db.name, ''),
+			COALESCE(db.name, '')
 		FROM instance_change_history
 		LEFT JOIN instance on instance.id = instance_change_history.instance_id
 		LEFT JOIN db on db.id = instance_change_history.database_id
-		WHERE ` + strings.Join(where, " AND ") + ` ORDER BY instance_id, database_id, sequence DESC`
+		WHERE ` + strings.Join(where, " AND ") + ` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
