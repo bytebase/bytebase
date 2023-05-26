@@ -124,6 +124,9 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 		LoadFull: request.Raw,
 	}
 
+	// this allows get the sheet only by the id: /projects/-/sheets/{sheet uid}.
+	// so that we can easily get the sheet from the issue.
+	// we can remove this after migrate the issue to v1 API.
 	if projectResourceID != "-" {
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 			ResourceID: &projectResourceID,

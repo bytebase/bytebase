@@ -12,7 +12,7 @@ import {
   getProjectAndSheetId,
 } from "./common";
 import { isSheetReadableV1 } from "@/utils";
-import { UNKNOWN_ID, SheetId, MaybeRef, SYSTEM_BOT_EMAIL } from "@/types";
+import { UNKNOWN_ID, SheetId, MaybeRef } from "@/types";
 
 interface SheetState {
   sheetByName: Map<string, Sheet>;
