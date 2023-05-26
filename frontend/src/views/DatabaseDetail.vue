@@ -177,63 +177,13 @@
       </template>
     </div>
 
-    <BBModal
+    <TransferSingleDatabase
       v-if="state.showTransferDatabaseModal"
-      :title="$t('database.transfer-project')"
-      @close="state.showTransferDatabaseModal = false"
-    >
-      <div class="w-112 flex flex-col items-center">
-        <div class="col-span-1 w-64">
-          <label for="user" class="textlabel">{{ $t("common.project") }}</label>
-          <!-- Only allow to transfer database to the project having OWNER role -->
-          <ProjectSelect
-            id="project"
-            class="mt-1"
-            name="project"
-            :allowed-role-list="['OWNER']"
-            :include-default-project="allowTransferToDefaultProject"
-            :selected-id="state.currentProjectId"
-            @select-project-id="
-              (projectId) => {
-                state.currentProjectId = projectId;
-              }
-            "
-          />
-        </div>
-        <SelectDatabaseLabel
-          :database="legacyDatabase"
-          :target-project-id="state.currentProjectId"
-          class="mt-4"
-          @next="doTransfer"
-        >
-          <template #buttons="{ next }">
-            <div
-              class="w-full pt-4 mt-6 flex justify-end border-t border-block-border"
-            >
-              <button
-                type="button"
-                class="btn-normal py-2 px-4"
-                @click.prevent="state.showTransferDatabaseModal = false"
-              >
-                {{ $t("common.cancel") }}
-              </button>
-              <!--
-                We are not allowed to transfer a db either its labels are not valid
-                or transferring into its project itself.
-              -->
-              <button
-                type="button"
-                class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-                :disabled="state.currentProjectId == legacyDatabase.project.id"
-                @click.prevent="next"
-              >
-                {{ $t("common.transfer") }}
-              </button>
-            </div>
-          </template>
-        </SelectDatabaseLabel>
-      </div>
-    </BBModal>
+      :database="database"
+      @cancel="state.showTransferDatabaseModal = false"
+      @updated="state.showTransferDatabaseModal = false"
+    />
+
     <BBModal
       v-if="state.showIncorrectProjectModal"
       :title="$t('common.warning')"
@@ -299,7 +249,6 @@ import dayjs from "dayjs";
 import { useI18n } from "vue-i18n";
 import { startCase } from "lodash-es";
 
-import ProjectSelect from "@/components/ProjectSelect.vue";
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
 import DatabaseMigrationHistoryPanel from "@/components/DatabaseMigrationHistoryPanel.vue";
 import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
@@ -308,8 +257,8 @@ import {
   DatabaseSettingsPanel,
   SQLEditorButtonV1,
 } from "@/components/DatabaseDetail";
+import { TransferSingleDatabase } from "@/components/TransferDatabaseForm";
 import { DatabaseLabelProps } from "@/components/DatabaseLabels";
-import { SelectDatabaseLabel } from "@/components/TransferDatabaseForm";
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
@@ -329,7 +278,6 @@ import {
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   Database,
-  DatabaseLabel,
   SQLResultSet,
   DEFAULT_PROJECT_V1_NAME,
   ComposedDatabase,
@@ -480,20 +428,6 @@ const allowTransferProject = computed(() => {
   }
 
   return false;
-});
-
-const allowTransferToDefaultProject = computed(() => {
-  if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
-    return true;
-  }
-
-  // Allow to transfer a database to DEFAULT project only if the current user
-  // can manage all projects.
-  // AKA DBA or workspace owner.
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-project",
-    currentUserV1.value.userRole
-  );
 });
 
 // Database can be admined if meets either of the condition below:
@@ -681,25 +615,6 @@ const createMigration = async (
   });
 };
 
-const updateProject = (newProjectId: string, labels?: DatabaseLabel[]) => {
-  databaseStore
-    .transferProject({
-      database: legacyDatabase.value,
-      projectId: newProjectId,
-      labels,
-    })
-    .then((updatedDatabase) => {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t(
-          "database.successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name",
-          [updatedDatabase.name, updatedDatabase.project.name]
-        ),
-      });
-    });
-};
-
 const updateLabels = (labels: Record<string, string>) => {
   useGracefulRequest(async () => {
     const databasePatch = { ...database.value };
@@ -757,11 +672,6 @@ watch(
     }
   }
 );
-
-const doTransfer = (labels: DatabaseLabel[]) => {
-  updateProject(state.currentProjectId, labels);
-  state.showTransferDatabaseModal = false;
-};
 
 const syncDatabaseSchema = () => {
   state.syncingSchema = true;

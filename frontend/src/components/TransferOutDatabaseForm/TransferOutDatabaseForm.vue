@@ -13,7 +13,7 @@
         </label>
         <ProjectSelect
           v-model:project="targetProjectId"
-          :allowed-project-role-list="['OWNER']"
+          :allowed-project-role-list="[PresetRoleType.OWNER]"
           :include-default-project="true"
           :filter="filterTargetProject"
         />
@@ -70,7 +70,7 @@ import {
 } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import { Database, UNKNOWN_ID } from "@/types";
+import { Database, PresetRoleType, UNKNOWN_ID } from "@/types";
 import {
   pushNotification,
   useDatabaseStore,
