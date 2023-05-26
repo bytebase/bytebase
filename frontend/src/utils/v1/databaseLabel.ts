@@ -5,17 +5,6 @@ import { LABEL_VALUE_EMPTY } from "../label";
 import { extractEnvironmentResourceName } from "./environment";
 import { Database } from "@/types/proto/v1/database_service";
 
-export const getLabelValueFromLabelListV1 = (
-  labels: Record<string, string>,
-  key: string
-) => {
-  return labels[key] ?? LABEL_VALUE_EMPTY;
-};
-
-export const getLabelValueV1 = (db: Database, key: string): string => {
-  return getLabelValueFromLabelListV1(db.labels, key);
-};
-
 export const getLabelValuesFromDatabaseV1List = (
   key: string,
   databaseList: Database[],

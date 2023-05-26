@@ -40,7 +40,7 @@
           v-if="isDbNameTemplateMode"
           :project="project"
           :name="state.databaseName"
-          :label-list="state.labelList"
+          :labels="state.labelList"
         />
       </div>
 
@@ -77,7 +77,7 @@
         v-if="isTenantProject"
         ref="labelForm"
         :project="project"
-        :label-list="state.labelList"
+        :labels="state.labelList"
         filter="required"
       />
 
@@ -142,7 +142,7 @@
         v-if="isTenantProject"
         class="w-full"
         :project="project"
-        :label-list="state.labelList"
+        :labels="state.labelList"
         filter="optional"
       />
 

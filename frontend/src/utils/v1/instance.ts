@@ -93,16 +93,16 @@ export const instanceV1HasAlterSchema = (
   return true;
 };
 
-// export const instanceHasBackupRestore = (
-//   instanceOrEngine: Instance | EngineType
-// ): boolean => {
-//   const engine = engineOfInstance(instanceOrEngine);
-//   if (engine === "MONGODB") return false;
-//   if (engine === "REDIS") return false;
-//   if (engine === "SPANNER") return false;
-//   if (engine === "REDSHIFT") return false;
-//   return true;
-// };
+export const instanceV1HasBackupRestore = (
+  instanceOrEngine: Instance | Engine
+): boolean => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  if (engine === Engine.MONGODB) return false;
+  if (engine === Engine.REDIS) return false;
+  if (engine === Engine.SPANNER) return false;
+  if (engine === Engine.REDSHIFT) return false;
+  return true;
+};
 
 // export const instanceHasReadonlyMode = (
 //   instanceOrEngine: Instance | EngineType

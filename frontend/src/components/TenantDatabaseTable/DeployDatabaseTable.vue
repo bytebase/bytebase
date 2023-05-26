@@ -102,7 +102,6 @@ import { computed, withDefaults } from "vue";
 import type { ComposedDatabase, LabelKeyType } from "../../types";
 import {
   hidePrefix,
-  getLabelValueV1,
   getLabelValuesFromDatabaseV1List,
   getPipelineFromDeploymentScheduleV1,
 } from "../../utils";
@@ -143,7 +142,7 @@ const xAxisValueList = computed(() => {
 
 const databaseGroupList = computed(() => {
   const key = props.label;
-  const dict = groupBy(props.databaseList, (db) => getLabelValueV1(db, key));
+  const dict = groupBy(props.databaseList, (db) => db.labels[key] ?? "");
   const rows = yAxisValueList.value.map((labelValue) => {
     const databaseList = dict[labelValue] || [];
     return {

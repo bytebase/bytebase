@@ -37,7 +37,7 @@
       v-if="isDbNameTemplateMode"
       :project="project"
       :name="state.context.databaseName"
-      :label-list="state.context.labelList"
+      :labels="state.context.labels"
     />
   </div>
 
@@ -46,7 +46,7 @@
     v-if="isTenantProject"
     ref="labelForm"
     :project="project"
-    :label-list="state.context.labelList"
+    :labels="state.context.labels"
     filter="required"
   />
 
@@ -74,7 +74,7 @@
       :selected-id="String(state.context.instanceId)"
       :environment-id="state.context.environmentId"
       :filter="instanceFilter"
-      @select-instance-id="(id: number) => (state.context.instanceId = id)"
+      @select-instance-id="(id: number) => (state.context.instanceId = String(id))"
     />
   </div>
 
@@ -82,14 +82,14 @@
   <DatabaseLabelForm
     v-if="isTenantProject"
     :project="project"
-    :label-list="state.context.labelList"
+    :labels="state.context.labels"
     filter="optional"
   />
 
   <div class="space-y-2">
     <label class="textlabel w-full flex gap-1">
       {{
-        selectedInstance.engine == "POSTGRES"
+        selectedInstance.engine === Engine.POSTGRES
           ? $t("db.encoding")
           : $t("db.character-set")
       }}
@@ -100,7 +100,7 @@
       name="charset"
       type="text"
       class="textfield mt-1 w-full"
-      :placeholder="defaultCharset(selectedInstance.engine)"
+      :placeholder="defaultCharsetOfEngineV1(selectedInstance.engine)"
     />
   </div>
 
@@ -114,7 +114,9 @@
       name="collation"
       type="text"
       class="textfield mt-1 w-full"
-      :placeholder="defaultCollation(selectedInstance.engine) || 'default'"
+      :placeholder="
+        defaultCollationOfEngineV1(selectedInstance.engine) || 'default'
+      "
     />
   </div>
 
@@ -134,10 +136,9 @@ import {
 import { cloneDeep, isEmpty } from "lodash-es";
 import {
   ComposedInstance,
-  Database,
-  Instance,
-  defaultCharset,
-  defaultCollation,
+  ComposedDatabase,
+  defaultCharsetOfEngineV1,
+  defaultCollationOfEngineV1,
 } from "@/types";
 import { CreatePITRDatabaseContext } from "./utils";
 import {
@@ -145,9 +146,14 @@ import {
   DatabaseNameTemplateTips,
   useDBNameTemplateInputState,
 } from "@/components/CreateDatabasePrepForm";
-import { useInstanceStore, useDBSchemaStore, useProjectV1ByUID } from "@/store";
+import {
+  useDBSchemaStore,
+  useProjectV1ByUID,
+  useInstanceV1Store,
+} from "@/store";
 import { isPITRAvailableOnInstanceV1 } from "@/plugins/pitr";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import { Engine } from "@/types/proto/v1/common";
 
 interface LocalState {
   context: CreatePITRDatabaseContext;
@@ -155,7 +161,7 @@ interface LocalState {
 
 const props = defineProps({
   database: {
-    type: Object as PropType<Database>,
+    type: Object as PropType<ComposedDatabase>,
     required: true,
   },
   context: {
@@ -174,27 +180,27 @@ const extractLocalContextFromProps = (): CreatePITRDatabaseContext => {
     return context;
   } else {
     const dbSchemaMetadata = dbSchemaStore.getDatabaseMetadataByDatabaseId(
-      props.database.id
+      Number(props.database.uid)
     );
 
     return {
-      projectId: String(database.project.id),
-      instanceId: database.instance.id,
-      environmentId: String(database.instance.environment.id),
-      databaseName: `${database.name}_recovery`, // looks like "my_db_recovery"
+      projectId: database.projectEntity.uid,
+      instanceId: database.instanceEntity.uid,
+      environmentId: database.instanceEntity.environmentEntity.uid,
+      databaseName: `${database.databaseName}_recovery`, // looks like "my_db_recovery"
       characterSet: dbSchemaMetadata.characterSet,
       collation: dbSchemaMetadata.collation,
-      labelList: cloneDeep(database.labels),
+      labels: cloneDeep(database.labels),
     };
   }
 };
 
-const instanceStore = useInstanceStore();
+const instanceV1Store = useInstanceV1Store();
 const dbSchemaStore = useDBSchemaStore();
 
 // Refresh the instance list
 const prepareInstanceList = () => {
-  instanceStore.fetchInstanceList();
+  instanceV1Store.fetchInstanceList();
 };
 
 onBeforeMount(prepareInstanceList);
@@ -222,8 +228,8 @@ const isDbNameTemplateMode = computed((): boolean => {
   return !!project.value.dbNameTemplate;
 });
 
-const selectedInstance = computed((): Instance => {
-  return instanceStore.getInstanceById(state.context.instanceId);
+const selectedInstance = computed(() => {
+  return instanceV1Store.getInstanceByUID(state.context.instanceId);
 });
 
 const instanceFilter = (instance: ComposedInstance): boolean => {
@@ -232,7 +238,7 @@ const instanceFilter = (instance: ComposedInstance): boolean => {
 
 useDBNameTemplateInputState(project, {
   databaseName: toRef(state.context, "databaseName"),
-  labels: toRef(state.context, "labelList"),
+  labels: toRef(state.context, "labels"),
 });
 
 // Sync values from props when changes.

@@ -164,7 +164,7 @@
       </template>
       <template v-if="selectedTabItem?.hash === 'backup-and-restore'">
         <DatabaseBackupPanel
-          :database="legacyDatabase"
+          :database="database"
           :allow-admin="allowAdmin"
           :allow-edit="allowEdit"
         />
@@ -228,7 +228,7 @@
       <SchemaDiagram
         :database="legacyDatabase"
         :database-metadata="
-          dbSchemaStore.getDatabaseMetadataByDatabaseId(legacyDatabase.id)
+          dbSchemaStore.getDatabaseMetadataByDatabaseId(Number(database.uid))
         "
       />
     </div>
@@ -236,7 +236,7 @@
 
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
-    :database-id-list="[legacyDatabase.id]"
+    :database-id-list="[Number(database.uid)]"
     alter-type="SINGLE_DB"
     @close="state.showSchemaEditorModal = false"
   />
@@ -266,9 +266,8 @@ import {
   allowGhostMigrationV1,
   isPITRDatabaseV1,
   isArchivedDatabaseV1,
-  instanceHasBackupRestore,
-  instanceHasAlterSchema,
-  instanceSupportSlowQuery,
+  instanceV1HasBackupRestore,
+  instanceV1SupportSlowQuery,
   hasPermissionInProjectV1,
   instanceV1HasAlterSchema,
   isDatabaseV1Accessible,
@@ -276,7 +275,6 @@ import {
 } from "@/utils";
 import {
   UNKNOWN_ID,
-  DEFAULT_PROJECT_ID,
   Database,
   SQLResultSet,
   DEFAULT_PROJECT_V1_NAME,
@@ -496,7 +494,7 @@ const allowEdit = computed(() => {
 });
 
 const allowAlterSchemaOrChangeData = computed(() => {
-  if (legacyDatabase.value.project.id === DEFAULT_PROJECT_ID) {
+  if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
     return false;
   }
   return allowEdit.value;
@@ -505,7 +503,7 @@ const allowAlterSchemaOrChangeData = computed(() => {
 const allowAlterSchema = computed(() => {
   return (
     allowAlterSchemaOrChangeData.value &&
-    instanceHasAlterSchema(legacyDatabase.value.instance)
+    instanceV1HasAlterSchema(database.value.instanceEntity)
   );
 });
 
@@ -515,13 +513,13 @@ const allowEditDatabaseLabels = computed((): boolean => {
 });
 
 const availableDatabaseTabItemList = computed(() => {
-  const db = legacyDatabase.value;
+  const db = database.value;
   return databaseTabItemList.value.filter((item) => {
     if (item.hash === "backup-and-restore") {
-      return instanceHasBackupRestore(db.instance);
+      return instanceV1HasBackupRestore(db.instanceEntity);
     }
     if (item.hash === "slow-query") {
-      return instanceSupportSlowQuery(db.instance);
+      return instanceV1SupportSlowQuery(db.instanceEntity);
     }
     return true;
   });
@@ -656,7 +654,7 @@ const selectDatabaseTabOnHash = () => {
 };
 
 const handleGotoSQLEditorFailed = () => {
-  state.currentProjectId = String(legacyDatabase.value.project.id);
+  state.currentProjectId = database.value.projectEntity.uid;
   state.showIncorrectProjectModal = true;
 };
 
@@ -676,7 +674,7 @@ watch(
 const syncDatabaseSchema = () => {
   state.syncingSchema = true;
   sqlStore
-    .syncDatabaseSchema(legacyDatabase.value.id)
+    .syncDatabaseSchema(Number(database.value.uid))
     .then((resultSet: SQLResultSet) => {
       state.syncingSchema = false;
       if (resultSet.error) {
@@ -685,7 +683,7 @@ const syncDatabaseSchema = () => {
           style: "CRITICAL",
           title: t(
             "db.failed-to-sync-schema-for-database-database-value-name",
-            [legacyDatabase.value.name]
+            [database.value.databaseName]
           ),
           description: resultSet.error,
         });
@@ -695,13 +693,13 @@ const syncDatabaseSchema = () => {
           style: "SUCCESS",
           title: t(
             "db.successfully-synced-schema-for-database-database-value-name",
-            [legacyDatabase.value.name]
+            [database.value.databaseName]
           ),
           description: resultSet.error,
         });
       }
       useDBSchemaStore().getOrFetchDatabaseMetadataById(
-        legacyDatabase.value.id,
+        Number(database.value.uid),
         true // skip cache
       );
     })
