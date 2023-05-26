@@ -637,6 +637,60 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 	return &v1pb.TestWebhookResponse{Error: err.Error()}, nil
 }
 
+// CreateDatabaseGroup creates a database group.
+func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
+	projectResourceID, err := getProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Parent)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Parent)
+	}
+
+	// The id value should be 4-63 characters, and valid characters are /[a-z][0-9]-/.
+	if len(request.DatabaseGroupId) < 4 || len(request.DatabaseGroupId) > 63 {
+		return nil, status.Errorf(codes.InvalidArgument, "database group id %q must be between 4 and 63 characters", request.DatabaseGroupId)
+	}
+	for _, c := range request.DatabaseGroupId {
+		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid database group id %q", request.DatabaseGroupId)
+		}
+	}
+	if request.DatabaseGroup.DatabasePlaceholder == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "database group database placeholder is required")
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	storeDatabaseGroup := &store.DatabaseGroupMessage{
+		CreatorID:         principalID,
+		ProjectResourceID: project.ResourceID,
+		Placeholder:       request.DatabaseGroup.DatabasePlaceholder,
+		Expression:        request.DatabaseGroup.DatabaseExpr,
+	}
+	databaseGroup, err := s.store.CreateDatabaseGroup(ctx, principalID, storeDatabaseGroup)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertStoreToAPIDatabaseGroup(databaseGroup), nil
+}
+
+func convertStoreToAPIDatabaseGroup(databaseGroup *store.DatabaseGroupMessage) *v1pb.DatabaseGroup {
+	return &v1pb.DatabaseGroup{
+		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, databaseGroup.ProjectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
+		DatabasePlaceholder: databaseGroup.Placeholder,
+		DatabaseExpr:        databaseGroup.Expression,
+	}
+}
+
 func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectWebhookMessage, error) {
 	tp, err := convertToAPIWebhookTypeString(webhook.Type)
 	if err != nil {
