@@ -173,7 +173,7 @@
         <DatabaseSlowQueryPanel :database="database" />
       </template>
       <template v-if="selectedTabItem?.hash === 'settings'">
-        <DatabaseSettingsPanel :database="legacyDatabase" />
+        <DatabaseSettingsPanel :database="database" />
       </template>
     </div>
 

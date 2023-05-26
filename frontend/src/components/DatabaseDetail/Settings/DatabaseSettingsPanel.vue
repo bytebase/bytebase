@@ -5,9 +5,10 @@
 </template>
 
 <script setup lang="ts">
-import { type Database } from "@/types";
+import { type ComposedDatabase } from "@/types";
+import Secrets from "./components/Secrets.vue";
 
 defineProps<{
-  database: Database;
+  database: ComposedDatabase;
 }>();
 </script>
