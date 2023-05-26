@@ -454,6 +454,7 @@
     - [QueryRequest](#bytebase-v1-QueryRequest)
     - [QueryResponse](#bytebase-v1-QueryResponse)
     - [QueryResult](#bytebase-v1-QueryResult)
+    - [QueryRow](#bytebase-v1-QueryRow)
   
     - [Status](#bytebase-v1-Status)
   
@@ -7063,11 +7064,26 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| column_names | [string](#string) | repeated | The column names of the query result. |
-| column_type_names | [string](#string) | repeated | The column types of the query result. |
-| data | [string](#string) | repeated | The data of the query result. |
-| masked | [bool](#bool) | repeated | The column is masked or not. |
+| column_names | [string](#string) | repeated | Column names of the query result. |
+| column_type_names | [string](#string) | repeated | Column types of the query result. |
+| rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
+| masked | [bool](#bool) | repeated | Columns are masked or not. |
 | error | [string](#string) |  | The error message if the query failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryRow"></a>
+
+### QueryRow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| values | [string](#string) | repeated | Row values of the query result. |
 
 
 

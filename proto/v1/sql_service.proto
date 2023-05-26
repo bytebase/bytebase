@@ -51,20 +51,25 @@ message QueryResponse {
 }
 
 message QueryResult {
-  // The column names of the query result.
+  // Column names of the query result.
   repeated string column_names = 1;
 
-  // The column types of the query result.
+  // Column types of the query result.
   repeated string column_type_names = 2;
 
-  // The data of the query result.
-  repeated string data = 3;
+  // Rows of the query result.
+  repeated QueryRow rows = 3;
 
-  // The column is masked or not.
+  // Columns are masked or not.
   repeated bool masked = 4;
 
   // The error message if the query failed.
   string error = 5;
+}
+
+message QueryRow {
+  // Row values of the query result.
+  repeated string values = 1;
 }
 
 enum Status {

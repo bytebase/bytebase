@@ -70,16 +70,21 @@ export interface QueryResponse {
 }
 
 export interface QueryResult {
-  /** The column names of the query result. */
+  /** Column names of the query result. */
   columnNames: string[];
-  /** The column types of the query result. */
+  /** Column types of the query result. */
   columnTypeNames: string[];
-  /** The data of the query result. */
-  data: string[];
-  /** The column is masked or not. */
+  /** Rows of the query result. */
+  rows: QueryRow[];
+  /** Columns are masked or not. */
   masked: boolean[];
   /** The error message if the query failed. */
   error: string;
+}
+
+export interface QueryRow {
+  /** Row values of the query result. */
+  values: string[];
 }
 
 export interface Advice {
@@ -292,7 +297,7 @@ export const QueryResponse = {
 };
 
 function createBaseQueryResult(): QueryResult {
-  return { columnNames: [], columnTypeNames: [], data: [], masked: [], error: "" };
+  return { columnNames: [], columnTypeNames: [], rows: [], masked: [], error: "" };
 }
 
 export const QueryResult = {
@@ -303,8 +308,8 @@ export const QueryResult = {
     for (const v of message.columnTypeNames) {
       writer.uint32(18).string(v!);
     }
-    for (const v of message.data) {
-      writer.uint32(26).string(v!);
+    for (const v of message.rows) {
+      QueryRow.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     writer.uint32(34).fork();
     for (const v of message.masked) {
@@ -343,7 +348,7 @@ export const QueryResult = {
             break;
           }
 
-          message.data.push(reader.string());
+          message.rows.push(QueryRow.decode(reader, reader.uint32()));
           continue;
         case 4:
           if (tag === 32) {
@@ -382,7 +387,7 @@ export const QueryResult = {
     return {
       columnNames: Array.isArray(object?.columnNames) ? object.columnNames.map((e: any) => String(e)) : [],
       columnTypeNames: Array.isArray(object?.columnTypeNames) ? object.columnTypeNames.map((e: any) => String(e)) : [],
-      data: Array.isArray(object?.data) ? object.data.map((e: any) => String(e)) : [],
+      rows: Array.isArray(object?.rows) ? object.rows.map((e: any) => QueryRow.fromJSON(e)) : [],
       masked: Array.isArray(object?.masked) ? object.masked.map((e: any) => Boolean(e)) : [],
       error: isSet(object.error) ? String(object.error) : "",
     };
@@ -400,10 +405,10 @@ export const QueryResult = {
     } else {
       obj.columnTypeNames = [];
     }
-    if (message.data) {
-      obj.data = message.data.map((e) => e);
+    if (message.rows) {
+      obj.rows = message.rows.map((e) => e ? QueryRow.toJSON(e) : undefined);
     } else {
-      obj.data = [];
+      obj.rows = [];
     }
     if (message.masked) {
       obj.masked = message.masked.map((e) => e);
@@ -422,9 +427,69 @@ export const QueryResult = {
     const message = createBaseQueryResult();
     message.columnNames = object.columnNames?.map((e) => e) || [];
     message.columnTypeNames = object.columnTypeNames?.map((e) => e) || [];
-    message.data = object.data?.map((e) => e) || [];
+    message.rows = object.rows?.map((e) => QueryRow.fromPartial(e)) || [];
     message.masked = object.masked?.map((e) => e) || [];
     message.error = object.error ?? "";
+    return message;
+  },
+};
+
+function createBaseQueryRow(): QueryRow {
+  return { values: [] };
+}
+
+export const QueryRow = {
+  encode(message: QueryRow, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.values) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): QueryRow {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryRow();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.values.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryRow {
+    return { values: Array.isArray(object?.values) ? object.values.map((e: any) => String(e)) : [] };
+  },
+
+  toJSON(message: QueryRow): unknown {
+    const obj: any = {};
+    if (message.values) {
+      obj.values = message.values.map((e) => e);
+    } else {
+      obj.values = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryRow>): QueryRow {
+    return QueryRow.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<QueryRow>): QueryRow {
+    const message = createBaseQueryRow();
+    message.values = object.values?.map((e) => e) || [];
     return message;
   },
 };
