@@ -3,7 +3,6 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
-import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "v1/common.proto";
 
