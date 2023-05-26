@@ -40,7 +40,7 @@ const environmentList = computed(() =>
 const prepareList = () => {
   // It will also be called when user logout
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    databaseV1Store.fetchDatabaseList({
+    databaseV1Store.searchDatabaseList({
       parent: "instances/-",
     });
   }

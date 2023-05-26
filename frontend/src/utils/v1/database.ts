@@ -1,4 +1,4 @@
-import { keyBy } from "lodash-es";
+import { orderBy } from "lodash-es";
 import slug from "slug";
 
 import {
@@ -7,10 +7,7 @@ import {
   UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
-import {
-  Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { instanceV1Slug } from "./instance";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
 import { User } from "@/types/proto/v1/auth_service";
@@ -62,19 +59,17 @@ export const extractDatabaseResourceName = (
   };
 };
 
-export const sortDatabaseV1ListByEnvironmentV1 = (
-  databaseList: ComposedDatabase[],
-  environmentList: Environment[]
-) => {
-  const environmentMap = keyBy(environmentList, (env) => env.name);
-  return databaseList.sort((a, b) => {
-    const aEnv = environmentMap[a.instanceEntity.environment];
-    const bEnv = environmentMap[b.instanceEntity.environment];
-    const aEnvOrder = aEnv?.order ?? -1;
-    const bEnvOrder = bEnv?.order ?? -1;
-
-    return bEnvOrder - aEnvOrder;
-  });
+export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
+  return orderBy(
+    databaseList,
+    [
+      (db) => db.instanceEntity.environmentEntity.order,
+      (db) => Number(db.instanceEntity.uid),
+      (db) => Number(db.projectEntity.uid),
+      (db) => db.databaseName,
+    ],
+    ["desc", "asc", "asc", "asc"]
+  );
 };
 
 export const isPITRDatabaseV1 = (db: ComposedDatabase): boolean => {

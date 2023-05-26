@@ -233,12 +233,12 @@ import {
   allowUsingSchemaEditorV1,
   instanceV1HasAlterSchema,
   filterDatabaseV1ByKeyword,
-  sortDatabaseV1ListByEnvironmentV1,
+  sortDatabaseV1List,
 } from "@/utils";
 import {
   hasFeature,
   useCurrentUserV1,
-  useDatabaseV1List,
+  useSearchDatabaseV1List,
   useDatabaseV1Store,
   useEnvironmentV1List,
   useProjectV1Store,
@@ -331,7 +331,7 @@ if (isTenantProject.value) {
 
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
-const { ready } = useDatabaseV1List({
+const { ready } = useSearchDatabaseV1List({
   parent: "instances/-",
 });
 
@@ -339,9 +339,9 @@ const databaseList = computed(() => {
   let list: ComposedDatabase[] = [];
   if (props.projectId) {
     const project = projectV1Store.getProjectByUID(props.projectId);
-    list = [...databaseV1Store.databaseListByProject(project.name)];
+    list = databaseV1Store.databaseListByProject(project.name);
   } else {
-    list = [...databaseV1Store.databaseListByUser(currentUserV1.value)];
+    list = databaseV1Store.databaseListByUser(currentUserV1.value);
   }
   list = list.filter((db) => (db.syncState = State.ACTIVE));
 
@@ -354,7 +354,7 @@ const databaseList = computed(() => {
     ]);
   });
 
-  return sortDatabaseV1ListByEnvironmentV1(list, environmentList.value);
+  return sortDatabaseV1List(list);
 });
 
 const schemaDatabaseList = computed(() => {

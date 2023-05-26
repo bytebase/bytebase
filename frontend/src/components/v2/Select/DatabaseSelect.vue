@@ -18,7 +18,7 @@ import { useI18n } from "vue-i18n";
 
 import {
   useCurrentUserV1,
-  useDatabaseV1List,
+  useSearchDatabaseV1List,
   useDatabaseV1Store,
 } from "@/store";
 import { ComposedDatabase, UNKNOWN_ID, unknownDatabase } from "@/types";
@@ -58,7 +58,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
-const { ready } = useDatabaseV1List({
+const { ready } = useSearchDatabaseV1List({
   parent: "instances/-",
 });
 

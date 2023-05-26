@@ -59,7 +59,7 @@ import { computed, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 
 import { DEFAULT_PROJECT_ID } from "@/types";
-import { idFromSlug, sortDatabaseV1ListByEnvironmentV1 } from "../utils";
+import { idFromSlug, sortDatabaseV1List } from "../utils";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
 import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
@@ -71,9 +71,8 @@ import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import {
   useDatabaseStore,
-  useDatabaseV1List,
+  useSearchDatabaseV1List,
   useDatabaseV1Store,
-  useEnvironmentV1List,
   useLegacyProjectStore,
   useProjectV1Store,
 } from "@/store";
@@ -108,15 +107,13 @@ const projectV1 = computed(() => {
   return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));
 });
 
-const environmentList = useEnvironmentV1List(false /* !showDeleted */);
-
 const prepareLegacyDatabaseList = () => {
   legacyDatabaseStore.fetchDatabaseListByProjectId(String(project.value.id));
 };
 
 watchEffect(prepareLegacyDatabaseList);
 
-useDatabaseV1List(
+useSearchDatabaseV1List(
   computed(() => ({
     parent: "instances/-",
     filter: `project == "${projectV1.value.name}"`,
@@ -125,7 +122,7 @@ useDatabaseV1List(
 
 const databaseV1List = computed(() => {
   const list = useDatabaseV1Store().databaseListByProject(projectV1.value.name);
-  return sortDatabaseV1ListByEnvironmentV1(list, environmentList.value);
+  return sortDatabaseV1List(list);
 });
 
 const isTenantProject = computed(() => {

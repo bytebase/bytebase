@@ -121,10 +121,8 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
 });
 
-export const useDatabaseV1List = (
-  args: MaybeRef<Partial<ListDatabasesRequest>>,
-  filter: (database: ComposedDatabase) => boolean = () => true,
-  search = true
+export const useSearchDatabaseV1List = (
+  args: MaybeRef<Partial<ListDatabasesRequest>>
 ) => {
   const store = useDatabaseV1Store();
   const ready = ref(false);
@@ -133,11 +131,8 @@ export const useDatabaseV1List = (
     () => JSON.stringify(unref(args)),
     () => {
       ready.value = false;
-      const request = search
-        ? store.searchDatabaseList(unref(args))
-        : store.fetchDatabaseList(unref(args));
-      request.then((list) => {
-        databaseList.value = list.filter(filter);
+      store.searchDatabaseList(unref(args)).then((list) => {
+        databaseList.value = list;
         ready.value = true;
       });
     },

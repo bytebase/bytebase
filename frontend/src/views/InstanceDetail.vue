@@ -188,7 +188,7 @@ const environment = computed(() => {
 const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
 watchEffect(() => {
-  databaseStore.fetchDatabaseList({
+  databaseStore.searchDatabaseList({
     parent: instance.value.name,
   });
 });

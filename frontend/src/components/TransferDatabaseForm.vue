@@ -47,14 +47,13 @@ import {
   buildDatabaseNameRegExpByTemplate,
   filterDatabaseV1ByKeyword,
   PRESET_LABEL_KEY_PLACEHOLDERS,
-  sortDatabaseV1ListByEnvironmentV1,
+  sortDatabaseV1List,
   useWorkspacePermissionV1,
 } from "../utils";
 import {
   pushNotification,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useEnvironmentV1List,
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
@@ -102,8 +101,6 @@ const prepare = async () => {
 
 onBeforeMount(prepare);
 
-const environmentList = useEnvironmentV1List(false /* !showDeleted */);
-
 const rawDatabaseList = computed(() => {
   if (state.transferSource === "DEFAULT") {
     return databaseStore.databaseListByProject(DEFAULT_PROJECT_V1_NAME);
@@ -137,7 +134,7 @@ const filteredDatabaseList = computed(() => {
     list = list.filter((db) => db.instance === instance.name);
   }
 
-  return sortDatabaseV1ListByEnvironmentV1(list, environmentList.value);
+  return sortDatabaseV1List(list);
 });
 
 const transferDatabase = async (databaseList: ComposedDatabase[]) => {

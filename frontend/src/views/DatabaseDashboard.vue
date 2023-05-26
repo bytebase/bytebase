@@ -85,7 +85,7 @@ import {
   filterDatabaseV1ByKeyword,
   hasWorkspacePermissionV1,
   sortDatabaseListByEnvironmentV1,
-  sortDatabaseV1ListByEnvironmentV1,
+  sortDatabaseV1List,
 } from "../utils";
 import {
   useCurrentUserV1,
@@ -147,16 +147,10 @@ const prepareDatabaseList = async () => {
   // It will also be called when user logout
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
     state.loading = true;
-    await databaseV1Store.fetchDatabaseList({
+    const databaseV1List = await databaseV1Store.searchDatabaseList({
       parent: "instances/-",
     });
-    const databaseV1List = databaseV1Store.databaseListByUser(
-      currentUserV1.value
-    );
-    state.databaseV1List = sortDatabaseV1ListByEnvironmentV1(
-      databaseV1List,
-      environmentV1Store.getEnvironmentList()
-    );
+    state.databaseV1List = sortDatabaseV1List(databaseV1List);
 
     await databaseStore.fetchDatabaseList();
     const databaseList = databaseStore.getDatabaseListByUser(
