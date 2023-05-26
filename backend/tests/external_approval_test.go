@@ -46,9 +46,22 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 		a.Equal(api.IssueCanceled, patchedIssue.Status)
 	}
 
-	err = ctl.patchSetting(api.SettingPatch{
-		Name:  api.SettingAppIM,
-		Value: `{"imType":"im.feishu","appId":"123","appSecret":"123","externalApproval":{"enabled":true}}`,
+	_, err = ctl.settingServiceClient.SetSetting(ctx, &v1pb.SetSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: fmt.Sprintf("settings/%s", api.SettingAppIM),
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_AppImSettingValue{
+					AppImSettingValue: &v1pb.AppIMSetting{
+						ImType:    v1pb.AppIMSetting_FEISHU,
+						AppId:     "123",
+						AppSecret: "123",
+						ExternalApproval: &v1pb.AppIMSetting_ExternalApproval{
+							Enabled: true,
+						},
+					},
+				},
+			},
+		},
 	})
 	a.NoError(err)
 
@@ -81,15 +94,13 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
+		EnvironmentID: prodEnvironmentUID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
 		Host:          instanceDir,
@@ -221,9 +232,22 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 		a.Equal(api.IssueCanceled, patchedIssue.Status)
 	}
 
-	err = ctl.patchSetting(api.SettingPatch{
-		Name:  api.SettingAppIM,
-		Value: `{"imType":"im.feishu","appId":"123","appSecret":"123","externalApproval":{"enabled":true}}`,
+	_, err = ctl.settingServiceClient.SetSetting(ctx, &v1pb.SetSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: fmt.Sprintf("settings/%s", api.SettingAppIM),
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_AppImSettingValue{
+					AppImSettingValue: &v1pb.AppIMSetting{
+						ImType:    v1pb.AppIMSetting_FEISHU,
+						AppId:     "123",
+						AppSecret: "123",
+						ExternalApproval: &v1pb.AppIMSetting_ExternalApproval{
+							Enabled: true,
+						},
+					},
+				},
+			},
+		},
 	})
 	a.NoError(err)
 
@@ -257,15 +281,13 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
+		EnvironmentID: prodEnvironmentUID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
 		Host:          instanceDir,

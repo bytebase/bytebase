@@ -74,6 +74,9 @@ message ListInstanceRolesRequest {
   // When paginating, all other parameters provided to `ListRoles` must match
   // the call that provided the page token.
   string page_token = 3;
+
+  // Refresh will refresh and return the latest data.
+  bool refresh = 4;
 }
 
 message ListInstanceRolesResponse {

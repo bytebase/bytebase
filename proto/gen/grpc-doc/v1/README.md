@@ -363,6 +363,7 @@
     - [ListPlansResponse](#bytebase-v1-ListPlansResponse)
     - [Plan](#bytebase-v1-Plan)
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
+    - [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry)
     - [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig)
@@ -3124,6 +3125,7 @@ InstanceRole is the API message for instance role.
 | page_token | [string](#string) |  | A page token, received from a previous `ListRoles` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListRoles` must match the call that provided the page token. |
+| refresh | [bool](#bool) |  | Refresh will refresh and return the latest data. |
 
 
 
@@ -5694,10 +5696,27 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target. Format: projects/{project}/logicalDatabases/{ldb1}. Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}. Format: instances/{xxx}/databases/{db1}. |
-| sheet | [string](#string) |  | The resource name of the sheet. Format: sheets/{sheet} |
+| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | type | [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
 | rollback_enabled | [bool](#bool) |  | If RollbackEnabled, build the RollbackSheetID of the task. |
+| rollback_detail | [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail) | optional |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail"></a>
+
+### Plan.ChangeDatabaseConfig.RollbackDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rollback_from_task | [string](#string) |  | rollback_from_task is the task from which the rollback SQL statement is generated for this task. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| rollback_from_review | [string](#string) |  | rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task. Format: projects/{project}/reviews/{review} |
 
 
 
@@ -5719,7 +5738,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | collation | [string](#string) |  | collation is the collation of the database. |
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
-| backup | [string](#string) |  | backup is the resource name of the backup. FIXME: backup v1 API is not ready yet, write the format here when it&#39;s ready. |
+| backup | [string](#string) |  | backup is the resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 | labels | [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
 
 
@@ -5753,7 +5772,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target to restore. Format: instances/{instance}/databases/{database} |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) | optional | create_database_config is present if the user wants to restore to a new database. |
-| backup | [string](#string) |  | FIXME: format TBD Restore from a backup. |
+| backup | [string](#string) |  |  |
 | point_in_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | After the PITR operations, the database will be recovered to the state at this time. |
 
 
@@ -5808,7 +5827,7 @@ FIXME(d/xz): support spec with deployment config
 | type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
 | status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
 | target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | detail | [string](#string) |  |  |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
 
@@ -5911,7 +5930,7 @@ FIXME(d/xz): support spec with deployment config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| backup | [string](#string) |  | The resource name of the backup. FIXME: format TBD. |
+| backup | [string](#string) |  | The resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 
 
 
@@ -5929,7 +5948,7 @@ FIXME(d/xz): support spec with deployment config
 | project | [string](#string) |  | The project owning the database. Format: projects/{project} |
 | database | [string](#string) |  | database name |
 | table | [string](#string) |  | table name |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | character_set | [string](#string) |  |  |
 | collection | [string](#string) |  |  |
 | labels | [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry) | repeated |  |
@@ -5963,7 +5982,7 @@ FIXME(d/xz): support spec with deployment config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | schema_version | [string](#string) |  |  |
 | rollback_enabled | [bool](#bool) |  | Build the rollback SQL if rollback_enabled. |
 | rollback_sql_status | [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus) |  | The status of the rollback SQL generation. |
@@ -5975,7 +5994,7 @@ FIXME(d/xz): support spec with deployment config
 | binlog_position_start | [int64](#int64) |  |  |
 | binlog_position_end | [int64](#int64) |  |  |
 | rollback_error | [string](#string) |  |  |
-| rollback_sheet | [string](#string) |  | rollback_sheet is the resource name of the sheet that stores the generated rollback SQL statement. Format: sheets/{sheet} |
+| rollback_sheet | [string](#string) |  | rollback_sheet is the resource name of the sheet that stores the generated rollback SQL statement. Format: projects/{project}/sheets/{sheet} |
 | rollback_from_review | [string](#string) |  | rollback_from_review is the resource name of the review that the rollback SQL statement is generated from. Format: projects/{project}/reviews/{review} |
 | rollback_from_task | [string](#string) |  | rollback_from_task is the resource name of the task that the rollback SQL statement is generated from. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 
@@ -5993,7 +6012,7 @@ FIXME(d/xz): support spec with deployment config
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | Target is only used when doing restore to a new database now. It is empty for the case of in-place restore. Target {instance} must be within the same environment as the instance of the original database. {database} is the target database name. Format: instances/{instance}/databases/database |
-| backup | [string](#string) |  | Only used when doing restore full backup only. |
+| backup | [string](#string) |  | Only used when doing restore full backup only. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 | point_in_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | After the PITR operations, the database will be recovered to the state at this time. |
 
 
@@ -6024,7 +6043,7 @@ FIXME(d/xz): support spec with deployment config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | schema_version | [string](#string) |  |  |
 
 

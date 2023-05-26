@@ -102,14 +102,12 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
+		EnvironmentID: prodEnvironmentUID,
 		Name:          "mysqlInstance",
 		Engine:        db.MySQL,
 		Host:          "127.0.0.1",
@@ -243,11 +241,9 @@ func TestGhostTenant(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
+	_, testEnvironmentUID, err := ctl.getEnvironment(ctx, "test")
 	a.NoError(err)
-	testEnvironment, err := findEnvironment(environments, "Test")
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	// Provision instances.
@@ -259,7 +255,7 @@ func TestGhostTenant(t *testing.T) {
 		// Add the provisioned instances.
 		instance, err := ctl.addInstance((api.InstanceCreate{
 			ResourceID:    generateRandomString("instance", 10),
-			EnvironmentID: testEnvironment.ID,
+			EnvironmentID: testEnvironmentUID,
 			Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 			Engine:        db.MySQL,
 			Host:          "127.0.0.1",
@@ -276,7 +272,7 @@ func TestGhostTenant(t *testing.T) {
 		// Add the provisioned instances.
 		instance, err := ctl.addInstance((api.InstanceCreate{
 			ResourceID:    generateRandomString("instance", 10),
-			EnvironmentID: prodEnvironment.ID,
+			EnvironmentID: prodEnvironmentUID,
 			Name:          fmt.Sprintf("%s-%d", prodInstanceName, i),
 			Engine:        db.MySQL,
 			Host:          "127.0.0.1",

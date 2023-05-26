@@ -16,7 +16,11 @@
             class="w-full px-2 py-2 flex flex-row justify-start items-center"
           >
             <span class="textlabel">{{ displayRoleTitle(role.role) }}</span>
-            <NTooltip :disabled="allowRemoveRole(role.role)">
+            <NTooltip
+              :disabled="
+                allowRemoveRole(role.role) || role.role !== 'roles/OWNER'
+              "
+            >
               <template #trigger>
                 <NButton
                   tag="div"

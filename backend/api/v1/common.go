@@ -33,11 +33,15 @@ const (
 	externalVersionControlPrefix = "externalVersionControls/"
 	riskPrefix                   = "risks/"
 	reviewPrefix                 = "reviews/"
+	rolloutPrefix                = "rollouts/"
+	stagePrefix                  = "stages/"
+	taskPrefix                   = "tasks/"
 	planPrefix                   = "plans/"
 	rolePrefix                   = "roles/"
 	secretNamePrefix             = "secrets/"
 	webhookIDPrefix              = "webhooks/"
 	sheetIDPrefix                = "sheets/"
+	databaseGroupNamePrefix      = "databaseGroups/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -238,6 +242,18 @@ func getReviewID(name string) (int, error) {
 		return 0, errors.Errorf("invalid review ID %q", tokens[1])
 	}
 	return reviewID, nil
+}
+
+func getTaskID(name string) (int, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix, stagePrefix, taskPrefix)
+	if err != nil {
+		return 0, err
+	}
+	taskID, err := strconv.Atoi(tokens[3])
+	if err != nil {
+		return 0, errors.Errorf("invalid task ID %q", tokens[1])
+	}
+	return taskID, nil
 }
 
 func getPlanID(name string) (int64, error) {

@@ -2,7 +2,6 @@
 package tests
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -15,14 +14,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -36,7 +33,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/server"
 	"github.com/bytebase/bytebase/backend/tests/fake"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -160,14 +156,16 @@ CREATE TABLE book4 (
 )
 
 type controller struct {
-	server                 *server.Server
-	profile                componentConfig.Profile
-	client                 *http.Client
-	grpcConn               *grpc.ClientConn
-	reviewServiceClient    v1pb.ReviewServiceClient
-	orgPolicyServiceClient v1pb.OrgPolicyServiceClient
-	projectServiceClient   v1pb.ProjectServiceClient
-	authServiceClient      v1pb.AuthServiceClient
+	server                   *server.Server
+	profile                  componentConfig.Profile
+	client                   *http.Client
+	grpcConn                 *grpc.ClientConn
+	reviewServiceClient      v1pb.ReviewServiceClient
+	orgPolicyServiceClient   v1pb.OrgPolicyServiceClient
+	projectServiceClient     v1pb.ProjectServiceClient
+	authServiceClient        v1pb.AuthServiceClient
+	settingServiceClient     v1pb.SettingServiceClient
+	environmentServiceClient v1pb.EnvironmentServiceClient
 
 	cookie             string
 	grpcMDAccessToken  string
@@ -266,7 +264,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	if err != nil {
 		return nil, err
 	}
-	if err := ctl.initWorkspaceProfile(); err != nil {
+	if err := ctl.initWorkspaceProfile(metaCtx); err != nil {
 		return nil, err
 	}
 	return metaCtx, nil
@@ -290,18 +288,21 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) (context
 	return ctl.start(ctx, serverPort)
 }
 
-func (ctl *controller) initWorkspaceProfile() error {
-	bytes, err := protojson.Marshal(&storepb.WorkspaceProfileSetting{
-		ExternalUrl:    ctl.profile.ExternalURL,
-		DisallowSignup: false,
+func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
+	_, err := ctl.settingServiceClient.SetSetting(ctx, &v1pb.SetSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: fmt.Sprintf("settings/%s", api.SettingWorkspaceProfile),
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_WorkspaceProfileSettingValue{
+					WorkspaceProfileSettingValue: &v1pb.WorkspaceProfileSetting{
+						ExternalUrl:    ctl.profile.ExternalURL,
+						DisallowSignup: false,
+					},
+				},
+			},
+		},
 	})
-	if err != nil {
-		return err
-	}
-	return ctl.patchSetting(api.SettingPatch{
-		Name:  api.SettingWorkspaceProfile,
-		Value: string(bytes),
-	})
+	return err
 }
 
 // GetTestProfile will return a profile for testing.
@@ -429,6 +430,8 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)
+	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
+	ctl.environmentServiceClient = v1pb.NewEnvironmentServiceClient(ctl.grpcConn)
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
@@ -698,23 +701,5 @@ func (ctl *controller) Login() error {
 	ctl.grpcMDAccessToken = resp.Header.Get("grpc-metadata-bytebase-access-token")
 	ctl.grpcMDRefreshToken = resp.Header.Get("grpc-metadata-bytebase-refresh-token")
 	ctl.grpcMDUser = resp.Header.Get("grpc-metadata-bytebase-user")
-	return nil
-}
-
-func (ctl *controller) patchSetting(settingPatch api.SettingPatch) error {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &settingPatch); err != nil {
-		return errors.Wrap(err, "failed to marshal settingPatch")
-	}
-
-	body, err := ctl.patch(fmt.Sprintf("/setting/%s", settingPatch.Name), buf)
-	if err != nil {
-		return err
-	}
-
-	setting := new(api.Setting)
-	if err = jsonapi.UnmarshalPayload(body, setting); err != nil {
-		return errors.Wrap(err, "fail to unmarshal setting response")
-	}
 	return nil
 }

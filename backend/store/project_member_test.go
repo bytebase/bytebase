@@ -192,6 +192,48 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 				},
 			},
 		},
+		{
+			oldPolicy: &IAMPolicyMessage{
+				Bindings: []*PolicyBinding{
+					{
+						Role:    api.Owner,
+						Members: []*UserMessage{{ID: 1}, {ID: 2}},
+					},
+				},
+			},
+			newPolicy: &IAMPolicyMessage{
+				Bindings: []*PolicyBinding{
+					{
+						Role:    api.Owner,
+						Members: []*UserMessage{{ID: 1}},
+					},
+					{
+						Role:    api.Developer,
+						Members: []*UserMessage{{ID: 1}},
+					},
+					{
+						Role:    api.Developer,
+						Members: []*UserMessage{{ID: 2}},
+					},
+				},
+			},
+			remove: &IAMPolicyMessage{
+				Bindings: []*PolicyBinding{
+					{
+						Role:    api.Owner,
+						Members: []*UserMessage{{ID: 2}},
+					},
+				},
+			},
+			add: &IAMPolicyMessage{
+				Bindings: []*PolicyBinding{
+					{
+						Role:    api.Developer,
+						Members: []*UserMessage{{ID: 1}, {ID: 2}},
+					},
+				},
+			},
+		},
 	}
 
 	for i, tc := range testCases {
