@@ -61,6 +61,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -149,6 +150,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -267,6 +269,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -405,6 +408,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -524,6 +528,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -634,6 +639,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -681,6 +687,7 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []
@@ -754,6 +761,50 @@
               comment: ""
               foreignkeys: []
           views: []
+          functions: []
+    characterset: ""
+    collation: ""
+    extensions: []
+  err: null
+- statement: |-
+    create view v1 as select * from t;
+    alter view v1 rename to this_is_view_del;
+    drop view this_is_view_del;
+  want:
+    name: postgres
+    schemas:
+        - name: public
+          tables:
+            - name: test
+              columns:
+                - name: id
+                  position: 1
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: name
+                  position: 2
+                  default: null
+                  nullable: true
+                  type: varchar(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+          functions: []
     characterset: ""
     collation: ""
     extensions: []

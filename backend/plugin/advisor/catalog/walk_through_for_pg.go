@@ -126,13 +126,8 @@ func (d *DatabaseState) pgDropView(tableDef *ast.TableDef, ifExists bool, _ ast.
 		return err
 	}
 
-	view, err := schema.getView(tableDef.Name)
-	if err != nil {
-		return err
-	}
-
-	delete(schema.identifierMap, view.name)
-	delete(schema.viewSet, view.name)
+	delete(schema.identifierMap, tableDef.Name)
+	delete(schema.viewSet, tableDef.Name)
 	return nil
 }
 
@@ -280,6 +275,10 @@ func (d *DatabaseState) pgRenameIndex(node *ast.RenameIndexStmt) *WalkThroughErr
 }
 
 func (d *DatabaseState) pgAlterTable(node *ast.AlterTableStmt) *WalkThroughError {
+	// Do nothing for view.
+	if node.Table.Type == ast.TableTypeView {
+		return nil
+	}
 	schema, err := d.getSchema(node.Table.Schema)
 	if err != nil {
 		return err
@@ -1024,17 +1023,6 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 		d.schemaSet[publicSchemaName] = schema
 	}
 	return schema, nil
-}
-
-func (s *SchemaState) getView(viewName string) (*ViewState, *WalkThroughError) {
-	view, exists := s.viewSet[viewName]
-	if !exists {
-		return nil, &WalkThroughError{
-			Type:    ErrorTypeViewNotExists,
-			Content: fmt.Sprintf("The view %q doesn't exists in schema %q", viewName, s.name),
-		}
-	}
-	return view, nil
 }
 
 func (s *SchemaState) getTable(tableName string) (*TableState, *WalkThroughError) {
