@@ -156,15 +156,16 @@ CREATE TABLE book4 (
 )
 
 type controller struct {
-	server                 *server.Server
-	profile                componentConfig.Profile
-	client                 *http.Client
-	grpcConn               *grpc.ClientConn
-	reviewServiceClient    v1pb.ReviewServiceClient
-	orgPolicyServiceClient v1pb.OrgPolicyServiceClient
-	projectServiceClient   v1pb.ProjectServiceClient
-	authServiceClient      v1pb.AuthServiceClient
-	settingServiceClient   v1pb.SettingServiceClient
+	server                   *server.Server
+	profile                  componentConfig.Profile
+	client                   *http.Client
+	grpcConn                 *grpc.ClientConn
+	reviewServiceClient      v1pb.ReviewServiceClient
+	orgPolicyServiceClient   v1pb.OrgPolicyServiceClient
+	projectServiceClient     v1pb.ProjectServiceClient
+	authServiceClient        v1pb.AuthServiceClient
+	settingServiceClient     v1pb.SettingServiceClient
+	environmentServiceClient v1pb.EnvironmentServiceClient
 
 	cookie             string
 	grpcMDAccessToken  string
@@ -430,6 +431,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)
 	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
+	ctl.environmentServiceClient = v1pb.NewEnvironmentServiceClient(ctl.grpcConn)
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
