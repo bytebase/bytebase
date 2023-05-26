@@ -158,7 +158,7 @@
       </template>
       <template v-if="selectedTabItem?.hash === 'change-history'">
         <DatabaseMigrationHistoryPanel
-          :database="legacyDatabase"
+          :database="database"
           :allow-edit="allowEdit"
         />
       </template>
