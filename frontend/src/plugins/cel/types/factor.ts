@@ -23,6 +23,10 @@ export const StringFactorList = [
   "resource.table",
   "request.statement",
   "request.export_format",
+
+  // Database/table group related factors
+  "resource.database_name",
+  "resource.table_name",
 ] as const;
 export type StringFactor = typeof StringFactorList[number];
 
