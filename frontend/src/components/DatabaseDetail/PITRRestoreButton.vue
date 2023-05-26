@@ -373,10 +373,12 @@ const onConfirm = async () => {
         cluster: "",
       } as CreateDatabaseContext;
       // Do not submit non-selected optional labels
-      const labels = Object.keys(context.labels).map((key) => {
-        const value = context.labels[key];
-        return { key, value };
-      });
+      const labels = Object.keys(context.labels)
+        .map((key) => {
+          const value = context.labels[key];
+          return { key, value };
+        })
+        .filter((kv) => !!kv.value);
       createDatabaseContext.labels = JSON.stringify(labels);
     }
 
