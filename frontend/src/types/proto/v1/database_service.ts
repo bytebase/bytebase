@@ -911,7 +911,7 @@ export function changeHistory_TypeToJSON(object: ChangeHistory_Type): string {
 export enum ChangeHistory_Status {
   STATUS_UNSPECIFIED = 0,
   PENDING = 1,
-  COMPLETED = 2,
+  DONE = 2,
   FAILED = 3,
   UNRECOGNIZED = -1,
 }
@@ -925,8 +925,8 @@ export function changeHistory_StatusFromJSON(object: any): ChangeHistory_Status 
     case "PENDING":
       return ChangeHistory_Status.PENDING;
     case 2:
-    case "COMPLETED":
-      return ChangeHistory_Status.COMPLETED;
+    case "DONE":
+      return ChangeHistory_Status.DONE;
     case 3:
     case "FAILED":
       return ChangeHistory_Status.FAILED;
@@ -943,8 +943,8 @@ export function changeHistory_StatusToJSON(object: ChangeHistory_Status): string
       return "STATUS_UNSPECIFIED";
     case ChangeHistory_Status.PENDING:
       return "PENDING";
-    case ChangeHistory_Status.COMPLETED:
-      return "COMPLETED";
+    case ChangeHistory_Status.DONE:
+      return "DONE";
     case ChangeHistory_Status.FAILED:
       return "FAILED";
     case ChangeHistory_Status.UNRECOGNIZED:

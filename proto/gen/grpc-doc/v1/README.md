@@ -2186,7 +2186,7 @@ The type of the backup.
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
-| COMPLETED | 2 |  |
+| DONE | 2 |  |
 | FAILED | 3 |  |
 
 
