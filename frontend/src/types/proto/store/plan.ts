@@ -43,10 +43,6 @@ export interface PlanConfig_CreateDatabaseConfig {
   cluster: string;
   /** owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>". */
   owner: string;
-  /**
-   * backup is the resource name of the backup.
-   * FIXME: backup v1 API is not ready yet, write the format here when it's ready.
-   */
   backup: string;
   /** labels of the database. */
   labels: { [key: string]: string };
@@ -67,7 +63,7 @@ export interface PlanConfig_ChangeDatabaseConfig {
   target: string;
   /**
    * The resource name of the sheet.
-   * Format: sheets/{sheet}
+   * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
   type: PlanConfig_ChangeDatabaseConfig_Type;
@@ -78,6 +74,7 @@ export interface PlanConfig_ChangeDatabaseConfig {
   schemaVersion: string;
   /** If RollbackEnabled, build the RollbackSheetID of the task. */
   rollbackEnabled: boolean;
+  rollbackDetail?: PlanConfig_ChangeDatabaseConfig_RollbackDetail | undefined;
 }
 
 /** Type is the database change type. */
@@ -154,6 +151,19 @@ export function planConfig_ChangeDatabaseConfig_TypeToJSON(object: PlanConfig_Ch
   }
 }
 
+export interface PlanConfig_ChangeDatabaseConfig_RollbackDetail {
+  /**
+   * rollback_from_task is the task from which the rollback SQL statement is generated for this task.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   */
+  rollbackFromTask: string;
+  /**
+   * rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task.
+   * Format: projects/{project}/reviews/{review}
+   */
+  rollbackFromReview: string;
+}
+
 export interface PlanConfig_RestoreDatabaseConfig {
   /**
    * The resource name of the target to restore.
@@ -165,8 +175,8 @@ export interface PlanConfig_RestoreDatabaseConfig {
     | PlanConfig_CreateDatabaseConfig
     | undefined;
   /**
-   * FIXME: format TBD
    * Restore from a backup.
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
    */
   backup?:
     | string
@@ -693,7 +703,7 @@ export const PlanConfig_CreateDatabaseConfig_LabelsEntry = {
 };
 
 function createBasePlanConfig_ChangeDatabaseConfig(): PlanConfig_ChangeDatabaseConfig {
-  return { target: "", sheet: "", type: 0, schemaVersion: "", rollbackEnabled: false };
+  return { target: "", sheet: "", type: 0, schemaVersion: "", rollbackEnabled: false, rollbackDetail: undefined };
 }
 
 export const PlanConfig_ChangeDatabaseConfig = {
@@ -712,6 +722,9 @@ export const PlanConfig_ChangeDatabaseConfig = {
     }
     if (message.rollbackEnabled === true) {
       writer.uint32(40).bool(message.rollbackEnabled);
+    }
+    if (message.rollbackDetail !== undefined) {
+      PlanConfig_ChangeDatabaseConfig_RollbackDetail.encode(message.rollbackDetail, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -758,6 +771,13 @@ export const PlanConfig_ChangeDatabaseConfig = {
 
           message.rollbackEnabled = reader.bool();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.rollbackDetail = PlanConfig_ChangeDatabaseConfig_RollbackDetail.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -774,6 +794,9 @@ export const PlanConfig_ChangeDatabaseConfig = {
       type: isSet(object.type) ? planConfig_ChangeDatabaseConfig_TypeFromJSON(object.type) : 0,
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
       rollbackEnabled: isSet(object.rollbackEnabled) ? Boolean(object.rollbackEnabled) : false,
+      rollbackDetail: isSet(object.rollbackDetail)
+        ? PlanConfig_ChangeDatabaseConfig_RollbackDetail.fromJSON(object.rollbackDetail)
+        : undefined,
     };
   },
 
@@ -784,6 +807,9 @@ export const PlanConfig_ChangeDatabaseConfig = {
     message.type !== undefined && (obj.type = planConfig_ChangeDatabaseConfig_TypeToJSON(message.type));
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
+    message.rollbackDetail !== undefined && (obj.rollbackDetail = message.rollbackDetail
+      ? PlanConfig_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail)
+      : undefined);
     return obj;
   },
 
@@ -798,6 +824,87 @@ export const PlanConfig_ChangeDatabaseConfig = {
     message.type = object.type ?? 0;
     message.schemaVersion = object.schemaVersion ?? "";
     message.rollbackEnabled = object.rollbackEnabled ?? false;
+    message.rollbackDetail = (object.rollbackDetail !== undefined && object.rollbackDetail !== null)
+      ? PlanConfig_ChangeDatabaseConfig_RollbackDetail.fromPartial(object.rollbackDetail)
+      : undefined;
+    return message;
+  },
+};
+
+function createBasePlanConfig_ChangeDatabaseConfig_RollbackDetail(): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
+  return { rollbackFromTask: "", rollbackFromReview: "" };
+}
+
+export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
+  encode(
+    message: PlanConfig_ChangeDatabaseConfig_RollbackDetail,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.rollbackFromTask !== "") {
+      writer.uint32(10).string(message.rollbackFromTask);
+    }
+    if (message.rollbackFromReview !== "") {
+      writer.uint32(18).string(message.rollbackFromReview);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanConfig_ChangeDatabaseConfig_RollbackDetail();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rollbackFromTask = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.rollbackFromReview = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
+    return {
+      rollbackFromTask: isSet(object.rollbackFromTask) ? String(object.rollbackFromTask) : "",
+      rollbackFromReview: isSet(object.rollbackFromReview) ? String(object.rollbackFromReview) : "",
+    };
+  },
+
+  toJSON(message: PlanConfig_ChangeDatabaseConfig_RollbackDetail): unknown {
+    const obj: any = {};
+    message.rollbackFromTask !== undefined && (obj.rollbackFromTask = message.rollbackFromTask);
+    message.rollbackFromReview !== undefined && (obj.rollbackFromReview = message.rollbackFromReview);
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<PlanConfig_ChangeDatabaseConfig_RollbackDetail>,
+  ): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
+    return PlanConfig_ChangeDatabaseConfig_RollbackDetail.fromPartial(base ?? {});
+  },
+
+  fromPartial(
+    object: DeepPartial<PlanConfig_ChangeDatabaseConfig_RollbackDetail>,
+  ): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
+    const message = createBasePlanConfig_ChangeDatabaseConfig_RollbackDetail();
+    message.rollbackFromTask = object.rollbackFromTask ?? "";
+    message.rollbackFromReview = object.rollbackFromReview ?? "";
     return message;
   },
 };
