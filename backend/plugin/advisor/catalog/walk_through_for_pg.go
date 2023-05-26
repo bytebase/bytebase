@@ -126,13 +126,8 @@ func (d *DatabaseState) pgDropView(tableDef *ast.TableDef, ifExists bool, _ ast.
 		return err
 	}
 
-	view, err := schema.getView(tableDef.Name)
-	if err != nil {
-		return err
-	}
-
-	delete(schema.identifierMap, view.name)
-	delete(schema.viewSet, view.name)
+	delete(schema.identifierMap, tableDef.Name)
+	delete(schema.viewSet, tableDef.Name)
 	return nil
 }
 
@@ -280,6 +275,10 @@ func (d *DatabaseState) pgRenameIndex(node *ast.RenameIndexStmt) *WalkThroughErr
 }
 
 func (d *DatabaseState) pgAlterTable(node *ast.AlterTableStmt) *WalkThroughError {
+	// Do nothing for view.
+	if node.Table.Type == ast.TableTypeView {
+		return nil
+	}
 	schema, err := d.getSchema(node.Table.Schema)
 	if err != nil {
 		return err
