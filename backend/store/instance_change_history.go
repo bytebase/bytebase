@@ -55,6 +55,7 @@ type FindInstanceChangeHistoryMessage struct {
 	Source     *db.MigrationSource
 	Version    *string
 	Limit      *int
+	Offset     *int
 }
 
 // UpdateInstanceChangeHistoryMessage is for updating an instance change history.
@@ -353,6 +354,9 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		WHERE ` + strings.Join(where, " AND ") + ` ORDER BY instance_id, database_id, sequence DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
