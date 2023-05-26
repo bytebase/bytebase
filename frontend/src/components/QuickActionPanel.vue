@@ -313,7 +313,7 @@ import { idFromSlug, isDev } from "../utils";
 import {
   useCommandStore,
   useCurrentUserIamPolicy,
-  useInstanceStore,
+  useInstanceV1Store,
   useProjectV1ListByCurrentUser,
   useRouterStore,
   useSubscriptionStore,
@@ -407,7 +407,7 @@ const transferOutDatabase = () => {
 };
 
 const createInstance = () => {
-  const instanceList = useInstanceStore().getInstanceList();
+  const instanceList = useInstanceV1Store().instanceList;
   if (subscriptionStore.instanceCount <= instanceList.length) {
     state.featureName = "bb.feature.instance-count";
     state.showFeatureModal = true;

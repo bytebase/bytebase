@@ -272,7 +272,6 @@ import {
   hasFeature,
   useCurrentUserV1,
   useEnvironmentV1Store,
-  useInstanceStore,
   useInstanceV1Store,
   useIssueStore,
   useProjectV1Store,
@@ -322,7 +321,6 @@ const emit = defineEmits<{
   (event: "dismiss"): void;
 }>();
 
-const instanceStore = useInstanceStore();
 const instanceV1Store = useInstanceV1Store();
 const router = useRouter();
 
@@ -334,13 +332,6 @@ useEventListener("keydown", (e: KeyboardEvent) => {
     cancel();
   }
 });
-
-// Refresh the instance list
-const prepareInstanceList = () => {
-  instanceStore.fetchInstanceList();
-};
-
-watchEffect(prepareInstanceList);
 
 const showAssigneeSelect = computed(() => {
   // If the role can't change assignee after creating the issue, then we will show the
