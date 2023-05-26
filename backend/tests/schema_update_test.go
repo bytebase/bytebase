@@ -61,15 +61,13 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
+		EnvironmentID: prodEnvironmentUID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
 		Host:          instanceDir,
@@ -487,15 +485,13 @@ func TestVCS(t *testing.T) {
 			instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), instanceName)
 			a.NoError(err)
 
-			environments, err := ctl.getEnvironments()
-			a.NoError(err)
-			prodEnvironment, err := findEnvironment(environments, "Prod")
+			prodEnvironment, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
 			// Add an instance.
 			instance, err := ctl.addInstance(api.InstanceCreate{
 				ResourceID:    generateRandomString("instance", 10),
-				EnvironmentID: prodEnvironment.ID,
+				EnvironmentID: prodEnvironmentUID,
 				Name:          instanceName,
 				Engine:        db.SQLite,
 				Host:          instanceDir,
@@ -674,7 +670,8 @@ func TestVCS(t *testing.T) {
 			status, err = ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
-			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, prodEnvironment.ResourceID, database.Name)
+			environmentResourceID := strings.TrimPrefix(prodEnvironment.Name, "environments/")
+			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, environmentResourceID, database.Name)
 			files, err := ctl.vcsProvider.GetFiles(test.externalID, latestFileName)
 			a.NoError(err)
 			a.Len(files, 1)
@@ -916,16 +913,14 @@ func TestVCS_SDL(t *testing.T) {
 			)
 			a.NoError(err)
 
-			environments, err := ctl.getEnvironments()
-			a.NoError(err)
-			prodEnvironment, err := findEnvironment(environments, "Prod")
+			_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
 			// Add an instance
 			instance, err := ctl.addInstance(
 				api.InstanceCreate{
 					ResourceID:    generateRandomString("instance", 10),
-					EnvironmentID: prodEnvironment.ID,
+					EnvironmentID: prodEnvironmentUID,
 					Name:          "pgInstance",
 					Engine:        db.Postgres,
 					Host:          "/tmp",
@@ -1403,9 +1398,13 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			)
 			a.NoError(err)
 
-			environment, err := ctl.createEnvironment(api.EnvironmentCreate{
-				Name: test.envName,
-			})
+			environment, err := ctl.environmentServiceClient.CreateEnvironment(ctx,
+				&v1pb.CreateEnvironmentRequest{
+					Environment:   &v1pb.Environment{Title: test.envName},
+					EnvironmentId: strings.ToLower(test.envName),
+				})
+			a.NoError(err)
+			environmentUID, err := strconv.Atoi(environment.Uid)
 			a.NoError(err)
 			// Provision an instance.
 			instanceRootDir := t.TempDir()
@@ -1414,7 +1413,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a.NoError(err)
 			instance, err := ctl.addInstance(api.InstanceCreate{
 				ResourceID:    generateRandomString("instance", 10),
-				EnvironmentID: environment.ID,
+				EnvironmentID: environmentUID,
 				Name:          instanceName,
 				Engine:        db.SQLite,
 				Host:          instanceDir,
@@ -1621,15 +1620,13 @@ func TestVCS_SQL_Review(t *testing.T) {
 			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
-			environments, err := ctl.getEnvironments()
-			a.NoError(err)
-			prodEnvironment, err := findEnvironment(environments, "Prod")
+			prodEnvironment, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
 			// Add an instance.
 			instance, err := ctl.addInstance(api.InstanceCreate{
 				ResourceID:    generateRandomString("instance", 10),
-				EnvironmentID: prodEnvironment.ID,
+				EnvironmentID: prodEnvironmentUID,
 				Name:          "pgInstance",
 				Engine:        db.Postgres,
 				Host:          "/tmp",
@@ -1717,7 +1714,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-				Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+				Parent: prodEnvironment.Name,
 				Policy: &v1pb.Policy{
 					Type: v1pb.PolicyType_SQL_REVIEW,
 					Policy: &v1pb.Policy_SqlReviewPolicy{
@@ -2101,10 +2098,15 @@ CREATE TABLE public.book (
 	err = ctl.setLicense()
 	a.NoError(err)
 	environmentName := t.Name()
-	environment, err := ctl.createEnvironment(api.EnvironmentCreate{
-		Name: environmentName,
-	})
+	environment, err := ctl.environmentServiceClient.CreateEnvironment(ctx,
+		&v1pb.CreateEnvironmentRequest{
+			Environment:   &v1pb.Environment{Title: environmentName},
+			EnvironmentId: strings.ToLower(environmentName),
+		})
 	a.NoError(err)
+	environmentUID, err := strconv.Atoi(environment.Uid)
+	a.NoError(err)
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			dbPort := getTestPort()
@@ -2129,7 +2131,7 @@ CREATE TABLE public.book (
 			case db.Postgres:
 				instance, err = ctl.addInstance(api.InstanceCreate{
 					ResourceID:    generateRandomString("instance", 10),
-					EnvironmentID: environment.ID,
+					EnvironmentID: environmentUID,
 					Name:          test.name,
 					Engine:        db.Postgres,
 					Host:          "/tmp",
@@ -2139,7 +2141,7 @@ CREATE TABLE public.book (
 			case db.MySQL:
 				instance, err = ctl.addInstance(api.InstanceCreate{
 					ResourceID:    generateRandomString("instance", 10),
-					EnvironmentID: environment.ID,
+					EnvironmentID: environmentUID,
 					Name:          "mysqlInstance",
 					Engine:        db.MySQL,
 					Host:          "127.0.0.1",
@@ -2244,15 +2246,13 @@ func TestMarkTaskAsDone(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	// Add an instance.
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
+		EnvironmentID: prodEnvironmentUID,
 		Name:          instanceName,
 		Engine:        db.SQLite,
 		Host:          instanceDir,
@@ -2514,15 +2514,13 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			)
 			a.NoError(err)
 
-			environments, err := ctl.getEnvironments()
-			a.NoError(err)
-			prodEnvironment, err := findEnvironment(environments, "Prod")
+			_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
 			// Add an instance
 			instance, err := ctl.addInstance(api.InstanceCreate{
 				ResourceID:    generateRandomString("instance", 10),
-				EnvironmentID: prodEnvironment.ID,
+				EnvironmentID: prodEnvironmentUID,
 				Name:          "mysqlInstance",
 				Engine:        db.MySQL,
 				Host:          "127.0.0.1",

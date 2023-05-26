@@ -194,14 +194,12 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
+		EnvironmentID: prodEnvironmentUID,
 		Name:          "pgInstance",
 		Engine:        db.Postgres,
 		Host:          "/tmp",
@@ -483,14 +481,12 @@ func TestSyncerForMySQL(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
+		EnvironmentID: prodEnvironmentUID,
 		Name:          "mysqlInstance",
 		Engine:        db.MySQL,
 		Host:          "127.0.0.1",
