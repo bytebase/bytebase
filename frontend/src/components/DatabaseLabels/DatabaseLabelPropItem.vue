@@ -47,7 +47,7 @@
 import { nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ComposedDatabase } from "../../types";
-import { LABEL_VALUE_EMPTY, MAX_LABEL_VALUE_LENGTH } from "../../utils";
+import { MAX_LABEL_VALUE_LENGTH } from "../../utils";
 
 type LocalState = {
   editing: boolean;
@@ -121,7 +121,7 @@ const cancel = () => {
 const save = () => {
   if (!validate()) return;
 
-  const value = state.value?.trim() ?? LABEL_VALUE_EMPTY;
+  const value = state.value?.trim() ?? "";
   emit("update:value", value);
   cancel();
 };

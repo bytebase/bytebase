@@ -1,7 +1,6 @@
 import { useEnvironmentV1Store } from "@/store";
 import { uniq } from "lodash-es";
 
-import { LABEL_VALUE_EMPTY } from "../label";
 import { extractEnvironmentResourceName } from "./environment";
 import { Database } from "@/types/proto/v1/database_service";
 
@@ -28,7 +27,7 @@ export const getLabelValuesFromDatabaseV1List = (
 
   if (withEmptyValue) {
     // plus one more "<empty value>" if needed
-    distinctValueList.push(LABEL_VALUE_EMPTY);
+    distinctValueList.push("");
   }
 
   return distinctValueList;
