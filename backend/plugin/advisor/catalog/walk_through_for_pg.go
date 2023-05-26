@@ -1025,17 +1025,6 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 	return schema, nil
 }
 
-func (s *SchemaState) getView(viewName string) (*ViewState, *WalkThroughError) {
-	view, exists := s.viewSet[viewName]
-	if !exists {
-		return nil, &WalkThroughError{
-			Type:    ErrorTypeViewNotExists,
-			Content: fmt.Sprintf("The view %q doesn't exists in schema %q", viewName, s.name),
-		}
-	}
-	return view, nil
-}
-
 func (s *SchemaState) getTable(tableName string) (*TableState, *WalkThroughError) {
 	table, exists := s.tableSet[tableName]
 	if !exists {
