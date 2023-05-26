@@ -17,6 +17,7 @@ import {
 } from "@/types";
 import { useEnvironmentV1Store } from "./environment";
 import { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
   const instanceMapByName = reactive(new Map<string, ComposedInstance>());
@@ -124,6 +125,10 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     await fetchInstanceByUID(uid);
     return getInstanceByUID(uid);
   };
+  const fetchInstanceRoleByName = async (name: string) => {
+    const role = await instanceRoleServiceClient.getInstanceRole({ name });
+    return role;
+  };
   const fetchInstanceRoleListByName = async (name: string) => {
     // TODO: ListInstanceRoles will return error if instance is archived
     // We temporarily suppress errors here now.
@@ -133,7 +138,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       });
       instanceRoleListMapByName.set(name, roles);
       return roles;
-    } catch {
+    } catch (err) {
+      console.debug(extractGrpcErrorMessage(err));
       return [];
     }
   };
@@ -190,6 +196,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     fetchInstanceByUID,
     getInstanceByUID,
     getOrFetchInstanceByUID,
+    fetchInstanceRoleByName,
     fetchInstanceRoleListByName,
     getInstanceRoleListByName,
     createDataSource,

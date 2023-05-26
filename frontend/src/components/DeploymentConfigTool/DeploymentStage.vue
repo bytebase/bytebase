@@ -70,7 +70,7 @@
 <script lang="ts">
 import { PRESET_LABEL_KEYS, RESERVED_LABEL_KEYS } from "@/utils";
 import { computed, defineComponent, PropType } from "vue";
-import { Database } from "../../types";
+import { ComposedDatabase } from "../../types";
 import SelectorItem from "./SelectorItem.vue";
 import {
   LabelSelectorRequirement,
@@ -99,7 +99,7 @@ export default defineComponent({
       default: false,
     },
     databaseList: {
-      type: Array as PropType<Database[]>,
+      type: Array as PropType<ComposedDatabase[]>,
       default: () => [],
     },
     showHeader: {

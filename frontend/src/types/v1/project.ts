@@ -10,6 +10,8 @@ import {
   Workflow,
 } from "../proto/v1/project_service";
 
+export const EMPTY_PROJECT_NAME = `projects/${EMPTY_ID}`;
+export const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
 export const DEFAULT_PROJECT_V1_NAME = "projects/default";
 
 export interface ComposedProject extends Project {
@@ -19,7 +21,7 @@ export interface ComposedProject extends Project {
 export const emptyProject = (): ComposedProject => {
   return {
     ...Project.fromJSON({
-      name: `projects/${EMPTY_ID}`,
+      name: EMPTY_PROJECT_NAME,
       uid: String(EMPTY_ID),
       title: "",
       key: "",
@@ -38,7 +40,7 @@ export const emptyProject = (): ComposedProject => {
 export const unknownProject = (): ComposedProject => {
   return {
     ...emptyProject(),
-    name: `projects/${UNKNOWN_ID}`,
+    name: UNKNOWN_PROJECT_NAME,
     uid: String(UNKNOWN_ID),
     title: "<<Unknown project>>",
   };

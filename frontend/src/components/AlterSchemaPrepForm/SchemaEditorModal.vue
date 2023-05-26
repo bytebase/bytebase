@@ -79,7 +79,7 @@
           data-label="bb-issue-sql-editor"
           :value="state.editStatement"
           :auto-focus="false"
-          :dialect="dialectOfEngine(databaseEngineType)"
+          :dialect="dialectOfEngineV1(databaseEngine)"
           @change="handleStatementChange"
         />
       </div>
@@ -129,17 +129,15 @@ import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
-  Database,
+  ComposedDatabase,
   DatabaseEdit,
-  DatabaseId,
-  dialectOfEngine,
-  EngineType,
-  unknown,
-  UNKNOWN_ID,
+  dialectOfEngineV1,
+  UNKNOWN_PROJECT_NAME,
+  unknownProject,
 } from "@/types";
-import { allowGhostMigration } from "@/utils";
+import { allowGhostMigrationV1 } from "@/utils";
 import {
-  useDatabaseStore,
+  useDatabaseV1Store,
   useNotificationStore,
   useSchemaEditorStore,
 } from "@/store";
@@ -153,6 +151,8 @@ import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import SchemaEditor from "@/components/SchemaEditor/SchemaEditor.vue";
 import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
 import GhostDialog from "./GhostDialog.vue";
+import { Engine } from "@/types/proto/v1/common";
+import { TenantMode } from "@/types/proto/v1/project_service";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
@@ -166,7 +166,7 @@ interface LocalState {
 
 const props = defineProps({
   databaseIdList: {
-    type: Array as PropType<DatabaseId[]>,
+    type: Array as PropType<string[]>,
     required: true,
   },
   alterType: {
@@ -191,7 +191,7 @@ const state = reactive<LocalState>({
   showActionConfirmModal: false,
 });
 const editorStore = useSchemaEditorStore();
-const databaseStore = useDatabaseStore();
+const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
 const statementFromSchemaEditor = ref<string>();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
@@ -212,22 +212,33 @@ const allowSyncSQLFromSchemaEditor = computed(() => {
   return false;
 });
 
-const databaseList = props.databaseIdList.map((databaseId) => {
-  return databaseStore.getDatabaseById(databaseId);
+const databaseList = computed(() => {
+  return props.databaseIdList.map((databaseId) => {
+    return databaseV1Store.getDatabaseByUID(databaseId);
+  });
 });
 // Returns the type if it's uniq.
-// Returns "unknown" if there are more than ONE types.
-const databaseEngineType = computed((): EngineType | "unknown" => {
-  const engineTypes = uniq(databaseList.map((db) => db.instance.engine));
-  if (engineTypes.length !== 1) return "unknown";
+// Returns Engine.UNRECOGNIZED if there are more than ONE types.
+const databaseEngine = computed((): Engine => {
+  const engineTypes = uniq(
+    databaseList.value.map((db) => db.instanceEntity.engine)
+  );
+  if (engineTypes.length !== 1) return Engine.UNRECOGNIZED;
   return engineTypes[0];
 });
 
-const project = head(databaseList)?.project ?? unknown("PROJECT");
-const isTenantProject = project.tenantMode === "TENANT";
+const project = computed(
+  () => head(databaseList.value)?.projectEntity ?? unknownProject()
+);
+const isTenantProject = computed(
+  () => project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED
+);
 
 onMounted(() => {
-  if (databaseList.length === 0 || project.id === UNKNOWN_ID) {
+  if (
+    databaseList.value.length === 0 ||
+    project.value.name === UNKNOWN_PROJECT_NAME
+  ) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -257,9 +268,9 @@ const dismissModal = () => {
 // 'normal' -> normal migration
 // 'online' -> online migration
 // false -> user clicked cancel button
-const isUsingGhostMigration = async (databaseList: Database[]) => {
+const isUsingGhostMigration = async (databaseList: ComposedDatabase[]) => {
   // check if all selected databases supports gh-ost
-  if (allowGhostMigration(databaseList)) {
+  if (allowGhostMigrationV1(databaseList)) {
     // open the dialog to ask the user
     const { result, mode } = await ghostDialog.value!.open();
     if (!result) {
@@ -321,7 +332,7 @@ const getDatabaseEditListWithSchemaEditor = () => {
 
 const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
   const databaseEditList = getDatabaseEditListWithSchemaEditor();
-  const databaseEditMap: Map<DatabaseId, string> = new Map();
+  const databaseEditMap: Map<string, string> = new Map();
   if (databaseEditList.length > 0) {
     for (const databaseEdit of databaseEditList) {
       const databaseEditResult = await editorStore.postDatabaseEdit(
@@ -339,11 +350,11 @@ const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
         return;
       }
       const previousStatement =
-        databaseEditMap.get(databaseEdit.databaseId) || "";
+        databaseEditMap.get(String(databaseEdit.databaseId)) || "";
       const statement = `${previousStatement}${previousStatement && "\n"}${
         databaseEditResult.statement
       }`;
-      databaseEditMap.set(databaseEdit.databaseId, statement);
+      databaseEditMap.set(String(databaseEdit.databaseId), statement);
     }
   }
   return databaseEditMap;
@@ -395,11 +406,11 @@ const handleUploadFile = (e: Event) => {
 const handlePreviewIssue = async () => {
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: project.id,
+    project: project.value.uid,
     mode: "normal",
     ghost: undefined,
   };
-  if (isTenantProject) {
+  if (isTenantProject.value) {
     if (props.databaseIdList.length > 1) {
       // A tenant pipeline with 2 or more databases will be generated
       // via deployment config, so we don't need the databaseList parameter.
@@ -421,7 +432,7 @@ const handlePreviewIssue = async () => {
 
     // We should show select ghost mode dialog only for altering table statement not create/drop table.
     // TODO(steven): parse the sql check if there only alter table statement.
-    const actionResult = await isUsingGhostMigration(databaseList);
+    const actionResult = await isUsingGhostMigration(databaseList.value);
     if (actionResult === false) {
       return;
     }
@@ -429,7 +440,7 @@ const handlePreviewIssue = async () => {
       query.ghost = 1;
     }
     query.name = generateIssueName(
-      databaseList.map((db) => db.name),
+      databaseList.value.map((db) => db.databaseName),
       !!query.ghost
     );
   } else {
@@ -458,7 +469,7 @@ const handlePreviewIssue = async () => {
     }
 
     if (hasOnlyAlterTableChanges) {
-      const actionResult = await isUsingGhostMigration(databaseList);
+      const actionResult = await isUsingGhostMigration(databaseList.value);
       if (actionResult === false) {
         return;
       }
@@ -473,18 +484,18 @@ const handlePreviewIssue = async () => {
     }
     const databaseIdList = Array.from(statementMap.keys());
     const statementList = Array.from(statementMap.values());
-    if (isTenantProject) {
+    if (isTenantProject.value) {
       query.sql = statementList.join("\n");
       query.name = generateIssueName(
-        databaseList.map((db) => db.name),
+        databaseList.value.map((db) => db.databaseName),
         !!query.ghost
       );
     } else {
       query.databaseList = databaseIdList.join(",");
       query.sqlList = JSON.stringify(statementList);
-      const databaseNameList = databaseList
-        .filter((database) => databaseIdList.includes(database.id))
-        .map((db) => db.name);
+      const databaseNameList = databaseList.value
+        .filter((database) => databaseIdList.includes(database.uid))
+        .map((db) => db.databaseName);
       query.name = generateIssueName(databaseNameList, !!query.ghost);
     }
   }
