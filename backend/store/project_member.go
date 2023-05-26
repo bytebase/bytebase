@@ -353,7 +353,11 @@ func GetIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 			return nil, nil, err
 		}
 		key := roleConditionMapKey{role: binding.Role, condition: str}
-		oldMap[key] = binding.Members
+		if oldMap[key] != nil {
+			oldMap[key] = filterUser(append(oldMap[key], binding.Members...))
+		} else {
+			oldMap[key] = binding.Members
+		}
 	}
 	for _, binding := range newPolicy.Bindings {
 		str, err := formatCondition(binding.Condition)
@@ -361,7 +365,11 @@ func GetIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 			return nil, nil, err
 		}
 		key := roleConditionMapKey{role: binding.Role, condition: str}
-		newMap[key] = binding.Members
+		if newMap[key] != nil {
+			newMap[key] = filterUser(append(newMap[key], binding.Members...))
+		} else {
+			newMap[key] = binding.Members
+		}
 	}
 
 	remove, add := &IAMPolicyMessage{}, &IAMPolicyMessage{}
@@ -437,4 +445,15 @@ func GetIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 	}
 
 	return remove, add, nil
+}
+
+func filterUser(list []*UserMessage) []*UserMessage {
+	result, f := []*UserMessage{}, make(map[int]bool, len(list))
+	for _, user := range list {
+		if f[user.ID] {
+			continue
+		}
+		result, f[user.ID] = append(result, user), true
+	}
+	return result
 }
