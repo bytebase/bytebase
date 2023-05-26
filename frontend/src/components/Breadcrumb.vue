@@ -72,8 +72,8 @@ import {
   useCurrentUser,
   useRouterStore,
   useBookmarkStore,
-  useDatabaseStore,
   useProjectV1Store,
+  useDatabaseV1Store,
 } from "@/store";
 import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
 
@@ -173,8 +173,8 @@ export default defineComponent({
         });
 
         if (tableName || dataSourceSlug || migrationHistory) {
-          const database = useDatabaseStore().getDatabaseById(
-            idFromSlug(databaseSlug)
+          const database = useDatabaseV1Store().getDatabaseByUID(
+            String(idFromSlug(databaseSlug))
           );
           list.push({
             name: database.name,

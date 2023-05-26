@@ -1,4 +1,4 @@
-import { Database } from "@/types";
+import { ComposedDatabase } from "@/types";
 import {
   LabelSelector,
   LabelSelectorRequirement,
@@ -7,19 +7,19 @@ import {
 } from "@/types/proto/v1/project_service";
 
 export const getPipelineFromDeploymentScheduleV1 = (
-  databaseList: Database[],
+  databaseList: ComposedDatabase[],
   schedule: Schedule | undefined
-): Database[][] => {
-  const stages: Database[][] = [];
+): ComposedDatabase[][] => {
+  const stages: ComposedDatabase[][] = [];
 
-  const collectedIds = new Set<Database["id"]>();
+  const collectedIds = new Set<string>();
   schedule?.deployments.forEach((deployment) => {
-    const dbs: Database[] = [];
+    const dbs: ComposedDatabase[] = [];
     databaseList.forEach((db) => {
-      if (collectedIds.has(db.id)) return;
+      if (collectedIds.has(db.uid)) return;
       if (isDatabaseMatchesSelectorV1(db, deployment.spec?.labelSelector)) {
         dbs.push(db);
-        collectedIds.add(db.id);
+        collectedIds.add(db.uid);
       }
     });
     stages.push(dbs);
@@ -29,7 +29,7 @@ export const getPipelineFromDeploymentScheduleV1 = (
 };
 
 export const isDatabaseMatchesSelectorV1 = (
-  database: Database,
+  database: ComposedDatabase,
   selector: LabelSelector | undefined
 ): boolean => {
   const rules = selector?.matchExpressions ?? [];
@@ -48,18 +48,18 @@ export const isDatabaseMatchesSelectorV1 = (
 };
 
 const checkLabelIn = (
-  db: Database,
+  db: ComposedDatabase,
   rule: LabelSelectorRequirement
 ): boolean => {
-  const label = db.labels.find((label) => label.key === rule.key);
-  if (!label) return false;
+  const value = db.labels[rule.key];
+  if (!value) return false;
 
-  return rule.values.some((value) => value === label.value);
+  return rule.values.includes(value);
 };
 
 const checkLabelExists = (
-  db: Database,
+  db: ComposedDatabase,
   rule: LabelSelectorRequirement
 ): boolean => {
-  return db.labels.some((label) => label.key === rule.key);
+  return !!db.labels[rule.key];
 };

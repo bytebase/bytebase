@@ -158,28 +158,3 @@ export function isArchivedDatabase(db: Database): boolean {
   }
   return false;
 }
-
-export const extractDatabaseResourceName = (
-  resource: string
-): {
-  environment?: string;
-  instance?: string;
-  database?: string;
-} => {
-  const pattern =
-    /^environments\/([^/]+)\/instances\/([^/]+)\/databases\/([^/]+)$/;
-  const matches = resource.match(pattern);
-  if (matches) {
-    const [_, environment, instance, database] = matches;
-    return {
-      environment,
-      instance,
-      database,
-    };
-  }
-  return {
-    environment: undefined,
-    instance: undefined,
-    database: undefined,
-  };
-};

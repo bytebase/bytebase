@@ -55,135 +55,122 @@
   </BBTable>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, PropType, reactive } from "vue";
+<script lang="ts" setup>
+import { computed, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { Database } from "@/types";
+import { ComposedDatabase } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
-import { bytesToString, databaseSlug, isGhostTable } from "@/utils";
+import { bytesToString, databaseV1Slug, isGhostTable } from "@/utils";
 import EllipsisText from "@/components/EllipsisText.vue";
+import { Engine } from "@/types/proto/v1/common";
 
 type LocalState = {
   showReservedTableList: boolean;
 };
 
-export default defineComponent({
-  name: "TableTable",
-  components: { EllipsisText },
-  props: {
-    database: {
-      required: true,
-      type: Object as PropType<Database>,
-    },
-    schemaName: {
-      type: String,
-      default: "",
-    },
-    tableList: {
-      required: true,
-      type: Object as PropType<TableMetadata[]>,
-    },
+const props = defineProps({
+  database: {
+    required: true,
+    type: Object as PropType<ComposedDatabase>,
   },
-  setup(props) {
-    const router = useRouter();
-    const { t } = useI18n();
-
-    const state = reactive<LocalState>({
-      showReservedTableList: false,
-    });
-
-    const isPostgres = props.database.instance.engine === "POSTGRES";
-
-    const hasSchemaProperty =
-      isPostgres ||
-      props.database.instance.engine === "SNOWFLAKE" ||
-      props.database.instance.engine === "ORACLE" ||
-      props.database.instance.engine === "MSSQL";
-
-    const columnList = computed(() => {
-      if (hasSchemaProperty) {
-        return [
-          {
-            title: t("common.schema"),
-          },
-          {
-            title: t("common.name"),
-          },
-          {
-            title: t("database.row-count-est"),
-          },
-          {
-            title: t("database.data-size"),
-          },
-          {
-            title: t("database.index-size"),
-          },
-        ];
-      } else {
-        return [
-          {
-            title: t("common.name"),
-          },
-          {
-            title: t("database.engine"),
-          },
-          {
-            title: t("database.row-count-est"),
-          },
-          {
-            title: t("database.data-size"),
-          },
-          {
-            title: t("database.index-size"),
-          },
-        ];
-      }
-    });
-
-    const regularTableList = computed(() =>
-      props.tableList.filter((table) => !isGhostTable(table))
-    );
-    const reservedTableList = computed(() =>
-      props.tableList.filter((table) => isGhostTable(table))
-    );
-    const hasReservedTables = computed(
-      () => reservedTableList.value.length > 0
-    );
-
-    const mixedTableList = computed(() => {
-      const tableList = [...regularTableList.value];
-      if (state.showReservedTableList) {
-        tableList.push(...reservedTableList.value);
-      }
-
-      return tableList;
-    });
-
-    const clickTable = (_: number, row: number, e: MouseEvent) => {
-      const table = mixedTableList.value[row];
-      let url = `/db/${databaseSlug(props.database)}/table/${table.name}`;
-      if (props.schemaName !== "") {
-        url = url + `?schema=${props.schemaName}`;
-      }
-      if (e.ctrlKey || e.metaKey) {
-        window.open(url, "_blank");
-      } else {
-        router.push(url);
-      }
-    };
-
-    return {
-      columnList,
-      state,
-      isPostgres,
-      bytesToString,
-      clickTable,
-      hasReservedTables,
-      mixedTableList,
-      isGhostTable,
-      hasSchemaProperty,
-    };
+  schemaName: {
+    type: String,
+    default: "",
+  },
+  tableList: {
+    required: true,
+    type: Object as PropType<TableMetadata[]>,
   },
 });
+
+const router = useRouter();
+const { t } = useI18n();
+
+const state = reactive<LocalState>({
+  showReservedTableList: false,
+});
+
+const engine = computed(() => props.database.instanceEntity.engine);
+
+const isPostgres = computed(() => engine.value === Engine.POSTGRES);
+
+const hasSchemaProperty = computed(() => {
+  return (
+    isPostgres.value ||
+    engine.value === Engine.SNOWFLAKE ||
+    engine.value === Engine.ORACLE ||
+    engine.value === Engine.MSSQL
+  );
+});
+
+const columnList = computed(() => {
+  if (hasSchemaProperty.value) {
+    return [
+      {
+        title: t("common.schema"),
+      },
+      {
+        title: t("common.name"),
+      },
+      {
+        title: t("database.row-count-est"),
+      },
+      {
+        title: t("database.data-size"),
+      },
+      {
+        title: t("database.index-size"),
+      },
+    ];
+  } else {
+    return [
+      {
+        title: t("common.name"),
+      },
+      {
+        title: t("database.engine"),
+      },
+      {
+        title: t("database.row-count-est"),
+      },
+      {
+        title: t("database.data-size"),
+      },
+      {
+        title: t("database.index-size"),
+      },
+    ];
+  }
+});
+
+const regularTableList = computed(() =>
+  props.tableList.filter((table) => !isGhostTable(table))
+);
+const reservedTableList = computed(() =>
+  props.tableList.filter((table) => isGhostTable(table))
+);
+const hasReservedTables = computed(() => reservedTableList.value.length > 0);
+
+const mixedTableList = computed(() => {
+  const tableList = [...regularTableList.value];
+  if (state.showReservedTableList) {
+    tableList.push(...reservedTableList.value);
+  }
+
+  return tableList;
+});
+
+const clickTable = (_: number, row: number, e: MouseEvent) => {
+  const table = mixedTableList.value[row];
+  let url = `/db/${databaseV1Slug(props.database)}/table/${table.name}`;
+  if (props.schemaName !== "") {
+    url = url + `?schema=${props.schemaName}`;
+  }
+  if (e.ctrlKey || e.metaKey) {
+    window.open(url, "_blank");
+  } else {
+    router.push(url);
+  }
+};
 </script>

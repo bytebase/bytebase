@@ -1,29 +1,27 @@
-import { computed, Ref, unref, watch } from "vue";
-import { DatabaseLabel, MaybeRef } from "@/types";
-import {
-  getLabelValueFromLabelList,
-  parseDatabaseLabelValueByTemplate,
-  setLabelValue,
-} from "@/utils";
+import { computed, unref, watch } from "vue";
+
+import { MaybeRef } from "@/types";
+import { parseDatabaseLabelValueByTemplate } from "@/utils";
 import { type Project, TenantMode } from "@/types/proto/v1/project_service";
+
 export const useDBNameTemplateInputState = (
   project: MaybeRef<Project>,
   values: {
-    databaseName: Ref<string>;
-    labels: Ref<DatabaseLabel[]>;
+    databaseName: MaybeRef<string>;
+    labels: MaybeRef<Record<string, string>>;
   }
 ) => {
   const TENANT_LABEL_KEY = "bb.tenant";
   const TENANT_LABEL_REGEXP_GROUP_NAME = "TENANT";
 
   const tenantValue = computed(() => {
-    return getLabelValueFromLabelList(unref(values.labels), TENANT_LABEL_KEY);
+    return unref(values.labels)[TENANT_LABEL_KEY] ?? "";
   });
 
   const parsedTenantValue = computed(() => {
     return parseDatabaseLabelValueByTemplate(
       unref(project).dbNameTemplate,
-      values.databaseName.value,
+      unref(values.databaseName),
       TENANT_LABEL_REGEXP_GROUP_NAME
     );
   });
@@ -40,7 +38,12 @@ export const useDBNameTemplateInputState = (
         // Tenant value has been changed by user manually, don't touch it.
         return;
       }
-      setLabelValue(values.labels.value, TENANT_LABEL_KEY, newValue);
+      const labels = unref(values.labels);
+      if (newValue) {
+        labels[TENANT_LABEL_KEY] = newValue;
+      } else {
+        delete labels[TENANT_LABEL_KEY];
+      }
     },
     { immediate: true }
   );
