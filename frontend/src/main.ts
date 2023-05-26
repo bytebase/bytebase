@@ -27,6 +27,7 @@ import {
   environmentSlug,
   humanizeTs,
   humanizeDuration,
+  humanizeDate,
   instanceName,
   instanceSlug,
   connectionSlug,
@@ -139,6 +140,7 @@ app.config.globalProperties.console = console;
 app.config.globalProperties.dayjs = dayjs;
 app.config.globalProperties.humanizeTs = humanizeTs;
 app.config.globalProperties.humanizeDuration = humanizeDuration;
+app.config.globalProperties.humanizeDate = humanizeDate;
 app.config.globalProperties.isDev = isDev();
 app.config.globalProperties.isRelease = isRelease();
 app.config.globalProperties.sizeToFit = sizeToFit;

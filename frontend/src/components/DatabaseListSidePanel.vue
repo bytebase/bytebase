@@ -14,16 +14,18 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import type { BBOutlineItem } from "@/bbkit/types";
-import { Database, UNKNOWN_USER_NAME } from "@/types";
-import { databaseSlug, environmentV1Name, projectSlug } from "@/utils";
+import { UNKNOWN_USER_NAME } from "@/types";
+import { databaseV1Slug, environmentV1Name, projectV1Slug } from "@/utils";
 import {
   useEnvironmentV1List,
-  useDatabaseStore,
+  useDatabaseV1Store,
   useCurrentUserV1,
 } from "@/store";
+import { State } from "@/types/proto/v1/common";
+import { TenantMode } from "@/types/proto/v1/project_service";
 
 const { t } = useI18n();
-const databaseStore = useDatabaseStore();
+const databaseV1Store = useDatabaseV1Store();
 const router = useRouter();
 
 const currentUserV1 = useCurrentUserV1();
@@ -38,17 +40,19 @@ const environmentList = computed(() =>
 const prepareList = () => {
   // It will also be called when user logout
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    databaseStore.fetchDatabaseList();
+    databaseV1Store.searchDatabaseList({
+      parent: "instances/-",
+    });
   }
 };
 
 watchEffect(prepareList);
 
 // Use this to make the list reactive when project is transferred.
-const databaseList = computed((): Database[] => {
-  return databaseStore
-    .getDatabaseListByUser(currentUserV1.value)
-    .filter((db) => db.syncStatus === "OK");
+const databaseList = computed(() => {
+  return databaseV1Store
+    .databaseListByUser(currentUserV1.value)
+    .filter((db) => db.syncState === State.ACTIVE);
 });
 
 const databaseListByEnvironment = computed(() => {
@@ -57,19 +61,21 @@ const databaseListByEnvironment = computed(() => {
     envToDbMap.set(environment.uid, []);
   }
   const list = [...databaseList.value].filter(
-    (db) => db.project.tenantMode !== "TENANT"
+    (db) => db.projectEntity.tenantMode !== TenantMode.TENANT_MODE_ENABLED
   );
   list.sort((a: any, b: any) => {
     return a.name.localeCompare(b.name);
   });
   for (const database of list) {
-    const dbList = envToDbMap.get(String(database.instance.environment.id))!;
+    const dbList = envToDbMap.get(
+      String(database.instanceEntity.environmentEntity.uid)
+    )!;
     // dbList may be undefined if the environment is archived
     if (dbList) {
       dbList.push({
-        id: `bb.database.${database.id}`,
-        name: database.name,
-        link: `/db/${databaseSlug(database)}`,
+        id: `bb.database.${database.uid}`,
+        name: database.databaseName,
+        link: `/db/${databaseV1Slug(database)}`,
       });
     }
   }
@@ -91,19 +97,19 @@ const databaseListByEnvironment = computed(() => {
 
 const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
   const list = databaseList.value.filter(
-    (db) => db.project.tenantMode === "TENANT"
+    (db) => db.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
   );
   // In case that each `db.project` is not reference equal
   // we run a uniq() on the list by project.id
   const projectList = uniqBy(
-    list.map((db) => db.project),
-    (project) => project.id
+    list.map((db) => db.projectEntity),
+    (project) => project.name
   );
   // Sort the list as what <ProjectListSidePanel /> does
   projectList.sort((a, b) => a.name.localeCompare(b.name));
   // Then group databaseList by project
   const databaseListGroupByProject = projectList.map((project) => {
-    const databaseList = list.filter((db) => db.project.id === project.id);
+    const databaseList = list.filter((db) => db.project === project.name);
     return {
       project,
       databaseList,
@@ -113,12 +119,12 @@ const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
   const itemList = databaseListGroupByProject.map(
     ({ project, databaseList }) => {
       return {
-        id: `bb.project.${project.id}.databases`,
-        name: project.name,
+        id: `bb.project.${project.uid}.databases`,
+        name: project.title,
         childList: databaseList.map<BBOutlineItem>((db) => ({
-          id: `bb.project.${project.id}.database.${db.name}`,
-          name: db.name,
-          link: `/project/${projectSlug(project)}#databases`,
+          id: `bb.project.${project.uid}.database.${db.databaseName}`,
+          name: db.databaseName,
+          link: `/project/${projectV1Slug(project)}#databases`,
         })),
         childCollapse: true,
       } as BBOutlineItem;

@@ -36,7 +36,7 @@
 
           <router-link
             class="normal-link text-sm"
-            :to="`/environment/${database.instance.environment.id}`"
+            :to="`/environment/${database.instanceEntity.environmentEntity.uid}`"
           >
             {{
               $t("database.backuppolicy-backup-enforced-and-cant-be-disabled", [
@@ -156,7 +156,12 @@
 import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NPopover } from "naive-ui";
-import { BackupSetting, BackupSettingUpsert, Database, unknown } from "@/types";
+import {
+  BackupSetting,
+  BackupSettingUpsert,
+  ComposedDatabase,
+  unknown,
+} from "@/types";
 import {
   AVAILABLE_DAYS_OF_WEEK,
   AVAILABLE_HOURS_OF_DAY,
@@ -185,14 +190,14 @@ const BACKUP_POLICY_ENFORCEMENT_POPUP_DURATION = 5000;
 const props = defineProps({
   database: {
     required: true,
-    type: Object as PropType<Database>,
+    type: Object as PropType<ComposedDatabase>,
   },
   allowAdmin: {
     required: true,
     type: Boolean,
   },
   backupPolicy: {
-    type: Object as PropType<BackupPlanSchedule>,
+    type: Number as PropType<BackupPlanSchedule>,
     default: BackupPlanSchedule.UNSET,
   },
   backupSetting: {
@@ -273,7 +278,7 @@ const handleSave = async () => {
   }
 
   const newBackupSetting: BackupSettingUpsert = {
-    databaseId: props.database.id,
+    databaseId: Number(props.database.uid),
     ...setting,
     hookUrl: props.backupSetting.hookUrl, // won't modify hookUrl
   };
@@ -291,7 +296,7 @@ const handleSave = async () => {
       style: "SUCCESS",
       title: t(
         "database.action-automatic-backup-for-database-props-database-name",
-        [action, props.database.name]
+        [action, props.database.databaseName]
       ),
     });
 

@@ -28,15 +28,15 @@
     >
       <template
         v-if="
-          database.instance.engine !== 'CLICKHOUSE' &&
-          database.instance.engine !== 'SNOWFLAKE' &&
-          database.instance.engine !== 'MONGODB'
+          databaseEngine !== Engine.CLICKHOUSE &&
+          databaseEngine !== Engine.SNOWFLAKE &&
+          databaseEngine !== Engine.MONGODB
         "
       >
         <div class="col-span-1 col-start-1">
           <dt class="text-sm font-medium text-control-light">
             {{
-              database.instance.engine == "POSTGRES"
+              databaseEngine === Engine.POSTGRES
                 ? $t("db.encoding")
                 : $t("db.character-set")
             }}
@@ -61,7 +61,9 @@
           {{ $t("database.sync-status") }}
         </dt>
         <dd class="mt-1 text-sm text-main">
-          <span>{{ database.syncStatus }}</span>
+          <span>
+            {{ database.syncState === State.ACTIVE ? "OK" : "NOT_FOUND" }}
+          </span>
         </dd>
       </div>
 
@@ -70,7 +72,7 @@
           {{ $t("database.last-successful-sync") }}
         </dt>
         <dd class="mt-1 text-sm text-main">
-          {{ humanizeTs(database.lastSuccessfulSyncTs) }}
+          {{ humanizeDate(database.successfulSyncTime) }}
         </dd>
       </div>
     </dl>
@@ -95,9 +97,9 @@
         </BBSelect>
       </div>
 
-      <template v-if="databaseEngine !== 'REDIS'">
+      <template v-if="databaseEngine !== Engine.REDIS">
         <div class="text-lg leading-6 font-medium text-main mb-4">
-          <span v-if="databaseEngine === 'MONGODB'">{{
+          <span v-if="databaseEngine === Engine.MONGODB">{{
             $t("db.collections")
           }}</span>
           <span v-else>{{ $t("db.tables") }}</span>
@@ -118,14 +120,14 @@
           :view-list="viewList"
         />
 
-        <template v-if="database.instance.engine == 'POSTGRES'">
+        <template v-if="databaseEngine === Engine.POSTGRES">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.extensions") }}
           </div>
           <DBExtensionTable :db-extension-list="dbExtensionList" />
         </template>
 
-        <template v-if="database.instance.engine === 'POSTGRES'">
+        <template v-if="databaseEngine === Engine.POSTGRES">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.functions") }}
           </div>
@@ -137,125 +139,20 @@
         </template>
       </template>
     </div>
-
-    <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
-    <div v-if="false" class="pt-6">
-      <DataSourceTable :instance="database.instance" :database="database" />
-    </div>
-
-    <template v-if="allowViewDataSource">
-      <template
-        v-for="(item, index) of [
-          { type: 'RW', list: readWriteDataSourceList },
-          { type: 'RO', list: readonlyDataSourceList },
-        ]"
-        :key="index"
-      >
-        <div v-if="item.list.length" class="pt-6">
-          <div
-            v-if="hasDataSourceFeature"
-            class="text-lg leading-6 font-medium text-main mb-4"
-          >
-            <span v-data-source-type>{{ item.type }}</span>
-          </div>
-          <div class="space-y-4">
-            <div v-for="(ds, dsIndex) of item.list" :key="dsIndex">
-              <div v-if="hasDataSourceFeature" class="relative mb-2">
-                <div
-                  class="absolute inset-0 flex items-center"
-                  aria-hidden="true"
-                >
-                  <div class="w-full border-t border-gray-300"></div>
-                </div>
-                <div class="relative flex justify-start">
-                  <router-link
-                    :to="`/db/${databaseSlug}/data-source/${dataSourceSlug(
-                      ds
-                    )}`"
-                    class="pr-3 bg-white font-medium normal-link"
-                    >{{ ds.name }}</router-link
-                  >
-                </div>
-              </div>
-              <div
-                v-if="allowConfigInstance"
-                class="flex justify-end space-x-3"
-              >
-                <template v-if="isEditingDataSource(ds)">
-                  <button
-                    type="button"
-                    class="btn-normal"
-                    @click.prevent="cancelEditDataSource"
-                  >
-                    {{ $t("common.cancel") }}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-normal"
-                    :disabled="!allowSaveDataSource"
-                    @click.prevent="saveEditDataSource"
-                  >
-                    <!-- Heroicon name: solid/save -->
-                    <heroicons-solid:save
-                      class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                    />
-                    <span>{{ $t("common.save") }}</span>
-                  </button>
-                </template>
-                <template v-else>
-                  <button
-                    type="button"
-                    class="btn-normal"
-                    @click.prevent="editDataSource(ds)"
-                  >
-                    <!-- Heroicon name: solid/pencil -->
-                    <heroicons-solid:pencil
-                      class="-ml-1 mr-2 h-5 w-5 text-control-light"
-                    />
-                    <span>{{ $t("common.edit") }}</span>
-                  </button>
-                </template>
-              </div>
-              <DataSourceConnectionPanel
-                :editing="isEditingDataSource(ds)"
-                :data-source="
-                  isEditingDataSource(ds) ? state.editingDataSource! : ds
-                "
-              />
-            </div>
-          </div>
-        </div>
-      </template>
-    </template>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, head, isEqual } from "lodash-es";
+import { head } from "lodash-es";
 import { computed, reactive, watchEffect, PropType } from "vue";
-import { hasWorkspacePermissionV1, roleListInProjectV1 } from "../utils";
-import {
-  Anomaly,
-  Database,
-  DataSource,
-  DataSourcePatch,
-  EngineType,
-} from "../types";
-import {
-  featureToRef,
-  useDataSourceStore,
-  useAnomalyList,
-  useDBSchemaStore,
-  useProjectV1Store,
-  useCurrentUserV1,
-} from "@/store";
+import { Anomaly, ComposedDatabase, DataSource } from "../types";
+import { useAnomalyList, useDBSchemaStore } from "@/store";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyTable.vue";
-import DataSourceTable from "../components/DataSourceTable.vue";
-import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
 import FunctionTable from "../components/FunctionTable.vue";
+import { Engine, State } from "@/types/proto/v1/common";
 
 interface LocalState {
   selectedSchemaName: string;
@@ -265,35 +162,34 @@ interface LocalState {
 const props = defineProps({
   database: {
     required: true,
-    type: Object as PropType<Database>,
+    type: Object as PropType<ComposedDatabase>,
   },
 });
-
-const dataSourceStore = useDataSourceStore();
 
 const state = reactive<LocalState>({
   selectedSchemaName: "",
 });
 
-const currentUserV1 = useCurrentUserV1();
 const dbSchemaStore = useDBSchemaStore();
 
 const databaseEngine = computed(() => {
-  return props.database.instance.engine as EngineType;
+  return props.database.instanceEntity.engine;
 });
 
 const hasSchemaProperty = computed(() => {
   return (
-    databaseEngine.value === "POSTGRES" ||
-    databaseEngine.value === "SNOWFLAKE" ||
-    databaseEngine.value === "ORACLE" ||
-    databaseEngine.value === "MSSQL" ||
-    databaseEngine.value === "REDSHIFT"
+    databaseEngine.value === Engine.POSTGRES ||
+    databaseEngine.value === Engine.SNOWFLAKE ||
+    databaseEngine.value === Engine.ORACLE ||
+    databaseEngine.value === Engine.MSSQL ||
+    databaseEngine.value === Engine.REDSHIFT
   );
 });
 
 const prepareDatabaseMetadata = async () => {
-  await dbSchemaStore.getOrFetchDatabaseMetadataById(props.database.id);
+  await dbSchemaStore.getOrFetchDatabaseMetadataById(
+    Number(props.database.uid)
+  );
   if (hasSchemaProperty.value && schemaList.value.length > 0) {
     state.selectedSchemaName = head(schemaList.value)?.name || "";
   }
@@ -302,7 +198,7 @@ const prepareDatabaseMetadata = async () => {
 watchEffect(prepareDatabaseMetadata);
 
 const anomalyList = useAnomalyList(
-  computed(() => ({ databaseId: props.database.id }))
+  computed(() => ({ databaseId: Number(props.database.uid) }))
 );
 
 const anomalySectionList = computed((): BBTableSectionDataSource<Anomaly>[] => {
@@ -316,10 +212,8 @@ const anomalySectionList = computed((): BBTableSectionDataSource<Anomaly>[] => {
   return list;
 });
 
-const hasDataSourceFeature = featureToRef("bb.feature.data-source");
-
 const schemaList = computed(() => {
-  return dbSchemaStore.getSchemaListByDatabaseId(props.database.id);
+  return dbSchemaStore.getSchemaListByDatabaseId(Number(props.database.uid));
 });
 
 const schemaNameList = computed(() => {
@@ -327,7 +221,9 @@ const schemaNameList = computed(() => {
 });
 
 const databaseSchemaMetadata = computed(() => {
-  return dbSchemaStore.getDatabaseMetadataByDatabaseId(props.database.id);
+  return dbSchemaStore.getDatabaseMetadataByDatabaseId(
+    Number(props.database.uid)
+  );
 });
 
 const tableList = computed(() => {
@@ -338,7 +234,7 @@ const tableList = computed(() => {
       )?.tables || []
     );
   }
-  return dbSchemaStore.getTableListByDatabaseId(props.database.id);
+  return dbSchemaStore.getTableListByDatabaseId(Number(props.database.uid));
 });
 
 const viewList = computed(() => {
@@ -349,11 +245,11 @@ const viewList = computed(() => {
       )?.views || []
     );
   }
-  return dbSchemaStore.getViewListByDatabaseId(props.database.id);
+  return dbSchemaStore.getViewListByDatabaseId(Number(props.database.uid));
 });
 
 const dbExtensionList = computed(() => {
-  return dbSchemaStore.getExtensionListByDatabaseId(props.database.id);
+  return dbSchemaStore.getExtensionListByDatabaseId(Number(props.database.uid));
 });
 
 const functionList = computed(() => {
@@ -364,78 +260,6 @@ const functionList = computed(() => {
       )?.functions || []
     );
   }
-  return dbSchemaStore.getFunctionListByDatabaseId(props.database.id);
+  return dbSchemaStore.getFunctionListByDatabaseId(Number(props.database.uid));
 });
-
-const allowConfigInstance = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-instance",
-    currentUserV1.value.userRole
-  );
-});
-
-const allowViewDataSource = computed(() => {
-  if (allowConfigInstance.value) {
-    return true;
-  }
-
-  const project = useProjectV1Store().getProjectByUID(
-    String(props.database.project.id)
-  );
-
-  return roleListInProjectV1(project.iamPolicy, currentUserV1.value).length > 0;
-});
-
-const dataSourceList = computed(() => {
-  return props.database.dataSourceList;
-});
-
-const readWriteDataSourceList = computed(() => {
-  return dataSourceList.value.filter((dataSource: DataSource) => {
-    return dataSource.type == "RW";
-  });
-});
-
-const readonlyDataSourceList = computed(() => {
-  return dataSourceList.value.filter((dataSource: DataSource) => {
-    return dataSource.type == "RO";
-  });
-});
-
-const isEditingDataSource = (dataSource: DataSource) => {
-  return state.editingDataSource && state.editingDataSource.id == dataSource.id;
-};
-
-const allowSaveDataSource = computed(() => {
-  for (const dataSource of dataSourceList.value) {
-    if (dataSource.id == state.editingDataSource!.id) {
-      return !isEqual(dataSource, state.editingDataSource);
-    }
-  }
-  return false;
-});
-
-const editDataSource = (dataSource: DataSource) => {
-  state.editingDataSource = cloneDeep(dataSource);
-};
-
-const cancelEditDataSource = () => {
-  state.editingDataSource = undefined;
-};
-
-const saveEditDataSource = () => {
-  const dataSourcePatch = {
-    username: state.editingDataSource?.username,
-    password: state.editingDataSource?.password,
-  } as DataSourcePatch;
-  dataSourceStore
-    .patchDataSource({
-      databaseId: state.editingDataSource?.databaseId as number,
-      dataSourceId: state.editingDataSource?.id as number,
-      dataSource: dataSourcePatch,
-    })
-    .then(() => {
-      state.editingDataSource = undefined;
-    });
-};
 </script>

@@ -6,13 +6,7 @@ import {
   SlowQueryLog,
   Database as V1Database,
 } from "@/types/proto/v1/database_service";
-import {
-  ComposedSlowQueryLog,
-  Database,
-  Instance,
-  unknown,
-  UNKNOWN_ID,
-} from "@/types";
+import { ComposedSlowQueryLog, Database, unknown, UNKNOWN_ID } from "@/types";
 import { useDatabaseStore } from "./database";
 
 export const useSlowQueryStore = defineStore("slow-query", () => {
@@ -30,10 +24,9 @@ export const useSlowQueryStore = defineStore("slow-query", () => {
     }
   };
 
-  const syncSlowQueriesByInstance = async (instance: Instance) => {
-    const name = `instances/${instance.resourceId}`;
+  const syncSlowQueriesByInstance = async (instance: string) => {
     await instanceServiceClient.syncSlowQueries({
-      instance: name,
+      instance,
     });
   };
 
