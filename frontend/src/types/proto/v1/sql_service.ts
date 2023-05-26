@@ -46,10 +46,10 @@ export function statusToJSON(object: Status): string {
 
 export interface QueryRequest {
   /**
-   * The instance to execute the query against.
+   * The name is the instance name to execute the query against.
    * Format: instances/{instance}
    */
-  instance: string;
+  name: string;
   /**
    * The connection database name to execute the query against.
    * For PostgreSQL, it's required.
@@ -121,13 +121,13 @@ export interface PrettyResponse {
 }
 
 function createBaseQueryRequest(): QueryRequest {
-  return { instance: "", connectionDatabase: "", statement: "", limit: 0 };
+  return { name: "", connectionDatabase: "", statement: "", limit: 0 };
 }
 
 export const QueryRequest = {
   encode(message: QueryRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.instance !== "") {
-      writer.uint32(10).string(message.instance);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.connectionDatabase !== "") {
       writer.uint32(18).string(message.connectionDatabase);
@@ -153,7 +153,7 @@ export const QueryRequest = {
             break;
           }
 
-          message.instance = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -187,7 +187,7 @@ export const QueryRequest = {
 
   fromJSON(object: any): QueryRequest {
     return {
-      instance: isSet(object.instance) ? String(object.instance) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
       limit: isSet(object.limit) ? Number(object.limit) : 0,
@@ -196,7 +196,7 @@ export const QueryRequest = {
 
   toJSON(message: QueryRequest): unknown {
     const obj: any = {};
-    message.instance !== undefined && (obj.instance = message.instance);
+    message.name !== undefined && (obj.name = message.name);
     message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
     message.statement !== undefined && (obj.statement = message.statement);
     message.limit !== undefined && (obj.limit = Math.round(message.limit));
@@ -209,7 +209,7 @@ export const QueryRequest = {
 
   fromPartial(object: DeepPartial<QueryRequest>): QueryRequest {
     const message = createBaseQueryRequest();
-    message.instance = object.instance ?? "";
+    message.name = object.name ?? "";
     message.connectionDatabase = object.connectionDatabase ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
@@ -802,24 +802,20 @@ export const SQLServiceDefinition = {
           8410: [new Uint8Array([8, 105, 110, 115, 116, 97, 110, 99, 101])],
           578365826: [
             new Uint8Array([
-              37,
+              33,
               58,
               1,
               42,
               34,
-              32,
+              28,
               47,
               118,
               49,
               47,
               123,
-              105,
               110,
-              115,
-              116,
               97,
-              110,
-              99,
+              109,
               101,
               61,
               105,
