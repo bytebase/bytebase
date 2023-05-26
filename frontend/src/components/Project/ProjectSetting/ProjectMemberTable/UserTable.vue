@@ -166,7 +166,7 @@ const allowAdmin = computed(() => {
 });
 
 const allowView = (item: ComposedProjectMember) => {
-  return item.user.name === currentUserV1.value.name || allowAdmin.value;
+  return item.user.name === currentUserV1.value.name;
 };
 
 const allowAddRole = (item: ComposedProjectMember) => {
