@@ -344,6 +344,9 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	if request.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
 		return nil, status.Errorf(codes.InvalidArgument, "only support add read-only data source")
 	}
+	if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureReadReplicaConnection.AccessErrorMessage())
+	}
 
 	dataSource, err := s.convertToDataSourceMessage(request.DataSource)
 	if err != nil {
@@ -392,50 +395,6 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	return convertToInstance(instance), nil
 }
 
-// RemoveDataSource removes a data source to an instance.
-func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.RemoveDataSourceRequest) (*v1pb.Instance, error) {
-	if request.DataSource == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
-	}
-	// We only support remove RO type datasource to instance now, see more details in instance_service.proto.
-	if request.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
-		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
-	}
-
-	dataSource, err := s.convertToDataSourceMessage(request.DataSource)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
-	}
-
-	instance, err := s.getInstanceMessage(ctx, request.Instance)
-	if err != nil {
-		return nil, err
-	}
-	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
-	}
-
-	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.Type); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instance.ResourceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		UID: &instance.UID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	return convertToInstance(instance), nil
-}
-
 // UpdateDataSource updates a data source of an instance.
 func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
 	if request.DataSource == nil {
@@ -447,6 +406,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	tp, err := convertDataSourceTp(request.DataSource.Type)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) && tp == api.RO {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureReadReplicaConnection.AccessErrorMessage())
 	}
 
 	instance, err := s.getInstanceMessage(ctx, request.Instance)
@@ -556,6 +518,50 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	if err := s.store.UpdateDataSourceV2(ctx, patch); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID: &instance.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return convertToInstance(instance), nil
+}
+
+// RemoveDataSource removes a data source to an instance.
+func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.RemoveDataSourceRequest) (*v1pb.Instance, error) {
+	if request.DataSource == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
+	}
+	// We only support remove RO type datasource to instance now, see more details in instance_service.proto.
+	if request.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
+		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
+	}
+
+	dataSource, err := s.convertToDataSourceMessage(request.DataSource)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
+	}
+
+	instance, err := s.getInstanceMessage(ctx, request.Instance)
+	if err != nil {
+		return nil, err
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+	}
+
+	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.Type); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instance.ResourceID,
+	})
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
