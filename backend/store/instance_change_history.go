@@ -437,7 +437,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		if changeHistory.IssueUID != nil {
 			issue, err := s.GetIssueV2(ctx, &FindIssueMessage{UID: changeHistory.IssueUID})
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get issue by issueUID %q", changeHistory.IssueUID)
+				return nil, errors.Wrapf(err, "failed to get issue by issueUID %q", *changeHistory.IssueUID)
 			}
 			changeHistory.IssueProjectID = issue.Project.ResourceID
 		}
