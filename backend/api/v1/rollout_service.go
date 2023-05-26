@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -13,7 +12,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -116,14 +114,6 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		return nil, status.Errorf(codes.Internal, "failed to find a default assignee, error: %v", err)
 	}
 	issueCreateMessage.Assignee = assignee
-
-	// ok, err := s.taskScheduler.CanPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, project.UID, issueCreate.Type)
-	// if err != nil {
-	// 	return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
-	// }
-	// if !ok {
-	// 	return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
-	// }
 
 	issueCreatePayload := &storepb.IssuePayload{
 		Approval: &storepb.IssuePayloadApproval{
@@ -289,7 +279,7 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 func (s *RolloutService) getTaskCreatesFromSpec(ctx context.Context, spec *v1pb.Plan_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
-			return nil, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+			return nil, nil, errors.Errorf(api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 	}
 
@@ -363,7 +353,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 		if project.TenantMode == api.TenantModeTenant {
 			if !licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
-				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+				return nil, errors.Errorf(api.FeatureMultiTenancy.AccessErrorMessage())
 			}
 		}
 
@@ -491,7 +481,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database schema baseline payload").SetInternal(err)
+			return nil, nil, errors.Wrapf(err, "failed to marshal task database schema baseline payload")
 		}
 		payloadString := string(bytes)
 		taskCreate := api.TaskCreate{
@@ -529,7 +519,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database schema update payload").SetInternal(err)
+			return nil, nil, errors.Wrapf(err, "failed to marshal task database schema update payload")
 		}
 		payloadString := string(bytes)
 		taskCreate := api.TaskCreate{
@@ -566,7 +556,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database schema update SDL payload").SetInternal(err)
+			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update SDL payload")
 		}
 		payloadString := string(bytes)
 		taskCreate := api.TaskCreate{
@@ -606,7 +596,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 		bytesSync, err := json.Marshal(payloadSync)
 		if err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update gh-ost sync payload, error: %v", err))
+			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update gh-ost sync payload")
 		}
 		taskCreateList = append(taskCreateList, api.TaskCreate{
 			Name:              fmt.Sprintf("Update schema gh-ost sync for database %q", database.DatabaseName),
@@ -624,7 +614,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 		bytesCutover, err := json.Marshal(payloadCutover)
 		if err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost cutover payload, error: %v", err))
+			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update ghost cutover payload")
 		}
 		taskCreateList = append(taskCreateList, api.TaskCreate{
 			Name:              fmt.Sprintf("Update schema gh-ost cutover for database %q", database.DatabaseName),
@@ -680,7 +670,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database data update payload").SetInternal(err)
+			return nil, nil, errors.Wrapf(err, "Failed to marshal database data update payload")
 		}
 		payloadString := string(bytes)
 		taskCreate := api.TaskCreate{
@@ -1161,8 +1151,7 @@ func convertDatabaseLabels(labelsMap map[string]string) (string, error) {
 	}
 	// For scalability, each database can have up to four labels for now.
 	if len(labelsMap) > api.DatabaseLabelSizeMax {
-		err := errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
-		return "", echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		return "", errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
 	}
 	var labels []*api.DatabaseLabel
 	for k, v := range labelsMap {
