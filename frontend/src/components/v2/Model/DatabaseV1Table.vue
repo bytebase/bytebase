@@ -59,9 +59,7 @@
                 {{
                   $t("database.last-sync-status-long", [
                     "NOT_FOUND",
-                    humanizeTs(
-                      (database.successfulSyncTime?.getTime() ?? 0) / 1000
-                    ),
+                    humanizeDate(database.successfulSyncTime),
                   ])
                 }}
               </div>
@@ -157,21 +155,20 @@
               </template>
 
               <span>
-                TODO: {{ database.successfulSyncTime }}
-                <!-- <template v-if="database.syncState === State.ACTIVE">
+                <template v-if="database.syncState === State.ACTIVE">
                   {{
                     $t("database.synced-at", {
-                      time: humanizeTs(database.lastSuccessfulSyncTs),
+                      time: humanizeDate(database.successfulSyncTime),
                     })
                   }}
                 </template>
                 <template v-else>
                   {{
                     $t("database.not-found-last-successful-sync-was", {
-                      time: humanizeTs(database.lastSuccessfulSyncTs),
+                      time: humanizeDate(database.successfulSyncTime),
                     })
                   }}
-                </template> -->
+                </template>
               </span>
             </NTooltip>
           </div>

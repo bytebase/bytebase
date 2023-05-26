@@ -55,9 +55,7 @@
 
       <div class="px-4 py-2 flex items-center justify-between space-x-1">
         <span>{{ $t("db.last-successful-sync") }}</span>
-        <span>{{
-          humanizeTs((database.successfulSyncTime?.getTime() ?? 0) / 1000)
-        }}</span>
+        <span>{{ humanizeDate(database.successfulSyncTime) }}</span>
       </div>
 
       <div

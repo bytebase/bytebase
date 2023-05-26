@@ -91,7 +91,6 @@ export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
   }
   return false;
 };
-
 export const isDatabaseV1Accessible = (
   database: ComposedDatabase,
   policyList: Policy[],

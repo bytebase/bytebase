@@ -1,4 +1,5 @@
 import { snakeCase } from "lodash-es";
+import { humanizeTs } from "../util";
 
 export const calcUpdateMask = (a: any, b: any, toSnakeCase = false) => {
   const updateMask = new Set<string>();
@@ -13,4 +14,8 @@ export const calcUpdateMask = (a: any, b: any, toSnakeCase = false) => {
   }
   const keys = [...updateMask.values(), ...bKeys.values()];
   return toSnakeCase ? keys.map(snakeCase) : keys;
+};
+
+export const humanizeDate = (date: Date | undefined) => {
+  return humanizeTs(Math.floor((date?.getTime() ?? 0) / 1000));
 };

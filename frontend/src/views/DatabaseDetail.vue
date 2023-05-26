@@ -154,7 +154,7 @@
     />
     <div class="py-6 px-6">
       <template v-if="selectedTabItem?.hash === 'overview'">
-        <DatabaseOverviewPanel :database="legacyDatabase" />
+        <DatabaseOverviewPanel :database="database" />
       </template>
       <template v-if="selectedTabItem?.hash === 'change-history'">
         <DatabaseMigrationHistoryPanel

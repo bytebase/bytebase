@@ -27,15 +27,16 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { Database } from "@/types";
+import { ComposedDatabase } from "@/types";
 import { FunctionMetadata } from "@/types/proto/store/database";
 import EllipsisText from "@/components/EllipsisText.vue";
 import FunctionDefinitionView from "@/components/FunctionDefinitionView.vue";
+import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps({
   database: {
     required: true,
-    type: Object as PropType<Database>,
+    type: Object as PropType<ComposedDatabase>,
   },
   schemaName: {
     type: String,
@@ -49,16 +50,21 @@ const props = defineProps({
 
 const { t } = useI18n();
 
-const isPostgres = props.database.instance.engine === "POSTGRES";
+const engine = computed(() => props.database.instanceEntity.engine);
 
-const hasSchemaProperty =
-  isPostgres ||
-  props.database.instance.engine === "SNOWFLAKE" ||
-  props.database.instance.engine === "ORACLE" ||
-  props.database.instance.engine === "MSSQL";
+const isPostgres = computed(() => engine.value === Engine.POSTGRES);
+
+const hasSchemaProperty = computed(() => {
+  return (
+    isPostgres.value ||
+    engine.value === Engine.SNOWFLAKE ||
+    engine.value === Engine.ORACLE ||
+    engine.value === Engine.MSSQL
+  );
+});
 
 const columnList = computed(() => {
-  if (hasSchemaProperty) {
+  if (hasSchemaProperty.value) {
     return [
       {
         title: t("common.schema"),
