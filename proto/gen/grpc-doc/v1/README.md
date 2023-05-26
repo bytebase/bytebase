@@ -315,6 +315,7 @@
     - [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest)
     - [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest)
     - [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse)
+    - [CreateReviewRequest](#bytebase-v1-CreateReviewRequest)
     - [GetReviewRequest](#bytebase-v1-GetReviewRequest)
     - [ListReviewsRequest](#bytebase-v1-ListReviewsRequest)
     - [ListReviewsResponse](#bytebase-v1-ListReviewsResponse)
@@ -3121,6 +3122,7 @@ InstanceRole is the API message for instance role.
 | page_token | [string](#string) |  | A page token, received from a previous `ListRoles` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListRoles` must match the call that provided the page token. |
+| refresh | [bool](#bool) |  | Refresh will refresh and return the latest data. |
 
 
 
@@ -5033,6 +5035,22 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="bytebase-v1-CreateReviewRequest"></a>
+
+### CreateReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of reviews. Format: projects/{project} |
+| review | [Review](#bytebase-v1-Review) |  | The review to create. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetReviewRequest"></a>
 
 ### GetReviewRequest
@@ -5094,6 +5112,8 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | name | [string](#string) |  | The name of the review. `review` is a system generated ID. Format: projects/{project}/reviews/{review} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | title | [string](#string) |  |  |
+| plan | [string](#string) |  | The plan associated with the review. Can be empty. Format: projects/{project}/plans/{plan} |
+| rollout | [string](#string) |  | The rollout associated with the review. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | description | [string](#string) |  |  |
 | status | [ReviewStatus](#bytebase-v1-ReviewStatus) |  |  |
 | assignee | [string](#string) |  | Format: users/hello@world.com |
@@ -5236,6 +5256,7 @@ ANY means approving any node will proceed.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetReview | [GetReviewRequest](#bytebase-v1-GetReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| CreateReview | [CreateReviewRequest](#bytebase-v1-CreateReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | ListReviews | [ListReviewsRequest](#bytebase-v1-ListReviewsRequest) | [ListReviewsResponse](#bytebase-v1-ListReviewsResponse) |  |
 | UpdateReview | [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |

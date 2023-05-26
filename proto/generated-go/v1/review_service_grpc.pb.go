@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	ReviewService_GetReview_FullMethodName          = "/bytebase.v1.ReviewService/GetReview"
+	ReviewService_CreateReview_FullMethodName       = "/bytebase.v1.ReviewService/CreateReview"
 	ReviewService_ListReviews_FullMethodName        = "/bytebase.v1.ReviewService/ListReviews"
 	ReviewService_UpdateReview_FullMethodName       = "/bytebase.v1.ReviewService/UpdateReview"
 	ReviewService_BatchUpdateReviews_FullMethodName = "/bytebase.v1.ReviewService/BatchUpdateReviews"
@@ -31,6 +32,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ReviewServiceClient interface {
 	GetReview(ctx context.Context, in *GetReviewRequest, opts ...grpc.CallOption) (*Review, error)
+	CreateReview(ctx context.Context, in *CreateReviewRequest, opts ...grpc.CallOption) (*Review, error)
 	ListReviews(ctx context.Context, in *ListReviewsRequest, opts ...grpc.CallOption) (*ListReviewsResponse, error)
 	UpdateReview(ctx context.Context, in *UpdateReviewRequest, opts ...grpc.CallOption) (*Review, error)
 	BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error)
@@ -48,6 +50,15 @@ func NewReviewServiceClient(cc grpc.ClientConnInterface) ReviewServiceClient {
 func (c *reviewServiceClient) GetReview(ctx context.Context, in *GetReviewRequest, opts ...grpc.CallOption) (*Review, error) {
 	out := new(Review)
 	err := c.cc.Invoke(ctx, ReviewService_GetReview_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *reviewServiceClient) CreateReview(ctx context.Context, in *CreateReviewRequest, opts ...grpc.CallOption) (*Review, error) {
+	out := new(Review)
+	err := c.cc.Invoke(ctx, ReviewService_CreateReview_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +106,7 @@ func (c *reviewServiceClient) ApproveReview(ctx context.Context, in *ApproveRevi
 // for forward compatibility
 type ReviewServiceServer interface {
 	GetReview(context.Context, *GetReviewRequest) (*Review, error)
+	CreateReview(context.Context, *CreateReviewRequest) (*Review, error)
 	ListReviews(context.Context, *ListReviewsRequest) (*ListReviewsResponse, error)
 	UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error)
 	BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error)
@@ -108,6 +120,9 @@ type UnimplementedReviewServiceServer struct {
 
 func (UnimplementedReviewServiceServer) GetReview(context.Context, *GetReviewRequest) (*Review, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReview not implemented")
+}
+func (UnimplementedReviewServiceServer) CreateReview(context.Context, *CreateReviewRequest) (*Review, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateReview not implemented")
 }
 func (UnimplementedReviewServiceServer) ListReviews(context.Context, *ListReviewsRequest) (*ListReviewsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListReviews not implemented")
@@ -148,6 +163,24 @@ func _ReviewService_GetReview_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ReviewServiceServer).GetReview(ctx, req.(*GetReviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReviewService_CreateReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateReviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReviewServiceServer).CreateReview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReviewService_CreateReview_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReviewServiceServer).CreateReview(ctx, req.(*CreateReviewRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -234,6 +267,10 @@ var ReviewService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetReview",
 			Handler:    _ReviewService_GetReview_Handler,
+		},
+		{
+			MethodName: "CreateReview",
+			Handler:    _ReviewService_CreateReview_Handler,
 		},
 		{
 			MethodName: "ListReviews",

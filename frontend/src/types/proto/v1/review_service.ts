@@ -59,6 +59,16 @@ export interface GetReviewRequest {
   name: string;
 }
 
+export interface CreateReviewRequest {
+  /**
+   * The parent, which owns this collection of reviews.
+   * Format: projects/{project}
+   */
+  parent: string;
+  /** The review to create. */
+  review?: Review;
+}
+
 export interface ListReviewsRequest {
   /**
    * The parent, which owns this collection of reviews.
@@ -143,6 +153,18 @@ export interface Review {
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
   title: string;
+  /**
+   * The plan associated with the review.
+   * Can be empty.
+   * Format: projects/{project}/plans/{plan}
+   */
+  plan: string;
+  /**
+   * The rollout associated with the review.
+   * Can be empty.
+   * Format: projects/{project}/rollouts/{rollout}
+   */
+  rollout: string;
   description: string;
   status: ReviewStatus;
   /** Format: users/hello@world.com */
@@ -435,6 +457,79 @@ export const GetReviewRequest = {
   fromPartial(object: DeepPartial<GetReviewRequest>): GetReviewRequest {
     const message = createBaseGetReviewRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseCreateReviewRequest(): CreateReviewRequest {
+  return { parent: "", review: undefined };
+}
+
+export const CreateReviewRequest = {
+  encode(message: CreateReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.review !== undefined) {
+      Review.encode(message.review, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateReviewRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateReviewRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.review = Review.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateReviewRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      review: isSet(object.review) ? Review.fromJSON(object.review) : undefined,
+    };
+  },
+
+  toJSON(message: CreateReviewRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.review !== undefined && (obj.review = message.review ? Review.toJSON(message.review) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateReviewRequest>): CreateReviewRequest {
+    return CreateReviewRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<CreateReviewRequest>): CreateReviewRequest {
+    const message = createBaseCreateReviewRequest();
+    message.parent = object.parent ?? "";
+    message.review = (object.review !== undefined && object.review !== null)
+      ? Review.fromPartial(object.review)
+      : undefined;
     return message;
   },
 };
@@ -867,6 +962,8 @@ function createBaseReview(): Review {
     name: "",
     uid: "",
     title: "",
+    plan: "",
+    rollout: "",
     description: "",
     status: 0,
     assignee: "",
@@ -892,6 +989,12 @@ export const Review = {
     }
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
+    }
+    if (message.plan !== "") {
+      writer.uint32(130).string(message.plan);
+    }
+    if (message.rollout !== "") {
+      writer.uint32(138).string(message.rollout);
     }
     if (message.description !== "") {
       writer.uint32(34).string(message.description);
@@ -959,6 +1062,20 @@ export const Review = {
           }
 
           message.title = reader.string();
+          continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.plan = reader.string();
+          continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.rollout = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -1058,6 +1175,8 @@ export const Review = {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
       title: isSet(object.title) ? String(object.title) : "",
+      plan: isSet(object.plan) ? String(object.plan) : "",
+      rollout: isSet(object.rollout) ? String(object.rollout) : "",
       description: isSet(object.description) ? String(object.description) : "",
       status: isSet(object.status) ? reviewStatusFromJSON(object.status) : 0,
       assignee: isSet(object.assignee) ? String(object.assignee) : "",
@@ -1080,6 +1199,8 @@ export const Review = {
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
     message.title !== undefined && (obj.title = message.title);
+    message.plan !== undefined && (obj.plan = message.plan);
+    message.rollout !== undefined && (obj.rollout = message.rollout);
     message.description !== undefined && (obj.description = message.description);
     message.status !== undefined && (obj.status = reviewStatusToJSON(message.status));
     message.assignee !== undefined && (obj.assignee = message.assignee);
@@ -1116,6 +1237,8 @@ export const Review = {
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
     message.title = object.title ?? "";
+    message.plan = object.plan ?? "";
+    message.rollout = object.rollout ?? "";
     message.description = object.description ?? "";
     message.status = object.status ?? 0;
     message.assignee = object.assignee ?? "";
@@ -1579,6 +1702,64 @@ export const ReviewServiceDefinition = {
         },
       },
     },
+    createReview: {
+      name: "CreateReview",
+      requestType: CreateReviewRequest,
+      requestStream: false,
+      responseType: Review,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([13, 112, 97, 114, 101, 110, 116, 44, 114, 101, 118, 105, 101, 119])],
+          578365826: [
+            new Uint8Array([
+              41,
+              58,
+              6,
+              114,
+              101,
+              118,
+              105,
+              101,
+              119,
+              34,
+              31,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              114,
+              101,
+              118,
+              105,
+              101,
+              119,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
     listReviews: {
       name: "ListReviews",
       requestType: ListReviewsRequest,
@@ -1825,6 +2006,7 @@ export const ReviewServiceDefinition = {
 
 export interface ReviewServiceImplementation<CallContextExt = {}> {
   getReview(request: GetReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  createReview(request: CreateReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
   listReviews(
     request: ListReviewsRequest,
     context: CallContext & CallContextExt,
@@ -1839,6 +2021,7 @@ export interface ReviewServiceImplementation<CallContextExt = {}> {
 
 export interface ReviewServiceClient<CallOptionsExt = {}> {
   getReview(request: DeepPartial<GetReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  createReview(request: DeepPartial<CreateReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
   listReviews(
     request: DeepPartial<ListReviewsRequest>,
     options?: CallOptions & CallOptionsExt,
