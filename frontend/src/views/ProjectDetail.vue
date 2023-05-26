@@ -16,6 +16,9 @@
     />
     <ProjectDatabasesPanel v-else :database-list="databaseList" />
   </template>
+  <template v-if="isDev && hash === 'database-groups'">
+    <ProjectDatabaseGroupPanel />
+  </template>
   <template v-if="hash === 'change-history'">
     <ProjectMigrationHistoryPanel
       id="change-history"
@@ -81,6 +84,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
 
 export default defineComponent({
   name: "ProjectDetail",
@@ -94,6 +98,7 @@ export default defineComponent({
     ProjectSettingPanel,
     ProjectDeploymentConfigPanel,
     ProjectDatabasesPanel,
+    ProjectDatabaseGroupPanel,
   },
   props: {
     projectWebhookSlug: {
