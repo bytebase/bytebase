@@ -56,7 +56,7 @@
 import { computed, watchEffect, h } from "vue";
 import { Translation, useI18n } from "vue-i18n";
 import { RouterLink } from "vue-router";
-import type { Database, DatabaseId, LabelKeyType } from "@/types";
+import type { ComposedDatabase, LabelKeyType } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import { getPipelineFromDeploymentScheduleV1, projectV1Slug } from "@/utils";
 import { useDeploymentConfigV1ByProject } from "@/store";
@@ -64,17 +64,17 @@ import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { Project } from "@/types/proto/v1/project_service";
 
-export type State = {
-  selectedDatabaseIdListForTenantMode: Set<DatabaseId>;
-  deployingTenantDatabaseList: DatabaseId[];
+export type ProjectTenantViewState = {
+  selectedDatabaseIdListForTenantMode: Set<string>;
+  deployingTenantDatabaseList: string[];
   label: LabelKeyType;
 };
 
 const props = defineProps<{
-  databaseList: Database[];
+  databaseList: ComposedDatabase[];
   environmentList: Environment[];
   project?: Project;
-  state: State;
+  state: ProjectTenantViewState;
 }>();
 
 const emit = defineEmits<{
@@ -101,7 +101,7 @@ watchEffect(() => {
 
   // flatten all stages' database id list
   // these databases are to be deployed
-  const databaseIdList = stages.flatMap((stage) => stage.map((db) => db.id));
+  const databaseIdList = stages.flatMap((stage) => stage.map((db) => db.uid));
   props.state.deployingTenantDatabaseList = databaseIdList;
 });
 

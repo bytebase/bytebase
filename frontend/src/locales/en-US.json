@@ -2507,5 +2507,11 @@
       "description": "System defined project querier role"
     },
     "select-role": "Select role"
+  },
+  "database-group": {
+    "factor": {
+      "resource_database_name": "Database name",
+      "resource_table_name": "Table name"
+    }
   }
 }

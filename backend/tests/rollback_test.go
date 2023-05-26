@@ -18,6 +18,7 @@ import (
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestRollback(t *testing.T) {
@@ -124,19 +125,21 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironmentUID,
-		Name:          t.Name(),
-		Engine:        db.MySQL,
-		Host:          connCfg.Host,
-		Port:          connCfg.Port,
-		Username:      connCfg.Username,
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       "mysqlInstance",
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 	t.Log("Instance added.")
 
@@ -144,7 +147,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instance.ID,
+		InstanceID: &instanceUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -333,19 +336,21 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironmentUID,
-		Name:          t.Name(),
-		Engine:        db.MySQL,
-		Host:          connCfg.Host,
-		Port:          connCfg.Port,
-		Username:      connCfg.Username,
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       t.Name(),
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 	t.Log("Instance added.")
 
@@ -353,7 +358,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instance.ID,
+		InstanceID: &instanceUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))
@@ -550,19 +555,21 @@ func TestRollbackCanceled(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironmentUID,
-		Name:          t.Name(),
-		Engine:        db.MySQL,
-		Host:          connCfg.Host,
-		Port:          connCfg.Port,
-		Username:      connCfg.Username,
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       t.Name(),
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 	t.Log("Instance added.")
 
@@ -570,7 +577,7 @@ func TestRollbackCanceled(t *testing.T) {
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instance.ID,
+		InstanceID: &instanceUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))

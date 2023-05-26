@@ -450,8 +450,15 @@
     - [SheetService](#bytebase-v1-SheetService)
   
 - [v1/sql_service.proto](#v1_sql_service-proto)
+    - [Advice](#bytebase-v1-Advice)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
     - [PrettyResponse](#bytebase-v1-PrettyResponse)
+    - [QueryRequest](#bytebase-v1-QueryRequest)
+    - [QueryResponse](#bytebase-v1-QueryResponse)
+    - [QueryResult](#bytebase-v1-QueryResult)
+    - [QueryRow](#bytebase-v1-QueryRow)
+  
+    - [Advice.Status](#bytebase-v1-Advice-Status)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -1774,7 +1781,7 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent of the change histories. Format: instances/{instance}/databases/{database} |
-| page_size | [int32](#int32) |  | Not used. The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 50 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 10 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListChangeHistories` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
@@ -1794,7 +1801,7 @@ When paginating, all other parameters provided to `ListChangeHistories` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | change_histories | [ChangeHistory](#bytebase-v1-ChangeHistory) | repeated | The list of change histories. |
-| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -2188,7 +2195,7 @@ The type of the backup.
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
-| COMPLETED | 2 |  |
+| DONE | 2 |  |
 | FAILED | 3 |  |
 
 
@@ -5695,7 +5702,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the target. Format: projects/{project}/logicalDatabases/{ldb1}. Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}. Format: instances/{xxx}/databases/{db1}. |
+| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name}. Format: projects/{project}/deploymentConfig. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | type | [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
@@ -7000,6 +7007,26 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
 
+<a name="bytebase-v1-Advice"></a>
+
+### Advice
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [Advice.Status](#bytebase-v1-Advice-Status) |  | The advice status. |
+| code | [int32](#int32) |  | The advice code. |
+| title | [string](#string) |  | The advice title. |
+| content | [string](#string) |  | The advice content. |
+| line | [int32](#int32) |  | The advice line number in the SQL statement. |
+| detail | [string](#string) |  | The advice detail. |
+
+
+
+
+
+
 <a name="bytebase-v1-PrettyRequest"></a>
 
 ### PrettyRequest
@@ -7032,7 +7059,89 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
 
+
+<a name="bytebase-v1-QueryRequest"></a>
+
+### QueryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance} |
+| connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
+| statement | [string](#string) |  | The SQL statement to execute. |
+| limit | [int32](#int32) |  | The maximum number of rows to return. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResponse"></a>
+
+### QueryResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
+| advices | [Advice](#bytebase-v1-Advice) | repeated | The query advices. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult"></a>
+
+### QueryResult
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| column_names | [string](#string) | repeated | Column names of the query result. |
+| column_type_names | [string](#string) | repeated | Column types of the query result. |
+| rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
+| masked | [bool](#bool) | repeated | Columns are masked or not. |
+| error | [string](#string) |  | The error message if the query failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryRow"></a>
+
+### QueryRow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| values | [string](#string) | repeated | Row values of the query result. |
+
+
+
+
+
  
+
+
+<a name="bytebase-v1-Advice-Status"></a>
+
+### Advice.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified. |
+| SUCCESS | 1 |  |
+| WARNING | 2 |  |
+| ERROR | 3 |  |
+
 
  
 
@@ -7047,6 +7156,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
+| Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
 
  
 

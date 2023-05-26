@@ -28,30 +28,26 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 
-import type { DatabaseLabel } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
-import {
-  buildDatabaseNameRegExpByTemplate,
-  getLabelValueFromLabelList,
-} from "@/utils";
+import { buildDatabaseNameRegExpByTemplate } from "@/utils";
 
 type ViewMode = "none" | "normal" | "template-mismatch" | "value-mismatch";
 
 const props = defineProps<{
   name: string;
   project: Project;
-  labelList: DatabaseLabel[];
+  labels: Record<string, string>;
 }>();
 
 const mode = computed((): ViewMode => {
-  const { project, name, labelList } = props;
+  const { project, name, labels } = props;
   if (!project.dbNameTemplate) return "none";
   if (!name) return "normal";
   const regex = buildDatabaseNameRegExpByTemplate(project.dbNameTemplate);
   const matches = name.match(regex);
   if (!matches) return "template-mismatch";
   const parsedTenant = matches.groups?.["TENANT"];
-  const tenant = getLabelValueFromLabelList(labelList, "bb.tenant");
+  const tenant = labels["bb.tenant"] ?? "";
   if (parsedTenant && parsedTenant !== tenant) {
     return "value-mismatch";
   }

@@ -1,12 +1,10 @@
-import { DatabaseLabel, InstanceId } from "@/types";
-
 // MySQL only by now
 export type CreatePITRDatabaseContext = {
   projectId: string;
   environmentId: string;
-  instanceId: InstanceId;
+  instanceId: string;
   databaseName: string;
   characterSet: string;
   collation: string;
-  labelList: DatabaseLabel[];
+  labels: Record<string, string>;
 };

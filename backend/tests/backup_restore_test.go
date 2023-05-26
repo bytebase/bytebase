@@ -20,7 +20,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -301,18 +300,21 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	defer dstStopFn()
 	dstConnCfg := getMySQLConnectionConfig(strconv.Itoa(dstPort), "")
 
-	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
-	dstInstance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID: generateRandomString("instance", 10),
-		// The target instance must be within the same environment as the instance of the original database now.
-		EnvironmentID: prodEnvironmentUID,
-		Name:          "DestinationInstance",
-		Engine:        db.MySQL,
-		Host:          dstConnCfg.Host,
-		Port:          dstConnCfg.Port,
-		Username:      dstConnCfg.Username,
+	dstInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: "destinationinstance",
+		Instance: &v1pb.Instance{
+			Title:       "DestinationInstance",
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: dstConnCfg.Host, Port: dstConnCfg.Port, Username: dstConnCfg.Username}},
+		},
 	})
+	a.NoError(err)
+	dstInstanceUID, err := strconv.Atoi(dstInstance.Uid)
+	a.NoError(err)
+	prodEnvironmentResourceID := strings.TrimPrefix(prodEnvironment.Name, "environments/")
 	a.NoError(err)
 
 	insertRangeData(t, sourceMySQLDB, numRowsTime0, numRowsTime1)
@@ -327,7 +329,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	_, err = sourceMySQLDB.ExecContext(ctx, dropColumnStmt)
 	a.NoError(err)
 
-	labels, err := marshalLabels(nil, dstInstance.Environment.ResourceID)
+	labels, err := marshalLabels(nil, prodEnvironmentResourceID)
 	a.NoError(err)
 
 	targetDatabaseName := "new_database"
@@ -335,7 +337,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 		DatabaseID:    database.ID,
 		PointInTimeTs: &targetTs,
 		CreateDatabaseCtx: &api.CreateDatabaseContext{
-			InstanceID:   dstInstance.ID,
+			InstanceID:   dstInstanceUID,
 			DatabaseName: targetDatabaseName,
 			Labels:       labels,
 			CharacterSet: "utf8mb4",
@@ -428,7 +430,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	prodEnvironment, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
@@ -450,22 +452,25 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	mysqlPort := getTestPort()
 	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironmentUID,
-		Name:          baseName + "_Instance",
-		Engine:        db.MySQL,
-		Host:          connCfg.Host,
-		Port:          connCfg.Port,
-		Username:      connCfg.Username,
+	a.NoError(err)
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       baseName + "_Instance",
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: connCfg.Host, Port: connCfg.Port, Username: connCfg.Username}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instance.ID,
+		InstanceID: &instanceUID,
 	})
 	a.NoError(err)
 	a.Equal(1, len(databases))

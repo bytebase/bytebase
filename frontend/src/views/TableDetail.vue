@@ -36,49 +36,36 @@
               <span class="textlabel"
                 >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
               >
-              <router-link
-                :to="`/environment/${environmentSlug(
-                  database.instance.environment
-                )}`"
-                class="normal-link"
-                >{{
-                  environmentName(database.instance.environment)
-                }}</router-link
-              >
+              <EnvironmentV1Name
+                :environment="database.instanceEntity.environmentEntity"
+                icon-class="textinfolabel"
+              />
             </dd>
             <dt class="sr-only">{{ $t("common.instance") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <InstanceEngineIcon :instance="database.instance" />
               <span class="ml-1 textlabel"
                 >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
               >
-              <router-link
-                :to="`/instance/${instanceSlug(database.instance)}`"
-                class="normal-link"
-                >{{ instanceName(database.instance) }}</router-link
-              >
+              <InstanceV1Name :instance="database.instanceEntity" />
             </dd>
             <dt class="sr-only">{{ $t("common.project") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel"
                 >{{ $t("common.project") }}&nbsp;-&nbsp;</span
               >
-              <router-link
-                :to="`/project/${projectSlug(database.project)}#databases`"
-                class="normal-link"
-                >{{ projectName(database.project) }}</router-link
-              >
+              <ProjectV1Name
+                :project="database.projectEntity"
+                hash="#databases"
+              />
             </dd>
             <dt class="sr-only">{{ $t("common.database") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel"
                 >{{ $t("common.database") }}&nbsp;-&nbsp;</span
               >
-              <router-link :to="`/db/${databaseSlug}`" class="normal-link">{{
-                database.name
-              }}</router-link>
+              <DatabaseV1Name :database="database" />
             </dd>
-            <SQLEditorButton
+            <SQLEditorButtonV1
               class="text-sm md:mr-4"
               :database="database"
               :label="true"
@@ -100,8 +87,8 @@
               </dt>
               <dd class="mt-1 text-sm text-main">
                 {{
-                  database.instance.engine == "POSTGRES" ||
-                  database.instance.engine == "SNOWFLAKE"
+                  instanceEngine === Engine.POSTGRES ||
+                  instanceEngine === Engine.SNOWFLAKE
                     ? "n/a"
                     : table.engine
                 }}
@@ -130,8 +117,8 @@
               </dt>
               <dd class="mt-1 text-sm text-main">
                 {{
-                  database.instance.engine == "CLICKHOUSE" ||
-                  database.instance.engine == "SNOWFLAKE"
+                  instanceEngine === Engine.CLICKHOUSE ||
+                  instanceEngine === Engine.SNOWFLAKE
                     ? "n/a"
                     : bytesToString(table.indexSize)
                 }}
@@ -140,8 +127,8 @@
 
             <template
               v-if="
-                database.instance.engine != 'CLICKHOUSE' &&
-                database.instance.engine != 'SNOWFLAKE'
+                instanceEngine !== Engine.CLICKHOUSE &&
+                instanceEngine !== Engine.SNOWFLAKE
               "
             >
               <div class="col-span-1">
@@ -150,9 +137,7 @@
                 </dt>
                 <dd class="mt-1 text-sm text-main">
                   {{
-                    database.instance.engine == "POSTGRES"
-                      ? "n/a"
-                      : table.collation
+                    instanceEngine === Engine.POSTGRES ? "n/a" : table.collation
                   }}
                 </dd>
               </div>
@@ -174,7 +159,7 @@
         />
       </div>
 
-      <div v-if="database.instance.engine != 'SNOWFLAKE'" class="mt-6 px-6">
+      <div v-if="instanceEngine !== Engine.SNOWFLAKE" class="mt-6 px-6">
         <div class="text-lg leading-6 font-medium text-main mb-4">
           {{ $t("database.indexes") }}
         </div>
@@ -184,132 +169,119 @@
   </div>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, onMounted, ref } from "vue";
+<script lang="ts" setup>
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   bytesToString,
   hasWorkspacePermissionV1,
   idFromSlug,
-  isDatabaseAccessible,
+  isDatabaseV1Accessible,
   isGhostTable,
 } from "@/utils";
-import { useCurrentUserV1, useDatabaseStore, useDBSchemaStore } from "@/store";
-import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "@/types";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useDBSchemaStore,
+} from "@/store";
+import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
-import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-import { SQLEditorButton } from "@/components/DatabaseDetail";
+import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
-import { getDatabasePathByLegacyDatabase } from "@/store/modules/v1/common";
 import { PolicyType, SensitiveData } from "@/types/proto/v1/org_policy_service";
+import { Engine } from "@/types/proto/v1/common";
+import { DatabaseV1Name } from "@/components/v2";
 
-export default defineComponent({
-  name: "TableDetail",
-  components: { ColumnTable, IndexTable, InstanceEngineIcon, SQLEditorButton },
-  props: {
-    databaseSlug: {
-      required: true,
-      type: String,
-    },
-    tableName: {
-      required: true,
-      type: String,
-    },
+const props = defineProps({
+  databaseSlug: {
+    required: true,
+    type: String,
   },
-  setup(props) {
-    const route = useRoute();
-    const router = useRouter();
-    const databaseStore = useDatabaseStore();
-    const dbSchemaStore = useDBSchemaStore();
-    const currentUserV1 = useCurrentUserV1();
-    const table = ref<TableMetadata>();
-    const databaseId = idFromSlug(props.databaseSlug);
-    const schemaName = (route.query.schema as string) || "";
-
-    const database = computed(() => {
-      return databaseStore.getDatabaseById(databaseId);
-    });
-    const instanceEngine = computed(() => {
-      return database.value.instance.engine;
-    });
-
-    const accessControlPolicy = usePolicyByParentAndType(
-      computed(() => ({
-        parentPath: getDatabasePathByLegacyDatabase(database.value),
-        policyType: PolicyType.ACCESS_CONTROL,
-      }))
-    );
-    const allowQuery = computed(() => {
-      if (
-        database.value.projectId === UNKNOWN_ID ||
-        database.value.projectId === DEFAULT_PROJECT_ID
-      ) {
-        return hasWorkspacePermissionV1(
-          "bb.permission.workspace.manage-database",
-          currentUserV1.value.userRole
-        );
-      }
-      const policy = accessControlPolicy.value;
-      const list = policy ? [policy] : [];
-      return isDatabaseAccessible(database.value, list, currentUserV1.value);
-    });
-    const hasSchemaProperty = computed(
-      () => instanceEngine.value === "POSTGRES"
-    );
-    const shouldShowColumnTable = computed(() => {
-      return instanceEngine.value !== "MONGODB";
-    });
-    const getTableName = (tableName: string) => {
-      if (hasSchemaProperty.value) {
-        return `"${schemaName}"."${tableName}"`;
-      }
-      return tableName;
-    };
-
-    onMounted(() => {
-      const schemaList = dbSchemaStore.getSchemaListByDatabaseId(databaseId);
-      const schema = schemaList.find((schema) => schema.name === schemaName);
-      if (schema) {
-        table.value = schema.tables.find(
-          (table) => table.name === props.tableName
-        );
-      }
-      if (!table.value) {
-        router.replace({
-          name: "error.404",
-        });
-      }
-    });
-
-    const sensitiveDataPolicy = usePolicyByParentAndType(
-      computed(() => ({
-        parentPath: getDatabasePathByLegacyDatabase(database.value),
-        policyType: PolicyType.SENSITIVE_DATA,
-      }))
-    );
-
-    const sensitiveDataList = computed((): SensitiveData[] => {
-      const policy = sensitiveDataPolicy.value;
-      if (!policy || !policy.sensitiveDataPolicy) {
-        return [];
-      }
-
-      return policy.sensitiveDataPolicy.sensitiveData;
-    });
-
-    return {
-      schemaName,
-      table,
-      database,
-      allowQuery,
-      getTableName,
-      bytesToString,
-      isGhostTable,
-      sensitiveDataList,
-      shouldShowColumnTable,
-    };
+  tableName: {
+    required: true,
+    type: String,
   },
+});
+
+const route = useRoute();
+const router = useRouter();
+const databaseV1Store = useDatabaseV1Store();
+const dbSchemaStore = useDBSchemaStore();
+const currentUserV1 = useCurrentUserV1();
+const table = ref<TableMetadata>();
+const databaseId = computed((): number =>
+  Number(idFromSlug(props.databaseSlug))
+);
+const schemaName = (route.query.schema as string) || "";
+
+const database = computed(() => {
+  return databaseV1Store.getDatabaseByUID(String(databaseId.value));
+});
+const instanceEngine = computed(() => {
+  return database.value.instanceEntity.engine;
+});
+
+const accessControlPolicy = usePolicyByParentAndType(
+  computed(() => ({
+    parentPath: database.value.name,
+    policyType: PolicyType.ACCESS_CONTROL,
+  }))
+);
+const allowQuery = computed(() => {
+  if (
+    database.value.project === EMPTY_PROJECT_NAME ||
+    database.value.project === DEFAULT_PROJECT_V1_NAME
+  ) {
+    return hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-database",
+      currentUserV1.value.userRole
+    );
+  }
+  const policy = accessControlPolicy.value;
+  const list = policy ? [policy] : [];
+  return isDatabaseV1Accessible(database.value, list, currentUserV1.value);
+});
+const hasSchemaProperty = computed(
+  () => instanceEngine.value === Engine.POSTGRES
+);
+const shouldShowColumnTable = computed(() => {
+  return instanceEngine.value !== Engine.MONGODB;
+});
+const getTableName = (tableName: string) => {
+  if (hasSchemaProperty.value) {
+    return `"${schemaName}"."${tableName}"`;
+  }
+  return tableName;
+};
+
+onMounted(() => {
+  const schemaList = dbSchemaStore.getSchemaListByDatabaseId(databaseId.value);
+  const schema = schemaList.find((schema) => schema.name === schemaName);
+  if (schema) {
+    table.value = schema.tables.find((table) => table.name === props.tableName);
+  }
+  if (!table.value) {
+    router.replace({
+      name: "error.404",
+    });
+  }
+});
+
+const sensitiveDataPolicy = usePolicyByParentAndType(
+  computed(() => ({
+    parentPath: database.value.name,
+    policyType: PolicyType.SENSITIVE_DATA,
+  }))
+);
+
+const sensitiveDataList = computed((): SensitiveData[] => {
+  const policy = sensitiveDataPolicy.value;
+  if (!policy || !policy.sensitiveDataPolicy) {
+    return [];
+  }
+
+  return policy.sensitiveDataPolicy.sensitiveData;
 });
 </script>

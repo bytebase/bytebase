@@ -228,7 +228,6 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 	for _, step := range steps {
 		stageCreate := api.StageCreate{}
 
-		specEnvironmentIDs := map[string]bool{}
 		var stageEnvironmentID string
 		registerEnvironmentID := func(environmentID string) error {
 			if stageEnvironmentID == "" {
@@ -256,16 +255,7 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 			stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, taskIndexDAGCreates...)
 		}
 
-		if len(specEnvironmentIDs) != 1 {
-			return nil, errors.Errorf("expect 1 environment in a step, got %d", len(specEnvironmentIDs))
-		}
-
-		var environmentID string
-		for k := range specEnvironmentIDs {
-			environmentID = k
-		}
-
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &stageEnvironmentID})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get environment")
 		}
