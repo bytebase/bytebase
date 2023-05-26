@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,22 +17,28 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (ctl *controller) createDatabase(ctx context.Context, projectUID int, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
-	labels, err := marshalLabels(labelMap, instance.Environment.ResourceID)
+func (ctl *controller) createDatabase(ctx context.Context, projectUID int, instance *v1pb.Instance, databaseName string, owner string, labelMap map[string]string) error {
+	environmentResourceID := strings.TrimPrefix(instance.Environment, "environments/")
+	instanceUID, err := strconv.Atoi(instance.Uid)
+	if err != nil {
+		return err
+	}
+
+	labels, err := marshalLabels(labelMap, environmentResourceID)
 	if err != nil {
 		return err
 	}
 	createCtx := &api.CreateDatabaseContext{
-		InstanceID:   instance.ID,
+		InstanceID:   instanceUID,
 		DatabaseName: databaseName,
 		Labels:       labels,
 		CharacterSet: "utf8mb4",
 		Collation:    "utf8mb4_general_ci",
 	}
-	if instance.Engine == db.Postgres {
+	if instance.Engine == v1pb.Engine_POSTGRES {
 		createCtx.Owner = owner
 		createCtx.CharacterSet = "UTF8"
 		createCtx.Collation = "en_US.UTF-8"
@@ -74,14 +81,19 @@ func (ctl *controller) createDatabase(ctx context.Context, projectUID int, insta
 }
 
 // cloneDatabaseFromBackup clones the database from an existing backup.
-func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, projectUID int, instance *api.Instance, databaseName string, backup *api.Backup, labelMap map[string]string) error {
-	labels, err := marshalLabels(labelMap, instance.Environment.ResourceID)
+func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, projectUID int, instance *v1pb.Instance, databaseName string, backup *api.Backup, labelMap map[string]string) error {
+	environmentID := strings.TrimPrefix(instance.Environment, "environments/")
+	instanceUID, err := strconv.Atoi(instance.Uid)
+	if err != nil {
+		return err
+	}
+	labels, err := marshalLabels(labelMap, environmentID)
 	if err != nil {
 		return err
 	}
 
 	createContext, err := json.Marshal(&api.CreateDatabaseContext{
-		InstanceID:   instance.ID,
+		InstanceID:   instanceUID,
 		DatabaseName: databaseName,
 		BackupID:     backup.ID,
 		Labels:       labels,
@@ -231,50 +243,6 @@ func marshalLabels(labelMap map[string]string, environmentID string) (string, er
 		return "", errors.Wrapf(err, "failed to marshal labels %+v", labelList)
 	}
 	return string(labels), nil
-}
-
-func (ctl *controller) createDataSource(databaseID int, dataSourceCreate api.DataSourceCreate) error {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &dataSourceCreate); err != nil {
-		return errors.Wrap(err, "failed to marshal dataSourceCreate")
-	}
-
-	body, err := ctl.post(fmt.Sprintf("/database/%d/data-source", databaseID), buf)
-	if err != nil {
-		return err
-	}
-
-	dataSource := new(api.DataSource)
-	if err = jsonapi.UnmarshalPayload(body, dataSource); err != nil {
-		return errors.Wrap(err, "fail to unmarshal dataSource response")
-	}
-	return nil
-}
-
-func (ctl *controller) patchDataSource(databaseID, dataSourceID int, dataSourcePatch api.DataSourcePatch) error {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &dataSourcePatch); err != nil {
-		return errors.Wrap(err, "failed to marshal dataSourcePatch")
-	}
-
-	body, err := ctl.patch(fmt.Sprintf("/database/%d/data-source/%d", databaseID, dataSourceID), buf)
-	if err != nil {
-		return err
-	}
-
-	dataSource := new(api.DataSource)
-	if err = jsonapi.UnmarshalPayload(body, dataSource); err != nil {
-		return errors.Wrap(err, "fail to unmarshal dataSource response")
-	}
-	return nil
-}
-
-func (ctl *controller) deleteDataSource(databaseID, dataSourceID int) error {
-	_, err := ctl.delete(fmt.Sprintf("/database/%d/data-source/%d", databaseID, dataSourceID), nil)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // disableAutomaticBackup disables the automatic backup of a database.

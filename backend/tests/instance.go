@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
 
@@ -11,38 +10,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
-
-// addInstance adds an instance.
-func (ctl *controller) addInstance(instanceCreate api.InstanceCreate) (*api.Instance, error) {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &instanceCreate); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal instance create")
-	}
-
-	body, err := ctl.post("/instance", buf)
-	if err != nil {
-		return nil, err
-	}
-
-	instance := new(api.Instance)
-	if err = jsonapi.UnmarshalPayload(body, instance); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal post instance response")
-	}
-	return instance, nil
-}
-
-func (ctl *controller) getInstanceByID(instanceID int) (*api.Instance, error) {
-	body, err := ctl.get(fmt.Sprintf("/instance/%d", instanceID), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	instance := new(api.Instance)
-	if err = jsonapi.UnmarshalPayload(body, instance); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal get instance response")
-	}
-	return instance, nil
-}
 
 func (ctl *controller) getInstanceMigrationHistory(instanceID int, find db.MigrationHistoryFind) ([]*api.MigrationHistory, error) {
 	params := make(map[string]string)
