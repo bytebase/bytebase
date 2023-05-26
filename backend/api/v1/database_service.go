@@ -519,6 +519,124 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 	return convertToBackup(backup, instanceID, databaseName), nil
 }
 
+// ListChangeHistories lists the change histories of a database.
+func (s *DatabaseService) ListChangeHistories(context.Context, *v1pb.ListChangeHistoriesRequest) (*v1pb.ListChangeHistoriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListChangeHistories not implemented")
+}
+
+// GetChangeHistory gets a change history.
+func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.GetChangeHistoryRequest) (*v1pb.ChangeHistory, error) {
+	instanceID, databaseName, changeHistoryIDStr, err := getInstanceDatabaseIDChangeHistory(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	changeHistoryID, err := strconv.ParseInt(changeHistoryIDStr, 10, 64)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot parse change history id %q", changeHistoryIDStr)
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	changeHistory, err := s.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		ID: &changeHistoryID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
+	}
+	if len(changeHistory) == 0 {
+		return nil, status.Errorf(codes.NotFound, "change history %q not found", changeHistoryIDStr)
+	}
+	if len(changeHistory) > 1 {
+		return nil, status.Errorf(codes.Internal, "expect to find one change history, got %d", len(changeHistory))
+	}
+	return convertToChangeHistory(changeHistory[0]), nil
+}
+
+func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) *v1pb.ChangeHistory {
+	v1pbHistory := &v1pb.ChangeHistory{
+		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", instanceNamePrefix, h.InstanceID, databaseIDPrefix, h.DatabaseName, changeHistoryPrefix, h.UID),
+		Uid:               h.UID,
+		Creator:           fmt.Sprintf("users/%s", h.Creator.Email),
+		Updater:           fmt.Sprintf("users/%s", h.Updater.Email),
+		CreateTime:        timestamppb.New(time.Unix(h.CreatedTs, 0)),
+		UpdateTime:        timestamppb.New(time.Unix(h.UpdatedTs, 0)),
+		ReleaseVersion:    h.ReleaseVersion,
+		Source:            convertToChangeHistorySource(h.Source),
+		Type:              convertToChangeHistoryType(h.Type),
+		Status:            convertToChangeHistoryStatus(h.Status),
+		Version:           h.Version,
+		Description:       h.Description,
+		Statement:         h.Statement,
+		Schema:            h.Schema,
+		PrevSchema:        h.SchemaPrev,
+		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
+		Review:            "",
+	}
+	if h.IssueUID != nil {
+		v1pbHistory.Review = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, h.IssueProjectID, reviewPrefix, *h.IssueUID)
+	}
+	return v1pbHistory
+}
+
+func convertToChangeHistorySource(source db.MigrationSource) v1pb.ChangeHistory_Source {
+	switch source {
+	case db.UI:
+		return v1pb.ChangeHistory_UI
+	case db.VCS:
+		return v1pb.ChangeHistory_VCS
+	case db.LIBRARY:
+		return v1pb.ChangeHistory_LIBRARY
+	default:
+		return v1pb.ChangeHistory_SOURCE_UNSPECIFIED
+	}
+}
+
+func convertToChangeHistoryType(t db.MigrationType) v1pb.ChangeHistory_Type {
+	switch t {
+	case db.Baseline:
+		return v1pb.ChangeHistory_BASELINE
+	case db.Migrate:
+		return v1pb.ChangeHistory_MIGRATE
+	case db.MigrateSDL:
+		return v1pb.ChangeHistory_MIGRATE_SDL
+	case db.Branch:
+		return v1pb.ChangeHistory_BRANCH
+	case db.Data:
+		return v1pb.ChangeHistory_DATA
+	default:
+		return v1pb.ChangeHistory_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToChangeHistoryStatus(s db.MigrationStatus) v1pb.ChangeHistory_Status {
+	switch s {
+	case db.Pending:
+		return v1pb.ChangeHistory_PENDING
+	case db.Done:
+		return v1pb.ChangeHistory_DONE
+	case db.Failed:
+		return v1pb.ChangeHistory_FAILED
+	default:
+		return v1pb.ChangeHistory_STATUS_UNSPECIFIED
+	}
+}
+
 // ListSecrets lists the secrets of a database.
 func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSecretsRequest) (*v1pb.ListSecretsResponse, error) {
 	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)

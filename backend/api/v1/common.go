@@ -42,6 +42,7 @@ const (
 	webhookIDPrefix              = "webhooks/"
 	sheetIDPrefix                = "sheets/"
 	databaseGroupNamePrefix      = "databaseGroups/"
+	changeHistoryPrefix          = "changeHistories/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -137,6 +138,15 @@ func getInstanceDatabaseID(name string) (string, string, error) {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
+}
+
+func getInstanceDatabaseIDChangeHistory(name string) (string, string, string, error) {
+	// the name should be instances/{instance-id}/databases/{database-id}/changeHistories/{changeHistory-id}
+	tokens, err := getNameParentTokens(name, instanceNamePrefix, databaseIDPrefix, changeHistoryPrefix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], nil
 }
 
 func getInstanceDatabaseIDSecretName(name string) (string, string, string, error) {

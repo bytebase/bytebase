@@ -156,9 +156,9 @@ func backfillHistory(ctx context.Context, storeInstance *store.Store, bytebasePg
 				CreatedTs:           h.CreatedTs,
 				UpdaterID:           api.SystemBotID,
 				UpdatedTs:           h.UpdatedTs,
-				InstanceID:          nil,
-				DatabaseID:          nil,
-				IssueID:             nil,
+				InstanceUID:         nil,
+				DatabaseUID:         nil,
+				IssueUID:            nil,
 				ReleaseVersion:      h.ReleaseVersion,
 				Sequence:            int64(h.Sequence),
 				Source:              h.Source,
@@ -336,9 +336,9 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	}
 	if _, err := storeInstance.CreateInstanceChangeHistory(ctx, &store.InstanceChangeHistoryMessage{
 		CreatorID:      api.SystemBotID,
-		InstanceID:     nil,
-		DatabaseID:     nil,
-		IssueID:        nil,
+		InstanceUID:    nil,
+		DatabaseUID:    nil,
+		IssueUID:       nil,
 		ReleaseVersion: serverVersion,
 		// Sequence starts from 1.
 		Sequence:            1,
