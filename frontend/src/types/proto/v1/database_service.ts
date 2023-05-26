@@ -986,12 +986,6 @@ export interface ListChangeHistoriesResponse {
   nextPageToken: string;
 }
 
-/** Used internally for obfuscating the page token. */
-export interface ListChangeHistoriesPageToken {
-  pageSize: number;
-  offset: number;
-}
-
 export interface GetChangeHistoryRequest {
   /**
    * The name of the change history to retrieve.
@@ -5464,77 +5458,6 @@ export const ListChangeHistoriesResponse = {
     const message = createBaseListChangeHistoriesResponse();
     message.changeHistories = object.changeHistories?.map((e) => ChangeHistory.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
-    return message;
-  },
-};
-
-function createBaseListChangeHistoriesPageToken(): ListChangeHistoriesPageToken {
-  return { pageSize: 0, offset: 0 };
-}
-
-export const ListChangeHistoriesPageToken = {
-  encode(message: ListChangeHistoriesPageToken, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.pageSize !== 0) {
-      writer.uint32(8).int32(message.pageSize);
-    }
-    if (message.offset !== 0) {
-      writer.uint32(16).int32(message.offset);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListChangeHistoriesPageToken {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListChangeHistoriesPageToken();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.pageSize = reader.int32();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.offset = reader.int32();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListChangeHistoriesPageToken {
-    return {
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      offset: isSet(object.offset) ? Number(object.offset) : 0,
-    };
-  },
-
-  toJSON(message: ListChangeHistoriesPageToken): unknown {
-    const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.offset !== undefined && (obj.offset = Math.round(message.offset));
-    return obj;
-  },
-
-  create(base?: DeepPartial<ListChangeHistoriesPageToken>): ListChangeHistoriesPageToken {
-    return ListChangeHistoriesPageToken.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<ListChangeHistoriesPageToken>): ListChangeHistoriesPageToken {
-    const message = createBaseListChangeHistoriesPageToken();
-    message.pageSize = object.pageSize ?? 0;
-    message.offset = object.offset ?? 0;
     return message;
   },
 };

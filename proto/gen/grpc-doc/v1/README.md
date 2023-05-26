@@ -95,7 +95,6 @@
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
     - [ListBackupRequest](#bytebase-v1-ListBackupRequest)
     - [ListBackupResponse](#bytebase-v1-ListBackupResponse)
-    - [ListChangeHistoriesPageToken](#bytebase-v1-ListChangeHistoriesPageToken)
     - [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest)
     - [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
@@ -1758,22 +1757,6 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 | ----- | ---- | ----- | ----------- |
 | backups | [Backup](#bytebase-v1-Backup) | repeated | The backups from the specified request. |
 | next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListChangeHistoriesPageToken"></a>
-
-### ListChangeHistoriesPageToken
-Used internally for obfuscating the page token.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  |  |
-| offset | [int32](#int32) |  |  |
 
 
 
