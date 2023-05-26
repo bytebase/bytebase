@@ -338,12 +338,19 @@ const formatOnSave = computed({
 
 const allowFormatOnSave = computed(() => language.value === "sql");
 
-const isTaskSheetOversize = computed(() => {
+const isValidSheetName = computed(() => {
   if (!state.taskSheetName) {
     return false;
   }
+  return sheetV1Store.getSheetUid(state.taskSheetName) !== UNKNOWN_ID;
+});
 
-  const taskSheet = sheetV1Store.getSheetByName(state.taskSheetName);
+const isTaskSheetOversize = computed(() => {
+  if (!isValidSheetName.value) {
+    return false;
+  }
+
+  const taskSheet = sheetV1Store.getSheetByName(state.taskSheetName!);
   if (!taskSheet) {
     return false;
   }
@@ -430,7 +437,7 @@ watch(
 watch(
   () => state.taskSheetName,
   async () => {
-    if (state.taskSheetName) {
+    if (isValidSheetName.value) {
       state.editStatement = await getOrFetchSheetStatementByName(
         state.taskSheetName
       );
