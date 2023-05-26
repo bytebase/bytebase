@@ -14,6 +14,10 @@ import { computed, reactive } from "vue";
 import type { SheetUpsert } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { useDatabaseStore, useSheetStore, useTabStore } from "@/store";
+import {
+  getProjectAndSheetId,
+  getSheetPathByLegacyProject,
+} from "@/store/modules/v1/common";
 import { defaultTabName, getDefaultTabNameFromConnection } from "@/utils";
 import SaveSheetForm from "./SaveSheetForm.vue";
 
@@ -45,9 +49,11 @@ const allowSave = computed((): boolean => {
   return true;
 });
 
-const doSaveSheet = async (sheetName?: string) => {
-  const { name, statement, sheetId } = tabStore.currentTab;
-  sheetName = sheetName || name;
+const doSaveSheet = async (sheetTitle?: string) => {
+  const { name, statement, sheetName } = tabStore.currentTab;
+  sheetTitle = sheetTitle || name;
+
+  const sheetId = getProjectAndSheetId(sheetName ?? "")[1];
 
   const conn = tabStore.currentTab.connection;
   const database = await databaseStore.getOrFetchDatabaseById(conn.databaseId);
@@ -55,21 +61,21 @@ const doSaveSheet = async (sheetName?: string) => {
     id: sheetId,
     projectId: database.project.id,
     databaseId: conn.databaseId,
-    name: sheetName,
+    name: sheetTitle,
     statement: statement,
   };
   const sheet = await sheetStore.upsertSheet(sheetUpsert);
 
   tabStore.updateCurrentTab({
-    sheetId: sheet.id,
+    sheetName: getSheetPathByLegacyProject(sheet.project, sheet.id),
     isSaved: true,
-    name: sheetName,
+    name: sheetTitle,
   });
 };
 
 const needSheetName = (sheetName: string | undefined) => {
   const tab = tabStore.currentTab;
-  if (tab.sheetId) {
+  if (tab.sheetName) {
     // If the sheet is saved, we don't need to show the name popup.
     return false;
   }

@@ -12,7 +12,7 @@ import {
   WebStorageHelper,
 } from "@/utils";
 import { useInstanceStore } from "./instance";
-import { useSheetStore } from "./sheet";
+import { useSheetV1Store } from "./v1/sheet";
 import { useWebTerminalStore } from "./webTerminal";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor.tab-list";
@@ -31,7 +31,7 @@ const PERSISTENT_TASK_FIELDS = [
   "isSaved",
   "savedAt",
   "statement",
-  "sheetId",
+  "sheetName",
   "mode",
 ] as const;
 type PersistentTaskInfo = Pick<TabInfo, typeof PERSISTENT_TASK_FIELDS[number]>;
@@ -216,10 +216,10 @@ export const useTabStore = defineStore("tab", () => {
     });
 
     // Fetch opening sheets if needed
-    const sheetStore = useSheetStore();
+    const sheetV1Store = useSheetV1Store();
     tabList.value.forEach((tab) => {
-      if (tab.sheetId && tab.sheetId !== UNKNOWN_ID) {
-        sheetStore.getOrFetchSheetById(tab.sheetId);
+      if (tab.sheetName) {
+        sheetV1Store.getOrFetchSheetByName(tab.sheetName);
       }
     });
 

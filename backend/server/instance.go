@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,14 +8,10 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/metric"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
@@ -32,101 +27,6 @@ type pgConnectionInfo struct {
 }
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
-	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
-	g.POST("/instance", func(c echo.Context) error {
-		ctx := c.Request().Context()
-
-		if err := s.instanceCountGuard(ctx); err != nil {
-			return err
-		}
-
-		instanceCreate := &api.InstanceCreate{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create instance request").SetInternal(err)
-		}
-
-		if err := s.disallowBytebaseStore(instanceCreate.Engine, instanceCreate.Host, instanceCreate.Port); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-		if !isValidResourceID(instanceCreate.ResourceID) {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid instance id %s", instanceCreate.ResourceID))
-		}
-		if instanceCreate.Engine != db.Postgres && instanceCreate.Engine != db.MongoDB && instanceCreate.Engine != db.Redshift && instanceCreate.Database != "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
-		}
-		environment, err := s.store.GetEnvironmentByID(ctx, instanceCreate.EnvironmentID)
-		if err != nil {
-			return err
-		}
-		if environment == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environment %v not found", instanceCreate.EnvironmentID))
-		}
-		creator := c.Get(getPrincipalIDContextKey()).(int)
-		instance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
-			ResourceID:   instanceCreate.ResourceID,
-			Title:        instanceCreate.Name,
-			Engine:       instanceCreate.Engine,
-			ExternalLink: instanceCreate.ExternalLink,
-			DataSources: []*store.DataSourceMessage{
-				{
-					Title:                   api.AdminDataSourceName,
-					Type:                    api.Admin,
-					Username:                instanceCreate.Username,
-					ObfuscatedPassword:      common.Obfuscate(instanceCreate.Password, s.secret),
-					ObfuscatedSslCa:         common.Obfuscate(instanceCreate.SslCa, s.secret),
-					ObfuscatedSslCert:       common.Obfuscate(instanceCreate.SslCert, s.secret),
-					ObfuscatedSslKey:        common.Obfuscate(instanceCreate.SslKey, s.secret),
-					Host:                    instanceCreate.Host,
-					Port:                    instanceCreate.Port,
-					Database:                instanceCreate.Database,
-					SRV:                     instanceCreate.SRV,
-					AuthenticationDatabase:  instanceCreate.AuthenticationDatabase,
-					SID:                     instanceCreate.SID,
-					ServiceName:             instanceCreate.ServiceName,
-					SSHHost:                 instanceCreate.SSHHost,
-					SSHPort:                 instanceCreate.SSHPort,
-					SSHUser:                 instanceCreate.SSHUser,
-					SSHObfuscatedPassword:   common.Obfuscate(instanceCreate.SSHPassword, s.secret),
-					SSHObfuscatedPrivateKey: common.Obfuscate(instanceCreate.SSHPrivateKey, s.secret),
-				},
-			},
-			EnvironmentID: environment.ResourceID,
-		}, creator)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
-		}
-		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
-		if err != nil {
-			return err
-		}
-
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-		if err == nil {
-			defer driver.Close(ctx)
-			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
-				log.Warn("Failed to sync instance",
-					zap.String("instance", instance.ResourceID),
-					zap.Error(err))
-			}
-			// Sync all databases in the instance asynchronously.
-			s.stateCfg.InstanceDatabaseSyncChan <- composedInstance
-		}
-
-		s.MetricReporter.Report(ctx, &metric.Metric{
-			Name:  metricAPI.InstanceCreateMetricName,
-			Value: 1,
-			Labels: map[string]any{
-				"engine": composedInstance.Engine,
-			},
-		})
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstance); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create instance response").SetInternal(err)
-		}
-		return nil
-	})
-
 	g.GET("/instance", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		instanceFind := &api.InstanceFind{}
@@ -163,71 +63,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance ID response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.PATCH("/instance/:instanceID", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("instanceID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
-		}
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &id})
-		if err != nil {
-			return err
-		}
-		if instance == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance %v not found", id))
-		}
-
-		patch := &api.InstancePatch{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, patch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch instance request").SetInternal(err)
-		}
-
-		var deletes *bool
-		if patch.RowStatus != nil {
-			if *patch.RowStatus == string(api.Normal) {
-				if err := s.instanceCountGuard(ctx); err != nil {
-					return err
-				}
-				f := false
-				deletes = &f
-			} else if *patch.RowStatus == string(api.Archived) {
-				// Transfer databases to the default project automatically.
-				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
-				if err != nil {
-					return err
-				}
-				if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, api.DefaultProjectID, api.SystemBotID); err != nil {
-					return err
-				}
-				f := true
-				deletes = &f
-			}
-		}
-
-		updateMessage := &store.UpdateInstanceMessage{
-			Title:         patch.Name,
-			ExternalLink:  patch.ExternalLink,
-			Delete:        deletes,
-			UpdaterID:     c.Get(getPrincipalIDContextKey()).(int),
-			EnvironmentID: instance.EnvironmentID,
-			ResourceID:    instance.ResourceID,
-		}
-		if _, err := s.store.UpdateInstanceV2(ctx, updateMessage); err != nil {
-			return err
-		}
-
-		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
-		if err != nil {
-			return err
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstance); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance ID response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -505,24 +340,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			Username: postgres.SampleUser,
 		})
 	})
-}
-
-// instanceCountGuard is a feature guard for instance count.
-// We only count instances with NORMAL status since users cannot make any operations for ARCHIVED one.
-func (s *Server) instanceCountGuard(ctx context.Context) error {
-	subscription := s.licenseService.LoadSubscription(ctx)
-	if subscription.InstanceCount == -1 {
-		return nil
-	}
-
-	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
-	}
-	if count >= subscription.InstanceCount {
-		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
-	}
-	return nil
 }
 
 // disallowBytebaseStore prevents users adding Bytebase's own Postgres database.

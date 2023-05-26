@@ -16,7 +16,8 @@
     <div v-if="allowAdmin" class="my-4 w-full flex gap-x-2">
       <div class="w-[18rem] shrink-0">
         <UserSelect
-          v-model:user="state.userUID"
+          v-model:users="state.userUIDList"
+          :multiple="true"
           :include-all="false"
           :filter="filterNonMemberUsers"
           :disabled="state.adding"
@@ -108,7 +109,7 @@ import { State } from "@/types/proto/v1/common";
 import { User } from "@/types/proto/v1/auth_service";
 
 interface LocalState {
-  userUID: string | undefined;
+  userUIDList: string[];
   roleList: string[];
   adding: boolean;
   showInactiveMemberList: boolean;
@@ -127,7 +128,7 @@ const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy, ready } = useProjectIamPolicy(projectResourceName);
 
 const state = reactive<LocalState>({
-  userUID: undefined,
+  userUIDList: [],
   roleList: [],
   adding: false,
   showInactiveMemberList: false,
@@ -223,8 +224,8 @@ const inactiveComposedMemberList = computed(() => {
 });
 
 const isValid = computed(() => {
-  const { userUID, roleList } = state;
-  return userUID && roleList.length > 0;
+  const { userUIDList, roleList } = state;
+  return userUIDList.length > 0 && roleList.length > 0;
 });
 
 const filterNonMemberUsers = (user: User) => {
@@ -235,16 +236,20 @@ const filterNonMemberUsers = (user: User) => {
 
 const addMember = async () => {
   if (!isValid.value) return;
-  const { userUID, roleList } = state;
-  if (!userUID) return;
+  const { userUIDList, roleList } = state;
+  if (userUIDList.length === 0 || roleList.length === 0) return;
   state.adding = true;
   try {
     const policy = cloneDeep(iamPolicy.value);
-    const user = userStore.getUserById(userUID) ?? unknownUser();
-    const tag = `user:${user.email}`;
-    roleList.forEach((role) => {
-      addRoleToProjectIamPolicy(policy, tag, role);
-    });
+    const userNameList = [];
+    for (const userUID of userUIDList) {
+      const user = userStore.getUserById(userUID) ?? unknownUser();
+      userNameList.push(user.title);
+      const tag = `user:${user.email}`;
+      roleList.forEach((role) => {
+        addRoleToProjectIamPolicy(policy, tag, role);
+      });
+    }
     await useProjectIamPolicyStore().updateProjectIamPolicy(
       projectResourceName.value,
       policy
@@ -254,11 +259,11 @@ const addMember = async () => {
       module: "bytebase",
       style: "SUCCESS",
       title: t("project.settings.success-member-added-prompt", {
-        name: user.title,
+        name: userNameList.join(", "),
       }),
     });
     state.roleList = [];
-    state.userUID = undefined;
+    state.userUIDList = [];
   } finally {
     state.adding = false;
   }

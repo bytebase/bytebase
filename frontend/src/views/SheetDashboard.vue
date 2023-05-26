@@ -92,13 +92,14 @@ import { last } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { t } from "@/plugins/i18n";
 
+import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   hasFeature,
+  useUserStore,
+  useSheetV1Store,
   useProjectV1ListByCurrentUser,
-  useSheetStore,
 } from "@/store";
-import { Sheet } from "@/types";
-import { getSheetIssueBacktracePayload } from "@/utils";
+import { getSheetIssueBacktracePayloadV1 } from "@/utils";
 import {
   type SheetViewMode,
   SheetTable,
@@ -119,7 +120,7 @@ const state = reactive<LocalState>({
   sheetList: [],
   showFeatureModal: false,
 });
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 
 const projectSelectorValue = ref("");
 const sheetSearchValue = ref("");
@@ -145,9 +146,9 @@ const navigationList = computed(() => {
 
 const shownSheetList = computed(() => {
   let list = [...state.sheetList];
-  const projectId = projectSelectorValue.value;
-  if (projectId !== "") {
-    list = list.filter((sheet) => String(sheet.project.id) === projectId);
+  const projectName = projectSelectorValue.value;
+  if (projectName !== "") {
+    list = list.filter((sheet) => sheet.name.startsWith(projectName));
   }
 
   const keyword = sheetSearchValue.value.trim().toLowerCase();
@@ -155,12 +156,16 @@ const shownSheetList = computed(() => {
     list = list.filter((sheet) => {
       return (
         sheet.name.toLowerCase().includes(keyword) ||
-        sheet.statement.toLowerCase().includes(keyword)
+        new TextDecoder().decode(sheet.content).toLowerCase().includes(keyword)
       );
     });
   }
 
-  return list.sort((a, b) => b.updatedTs - a.updatedTs);
+  return list.sort(
+    (a, b) =>
+      (b.updateTime ?? new Date()).getTime() -
+      (a.updateTime ?? new Date()).getTime()
+  );
 });
 
 const { projectList } = useProjectV1ListByCurrentUser(false /* !showDeleted */);
@@ -185,7 +190,7 @@ const projectSelectOptions = computed(() => {
     projectList.value.map((project) => {
       return {
         label: project.title,
-        value: project.uid,
+        value: project.name,
       };
     })
   );
@@ -205,18 +210,20 @@ const currentSheetViewMode = computed((): SheetViewMode => {
 });
 
 const fetchSheetData = async () => {
+  await useUserStore().fetchUserList();
+
   let sheetList: Sheet[] = [];
   if (currentSheetViewMode.value === "my") {
-    sheetList = await sheetStore.fetchMySheetList();
+    sheetList = await sheetV1Store.fetchMySheetList();
   } else if (currentSheetViewMode.value === "starred") {
-    sheetList = await sheetStore.fetchStarredSheetList();
+    sheetList = await sheetV1Store.fetchStarredSheetList();
   } else if (currentSheetViewMode.value === "shared") {
-    sheetList = await sheetStore.fetchSharedSheetList();
+    sheetList = await sheetV1Store.fetchSharedSheetList();
   }
 
   // Hide those sheets from issue.
   state.sheetList = sheetList.filter((sheet) => {
-    return !getSheetIssueBacktracePayload(sheet);
+    return !getSheetIssueBacktracePayloadV1(sheet);
   });
 };
 
@@ -250,7 +257,7 @@ const handleSyncSheetFromVCS = () => {
     return;
   }
 
-  const selectedProjectId = selectedProject.value.uid;
+  const selectedProjectName = selectedProject.value.name;
   const dialogInstance = dialog.create({
     title: t("sheet.hint-tips.confirm-to-sync-sheet"),
     type: "info",
@@ -261,7 +268,7 @@ const handleSyncSheetFromVCS = () => {
     async onPositiveClick() {
       dialogInstance.closable = false;
       dialogInstance.loading = true;
-      await sheetStore.syncSheetFromVCS(selectedProjectId);
+      await sheetV1Store.syncSheetFromVCS(selectedProjectName);
       await fetchSheetData();
       dialogInstance.destroy();
     },

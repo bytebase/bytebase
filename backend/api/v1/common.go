@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/base64"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -11,8 +12,10 @@ import (
 	"golang.org/x/exp/ebnf"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -33,10 +36,16 @@ const (
 	externalVersionControlPrefix = "externalVersionControls/"
 	riskPrefix                   = "risks/"
 	reviewPrefix                 = "reviews/"
+	rolloutPrefix                = "rollouts/"
+	stagePrefix                  = "stages/"
+	taskPrefix                   = "tasks/"
+	planPrefix                   = "plans/"
 	rolePrefix                   = "roles/"
 	secretNamePrefix             = "secrets/"
 	webhookIDPrefix              = "webhooks/"
 	sheetIDPrefix                = "sheets/"
+	databaseGroupNamePrefix      = "databaseGroups/"
+	changeHistoryPrefix          = "changeHistories/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -134,6 +143,15 @@ func getInstanceDatabaseID(name string) (string, string, error) {
 	return tokens[0], tokens[1], nil
 }
 
+func getInstanceDatabaseIDChangeHistory(name string) (string, string, string, error) {
+	// the name should be instances/{instance-id}/databases/{database-id}/changeHistories/{changeHistory-id}
+	tokens, err := getNameParentTokens(name, instanceNamePrefix, databaseIDPrefix, changeHistoryPrefix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], nil
+}
+
 func getInstanceDatabaseIDSecretName(name string) (string, string, string, error) {
 	// the instance request should be instances/{instance-id}/databases/{database-id}/secrets/{secret-name}
 	tokens, err := getNameParentTokens(name, instanceNamePrefix, databaseIDPrefix, secretNamePrefix)
@@ -161,6 +179,14 @@ func getUserID(name string) (int, error) {
 		return 0, errors.Errorf("invalid user ID %q", tokens[0])
 	}
 	return userID, nil
+}
+
+func getUserEmail(name string) (string, error) {
+	tokens, err := getNameParentTokens(name, userNamePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
 }
 
 func getSettingName(name string) (string, error) {
@@ -229,6 +255,30 @@ func getReviewID(name string) (int, error) {
 		return 0, errors.Errorf("invalid review ID %q", tokens[1])
 	}
 	return reviewID, nil
+}
+
+func getTaskID(name string) (int, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix, stagePrefix, taskPrefix)
+	if err != nil {
+		return 0, err
+	}
+	taskID, err := strconv.Atoi(tokens[3])
+	if err != nil {
+		return 0, errors.Errorf("invalid task ID %q", tokens[1])
+	}
+	return taskID, nil
+}
+
+func getPlanID(name string) (int64, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, planPrefix)
+	if err != nil {
+		return 0, err
+	}
+	planID, err := strconv.ParseInt(tokens[1], 10, 64)
+	if err != nil {
+		return 0, errors.Errorf("invalid plan ID %q", tokens[1])
+	}
+	return planID, nil
 }
 
 func getRoleID(name string) (string, error) {
@@ -595,4 +645,23 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.OceanBase
 	}
 	return db.UnknownType
+}
+
+func marshalPageToken(pageToken *storepb.PageToken) (string, error) {
+	b, err := proto.Marshal(pageToken)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to marshal page token")
+	}
+	return base64.StdEncoding.EncodeToString(b), nil
+}
+
+func unmarshalPageToken(s string, pageToken *storepb.PageToken) error {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return errors.Wrapf(err, "failed to decode page token")
+	}
+	if err := proto.Unmarshal(b, pageToken); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal page token")
+	}
+	return nil
 }

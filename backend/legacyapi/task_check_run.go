@@ -132,7 +132,7 @@ type TaskCheckRun struct {
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType db.Type) bool {
-	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB || dbType == db.MariaDB {
+	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB || dbType == db.MariaDB || dbType == db.Oracle {
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
 			return false
@@ -161,7 +161,7 @@ func IsSQLReviewSupported(dbType db.Type) bool {
 // IsStatementTypeCheckSupported checks the engine type if statement type check supports it.
 func IsStatementTypeCheckSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB:
+	case db.Postgres, db.TiDB, db.MySQL, db.MariaDB, db.OceanBase:
 		return true
 	default:
 		return false
@@ -171,7 +171,7 @@ func IsStatementTypeCheckSupported(dbType db.Type) bool {
 // IsTaskCheckReportSupported checks if the task report supports the engine type.
 func IsTaskCheckReportSupported(dbType db.Type) bool {
 	switch dbType {
-	case db.Postgres, db.TiDB, db.MySQL:
+	case db.Postgres, db.MySQL, db.MariaDB, db.OceanBase:
 		return true
 	default:
 		return false

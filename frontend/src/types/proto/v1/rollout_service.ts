@@ -98,6 +98,8 @@ export interface Plan_Step {
 export interface Plan_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
   earliestAllowedTime?: Date;
+  /** A UUID4 string that uniquely identifies the Spec. */
+  id: string;
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   restoreDatabaseConfig?: Plan_RestoreDatabaseConfig | undefined;
@@ -126,7 +128,7 @@ export interface Plan_CreateDatabaseConfig {
   owner: string;
   /**
    * backup is the resource name of the backup.
-   * FIXME: backup v1 API is not ready yet, write the format here when it's ready.
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
    */
   backup: string;
   /** labels of the database. */
@@ -141,14 +143,13 @@ export interface Plan_CreateDatabaseConfig_LabelsEntry {
 export interface Plan_ChangeDatabaseConfig {
   /**
    * The resource name of the target.
-   * Format: projects/{project}/logicalDatabases/{ldb1}.
-   * Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}.
-   * Format: instances/{xxx}/databases/{db1}.
+   * Format: instances/{instance-id}/databases/{database-name}.
+   * Format: projects/{project}/deploymentConfig.
    */
   target: string;
   /**
    * The resource name of the sheet.
-   * Format: sheets/{sheet}
+   * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
   type: Plan_ChangeDatabaseConfig_Type;
@@ -159,6 +160,7 @@ export interface Plan_ChangeDatabaseConfig {
   schemaVersion: string;
   /** If RollbackEnabled, build the RollbackSheetID of the task. */
   rollbackEnabled: boolean;
+  rollbackDetail?: Plan_ChangeDatabaseConfig_RollbackDetail | undefined;
 }
 
 /** Type is the database change type. */
@@ -235,6 +237,19 @@ export function plan_ChangeDatabaseConfig_TypeToJSON(object: Plan_ChangeDatabase
   }
 }
 
+export interface Plan_ChangeDatabaseConfig_RollbackDetail {
+  /**
+   * rollback_from_task is the task from which the rollback SQL statement is generated for this task.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   */
+  rollbackFromTask: string;
+  /**
+   * rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task.
+   * Format: projects/{project}/reviews/{review}
+   */
+  rollbackFromReview: string;
+}
+
 export interface Plan_RestoreDatabaseConfig {
   /**
    * The resource name of the target to restore.
@@ -242,13 +257,7 @@ export interface Plan_RestoreDatabaseConfig {
    */
   target: string;
   /** create_database_config is present if the user wants to restore to a new database. */
-  createDatabaseConfig?:
-    | Plan_CreateDatabaseConfig
-    | undefined;
-  /**
-   * FIXME: format TBD
-   * Restore from a backup.
-   */
+  createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   backup?:
     | string
     | undefined;
@@ -298,7 +307,7 @@ export interface PlanCheckRun {
   status: PlanCheckRun_Status;
   /** Format: instances/{instance}/databases/{database} */
   target: string;
-  /** Format: sheets/{sheet} */
+  /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
   detail: string;
   results: PlanCheckRun_Result[];
@@ -579,6 +588,16 @@ export interface Task {
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
   title: string;
+  /**
+   * A UUID4 string that uniquely identifies the Spec.
+   * Could be empty if the rollout of the task does not have an associating plan.
+   */
+  specId: string;
+  /**
+   * Status is the status of the task.
+   * TODO(p0ny): migrate old task status and use this field as a summary of the task runs.
+   */
+  status: Task_Status;
   type: Task_Type;
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
   blockedByTasks: string[];
@@ -589,6 +608,69 @@ export interface Task {
   databaseSchemaUpdate?: Task_DatabaseSchemaUpdate | undefined;
   databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
   databaseRestoreRestore?: Task_DatabaseRestoreRestore | undefined;
+}
+
+export enum Task_Status {
+  STATUS_UNSPECIFIED = 0,
+  PENDING_APPROVAL = 1,
+  PENDING = 2,
+  RUNNING = 3,
+  DONE = 4,
+  FAILED = 5,
+  CANCELED = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function task_StatusFromJSON(object: any): Task_Status {
+  switch (object) {
+    case 0:
+    case "STATUS_UNSPECIFIED":
+      return Task_Status.STATUS_UNSPECIFIED;
+    case 1:
+    case "PENDING_APPROVAL":
+      return Task_Status.PENDING_APPROVAL;
+    case 2:
+    case "PENDING":
+      return Task_Status.PENDING;
+    case 3:
+    case "RUNNING":
+      return Task_Status.RUNNING;
+    case 4:
+    case "DONE":
+      return Task_Status.DONE;
+    case 5:
+    case "FAILED":
+      return Task_Status.FAILED;
+    case 6:
+    case "CANCELED":
+      return Task_Status.CANCELED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Task_Status.UNRECOGNIZED;
+  }
+}
+
+export function task_StatusToJSON(object: Task_Status): string {
+  switch (object) {
+    case Task_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
+    case Task_Status.PENDING_APPROVAL:
+      return "PENDING_APPROVAL";
+    case Task_Status.PENDING:
+      return "PENDING";
+    case Task_Status.RUNNING:
+      return "RUNNING";
+    case Task_Status.DONE:
+      return "DONE";
+    case Task_Status.FAILED:
+      return "FAILED";
+    case Task_Status.CANCELED:
+      return "CANCELED";
+    case Task_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export enum Task_Type {
@@ -704,7 +786,7 @@ export interface Task_DatabaseCreate {
   database: string;
   /** table name */
   table: string;
-  /** Format: sheets/{sheet} */
+  /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
   characterSet: string;
   collection: string;
@@ -721,13 +803,13 @@ export interface Task_DatabaseSchemaBaseline {
 }
 
 export interface Task_DatabaseSchemaUpdate {
-  /** Format: sheets/{sheet} */
+  /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
   schemaVersion: string;
 }
 
 export interface Task_DatabaseDataUpdate {
-  /** Format: sheets/{sheet} */
+  /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
   schemaVersion: string;
   /** Build the rollback SQL if rollback_enabled. */
@@ -758,7 +840,7 @@ export interface Task_DatabaseDataUpdate {
   /**
    * rollback_sheet is the resource name of
    * the sheet that stores the generated rollback SQL statement.
-   * Format: sheets/{sheet}
+   * Format: projects/{project}/sheets/{sheet}
    */
   rollbackSheet: string;
   /**
@@ -827,7 +909,7 @@ export function task_DatabaseDataUpdate_RollbackSqlStatusToJSON(
 export interface Task_DatabaseBackup {
   /**
    * The resource name of the backup.
-   * FIXME: format TBD.
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
    */
   backup: string;
 }
@@ -841,7 +923,10 @@ export interface Task_DatabaseRestoreRestore {
    * Format: instances/{instance}/databases/database
    */
   target: string;
-  /** Only used when doing restore full backup only. */
+  /**
+   * Only used when doing restore full backup only.
+   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
+   */
   backup?:
     | string
     | undefined;
@@ -876,7 +961,7 @@ export enum TaskRun_Status {
   STATUS_UNSPECIFIED = 0,
   PENDING = 1,
   RUNNING = 2,
-  COMPLETED = 3,
+  DONE = 3,
   FAILED = 4,
   CANCELED = 5,
   SKIPPED = 6,
@@ -895,8 +980,8 @@ export function taskRun_StatusFromJSON(object: any): TaskRun_Status {
     case "RUNNING":
       return TaskRun_Status.RUNNING;
     case 3:
-    case "COMPLETED":
-      return TaskRun_Status.COMPLETED;
+    case "DONE":
+      return TaskRun_Status.DONE;
     case 4:
     case "FAILED":
       return TaskRun_Status.FAILED;
@@ -921,8 +1006,8 @@ export function taskRun_StatusToJSON(object: TaskRun_Status): string {
       return "PENDING";
     case TaskRun_Status.RUNNING:
       return "RUNNING";
-    case TaskRun_Status.COMPLETED:
-      return "COMPLETED";
+    case TaskRun_Status.DONE:
+      return "DONE";
     case TaskRun_Status.FAILED:
       return "FAILED";
     case TaskRun_Status.CANCELED:
@@ -1482,6 +1567,7 @@ export const Plan_Step = {
 function createBasePlan_Spec(): Plan_Spec {
   return {
     earliestAllowedTime: undefined,
+    id: "",
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     restoreDatabaseConfig: undefined,
@@ -1492,6 +1578,9 @@ export const Plan_Spec = {
   encode(message: Plan_Spec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.earliestAllowedTime !== undefined) {
       Timestamp.encode(toTimestamp(message.earliestAllowedTime), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.id !== "") {
+      writer.uint32(42).string(message.id);
     }
     if (message.createDatabaseConfig !== undefined) {
       Plan_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).ldelim();
@@ -1518,6 +1607,13 @@ export const Plan_Spec = {
           }
 
           message.earliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.id = reader.string();
           continue;
         case 1:
           if (tag !== 10) {
@@ -1554,6 +1650,7 @@ export const Plan_Spec = {
       earliestAllowedTime: isSet(object.earliestAllowedTime)
         ? fromJsonTimestamp(object.earliestAllowedTime)
         : undefined,
+      id: isSet(object.id) ? String(object.id) : "",
       createDatabaseConfig: isSet(object.createDatabaseConfig)
         ? Plan_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
         : undefined,
@@ -1569,6 +1666,7 @@ export const Plan_Spec = {
   toJSON(message: Plan_Spec): unknown {
     const obj: any = {};
     message.earliestAllowedTime !== undefined && (obj.earliestAllowedTime = message.earliestAllowedTime.toISOString());
+    message.id !== undefined && (obj.id = message.id);
     message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
       ? Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
       : undefined);
@@ -1588,6 +1686,7 @@ export const Plan_Spec = {
   fromPartial(object: DeepPartial<Plan_Spec>): Plan_Spec {
     const message = createBasePlan_Spec();
     message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
+    message.id = object.id ?? "";
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
       ? Plan_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
       : undefined;
@@ -1861,7 +1960,7 @@ export const Plan_CreateDatabaseConfig_LabelsEntry = {
 };
 
 function createBasePlan_ChangeDatabaseConfig(): Plan_ChangeDatabaseConfig {
-  return { target: "", sheet: "", type: 0, schemaVersion: "", rollbackEnabled: false };
+  return { target: "", sheet: "", type: 0, schemaVersion: "", rollbackEnabled: false, rollbackDetail: undefined };
 }
 
 export const Plan_ChangeDatabaseConfig = {
@@ -1880,6 +1979,9 @@ export const Plan_ChangeDatabaseConfig = {
     }
     if (message.rollbackEnabled === true) {
       writer.uint32(40).bool(message.rollbackEnabled);
+    }
+    if (message.rollbackDetail !== undefined) {
+      Plan_ChangeDatabaseConfig_RollbackDetail.encode(message.rollbackDetail, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -1926,6 +2028,13 @@ export const Plan_ChangeDatabaseConfig = {
 
           message.rollbackEnabled = reader.bool();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.rollbackDetail = Plan_ChangeDatabaseConfig_RollbackDetail.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1942,6 +2051,9 @@ export const Plan_ChangeDatabaseConfig = {
       type: isSet(object.type) ? plan_ChangeDatabaseConfig_TypeFromJSON(object.type) : 0,
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
       rollbackEnabled: isSet(object.rollbackEnabled) ? Boolean(object.rollbackEnabled) : false,
+      rollbackDetail: isSet(object.rollbackDetail)
+        ? Plan_ChangeDatabaseConfig_RollbackDetail.fromJSON(object.rollbackDetail)
+        : undefined,
     };
   },
 
@@ -1952,6 +2064,9 @@ export const Plan_ChangeDatabaseConfig = {
     message.type !== undefined && (obj.type = plan_ChangeDatabaseConfig_TypeToJSON(message.type));
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
+    message.rollbackDetail !== undefined && (obj.rollbackDetail = message.rollbackDetail
+      ? Plan_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail)
+      : undefined);
     return obj;
   },
 
@@ -1966,6 +2081,80 @@ export const Plan_ChangeDatabaseConfig = {
     message.type = object.type ?? 0;
     message.schemaVersion = object.schemaVersion ?? "";
     message.rollbackEnabled = object.rollbackEnabled ?? false;
+    message.rollbackDetail = (object.rollbackDetail !== undefined && object.rollbackDetail !== null)
+      ? Plan_ChangeDatabaseConfig_RollbackDetail.fromPartial(object.rollbackDetail)
+      : undefined;
+    return message;
+  },
+};
+
+function createBasePlan_ChangeDatabaseConfig_RollbackDetail(): Plan_ChangeDatabaseConfig_RollbackDetail {
+  return { rollbackFromTask: "", rollbackFromReview: "" };
+}
+
+export const Plan_ChangeDatabaseConfig_RollbackDetail = {
+  encode(message: Plan_ChangeDatabaseConfig_RollbackDetail, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.rollbackFromTask !== "") {
+      writer.uint32(10).string(message.rollbackFromTask);
+    }
+    if (message.rollbackFromReview !== "") {
+      writer.uint32(18).string(message.rollbackFromReview);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_ChangeDatabaseConfig_RollbackDetail {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlan_ChangeDatabaseConfig_RollbackDetail();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rollbackFromTask = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.rollbackFromReview = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Plan_ChangeDatabaseConfig_RollbackDetail {
+    return {
+      rollbackFromTask: isSet(object.rollbackFromTask) ? String(object.rollbackFromTask) : "",
+      rollbackFromReview: isSet(object.rollbackFromReview) ? String(object.rollbackFromReview) : "",
+    };
+  },
+
+  toJSON(message: Plan_ChangeDatabaseConfig_RollbackDetail): unknown {
+    const obj: any = {};
+    message.rollbackFromTask !== undefined && (obj.rollbackFromTask = message.rollbackFromTask);
+    message.rollbackFromReview !== undefined && (obj.rollbackFromReview = message.rollbackFromReview);
+    return obj;
+  },
+
+  create(base?: DeepPartial<Plan_ChangeDatabaseConfig_RollbackDetail>): Plan_ChangeDatabaseConfig_RollbackDetail {
+    return Plan_ChangeDatabaseConfig_RollbackDetail.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Plan_ChangeDatabaseConfig_RollbackDetail>): Plan_ChangeDatabaseConfig_RollbackDetail {
+    const message = createBasePlan_ChangeDatabaseConfig_RollbackDetail();
+    message.rollbackFromTask = object.rollbackFromTask ?? "";
+    message.rollbackFromReview = object.rollbackFromReview ?? "";
     return message;
   },
 };
@@ -2812,6 +3001,8 @@ function createBaseTask(): Task {
     name: "",
     uid: "",
     title: "",
+    specId: "",
+    status: 0,
     type: 0,
     blockedByTasks: [],
     target: "",
@@ -2833,6 +3024,12 @@ export const Task = {
     }
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
+    }
+    if (message.specId !== "") {
+      writer.uint32(98).string(message.specId);
+    }
+    if (message.status !== 0) {
+      writer.uint32(104).int32(message.status);
     }
     if (message.type !== 0) {
       writer.uint32(32).int32(message.type);
@@ -2888,6 +3085,20 @@ export const Task = {
           }
 
           message.title = reader.string();
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.specId = reader.string();
+          continue;
+        case 13:
+          if (tag !== 104) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
           continue;
         case 4:
           if (tag !== 32) {
@@ -2959,6 +3170,8 @@ export const Task = {
       name: isSet(object.name) ? String(object.name) : "",
       uid: isSet(object.uid) ? String(object.uid) : "",
       title: isSet(object.title) ? String(object.title) : "",
+      specId: isSet(object.specId) ? String(object.specId) : "",
+      status: isSet(object.status) ? task_StatusFromJSON(object.status) : 0,
       type: isSet(object.type) ? task_TypeFromJSON(object.type) : 0,
       blockedByTasks: Array.isArray(object?.blockedByTasks) ? object.blockedByTasks.map((e: any) => String(e)) : [],
       target: isSet(object.target) ? String(object.target) : "",
@@ -2983,6 +3196,8 @@ export const Task = {
     message.name !== undefined && (obj.name = message.name);
     message.uid !== undefined && (obj.uid = message.uid);
     message.title !== undefined && (obj.title = message.title);
+    message.specId !== undefined && (obj.specId = message.specId);
+    message.status !== undefined && (obj.status = task_StatusToJSON(message.status));
     message.type !== undefined && (obj.type = task_TypeToJSON(message.type));
     if (message.blockedByTasks) {
       obj.blockedByTasks = message.blockedByTasks.map((e) => e);
@@ -3016,6 +3231,8 @@ export const Task = {
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
     message.title = object.title ?? "";
+    message.specId = object.specId ?? "";
+    message.status = object.status ?? 0;
     message.type = object.type ?? 0;
     message.blockedByTasks = object.blockedByTasks?.map((e) => e) || [];
     message.target = object.target ?? "";

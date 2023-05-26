@@ -33,7 +33,7 @@ import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
 import {
   useCurrentTab,
   useInstanceStore,
-  useSheetStore,
+  useSheetV1Store,
   useTabStore,
 } from "@/store";
 import SQLEditor from "./SQLEditor.vue";
@@ -47,18 +47,19 @@ import {
 import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
-import { getSheetIssueBacktracePayload } from "@/utils";
+import { getSheetIssueBacktracePayloadV1 } from "@/utils";
 
 const tabStore = useTabStore();
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
 const tab = useCurrentTab();
 
 const sheetBacktracePayload = computed(() => {
-  const sheetId = tabStore.currentTab.sheetId;
-  if (!sheetId) return undefined;
-  const sheet = sheetStore.getSheetById(sheetId);
-  return getSheetIssueBacktracePayload(sheet);
+  const sheetName = tabStore.currentTab.sheetName;
+  if (!sheetName) return undefined;
+  const sheet = sheetV1Store.getSheetByName(sheetName);
+  if (!sheet) return undefined;
+  return getSheetIssueBacktracePayloadV1(sheet);
 });
 
 const { execute } = useExecuteSQL();

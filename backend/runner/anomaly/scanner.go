@@ -500,11 +500,9 @@ func disableBackupAnomalyCheck(dbTp db.Type) bool {
 func disableSchemaDriftAnomalyCheck(dbTp db.Type) bool {
 	m := map[db.Type]struct{}{
 		db.MongoDB:  {},
-		db.Spanner:  {},
 		db.Redis:    {},
 		db.Oracle:   {},
 		db.MSSQL:    {},
-		db.MariaDB:  {},
 		db.Redshift: {},
 	}
 	_, ok := m[dbTp]

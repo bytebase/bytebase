@@ -6,3 +6,8 @@ export const getErrorCode = (error: unknown) => {
   }
   return Status.UNKNOWN;
 };
+
+export const extractGrpcErrorMessage = (err: unknown) => {
+  const description = err instanceof ClientError ? err.details : String(err);
+  return description;
+};

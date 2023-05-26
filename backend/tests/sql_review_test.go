@@ -114,16 +114,14 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	reviewPolicy, err := prodTemplateSQLReviewPolicyForPostgreSQL()
 	a.NoError(err)
 
 	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+		Parent: prodEnvironment.Name,
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_SQL_REVIEW,
 			Policy: &v1pb.Policy_SqlReviewPolicy{
@@ -134,7 +132,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+		Parent: prodEnvironment.Name,
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_SQL_REVIEW,
 			Policy: &v1pb.Policy_SqlReviewPolicy{
@@ -145,16 +143,17 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 	a.NotNil(policy.Name)
 
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
-		Name:          "pgInstance",
-		Engine:        db.Postgres,
-		Host:          "/tmp",
-		Port:          strconv.Itoa(pgPort),
-		Username:      "bytebase",
-		Password:      "bytebase",
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       "pgInstance",
+			Engine:      v1pb.Engine_POSTGRES,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
@@ -173,7 +172,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.Equal(1, len(databases))
 
 	database := databases[0]
-	a.Equal(instance.ID, database.Instance.ID)
+	a.Equal(instanceUID, database.Instance.ID)
 
 	yamlFile, err := os.Open(filepath)
 	a.NoError(err)
@@ -216,7 +215,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	// delete the SQL review policy
 	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
-		Name: fmt.Sprintf("environments/%s/policies/%s", prodEnvironment.ResourceID, v1pb.PolicyType_SQL_REVIEW),
+		Name: fmt.Sprintf("%s/policies/%s", prodEnvironment.Name, v1pb.PolicyType_SQL_REVIEW),
 	})
 	a.NoError(err)
 
@@ -307,16 +306,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	reviewPolicy, err := prodTemplateSQLReviewPolicyForMySQL()
 	a.NoError(err)
 
 	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+		Parent: prodEnvironment.Name,
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_SQL_REVIEW,
 			Policy: &v1pb.Policy_SqlReviewPolicy{
@@ -327,7 +324,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	policy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: fmt.Sprintf("environments/%s", prodEnvironment.ResourceID),
+		Parent: prodEnvironment.Name,
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_SQL_REVIEW,
 			Policy: &v1pb.Policy_SqlReviewPolicy{
@@ -338,16 +335,17 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.NotNil(policy.Name)
 
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironment.ID,
-		Name:          "mysqlInstance",
-		Engine:        db.MySQL,
-		Host:          "127.0.0.1",
-		Port:          strconv.Itoa(mysqlPort),
-		Username:      "bytebase",
-		Password:      "bytebase",
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       "mysqlInstance",
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
 	databases, err := ctl.getDatabases(api.DatabaseFind{
@@ -356,7 +354,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Nil(databases)
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instance.ID,
+		InstanceID: &instanceUID,
 	})
 	a.NoError(err)
 	a.Nil(databases)
@@ -371,7 +369,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.Equal(1, len(databases))
 
 	database := databases[0]
-	a.Equal(instance.ID, database.Instance.ID)
+	a.Equal(instanceUID, database.Instance.ID)
 
 	yamlFile, err := os.Open(filepath)
 	a.NoError(err)
@@ -439,7 +437,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	// delete the SQL review policy
 	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, &v1pb.DeletePolicyRequest{
-		Name: fmt.Sprintf("environments/%s/policies/%s", prodEnvironment.ResourceID, v1pb.PolicyType_SQL_REVIEW),
+		Name: fmt.Sprintf("%s/policies/%s", prodEnvironment.Name, v1pb.PolicyType_SQL_REVIEW),
 	})
 	a.NoError(err)
 

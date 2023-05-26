@@ -85,44 +85,45 @@
 import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useTabStore, useSheetStore } from "@/store";
+import { pushNotification, useTabStore, useSheetV1Store } from "@/store";
 import { AccessOption } from "@/types";
-import { sheetSlug } from "@/utils";
+import { sheetSlugV1 } from "@/utils";
+import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 
 const { t } = useI18n();
 const tabStore = useTabStore();
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 
 const accessOptions = computed<AccessOption[]>(() => {
   return [
     {
       label: t("sql-editor.private"),
-      value: "PRIVATE",
+      value: Sheet_Visibility.VISIBILITY_PRIVATE,
       description: t("sql-editor.private-desc"),
     },
     {
       label: t("common.project"),
-      value: "PROJECT",
+      value: Sheet_Visibility.VISIBILITY_PROJECT,
       description: t("sql-editor.project-desc"),
     },
     {
       label: t("sql-editor.public"),
-      value: "PUBLIC",
+      value: Sheet_Visibility.VISIBILITY_PUBLIC,
       description: t("sql-editor.public-desc"),
     },
   ];
 });
 
-const sheet = computed(() => sheetStore.currentSheet);
-const isCreator = computed(() => sheetStore.isCreator);
+const sheet = computed(() => sheetV1Store.currentSheet);
+const isCreator = computed(() => sheetV1Store.isCreator);
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
 
 const updateSheet = () => {
-  if (tabStore.currentTab.sheetId) {
-    sheetStore.patchSheetById({
-      id: tabStore.currentTab.sheetId,
+  if (sheet.value) {
+    sheetV1Store.patchSheet({
+      name: sheet.value.name,
       visibility: currentAccess.value.value,
     });
   }
@@ -137,9 +138,14 @@ const handleChangeAccess = (option: AccessOption) => {
   isShowAccessPopover.value = false;
 };
 
-const sharedTabLink = computed(
-  () => `${window.location.origin}/sql-editor/sheet/${sheetSlug(sheet.value)}`
-);
+const sharedTabLink = computed(() => {
+  if (!sheet.value) {
+    return "";
+  }
+  return `${window.location.origin}/sql-editor/sheet/${sheetSlugV1(
+    sheet.value
+  )}`;
+});
 
 const { copy, copied } = useClipboard({
   source: sharedTabLink.value,

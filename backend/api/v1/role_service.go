@@ -65,6 +65,9 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomRole) {
 		return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomRole.AccessErrorMessage())
 	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	roleID, err := getRoleID(request.Role.Name)
 	if err != nil {

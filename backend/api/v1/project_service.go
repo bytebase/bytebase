@@ -9,10 +9,13 @@ import (
 
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	webhookPlugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -24,13 +27,15 @@ import (
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1pb.UnimplementedProjectServiceServer
-	store *store.Store
+	store           *store.Store
+	activityManager *activity.Manager
 }
 
 // NewProjectService creates a new ProjectService.
-func NewProjectService(store *store.Store) *ProjectService {
+func NewProjectService(store *store.Store, activityManager *activity.Manager) *ProjectService {
 	return &ProjectService{
-		store: store,
+		store:           store,
+		activityManager: activityManager,
 	}
 }
 
@@ -299,12 +304,54 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	oldPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &project.UID})
+	if err != nil {
+		return nil, err
+	}
+	remove, add, err := store.GetIAMPolicyDiff(oldPolicy, policy)
+	if err != nil {
+		return nil, err
+	}
+	s.CreateIAMPolicyUpdateActivity(ctx, remove, add, project, creatorUID)
+
 	iamPolicy, err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return convertToIamPolicy(iamPolicy), nil
+}
+
+// CreateIAMPolicyUpdateActivity creates project IAM policy change activities.
+func (s *ProjectService) CreateIAMPolicyUpdateActivity(ctx context.Context, remove, add *store.IAMPolicyMessage, project *store.ProjectMessage, creatorUID int) {
+	var activities []*api.ActivityCreate
+	for _, binding := range remove.Bindings {
+		for _, member := range binding.Members {
+			activities = append(activities, &api.ActivityCreate{
+				CreatorID:   creatorUID,
+				ContainerID: project.UID,
+				Type:        api.ActivityProjectMemberDelete,
+				Level:       api.ActivityInfo,
+				Comment:     fmt.Sprintf("Revoked %s from %s (%s).", binding.Role, member.Name, member.Email),
+			})
+		}
+	}
+	for _, binding := range add.Bindings {
+		for _, member := range binding.Members {
+			activities = append(activities, &api.ActivityCreate{
+				CreatorID:   creatorUID,
+				ContainerID: project.UID,
+				Type:        api.ActivityProjectMemberCreate,
+				Level:       api.ActivityInfo,
+				Comment:     fmt.Sprintf("Granted %s to %s (%s).", member.Name, member.Email, binding.Role),
+			})
+		}
+	}
+	for _, a := range activities {
+		if _, err := s.activityManager.CreateActivity(ctx, a, &activity.Metadata{}); err != nil {
+			log.Warn("Failed to create project activity", zap.Error(err))
+		}
+	}
 }
 
 // GetDeploymentConfig returns the deployment config for a project.
@@ -581,13 +628,67 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 			Link:         fmt.Sprintf("%s/project/%s/webhook/%s", setting.ExternalUrl, fmt.Sprintf("%s-%d", slug.Make(project.Title), project.UID), fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
 			CreatorID:    api.SystemBotID,
 			CreatorName:  "Bytebase",
-			CreatorEmail: "support@bytebase.com",
+			CreatorEmail: api.SystemBotEmail,
 			CreatedTs:    time.Now().Unix(),
 			Project:      &webhookPlugin.Project{Name: project.Title},
 		},
 	)
 
 	return &v1pb.TestWebhookResponse{Error: err.Error()}, nil
+}
+
+// CreateDatabaseGroup creates a database group.
+func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
+	projectResourceID, err := getProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Parent)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Parent)
+	}
+
+	// The id value should be 4-63 characters, and valid characters are /[a-z][0-9]-/.
+	if len(request.DatabaseGroupId) < 4 || len(request.DatabaseGroupId) > 63 {
+		return nil, status.Errorf(codes.InvalidArgument, "database group id %q must be between 4 and 63 characters", request.DatabaseGroupId)
+	}
+	for _, c := range request.DatabaseGroupId {
+		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid database group id %q", request.DatabaseGroupId)
+		}
+	}
+	if request.DatabaseGroup.DatabasePlaceholder == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "database group database placeholder is required")
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	storeDatabaseGroup := &store.DatabaseGroupMessage{
+		CreatorID:         principalID,
+		ProjectResourceID: project.ResourceID,
+		Placeholder:       request.DatabaseGroup.DatabasePlaceholder,
+		Expression:        request.DatabaseGroup.DatabaseExpr,
+	}
+	databaseGroup, err := s.store.CreateDatabaseGroup(ctx, principalID, storeDatabaseGroup)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertStoreToAPIDatabaseGroup(databaseGroup), nil
+}
+
+func convertStoreToAPIDatabaseGroup(databaseGroup *store.DatabaseGroupMessage) *v1pb.DatabaseGroup {
+	return &v1pb.DatabaseGroup{
+		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, databaseGroup.ProjectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
+		DatabasePlaceholder: databaseGroup.Placeholder,
+		DatabaseExpr:        databaseGroup.Expression,
+	}
 }
 
 func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectWebhookMessage, error) {

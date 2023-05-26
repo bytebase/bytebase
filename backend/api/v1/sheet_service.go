@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -18,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
@@ -101,7 +103,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 	}
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert sheet: %v", err))
+		return nil, err
 	}
 	return v1pbSheet, nil
 }
@@ -145,7 +147,7 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert sheet: %v", err))
+		return nil, err
 	}
 	return v1pbSheet, nil
 }
@@ -237,7 +239,12 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 	for _, sheet := range sheetList {
 		v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert sheet: %v", err))
+			st := status.Convert(err)
+			if st.Code() == codes.NotFound {
+				log.Debug("failed to found resource for sheet", zap.Error(err), zap.Int("id", sheet.UID), zap.Int("project", sheet.ProjectUID))
+				continue
+			}
+			return nil, err
 		}
 		v1pbSheets = append(v1pbSheets, v1pbSheet)
 	}
@@ -319,6 +326,8 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 			}
 			stringVisibility := string(visibility)
 			sheetPatch.Visibility = &stringVisibility
+		case "payload":
+			sheetPatch.Name = &request.Sheet.Payload
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
 		}
@@ -329,7 +338,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 	}
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, storeSheet)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to convert sheet: %v", err))
+		return nil, err
 	}
 
 	return v1pbSheet, nil
@@ -647,6 +656,9 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project: %v", err))
 	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with id %d not found", sheet.ProjectUID))
+	}
 
 	return &v1pb.Sheet{
 		Name:        fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, sheetIDPrefix, sheet.UID),
@@ -661,6 +673,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		Source:      source,
 		Type:        tp,
 		Starred:     sheet.Starred,
+		Payload:     sheet.Payload,
 	}, nil
 }
 
@@ -705,6 +718,7 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		Visibility: visibility,
 		Source:     source,
 		Type:       tp,
+		Payload:    sheet.Payload,
 	}, nil
 }
 

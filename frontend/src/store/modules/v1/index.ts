@@ -4,3 +4,8 @@ export * from "./projectIamPolicy";
 export * from "./projectWebhook";
 export * from "./deploymentConfig";
 export * from "./databaseSecret";
+export * from "./sheet";
+export * from "./policy";
+export * from "./dataSource";
+export * from "./setting";
+export * from "./instance";

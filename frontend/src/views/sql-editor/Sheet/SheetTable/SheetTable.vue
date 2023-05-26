@@ -15,7 +15,7 @@
     </div>
     <div
       v-for="sheet in sheetList"
-      :key="sheet.id"
+      :key="sheet.name"
       class="sheet-list-container text-sm cursor-pointer hover:bg-gray-100"
       :class="view"
       @click="handleSheetClick(sheet)"
@@ -48,11 +48,13 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
 
-import type { Sheet } from "@/types";
+import { Sheet } from "@/types/proto/v1/sheet_service";
+import { getProjectAndSheetId } from "@/store/modules/v1/common";
 import { SheetViewMode } from "../types";
 import Dropdown from "./Dropdown.vue";
 import { useRouter } from "vue-router";
-import { sheetSlug } from "@/utils";
+import { sheetSlugV1 } from "@/utils";
+import { useUserStore } from "@/store";
 
 const props = withDefaults(
   defineProps<{
@@ -81,7 +83,7 @@ const handleSheetClick = (sheet: Sheet) => {
   router.push({
     name: "sql-editor.share",
     params: {
-      sheetSlug: sheetSlug(sheet),
+      sheetSlug: sheetSlugV1(sheet),
     },
   });
 };
@@ -118,14 +120,15 @@ const headers = computed(() => {
 });
 
 const getValueList = (sheet: Sheet) => {
+  const [projName, _] = getProjectAndSheetId(sheet.name);
   const valueList = [
     {
       key: "name",
-      value: sheet.name,
+      value: sheet.title,
     },
     {
       key: "project",
-      value: sheet.project.name,
+      value: projName,
     },
     {
       key: "visibility",
@@ -136,13 +139,17 @@ const getValueList = (sheet: Sheet) => {
   if (showCreator.value) {
     valueList.push({
       key: "creator",
-      value: sheet.creator.name,
+      value:
+        useUserStore().getUserByIdentifier(sheet.creator)?.title ??
+        sheet.creator,
     });
   }
 
   valueList.push({
     key: "updated",
-    value: dayjs.duration(sheet.updatedTs * 1000 - Date.now()).humanize(true),
+    value: dayjs
+      .duration((sheet.updateTime ?? new Date()).getTime() - Date.now())
+      .humanize(true),
   });
 
   return valueList;

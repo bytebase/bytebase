@@ -171,8 +171,8 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 			updated = true
 			break
 		}
+		role := api.Role(strings.TrimPrefix(payload.GrantRequest.Role, "roles/"))
 		if !updated {
-			role := api.Role(strings.TrimPrefix(payload.GrantRequest.Role, "roles/"))
 			condition := payload.GrantRequest.Condition
 			condition.Description = fmt.Sprintf("#%d", issue.UID)
 			policy.Bindings = append(policy.Bindings, &store.PolicyBinding{
@@ -183,6 +183,16 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		}
 		if _, err := s.store.SetProjectIAMPolicy(ctx, policy, api.SystemBotID, issue.Project.UID); err != nil {
 			return nil, err
+		}
+		// Post project IAM policy update activity.
+		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: issue.Project.UID,
+			Type:        api.ActivityProjectMemberCreate,
+			Level:       api.ActivityInfo,
+			Comment:     fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, role),
+		}, &activity.Metadata{}); err != nil {
+			log.Warn("Failed to create project activity", zap.Error(err))
 		}
 	}
 
@@ -380,7 +390,7 @@ func convertToReview(ctx context.Context, s *store.Store, issue *store.IssueMess
 	}
 
 	review := &v1pb.Review{
-		Name:              fmt.Sprintf("%s%d", reviewPrefix, issue.UID),
+		Name:              fmt.Sprintf("%s%s/%s%d", projectNamePrefix, issue.Project.ResourceID, reviewPrefix, issue.UID),
 		Uid:               fmt.Sprintf("%d", issue.UID),
 		Title:             issue.Title,
 		Description:       issue.Description,

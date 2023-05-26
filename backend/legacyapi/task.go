@@ -62,6 +62,7 @@ type TaskDatabasePITRRestorePayload struct {
 	// Common fields
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
+	SpecID        string `json:"specId,omitempty"`
 
 	// The project owning the database.
 	ProjectID int `json:"projectId,omitempty"`
@@ -90,6 +91,7 @@ type TaskDatabasePITRCutoverPayload struct {
 	// Common fields
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
+	SpecID        string `json:"specId,omitempty"`
 }
 
 // TaskDatabaseCreatePayload is the task payload for creating databases.
@@ -97,6 +99,7 @@ type TaskDatabaseCreatePayload struct {
 	// Common fields
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
+	SpecID        string `json:"specId,omitempty"`
 
 	// The project owning the database.
 	ProjectID    int    `json:"projectId,omitempty"`
@@ -113,6 +116,7 @@ type TaskDatabaseSchemaBaselinePayload struct {
 	// Common fields
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
+	SpecID        string `json:"specId,omitempty"`
 
 	SchemaVersion string `json:"schemaVersion,omitempty"`
 }
@@ -122,6 +126,7 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	// Common fields
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
+	SpecID        string `json:"specId,omitempty"`
 
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
@@ -133,6 +138,7 @@ type TaskDatabaseSchemaUpdateSDLPayload struct {
 	// Common fields
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
+	SpecID        string `json:"specId,omitempty"`
 
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
@@ -144,6 +150,7 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 	// Common fields
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
+	SpecID        string `json:"specId,omitempty"`
 
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
@@ -159,6 +166,7 @@ type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
 	// Common fields
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
+	SpecID        string `json:"specId,omitempty"`
 }
 
 // RollbackSQLStatus is the status of a rollback SQL generation task.
@@ -178,6 +186,7 @@ type TaskDatabaseDataUpdatePayload struct {
 	// Common fields
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
+	SpecID        string `json:"specId,omitempty"`
 
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
@@ -218,6 +227,7 @@ type TaskDatabaseBackupPayload struct {
 	// Common fields
 	Skipped       bool   `json:"skipped,omitempty"`
 	SkippedReason string `json:"skippedReason,omitempty"`
+	SpecID        string `json:"specId,omitempty"`
 
 	BackupID int `json:"backupId,omitempty"`
 }

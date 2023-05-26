@@ -93,7 +93,8 @@ const wrapCELExpr = (object: any): CELExpr => {
   });
 };
 
-const wrapConstExpr = (value: number | string): CELExpr => {
+// Note: We don't need to wrap date type factor right now. Put it here is just for prevent eslint error.
+const wrapConstExpr = (value: number | string | Date): CELExpr => {
   if (typeof value === "string") {
     return wrapCELExpr({
       constExpr: {
@@ -110,6 +111,7 @@ const wrapConstExpr = (value: number | string): CELExpr => {
   }
   throw new Error(`unexpected value "${value}"`);
 };
+
 const wrapListExpr = (values: string[] | number[]): CELExpr => {
   return wrapCELExpr({
     listExpr: {

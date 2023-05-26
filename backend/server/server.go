@@ -112,6 +112,8 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	// Register oracle advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
+	// Register clickhouse driver.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 
 	// Register mysql differ driver.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/differ/mysql"
@@ -506,12 +508,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return aclMiddleware(s, internalAPIPrefix, ce, next, profile.Readonly)
 	})
 	s.registerDebugRoutes(apiGroup)
-	s.registerSettingRoutes(apiGroup)
 	s.registerOAuthRoutes(apiGroup)
-	s.registerPrincipalRoutes(apiGroup)
-	s.registerMemberRoutes(apiGroup)
 	s.registerProjectRoutes(apiGroup)
-	s.registerProjectWebhookRoutes(apiGroup)
 	s.registerEnvironmentRoutes(apiGroup)
 	s.registerInstanceRoutes(apiGroup)
 	s.registerDatabaseRoutes(apiGroup)
@@ -577,7 +575,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.secret,
 		s.stateCfg,
 		s.dbFactory))
-	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
+	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store, s.ActivityManager))
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner, s.licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
@@ -588,8 +586,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterExternalVersionControlServiceServer(s.grpcServer, v1.NewExternalVersionControlService(s.store))
 	v1pb.RegisterRiskServiceServer(s.grpcServer, v1.NewRiskService(s.store, s.licenseService))
 	v1pb.RegisterReviewServiceServer(s.grpcServer, v1.NewReviewService(s.store, s.ActivityManager, s.TaskScheduler, s.stateCfg))
+	v1pb.RegisterRolloutServiceServer(s.grpcServer, v1.NewRolloutService(s.store, s.licenseService, s.dbFactory, s.TaskScheduler, s.TaskCheckScheduler, s.stateCfg, s.ActivityManager))
 	v1pb.RegisterRoleServiceServer(s.grpcServer, v1.NewRoleService(s.store, s.licenseService))
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store))
+	v1pb.RegisterCelServiceServer(s.grpcServer, v1.NewCelService())
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -645,6 +645,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))

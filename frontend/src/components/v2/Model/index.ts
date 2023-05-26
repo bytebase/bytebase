@@ -1,5 +1,4 @@
 import DatabaseName from "./DatabaseName.vue";
-import InstanceName from "./InstanceName.vue";
 import EnvironmentName from "./EnvironmentName.vue";
 import EnvironmentV1Name from "./EnvironmentV1Name.vue";
 import EnvironmentV1Table from "./EnvironmentV1Table.vue";
@@ -8,9 +7,9 @@ import ProjectName from "./ProjectName.vue";
 import ProjectV1Name from "./ProjectV1Name.vue";
 import ProjectV1Table from "./ProjectV1Table.vue";
 
+export * from "./Instance";
 export {
   DatabaseName,
-  InstanceName,
   EnvironmentName,
   EnvironmentV1Name,
   EnvironmentV1Table,

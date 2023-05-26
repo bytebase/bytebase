@@ -24,8 +24,7 @@
 import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
 
 import type { TabInfo } from "@/types";
-import { UNKNOWN_ID } from "@/types";
-import { useSheetStore, useTabStore } from "@/store";
+import { useSheetV1Store, useTabStore } from "@/store";
 
 type LocalState = {
   editing: boolean;
@@ -49,7 +48,7 @@ const state = reactive<LocalState>({
 });
 
 const tabStore = useTabStore();
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 const inputRef = ref<HTMLInputElement>();
 
 const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
@@ -71,11 +70,10 @@ const confirmEdit = () => {
   }
 
   tab.name = name;
-
-  if (tab.sheetId && tab.sheetId !== UNKNOWN_ID) {
-    sheetStore.patchSheetById({
-      id: tab.sheetId,
-      name,
+  if (tab.sheetName) {
+    sheetV1Store.patchSheet({
+      name: tab.sheetName,
+      title: name,
     });
   }
 

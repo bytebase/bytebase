@@ -130,6 +130,8 @@ import {
   useDBSchemaStore,
   useSheetStore,
   useUIStateStore,
+  useDatabaseStore,
+  useSheetV1Store,
 } from "@/store";
 import { useIssueLogic } from "./logic";
 import {
@@ -137,7 +139,6 @@ import {
   dialectOfEngine,
   Issue,
   SheetCreate,
-  SheetId,
   SQLDialect,
   Task,
   TaskCreate,
@@ -146,16 +147,17 @@ import {
 } from "@/types";
 import {
   getBacktracePayloadWithIssue,
-  sheetIdOfTask,
+  sheetNameOfTask,
   useInstanceEditorLanguage,
 } from "@/utils";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 import UploadProgressButton from "../misc/UploadProgressButton.vue";
+import { getSheetPathByLegacyProject } from "@/store/modules/v1/common";
 
 interface LocalState {
-  taskSheetId?: SheetId;
+  taskSheetName?: string;
   editing: boolean;
   editStatement: string;
   isUploadingFile: boolean;
@@ -195,6 +197,7 @@ const overrideSQLDialog = useDialog();
 const uiStateStore = useUIStateStore();
 const dbSchemaStore = useDBSchemaStore();
 const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
 const state = reactive<LocalState>({
@@ -294,11 +297,17 @@ const useTempEditState = (state: LocalState) => {
 
 useTempEditState(state);
 
-const getOrFetchSheetStatementById = async (sheetId: SheetId) => {
-  if (!sheetId || sheetId === UNKNOWN_ID) {
+const getOrFetchSheetStatementByName = async (
+  sheetName: string | undefined
+) => {
+  if (!sheetName) {
     return "";
   }
-  return (await sheetStore.getOrFetchSheetById(sheetId)).statement;
+  const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);
+  if (!sheet) {
+    return "";
+  }
+  return new TextDecoder().decode(sheet.content);
 };
 
 const readonly = computed(() => {
@@ -326,12 +335,17 @@ const formatOnSave = computed({
 const allowFormatOnSave = computed(() => language.value === "sql");
 
 const isTaskSheetOversize = computed(() => {
-  if (!state.taskSheetId || state.taskSheetId === UNKNOWN_ID) {
+  if (!state.taskSheetName) {
     return false;
   }
 
-  const taskSheet = sheetStore.getSheetById(state.taskSheetId);
-  return taskSheet.statement.length < taskSheet.size;
+  const taskSheet = sheetV1Store.getSheetByName(state.taskSheetName);
+  if (!taskSheet) {
+    return false;
+  }
+  return (
+    new TextDecoder().decode(taskSheet.content).length < taskSheet.contentSize
+  );
 });
 
 const shouldShowStatementEditButtonForUI = computed(() => {
@@ -356,9 +370,9 @@ onMounted(async () => {
   if (create.value) {
     state.editing = true;
   } else {
-    const sheetId = sheetIdOfTask(selectedTask.value as Task);
-    if (sheetId && sheetId !== UNKNOWN_ID) {
-      state.taskSheetId = sheetId;
+    const sheetName = sheetNameOfTask(selectedTask.value as Task);
+    if (sheetName) {
+      state.taskSheetName = sheetName;
     }
   }
 });
@@ -382,13 +396,25 @@ watch(
   selectedTask,
   async () => {
     const task = selectedTask.value;
-    const sheetId = create.value
-      ? (task as TaskCreate).sheetId
-      : sheetIdOfTask(task as Task);
-    if (sheetId && sheetId !== UNKNOWN_ID) {
-      state.taskSheetId = sheetId;
+
+    // TODO: remove legacy logic.
+    let sheetName;
+    if (create.value) {
+      const taskCreate = task as TaskCreate;
+      if (taskCreate.databaseId) {
+        const db = await useDatabaseStore().getOrFetchDatabaseById(
+          taskCreate.databaseId
+        );
+        sheetName = getSheetPathByLegacyProject(db.project, taskCreate.sheetId);
+      }
     } else {
-      state.taskSheetId = undefined;
+      sheetName = sheetNameOfTask(task as Task);
+    }
+
+    if (sheetName) {
+      state.taskSheetName = sheetName;
+    } else {
+      state.taskSheetName = undefined;
     }
   },
   {
@@ -398,11 +424,11 @@ watch(
 );
 
 watch(
-  () => state.taskSheetId,
+  () => state.taskSheetName,
   async () => {
-    if (state.taskSheetId && state.taskSheetId !== UNKNOWN_ID) {
-      state.editStatement = await getOrFetchSheetStatementById(
-        state.taskSheetId
+    if (state.taskSheetName) {
+      state.editStatement = await getOrFetchSheetStatementByName(
+        state.taskSheetName
       );
     }
   },
@@ -427,8 +453,8 @@ const saveEdit = async () => {
 };
 
 const cancelEdit = async () => {
-  state.editStatement = await getOrFetchSheetStatementById(
-    state.taskSheetId || UNKNOWN_ID
+  state.editStatement = await getOrFetchSheetStatementByName(
+    state.taskSheetName
   );
   state.editing = false;
 };

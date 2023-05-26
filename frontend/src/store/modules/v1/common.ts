@@ -3,7 +3,9 @@ import {
   UNKNOWN_ID,
   Instance,
   Database,
+  Project,
   Environment,
+  SheetId,
 } from "@/types";
 
 export const userNamePrefix = "users/";
@@ -14,6 +16,7 @@ export const databaseNamePrefix = "databases/";
 export const idpNamePrefix = "idps/";
 export const policyNamePrefix = "policies/";
 export const settingNamePrefix = "settings/";
+export const sheetNamePrefix = "sheets/";
 
 export const getNameParentTokens = (
   name: string,
@@ -43,8 +46,34 @@ export const getUserId = (name: string): number => {
   return userId;
 };
 
+export const getProjectAndSheetId = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    sheetNamePrefix,
+  ]);
+
+  if (tokens.length != 2) {
+    return ["", ""];
+  }
+
+  return tokens;
+};
+
+export const getInstanceAndDatabaseId = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [
+    instanceNamePrefix,
+    databaseNamePrefix,
+  ]);
+
+  if (tokens.length != 2) {
+    return ["", ""];
+  }
+
+  return tokens;
+};
+
 export const getUserEmailFromIdentifier = (identifier: string): string => {
-  return identifier.replace(/^user:/, "");
+  return identifier.replace(/^(user:|users\/)/, "");
 };
 
 export const getIdentityProviderResourceId = (name: string): ResourceId => {
@@ -66,4 +95,11 @@ export const getDatabasePathByLegacyDatabase = (database: Database): string => {
   return `${getInstancePathByLegacyInstance(
     database.instance
   )}/${databaseNamePrefix}${database.name}`;
+};
+
+export const getSheetPathByLegacyProject = (
+  project: Project,
+  sheetId: SheetId
+): string => {
+  return `${projectNamePrefix}${project.resourceId}/${sheetNamePrefix}${sheetId}`;
 };

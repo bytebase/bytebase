@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   DEFAULT_RISK_LEVEL,
   ParsedApprovalRule,
-  SYSTEM_BOT_ID,
+  SYSTEM_BOT_EMAIL,
   unknownUser,
   UNKNOWN_USER_NAME,
   UnrecognizedApprovalRule,
@@ -38,6 +38,7 @@ import {
   WorkspaceApprovalSetting,
   WorkspaceApprovalSetting_Rule as ApprovalRule,
 } from "@/types/proto/v1/setting_service";
+import { userNamePrefix } from "@/store/modules/v1/common";
 
 export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
   const name = approvalNode_GroupValueToJSON(group);
@@ -256,7 +257,7 @@ export const seedWorkspaceApprovalSetting = () => {
       template: {
         title,
         description,
-        creatorId: SYSTEM_BOT_ID,
+        creator: `${userNamePrefix}${SYSTEM_BOT_EMAIL}`,
         flow: {
           steps: roles.map((role) => ({
             type: ApprovalStep_Type.ANY,
@@ -318,5 +319,6 @@ export const seedWorkspaceApprovalSetting = () => {
 export const creatorOfRule = (rule: LocalApprovalRule) => {
   const creatorName = rule.template.creator ?? UNKNOWN_USER_NAME;
   if (creatorName === UNKNOWN_USER_NAME) return unknownUser();
-  return useUserStore().getUserByName(creatorName) ?? unknownUser();
+
+  return useUserStore().getUserByIdentifier(creatorName) ?? unknownUser();
 };
