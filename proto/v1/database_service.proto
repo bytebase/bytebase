@@ -872,6 +872,12 @@ message ListChangeHistoriesResponse {
   string next_page_token = 2;
 }
 
+// Used internally for obfuscating the page token.
+message ListChangeHistoriesPageToken {
+  int32 page_size = 1;
+  int32 offset = 2;
+}
+
 message GetChangeHistoryRequest {
   // The name of the change history to retrieve.
   // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
