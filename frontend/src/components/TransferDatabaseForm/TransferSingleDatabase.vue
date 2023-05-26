@@ -9,7 +9,9 @@
         <ProjectSelect
           style="width: 100%"
           :project="targetProject.uid"
-          :allowed-project-role-list="[PresetRoleType.OWNER]"
+          :allowed-project-role-list="
+            hasWorkspaceManageProjectPermission ? [] : [PresetRoleType.OWNER]
+          "
           :include-default-project="allowTransferToDefaultProject"
           @update:project="handleSelectProject"
         />
@@ -89,6 +91,13 @@ const allowTransfer = computed(() => {
   return sourceProject.value.name !== targetProject.value.name;
 });
 
+const hasWorkspaceManageProjectPermission = computed(() =>
+  hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-project",
+    currentUserV1.value.userRole
+  )
+);
+
 const allowTransferToDefaultProject = computed(() => {
   if (props.database.project === DEFAULT_PROJECT_V1_NAME) {
     return true;
@@ -97,10 +106,7 @@ const allowTransferToDefaultProject = computed(() => {
   // Allow to transfer a database to DEFAULT project only if the current user
   // can manage all projects.
   // AKA DBA or workspace owner.
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-project",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspaceManageProjectPermission.value;
 });
 
 const handleSelectProject = (uid: string | undefined) => {

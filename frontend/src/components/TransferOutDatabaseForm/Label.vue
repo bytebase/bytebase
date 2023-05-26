@@ -6,8 +6,8 @@
   />
   <template v-if="database">
     <div class="flex items-center gap-x-1">
-      <InstanceName
-        :instance="database.instance"
+      <InstanceV1Name
+        :instance="database.instanceEntity"
         :link="false"
         class="whitespace-nowrap"
       />
@@ -23,8 +23,8 @@ import { computed } from "vue";
 import { escape } from "lodash-es";
 
 import { DatabaseTreeOption } from "./common";
-import { useDatabaseStore, useEnvironmentV1Store } from "@/store";
-import { EnvironmentV1Name, InstanceName } from "@/components/v2";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { getHighlightHTMLByRegExp } from "@/utils";
 
 const props = defineProps<{
@@ -45,11 +45,11 @@ const environment = computed(() => {
 const database = computed(() => {
   const { option } = props;
   if (option.level !== "database") return undefined;
-  return useDatabaseStore().getDatabaseById(id.value);
+  return useDatabaseV1Store().getDatabaseByUID(id.value);
 });
 
 const databaseName = computed(() => {
-  const name = database.value?.name ?? "";
+  const name = database.value?.databaseName ?? "";
   const keyword = (props.keyword ?? "").trim();
 
   return getHighlightHTMLByRegExp(

@@ -17,6 +17,7 @@ import {
 import {
   Database,
   ListDatabasesRequest,
+  SearchDatabasesRequest,
   UpdateDatabaseRequest,
 } from "@/types/proto/v1/database_service";
 import {
@@ -52,6 +53,11 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const composedDatabaseList = await upsertDatabaseMap(databases);
     return composedDatabaseList;
   };
+  const searchDatabaseList = async (args: Partial<SearchDatabasesRequest>) => {
+    const { databases } = await databaseServiceClient.searchDatabases(args);
+    const composedDatabaseList = await upsertDatabaseMap(databases);
+    return composedDatabaseList;
+  };
   const databaseListByUser = (user: User) => {
     const canManageDatabase = hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-database",
@@ -65,6 +71,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
   const databaseListByProject = (project: string) => {
     return databaseList.value.filter((db) => db.project === project);
+  };
+  const databaseListByInstance = (instance: string) => {
+    return databaseList.value.filter((db) => db.instance === instance);
   };
   const getDatabaseByUID = (uid: string) => {
     if (uid === String(EMPTY_ID)) return emptyDatabase();
@@ -101,8 +110,10 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   return {
     databaseList,
     fetchDatabaseList,
+    searchDatabaseList,
     databaseListByUser,
     databaseListByProject,
+    databaseListByInstance,
     fetchDatabaseByUID,
     getDatabaseByUID,
     getOrFetchDatabaseByUID,
@@ -112,7 +123,8 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
 export const useDatabaseV1List = (
   args: MaybeRef<Partial<ListDatabasesRequest>>,
-  filter: (database: ComposedDatabase) => boolean = () => true
+  filter: (database: ComposedDatabase) => boolean = () => true,
+  search = true
 ) => {
   const store = useDatabaseV1Store();
   const ready = ref(false);
@@ -121,7 +133,10 @@ export const useDatabaseV1List = (
     () => JSON.stringify(unref(args)),
     () => {
       ready.value = false;
-      store.fetchDatabaseList(unref(args)).then((list) => {
+      const request = search
+        ? store.searchDatabaseList(unref(args))
+        : store.fetchDatabaseList(unref(args));
+      request.then((list) => {
         databaseList.value = list.filter(filter);
         ready.value = true;
       });

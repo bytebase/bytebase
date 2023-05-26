@@ -1,7 +1,7 @@
 import { groupBy } from "lodash-es";
 import { TransferOption, TreeOption } from "naive-ui";
 import { useEnvironmentV1Store } from "@/store";
-import { Database } from "@/types";
+import { ComposedDatabase } from "@/types";
 
 export interface DatabaseTreeOption<L = "environment" | "database">
   extends TreeOption {
@@ -9,11 +9,11 @@ export interface DatabaseTreeOption<L = "environment" | "database">
   value: string;
 }
 
-export const mapTreeOptions = (databaseList: Database[]) => {
+export const mapTreeOptions = (databaseList: ComposedDatabase[]) => {
   const environmentV1Store = useEnvironmentV1Store();
   const databaseListGroupByEnvironment = groupBy(
     databaseList,
-    (db) => db.instance.environment.id
+    (db) => db.instanceEntity.environmentEntity.uid
   );
   return Object.keys(databaseListGroupByEnvironment).map<
     DatabaseTreeOption<"environment">
@@ -22,7 +22,7 @@ export const mapTreeOptions = (databaseList: Database[]) => {
     const group = databaseListGroupByEnvironment[environmentId];
     const children = group.map<DatabaseTreeOption<"database">>((db) => ({
       level: "database",
-      value: `database-${db.id}`,
+      value: `database-${db.uid}`,
       label: db.name,
       isLeaf: true,
     }));

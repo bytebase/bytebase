@@ -139,10 +139,11 @@ import {
   useInstanceV1Store,
   useEnvironmentV1Store,
   useGracefulRequest,
-  useDatabaseV1List,
+  useDatabaseV1Store,
 } from "@/store";
 import { DatabaseV1Table } from "@/components/v2";
 import { State } from "@/types/proto/v1/common";
+import { watchEffect } from "vue";
 
 interface LocalState {
   showCreateDatabaseModal: boolean;
@@ -159,6 +160,7 @@ const props = defineProps({
 
 const instanceStore = useInstanceStore();
 const instanceV1Store = useInstanceV1Store();
+const databaseStore = useDatabaseV1Store();
 const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 
@@ -185,13 +187,14 @@ const environment = computed(() => {
 
 const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
-const { databaseList: databaseV1ListOfInstance } = useDatabaseV1List(
-  computed(() => ({
+watchEffect(() => {
+  databaseStore.fetchDatabaseList({
     parent: instance.value.name,
-  }))
-);
+  });
+});
+
 const databaseV1List = computed(() => {
-  const list = [...databaseV1ListOfInstance.value];
+  const list = databaseStore.databaseListByInstance(instance.value.name);
 
   if (
     hasWorkspacePermissionV1(

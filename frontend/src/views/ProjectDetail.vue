@@ -72,12 +72,12 @@ import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigP
 import {
   useDatabaseStore,
   useDatabaseV1List,
+  useDatabaseV1Store,
   useEnvironmentV1List,
   useLegacyProjectStore,
   useProjectV1Store,
 } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { State } from "@/types/proto/v1/common";
 
 const props = defineProps({
   projectWebhookSlug: {
@@ -95,7 +95,7 @@ const props = defineProps({
 });
 
 const route = useRoute();
-const databaseStore = useDatabaseStore();
+const legacyDatabaseStore = useDatabaseStore();
 const projectStore = useLegacyProjectStore();
 const projectV1Store = useProjectV1Store();
 
@@ -110,26 +110,21 @@ const projectV1 = computed(() => {
 
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
-const prepareDatabaseList = () => {
-  databaseStore.fetchDatabaseListByProjectId(String(project.value.id));
+const prepareLegacyDatabaseList = () => {
+  legacyDatabaseStore.fetchDatabaseListByProjectId(String(project.value.id));
 };
 
-watchEffect(prepareDatabaseList);
+watchEffect(prepareLegacyDatabaseList);
 
-const v1Args = computed(() => ({
-  parent: "instances/-",
-  filter: `project == "${projectV1.value.name}"`,
-}));
-const { databaseList: databaseV1ListOfProject } = useDatabaseV1List(
-  v1Args,
-  (db) => {
-    return db.project === projectV1.value.name && db.syncState === State.ACTIVE;
-  }
+useDatabaseV1List(
+  computed(() => ({
+    parent: "instances/-",
+    filter: `project == "${projectV1.value.name}"`,
+  }))
 );
 
 const databaseV1List = computed(() => {
-  // const list = databaseV1Store.databaseListByProject(projectV1.value.name);
-  const list = [...databaseV1ListOfProject.value];
+  const list = useDatabaseV1Store().databaseListByProject(projectV1.value.name);
   return sortDatabaseV1ListByEnvironmentV1(list, environmentList.value);
 });
 
