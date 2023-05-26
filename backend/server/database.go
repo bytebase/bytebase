@@ -76,8 +76,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if composedDatabase == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
-		// Wildcard(*) database is used to connect all database at instance level.
-		// Do not return it via `get database by id` API.
 		if composedDatabase.Name == api.AllDatabaseName {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database with ID %d is a wildcard *", id))
 		}
