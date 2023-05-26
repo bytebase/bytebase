@@ -680,10 +680,10 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPIDatabaseGroup(ctx, databaseGroup), nil
+	return convertStoreToAPIDatabaseGroup(databaseGroup), nil
 }
 
-func convertStoreToAPIDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage) *v1pb.DatabaseGroup {
+func convertStoreToAPIDatabaseGroup(databaseGroup *store.DatabaseGroupMessage) *v1pb.DatabaseGroup {
 	return &v1pb.DatabaseGroup{
 		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, databaseGroup.ProjectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
