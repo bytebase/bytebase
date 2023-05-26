@@ -42,9 +42,17 @@
           </NButton>
         </NPopselect>
       </div>
-      <div class="bb-grid-cell">
-        <NButton v-if="allowAdmin" text @click="editingMember = item">
-          <heroicons-outline:pencil-square class="w-4 h-4" />
+      <div class="bb-grid-cell gap-x-2 justify-end">
+        <NButton v-if="allowAdmin" size="tiny" @click="editingMember = item">
+          {{ $t("common.edit") }}
+          <heroicons-outline:pencil-square class="w-4 h-auto ml-0.5" />
+        </NButton>
+        <NButton
+          v-else-if="allowView(item)"
+          size="tiny"
+          @click="editingMember = item"
+        >
+          {{ $t("common.view") }}
         </NButton>
       </div>
     </template>
@@ -122,7 +130,7 @@ const columnList = computed(() => {
   };
   const OPERATIONS: BBGridColumn = {
     title: "",
-    width: "6rem",
+    width: "10rem",
   };
   if (hasRBACFeature.value) {
     return [ACCOUNT, ROLE, OPERATIONS];
@@ -156,6 +164,10 @@ const allowAdmin = computed(() => {
 
   return false;
 });
+
+const allowView = (item: ComposedProjectMember) => {
+  return item.user.name === currentUserV1.value.name;
+};
 
 const allowAddRole = (item: ComposedProjectMember) => {
   if (!allowAdmin.value) return false;
