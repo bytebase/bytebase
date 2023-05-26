@@ -162,7 +162,7 @@ message Plan {
     // owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
     string owner = 7;
     // backup is the resource name of the backup.
-    // FIXME: backup v1 API is not ready yet, write the format here when it's ready.
+    // Format: instances/{instance}/databases/{database}/backups/{backup-name}
     string backup = 8;
     // labels of the database.
     map<string, string> labels = 9;
@@ -175,7 +175,7 @@ message Plan {
     // Format: instances/{xxx}/databases/{db1}.
     string target = 1;
     // The resource name of the sheet.
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;
     // Type is the database change type.
     enum Type {
@@ -202,6 +202,16 @@ message Plan {
 
     // If RollbackEnabled, build the RollbackSheetID of the task.
     bool rollback_enabled = 5;
+
+    message RollbackDetail {
+      // rollback_from_task is the task from which the rollback SQL statement is generated for this task.
+      // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+      string rollback_from_task = 1;
+      // rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task.
+      // Format: projects/{project}/reviews/{review}
+      string rollback_from_review = 2;
+    }
+    optional RollbackDetail rollback_detail = 6;
   }
 
   message RestoreDatabaseConfig {
@@ -214,8 +224,9 @@ message Plan {
     // 1. from a backup
     // 2. from a point in time
     oneof source {
-      // FIXME: format TBD
       // Restore from a backup.
+      // Format: instances/{instance}/databases/{database}/backups/{backup-name}
+
       string backup = 3;
       // After the PITR operations, the database will be recovered to the state at this time.
       google.protobuf.Timestamp point_in_time = 4;
@@ -284,7 +295,7 @@ message PlanCheckRun {
 
   // Format: instances/{instance}/databases/{database}
   string target = 5;
-  // Format: sheets/{sheet}
+  // Format: projects/{project}/sheets/{sheet}
   string sheet = 6;
 
   string detail = 7;
@@ -412,7 +423,7 @@ message Task {
     string database = 2;
     // table name
     string table = 3;
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string sheet = 4;
     string character_set = 5;
     string collection = 6;
@@ -424,13 +435,13 @@ message Task {
   }
 
   message DatabaseSchemaUpdate {
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string sheet = 1;
     string schema_version = 2;
   }
 
   message DatabaseDataUpdate {
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string sheet = 1;
     string schema_version = 2;
 
@@ -463,7 +474,7 @@ message Task {
     string rollback_error = 12;
     // rollback_sheet is the resource name of
     // the sheet that stores the generated rollback SQL statement.
-    // Format: sheets/{sheet}
+    // Format: projects/{project}/sheets/{sheet}
     string rollback_sheet = 13;
     // rollback_from_review is the resource name of the review that
     // the rollback SQL statement is generated from.
@@ -477,7 +488,7 @@ message Task {
 
   message DatabaseBackup {
     // The resource name of the backup.
-    // FIXME: format TBD.
+    // Format: instances/{instance}/databases/{database}/backups/{backup-name}
     string backup = 1;
   }
 
@@ -491,6 +502,7 @@ message Task {
 
     oneof source {
       // Only used when doing restore full backup only.
+      // Format: instances/{instance}/databases/{database}/backups/{backup-name}
       string backup = 2;
       // After the PITR operations, the database will be recovered to the state at this time.
       google.protobuf.Timestamp point_in_time = 3;
