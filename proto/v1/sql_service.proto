@@ -18,7 +18,7 @@ service SQLService {
   }
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
-      post: "/v1/{instance=instances/*}/sql:query"
+      post: "/v1/{instance=instances/*}:query"
       body: "*"
     };
     option (google.api.method_signature) = "instance";
@@ -43,11 +43,11 @@ message QueryRequest {
 }
 
 message QueryResponse {
-  // The query result.
-  repeated QueryResult result = 1;
+  // The query results.
+  repeated QueryResult results = 1;
 
-  // The query advice.
-  repeated Advice advice = 2;
+  // The query advices.
+  repeated Advice advices = 2;
 }
 
 message QueryResult {
@@ -67,13 +67,15 @@ message QueryResult {
   string error = 5;
 }
 
+enum Status {
+  STATUS_SUCCESS = 0;
+  STATUS_WARN = 1;
+  STATUS_ERROR = 2;
+}
+
 message Advice {
   // The advice status.
-  // Should be one of the following:
-  // - SUCCESS
-  // - WARN
-  // - ERROR
-  string status = 1;
+  Status status = 1;
 
   // The advice code.
   int32 code = 2;
@@ -87,8 +89,8 @@ message Advice {
   // The advice line number in the SQL statement.
   int32 line = 5;
 
-  // The advice details.
-  string details = 6;
+  // The advice detail.
+  string detail = 6;
 }
 
 message PrettyRequest {

@@ -5,6 +5,45 @@ import { Engine, engineFromJSON, engineToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
+export enum Status {
+  STATUS_SUCCESS = 0,
+  STATUS_WARN = 1,
+  STATUS_ERROR = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function statusFromJSON(object: any): Status {
+  switch (object) {
+    case 0:
+    case "STATUS_SUCCESS":
+      return Status.STATUS_SUCCESS;
+    case 1:
+    case "STATUS_WARN":
+      return Status.STATUS_WARN;
+    case 2:
+    case "STATUS_ERROR":
+      return Status.STATUS_ERROR;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Status.UNRECOGNIZED;
+  }
+}
+
+export function statusToJSON(object: Status): string {
+  switch (object) {
+    case Status.STATUS_SUCCESS:
+      return "STATUS_SUCCESS";
+    case Status.STATUS_WARN:
+      return "STATUS_WARN";
+    case Status.STATUS_ERROR:
+      return "STATUS_ERROR";
+    case Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface QueryRequest {
   /**
    * The instance to execute the query against.
@@ -24,10 +63,10 @@ export interface QueryRequest {
 }
 
 export interface QueryResponse {
-  /** The query result. */
-  result: QueryResult[];
-  /** The query advice. */
-  advice: Advice[];
+  /** The query results. */
+  results: QueryResult[];
+  /** The query advices. */
+  advices: Advice[];
 }
 
 export interface QueryResult {
@@ -44,14 +83,8 @@ export interface QueryResult {
 }
 
 export interface Advice {
-  /**
-   * The advice status.
-   * Should be one of the following:
-   * - SUCCESS
-   * - WARN
-   * - ERROR
-   */
-  status: string;
+  /** The advice status. */
+  status: Status;
   /** The advice code. */
   code: number;
   /** The advice title. */
@@ -60,8 +93,8 @@ export interface Advice {
   content: string;
   /** The advice line number in the SQL statement. */
   line: number;
-  /** The advice details. */
-  details: string;
+  /** The advice detail. */
+  detail: string;
 }
 
 export interface PrettyRequest {
@@ -180,15 +213,15 @@ export const QueryRequest = {
 };
 
 function createBaseQueryResponse(): QueryResponse {
-  return { result: [], advice: [] };
+  return { results: [], advices: [] };
 }
 
 export const QueryResponse = {
   encode(message: QueryResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.result) {
+    for (const v of message.results) {
       QueryResult.encode(v!, writer.uint32(10).fork()).ldelim();
     }
-    for (const v of message.advice) {
+    for (const v of message.advices) {
       Advice.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
@@ -206,14 +239,14 @@ export const QueryResponse = {
             break;
           }
 
-          message.result.push(QueryResult.decode(reader, reader.uint32()));
+          message.results.push(QueryResult.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.advice.push(Advice.decode(reader, reader.uint32()));
+          message.advices.push(Advice.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -226,22 +259,22 @@ export const QueryResponse = {
 
   fromJSON(object: any): QueryResponse {
     return {
-      result: Array.isArray(object?.result) ? object.result.map((e: any) => QueryResult.fromJSON(e)) : [],
-      advice: Array.isArray(object?.advice) ? object.advice.map((e: any) => Advice.fromJSON(e)) : [],
+      results: Array.isArray(object?.results) ? object.results.map((e: any) => QueryResult.fromJSON(e)) : [],
+      advices: Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: QueryResponse): unknown {
     const obj: any = {};
-    if (message.result) {
-      obj.result = message.result.map((e) => e ? QueryResult.toJSON(e) : undefined);
+    if (message.results) {
+      obj.results = message.results.map((e) => e ? QueryResult.toJSON(e) : undefined);
     } else {
-      obj.result = [];
+      obj.results = [];
     }
-    if (message.advice) {
-      obj.advice = message.advice.map((e) => e ? Advice.toJSON(e) : undefined);
+    if (message.advices) {
+      obj.advices = message.advices.map((e) => e ? Advice.toJSON(e) : undefined);
     } else {
-      obj.advice = [];
+      obj.advices = [];
     }
     return obj;
   },
@@ -252,8 +285,8 @@ export const QueryResponse = {
 
   fromPartial(object: DeepPartial<QueryResponse>): QueryResponse {
     const message = createBaseQueryResponse();
-    message.result = object.result?.map((e) => QueryResult.fromPartial(e)) || [];
-    message.advice = object.advice?.map((e) => Advice.fromPartial(e)) || [];
+    message.results = object.results?.map((e) => QueryResult.fromPartial(e)) || [];
+    message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
     return message;
   },
 };
@@ -397,13 +430,13 @@ export const QueryResult = {
 };
 
 function createBaseAdvice(): Advice {
-  return { status: "", code: 0, title: "", content: "", line: 0, details: "" };
+  return { status: 0, code: 0, title: "", content: "", line: 0, detail: "" };
 }
 
 export const Advice = {
   encode(message: Advice, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.status !== "") {
-      writer.uint32(10).string(message.status);
+    if (message.status !== 0) {
+      writer.uint32(8).int32(message.status);
     }
     if (message.code !== 0) {
       writer.uint32(16).int32(message.code);
@@ -417,8 +450,8 @@ export const Advice = {
     if (message.line !== 0) {
       writer.uint32(40).int32(message.line);
     }
-    if (message.details !== "") {
-      writer.uint32(50).string(message.details);
+    if (message.detail !== "") {
+      writer.uint32(50).string(message.detail);
     }
     return writer;
   },
@@ -431,11 +464,11 @@ export const Advice = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.status = reader.string();
+          message.status = reader.int32() as any;
           continue;
         case 2:
           if (tag !== 16) {
@@ -470,7 +503,7 @@ export const Advice = {
             break;
           }
 
-          message.details = reader.string();
+          message.detail = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -483,23 +516,23 @@ export const Advice = {
 
   fromJSON(object: any): Advice {
     return {
-      status: isSet(object.status) ? String(object.status) : "",
+      status: isSet(object.status) ? statusFromJSON(object.status) : 0,
       code: isSet(object.code) ? Number(object.code) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       content: isSet(object.content) ? String(object.content) : "",
       line: isSet(object.line) ? Number(object.line) : 0,
-      details: isSet(object.details) ? String(object.details) : "",
+      detail: isSet(object.detail) ? String(object.detail) : "",
     };
   },
 
   toJSON(message: Advice): unknown {
     const obj: any = {};
-    message.status !== undefined && (obj.status = message.status);
+    message.status !== undefined && (obj.status = statusToJSON(message.status));
     message.code !== undefined && (obj.code = Math.round(message.code));
     message.title !== undefined && (obj.title = message.title);
     message.content !== undefined && (obj.content = message.content);
     message.line !== undefined && (obj.line = Math.round(message.line));
-    message.details !== undefined && (obj.details = message.details);
+    message.detail !== undefined && (obj.detail = message.detail);
     return obj;
   },
 
@@ -509,12 +542,12 @@ export const Advice = {
 
   fromPartial(object: DeepPartial<Advice>): Advice {
     const message = createBaseAdvice();
-    message.status = object.status ?? "";
+    message.status = object.status ?? 0;
     message.code = object.code ?? 0;
     message.title = object.title ?? "";
     message.content = object.content ?? "";
     message.line = object.line ?? 0;
-    message.details = object.details ?? "";
+    message.detail = object.detail ?? "";
     return message;
   },
 };
@@ -704,12 +737,12 @@ export const SQLServiceDefinition = {
           8410: [new Uint8Array([8, 105, 110, 115, 116, 97, 110, 99, 101])],
           578365826: [
             new Uint8Array([
-              41,
+              37,
               58,
               1,
               42,
               34,
-              36,
+              32,
               47,
               118,
               49,
@@ -736,10 +769,6 @@ export const SQLServiceDefinition = {
               47,
               42,
               125,
-              47,
-              115,
-              113,
-              108,
               58,
               113,
               117,

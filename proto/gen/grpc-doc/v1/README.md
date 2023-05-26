@@ -455,6 +455,8 @@
     - [QueryResponse](#bytebase-v1-QueryResponse)
     - [QueryResult](#bytebase-v1-QueryResult)
   
+    - [Status](#bytebase-v1-Status)
+  
     - [SQLService](#bytebase-v1-SQLService)
   
 - [Scalar Value Types](#scalar-value-types)
@@ -6974,12 +6976,12 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [string](#string) |  | The advice status. Should be one of the following: - SUCCESS - WARN - ERROR |
+| status | [Status](#bytebase-v1-Status) |  | The advice status. |
 | code | [int32](#int32) |  | The advice code. |
 | title | [string](#string) |  | The advice title. |
 | content | [string](#string) |  | The advice content. |
 | line | [int32](#int32) |  | The advice line number in the SQL statement. |
-| details | [string](#string) |  | The advice details. |
+| detail | [string](#string) |  | The advice detail. |
 
 
 
@@ -7045,8 +7047,8 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| result | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query result. |
-| advice | [Advice](#bytebase-v1-Advice) | repeated | The query advice. |
+| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
+| advices | [Advice](#bytebase-v1-Advice) | repeated | The query advices. |
 
 
 
@@ -7072,6 +7074,19 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
  
+
+
+<a name="bytebase-v1-Status"></a>
+
+### Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_SUCCESS | 0 |  |
+| STATUS_WARN | 1 |  |
+| STATUS_ERROR | 2 |  |
+
 
  
 

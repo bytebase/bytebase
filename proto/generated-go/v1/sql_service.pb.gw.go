@@ -172,7 +172,7 @@ func RegisterSQLServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SQLService/Query", runtime.WithHTTPPathPattern("/v1/{instance=instances/*}/sql:query"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SQLService/Query", runtime.WithHTTPPathPattern("/v1/{instance=instances/*}:query"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -258,7 +258,7 @@ func RegisterSQLServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SQLService/Query", runtime.WithHTTPPathPattern("/v1/{instance=instances/*}/sql:query"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SQLService/Query", runtime.WithHTTPPathPattern("/v1/{instance=instances/*}:query"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -280,7 +280,7 @@ func RegisterSQLServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 var (
 	pattern_SQLService_Pretty_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "sql", "pretty"}, ""))
 
-	pattern_SQLService_Query_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "instances", "instance", "sql"}, "query"))
+	pattern_SQLService_Query_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "instances", "instance"}, "query"))
 )
 
 var (
