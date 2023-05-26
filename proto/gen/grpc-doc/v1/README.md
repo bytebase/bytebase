@@ -1779,7 +1779,7 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent of the change histories. Format: instances/{instance}/databases/{database} |
-| page_size | [int32](#int32) |  | Not used. The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 50 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 10 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListChangeHistories` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
@@ -1799,7 +1799,7 @@ When paginating, all other parameters provided to `ListChangeHistories` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | change_histories | [ChangeHistory](#bytebase-v1-ChangeHistory) | repeated | The list of change histories. |
-| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -2193,7 +2193,7 @@ The type of the backup.
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
-| COMPLETED | 2 |  |
+| DONE | 2 |  |
 | FAILED | 3 |  |
 
 
