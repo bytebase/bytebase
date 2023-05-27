@@ -47,11 +47,7 @@ func newDriver(db.DriverConfig) db.Driver {
 
 // Open opens a ClickHouse driver.
 func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	port := config.Port
-	if port == "" {
-		port = "9000"
-	}
-	addr := fmt.Sprintf("%s:%s", config.Host, port)
+	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	// Set SSL configuration.
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
