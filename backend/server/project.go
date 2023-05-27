@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -1227,4 +1228,50 @@ func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMe
 		}
 	}
 	return false
+}
+
+// SheetInfo represents the sheet related information from sheetPathTemplate.
+type SheetInfo struct {
+	EnvironmentID string
+	DatabaseName  string
+	SheetName     string
+}
+
+// parseSheetInfo matches sheetPath against sheetPathTemplate. If sheetPath matches, then it will derive SheetInfo from the sheetPath.
+// Both sheetPath and sheetPathTemplate are the full file path(including the base directory) of the repository.
+func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, error) {
+	placeholderList := []string{
+		"ENV_ID",
+		"DB_NAME",
+		"NAME",
+	}
+	sheetPathRegex := sheetPathTemplate
+	for _, placeholder := range placeholderList {
+		sheetPathRegex = strings.ReplaceAll(sheetPathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9\\+\\-\\=\\_\\#\\!\\$\\. ]+)", placeholder))
+	}
+	sheetRegex, err := regexp.Compile(fmt.Sprintf("^%s$", sheetPathRegex))
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid sheet path template %q", sheetPathTemplate)
+	}
+	if !sheetRegex.MatchString(sheetPath) {
+		return nil, errors.Errorf("sheet path %q does not match sheet path template %q", sheetPath, sheetPathTemplate)
+	}
+
+	matchList := sheetRegex.FindStringSubmatch(sheetPath)
+	sheetInfo := &SheetInfo{}
+	for _, placeholder := range placeholderList {
+		index := sheetRegex.SubexpIndex(placeholder)
+		if index >= 0 {
+			switch placeholder {
+			case "ENV_ID":
+				sheetInfo.EnvironmentID = matchList[index]
+			case "DB_NAME":
+				sheetInfo.DatabaseName = matchList[index]
+			case "NAME":
+				sheetInfo.SheetName = matchList[index]
+			}
+		}
+	}
+
+	return sheetInfo, nil
 }
