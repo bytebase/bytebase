@@ -11,6 +11,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestSheetVCS(t *testing.T) {
@@ -110,19 +111,29 @@ func TestSheetVCS(t *testing.T) {
 			err = ctl.vcsProvider.AddFiles(test.externalID, files)
 			a.NoError(err)
 
-			sheetsBefore, err := ctl.listMySheets()
+			resp, err := ctl.sheetServiceClient.SearchSheets(ctx, &v1pb.SearchSheetsRequest{
+				Parent: "projects/-",
+				Filter: "creator = users/demo@example.com",
+			})
+			a.NoError(err)
+			sheetsBefore := resp.Sheets
 			a.NoError(err)
 
 			err = ctl.syncSheet(projectUID)
 			a.NoError(err)
 
-			sheetsAfter, err := ctl.listMySheets()
+			resp, err = ctl.sheetServiceClient.SearchSheets(ctx, &v1pb.SearchSheetsRequest{
+				Parent: "projects/-",
+				Filter: "creator = users/demo@example.com",
+			})
+			a.NoError(err)
+			sheetsAfter := resp.Sheets
 			a.NoError(err)
 			a.Len(sheetsAfter, len(sheetsBefore)+1)
 
 			sheetFromVCS := sheetsAfter[len(sheetsAfter)-1]
-			a.Equal("all_employee", sheetFromVCS.Name)
-			a.Equal(fileContent, sheetFromVCS.Statement)
+			a.Equal("all_employee", sheetFromVCS.Title)
+			a.Equal(fileContent, string(sheetFromVCS.Content))
 		})
 	}
 }

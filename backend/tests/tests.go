@@ -167,6 +167,7 @@ type controller struct {
 	settingServiceClient     v1pb.SettingServiceClient
 	environmentServiceClient v1pb.EnvironmentServiceClient
 	instanceServiceClient    v1pb.InstanceServiceClient
+	sheetServiceClient       v1pb.SheetServiceClient
 
 	cookie             string
 	grpcMDAccessToken  string
@@ -434,6 +435,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
 	ctl.environmentServiceClient = v1pb.NewEnvironmentServiceClient(ctl.grpcConn)
 	ctl.instanceServiceClient = v1pb.NewInstanceServiceClient(ctl.grpcConn)
+	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
