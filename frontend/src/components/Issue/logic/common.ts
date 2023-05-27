@@ -273,7 +273,7 @@ export const useCommonLogic = () => {
           }
         );
         migrationDetail.sheetId = sheetV1Store.getSheetUid(sheet.name);
-      } else {
+      } else if (taskCreate.sheetId === UNKNOWN_ID) {
         const sheetName = getSheetPathByLegacyProject(
           db.project,
           taskCreate.sheetId

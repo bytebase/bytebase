@@ -105,6 +105,9 @@ export const getSheetPathByLegacyProject = (
   project: Project,
   sheetId: SheetId
 ): string => {
+  if (sheetId === UNKNOWN_ID) {
+    return "";
+  }
   return `${getProjectPathByLegacyProject(
     project
   )}/${sheetNamePrefix}${sheetId}`;

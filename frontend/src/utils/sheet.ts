@@ -11,6 +11,7 @@ import {
   TaskDatabaseSchemaUpdateGhostSyncPayload,
   TaskDatabaseSchemaUpdatePayload,
   TaskDatabaseSchemaUpdateSDLPayload,
+  UNKNOWN_ID,
 } from "@/types";
 import { flattenTaskList } from "@/components/Issue/logic";
 import { getSheetPathByLegacyProject } from "@/store/modules/v1/common";
@@ -58,7 +59,7 @@ export const maybeSetSheetBacktracePayloadByIssue = async (issue: Issue) => {
 
   flattenTaskList(issue).forEach((task) => {
     const sheetId = sheetIdOfTask(task as Task);
-    if (sheetId) {
+    if (sheetId && sheetId !== UNKNOWN_ID) {
       sheetIdList.push(sheetId);
     }
   });

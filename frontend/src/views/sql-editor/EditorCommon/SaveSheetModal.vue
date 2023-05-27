@@ -64,7 +64,7 @@ const doSaveSheet = async (sheetTitle?: string) => {
   const database = await databaseStore.getOrFetchDatabaseById(conn.databaseId);
 
   let sheet: Sheet | undefined;
-  if (sheetId === UNKNOWN_ID) {
+  if (sheetId !== UNKNOWN_ID) {
     sheet = await sheetV1Store.patchSheet({
       name: sheetName,
       database: getDatabasePathByLegacyDatabase(database),

@@ -76,7 +76,7 @@ export const useSheetV1Store = defineStore("sheet_v1", {
   actions: {
     getSheetUid(name: string): number {
       const [_, sheetId] = getProjectAndSheetId(name);
-      if (Number.isNaN(sheetId)) {
+      if (!sheetId || Number.isNaN(sheetId)) {
         return UNKNOWN_ID;
       }
       return Number(sheetId);
