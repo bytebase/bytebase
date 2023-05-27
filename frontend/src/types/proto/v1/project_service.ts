@@ -851,7 +851,7 @@ export interface ListDatabaseGroupsRequest {
 }
 
 export interface ListDatabaseGroupsResponse {
-  /** database_groups is the list of anomalies. */
+  /** database_groups is the list of database groups. */
   databaseGroups: DatabaseGroup[];
   /**
    * Not used. A token, which can be sent as `page_token` to retrieve the next page.
@@ -954,6 +954,47 @@ export interface UpdateSchemaGroupRequest {
 export interface DeleteSchemaGroupRequest {
   /**
    * The name of the schema group to delete.
+   * Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
+   */
+  name: string;
+}
+
+export interface ListSchemaGroupsRequest {
+  /**
+   * The parent resource whose schema groups are to be listed.
+   * Format: projects/{project}/schemaGroups/{schemaGroup}
+   */
+  parent: string;
+  /**
+   * Not used. The maximum number of anomalies to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 anomalies will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * Not used. A page token, received from a previous `ListSchemaGroups` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListSchemaGroups` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListSchemaGroupsResponse {
+  /** schema_groups is the list of schema groups. */
+  schemaGroups: SchemaGroup[];
+  /**
+   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
+export interface GetSchemaGroupRequest {
+  /**
+   * The name of the database group to retrieve.
    * Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
    */
   name: string;
@@ -4260,6 +4301,223 @@ export const DeleteSchemaGroupRequest = {
   },
 };
 
+function createBaseListSchemaGroupsRequest(): ListSchemaGroupsRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListSchemaGroupsRequest = {
+  encode(message: ListSchemaGroupsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSchemaGroupsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListSchemaGroupsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListSchemaGroupsRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListSchemaGroupsRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListSchemaGroupsRequest>): ListSchemaGroupsRequest {
+    return ListSchemaGroupsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListSchemaGroupsRequest>): ListSchemaGroupsRequest {
+    const message = createBaseListSchemaGroupsRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListSchemaGroupsResponse(): ListSchemaGroupsResponse {
+  return { schemaGroups: [], nextPageToken: "" };
+}
+
+export const ListSchemaGroupsResponse = {
+  encode(message: ListSchemaGroupsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.schemaGroups) {
+      SchemaGroup.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListSchemaGroupsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListSchemaGroupsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schemaGroups.push(SchemaGroup.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListSchemaGroupsResponse {
+    return {
+      schemaGroups: Array.isArray(object?.schemaGroups)
+        ? object.schemaGroups.map((e: any) => SchemaGroup.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListSchemaGroupsResponse): unknown {
+    const obj: any = {};
+    if (message.schemaGroups) {
+      obj.schemaGroups = message.schemaGroups.map((e) => e ? SchemaGroup.toJSON(e) : undefined);
+    } else {
+      obj.schemaGroups = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListSchemaGroupsResponse>): ListSchemaGroupsResponse {
+    return ListSchemaGroupsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListSchemaGroupsResponse>): ListSchemaGroupsResponse {
+    const message = createBaseListSchemaGroupsResponse();
+    message.schemaGroups = object.schemaGroups?.map((e) => SchemaGroup.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseGetSchemaGroupRequest(): GetSchemaGroupRequest {
+  return { name: "" };
+}
+
+export const GetSchemaGroupRequest = {
+  encode(message: GetSchemaGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetSchemaGroupRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetSchemaGroupRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetSchemaGroupRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetSchemaGroupRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetSchemaGroupRequest>): GetSchemaGroupRequest {
+    return GetSchemaGroupRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<GetSchemaGroupRequest>): GetSchemaGroupRequest {
+    const message = createBaseGetSchemaGroupRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseSchemaGroup(): SchemaGroup {
   return { name: "", tableExpr: undefined, tablePlaceholder: "" };
 }
@@ -5730,6 +5988,150 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    listSchemaGroups: {
+      name: "ListSchemaGroups",
+      requestType: ListSchemaGroupsRequest,
+      requestStream: false,
+      responseType: ListSchemaGroupsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              55,
+              18,
+              53,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              71,
+              114,
+              111,
+              117,
+              112,
+              115,
+              47,
+              42,
+              125,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              71,
+              114,
+              111,
+              117,
+              112,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    getSchemaGroup: {
+      name: "GetSchemaGroup",
+      requestType: GetSchemaGroupRequest,
+      requestStream: false,
+      responseType: SchemaGroup,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              55,
+              18,
+              53,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              71,
+              114,
+              111,
+              117,
+              112,
+              115,
+              47,
+              42,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              71,
+              114,
+              111,
+              117,
+              112,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
     createSchemaGroup: {
       name: "CreateSchemaGroup",
       requestType: CreateSchemaGroupRequest,
@@ -6109,6 +6511,14 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
     request: DeleteDatabaseGroupRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
+  listSchemaGroups(
+    request: ListSchemaGroupsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListSchemaGroupsResponse>>;
+  getSchemaGroup(
+    request: GetSchemaGroupRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<SchemaGroup>>;
   createSchemaGroup(
     request: CreateSchemaGroupRequest,
     context: CallContext & CallContextExt,
@@ -6190,6 +6600,14 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<DeleteDatabaseGroupRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
+  listSchemaGroups(
+    request: DeepPartial<ListSchemaGroupsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListSchemaGroupsResponse>;
+  getSchemaGroup(
+    request: DeepPartial<GetSchemaGroupRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<SchemaGroup>;
   createSchemaGroup(
     request: DeepPartial<CreateSchemaGroupRequest>,
     options?: CallOptions & CallOptionsExt,
