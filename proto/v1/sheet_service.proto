@@ -100,13 +100,10 @@ message UpdateSheetOrganizerRequest {
   SheetOrganizer organizer = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to be updated.
-  // Fields are specified relative to the sheet.
-  // (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
+  // Fields are specified relative to the sheet organizer.
   // Only support update the following fields for now:
-  // - `title`
-  // - `statement`
   // - `starred`
-  // - `visibility`
+  // - `pinned`
   google.protobuf.FieldMask update_mask = 2;
 }
 
