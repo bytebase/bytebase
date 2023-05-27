@@ -2463,6 +2463,7 @@ type ListDatabaseGroupsRequest struct {
 
 	// The parent resource whose database groups are to be listed.
 	// Format: projects/{project}
+	// Use projects/- to list database groups across all projects.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// Not used. The maximum number of anomalies to return. The service may return fewer than
 	// this value.

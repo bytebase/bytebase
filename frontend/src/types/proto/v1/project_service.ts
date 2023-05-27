@@ -827,6 +827,48 @@ export function activity_TypeToJSON(object: Activity_Type): string {
   }
 }
 
+export interface ListDatabaseGroupsRequest {
+  /**
+   * The parent resource whose database groups are to be listed.
+   * Format: projects/{project}
+   * Use projects/- to list database groups across all projects.
+   */
+  parent: string;
+  /**
+   * Not used. The maximum number of anomalies to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 anomalies will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * Not used. A page token, received from a previous `ListDatabaseGroups` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListDatabaseGroups` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListDatabaseGroupsResponse {
+  /** database_groups is the list of anomalies. */
+  databaseGroups: DatabaseGroup[];
+  /**
+   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
+export interface GetDatabaseGroupRequest {
+  /**
+   * The name of the database group to retrieve.
+   * Format: projects/{project}/databaseGroups/{databaseGroup}
+   */
+  name: string;
+}
+
 export interface CreateDatabaseGroupRequest {
   /**
    * The parent resource where this database group will be created.
@@ -3481,6 +3523,223 @@ export const Activity = {
   },
 };
 
+function createBaseListDatabaseGroupsRequest(): ListDatabaseGroupsRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListDatabaseGroupsRequest = {
+  encode(message: ListDatabaseGroupsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListDatabaseGroupsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListDatabaseGroupsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListDatabaseGroupsRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListDatabaseGroupsRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListDatabaseGroupsRequest>): ListDatabaseGroupsRequest {
+    return ListDatabaseGroupsRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListDatabaseGroupsRequest>): ListDatabaseGroupsRequest {
+    const message = createBaseListDatabaseGroupsRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListDatabaseGroupsResponse(): ListDatabaseGroupsResponse {
+  return { databaseGroups: [], nextPageToken: "" };
+}
+
+export const ListDatabaseGroupsResponse = {
+  encode(message: ListDatabaseGroupsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.databaseGroups) {
+      DatabaseGroup.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListDatabaseGroupsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListDatabaseGroupsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databaseGroups.push(DatabaseGroup.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListDatabaseGroupsResponse {
+    return {
+      databaseGroups: Array.isArray(object?.databaseGroups)
+        ? object.databaseGroups.map((e: any) => DatabaseGroup.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListDatabaseGroupsResponse): unknown {
+    const obj: any = {};
+    if (message.databaseGroups) {
+      obj.databaseGroups = message.databaseGroups.map((e) => e ? DatabaseGroup.toJSON(e) : undefined);
+    } else {
+      obj.databaseGroups = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListDatabaseGroupsResponse>): ListDatabaseGroupsResponse {
+    return ListDatabaseGroupsResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListDatabaseGroupsResponse>): ListDatabaseGroupsResponse {
+    const message = createBaseListDatabaseGroupsResponse();
+    message.databaseGroups = object.databaseGroups?.map((e) => DatabaseGroup.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseGetDatabaseGroupRequest(): GetDatabaseGroupRequest {
+  return { name: "" };
+}
+
+export const GetDatabaseGroupRequest = {
+  encode(message: GetDatabaseGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseGroupRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetDatabaseGroupRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetDatabaseGroupRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetDatabaseGroupRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetDatabaseGroupRequest>): GetDatabaseGroupRequest {
+    return GetDatabaseGroupRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<GetDatabaseGroupRequest>): GetDatabaseGroupRequest {
+    const message = createBaseGetDatabaseGroupRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseCreateDatabaseGroupRequest(): CreateDatabaseGroupRequest {
   return { parent: "", databaseGroup: undefined, databaseGroupId: "" };
 }
@@ -5086,6 +5345,120 @@ export const ProjectServiceDefinition = {
         },
       },
     },
+    listDatabaseGroups: {
+      name: "ListDatabaseGroups",
+      requestType: ListDatabaseGroupsRequest,
+      requestStream: false,
+      responseType: ListDatabaseGroupsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              40,
+              18,
+              38,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              71,
+              114,
+              111,
+              117,
+              112,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    getDatabaseGroup: {
+      name: "GetDatabaseGroup",
+      requestType: GetDatabaseGroupRequest,
+      requestStream: false,
+      responseType: DatabaseGroup,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              40,
+              18,
+              38,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              71,
+              114,
+              111,
+              117,
+              112,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
     createDatabaseGroup: {
       name: "CreateDatabaseGroup",
       requestType: CreateDatabaseGroupRequest,
@@ -5717,6 +6090,14 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
     request: SetProjectGitOpsInfoRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ProjectGitOpsInfo>>;
+  listDatabaseGroups(
+    request: ListDatabaseGroupsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListDatabaseGroupsResponse>>;
+  getDatabaseGroup(
+    request: GetDatabaseGroupRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<DatabaseGroup>>;
   createDatabaseGroup(
     request: CreateDatabaseGroupRequest,
     context: CallContext & CallContextExt,
@@ -5790,6 +6171,14 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<SetProjectGitOpsInfoRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ProjectGitOpsInfo>;
+  listDatabaseGroups(
+    request: DeepPartial<ListDatabaseGroupsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListDatabaseGroupsResponse>;
+  getDatabaseGroup(
+    request: DeepPartial<GetDatabaseGroupRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<DatabaseGroup>;
   createDatabaseGroup(
     request: DeepPartial<CreateDatabaseGroupRequest>,
     options?: CallOptions & CallOptionsExt,
