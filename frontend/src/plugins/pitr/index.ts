@@ -1,8 +1,7 @@
 import { computed, Ref, watch } from "vue";
 import {
   CreateDatabaseContext,
-  Database,
-  Instance,
+  ComposedDatabase,
   IssueCreate,
   MigrationHistory,
   PITRContext,
@@ -15,33 +14,35 @@ import {
 } from "@/store";
 import { useI18n } from "vue-i18n";
 import { extractUserUID, semverCompare } from "@/utils";
+import { Instance } from "@/types/proto/v1/instance_service";
+import { Engine } from "@/types/proto/v1/common";
 
 export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
-export const isPITRAvailableOnInstance = (instance: Instance): boolean => {
+export const isPITRAvailableOnInstanceV1 = (instance: Instance): boolean => {
   const { engine, engineVersion } = instance;
   return (
-    engine === "MYSQL" &&
+    engine === Engine.MYSQL &&
     semverCompare(engineVersion, MIN_PITR_SUPPORT_MYSQL_VERSION)
   );
 };
 
-export const usePITRLogic = (database: Ref<Database>) => {
+export const usePITRLogic = (database: Ref<ComposedDatabase>) => {
   const { t } = useI18n();
   const currentUserV1 = useCurrentUserV1();
   const instanceStore = useInstanceStore();
 
   const backupList = useBackupListByDatabaseId(
-    computed(() => database.value.id)
+    computed(() => Number(database.value.uid))
   );
   const doneBackupList = computed(() =>
     backupList.value.filter((backup) => backup.status === "DONE")
   );
 
   const pitrAvailable = computed((): { result: boolean; message: string } => {
-    const { engine, engineVersion } = database.value.instance;
+    const { engine, engineVersion } = database.value.instanceEntity;
     if (
-      engine === "MYSQL" &&
+      engine === Engine.MYSQL &&
       semverCompare(engineVersion, MIN_PITR_SUPPORT_MYSQL_VERSION)
     ) {
       if (doneBackupList.value.length > 0) {
@@ -63,12 +64,12 @@ export const usePITRLogic = (database: Ref<Database>) => {
 
   const prepareMigrationHistoryList = async () => {
     const migration = await instanceStore.checkMigrationSetup(
-      database.value.instance.id
+      Number(database.value.instanceEntity.uid)
     );
     if (migration.status === "OK") {
       instanceStore.fetchMigrationHistory({
-        instanceId: database.value.instance.id,
-        databaseName: database.value.name,
+        instanceId: Number(database.value.instanceEntity.uid),
+        databaseName: database.value.databaseName,
       });
     }
   };
@@ -77,8 +78,8 @@ export const usePITRLogic = (database: Ref<Database>) => {
 
   const migrationHistoryList = computed(() => {
     return instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
-      database.value.instance.id,
-      database.value.name
+      Number(database.value.instanceEntity.uid),
+      database.value.databaseName
     );
   });
 
@@ -93,7 +94,7 @@ export const usePITRLogic = (database: Ref<Database>) => {
   ) => {
     const issueStore = useIssueStore();
     const createContext: PITRContext = {
-      databaseId: database.value.id,
+      databaseId: Number(database.value.uid),
       pointInTimeTs: pointTimeTs,
       createDatabaseContext,
     };
@@ -102,7 +103,7 @@ export const usePITRLogic = (database: Ref<Database>) => {
       type: "bb.issue.database.restore.pitr",
       description: "",
       assigneeId: Number(extractUserUID(currentUserV1.value.name)),
-      projectId: Number(database.value.project.id),
+      projectId: Number(database.value.projectEntity.uid),
       payload: {},
       createContext,
       ...params,

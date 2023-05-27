@@ -22,7 +22,7 @@
 
 import { defineComponent, PropType } from "vue";
 import DeploymentStage from "./DeploymentStage.vue";
-import { Database } from "@/types";
+import { ComposedDatabase } from "@/types";
 import { Schedule, ScheduleDeployment } from "@/types/proto/v1/project_service";
 
 export default defineComponent({
@@ -38,7 +38,7 @@ export default defineComponent({
       required: true,
     },
     databaseList: {
-      type: Array as PropType<Database[]>,
+      type: Array as PropType<ComposedDatabase[]>,
       default: () => [],
     },
   },

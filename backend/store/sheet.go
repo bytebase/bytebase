@@ -853,8 +853,8 @@ func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*Sheet
 			type,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, LENGTH(statement), payload
 	`, common.MaxSheetSize)
 
 	tx, err := s.db.BeginTx(ctx, nil)

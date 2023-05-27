@@ -5,9 +5,9 @@ import {
   defaultSlowQueryFilterParams,
 } from "@/components/SlowQuery";
 import {
-  useDatabaseStore,
+  useDatabaseV1Store,
   useEnvironmentV1Store,
-  useInstanceStore,
+  useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
 
@@ -19,11 +19,11 @@ export const wrapQueryFromFilterParams = (params: SlowQueryFilterParams) => {
   if (params.environment && params.environment.uid !== String(UNKNOWN_ID)) {
     query.environment = params.environment.uid;
   }
-  if (params.instance && params.instance.id !== UNKNOWN_ID) {
-    query.instance = params.instance.id;
+  if (params.instance && params.instance.uid !== String(UNKNOWN_ID)) {
+    query.instance = params.instance.uid;
   }
-  if (params.database && params.database.id !== UNKNOWN_ID) {
-    query.database = params.database.id;
+  if (params.database && params.database.uid !== String(UNKNOWN_ID)) {
+    query.database = params.database.uid;
   }
   if (params.fromTime) {
     if (params.fromTime !== defaultSlowQueryFilterParams().fromTime) {
@@ -61,16 +61,16 @@ export const extractSlowQueryLogFilterFromQuery = async (
     }
   }
   if (query.instance) {
-    const id = parseInt(query.instance as string, 10) ?? UNKNOWN_ID;
-    const instance = await useInstanceStore().getOrFetchInstanceById(id);
-    if (instance && instance.id !== UNKNOWN_ID) {
+    const uid = (query.instance as string) ?? UNKNOWN_ID;
+    const instance = await useInstanceV1Store().getOrFetchInstanceByUID(uid);
+    if (instance && instance.uid !== String(UNKNOWN_ID)) {
       params.instance = instance;
     }
   }
   if (query.database) {
-    const id = parseInt(query.database as string, 10) ?? UNKNOWN_ID;
-    const database = await useDatabaseStore().getOrFetchDatabaseById(id);
-    if (database && database.id !== UNKNOWN_ID) {
+    const uid = (query.database as string) ?? UNKNOWN_ID;
+    const database = await useDatabaseV1Store().getOrFetchDatabaseByUID(uid);
+    if (database && database.uid !== String(UNKNOWN_ID)) {
       params.database = database;
     }
   }

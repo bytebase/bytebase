@@ -51,7 +51,9 @@ export const isSheetReadableV1 = (sheet: Sheet) => {
 
     const [projectId, _] = getProjectAndSheetId(sheet.name);
 
-    const projectV1 = useProjectV1Store().getProjectByName(projectId);
+    const projectV1 = useProjectV1Store().getProjectByName(
+      `projects/${projectId}`
+    );
     return isMemberOfProjectV1(projectV1.iamPolicy, currentUserV1.value);
   }
   // visibility === "PUBLIC"
@@ -90,7 +92,9 @@ export const isSheetWritableV1 = (sheet: Sheet) => {
     }
 
     const [projectId, _] = getProjectAndSheetId(sheet.name);
-    const projectV1 = useProjectV1Store().getProjectByName(projectId);
+    const projectV1 = useProjectV1Store().getProjectByName(
+      `projects/${projectId}`
+    );
     const isCurrentUserProjectOwner = () => {
       return hasPermissionInProjectV1(
         projectV1.iamPolicy,

@@ -100,7 +100,7 @@
 
     <SchemaEditorModal
       v-if="alterSchemaState.showModal"
-      :database-id-list="alterSchemaState.databaseIdList"
+      :database-id-list="alterSchemaState.databaseIdList.map((id) => `${id}`)"
       :new-window="true"
       alter-type="SINGLE_DB"
       @close="alterSchemaState.showModal = false"

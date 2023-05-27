@@ -51,7 +51,7 @@
           <span class="ml-2">{{ selectedInstance.name }}</span>
         </div>
         <div
-          v-if="selectedDatabase.id !== UNKNOWN_ID"
+          v-if="selectedDatabaseV1.uid !== String(UNKNOWN_ID)"
           class="flex items-center"
         >
           <span class="mx-2">
@@ -60,7 +60,7 @@
             />
           </span>
           <heroicons-outline:database />
-          <span class="ml-2">{{ selectedDatabase.name }}</span>
+          <span class="ml-2">{{ selectedDatabaseV1.databaseName }}</span>
         </div>
       </label>
     </div>
@@ -79,7 +79,7 @@ import { computed } from "vue";
 import { NPopover } from "naive-ui";
 import { useRouter } from "vue-router";
 
-import { useTabStore, useInstanceById, useDatabaseById } from "@/store";
+import { useTabStore, useInstanceById, useDatabaseV1ByUID } from "@/store";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import { instanceSlug } from "@/utils";
 
@@ -92,8 +92,8 @@ const selectedInstance = useInstanceById(
   computed(() => connection.value.instanceId)
 );
 
-const selectedDatabase = useDatabaseById(
-  computed(() => connection.value.databaseId)
+const { database: selectedDatabaseV1 } = useDatabaseV1ByUID(
+  computed(() => String(connection.value.databaseId))
 );
 
 const isProductionEnvironment = computed(() => {

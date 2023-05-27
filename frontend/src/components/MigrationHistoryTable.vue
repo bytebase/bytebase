@@ -88,10 +88,10 @@
 import { computed, defineComponent, PropType } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { Database, MigrationHistory } from "@/types";
+import { ComposedDatabase, MigrationHistory } from "@/types";
 import { BBTableSectionDataSource } from "@/bbkit/types";
 import {
-  databaseSlug,
+  databaseV1Slug,
   migrationHistorySlug,
   nanosecondsToString,
 } from "@/utils";
@@ -113,7 +113,7 @@ export default defineComponent({
     },
     databaseSectionList: {
       required: true,
-      type: Array as PropType<Database[]>,
+      type: Array as PropType<ComposedDatabase[]>,
     },
     historySectionList: {
       required: true,
@@ -183,7 +183,7 @@ export default defineComponent({
     const clickHistory = (section: number, row: number) => {
       const history = props.historySectionList[section].list[row];
       router.push(
-        `/db/${databaseSlug(
+        `/db/${databaseV1Slug(
           props.databaseSectionList[section]
         )}/history/${migrationHistorySlug(history.id, history.version)}`
       );

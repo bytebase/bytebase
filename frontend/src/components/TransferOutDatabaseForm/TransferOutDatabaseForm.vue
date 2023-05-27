@@ -2,18 +2,20 @@
   <div class="w-[60rem] space-y-2">
     <div class="flex items-center justify-between">
       <div class="flex-1 flex items-center gap-x-2">
-        <label class="textlabel">
+        <span class="textlabel">
           {{ $t("database.transfer.source-project") }}
-        </label>
+        </span>
         <ProjectV1Name :project="sourceProject" :link="false" />
       </div>
       <div class="flex-1 flex items-center gap-x-2">
-        <label class="textlabel">
+        <span class="textlabel">
           {{ $t("database.transfer.target-project") }}
-        </label>
+        </span>
         <ProjectSelect
           v-model:project="targetProjectId"
-          :allowed-project-role-list="['OWNER']"
+          :allowed-project-role-list="
+            hasWorkspaceManageProjectPermission ? [] : [PresetRoleType.OWNER]
+          "
           :include-default-project="true"
           :filter="filterTargetProject"
         />
@@ -70,10 +72,12 @@ import {
 } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import { Database, UNKNOWN_ID } from "@/types";
+import { ComposedDatabase, PresetRoleType, UNKNOWN_ID } from "@/types";
 import {
   pushNotification,
-  useDatabaseStore,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useGracefulRequest,
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
@@ -85,6 +89,8 @@ import {
   mapTreeOptions,
 } from "./common";
 import { Project } from "@/types/proto/v1/project_service";
+import { cloneDeep } from "lodash-es";
+import { hasWorkspacePermissionV1 } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
@@ -95,13 +101,22 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const currentUser = useCurrentUserV1();
 const projectStore = useProjectV1Store();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const loading = ref(false);
 const transfer = ref<InstanceType<typeof NTransfer>>();
 
+const hasWorkspaceManageProjectPermission = computed(() =>
+  hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-project",
+    currentUser.value.userRole
+  )
+);
+
 const databaseList = computed(() => {
-  return databaseStore.getDatabaseListByProjectId(props.projectId);
+  const project = projectStore.getProjectByUID(props.projectId);
+  return databaseStore.databaseListByProject(project.name);
 });
 
 const selectedValueList = ref<string[]>([]);
@@ -109,8 +124,8 @@ const selectedDatabaseList = computed(() => {
   return selectedValueList.value
     .filter((value) => value.startsWith("database-"))
     .map((value) => {
-      const id = parseInt(value.split("-").pop()!, 10);
-      return databaseStore.getDatabaseById(id);
+      const uid = value.split("-").pop()!;
+      return databaseStore.getDatabaseByUID(uid);
     });
 });
 const targetProjectId = ref<string>();
@@ -213,33 +228,40 @@ const doTransfer = async () => {
   const target = targetProject.value!;
   if (!target) if (!targetProject.value) return;
 
-  const transferOneDatabase = (database: Database) => {
-    return databaseStore.transferProject({
-      database,
-      projectId: target.uid,
+  const transferOneDatabase = async (database: ComposedDatabase) => {
+    const targetProject = useProjectV1Store().getProjectByUID(props.projectId);
+    const databasePatch = cloneDeep(database);
+    databasePatch.project = targetProject.name;
+    const updateMask = ["project"];
+    const updated = await useDatabaseV1Store().updateDatabase({
+      database: databasePatch,
+      updateMask,
     });
+    return updated;
   };
 
   const databaseList = selectedDatabaseList.value;
 
   try {
     loading.value = true;
-    const requests = databaseList.map((db) => {
-      transferOneDatabase(db);
-    });
-    await Promise.all(requests);
+    await useGracefulRequest(async () => {
+      const requests = databaseList.map((db) => {
+        transferOneDatabase(db);
+      });
+      await Promise.all(requests);
 
-    const displayDatabaseName =
-      databaseList.length > 1
-        ? `${databaseList.length} databases`
-        : `'${databaseList[0].name}'`;
+      const displayDatabaseName =
+        databaseList.length > 1
+          ? `${databaseList.length} databases`
+          : `'${databaseList[0].databaseName}'`;
 
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: `Successfully transferred ${displayDatabaseName} to project '${target.title}'.`,
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: `Successfully transferred ${displayDatabaseName} to project '${target.title}'.`,
+      });
+      emit("dismiss");
     });
-    emit("dismiss");
   } finally {
     loading.value = false;
   }

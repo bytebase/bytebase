@@ -37,9 +37,9 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { Database, LabelKeyType } from "@/types";
+import { ComposedDatabase, LabelKeyType } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
-import { filterDatabaseByKeyword } from "@/utils";
+import { filterDatabaseV1ByKeyword } from "@/utils";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
 import { Environment } from "@/types/proto/v1/environment_service";
 
@@ -47,7 +47,7 @@ const props = withDefaults(
   defineProps<{
     deployment: DeploymentConfig;
     environmentList: Environment[];
-    databaseList: Database[];
+    databaseList: ComposedDatabase[];
     showSearchBox: boolean;
   }>(),
   {
@@ -62,7 +62,7 @@ const state = reactive({
 
 const filteredDatabaseList = computed(() => {
   return props.databaseList.filter((db) => {
-    return filterDatabaseByKeyword(db, state.keyword, [
+    return filterDatabaseV1ByKeyword(db, state.keyword, [
       "name",
       "environment",
       "instance",

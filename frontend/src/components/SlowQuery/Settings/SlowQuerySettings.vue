@@ -49,22 +49,21 @@ import { BBAttention } from "@/bbkit";
 import {
   pushNotification,
   useEnvironmentV1List,
-  useInstanceStore,
+  useInstanceV1Store,
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
-import { ComposedSlowQueryPolicy, Instance, UNKNOWN_ID } from "@/types";
+import { ComposedInstance, ComposedSlowQueryPolicy, UNKNOWN_ID } from "@/types";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import { SlowQueryPolicyTable } from "./components";
-import { instanceSupportSlowQuery } from "@/utils";
+import { instanceV1SupportSlowQuery } from "@/utils";
 import { useGracefulRequest } from "@/store/modules/utils";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { getInstancePathByLegacyInstance } from "@/store/modules/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 
 type LocalState = {
   ready: boolean;
-  instanceList: Instance[];
+  instanceList: ComposedInstance[];
   filter: {
     environment: Environment | undefined;
     keyword: string;
@@ -83,7 +82,7 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const slowQueryPolicyStore = useSlowQueryPolicyStore();
 const slowQueryStore = useSlowQueryStore();
-const instanceStore = useInstanceStore();
+const instanceV1Store = useInstanceV1Store();
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
 const policyList = computed(() => {
@@ -92,7 +91,7 @@ const policyList = computed(() => {
 
 const composedSlowQueryPolicyList = computed(() => {
   const list = state.instanceList.map<ComposedSlowQueryPolicy>((instance) => {
-    const policy = policyList.value.find((p) => p.resourceUid == instance.id);
+    const policy = policyList.value.find((p) => p.resourceUid == instance.uid);
     return {
       instance,
       active: policy?.slowQueryPolicy?.active ?? false,
@@ -103,7 +102,7 @@ const composedSlowQueryPolicyList = computed(() => {
     list,
     [
       (item) => item.instance.engine,
-      (item) => item.instance.environment.order,
+      (item) => item.instance.environmentEntity.order,
       (item) => item.instance.name,
     ],
     ["asc", "desc", "asc"]
@@ -115,7 +114,7 @@ const filteredComposedSlowQueryPolicyList = computed(() => {
   const { environment } = state.filter;
   if (environment && environment.uid !== String(UNKNOWN_ID)) {
     list = list.filter(
-      (item) => String(item.instance.environment.id) === environment.uid
+      (item) => String(item.instance.environment) === environment.name
     );
   }
   const keyword = state.filter.keyword.trim().toLowerCase();
@@ -131,8 +130,10 @@ const filteredComposedSlowQueryPolicyList = computed(() => {
 const prepare = async () => {
   try {
     const prepareInstanceList = async () => {
-      const list = await instanceStore.fetchInstanceList(["NORMAL"]);
-      state.instanceList = list.filter(instanceSupportSlowQuery);
+      const list = await instanceV1Store.fetchInstanceList(
+        false /* !showDeleted */
+      );
+      state.instanceList = list.filter(instanceV1SupportSlowQuery);
     };
     const preparePolicyList = async () => {
       await slowQueryPolicyStore.fetchPolicyList();
@@ -150,16 +151,16 @@ const changeEnvironment = (id: string | undefined) => {
 };
 
 const patchInstanceSlowQueryPolicy = async (
-  instance: Instance,
+  instance: ComposedInstance,
   active: boolean
 ) => {
   return slowQueryPolicyStore.upsertPolicy({
-    parentPath: getInstancePathByLegacyInstance(instance),
+    parentPath: instance.name,
     active,
   });
 };
 
-const toggleActive = async (instance: Instance, active: boolean) => {
+const toggleActive = async (instance: ComposedInstance, active: boolean) => {
   try {
     await patchInstanceSlowQueryPolicy(instance, active);
     if (active) {
@@ -167,7 +168,7 @@ const toggleActive = async (instance: Instance, active: boolean) => {
       // API endpoint to sync slow queries from the instance immediately.
       try {
         await useGracefulRequest(() =>
-          slowQueryStore.syncSlowQueriesByInstance(instance)
+          slowQueryStore.syncSlowQueriesByInstance(instance.name)
         );
         pushNotification({
           module: "bytebase",

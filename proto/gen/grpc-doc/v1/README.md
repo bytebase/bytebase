@@ -268,15 +268,21 @@
     - [DeleteSchemaGroupRequest](#bytebase-v1-DeleteSchemaGroupRequest)
     - [DeploymentConfig](#bytebase-v1-DeploymentConfig)
     - [DeploymentSpec](#bytebase-v1-DeploymentSpec)
+    - [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest)
     - [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest)
     - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
     - [GetProjectGitOpsInfoRequest](#bytebase-v1-GetProjectGitOpsInfoRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
+    - [GetSchemaGroupRequest](#bytebase-v1-GetSchemaGroupRequest)
     - [IamPolicy](#bytebase-v1-IamPolicy)
     - [LabelSelector](#bytebase-v1-LabelSelector)
     - [LabelSelectorRequirement](#bytebase-v1-LabelSelectorRequirement)
+    - [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest)
+    - [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse)
     - [ListProjectsRequest](#bytebase-v1-ListProjectsRequest)
     - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
+    - [ListSchemaGroupsRequest](#bytebase-v1-ListSchemaGroupsRequest)
+    - [ListSchemaGroupsResponse](#bytebase-v1-ListSchemaGroupsResponse)
     - [Project](#bytebase-v1-Project)
     - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
     - [Schedule](#bytebase-v1-Schedule)
@@ -438,7 +444,9 @@
     - [SearchSheetsRequest](#bytebase-v1-SearchSheetsRequest)
     - [SearchSheetsResponse](#bytebase-v1-SearchSheetsResponse)
     - [Sheet](#bytebase-v1-Sheet)
+    - [SheetOrganizer](#bytebase-v1-SheetOrganizer)
     - [SyncSheetsRequest](#bytebase-v1-SyncSheetsRequest)
+    - [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
   
     - [Sheet.Source](#bytebase-v1-Sheet-Source)
@@ -3226,7 +3234,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
-| data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be added. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be added. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
 
@@ -3384,7 +3392,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
-| data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be removed. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be removed. |
 
 
 
@@ -3430,7 +3438,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
-| data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
@@ -4301,6 +4309,21 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+<a name="bytebase-v1-GetDatabaseGroupRequest"></a>
+
+### GetDatabaseGroupRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database group to retrieve. Format: projects/{project}/databaseGroups/{databaseGroup} |
+
+
+
+
+
+
 <a name="bytebase-v1-GetDeploymentConfigRequest"></a>
 
 ### GetDeploymentConfigRequest
@@ -4361,6 +4384,21 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+<a name="bytebase-v1-GetSchemaGroupRequest"></a>
+
+### GetSchemaGroupRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database group to retrieve. Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup} |
+
+
+
+
+
+
 <a name="bytebase-v1-IamPolicy"></a>
 
 ### IamPolicy
@@ -4408,6 +4446,41 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+<a name="bytebase-v1-ListDatabaseGroupsRequest"></a>
+
+### ListDatabaseGroupsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} |
+| page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListDatabaseGroups` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDatabaseGroups` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListDatabaseGroupsResponse"></a>
+
+### ListDatabaseGroupsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database_groups | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | repeated | database_groups is the list of database groups. |
+| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
 <a name="bytebase-v1-ListProjectsRequest"></a>
 
 ### ListProjectsRequest
@@ -4437,6 +4510,41 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | ----- | ---- | ----- | ----------- |
 | projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSchemaGroupsRequest"></a>
+
+### ListSchemaGroupsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource whose schema groups are to be listed. Format: projects/{project}/schemaGroups/{schemaGroup} |
+| page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListSchemaGroups` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListSchemaGroups` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListSchemaGroupsResponse"></a>
+
+### ListSchemaGroupsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_groups | [SchemaGroup](#bytebase-v1-SchemaGroup) | repeated | schema_groups is the list of schema groups. |
+| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -4913,11 +5021,15 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
 | SetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
 | GetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
+| ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) |  |
+| GetDatabaseGroup | [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
 | CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
 | UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
 | DeleteDatabaseGroup | [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| CreateSchemaGroup | [CreateSchemaGroupRequest](#bytebase-v1-CreateSchemaGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
-| UpdateSchemaGroup | [UpdateSchemaGroupRequest](#bytebase-v1-UpdateSchemaGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
+| ListSchemaGroups | [ListSchemaGroupsRequest](#bytebase-v1-ListSchemaGroupsRequest) | [ListSchemaGroupsResponse](#bytebase-v1-ListSchemaGroupsResponse) |  |
+| GetSchemaGroup | [GetSchemaGroupRequest](#bytebase-v1-GetSchemaGroupRequest) | [SchemaGroup](#bytebase-v1-SchemaGroup) |  |
+| CreateSchemaGroup | [CreateSchemaGroupRequest](#bytebase-v1-CreateSchemaGroupRequest) | [SchemaGroup](#bytebase-v1-SchemaGroup) |  |
+| UpdateSchemaGroup | [UpdateSchemaGroupRequest](#bytebase-v1-UpdateSchemaGroupRequest) | [SchemaGroup](#bytebase-v1-SchemaGroup) |  |
 | DeleteSchemaGroup | [DeleteSchemaGroupRequest](#bytebase-v1-DeleteSchemaGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
@@ -6861,6 +6973,23 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 
 
 
+<a name="bytebase-v1-SheetOrganizer"></a>
+
+### SheetOrganizer
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | The name of the sheet. Format: projects/{project}/sheets/{sheet} |
+| starred | [bool](#bool) |  | starred means if the sheet is starred. |
+| pinned | [bool](#bool) |  | pinned means if the sheet is pinned. |
+
+
+
+
+
+
 <a name="bytebase-v1-SyncSheetsRequest"></a>
 
 ### SyncSheetsRequest
@@ -6872,6 +7001,24 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | parent | [string](#string) |  | The name of the project to sync sheets.
 
 Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSheetOrganizerRequest"></a>
+
+### UpdateSheetOrganizerRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| organizer | [SheetOrganizer](#bytebase-v1-SheetOrganizer) |  | The organizer to update.
+
+The organizer&#39;s `sheet` field is used to identify the sheet. Format: projects/{project}/sheets/{sheet} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet organizer. Only support update the following fields for now: - `starred` - `pinned` |
 
 
 
@@ -6955,6 +7102,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | SearchSheets | [SearchSheetsRequest](#bytebase-v1-SearchSheetsRequest) | [SearchSheetsResponse](#bytebase-v1-SearchSheetsResponse) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
+| UpdateSheetOrganizer | [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest) | [SheetOrganizer](#bytebase-v1-SheetOrganizer) |  |
 | DeleteSheet | [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | SyncSheets | [SyncSheetsRequest](#bytebase-v1-SyncSheetsRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 

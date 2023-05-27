@@ -7,24 +7,14 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
-	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
 )
-
-// pgConnectionInfo represents the embedded postgres instance connection info.
-type pgConnectionInfo struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-}
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	g.GET("/instance", func(c echo.Context) error {
@@ -64,62 +54,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance ID response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.GET("/instance/:instanceID/user", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("instanceID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
-		}
-
-		instanceUsers, err := s.store.ListInstanceUsers(ctx, &store.FindInstanceUserMessage{InstanceUID: id})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", id)).SetInternal(err)
-		}
-		var composedInstanceUsers []*api.InstanceUser
-		for _, instanceUser := range instanceUsers {
-			composedInstanceUsers = append(composedInstanceUsers, &api.InstanceUser{
-				ID:         instanceUser.Name,
-				InstanceID: id,
-				Name:       instanceUser.Name,
-				Grant:      instanceUser.Grant,
-			})
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstanceUsers); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance user list response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.GET("/instance/:instanceID/user/:userID", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		instanceID, err := strconv.Atoi(c.Param("instanceID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
-		}
-		userID := c.Param("userID")
-
-		instanceUser, err := s.store.GetInstanceUser(ctx, &store.FindInstanceUserMessage{InstanceUID: instanceID, Name: &userID})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
-		}
-		if instanceUser == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instanceUser not found with instanceID: %v and userID: %v", instanceID, userID))
-		}
-		composedInstanceUser := &api.InstanceUser{
-			ID:         instanceUser.Name,
-			InstanceID: instanceID,
-			Name:       instanceUser.Name,
-			Grant:      instanceUser.Grant,
-		}
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstanceUser); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
 		}
 		return nil
 	})
@@ -331,23 +265,4 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-
-	// Returns the sample embedded postgres instance connection info.
-	g.GET("/instance/sample-pg", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, pgConnectionInfo{
-			Host:     common.GetPostgresSocketDir(),
-			Port:     s.profile.SampleDatabasePort,
-			Username: postgres.SampleUser,
-		})
-	})
-}
-
-// disallowBytebaseStore prevents users adding Bytebase's own Postgres database.
-// Otherwise, users can take control of the database which is a security issue.
-func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
-	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as socket file extension to differentiate different Postgres instances.
-	if engine == db.Postgres && port == fmt.Sprintf("%v", s.profile.DatastorePort) && host == common.GetPostgresSocketDir() {
-		return errors.Errorf("instance doesn't exist for host %q and port %q", host, port)
-	}
-	return nil
 }

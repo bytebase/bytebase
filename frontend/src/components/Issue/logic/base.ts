@@ -28,12 +28,18 @@ import {
   useDatabaseStore,
   useIssueStore,
   useProjectV1Store,
-  useSheetStore,
-  useSheetById,
+  useSheetV1Store,
+  useSheetStatementByUid,
 } from "@/store";
 import { flattenTaskList, TaskTypeWithStatement } from "./common";
 import { maybeCreateBackTraceComments } from "../rollback/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import { sheetNamePrefix } from "@/store/modules/v1/common";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 
 export const useBaseIssueLogic = (params: {
   create: Ref<boolean>;
@@ -45,7 +51,7 @@ export const useBaseIssueLogic = (params: {
   const issueStore = useIssueStore();
   const projectV1Store = useProjectV1Store();
   const databaseStore = useDatabaseStore();
-  const sheetStore = useSheetStore();
+  const sheetV1Store = useSheetV1Store();
 
   const project = computed(() => {
     const projectUID = create.value
@@ -230,13 +236,13 @@ export const useBaseIssueLogic = (params: {
     if (create.value) {
       const taskCreate = task as TaskCreate;
       if (taskCreate.sheetId && taskCreate.sheetId !== UNKNOWN_ID) {
-        return useSheetById(taskCreate.sheetId).value?.statement || "";
+        return useSheetStatementByUid(taskCreate.sheetId).value || "";
       }
       return (task as TaskCreate).statement;
     }
     return (
-      useSheetById(sheetIdOfTask(task as Task) || UNKNOWN_ID).value
-        ?.statement || ""
+      useSheetStatementByUid(sheetIdOfTask(task as Task) || UNKNOWN_ID).value ||
+      ""
     );
   });
 
@@ -274,26 +280,40 @@ export const useBaseIssueLogic = (params: {
     const sheetId = task.sheetId;
     const statement = task.statement;
     let sheet = undefined;
+
     if (sheetId && sheetId !== UNKNOWN_ID) {
-      sheet = await sheetStore.getOrFetchSheetById(sheetId);
+      sheet = await sheetV1Store.getOrFetchSheetByName(
+        `${project.value.name}/${sheetNamePrefix}${sheetId}`
+      );
     }
 
     for (const taskItem of taskList) {
       if (TaskTypeWithStatement.includes(taskItem.type)) {
         if (sheet) {
-          if (sheet.statement.length < sheet.size) {
+          if (
+            new TextDecoder().decode(sheet.content).length < sheet.contentSize
+          ) {
             taskItem.sheetId = sheetId;
           } else {
-            const newSheet = await sheetStore.createSheet({
-              projectId: project.value.uid,
-              databaseId: taskItem.databaseId,
-              name: uuidv4(),
-              statement,
-              visibility: "PROJECT",
-              source: "BYTEBASE_ARTIFACT",
-              payload: {},
-            });
-            taskItem.sheetId = newSheet.id;
+            let database = "";
+            if (taskItem.databaseId) {
+              database = (
+                await databaseStore.getOrFetchDatabaseById(taskItem.databaseId)
+              ).name;
+            }
+            const newSheet = await sheetV1Store.createSheet(
+              project.value.name,
+              {
+                title: uuidv4(),
+                content: new TextEncoder().encode(statement),
+                database: database,
+                visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+                source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+                type: Sheet_Type.TYPE_SQL,
+                payload: "{}",
+              }
+            );
+            taskItem.sheetId = sheetV1Store.getSheetUid(newSheet.name);
           }
           taskItem.statement = "";
         } else {

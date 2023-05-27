@@ -4,7 +4,7 @@
     :options="options"
     :placeholder="$t('database.select')"
     :virtual-scroll="true"
-    :filter="filterByName"
+    :filter="filterByDatabaseName"
     :filterable="true"
     style="width: 12rem"
     @update:value="$emit('update:database', $event)"
@@ -12,42 +12,40 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, watchEffect } from "vue";
+import { computed, watch } from "vue";
 import { NSelect, SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import { useCurrentUserV1, useDatabaseStore } from "@/store";
 import {
-  Database,
-  DatabaseId,
-  EngineType,
-  EngineTypeList,
-  InstanceId,
-  UNKNOWN_ID,
-  unknown,
-} from "@/types";
+  useCurrentUserV1,
+  useSearchDatabaseV1List,
+  useDatabaseV1Store,
+} from "@/store";
+import { ComposedDatabase, UNKNOWN_ID, unknownDatabase } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { supportedEngineV1List } from "@/utils";
 
 interface DatabaseSelectOption extends SelectOption {
-  value: DatabaseId;
-  database: Database;
+  value: string;
+  database: ComposedDatabase;
 }
 
 const props = withDefaults(
   defineProps<{
-    database: DatabaseId | undefined;
+    database: string | undefined;
     environment?: string;
-    instance?: InstanceId;
+    instance?: string;
     project?: string;
-    allowedEngineTypeList?: readonly EngineType[];
+    allowedEngineTypeList?: readonly Engine[];
     includeAll?: boolean;
     autoReset?: boolean;
-    filter?: (database: Database, index: number) => boolean;
+    filter?: (database: ComposedDatabase, index: number) => boolean;
   }>(),
   {
     environment: undefined,
     instance: undefined,
     project: undefined,
-    allowedEngineTypeList: () => EngineTypeList,
+    allowedEngineTypeList: () => supportedEngineV1List(),
     includeAll: false,
     autoReset: true,
     filter: undefined,
@@ -55,32 +53,33 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "update:database", value: DatabaseId | undefined): void;
+  (event: "update:database", value: string | undefined): void;
 }>();
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
-const databaseStore = useDatabaseStore();
-
-const prepare = () => {
-  databaseStore.fetchDatabaseList();
-};
-watchEffect(prepare);
+const { ready } = useSearchDatabaseV1List({
+  parent: "instances/-",
+});
 
 const rawDatabaseList = computed(() => {
-  const list = databaseStore.getDatabaseListByUser(currentUserV1.value);
+  const list = useDatabaseV1Store().databaseListByUser(currentUserV1.value);
 
   return list.filter((db) => {
     if (props.environment && props.environment !== String(UNKNOWN_ID)) {
-      if (db.instance.environment.id !== props.environment) return false;
+      if (db.instanceEntity.environmentEntity.uid !== props.environment) {
+        return false;
+      }
     }
-    if (props.instance && props.instance !== UNKNOWN_ID) {
-      if (db.instance.id !== props.instance) return false;
+    if (props.instance && props.instance !== String(UNKNOWN_ID)) {
+      if (db.instanceEntity.uid !== props.instance) return false;
     }
     if (props.project && props.project !== String(UNKNOWN_ID)) {
-      if (String(db.project.id) !== props.project) return false;
+      if (db.projectEntity.uid !== props.project) return false;
     }
-    if (!props.allowedEngineTypeList.includes(db.instance.engine)) return false;
+    if (!props.allowedEngineTypeList.includes(db.instanceEntity.engine)) {
+      return false;
+    }
 
     return true;
   });
@@ -93,9 +92,11 @@ const combinedDatabaseList = computed(() => {
     list = list.filter(props.filter);
   }
 
-  if (props.database === UNKNOWN_ID || props.includeAll) {
-    const dummyAll = unknown("DATABASE");
-    dummyAll.name = t("database.all");
+  if (props.database === String(UNKNOWN_ID) || props.includeAll) {
+    const dummyAll = {
+      ...unknownDatabase(),
+      databaseName: t("database.all"),
+    };
     list.unshift(dummyAll);
   }
 
@@ -106,15 +107,15 @@ const options = computed(() => {
   return combinedDatabaseList.value.map<DatabaseSelectOption>((database) => {
     return {
       database,
-      value: database.id,
-      label: database.name,
+      value: database.uid,
+      label: database.databaseName,
     };
   });
 });
 
-const filterByName = (pattern: string, option: SelectOption) => {
+const filterByDatabaseName = (pattern: string, option: SelectOption) => {
   const { database } = option as DatabaseSelectOption;
-  return database.name.toLowerCase().includes(pattern.toLowerCase());
+  return database.databaseName.toLowerCase().includes(pattern.toLowerCase());
 };
 
 // The database list might change if environment changes, and the previous selected id
@@ -123,8 +124,9 @@ const filterByName = (pattern: string, option: SelectOption) => {
 const resetInvalidSelection = () => {
   if (!props.autoReset) return;
   if (
+    ready.value &&
     props.database &&
-    !combinedDatabaseList.value.find((item) => item.id === props.database)
+    !combinedDatabaseList.value.find((item) => item.uid === props.database)
   ) {
     emit("update:database", undefined);
   }

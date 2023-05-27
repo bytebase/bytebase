@@ -455,17 +455,6 @@ export const useInstanceStore = defineStore("instance", {
 
       return historyList;
     },
-    async getSamplePostgresInstance() {
-      const data = (
-        await axios.get<{
-          host: string;
-          port: number;
-          username: string;
-        }>("/api/instance/sample-pg")
-      ).data;
-
-      return data;
-    },
   },
 });
 

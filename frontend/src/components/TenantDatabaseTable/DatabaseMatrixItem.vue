@@ -10,7 +10,7 @@
       <div class="flex items-center select-none space-x-1">
         <div class="sync-status">
           <heroicons-solid:check-circle
-            v-if="database.syncStatus === 'OK'"
+            v-if="database.syncState === State.ACTIVE"
             class="p-1 w-8 h-8 text-success"
           />
           <heroicons-solid:exclamation
@@ -23,7 +23,7 @@
             :to="databaseDetailUrl"
             class="text-main whitespace-nowrap hover:underline"
           >
-            {{ database.name }}
+            {{ database.databaseName }}
           </router-link>
 
           <router-link
@@ -40,21 +40,22 @@
       <div class="px-4 py-2 flex items-center whitespace-nowrap space-x-1">
         <span>
           <heroicons-solid:check
-            v-if="database.syncStatus === 'OK'"
+            v-if="database.syncState === State.ACTIVE"
             class="w-4 h-4 text-success"
           />
           <heroicons-outline:exclamation v-else class="w-4 h-4 text-warning" />
         </span>
-        <span class="flex-1">{{ database.syncStatus }}</span>
+        <span class="flex-1">
+          {{ database.syncState === State.ACTIVE ? "OK" : "NOT_FOUND" }}
+        </span>
       </div>
       <div class="px-4 py-2 flex items-center whitespace-pre-wrap space-x-1">
-        <InstanceEngineIcon :instance="database.instance" />
-        <span class="flex-1">{{ instanceName(database.instance) }}</span>
+        <InstanceV1Name :instance="database.instanceEntity" :link="false" />
       </div>
 
       <div class="px-4 py-2 flex items-center justify-between space-x-1">
         <span>{{ $t("db.last-successful-sync") }}</span>
-        <span>{{ humanizeTs(database.lastSuccessfulSyncTs) }}</span>
+        <span>{{ humanizeDate(database.successfulSyncTime) }}</span>
       </div>
 
       <div
@@ -79,48 +80,40 @@
   </NPopover>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, PropType } from "vue";
-import { Database } from "../../types";
-import { databaseSlug, hidePrefix, PRESET_LABEL_KEYS } from "../../utils";
-import InstanceEngineIcon from "../InstanceEngineIcon.vue";
+<script lang="ts" setup>
+import { computed, PropType } from "vue";
 import { NPopover } from "naive-ui";
 
-export default defineComponent({
-  name: "DatabaseMatrixItem",
-  components: {
-    InstanceEngineIcon,
-    NPopover,
-  },
-  props: {
-    database: {
-      type: Object as PropType<Database>,
-      required: true,
-    },
-  },
-  setup(props) {
-    const displayLabelList = computed(() => {
-      return props.database.labels.filter((label) => {
-        if (!label.value) return false;
-        if (!PRESET_LABEL_KEYS.includes(label.key)) return false;
-        return true;
-      });
-    });
+import { ComposedDatabase } from "../../types";
+import { databaseV1Slug, hidePrefix, PRESET_LABEL_KEYS } from "../../utils";
+import { State } from "@/types/proto/v1/common";
+import { InstanceV1Name } from "../v2";
 
-    const databaseDetailUrl = computed((): string => {
-      return `/db/${databaseSlug(props.database)}`;
-    });
-
-    const schemaVersionUrl = computed((): string => {
-      return `/db/${databaseSlug(props.database)}#change-history`;
-    });
-
-    return {
-      databaseDetailUrl,
-      schemaVersionUrl,
-      displayLabelList,
-      hidePrefix,
-    };
+const props = defineProps({
+  database: {
+    type: Object as PropType<ComposedDatabase>,
+    required: true,
   },
+});
+
+const displayLabelList = computed(() => {
+  return Object.keys(props.database.labels)
+    .map((key) => {
+      const value = props.database.labels[key];
+      return { key, value };
+    })
+    .filter((kv) => {
+      if (!kv.value) return false;
+      if (!PRESET_LABEL_KEYS.includes(kv.key)) return false;
+      return true;
+    });
+});
+
+const databaseDetailUrl = computed((): string => {
+  return `/db/${databaseV1Slug(props.database)}`;
+});
+
+const schemaVersionUrl = computed((): string => {
+  return `/db/${databaseV1Slug(props.database)}#change-history`;
 });
 </script>

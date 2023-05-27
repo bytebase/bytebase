@@ -11,15 +11,20 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 
-import type { SheetUpsert } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { useDatabaseStore, useSheetStore, useTabStore } from "@/store";
+import { useDatabaseStore, useSheetV1Store, useTabStore } from "@/store";
 import {
-  getProjectAndSheetId,
-  getSheetPathByLegacyProject,
+  getDatabasePathByLegacyDatabase,
+  getProjectPathByLegacyProject,
 } from "@/store/modules/v1/common";
 import { defaultTabName, getDefaultTabNameFromConnection } from "@/utils";
 import SaveSheetForm from "./SaveSheetForm.vue";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+  Sheet,
+} from "@/types/proto/v1/sheet_service";
 
 type LocalState = {
   showModal: boolean;
@@ -27,7 +32,7 @@ type LocalState = {
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 
 const state = reactive<LocalState>({
   showModal: false,
@@ -53,24 +58,41 @@ const doSaveSheet = async (sheetTitle?: string) => {
   const { name, statement, sheetName } = tabStore.currentTab;
   sheetTitle = sheetTitle || name;
 
-  const sheetId = getProjectAndSheetId(sheetName ?? "")[1];
+  const sheetId = sheetV1Store.getSheetUid(sheetName ?? "");
 
   const conn = tabStore.currentTab.connection;
   const database = await databaseStore.getOrFetchDatabaseById(conn.databaseId);
-  const sheetUpsert: SheetUpsert = {
-    id: sheetId,
-    projectId: database.project.id,
-    databaseId: conn.databaseId,
-    name: sheetTitle,
-    statement: statement,
-  };
-  const sheet = await sheetStore.upsertSheet(sheetUpsert);
 
-  tabStore.updateCurrentTab({
-    sheetName: getSheetPathByLegacyProject(sheet.project, sheet.id),
-    isSaved: true,
-    name: sheetTitle,
-  });
+  let sheet: Sheet | undefined;
+  if (sheetId !== UNKNOWN_ID) {
+    sheet = await sheetV1Store.patchSheet({
+      name: sheetName,
+      database: getDatabasePathByLegacyDatabase(database),
+      title: sheetTitle,
+      content: new TextEncoder().encode(statement),
+    });
+  } else {
+    sheet = await sheetV1Store.createSheet(
+      getProjectPathByLegacyProject(database.project),
+      {
+        title: sheetTitle,
+        content: new TextEncoder().encode(statement),
+        database: getDatabasePathByLegacyDatabase(database),
+        visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
+        source: Sheet_Source.SOURCE_BYTEBASE,
+        type: Sheet_Type.TYPE_SQL,
+        payload: "{}",
+      }
+    );
+  }
+
+  if (sheet) {
+    tabStore.updateCurrentTab({
+      sheetName: sheet.name,
+      isSaved: true,
+      name: sheetTitle,
+    });
+  }
 };
 
 const needSheetName = (sheetName: string | undefined) => {
@@ -92,18 +114,18 @@ const needSheetName = (sheetName: string | undefined) => {
   return false;
 };
 
-const trySaveSheet = (sheetName?: string) => {
+const trySaveSheet = (sheetTitle?: string) => {
   if (!allowSave.value) {
     return;
   }
 
-  if (needSheetName(sheetName)) {
+  if (needSheetName(sheetTitle)) {
     state.showModal = true;
     return;
   }
   state.showModal = false;
 
-  doSaveSheet(sheetName);
+  doSaveSheet(sheetTitle);
 };
 
 const close = () => {

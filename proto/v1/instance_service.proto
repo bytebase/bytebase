@@ -160,7 +160,7 @@ message AddDataSourceRequest {
 
   // Identified by type.
   // Only READ_ONLY data source can be added.
-  DataSource data_sources = 2 [(google.api.field_behavior) = REQUIRED];
+  DataSource data_source = 2 [(google.api.field_behavior) = REQUIRED];
 
   // Validate only also tests the data source connection.
   bool validate_only = 3;
@@ -173,7 +173,7 @@ message RemoveDataSourceRequest {
 
   // Identified by type.
   // Only READ_ONLY data source can be removed.
-  DataSource data_sources = 2 [(google.api.field_behavior) = REQUIRED];
+  DataSource data_source = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message UpdateDataSourceRequest {
@@ -182,7 +182,7 @@ message UpdateDataSourceRequest {
   string instance = 1 [(google.api.field_behavior) = REQUIRED];
 
   // Identified by type.
-  DataSource data_sources = 2 [(google.api.field_behavior) = REQUIRED];
+  DataSource data_source = 2 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 3;
