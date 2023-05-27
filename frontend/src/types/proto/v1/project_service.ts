@@ -831,7 +831,6 @@ export interface ListDatabaseGroupsRequest {
   /**
    * The parent resource whose database groups are to be listed.
    * Format: projects/{project}
-   * Use projects/- to list database groups across all projects.
    */
   parent: string;
   /**
