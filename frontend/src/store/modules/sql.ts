@@ -54,18 +54,6 @@ export const useSQLStore = defineStore("sql", {
       return convert(resultSet);
     },
 
-    async ping(connectionInfo: ConnectionInfo) {
-      const res = (
-        await axios.post(`/api/sql/ping`, {
-          data: {
-            type: "connectionInfo",
-            attributes: connectionInfo,
-          },
-        })
-      ).data;
-
-      return convert(res.data);
-    },
     async syncSchema(instanceId: InstanceId) {
       const res = (
         await axios.post(
