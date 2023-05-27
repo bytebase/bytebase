@@ -3,7 +3,6 @@ package tests
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
@@ -28,29 +27,6 @@ func (ctl *controller) createSheet(sheetCreate api.SheetCreate) (*api.Sheet, err
 		return nil, errors.Wrap(err, "fail to unmarshal sheet response")
 	}
 	return sheet, nil
-}
-
-// listMySheets lists caller's sheets.
-func (ctl *controller) listMySheets() ([]*api.Sheet, error) {
-	params := map[string]string{}
-	body, err := ctl.get("/sheet/my", params)
-	if err != nil {
-		return nil, err
-	}
-
-	var sheets []*api.Sheet
-	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Sheet)))
-	if err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal get sheet response")
-	}
-	for _, p := range ps {
-		sheet, ok := p.(*api.Sheet)
-		if !ok {
-			return nil, errors.Errorf("fail to convert sheet")
-		}
-		sheets = append(sheets, sheet)
-	}
-	return sheets, nil
 }
 
 // syncSheet syncs sheets with project.
