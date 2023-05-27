@@ -337,15 +337,18 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 
 // AddDataSource adds a data source to an instance.
 func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDataSourceRequest) (*v1pb.Instance, error) {
-	if request.DataSources == nil {
+	if request.DataSource == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
 	}
 	// We only support add RO type datasouce to instance now, see more details in instance_service.proto.
-	if request.DataSources.Type != v1pb.DataSourceType_READ_ONLY {
+	if request.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
 		return nil, status.Errorf(codes.InvalidArgument, "only support add read-only data source")
 	}
+	if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureReadReplicaConnection.AccessErrorMessage())
+	}
 
-	dataSource, err := s.convertToDataSourceMessage(request.DataSources)
+	dataSource, err := s.convertToDataSourceMessage(request.DataSource)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
@@ -392,61 +395,20 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	return convertToInstance(instance), nil
 }
 
-// RemoveDataSource removes a data source to an instance.
-func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.RemoveDataSourceRequest) (*v1pb.Instance, error) {
-	if request.DataSources == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
-	}
-	// We only support remove RO type datasource to instance now, see more details in instance_service.proto.
-	if request.DataSources.Type != v1pb.DataSourceType_READ_ONLY {
-		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
-	}
-
-	dataSource, err := s.convertToDataSourceMessage(request.DataSources)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
-	}
-
-	instance, err := s.getInstanceMessage(ctx, request.Instance)
-	if err != nil {
-		return nil, err
-	}
-	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
-	}
-
-	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.Type); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instance.ResourceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		UID: &instance.UID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	return convertToInstance(instance), nil
-}
-
 // UpdateDataSource updates a data source of an instance.
 func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
-	if request.DataSources == nil {
+	if request.DataSource == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "datasource is required")
 	}
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	tp, err := convertDataSourceTp(request.DataSources.Type)
+	tp, err := convertDataSourceTp(request.DataSource.Type)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) && tp == api.RO {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureReadReplicaConnection.AccessErrorMessage())
 	}
 
 	instance, err := s.getInstanceMessage(ctx, request.Instance)
@@ -480,57 +442,57 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "username":
-			patch.Username = &request.DataSources.Username
+			patch.Username = &request.DataSource.Username
 			dataSource.Username = *patch.Username
 		case "password":
-			obfuscated := common.Obfuscate(request.DataSources.Password, s.secret)
+			obfuscated := common.Obfuscate(request.DataSource.Password, s.secret)
 			patch.ObfuscatedPassword = &obfuscated
 			dataSource.ObfuscatedPassword = obfuscated
 		case "ssl_ca":
-			obfuscated := common.Obfuscate(request.DataSources.SslCa, s.secret)
+			obfuscated := common.Obfuscate(request.DataSource.SslCa, s.secret)
 			patch.ObfuscatedSslCa = &obfuscated
 			dataSource.ObfuscatedSslCa = obfuscated
 		case "ssl_cert":
-			obfuscated := common.Obfuscate(request.DataSources.SslCert, s.secret)
+			obfuscated := common.Obfuscate(request.DataSource.SslCert, s.secret)
 			patch.ObfuscatedSslCert = &obfuscated
 			dataSource.ObfuscatedSslCert = obfuscated
 		case "ssl_key":
-			obfuscated := common.Obfuscate(request.DataSources.SslKey, s.secret)
+			obfuscated := common.Obfuscate(request.DataSource.SslKey, s.secret)
 			patch.ObfuscatedSslKey = &obfuscated
 			dataSource.ObfuscatedSslKey = obfuscated
 		case "host":
-			patch.Host = &request.DataSources.Host
-			dataSource.Host = request.DataSources.Host
+			patch.Host = &request.DataSource.Host
+			dataSource.Host = request.DataSource.Host
 		case "port":
-			patch.Port = &request.DataSources.Port
-			dataSource.Port = request.DataSources.Port
+			patch.Port = &request.DataSource.Port
+			dataSource.Port = request.DataSource.Port
 		case "srv":
-			patch.SRV = &request.DataSources.Srv
-			dataSource.SRV = request.DataSources.Srv
+			patch.SRV = &request.DataSource.Srv
+			dataSource.SRV = request.DataSource.Srv
 		case "authentication_database":
-			patch.AuthenticationDatabase = &request.DataSources.AuthenticationDatabase
-			dataSource.AuthenticationDatabase = request.DataSources.AuthenticationDatabase
+			patch.AuthenticationDatabase = &request.DataSource.AuthenticationDatabase
+			dataSource.AuthenticationDatabase = request.DataSource.AuthenticationDatabase
 		case "sid":
-			patch.SID = &request.DataSources.Sid
-			dataSource.SID = request.DataSources.Sid
+			patch.SID = &request.DataSource.Sid
+			dataSource.SID = request.DataSource.Sid
 		case "service_name":
-			patch.ServiceName = &request.DataSources.ServiceName
-			dataSource.ServiceName = request.DataSources.ServiceName
+			patch.ServiceName = &request.DataSource.ServiceName
+			dataSource.ServiceName = request.DataSource.ServiceName
 		case "ssh_host":
-			patch.SSHHost = &request.DataSources.SshHost
-			dataSource.SSHHost = request.DataSources.SshHost
+			patch.SSHHost = &request.DataSource.SshHost
+			dataSource.SSHHost = request.DataSource.SshHost
 		case "ssh_port":
-			patch.SSHPort = &request.DataSources.SshPort
-			dataSource.SSHPort = request.DataSources.SshPort
+			patch.SSHPort = &request.DataSource.SshPort
+			dataSource.SSHPort = request.DataSource.SshPort
 		case "ssh_user":
-			patch.SSHUser = &request.DataSources.SshUser
-			dataSource.SSHUser = request.DataSources.SshUser
+			patch.SSHUser = &request.DataSource.SshUser
+			dataSource.SSHUser = request.DataSource.SshUser
 		case "ssh_password":
-			obfuscated := common.Obfuscate(request.DataSources.SshPassword, s.secret)
+			obfuscated := common.Obfuscate(request.DataSource.SshPassword, s.secret)
 			patch.SSHObfuscatedPassword = &obfuscated
 			dataSource.SSHObfuscatedPassword = obfuscated
 		case "ssh_private_key":
-			obfuscated := common.Obfuscate(request.DataSources.SshPrivateKey, s.secret)
+			obfuscated := common.Obfuscate(request.DataSource.SshPrivateKey, s.secret)
 			patch.SSHObfuscatedPrivateKey = &obfuscated
 			dataSource.SSHObfuscatedPrivateKey = obfuscated
 		}
@@ -556,6 +518,50 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	if err := s.store.UpdateDataSourceV2(ctx, patch); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID: &instance.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return convertToInstance(instance), nil
+}
+
+// RemoveDataSource removes a data source to an instance.
+func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.RemoveDataSourceRequest) (*v1pb.Instance, error) {
+	if request.DataSource == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
+	}
+	// We only support remove RO type datasource to instance now, see more details in instance_service.proto.
+	if request.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
+		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
+	}
+
+	dataSource, err := s.convertToDataSourceMessage(request.DataSource)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
+	}
+
+	instance, err := s.getInstanceMessage(ctx, request.Instance)
+	if err != nil {
+		return nil, err
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+	}
+
+	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.Type); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instance.ResourceID,
+	})
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
