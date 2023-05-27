@@ -62,6 +62,7 @@ export interface UpdateSheetOrganizerRequest {
    * Fields are specified relative to the sheet organizer.
    * Only support update the following fields for now:
    * - `starred`
+   * - `pinned`
    */
   updateMask?: string[];
 }
