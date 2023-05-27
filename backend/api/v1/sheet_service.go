@@ -80,11 +80,22 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("instance with resource id %q not found", instanceResourceID))
 		}
 
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			ProjectID:    &projectResourceID,
-			InstanceID:   &instanceResourceID,
-			DatabaseName: &databaseName,
-		})
+		find := &store.FindDatabaseMessage{
+			ProjectID:  &projectResourceID,
+			InstanceID: &instanceResourceID,
+		}
+		// It's chaos. We return /instance/{resource id}/databases/{uid} database in find sheet request,
+		// but the frontend use both /instance/{resource id}/databases/{uid} and /instance/{resource id}/databases/{name}, sometimes the name will convert to int id incorrectly.
+		// For database v1 api, we should only use the /instance/{resource id}/databases/{name}
+		// We need to remove legacy code after the migration.
+		dbUID, isNumber := isNumber(databaseName)
+		if isNumber {
+			find.UID = &dbUID
+		} else {
+			find.DatabaseName = &databaseName
+		}
+
+		database, err := s.store.GetDatabaseV2(ctx, find)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get database with name %q, err: %s", databaseName, err.Error()))
 		}
@@ -119,25 +130,32 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectResourceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+	find := &api.SheetFind{
+		ID:       &sheetIntID,
+		LoadFull: request.Raw,
 	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
+
+	// this allows get the sheet only by the id: /projects/-/sheets/{sheet uid}.
+	// so that we can easily get the sheet from the issue.
+	// we can remove this after migrate the issue to v1 API.
+	if projectResourceID != "-" {
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectResourceID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+		}
+		if project == nil {
+			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+		}
+		if project.Deleted {
+			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
+		}
+		find.ProjectID = &project.UID
 	}
 
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{
-		ID:        &sheetIntID,
-		LoadFull:  request.Raw,
-		ProjectID: &project.UID,
-	}, currentPrincipalID)
+	sheet, err := s.store.GetSheetV2(ctx, find, currentPrincipalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
@@ -327,7 +345,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 			stringVisibility := string(visibility)
 			sheetPatch.Visibility = &stringVisibility
 		case "payload":
-			sheetPatch.Name = &request.Sheet.Payload
+			sheetPatch.Payload = &request.Sheet.Payload
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
 		}
@@ -599,6 +617,44 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 		}
 	}
 	return &emptypb.Empty{}, nil
+}
+
+// UpdateSheetOrganizer upsert the sheet organizer.
+func (s *SheetService) UpdateSheetOrganizer(ctx context.Context, request *v1pb.UpdateSheetOrganizerRequest) (*v1pb.SheetOrganizer, error) {
+	_, sheetID, err := getProjectResourceIDSheetID(request.Organizer.Sheet)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	sheetIntID, err := strconv.Atoi(sheetID)
+	if err != nil || sheetIntID <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
+	}
+
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	sheetOrganizerUpsert := &api.SheetOrganizerUpsert{
+		SheetID:     sheetIntID,
+		PrincipalID: currentPrincipalID,
+	}
+
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "starred":
+			sheetOrganizerUpsert.Starred = request.Organizer.Starred
+		case "pinned":
+			sheetOrganizerUpsert.Pinned = request.Organizer.Pinned
+		}
+	}
+
+	organizer, err := s.store.UpsertSheetOrganizer(ctx, sheetOrganizerUpsert)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to upsert organizer for sheet %s with error: %v", request.Organizer.Sheet, err)
+	}
+
+	return &v1pb.SheetOrganizer{
+		Sheet:   request.Organizer.Sheet,
+		Starred: organizer.Starred,
+		Pinned:  organizer.Pinned,
+	}, nil
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {

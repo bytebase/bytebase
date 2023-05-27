@@ -441,7 +441,9 @@
     - [SearchSheetsRequest](#bytebase-v1-SearchSheetsRequest)
     - [SearchSheetsResponse](#bytebase-v1-SearchSheetsResponse)
     - [Sheet](#bytebase-v1-Sheet)
+    - [SheetOrganizer](#bytebase-v1-SheetOrganizer)
     - [SyncSheetsRequest](#bytebase-v1-SyncSheetsRequest)
+    - [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
   
     - [Sheet.Source](#bytebase-v1-Sheet-Source)
@@ -6916,6 +6918,23 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 
 
 
+<a name="bytebase-v1-SheetOrganizer"></a>
+
+### SheetOrganizer
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | The name of the sheet. Format: projects/{project}/sheets/{sheet} |
+| starred | [bool](#bool) |  | starred means if the sheet is starred. |
+| pinned | [bool](#bool) |  | pinned means if the sheet is pinned. |
+
+
+
+
+
+
 <a name="bytebase-v1-SyncSheetsRequest"></a>
 
 ### SyncSheetsRequest
@@ -6927,6 +6946,24 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | parent | [string](#string) |  | The name of the project to sync sheets.
 
 Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSheetOrganizerRequest"></a>
+
+### UpdateSheetOrganizerRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| organizer | [SheetOrganizer](#bytebase-v1-SheetOrganizer) |  | The organizer to update.
+
+The organizer&#39;s `sheet` field is used to identify the sheet. Format: projects/{project}/sheets/{sheet} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet organizer. Only support update the following fields for now: - `starred` - `pinned` |
 
 
 
@@ -7010,6 +7047,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | SearchSheets | [SearchSheetsRequest](#bytebase-v1-SearchSheetsRequest) | [SearchSheetsResponse](#bytebase-v1-SearchSheetsResponse) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
+| UpdateSheetOrganizer | [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest) | [SheetOrganizer](#bytebase-v1-SheetOrganizer) |  |
 | DeleteSheet | [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | SyncSheets | [SyncSheetsRequest](#bytebase-v1-SyncSheetsRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 

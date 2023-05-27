@@ -20,11 +20,17 @@ import {
 } from "@/types";
 import {
   useDatabaseStore,
-  useSheetStore,
-  useSheetById,
+  useSheetV1Store,
+  useSheetStatementByUid,
   useTaskStore,
 } from "@/store";
 import { sheetIdOfTask } from "@/utils";
+import { getProjectPathByLegacyProject } from "@/store/modules/v1/common";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 
 export default defineComponent({
   name: "GhostModeProvider",
@@ -42,6 +48,7 @@ export default defineComponent({
     } = useIssueLogic();
     const databaseStore = useDatabaseStore();
     const taskStore = useTaskStore();
+    const sheetV1Store = useSheetV1Store();
 
     const selectedStatement = computed(() => {
       if (isTenantMode.value) {
@@ -50,14 +57,14 @@ export default defineComponent({
           const issueCreate = issue.value as IssueCreate;
           const context = issueCreate.createContext as MigrationContext;
           return (
-            useSheetById(context.detailList[0].sheetId).value?.statement || ""
+            useSheetStatementByUid(context.detailList[0].sheetId).value || ""
           );
         } else {
           const issueEntity = issue.value as Issue;
           const task = issueEntity.pipeline.stageList[0].taskList[0];
           const payload =
             task.payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
-          return useSheetById(payload.sheetId).value?.statement || "";
+          return useSheetStatementByUid(payload.sheetId).value || "";
         }
       } else {
         // In standard pipeline, each ghost-sync task can hold its own
@@ -68,14 +75,14 @@ export default defineComponent({
             let statement = (task as TaskCreate).statement;
             if ((task as TaskCreate).sheetId !== UNKNOWN_ID) {
               statement =
-                useSheetById((task as TaskCreate).sheetId).value?.statement ||
+                useSheetStatementByUid((task as TaskCreate).sheetId).value ||
                 "";
             }
             return statement;
           } else {
             return (
-              useSheetById(sheetIdOfTask(task as Task) || UNKNOWN_ID).value
-                ?.statement || ""
+              useSheetStatementByUid(sheetIdOfTask(task as Task) || UNKNOWN_ID)
+                .value || ""
             );
           }
         } else {
@@ -169,16 +176,19 @@ export default defineComponent({
           const db = databaseStore.getDatabaseById(detail.databaseId!);
           if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
             const statement = maybeFormatStatementOnSave(detail.statement, db);
-            const sheet = await useSheetStore().createSheet({
-              projectId: issueCreate.projectId,
-              name: issueCreate.name + " - " + db.name,
-              statement: statement,
-              visibility: "PROJECT",
-              source: "BYTEBASE_ARTIFACT",
-              payload: {},
-            });
+            const sheet = await sheetV1Store.createSheet(
+              getProjectPathByLegacyProject(db.project),
+              {
+                title: issueCreate.name + " - " + db.name,
+                content: new TextEncoder().encode(statement),
+                visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+                source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+                type: Sheet_Type.TYPE_SQL,
+                payload: "{}",
+              }
+            );
             detail.statement = "";
-            detail.sheetId = sheet.id;
+            detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
           }
         }
       } else {
@@ -201,16 +211,19 @@ export default defineComponent({
             const db = databaseStore.getDatabaseById(databaseId);
             if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
               const statement = maybeFormatStatementOnSave(task.statement, db);
-              const sheet = await useSheetStore().createSheet({
-                projectId: issueCreate.projectId,
-                name: issueCreate.name + " - " + db.name,
-                statement: statement,
-                visibility: "PROJECT",
-                source: "BYTEBASE_ARTIFACT",
-                payload: {},
-              });
+              const sheet = await sheetV1Store.createSheet(
+                getProjectPathByLegacyProject(db.project),
+                {
+                  title: issueCreate.name + " - " + db.name,
+                  content: new TextEncoder().encode(statement),
+                  visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+                  source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+                  type: Sheet_Type.TYPE_SQL,
+                  payload: "{}",
+                }
+              );
               detail.statement = "";
-              detail.sheetId = sheet.id;
+              detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
             }
             detail.earliestAllowedTs = task.earliestAllowedTs;
           }

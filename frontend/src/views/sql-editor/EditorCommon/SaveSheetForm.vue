@@ -2,7 +2,7 @@
   <div class="save-sheet-modal w-80">
     <n-input
       ref="sheetNameInputRef"
-      v-model:value="sheetName"
+      v-model:value="sheetTitle"
       :placeholder="$t('sql-editor.save-sheet-input-placeholder')"
       @keyup.enter="handleSaveSheet"
     />
@@ -27,11 +27,11 @@ const emit = defineEmits<{
 
 const tabStore = useTabStore();
 
-const sheetName = ref(tabStore.currentTab.name);
+const sheetTitle = ref(tabStore.currentTab.name);
 const sheetNameInputRef = ref();
 
 const handleSaveSheet = () => {
-  emit("save-sheet", sheetName.value);
+  emit("save-sheet", sheetTitle.value);
 };
 
 nextTick(() => {
