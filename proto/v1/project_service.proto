@@ -161,7 +161,7 @@ service ProjectService {
   }
 
   rpc GetSchemaGroup(GetSchemaGroupRequest) returns (SchemaGroup) {
-  option (google.api.http) = {get: "/v1/{name=projects/*/databaseGroups/*/schemaGroups/*}"};
+    option (google.api.http) = {get: "/v1/{name=projects/*/databaseGroups/*/schemaGroups/*}"};
     option (google.api.method_signature) = "name";
   }
 
