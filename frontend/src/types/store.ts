@@ -159,7 +159,6 @@ export interface SQLEditorState {
 }
 
 export interface SheetState {
-  sheetList: Sheet[];
   sheetById: Map<SheetId, Sheet>;
 }
 

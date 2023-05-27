@@ -1,35 +1,20 @@
-import { isUndefined, uniq } from "lodash-es";
+import { uniq } from "lodash-es";
 
-import { useSheetStore } from "@/store";
+import { useSheetV1Store } from "@/store";
 import {
   Issue,
-  Sheet,
   SheetId,
   SheetIssueBacktracePayload,
-  SheetPayload,
-  SheetSource,
   Task,
   TaskDatabaseCreatePayload,
   TaskDatabaseDataUpdatePayload,
   TaskDatabaseSchemaUpdateGhostSyncPayload,
   TaskDatabaseSchemaUpdatePayload,
   TaskDatabaseSchemaUpdateSDLPayload,
+  UNKNOWN_ID,
 } from "@/types";
 import { flattenTaskList } from "@/components/Issue/logic";
-
-// getDefaultSheetPayloadWithSource gets the default payload with sheet source.
-export const getDefaultSheetPayloadWithSource = (
-  sheetSource: SheetSource
-): SheetPayload => {
-  if (sheetSource === "BYTEBASE") {
-    // As we don't save any data for sheet from UI, return an empty payload.
-    return {};
-  }
-
-  // Shouldn't reach this line.
-  // For those sheet from VCS, we create and patch them in backend.
-  return {};
-};
+import { getSheetPathByLegacyProject } from "@/store/modules/v1/common";
 
 export const sheetIdOfTask = (task: Task) => {
   switch (task.type) {
@@ -74,21 +59,22 @@ export const maybeSetSheetBacktracePayloadByIssue = async (issue: Issue) => {
 
   flattenTaskList(issue).forEach((task) => {
     const sheetId = sheetIdOfTask(task as Task);
-    if (sheetId) {
+    if (sheetId && sheetId !== UNKNOWN_ID) {
       sheetIdList.push(sheetId);
     }
   });
 
-  const store = useSheetStore();
+  const sheetV1Store = useSheetV1Store();
   const requests = uniq(sheetIdList).map((sheetId) => {
     const payload: SheetIssueBacktracePayload = {
       type: "bb.sheet.issue-backtrace",
       issueId: issue.id,
       issueName: issue.name,
     };
-    return store.patchSheetById({
-      id: sheetId,
-      payload,
+
+    return sheetV1Store.patchSheet({
+      name: getSheetPathByLegacyProject(issue.project, sheetId),
+      payload: JSON.stringify(payload),
     });
   });
 
@@ -105,17 +91,4 @@ export const getBacktracePayloadWithIssue = (issue: Issue) => {
     issueId: issue.id,
     issueName: issue.name,
   };
-};
-
-export const getSheetIssueBacktracePayload = (sheet: Sheet) => {
-  const maybePayload = (sheet.payload ?? {}) as SheetIssueBacktracePayload;
-  if (
-    maybePayload.type === "bb.sheet.issue-backtrace" &&
-    !isUndefined(maybePayload.issueId) &&
-    !isUndefined(maybePayload.issueName)
-  ) {
-    return maybePayload;
-  }
-
-  return undefined;
 };

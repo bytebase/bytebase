@@ -17,14 +17,14 @@ import { useI18n } from "vue-i18n";
 import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
 
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import type { SheetCreate, SheetOrganizerUpsert } from "@/types";
 import type { SheetViewMode } from "../types";
-import { getDefaultSheetPayloadWithSource, isSheetWritableV1 } from "@/utils";
-import { useSheetStore, useSheetV1Store, useProjectV1Store } from "@/store";
+import { isSheetWritableV1 } from "@/utils";
+import { useSheetV1Store, pushNotification } from "@/store";
 import {
-  getProjectAndSheetId,
-  getInstanceAndDatabaseId,
-} from "@/store/modules/v1/common";
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -36,7 +36,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 const dialog = useDialog();
 
 const options = computed(() => {
@@ -91,7 +91,7 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
-        await useSheetV1Store().deleteSheetByName(sheet.name);
+        await sheetV1Store.deleteSheetByName(sheet.name);
         emit("refresh");
         dialogInstance.destroy();
       },
@@ -103,18 +103,10 @@ const handleAction = async (key: string) => {
       showIcon: true,
     });
   } else if (key === "star" || key === "unstar") {
-    const [_, uid] = getProjectAndSheetId(sheet.name);
-    const sheetOrganizerUpsert: SheetOrganizerUpsert = {
-      sheeId: uid,
-    };
-
-    if (key === "star") {
-      sheetOrganizerUpsert.starred = true;
-    } else if (key === "unstar") {
-      sheetOrganizerUpsert.starred = false;
-    }
-
-    await sheetStore.upsertSheetOrganizer(sheetOrganizerUpsert);
+    await sheetV1Store.upsertSheetOrganizer({
+      sheet: sheet.name,
+      starred: key === "star",
+    });
     emit("refresh");
   } else if (key === "duplicate") {
     const dialogInstance = dialog.create({
@@ -125,24 +117,23 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
-        const [projectId, _] = getProjectAndSheetId(sheet.name);
-        const projectV1 = useProjectV1Store().getProjectByName(
-          `projects/${projectId}`
+        await sheetV1Store.createSheet(
+          sheetV1Store.getSheetParentPath(sheet.name),
+          {
+            title: sheet.title,
+            content: sheet.content,
+            database: sheet.database,
+            visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
+            source: Sheet_Source.SOURCE_BYTEBASE,
+            type: Sheet_Type.TYPE_SQL,
+            payload: "{}",
+          }
         );
-
-        const sheetCreate: SheetCreate = {
-          projectId: projectV1.uid,
-          name: sheet.title,
-          statement: new TextDecoder().decode(sheet.content),
-          visibility: "PRIVATE",
-          payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
-          source: "BYTEBASE",
-        };
-        if (sheet.database) {
-          sheetCreate.databaseId = getInstanceAndDatabaseId(sheet.database)[1];
-        }
-        await sheetStore.createSheet(sheetCreate);
-        emit("refresh");
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: t("sheet.notifications.duplicate-success"),
+        });
         dialogInstance.destroy();
       },
       onNegativeClick() {
