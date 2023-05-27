@@ -403,6 +403,10 @@
     - [RolloutService](#bytebase-v1-RolloutService)
   
 - [v1/subscription_service.proto](#v1_subscription_service-proto)
+    - [Feature](#bytebase-v1-Feature)
+    - [Feature.MatrixEntry](#bytebase-v1-Feature-MatrixEntry)
+    - [FeatureMatrix](#bytebase-v1-FeatureMatrix)
+    - [GetFeatureMatrixRequest](#bytebase-v1-GetFeatureMatrixRequest)
     - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
     - [PatchSubscription](#bytebase-v1-PatchSubscription)
     - [Subscription](#bytebase-v1-Subscription)
@@ -6393,6 +6397,63 @@ Type is the database change type.
 
 
 
+<a name="bytebase-v1-Feature"></a>
+
+### Feature
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Name is the feature name. |
+| matrix | [Feature.MatrixEntry](#bytebase-v1-Feature-MatrixEntry) | repeated | Matrix is the feature matrix for different plan. The key is the plan enum in string value. |
+
+
+
+
+
+
+<a name="bytebase-v1-Feature-MatrixEntry"></a>
+
+### Feature.MatrixEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-FeatureMatrix"></a>
+
+### FeatureMatrix
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| feature | [Feature](#bytebase-v1-Feature) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetFeatureMatrixRequest"></a>
+
+### GetFeatureMatrixRequest
+
+
+
+
+
+
+
 <a name="bytebase-v1-GetSubscriptionRequest"></a>
 
 ### GetSubscriptionRequest
@@ -6514,6 +6575,7 @@ Type is the database change type.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
+| GetFeatureMatrix | [GetFeatureMatrixRequest](#bytebase-v1-GetFeatureMatrixRequest) | [FeatureMatrix](#bytebase-v1-FeatureMatrix) |  |
 | UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
 | TrialSubscription | [TrialSubscriptionRequest](#bytebase-v1-TrialSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
 

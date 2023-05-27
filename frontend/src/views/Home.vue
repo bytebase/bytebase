@@ -199,7 +199,7 @@ import { UNKNOWN_ID, Issue, planTypeToString } from "../types";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
 import {
   useEnvironmentV1Store,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
   useOnboardingStateStore,
   featureToRef,
   useCurrentUserV1,
@@ -219,7 +219,7 @@ const OPEN_ISSUE_LIST_PAGE_SIZE = 10;
 const MAX_CLOSED_ISSUE = 5;
 
 const environmentV1Store = useEnvironmentV1Store();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 const onboardingStateStore = useOnboardingStateStore();
 const router = useRouter();
 const route = useRoute();

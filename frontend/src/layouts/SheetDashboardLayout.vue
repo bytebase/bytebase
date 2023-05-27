@@ -38,7 +38,7 @@ import { storeToRefs } from "pinia";
 import {
   pushNotification,
   useActuatorStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
 } from "@/store";
 import { ServerInfo } from "@/types";
 import BannerDemo from "@/views/BannerDemo.vue";
@@ -46,7 +46,7 @@ import BannerSubscription from "@/views/BannerSubscription.vue";
 import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
 
 const actuatorStore = useActuatorStore();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const ping = () => {
   actuatorStore.fetchServerInfo().then((info: ServerInfo) => {

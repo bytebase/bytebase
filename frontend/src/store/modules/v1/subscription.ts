@@ -1,20 +1,27 @@
 import { defineStore } from "pinia";
-import axios from "axios";
 import dayjs from "dayjs";
 import { computed, Ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { FeatureType, SubscriptionState, planTypeToString } from "@/types";
+import { subscriptionServiceClient } from "@/grpcweb";
+import { FeatureType, planTypeToString } from "@/types";
 import {
   PlanType,
   Subscription,
   planTypeFromJSON,
+  planTypeToJSON,
 } from "@/types/proto/v1/subscription_service";
 
-export const useSubscriptionStore = defineStore("subscription", {
+interface SubscriptionState {
+  subscription: Subscription | undefined;
+  trialingDays: number;
+  featureMatrix: Map<FeatureType, boolean[]>;
+}
+
+export const useSubscriptionV1Store = defineStore("subscription_v1", {
   state: (): SubscriptionState => ({
-    featureMatrix: new Map<FeatureType, boolean[]>(),
     subscription: undefined,
     trialingDays: 14,
+    featureMatrix: new Map<FeatureType, boolean[]>(),
   }),
   getters: {
     instanceCount(state): number {
@@ -96,6 +103,9 @@ export const useSubscriptionStore = defineStore("subscription", {
     },
   },
   actions: {
+    setSubscription(subscription: Subscription) {
+      this.subscription = subscription;
+    },
     hasFeature(type: FeatureType) {
       const matrix = this.featureMatrix.get(type);
       if (!Array.isArray(matrix)) {
@@ -141,13 +151,10 @@ export const useSubscriptionStore = defineStore("subscription", {
         requiredPlan,
       });
     },
-    setSubscription(subscription: Subscription) {
-      this.subscription = subscription;
-    },
     async fetchSubscription() {
       try {
-        const { data: subscription } = await axios.get<Subscription>(
-          `/v1/subscription`
+        const subscription = await subscriptionServiceClient.getSubscription(
+          {}
         );
         this.setSubscription(subscription);
         return subscription;
@@ -155,54 +162,62 @@ export const useSubscriptionStore = defineStore("subscription", {
         console.error(e);
       }
     },
-    async fetchFeatureMatrix() {
-      try {
-        const { data } = await axios.get<{
-          [key: string]: boolean[];
-        }>(`/api/feature`);
-        for (const [key, value] of Object.entries(data)) {
-          this.featureMatrix.set(key as FeatureType, value);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    },
     async patchSubscription(license: string) {
-      const { data: subscription } = await axios.patch<Subscription>(
-        `/v1/subscription`,
-        {
+      const subscription = await subscriptionServiceClient.updateSubscription({
+        patch: {
           license,
-        }
-      );
+        },
+      });
       this.setSubscription(subscription);
       return subscription;
     },
     async trialSubscription(planType: PlanType) {
-      const { data: subscription } = await axios.post<Subscription>(
-        `/v1/subscription/trial`,
-        {
+      const subscription = await subscriptionServiceClient.trialSubscription({
+        trial: {
           plan: planType,
           days: this.trialingDays,
           instanceCount: -1,
-        }
-      );
+        },
+      });
       this.setSubscription(subscription);
       return subscription;
+    },
+    async fetchFeatureMatrix() {
+      try {
+        const featureMatrix = await subscriptionServiceClient.getFeatureMatrix(
+          {}
+        );
+
+        const stateMatrix = new Map<FeatureType, boolean[]>();
+        for (const feature of featureMatrix.feature) {
+          const featureType = feature.name as FeatureType;
+          stateMatrix.set(
+            featureType,
+            [PlanType.FREE, PlanType.TEAM, PlanType.ENTERPRISE].map((type) => {
+              return feature.matrix[planTypeToJSON(type)] ?? false;
+            })
+          );
+        }
+
+        this.featureMatrix = stateMatrix;
+      } catch (e) {
+        console.error(e);
+      }
     },
   },
 });
 
 export const hasFeature = (type: FeatureType) => {
-  const store = useSubscriptionStore();
+  const store = useSubscriptionV1Store();
   return store.hasFeature(type);
 };
 
 export const featureToRef = (type: FeatureType): Ref<boolean> => {
-  const store = useSubscriptionStore();
+  const store = useSubscriptionV1Store();
   return computed(() => store.hasFeature(type));
 };
 
 export const useCurrentPlan = () => {
-  const store = useSubscriptionStore();
+  const store = useSubscriptionV1Store();
   return computed(() => store.currentPlan);
 };

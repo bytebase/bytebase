@@ -37,7 +37,6 @@ export * from "./sqlEditor";
 export * from "./connectionTree";
 export * from "./webTerminal";
 export * from "./tab";
-export * from "./subscription";
 export * from "./sheet";
 export * from "./sqlReview";
 export * from "./utils";

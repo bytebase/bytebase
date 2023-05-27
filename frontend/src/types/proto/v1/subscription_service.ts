@@ -53,6 +53,9 @@ export function planTypeToJSON(object: PlanType): string {
 export interface GetSubscriptionRequest {
 }
 
+export interface GetFeatureMatrixRequest {
+}
+
 export interface UpdateSubscriptionRequest {
   patch?: PatchSubscription;
 }
@@ -79,6 +82,22 @@ export interface Subscription {
   trialing: boolean;
   orgId: string;
   orgName: string;
+}
+
+export interface FeatureMatrix {
+  feature: Feature[];
+}
+
+export interface Feature {
+  /** Name is the feature name. */
+  name: string;
+  /** Matrix is the feature matrix for different plan. The key is the plan enum in string value. */
+  matrix: { [key: string]: boolean };
+}
+
+export interface Feature_MatrixEntry {
+  key: string;
+  value: boolean;
 }
 
 function createBaseGetSubscriptionRequest(): GetSubscriptionRequest {
@@ -121,6 +140,50 @@ export const GetSubscriptionRequest = {
 
   fromPartial(_: DeepPartial<GetSubscriptionRequest>): GetSubscriptionRequest {
     const message = createBaseGetSubscriptionRequest();
+    return message;
+  },
+};
+
+function createBaseGetFeatureMatrixRequest(): GetFeatureMatrixRequest {
+  return {};
+}
+
+export const GetFeatureMatrixRequest = {
+  encode(_: GetFeatureMatrixRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetFeatureMatrixRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetFeatureMatrixRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): GetFeatureMatrixRequest {
+    return {};
+  },
+
+  toJSON(_: GetFeatureMatrixRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetFeatureMatrixRequest>): GetFeatureMatrixRequest {
+    return GetFeatureMatrixRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(_: DeepPartial<GetFeatureMatrixRequest>): GetFeatureMatrixRequest {
+    const message = createBaseGetFeatureMatrixRequest();
     return message;
   },
 };
@@ -525,6 +588,226 @@ export const Subscription = {
   },
 };
 
+function createBaseFeatureMatrix(): FeatureMatrix {
+  return { feature: [] };
+}
+
+export const FeatureMatrix = {
+  encode(message: FeatureMatrix, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.feature) {
+      Feature.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): FeatureMatrix {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFeatureMatrix();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.feature.push(Feature.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FeatureMatrix {
+    return { feature: Array.isArray(object?.feature) ? object.feature.map((e: any) => Feature.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: FeatureMatrix): unknown {
+    const obj: any = {};
+    if (message.feature) {
+      obj.feature = message.feature.map((e) => e ? Feature.toJSON(e) : undefined);
+    } else {
+      obj.feature = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<FeatureMatrix>): FeatureMatrix {
+    return FeatureMatrix.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<FeatureMatrix>): FeatureMatrix {
+    const message = createBaseFeatureMatrix();
+    message.feature = object.feature?.map((e) => Feature.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseFeature(): Feature {
+  return { name: "", matrix: {} };
+}
+
+export const Feature = {
+  encode(message: Feature, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    Object.entries(message.matrix).forEach(([key, value]) => {
+      Feature_MatrixEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).ldelim();
+    });
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Feature {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFeature();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = Feature_MatrixEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.matrix[entry2.key] = entry2.value;
+          }
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Feature {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      matrix: isObject(object.matrix)
+        ? Object.entries(object.matrix).reduce<{ [key: string]: boolean }>((acc, [key, value]) => {
+          acc[key] = Boolean(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: Feature): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    obj.matrix = {};
+    if (message.matrix) {
+      Object.entries(message.matrix).forEach(([k, v]) => {
+        obj.matrix[k] = v;
+      });
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Feature>): Feature {
+    return Feature.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Feature>): Feature {
+    const message = createBaseFeature();
+    message.name = object.name ?? "";
+    message.matrix = Object.entries(object.matrix ?? {}).reduce<{ [key: string]: boolean }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = Boolean(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBaseFeature_MatrixEntry(): Feature_MatrixEntry {
+  return { key: "", value: false };
+}
+
+export const Feature_MatrixEntry = {
+  encode(message: Feature_MatrixEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value === true) {
+      writer.uint32(16).bool(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Feature_MatrixEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFeature_MatrixEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.value = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Feature_MatrixEntry {
+    return {
+      key: isSet(object.key) ? String(object.key) : "",
+      value: isSet(object.value) ? Boolean(object.value) : false,
+    };
+  },
+
+  toJSON(message: Feature_MatrixEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create(base?: DeepPartial<Feature_MatrixEntry>): Feature_MatrixEntry {
+    return Feature_MatrixEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Feature_MatrixEntry>): Feature_MatrixEntry {
+    const message = createBaseFeature_MatrixEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? false;
+    return message;
+  },
+};
+
 export type SubscriptionServiceDefinition = typeof SubscriptionServiceDefinition;
 export const SubscriptionServiceDefinition = {
   name: "SubscriptionService",
@@ -542,6 +825,19 @@ export const SubscriptionServiceDefinition = {
           578365826: [
             new Uint8Array([18, 18, 16, 47, 118, 49, 47, 115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110]),
           ],
+        },
+      },
+    },
+    getFeatureMatrix: {
+      name: "GetFeatureMatrix",
+      requestType: GetFeatureMatrixRequest,
+      requestStream: false,
+      responseType: FeatureMatrix,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [new Uint8Array([13, 18, 11, 47, 118, 49, 47, 102, 101, 97, 116, 117, 114, 101])],
         },
       },
     },
@@ -643,6 +939,10 @@ export interface SubscriptionServiceImplementation<CallContextExt = {}> {
     request: GetSubscriptionRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Subscription>>;
+  getFeatureMatrix(
+    request: GetFeatureMatrixRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<FeatureMatrix>>;
   updateSubscription(
     request: UpdateSubscriptionRequest,
     context: CallContext & CallContextExt,
@@ -658,6 +958,10 @@ export interface SubscriptionServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<GetSubscriptionRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Subscription>;
+  getFeatureMatrix(
+    request: DeepPartial<GetFeatureMatrixRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<FeatureMatrix>;
   updateSubscription(
     request: DeepPartial<UpdateSubscriptionRequest>,
     options?: CallOptions & CallOptionsExt,
@@ -695,6 +999,10 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

@@ -18,6 +18,7 @@ import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
+import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -106,6 +107,11 @@ export const sqlServiceClient = clientFactory.create(
 
 export const celServiceClient = clientFactory.create(
   CelServiceDefinition,
+  channel
+);
+
+export const subscriptionServiceClient = clientFactory.create(
+  SubscriptionServiceDefinition,
   channel
 );
 

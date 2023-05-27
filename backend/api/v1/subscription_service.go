@@ -49,6 +49,24 @@ func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *v1pb.GetSu
 	return s.loadSubscription(ctx)
 }
 
+// GetFeatureMatrix gets the feature metric.
+func (*SubscriptionService) GetFeatureMatrix(_ context.Context, _ *v1pb.GetFeatureMatrixRequest) (*v1pb.FeatureMatrix, error) {
+	resp := &v1pb.FeatureMatrix{}
+	for key, val := range api.FeatureMatrix {
+		matrix := map[string]bool{}
+		for i, enabled := range val {
+			plan := covertToV1PlanType(api.PlanType(i))
+			matrix[plan.String()] = enabled
+		}
+		resp.Feature = append(resp.Feature, &v1pb.Feature{
+			Name:   string(key),
+			Matrix: matrix,
+		})
+	}
+
+	return resp, nil
+}
+
 // UpdateSubscription updates the subscription license.
 func (s *SubscriptionService) UpdateSubscription(ctx context.Context, request *v1pb.UpdateSubscriptionRequest) (*v1pb.Subscription, error) {
 	// clear the trialing setting for dev test
@@ -154,19 +172,9 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 func (s *SubscriptionService) loadSubscription(ctx context.Context) (*v1pb.Subscription, error) {
 	sub := s.licenseService.LoadSubscription(ctx)
 
-	plan := v1pb.PlanType_PLAN_TYPE_UNSPECIFIED
-	switch sub.Plan {
-	case api.FREE:
-		plan = v1pb.PlanType_FREE
-	case api.TEAM:
-		plan = v1pb.PlanType_TEAM
-	case api.ENTERPRISE:
-		plan = v1pb.PlanType_ENTERPRISE
-	}
-
 	subscription := &v1pb.Subscription{
 		InstanceCount: int32(sub.InstanceCount),
-		Plan:          plan,
+		Plan:          covertToV1PlanType(sub.Plan),
 		Trialing:      sub.Trialing,
 		OrgId:         sub.OrgID,
 		OrgName:       sub.OrgName,
@@ -177,4 +185,17 @@ func (s *SubscriptionService) loadSubscription(ctx context.Context) (*v1pb.Subsc
 	}
 
 	return subscription, nil
+}
+
+func covertToV1PlanType(planType api.PlanType) v1pb.PlanType {
+	switch planType {
+	case api.FREE:
+		return v1pb.PlanType_FREE
+	case api.TEAM:
+		return v1pb.PlanType_TEAM
+	case api.ENTERPRISE:
+		return v1pb.PlanType_ENTERPRISE
+	default:
+		return v1pb.PlanType_PLAN_TYPE_UNSPECIFIED
+	}
 }

@@ -286,7 +286,7 @@
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Plan, PLANS, FEATURE_SECTIONS } from "@/types";
-import { useSubscriptionStore } from "@/store";
+import { useSubscriptionV1Store } from "@/store";
 import { LocalPlan } from "./types";
 import FeatureItem from "./FeatureItem.vue";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -301,7 +301,7 @@ const emit = defineEmits(["on-trial"]);
 const minimumInstanceCount = 5;
 
 const { t } = useI18n();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 const state = reactive<LocalState>({
   isMonthly: false,
   instanceCount:

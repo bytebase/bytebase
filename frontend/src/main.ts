@@ -18,7 +18,7 @@ import {
   pushNotification,
   useActuatorStore,
   useAuthStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
 } from "./store";
 import {
   databaseSlug,
@@ -171,11 +171,11 @@ const initActuator = () => {
   return actuatorStore.fetchServerInfo();
 };
 const initSubscription = () => {
-  const subscriptionStore = useSubscriptionStore();
+  const subscriptionStore = useSubscriptionV1Store();
   return subscriptionStore.fetchSubscription();
 };
 const initFeatureMatrix = () => {
-  const subscriptionStore = useSubscriptionStore();
+  const subscriptionStore = useSubscriptionV1Store();
   return subscriptionStore.fetchFeatureMatrix();
 };
 const restoreUser = () => {

@@ -36,7 +36,7 @@ import { UNKNOWN_ID } from "../types";
 import { sortInstanceV1ListByEnvironmentV1 } from "../utils";
 import {
   useUIStateStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
   useEnvironmentV1Store,
   useEnvironmentV1List,
   useInstanceV1List,
@@ -46,7 +46,7 @@ interface LocalState {
   searchText: string;
 }
 
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 const uiStateStore = useUIStateStore();
 const router = useRouter();
 const { t } = useI18n();
