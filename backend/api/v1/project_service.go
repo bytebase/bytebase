@@ -683,6 +683,89 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 	return convertStoreToAPIDatabaseGroup(databaseGroup), nil
 }
 
+// UpdateDatabaseGroup updates a database group.
+func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.UpdateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
+	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
+	}
+	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, databaseGroupResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if existedDatabaseGroup == nil {
+		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
+	}
+
+	var updateDatabaseGroup store.UpdateDatabaseGroupMessage
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "database_placeholder":
+			if request.DatabaseGroup.DatabasePlaceholder == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "database group database placeholder is required")
+			}
+			updateDatabaseGroup.Placeholder = &request.DatabaseGroup.DatabasePlaceholder
+		case "database_expr":
+			if request.DatabaseGroup.DatabaseExpr == nil {
+				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
+			}
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
+		}
+	}
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	databaseGroup, err := s.store.UpdateDatabaseGroup(ctx, principalID, databaseGroupResourceID, &updateDatabaseGroup)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertStoreToAPIDatabaseGroup(databaseGroup), nil
+}
+
+// DeleteDatabaseGroup deletes a database group.
+func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.DeleteDatabaseGroupRequest) (*emptypb.Empty, error) {
+	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
+	}
+	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, databaseGroupResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if existedDatabaseGroup == nil {
+		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
+	}
+
+	err = s.store.DeleteDatabaseGroup(ctx, databaseGroupResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &emptypb.Empty{}, nil
+}
+
 func convertStoreToAPIDatabaseGroup(databaseGroup *store.DatabaseGroupMessage) *v1pb.DatabaseGroup {
 	return &v1pb.DatabaseGroup{
 		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, databaseGroup.ProjectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
