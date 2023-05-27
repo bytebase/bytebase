@@ -43,11 +43,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 
 // Open opens the redis driver.
 func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
-	port := config.Port
-	if port == "" {
-		port = "6379"
-	}
-	addr := fmt.Sprintf("%s:%s", config.Host, port)
+	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "redis: failed to get tls config")
