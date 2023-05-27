@@ -709,7 +709,6 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 	}
 
-	// TODO(zp): get already existed database group
 	var updateDatabaseGroup store.UpdateDatabaseGroupMessage
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
