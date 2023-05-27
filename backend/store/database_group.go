@@ -133,9 +133,7 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
+	defer rows.Close()
 	for rows.Next() {
 		var databaseGroup DatabaseGroupMessage
 		var stringExpr string
@@ -161,6 +159,9 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 	}
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 	return databaseGroups, nil
 }
