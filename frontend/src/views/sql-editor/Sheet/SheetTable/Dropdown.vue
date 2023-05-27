@@ -126,7 +126,9 @@ const handleAction = async (key: string) => {
       closeOnEsc: false,
       async onPositiveClick() {
         const [projectId, _] = getProjectAndSheetId(sheet.name);
-        const projectV1 = useProjectV1Store().getProjectByName(projectId);
+        const projectV1 = useProjectV1Store().getProjectByName(
+          `projects/${projectId}`
+        );
 
         const sheetCreate: SheetCreate = {
           projectId: projectV1.uid,

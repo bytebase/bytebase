@@ -17,16 +17,16 @@
                 <h1
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
-                  {{ database.name }}
+                  {{ database.databaseName }}
 
-                  <ProductionEnvironmentIcon
-                    :environment="database.instance.environment"
-                    tooltip
+                  <ProductionEnvironmentV1Icon
+                    :environment="database.instanceEntity.environmentEntity"
+                    :tooltip="true"
                     class="w-5 h-5"
                   />
 
                   <BBBadge
-                    v-if="isPITRDatabase(database)"
+                    v-if="isPITRDatabaseV1(database)"
                     text="PITR"
                     :can-remove="false"
                     class="text-xs"
@@ -44,39 +44,29 @@
               <span class="textlabel"
                 >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
               >
-              <router-link
-                :to="`/environment/${environmentSlug(
-                  database.instance.environment
-                )}`"
-                class="normal-link"
-              >
-                {{ environmentName(database.instance.environment) }}
-              </router-link>
+              <EnvironmentV1Name
+                :environment="database.instanceEntity.environmentEntity"
+                icon-class="textinfolabel"
+              />
             </dd>
             <dt class="sr-only">{{ $t("common.instance") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <InstanceEngineIcon :instance="database.instance" />
               <span class="ml-1 textlabel"
                 >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
               >
-              <router-link
-                :to="`/instance/${instanceSlug(database.instance)}`"
-                class="normal-link"
-                >{{ instanceName(database.instance) }}</router-link
-              >
+              <InstanceV1Name :instance="database.instanceEntity" />
             </dd>
             <dt class="sr-only">{{ $t("common.project") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel"
                 >{{ $t("common.project") }}&nbsp;-&nbsp;</span
               >
-              <router-link
-                :to="`/project/${projectSlug(database.project)}#databases`"
-                class="normal-link"
-                >{{ projectName(database.project) }}</router-link
-              >
+              <ProjectV1Name
+                :project="database.projectEntity"
+                hash="#databases"
+              />
             </dd>
-            <SQLEditorButton
+            <SQLEditorButtonV1
               class="text-sm md:mr-4"
               :database="database"
               :label="true"
@@ -92,10 +82,10 @@
               <SchemaDiagramIcon />
             </dd>
             <DatabaseLabelProps
-              :label-list="database.labels"
+              :labels="database.labels"
               :database="database"
               :allow-edit="allowEditDatabaseLabels"
-              @update:label-list="updateLabels"
+              @update:labels="updateLabels"
             >
               <template #label="{ label }">
                 <span class="textlabel capitalize">
@@ -187,63 +177,13 @@
       </template>
     </div>
 
-    <BBModal
+    <TransferSingleDatabase
       v-if="state.showTransferDatabaseModal"
-      :title="$t('database.transfer-project')"
-      @close="state.showTransferDatabaseModal = false"
-    >
-      <div class="w-112 flex flex-col items-center">
-        <div class="col-span-1 w-64">
-          <label for="user" class="textlabel">{{ $t("common.project") }}</label>
-          <!-- Only allow to transfer database to the project having OWNER role -->
-          <ProjectSelect
-            id="project"
-            class="mt-1"
-            name="project"
-            :allowed-role-list="['OWNER']"
-            :include-default-project="allowTransferToDefaultProject"
-            :selected-id="state.editingProjectId"
-            @select-project-id="
-              (projectId) => {
-                state.editingProjectId = projectId;
-              }
-            "
-          />
-        </div>
-        <SelectDatabaseLabel
-          :database="database"
-          :target-project-id="state.editingProjectId"
-          class="mt-4"
-          @next="doTransfer"
-        >
-          <template #buttons="{ next }">
-            <div
-              class="w-full pt-4 mt-6 flex justify-end border-t border-block-border"
-            >
-              <button
-                type="button"
-                class="btn-normal py-2 px-4"
-                @click.prevent="state.showTransferDatabaseModal = false"
-              >
-                {{ $t("common.cancel") }}
-              </button>
-              <!--
-                We are not allowed to transfer a db either its labels are not valid
-                or transferring into its project itself.
-              -->
-              <button
-                type="button"
-                class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-                :disabled="state.editingProjectId == database.project.id"
-                @click.prevent="next"
-              >
-                {{ $t("common.transfer") }}
-              </button>
-            </div>
-          </template>
-        </SelectDatabaseLabel>
-      </div>
-    </BBModal>
+      :database="database"
+      @cancel="state.showTransferDatabaseModal = false"
+      @updated="state.showTransferDatabaseModal = false"
+    />
+
     <BBModal
       v-if="state.showIncorrectProjectModal"
       :title="$t('common.warning')"
@@ -286,9 +226,9 @@
   >
     <div class="w-[80vw] h-full">
       <SchemaDiagram
-        :database="database"
+        :database="legacyDatabase"
         :database-metadata="
-          dbSchemaStore.getDatabaseMetadataByDatabaseId(database.id)
+          dbSchemaStore.getDatabaseMetadataByDatabaseId(Number(database.uid))
         "
       />
     </div>
@@ -296,7 +236,7 @@
 
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
-    :database-id-list="[database.id]"
+    :database-id-list="[database.uid]"
     alter-type="SINGLE_DB"
     @close="state.showSchemaEditorModal = false"
   />
@@ -309,52 +249,60 @@ import dayjs from "dayjs";
 import { useI18n } from "vue-i18n";
 import { startCase } from "lodash-es";
 
-import ProjectSelect from "@/components/ProjectSelect.vue";
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
 import DatabaseMigrationHistoryPanel from "@/components/DatabaseMigrationHistoryPanel.vue";
 import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
-import { DatabaseSettingsPanel } from "@/components/DatabaseDetail";
-import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
+import {
+  DatabaseSettingsPanel,
+  SQLEditorButtonV1,
+} from "@/components/DatabaseDetail";
+import { TransferSingleDatabase } from "@/components/TransferDatabaseForm";
 import { DatabaseLabelProps } from "@/components/DatabaseLabels";
-import { SelectDatabaseLabel } from "@/components/TransferDatabaseForm";
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
   hidePrefix,
-  allowGhostMigration,
-  isPITRDatabase,
-  isDatabaseAccessible,
-  allowUsingSchemaEditor,
-  isArchivedDatabase,
-  instanceHasBackupRestore,
-  instanceHasAlterSchema,
-  instanceSupportSlowQuery,
+  allowGhostMigrationV1,
+  isPITRDatabaseV1,
+  isArchivedDatabaseV1,
+  instanceV1HasBackupRestore,
+  instanceV1SupportSlowQuery,
   hasPermissionInProjectV1,
+  instanceV1HasAlterSchema,
+  isDatabaseV1Accessible,
+  allowUsingSchemaEditorV1,
 } from "@/utils";
 import {
   UNKNOWN_ID,
-  DEFAULT_PROJECT_ID,
   Database,
-  DatabaseLabel,
   SQLResultSet,
+  DEFAULT_PROJECT_V1_NAME,
+  ComposedDatabase,
 } from "@/types";
 import { BBTabFilterItem } from "@/bbkit/types";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
-import { SQLEditorButton } from "@/components/DatabaseDetail";
 import {
   pushNotification,
   useCurrentUserIamPolicy,
   useCurrentUserV1,
   useDatabaseStore,
+  useDatabaseV1Store,
   useDBSchemaStore,
-  useProjectV1ByUID,
+  useGracefulRequest,
   useSQLStore,
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
-import { getDatabasePathByLegacyDatabase } from "@/store/modules/v1/common";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import {
+  EnvironmentV1Name,
+  InstanceV1Name,
+  ProductionEnvironmentV1Icon,
+  ProjectV1Name,
+} from "@/components/v2";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import { State } from "@/types/proto/v1/common";
 
 type DatabaseTabItem = {
   name: string;
@@ -365,7 +313,7 @@ interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
   showSchemaEditorModal: boolean;
-  editingProjectId: string;
+  currentProjectId: string;
   selectedIndex: number;
   syncingSchema: boolean;
   showSchemaDiagram: boolean;
@@ -381,6 +329,7 @@ const props = defineProps({
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseStore();
+const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaStore();
 const sqlStore = useSQLStore();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
@@ -403,7 +352,7 @@ const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
   showSchemaEditorModal: false,
-  editingProjectId: String(UNKNOWN_ID),
+  currentProjectId: String(UNKNOWN_ID),
   selectedIndex: 0,
   syncingSchema: false,
   showSchemaDiagram: false,
@@ -412,35 +361,36 @@ const state = reactive<LocalState>({
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
-const database = computed((): Database => {
+const legacyDatabase = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
 });
-const { project: projectV1 } = useProjectV1ByUID(
-  computed(() => {
-    return String(database.value.project.id);
-  })
-);
+const database = computed(() => {
+  return databaseV1Store.getDatabaseByUID(
+    String(idFromSlug(props.databaseSlug))
+  );
+});
+const project = computed(() => database.value.projectEntity);
 
 const allowToChangeDatabase = computed(() => {
   return currentUserIamPolicy.allowToChangeDatabaseOfProject(
-    `projects/${database.value.project.resourceId}`
+    project.value.name
   );
 });
 
 const hasSchemaDiagramFeature = computed((): boolean => {
-  return instanceHasAlterSchema(database.value.instance);
+  return instanceV1HasAlterSchema(database.value.instanceEntity);
 });
 
 const accessControlPolicy = usePolicyByParentAndType(
   computed(() => ({
-    parentPath: getDatabasePathByLegacyDatabase(database.value),
+    parentPath: database.value.name,
     policyType: PolicyType.ACCESS_CONTROL,
   }))
 );
 const allowQuery = computed(() => {
   const policy = accessControlPolicy.value;
   const list = policy ? [policy] : [];
-  return isDatabaseAccessible(database.value, list, currentUserV1.value);
+  return isDatabaseV1Accessible(database.value, list, currentUserV1.value);
 });
 
 // Project can be transferred if meets either of the condition below:
@@ -448,11 +398,11 @@ const allowQuery = computed(() => {
 // - Workspace role can manage instance
 // - Project role can transfer database
 const allowTransferProject = computed(() => {
-  if (isArchivedDatabase(database.value)) {
+  if (isArchivedDatabaseV1(database.value)) {
     return false;
   }
 
-  if (database.value.project.id == DEFAULT_PROJECT_ID) {
+  if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
     return true;
   }
 
@@ -467,7 +417,7 @@ const allowTransferProject = computed(() => {
 
   if (
     hasPermissionInProjectV1(
-      projectV1.value.iamPolicy,
+      project.value.iamPolicy,
       currentUserV1.value,
       "bb.permission.project.transfer-database"
     )
@@ -478,20 +428,6 @@ const allowTransferProject = computed(() => {
   return false;
 });
 
-const allowTransferToDefaultProject = computed(() => {
-  if (database.value.project.id === DEFAULT_PROJECT_ID) {
-    return true;
-  }
-
-  // Allow to transfer a database to DEFAULT project only if the current user
-  // can manage all projects.
-  // AKA DBA or workspace owner.
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-project",
-    currentUserV1.value.userRole
-  );
-});
-
 // Database can be admined if meets either of the condition below:
 // - Workspace role can manage instance
 // - Project role can admin database
@@ -500,7 +436,7 @@ const allowTransferToDefaultProject = computed(() => {
 // - Edit database label
 // - Enable/disable backup
 const allowAdmin = computed(() => {
-  if (isArchivedDatabase(database.value)) {
+  if (isArchivedDatabaseV1(database.value)) {
     return false;
   }
 
@@ -515,7 +451,7 @@ const allowAdmin = computed(() => {
 
   if (
     hasPermissionInProjectV1(
-      projectV1.value.iamPolicy,
+      project.value.iamPolicy,
       currentUserV1.value,
       "bb.permission.project.admin-database"
     )
@@ -532,7 +468,7 @@ const allowAdmin = computed(() => {
 // The edit operation includes
 // - Take manual backup
 const allowEdit = computed(() => {
-  if (isArchivedDatabase(database.value)) {
+  if (isArchivedDatabaseV1(database.value)) {
     return false;
   }
 
@@ -547,7 +483,7 @@ const allowEdit = computed(() => {
 
   if (
     hasPermissionInProjectV1(
-      projectV1.value.iamPolicy,
+      project.value.iamPolicy,
       currentUserV1.value,
       "bb.permission.project.change-database"
     )
@@ -558,7 +494,7 @@ const allowEdit = computed(() => {
 });
 
 const allowAlterSchemaOrChangeData = computed(() => {
-  if (database.value.project.id === DEFAULT_PROJECT_ID) {
+  if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
     return false;
   }
   return allowEdit.value;
@@ -567,7 +503,7 @@ const allowAlterSchemaOrChangeData = computed(() => {
 const allowAlterSchema = computed(() => {
   return (
     allowAlterSchemaOrChangeData.value &&
-    instanceHasAlterSchema(database.value.instance)
+    instanceV1HasAlterSchema(database.value.instanceEntity)
   );
 });
 
@@ -580,10 +516,10 @@ const availableDatabaseTabItemList = computed(() => {
   const db = database.value;
   return databaseTabItemList.value.filter((item) => {
     if (item.hash === "backup-and-restore") {
-      return instanceHasBackupRestore(db.instance);
+      return instanceV1HasBackupRestore(db.instanceEntity);
     }
     if (item.hash === "slow-query") {
-      return instanceSupportSlowQuery(db.instance);
+      return instanceV1SupportSlowQuery(db.instanceEntity);
     }
     return true;
   });
@@ -596,21 +532,21 @@ const tabItemList = computed((): BBTabFilterItem[] => {
 });
 
 const tryTransferProject = () => {
-  state.editingProjectId = String(database.value.project.id);
+  state.currentProjectId = project.value.uid;
   state.showTransferDatabaseModal = true;
 };
 
 // 'normal' -> normal migration
 // 'online' -> online migration
 // false -> user clicked cancel button
-const isUsingGhostMigration = async (databaseList: Database[]) => {
-  if (database.value.project.tenantMode === "TENANT") {
+const isUsingGhostMigration = async (databaseList: ComposedDatabase[]) => {
+  if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
     // Not available for tenant mode now.
     return "normal";
   }
 
   // check if all selected databases supports gh-ost
-  if (allowGhostMigration(databaseList)) {
+  if (allowGhostMigrationV1(databaseList)) {
     // open the dialog to ask the user
     const { result, mode } = await ghostDialog.value!.open();
     if (!result) {
@@ -630,8 +566,8 @@ const createMigration = async (
   let mode: AlterMode = "normal";
   if (type === "bb.issue.database.schema.update") {
     if (
-      database.value.syncStatus === "OK" &&
-      allowUsingSchemaEditor([database.value])
+      database.value.syncState === State.ACTIVE &&
+      allowUsingSchemaEditorV1([database.value])
     ) {
       state.showSchemaEditorModal = true;
       return;
@@ -644,7 +580,7 @@ const createMigration = async (
 
   // Create a user friendly default issue name
   const issueNameParts: string[] = [];
-  issueNameParts.push(`[${database.value.name}]`);
+  issueNameParts.push(`[${database.value.databaseName}]`);
   if (mode === "online") {
     issueNameParts.push("Online schema change");
   } else {
@@ -661,8 +597,8 @@ const createMigration = async (
   const query: Record<string, any> = {
     template: type,
     name: issueNameParts.join(" "),
-    project: database.value.project.id,
-    databaseList: database.value.id,
+    project: project.value.uid,
+    databaseList: database.value.uid,
   };
   if (mode === "online") {
     query.ghost = "1";
@@ -677,29 +613,14 @@ const createMigration = async (
   });
 };
 
-const updateProject = (newProjectId: string, labels?: DatabaseLabel[]) => {
-  databaseStore
-    .transferProject({
-      database: database.value,
-      projectId: newProjectId,
-      labels,
-    })
-    .then((updatedDatabase) => {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t(
-          "database.successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name",
-          [updatedDatabase.name, updatedDatabase.project.name]
-        ),
-      });
+const updateLabels = (labels: Record<string, string>) => {
+  useGracefulRequest(async () => {
+    const databasePatch = { ...database.value };
+    databasePatch.labels = labels;
+    await databaseV1Store.updateDatabase({
+      database: databasePatch,
+      updateMask: ["labels"],
     });
-};
-
-const updateLabels = (labels: DatabaseLabel[]) => {
-  databaseStore.patchDatabaseLabels({
-    databaseId: database.value.id,
-    labels,
   });
 };
 
@@ -733,7 +654,7 @@ const selectDatabaseTabOnHash = () => {
 };
 
 const handleGotoSQLEditorFailed = () => {
-  state.editingProjectId = String(database.value.project.id);
+  state.currentProjectId = database.value.projectEntity.uid;
   state.showIncorrectProjectModal = true;
 };
 
@@ -750,15 +671,10 @@ watch(
   }
 );
 
-const doTransfer = (labels: DatabaseLabel[]) => {
-  updateProject(state.editingProjectId, labels);
-  state.showTransferDatabaseModal = false;
-};
-
 const syncDatabaseSchema = () => {
   state.syncingSchema = true;
   sqlStore
-    .syncDatabaseSchema(database.value.id)
+    .syncDatabaseSchema(Number(database.value.uid))
     .then((resultSet: SQLResultSet) => {
       state.syncingSchema = false;
       if (resultSet.error) {
@@ -767,7 +683,7 @@ const syncDatabaseSchema = () => {
           style: "CRITICAL",
           title: t(
             "db.failed-to-sync-schema-for-database-database-value-name",
-            [database.value.name]
+            [database.value.databaseName]
           ),
           description: resultSet.error,
         });
@@ -777,13 +693,13 @@ const syncDatabaseSchema = () => {
           style: "SUCCESS",
           title: t(
             "db.successfully-synced-schema-for-database-database-value-name",
-            [database.value.name]
+            [database.value.databaseName]
           ),
           description: resultSet.error,
         });
       }
       useDBSchemaStore().getOrFetchDatabaseMetadataById(
-        database.value.id,
+        Number(database.value.uid),
         true // skip cache
       );
     })

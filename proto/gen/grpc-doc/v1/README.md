@@ -363,6 +363,7 @@
     - [ListPlansResponse](#bytebase-v1-ListPlansResponse)
     - [Plan](#bytebase-v1-Plan)
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
+    - [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry)
     - [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig)
@@ -447,8 +448,15 @@
     - [SheetService](#bytebase-v1-SheetService)
   
 - [v1/sql_service.proto](#v1_sql_service-proto)
+    - [Advice](#bytebase-v1-Advice)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
     - [PrettyResponse](#bytebase-v1-PrettyResponse)
+    - [QueryRequest](#bytebase-v1-QueryRequest)
+    - [QueryResponse](#bytebase-v1-QueryResponse)
+    - [QueryResult](#bytebase-v1-QueryResult)
+    - [QueryRow](#bytebase-v1-QueryRow)
+  
+    - [Advice.Status](#bytebase-v1-Advice-Status)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -1771,7 +1779,7 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent of the change histories. Format: instances/{instance}/databases/{database} |
-| page_size | [int32](#int32) |  | Not used. The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 50 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 10 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListChangeHistories` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
@@ -1791,7 +1799,7 @@ When paginating, all other parameters provided to `ListChangeHistories` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | change_histories | [ChangeHistory](#bytebase-v1-ChangeHistory) | repeated | The list of change histories. |
-| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -2185,7 +2193,7 @@ The type of the backup.
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
-| COMPLETED | 2 |  |
+| DONE | 2 |  |
 | FAILED | 3 |  |
 
 
@@ -3218,7 +3226,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
-| data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be added. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be added. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
 
@@ -3376,7 +3384,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
-| data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be removed. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be removed. |
 
 
 
@@ -3422,7 +3430,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
-| data_sources | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
@@ -5692,11 +5700,28 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the target. Format: projects/{project}/logicalDatabases/{ldb1}. Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}. Format: instances/{xxx}/databases/{db1}. |
-| sheet | [string](#string) |  | The resource name of the sheet. Format: sheets/{sheet} |
+| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name}. Format: projects/{project}/deploymentConfig. |
+| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | type | [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
 | rollback_enabled | [bool](#bool) |  | If RollbackEnabled, build the RollbackSheetID of the task. |
+| rollback_detail | [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail) | optional |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail"></a>
+
+### Plan.ChangeDatabaseConfig.RollbackDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rollback_from_task | [string](#string) |  | rollback_from_task is the task from which the rollback SQL statement is generated for this task. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| rollback_from_review | [string](#string) |  | rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task. Format: projects/{project}/reviews/{review} |
 
 
 
@@ -5718,7 +5743,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | collation | [string](#string) |  | collation is the collation of the database. |
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
-| backup | [string](#string) |  | backup is the resource name of the backup. FIXME: backup v1 API is not ready yet, write the format here when it&#39;s ready. |
+| backup | [string](#string) |  | backup is the resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 | labels | [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
 
 
@@ -5752,7 +5777,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target to restore. Format: instances/{instance}/databases/{database} |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) | optional | create_database_config is present if the user wants to restore to a new database. |
-| backup | [string](#string) |  | FIXME: format TBD Restore from a backup. |
+| backup | [string](#string) |  |  |
 | point_in_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | After the PITR operations, the database will be recovered to the state at this time. |
 
 
@@ -5807,7 +5832,7 @@ FIXME(d/xz): support spec with deployment config
 | type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
 | status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
 | target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | detail | [string](#string) |  |  |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
 
@@ -5910,7 +5935,7 @@ FIXME(d/xz): support spec with deployment config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| backup | [string](#string) |  | The resource name of the backup. FIXME: format TBD. |
+| backup | [string](#string) |  | The resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 
 
 
@@ -5928,7 +5953,7 @@ FIXME(d/xz): support spec with deployment config
 | project | [string](#string) |  | The project owning the database. Format: projects/{project} |
 | database | [string](#string) |  | database name |
 | table | [string](#string) |  | table name |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | character_set | [string](#string) |  |  |
 | collection | [string](#string) |  |  |
 | labels | [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry) | repeated |  |
@@ -5962,7 +5987,7 @@ FIXME(d/xz): support spec with deployment config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | schema_version | [string](#string) |  |  |
 | rollback_enabled | [bool](#bool) |  | Build the rollback SQL if rollback_enabled. |
 | rollback_sql_status | [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus) |  | The status of the rollback SQL generation. |
@@ -5974,7 +5999,7 @@ FIXME(d/xz): support spec with deployment config
 | binlog_position_start | [int64](#int64) |  |  |
 | binlog_position_end | [int64](#int64) |  |  |
 | rollback_error | [string](#string) |  |  |
-| rollback_sheet | [string](#string) |  | rollback_sheet is the resource name of the sheet that stores the generated rollback SQL statement. Format: sheets/{sheet} |
+| rollback_sheet | [string](#string) |  | rollback_sheet is the resource name of the sheet that stores the generated rollback SQL statement. Format: projects/{project}/sheets/{sheet} |
 | rollback_from_review | [string](#string) |  | rollback_from_review is the resource name of the review that the rollback SQL statement is generated from. Format: projects/{project}/reviews/{review} |
 | rollback_from_task | [string](#string) |  | rollback_from_task is the resource name of the task that the rollback SQL statement is generated from. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 
@@ -5992,7 +6017,7 @@ FIXME(d/xz): support spec with deployment config
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | Target is only used when doing restore to a new database now. It is empty for the case of in-place restore. Target {instance} must be within the same environment as the instance of the original database. {database} is the target database name. Format: instances/{instance}/databases/database |
-| backup | [string](#string) |  | Only used when doing restore full backup only. |
+| backup | [string](#string) |  | Only used when doing restore full backup only. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 | point_in_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | After the PITR operations, the database will be recovered to the state at this time. |
 
 
@@ -6023,7 +6048,7 @@ FIXME(d/xz): support spec with deployment config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Format: sheets/{sheet} |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | schema_version | [string](#string) |  |  |
 
 
@@ -6944,6 +6969,26 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
 
+<a name="bytebase-v1-Advice"></a>
+
+### Advice
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [Advice.Status](#bytebase-v1-Advice-Status) |  | The advice status. |
+| code | [int32](#int32) |  | The advice code. |
+| title | [string](#string) |  | The advice title. |
+| content | [string](#string) |  | The advice content. |
+| line | [int32](#int32) |  | The advice line number in the SQL statement. |
+| detail | [string](#string) |  | The advice detail. |
+
+
+
+
+
+
 <a name="bytebase-v1-PrettyRequest"></a>
 
 ### PrettyRequest
@@ -6976,7 +7021,89 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
 
+
+<a name="bytebase-v1-QueryRequest"></a>
+
+### QueryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance} |
+| connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
+| statement | [string](#string) |  | The SQL statement to execute. |
+| limit | [int32](#int32) |  | The maximum number of rows to return. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResponse"></a>
+
+### QueryResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
+| advices | [Advice](#bytebase-v1-Advice) | repeated | The query advices. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult"></a>
+
+### QueryResult
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| column_names | [string](#string) | repeated | Column names of the query result. |
+| column_type_names | [string](#string) | repeated | Column types of the query result. |
+| rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
+| masked | [bool](#bool) | repeated | Columns are masked or not. |
+| error | [string](#string) |  | The error message if the query failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryRow"></a>
+
+### QueryRow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| values | [string](#string) | repeated | Row values of the query result. |
+
+
+
+
+
  
+
+
+<a name="bytebase-v1-Advice-Status"></a>
+
+### Advice.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified. |
+| SUCCESS | 1 |  |
+| WARNING | 2 |  |
+| ERROR | 3 |  |
+
 
  
 
@@ -6991,6 +7118,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
+| Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
 
  
 

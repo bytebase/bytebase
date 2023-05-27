@@ -72,7 +72,7 @@
             <label
               class="border-control-border relative border p-3 flex flex-col gap-y-2 md:flex-row md:pl-4 md:pr-6"
               :class="
-                database.syncStatus == 'OK'
+                database.syncState === State.ACTIVE
                   ? 'cursor-pointer'
                   : 'cursor-not-allowed'
               "
@@ -83,15 +83,15 @@
                   class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
                   :checked="
                     isDatabaseSelectedForEnvironment(
-                      database.id,
+                      database.uid,
                       environment.uid
                     )
                   "
-                  @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.uid, e.target.checked)"
+                  @input="(e: any) => toggleDatabaseUidForEnvironment(database.uid, environment.uid, e.target.checked)"
                 />
                 <span
                   class="font-medium ml-2 text-main"
-                  :class="database.syncStatus !== 'OK' && 'opacity-40'"
+                  :class="database.syncState !== State.ACTIVE && 'opacity-40'"
                   >{{ database.name }}</span
                 >
               </div>
@@ -100,7 +100,7 @@
               >
                 <InstanceEngineIcon :instance="database.instance" />
                 <span class="flex-1 whitespace-pre-wrap">
-                  {{ instanceName(database.instance) }}
+                  {{ instanceV1Name(database.instanceEntity) }}
                 </span>
               </div>
             </label>
@@ -127,21 +127,23 @@
 import { PropType, computed } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
 
-import { Database, DatabaseId } from "../../types";
+import { ComposedDatabase } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from "@/components/v2";
 import { Project } from "@/types/proto/v1/project_service";
+import { State } from "@/types/proto/v1/common";
+import { instanceV1Name } from "@/utils";
 
 export type AlterType = "SINGLE_DB" | "MULTI_DB" | "TENANT";
 
-export type State = {
+export type ProjectStandardViewState = {
   alterType: AlterType;
-  selectedDatabaseIdListForEnvironment: Map<string, DatabaseId[]>;
+  selectedDatabaseUidListForEnvironment: Map<string, string[]>;
 };
 
 const props = defineProps({
   state: {
-    type: Object as PropType<State>,
+    type: Object as PropType<ProjectStandardViewState>,
     required: true,
   },
   project: {
@@ -149,7 +151,7 @@ const props = defineProps({
     default: undefined,
   },
   databaseList: {
-    type: Array as PropType<Database[]>,
+    type: Array as PropType<ComposedDatabase[]>,
     required: true,
   },
   environmentList: {
@@ -158,13 +160,13 @@ const props = defineProps({
   },
 });
 const emit = defineEmits<{
-  (event: "select-database", db: Database): void;
+  (event: "select-database", db: ComposedDatabase): void;
 }>();
 
 const databaseListGroupByEnvironment = computed(() => {
   const listByEnv = props.environmentList.map((environment) => {
     const databaseList = props.databaseList.filter(
-      (db) => String(db.instance.environment.id) === environment.uid
+      (db) => db.instanceEntity.environment === environment.name
     );
     return {
       environment,
@@ -175,12 +177,12 @@ const databaseListGroupByEnvironment = computed(() => {
   return listByEnv.filter((group) => group.databaseList.length > 0);
 });
 
-const toggleDatabaseIdForEnvironment = (
-  databaseId: DatabaseId,
+const toggleDatabaseUidForEnvironment = (
+  databaseId: string,
   environmentId: string,
   selected: boolean
 ) => {
-  const map = props.state.selectedDatabaseIdListForEnvironment;
+  const map = props.state.selectedDatabaseUidListForEnvironment;
   const list = map.get(environmentId) || [];
   const index = list.indexOf(databaseId);
   if (selected) {
@@ -203,23 +205,23 @@ const toggleDatabaseIdForEnvironment = (
 };
 
 const isDatabaseSelectedForEnvironment = (
-  databaseId: DatabaseId,
+  databaseId: string,
   environmentId: string
 ) => {
-  const map = props.state.selectedDatabaseIdListForEnvironment;
+  const map = props.state.selectedDatabaseUidListForEnvironment;
   const list = map.get(environmentId) || [];
   return list.includes(databaseId);
 };
 
 const getAllSelectionStateForEnvironment = (
   environment: Environment,
-  databaseList: Database[]
+  databaseList: ComposedDatabase[]
 ): { checked: boolean; indeterminate: boolean } => {
   const set = new Set(
-    props.state.selectedDatabaseIdListForEnvironment.get(environment.uid) ?? []
+    props.state.selectedDatabaseUidListForEnvironment.get(environment.uid) ?? []
   );
-  const checked = databaseList.every((db) => set.has(db.id));
-  const indeterminate = !checked && databaseList.some((db) => set.has(db.id));
+  const checked = databaseList.every((db) => set.has(db.uid));
+  const indeterminate = !checked && databaseList.some((db) => set.has(db.uid));
 
   return {
     checked,
@@ -229,26 +231,26 @@ const getAllSelectionStateForEnvironment = (
 
 const toggleAllDatabasesSelectionForEnvironment = (
   environment: Environment,
-  databaseList: Database[],
+  databaseList: ComposedDatabase[],
   on: boolean
 ) => {
   databaseList.forEach((db) =>
-    toggleDatabaseIdForEnvironment(db.id, environment.uid, on)
+    toggleDatabaseUidForEnvironment(db.uid, environment.uid, on)
   );
 };
 
-const selectDatabase = (db: Database) => {
+const selectDatabase = (db: ComposedDatabase) => {
   emit("select-database", db);
 };
 
 const getSelectionStateSummaryForEnvironment = (
   environment: Environment,
-  databaseList: Database[]
+  databaseList: ComposedDatabase[]
 ) => {
   const set = new Set(
-    props.state.selectedDatabaseIdListForEnvironment.get(environment.uid)
+    props.state.selectedDatabaseUidListForEnvironment.get(environment.uid)
   );
-  const selected = databaseList.filter((db) => set.has(db.id)).length;
+  const selected = databaseList.filter((db) => set.has(db.uid)).length;
   const total = databaseList.length;
 
   return { selected, total };

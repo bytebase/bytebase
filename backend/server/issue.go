@@ -732,7 +732,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}
 
 	if c.BackupID != 0 {
-		backup, err := s.store.GetBackupV2(ctx, c.BackupID)
+		backup, err := s.store.GetBackupByUID(ctx, c.BackupID)
 		if err != nil {
 			return nil, errors.Errorf("failed to find backup %v", c.BackupID)
 		}

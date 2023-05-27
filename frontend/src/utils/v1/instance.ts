@@ -1,8 +1,9 @@
 import slug from "slug";
+import { keyBy } from "lodash-es";
+
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { keyBy } from "lodash-es";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");
@@ -84,24 +85,24 @@ export const supportedEngineV1List = () => {
 //   return RE.test(host);
 // };
 
-// export const instanceHasAlterSchema = (
-//   instanceOrEngine: Instance | EngineType
-// ): boolean => {
-//   const engine = engineOfInstance(instanceOrEngine);
-//   if (engine === "REDIS") return false;
-//   return true;
-// };
+export const instanceV1HasAlterSchema = (
+  instanceOrEngine: Instance | Engine
+): boolean => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  if (engine === Engine.REDIS) return false;
+  return true;
+};
 
-// export const instanceHasBackupRestore = (
-//   instanceOrEngine: Instance | EngineType
-// ): boolean => {
-//   const engine = engineOfInstance(instanceOrEngine);
-//   if (engine === "MONGODB") return false;
-//   if (engine === "REDIS") return false;
-//   if (engine === "SPANNER") return false;
-//   if (engine === "REDSHIFT") return false;
-//   return true;
-// };
+export const instanceV1HasBackupRestore = (
+  instanceOrEngine: Instance | Engine
+): boolean => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  if (engine === Engine.MONGODB) return false;
+  if (engine === Engine.REDIS) return false;
+  if (engine === Engine.SPANNER) return false;
+  if (engine === Engine.REDSHIFT) return false;
+  return true;
+};
 
 // export const instanceHasReadonlyMode = (
 //   instanceOrEngine: Instance | EngineType
@@ -160,19 +161,19 @@ export const instanceV1HasSSH = (
   ].includes(engine);
 };
 
-// export const instanceHasCollationAndCharacterSet = (
-//   instanceOrEngine: Instance | EngineType
-// ) => {
-//   const engine = engineOfInstance(instanceOrEngine);
+export const instanceV1HasCollationAndCharacterSet = (
+  instanceOrEngine: Instance | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
 
-//   const excludedList: EngineType[] = [
-//     "MONGODB",
-//     "CLICKHOUSE",
-//     "SNOWFLAKE",
-//     "REDSHIFT",
-//   ];
-//   return !excludedList.includes(engine);
-// };
+  const excludedList: Engine[] = [
+    Engine.MONGODB,
+    Engine.CLICKHOUSE,
+    Engine.SNOWFLAKE,
+    Engine.REDSHIFT,
+  ];
+  return !excludedList.includes(engine);
+};
 
 export const engineOfInstanceV1 = (instanceOrEngine: Instance | Engine) => {
   if (typeof instanceOrEngine === "number") {

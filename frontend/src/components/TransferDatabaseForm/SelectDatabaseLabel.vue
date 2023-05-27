@@ -2,28 +2,24 @@
   <div
     v-if="targetProject.tenantMode === TenantMode.TENANT_MODE_ENABLED"
     class="space-y-4 flex flex-col justify-center items-center"
-    v-bind="$attrs"
   >
-    <div v-for="label in PRESET_LABEL_KEYS" :key="label" class="w-64">
+    <div v-for="key in PRESET_LABEL_KEYS" :key="key" class="w-64">
       <label class="textlabel capitalize">
-        {{ hidePrefix(label) }}
-        <span v-if="isRequiredLabel(label)" style="color: red">*</span>
+        {{ hidePrefix(key) }}
+        <span v-if="isRequiredLabel(key)" style="color: red">*</span>
       </label>
 
       <div class="flex flex-col space-y-1 w-64 mt-1">
-        <BBTextField
-          :value="getLabelValue(label)"
-          :placeholder="getLabelPlaceholder(label)"
-          class="textfield"
-          @input="
-            setLabelValue(label, ($event.target as HTMLInputElement).value)
-          "
+        <NInput
+          :value="getLabelValue(key)"
+          :placeholder="getLabelPlaceholder(key)"
+          @input="setLabelValue(key, $event)"
         />
       </div>
 
-      <div v-if="isParsedLabel(label)" class="mt-2 textinfolabel">
+      <div v-if="isParsedLabel(key)" class="mt-2 textinfolabel">
         <i18n-t keypath="label.parsed-from-template">
-          <template #name>{{ database.name }}</template>
+          <template #name>{{ database.databaseName }}</template>
           <template #template>
             <code class="text-xs font-mono bg-control-bg">
               {{ targetProject.dbNameTemplate }}
@@ -33,8 +29,6 @@
       </div>
     </div>
   </div>
-
-  <slot name="buttons" :next="next"></slot>
 </template>
 
 <script lang="ts">
@@ -44,15 +38,12 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { computed, reactive, toRef, watch } from "vue";
-import { capitalize, cloneDeep } from "lodash-es";
+import { computed, toRef, watch } from "vue";
+import { capitalize } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import type {
-  Database,
-  DatabaseLabel,
-  LabelKeyType,
-  LabelValueType,
-} from "@/types";
+import { NInput } from "naive-ui";
+
+import type { ComposedDatabase } from "@/types";
 import {
   buildDatabaseNameRegExpByTemplate,
   hidePrefix,
@@ -64,17 +55,13 @@ import { useProjectV1ByUID } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
 
 const props = defineProps<{
-  database: Database;
+  database: ComposedDatabase;
+  labels: Record<string, string>;
   targetProjectId: string;
 }>();
-
 const emit = defineEmits<{
-  (event: "next", labelList: DatabaseLabel[]): void;
+  (event: "update:labels", labels: Record<string, string>): void;
 }>();
-
-const state = reactive({
-  databaseLabelList: cloneDeep(props.database.labels),
-});
 
 const { t } = useI18n();
 
@@ -97,44 +84,47 @@ const dbNameMatchesTemplate = computed((): boolean => {
     return true;
   }
   const regex = buildDatabaseNameRegExpByTemplate(project.dbNameTemplate);
-  return regex.test(props.database.name);
+  return regex.test(props.database.databaseName);
 });
 
-const isRequiredLabel = (key: LabelKeyType): boolean => {
+const isRequiredLabel = (key: string): boolean => {
   return requiredLabelList.value.includes(key);
 };
 
-const isParsedLabel = (key: LabelKeyType): boolean => {
-  return labelListParsedFromTemplate.value.some((label) => label.key === key);
+const isParsedLabel = (key: string): boolean => {
+  const parsed = labelsParsedFromTemplate.value;
+  if (!parsed) return false;
+  return key in parsed;
 };
 
-const labelListParsedFromTemplate = computed((): DatabaseLabel[] => {
-  if (!dbNameMatchesTemplate.value) return [];
+const labelsParsedFromTemplate = computed(() => {
+  if (!dbNameMatchesTemplate.value) return undefined;
 
   const regex = buildDatabaseNameRegExpByTemplate(
     targetProject.value.dbNameTemplate
   );
   const match = props.database.name.match(regex);
-  if (!match) return [];
+  if (!match) return undefined;
 
-  const parsedLabelList: DatabaseLabel[] = [];
+  const parsedLabelList: Record<string, string> = {};
   PRESET_LABEL_KEY_PLACEHOLDERS.forEach(([placeholder, key]) => {
     const value = match.groups?.[placeholder];
     if (value) {
-      parsedLabelList.push({ key, value });
+      parsedLabelList[key] = value;
     }
   });
 
   return parsedLabelList;
 });
 
-watch(labelListParsedFromTemplate, (list) => {
-  list.forEach((label) => {
-    setLabelValue(label.key, label.value);
-  });
+watch(labelsParsedFromTemplate, (labels) => {
+  if (!labels) return;
+  for (const key in labels) {
+    setLabelValue(key, labels[key]);
+  }
 });
 
-const getLabelPlaceholder = (key: LabelKeyType): string => {
+const getLabelPlaceholder = (key: string): string => {
   // provide "Input Tenant" if Tenant is optional
   // provide "Input {{TENANT}}" if Tenant is required in the template
   key = isRequiredLabel(key)
@@ -143,32 +133,17 @@ const getLabelPlaceholder = (key: LabelKeyType): string => {
   return t("create-db.input-label-value", { key });
 };
 
-const getLabelValue = (key: LabelKeyType): LabelValueType | undefined => {
-  return (
-    state.databaseLabelList.find((label) => label.key === key)?.value || ""
-  );
+const getLabelValue = (key: string) => {
+  return props.labels[key] ?? "";
 };
 
-const setLabelValue = (key: LabelKeyType, value: LabelValueType) => {
-  const label = state.databaseLabelList.find((label) => label.key === key);
-  if (label) {
-    label.value = value;
+const setLabelValue = (key: string, value: string) => {
+  const labels = { ...props.labels };
+  if (value) {
+    labels[key] = value;
   } else {
-    state.databaseLabelList.push({ key, value });
+    delete labels[key];
   }
-  state.databaseLabelList = state.databaseLabelList.filter(
-    (label) => !!label.value
-  );
-};
-
-watch(
-  () => props.database,
-  (db) => {
-    state.databaseLabelList = cloneDeep(db.labels);
-  }
-);
-
-const next = () => {
-  emit("next", cloneDeep(state.databaseLabelList));
+  emit("update:labels", labels);
 };
 </script>

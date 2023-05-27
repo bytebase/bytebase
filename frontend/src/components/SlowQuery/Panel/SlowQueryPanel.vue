@@ -44,11 +44,10 @@ import { computed, shallowRef, watch } from "vue";
 import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
-import { ComposedSlowQueryLog, UNKNOWN_ID } from "@/types";
+import { ComposedSlowQueryLog } from "@/types";
 import {
   pushNotification,
   useGracefulRequest,
-  useInstanceStore,
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
@@ -61,6 +60,7 @@ import {
 import LogFilter from "./LogFilter.vue";
 import LogTable from "./LogTable.vue";
 import DetailPanel from "./DetailPanel.vue";
+import { extractInstanceResourceName } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -113,19 +113,15 @@ const syncNow = async () => {
   syncing.value = true;
   try {
     await useGracefulRequest(async () => {
-      const instanceStore = useInstanceStore();
       const policyList = await useSlowQueryPolicyStore().fetchPolicyList();
       const requestList = policyList
         .filter((policy) => {
           return policy.slowQueryPolicy?.active;
         })
         .map(async (policy) => {
-          const instanceId = policy.resourceUid;
-          const instance = await instanceStore.getOrFetchInstanceById(
-            Number(instanceId)
+          return slowQueryStore.syncSlowQueriesByInstance(
+            `instances/${extractInstanceResourceName(policy.name)}`
           );
-          if (instance.id === UNKNOWN_ID) return;
-          return slowQueryStore.syncSlowQueriesByInstance(instance);
         });
       await Promise.all(requestList);
       pushNotification({

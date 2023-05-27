@@ -12,7 +12,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -35,16 +34,21 @@ func TestArchiveProject(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironmentUID,
-		Name:          "test",
-		Engine:        db.SQLite,
-		Host:          instanceDir,
+	// Add an instance.
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       "test",
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
 	t.Run("ArchiveProjectWithDatbase", func(t *testing.T) {
@@ -71,7 +75,7 @@ func TestArchiveProject(t *testing.T) {
 
 		databaseName := "fakedb"
 		createDatabaseCtx := &api.CreateDatabaseContext{
-			InstanceID:   instance.ID,
+			InstanceID:   instanceUID,
 			DatabaseName: databaseName,
 			Labels:       "",
 			CharacterSet: "utf8mb4",

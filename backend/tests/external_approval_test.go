@@ -94,17 +94,21 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	// Add an instance.
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironmentUID,
-		Name:          instanceName,
-		Engine:        db.SQLite,
-		Host:          instanceDir,
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       instanceName,
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
 	// Expecting project to have no database.
@@ -115,7 +119,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	a.Zero(len(databases))
 	// Expecting instance to have no database.
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instance.ID,
+		InstanceID: &instanceUID,
 	})
 	a.NoError(err)
 	a.Zero(len(databases))
@@ -132,7 +136,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	a.NoError(err)
 	a.Equal(1, len(databases))
 	database := databases[0]
-	a.Equal(instance.ID, database.Instance.ID)
+	a.Equal(instanceUID, database.Instance.ID)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectUID,
@@ -281,17 +285,21 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	// Add an instance.
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironmentUID,
-		Name:          instanceName,
-		Engine:        db.SQLite,
-		Host:          instanceDir,
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       instanceName,
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
 	// Expecting project to have no database.
@@ -302,7 +310,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	a.Zero(len(databases))
 	// Expecting instance to have no database.
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instance.ID,
+		InstanceID: &instanceUID,
 	})
 	a.NoError(err)
 	a.Zero(len(databases))
@@ -319,7 +327,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	a.NoError(err)
 	a.Equal(1, len(databases))
 	database := databases[0]
-	a.Equal(instance.ID, database.Instance.ID)
+	a.Equal(instanceUID, database.Instance.ID)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectUID,
