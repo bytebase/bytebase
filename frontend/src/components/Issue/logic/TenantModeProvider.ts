@@ -2,9 +2,10 @@ import { computed, defineComponent } from "vue";
 import { cloneDeep, head } from "lodash-es";
 import {
   useDatabaseStore,
-  useSheetStore,
+  useSheetV1Store,
+  useProjectV1Store,
   useTaskStore,
-  useSheetById,
+  useSheetStatementByUid,
 } from "@/store";
 import {
   Issue,
@@ -25,6 +26,12 @@ import {
 } from "./common";
 import { provideIssueLogic, useIssueLogic } from "./index";
 import { getBacktracePayloadWithIssue, sheetIdOfTask } from "@/utils";
+import { getProjectPathByLegacyProject } from "@/store/modules/v1/common";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 
 export default defineComponent({
   name: "TenantModeProvider",
@@ -32,7 +39,8 @@ export default defineComponent({
     const { create, issue, selectedTask, createIssue, onStatusChanged } =
       useIssueLogic();
     const databaseStore = useDatabaseStore();
-    const sheetStore = useSheetStore();
+    const sheetV1Store = useSheetV1Store();
+    const projectV1Store = useProjectV1Store();
     const taskStore = useTaskStore();
 
     const allowEditStatement = computed(() => {
@@ -55,8 +63,9 @@ export default defineComponent({
         const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
         const selectedTaskSheetId = sheetIdOfTask(selectedTask.value as Task);
         return (
-          useSheetById(selectedTaskSheetId || payload.sheetId || UNKNOWN_ID)
-            .value?.statement || ""
+          useSheetStatementByUid(
+            selectedTaskSheetId || payload.sheetId || UNKNOWN_ID
+          ).value || ""
         );
       }
     });
@@ -77,15 +86,20 @@ export default defineComponent({
         );
       } else {
         const issueEntity = issue.value as Issue;
-        const sheet = await sheetStore.createSheet({
-          projectId: issueEntity.project.id,
-          name: `Sheet for issue #${issueEntity.id}`,
-          statement: newStatement,
-          visibility: "PROJECT",
-          source: "BYTEBASE_ARTIFACT",
-          payload: getBacktracePayloadWithIssue(issue.value as Issue),
-        });
-        updateSheetId(sheet.id);
+        const sheet = await sheetV1Store.createSheet(
+          getProjectPathByLegacyProject(issueEntity.project),
+          {
+            title: `Sheet for issue #${issueEntity.id}`,
+            content: new TextEncoder().encode(newStatement),
+            visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+            source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+            type: Sheet_Type.TYPE_SQL,
+            payload: JSON.stringify(
+              getBacktracePayloadWithIssue(issue.value as Issue)
+            ),
+          }
+        );
+        updateSheetId(sheetV1Store.getSheetUid(sheet.name));
       }
     };
 
@@ -140,16 +154,19 @@ export default defineComponent({
       const db = databaseStore.getDatabaseById(detail.databaseId!);
       if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
         const statement = maybeFormatStatementOnSave(detail.statement, db);
-        const sheet = await useSheetStore().createSheet({
-          projectId: issueCreate.projectId,
-          name: issueCreate.name + " - " + db.name,
-          statement: statement,
-          visibility: "PROJECT",
-          source: "BYTEBASE_ARTIFACT",
-          payload: {},
+        const project = await projectV1Store.getOrFetchProjectByUID(
+          `${issueCreate.projectId}`
+        );
+        const sheet = await sheetV1Store.createSheet(project.name, {
+          title: issueCreate.name + " - " + db.name,
+          content: new TextEncoder().encode(statement),
+          visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+          source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+          type: Sheet_Type.TYPE_SQL,
+          payload: "{}",
         });
         detail.statement = "";
-        detail.sheetId = sheet.id;
+        detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
       }
       for (const detailItem of context.detailList) {
         detailItem.statement = "";

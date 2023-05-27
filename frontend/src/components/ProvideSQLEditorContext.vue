@@ -233,7 +233,7 @@ const prepareSheet = async () => {
 
     tabStore.updateCurrentTab({
       sheetName,
-      name: sheet.name,
+      name: sheet.title,
       statement: new TextDecoder().decode(sheet.content),
       isSaved: true,
       connection: {

@@ -524,7 +524,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerVCSRoutes(apiGroup)
 	s.registerPlanRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
-	s.registerSheetOrganizerRoutes(apiGroup)
 	s.registerAnomalyRoutes(apiGroup)
 
 	// Register healthz endpoint.

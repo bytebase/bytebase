@@ -2017,6 +2017,9 @@
     "actions": {
       "sync-from-vcs": "Sync SQL scripts from VCS"
     },
+    "notifications": {
+      "duplicate-success": "Successfully duplicate to \"My sheets\""
+    },
     "hint-tips": {
       "confirm-to-sync-sheet": "Confirm to sync sheets?",
       "confirm-to-delete-this-sheet": "Confirm to delete this sheet?",
