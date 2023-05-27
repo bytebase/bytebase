@@ -60,7 +60,7 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, resourceID string) erro
 	return nil
 }
 
-// ListDatabaseGroup lists database groups.
+// ListDatabaseGroups lists database groups.
 func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -106,7 +106,7 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 	return databaseGroups[0], nil
 }
 
-func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
+func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
 	where, args := []string{}, []any{}
 	if v := find.ProjectResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_resource_id = $%d", len(args)+1)), append(args, *v)
@@ -128,12 +128,6 @@ func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDat
 	FROM db_group %s ORDER BY id DESC;`, strings.Join(where, " AND "))
 
 	var databaseGroups []*DatabaseGroupMessage
-
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
 
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
