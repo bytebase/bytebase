@@ -77,6 +77,14 @@ func getProjectID(name string) (string, error) {
 	return tokens[0], nil
 }
 
+func getProjectIDDatabaseGroupID(name string) (string, string, error) {
+	tokens, err := getNameParentTokens(name, databaseGroupNamePrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
 func getProjectIDWebhookID(name string) (string, string, error) {
 	tokens, err := getNameParentTokens(name, projectNamePrefix, webhookIDPrefix)
 	if err != nil {
