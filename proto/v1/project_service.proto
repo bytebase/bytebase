@@ -124,6 +124,16 @@ service ProjectService {
     option (google.api.http) = {get: "/v1/{project=projects/*}/gitOpsInfo"};
   }
 
+  rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/databaseGroups"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc GetDatabaseGroup(GetDatabaseGroupRequest) returns (DatabaseGroup) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/databaseGroups/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
   rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/databaseGroups"
@@ -579,6 +589,40 @@ message Activity {
     // TYPE_DATABASE_RECOVERY_PITR_DONE represents the database recovery to a point in time is done.
     TYPE_DATABASE_RECOVERY_PITR_DONE = 20;
   }
+}
+
+message ListDatabaseGroupsRequest {
+  // The parent resource whose database groups are to be listed.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Not used. The maximum number of anomalies to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 anomalies will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used. A page token, received from a previous `ListDatabaseGroups` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListDatabaseGroups` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListDatabaseGroupsResponse {
+  // database_groups is the list of anomalies.
+  repeated DatabaseGroup database_groups = 1;
+
+  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message GetDatabaseGroupRequest {
+  // The name of the database group to retrieve.
+  // Format: projects/{project}/databaseGroups/{databaseGroup}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message CreateDatabaseGroupRequest {
