@@ -80,11 +80,22 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("instance with resource id %q not found", instanceResourceID))
 		}
 
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			ProjectID:    &projectResourceID,
-			InstanceID:   &instanceResourceID,
-			DatabaseName: &databaseName,
-		})
+		find := &store.FindDatabaseMessage{
+			ProjectID:  &projectResourceID,
+			InstanceID: &instanceResourceID,
+		}
+		// It's a chaos. We return /instance/{resource id}/databases/{uid} database in find sheet request,
+		// but the frontend use both /instance/{resource id}/databases/{uid} and /instance/{resource id}/databases/{name}
+		// For database v1 api, we should only use the /instance/{resource id}/databases/{name}
+		// We need to remove legacy code after the migration.
+		dbUID, isNumber := isNumber(databaseName)
+		if isNumber {
+			find.UID = &dbUID
+		} else {
+			find.DatabaseName = &databaseName
+		}
+
+		database, err := s.store.GetDatabaseV2(ctx, find)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get database with name %q, err: %s", databaseName, err.Error()))
 		}
@@ -658,7 +669,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		if database == nil {
 			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("database with id %d not found", *sheet.DatabaseID))
 		}
-		databaseParent = fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName)
+		databaseParent = fmt.Sprintf("%s%s/%s%d", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.UID)
 	}
 
 	visibility := v1pb.Sheet_VISIBILITY_UNSPECIFIED
