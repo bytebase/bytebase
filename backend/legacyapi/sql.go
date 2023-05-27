@@ -1,39 +1,8 @@
 package api
 
 import (
-	"context"
-
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 )
-
-// ConnectionInfo is the API message for connection infos.
-type ConnectionInfo struct {
-	Engine           db.Type `jsonapi:"attr,engine"`
-	Host             string  `jsonapi:"attr,host"`
-	Port             string  `jsonapi:"attr,port"`
-	Username         string  `jsonapi:"attr,username"`
-	Password         string  `jsonapi:"attr,password"`
-	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
-	Database         string  `jsonapi:"attr,database"`
-	InstanceID       *int    `jsonapi:"attr,instanceId"`
-	SslCa            *string `jsonapi:"attr,sslCa"`
-	SslCert          *string `jsonapi:"attr,sslCert"`
-	SslKey           *string `jsonapi:"attr,sslKey"`
-	// SRV is used for MongoDB only.
-	SRV bool `jsonapi:"attr,srv"`
-	// AuthenticationDatabase is used for MongoDB only.
-	AuthenticationDatabase string `json:"authenticationDatabase" jsonapi:"attr,authenticationDatabase"`
-	SID                    string `json:"sid" jsonapi:"attr,sid"`
-	ServiceName            string `json:"serviceName" jsonapi:"attr,serviceName"`
-	// SSH configuration.
-	UseSSHConfig  bool   `jsonapi:"attr,useSSHConfig"`
-	SSHHost       string `json:"sshHost" jsonapi:"attr,sshHost"`
-	SSHPort       string `json:"sshPort" jsonapi:"attr,sshPort"`
-	SSHUser       string `json:"sshUser" jsonapi:"attr,sshUser"`
-	SSHPassword   string `json:"sshPassword" jsonapi:"attr,sshPassword"`
-	SSHPrivateKey string `json:"sshPrivateKey" jsonapi:"attr,sshPrivateKey"`
-}
 
 // SQLSyncSchema is the API message for sync schemas.
 type SQLSyncSchema struct {
@@ -74,9 +43,4 @@ type SQLResultSet struct {
 	Error string `jsonapi:"attr,error"`
 	// A list of SQL check advice.
 	AdviceList []advisor.Advice `jsonapi:"attr,adviceList"`
-}
-
-// SQLService is the service for SQL.
-type SQLService interface {
-	Ping(ctx context.Context, config *ConnectionInfo) (*SQLResultSet, error)
 }
