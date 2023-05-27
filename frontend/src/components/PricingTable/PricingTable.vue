@@ -307,7 +307,7 @@ const state = reactive<LocalState>({
   instanceCount:
     subscriptionStore.subscription?.instanceCount ?? minimumInstanceCount,
 });
-const enterprisePlanFormLink = "https://airtable.com/shrS2Ot5BfGExwemj";
+const enterprisePlanFormLink = "https://www.bytebase.com/contact-us";
 
 watch(
   () => subscriptionStore.subscription,
