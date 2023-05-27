@@ -701,7 +701,9 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 	if project.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
-	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, databaseGroupResourceID)
+	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ResourceID: &databaseGroupResourceID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -751,7 +753,9 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 	if project.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
-	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, databaseGroupResourceID)
+	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ResourceID: &databaseGroupResourceID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -764,6 +768,69 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
+}
+
+// ListDatabaseGroups lists database groups.
+func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.ListDatabaseGroupsRequest) (*v1pb.ListDatabaseGroupsResponse, error) {
+	projectResourceID, err := getProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
+	}
+	databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{
+		ProjectResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	var apiDatabaseGroups []*v1pb.DatabaseGroup
+	for _, databaseGroup := range databaseGroups {
+		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroup(databaseGroup))
+	}
+	return &v1pb.ListDatabaseGroupsResponse{
+		DatabaseGroups: apiDatabaseGroups,
+	}, nil
+}
+
+// GetDatabaseGroup gets a database group.
+func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.GetDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
+	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
+	}
+	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ResourceID: &databaseGroupResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if databaseGroup == nil {
+		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
+	}
+	return convertStoreToAPIDatabaseGroup(databaseGroup), nil
 }
 
 func convertStoreToAPIDatabaseGroup(databaseGroup *store.DatabaseGroupMessage) *v1pb.DatabaseGroup {
