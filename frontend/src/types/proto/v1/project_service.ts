@@ -6136,7 +6136,7 @@ export const ProjectServiceDefinition = {
       name: "CreateSchemaGroup",
       requestType: CreateSchemaGroupRequest,
       requestStream: false,
-      responseType: DatabaseGroup,
+      responseType: SchemaGroup,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -6246,7 +6246,7 @@ export const ProjectServiceDefinition = {
       name: "UpdateSchemaGroup",
       requestType: UpdateSchemaGroupRequest,
       requestStream: false,
-      responseType: DatabaseGroup,
+      responseType: SchemaGroup,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -6522,11 +6522,11 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
   createSchemaGroup(
     request: CreateSchemaGroupRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseGroup>>;
+  ): Promise<DeepPartial<SchemaGroup>>;
   updateSchemaGroup(
     request: UpdateSchemaGroupRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<DatabaseGroup>>;
+  ): Promise<DeepPartial<SchemaGroup>>;
   deleteSchemaGroup(
     request: DeleteSchemaGroupRequest,
     context: CallContext & CallContextExt,
@@ -6611,11 +6611,11 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
   createSchemaGroup(
     request: DeepPartial<CreateSchemaGroupRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseGroup>;
+  ): Promise<SchemaGroup>;
   updateSchemaGroup(
     request: DeepPartial<UpdateSchemaGroupRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<DatabaseGroup>;
+  ): Promise<SchemaGroup>;
   deleteSchemaGroup(
     request: DeepPartial<DeleteSchemaGroupRequest>,
     options?: CallOptions & CallOptionsExt,

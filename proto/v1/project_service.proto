@@ -165,7 +165,7 @@ service ProjectService {
     option (google.api.method_signature) = "name";
   }
 
-  rpc CreateSchemaGroup(CreateSchemaGroupRequest) returns (DatabaseGroup) {
+  rpc CreateSchemaGroup(CreateSchemaGroupRequest) returns (SchemaGroup) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/databaseGroups/*}/schemaGroups"
       body: "schema_group"
@@ -173,7 +173,7 @@ service ProjectService {
     option (google.api.method_signature) = "parent,databaseGroup";
   }
 
-  rpc UpdateSchemaGroup(UpdateSchemaGroupRequest) returns (DatabaseGroup) {
+  rpc UpdateSchemaGroup(UpdateSchemaGroupRequest) returns (SchemaGroup) {
     option (google.api.http) = {
       patch: "/v1/{schema_group.name=projects/*/databaseGroups/*/schemaGroups/*}"
       body: "schema_group"
