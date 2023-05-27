@@ -86,7 +86,7 @@
             type="button"
             class="btn-primary inline-flex justify-center ml-auto"
             target="_blank"
-            href="https://airtable.com/shrS2Ot5BfGExwemj"
+            href="https://www.bytebase.com/contact-us"
           >
             {{ $t("subscription.contact-us") }}
           </a>
