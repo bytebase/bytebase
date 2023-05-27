@@ -77,7 +77,7 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, resourceID string) (*Datab
 	}
 	defer tx.Rollback()
 
-	if err := tx.QueryRowContext(ctx, query).Scan(
+	if err := tx.QueryRowContext(ctx, query, resourceID).Scan(
 		&databaseGroup.ID,
 		&databaseGroup.CreatedTs,
 		&databaseGroup.UpdatedTs,
