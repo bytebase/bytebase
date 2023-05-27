@@ -1,36 +1,5 @@
-import { EngineType } from "./instance";
 import { InstanceId } from "./id";
 import { Advice } from "./sqlAdvice";
-
-export type ConnectionInfo = {
-  engine: EngineType;
-  host: string;
-  port?: string;
-  // In mysql, username can be empty which means anonymous user
-  username?: string;
-  password?: string;
-  useEmptyPassword: boolean;
-  database?: string;
-  // Instance detail page has a Test Connection button, if user doesn't input new password, we
-  // want the connection to use the existing password to test the connection, however, we do
-  // not transfer the password back to client, thus we here pass the instanceId so the server
-  // can fetch the corresponding password.
-  instanceId?: InstanceId;
-  sslCa?: string;
-  sslCert?: string;
-  sslKey?: string;
-  srv: boolean;
-  authenticationDatabase: string;
-  // sid and serviceName are used for Oracle database. Required one of them.
-  sid: string;
-  serviceName: string;
-  // Connection over SSH.
-  sshHost: string;
-  sshPort: string;
-  sshUser: string;
-  sshPassword: string;
-  sshPrivateKey: string;
-};
 
 export type QueryInfo = {
   instanceId: InstanceId;
