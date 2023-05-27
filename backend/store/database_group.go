@@ -29,6 +29,12 @@ type DatabaseGroupMessage struct {
 	Expression        *expr.Expr
 }
 
+// FindDatabaseGroupMessage is the message for finding database group.
+type FindDatabaseGroupMessage struct {
+	ProjectResourceID *string
+	ResourceID        *string
+}
+
 // UpdateDatabaseGroupMessage is the message for updating database group.
 type UpdateDatabaseGroupMessage struct {
 	Placeholder *string
@@ -54,10 +60,62 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, resourceID string) erro
 	return nil
 }
 
+// ListDatabaseGroup lists database groups.
+func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	databaseGroups, err := s.listDatabaseGroupImpl(ctx, tx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list database groups")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	return databaseGroups, nil
+}
+
 // GetDatabaseGroup gets a database group.
-func (s *Store) GetDatabaseGroup(ctx context.Context, resourceID string) (*DatabaseGroupMessage, error) {
-	query := `
-	SELECT
+func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	databaseGroups, err := s.listDatabaseGroupImpl(ctx, tx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list database groups")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	if len(databaseGroups) == 0 {
+		return nil, nil
+	}
+	if len(databaseGroups) > 1 {
+		return nil, errors.Errorf("found multiple database groups")
+	}
+	return databaseGroups[0], nil
+}
+
+func (s *Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
+	where, args := []string{}, []any{}
+	if v := find.ProjectResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("project_resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	query := fmt.Sprintf(`SELECT
 		id,
 		created_ts,
 		updated_ts,
@@ -67,38 +125,50 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, resourceID string) (*Datab
 		resource_id,
 		placeholder,
 		expression
-	FROM db_group;
-	`
-	var databaseGroup DatabaseGroupMessage
-	var stringExpr string
+	FROM db_group %s ORDER BY id DESC;`, strings.Join(where, " AND "))
+
+	var databaseGroups []*DatabaseGroupMessage
+
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	if err := tx.QueryRowContext(ctx, query, resourceID).Scan(
-		&databaseGroup.ID,
-		&databaseGroup.CreatedTs,
-		&databaseGroup.UpdatedTs,
-		&databaseGroup.CreatorID,
-		&databaseGroup.UpdaterID,
-		&databaseGroup.ProjectResourceID,
-		&databaseGroup.ResourceID,
-		&databaseGroup.Placeholder,
-		&stringExpr,
-	); err != nil {
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	var expression expr.Expr
-	if err := protojson.Unmarshal([]byte(stringExpr), &expression); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal expression")
+	for rows.Next() {
+		var databaseGroup DatabaseGroupMessage
+		var stringExpr string
+		if err := rows.Scan(
+			&databaseGroup.ID,
+			&databaseGroup.CreatedTs,
+			&databaseGroup.UpdatedTs,
+			&databaseGroup.CreatorID,
+			&databaseGroup.UpdaterID,
+			&databaseGroup.ProjectResourceID,
+			&databaseGroup.ResourceID,
+			&databaseGroup.Placeholder,
+			&stringExpr,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan")
+		}
+		var expression expr.Expr
+		if err := protojson.Unmarshal([]byte(stringExpr), &expression); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal expression")
+		}
+		databaseGroup.Expression = &expression
+		databaseGroups = append(databaseGroups, &databaseGroup)
 	}
-	databaseGroup.Expression = &expression
-	return &databaseGroup, nil
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to scan")
+	}
+	return databaseGroups, nil
 }
 
 // UpdateDatabaseGroup updates a database group.
