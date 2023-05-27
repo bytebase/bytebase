@@ -84,8 +84,8 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 			ProjectID:  &projectResourceID,
 			InstanceID: &instanceResourceID,
 		}
-		// It's a chaos. We return /instance/{resource id}/databases/{uid} database in find sheet request,
-		// but the frontend use both /instance/{resource id}/databases/{uid} and /instance/{resource id}/databases/{name}
+		// It's chaos. We return /instance/{resource id}/databases/{uid} database in find sheet request,
+		// but the frontend use both /instance/{resource id}/databases/{uid} and /instance/{resource id}/databases/{name}, sometimes the name will convert to int id incorrectly.
 		// For database v1 api, we should only use the /instance/{resource id}/databases/{name}
 		// We need to remove legacy code after the migration.
 		dbUID, isNumber := isNumber(databaseName)
