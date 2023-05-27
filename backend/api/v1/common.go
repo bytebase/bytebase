@@ -45,6 +45,7 @@ const (
 	webhookIDPrefix              = "webhooks/"
 	sheetIDPrefix                = "sheets/"
 	databaseGroupNamePrefix      = "databaseGroups/"
+	schemaGroupNamePrefix        = "schemaGroups/"
 	changeHistoryPrefix          = "changeHistories/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
@@ -90,6 +91,14 @@ func getProjectIDDatabaseGroupID(name string) (string, string, error) {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
+}
+
+func getProjectIDDatabaseGroupIDSchemaGroupID(name string) (string, string, string, error) {
+	tokens, err := getNameParentTokens(name, databaseGroupNamePrefix, schemaGroupNamePrefix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], nil
 }
 
 func getProjectIDWebhookID(name string) (string, string, error) {
