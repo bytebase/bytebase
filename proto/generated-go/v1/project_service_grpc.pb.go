@@ -80,8 +80,8 @@ type ProjectServiceClient interface {
 	DeleteDatabaseGroup(ctx context.Context, in *DeleteDatabaseGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ListSchemaGroups(ctx context.Context, in *ListSchemaGroupsRequest, opts ...grpc.CallOption) (*ListSchemaGroupsResponse, error)
 	GetSchemaGroup(ctx context.Context, in *GetSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error)
-	CreateSchemaGroup(ctx context.Context, in *CreateSchemaGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
-	UpdateSchemaGroup(ctx context.Context, in *UpdateSchemaGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
+	CreateSchemaGroup(ctx context.Context, in *CreateSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error)
+	UpdateSchemaGroup(ctx context.Context, in *UpdateSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error)
 	DeleteSchemaGroup(ctx context.Context, in *DeleteSchemaGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -318,8 +318,8 @@ func (c *projectServiceClient) GetSchemaGroup(ctx context.Context, in *GetSchema
 	return out, nil
 }
 
-func (c *projectServiceClient) CreateSchemaGroup(ctx context.Context, in *CreateSchemaGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error) {
-	out := new(DatabaseGroup)
+func (c *projectServiceClient) CreateSchemaGroup(ctx context.Context, in *CreateSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error) {
+	out := new(SchemaGroup)
 	err := c.cc.Invoke(ctx, ProjectService_CreateSchemaGroup_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -327,8 +327,8 @@ func (c *projectServiceClient) CreateSchemaGroup(ctx context.Context, in *Create
 	return out, nil
 }
 
-func (c *projectServiceClient) UpdateSchemaGroup(ctx context.Context, in *UpdateSchemaGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error) {
-	out := new(DatabaseGroup)
+func (c *projectServiceClient) UpdateSchemaGroup(ctx context.Context, in *UpdateSchemaGroupRequest, opts ...grpc.CallOption) (*SchemaGroup, error) {
+	out := new(SchemaGroup)
 	err := c.cc.Invoke(ctx, ProjectService_UpdateSchemaGroup_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -375,8 +375,8 @@ type ProjectServiceServer interface {
 	DeleteDatabaseGroup(context.Context, *DeleteDatabaseGroupRequest) (*emptypb.Empty, error)
 	ListSchemaGroups(context.Context, *ListSchemaGroupsRequest) (*ListSchemaGroupsResponse, error)
 	GetSchemaGroup(context.Context, *GetSchemaGroupRequest) (*SchemaGroup, error)
-	CreateSchemaGroup(context.Context, *CreateSchemaGroupRequest) (*DatabaseGroup, error)
-	UpdateSchemaGroup(context.Context, *UpdateSchemaGroupRequest) (*DatabaseGroup, error)
+	CreateSchemaGroup(context.Context, *CreateSchemaGroupRequest) (*SchemaGroup, error)
+	UpdateSchemaGroup(context.Context, *UpdateSchemaGroupRequest) (*SchemaGroup, error)
 	DeleteSchemaGroup(context.Context, *DeleteSchemaGroupRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
@@ -460,10 +460,10 @@ func (UnimplementedProjectServiceServer) ListSchemaGroups(context.Context, *List
 func (UnimplementedProjectServiceServer) GetSchemaGroup(context.Context, *GetSchemaGroupRequest) (*SchemaGroup, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSchemaGroup not implemented")
 }
-func (UnimplementedProjectServiceServer) CreateSchemaGroup(context.Context, *CreateSchemaGroupRequest) (*DatabaseGroup, error) {
+func (UnimplementedProjectServiceServer) CreateSchemaGroup(context.Context, *CreateSchemaGroupRequest) (*SchemaGroup, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateSchemaGroup not implemented")
 }
-func (UnimplementedProjectServiceServer) UpdateSchemaGroup(context.Context, *UpdateSchemaGroupRequest) (*DatabaseGroup, error) {
+func (UnimplementedProjectServiceServer) UpdateSchemaGroup(context.Context, *UpdateSchemaGroupRequest) (*SchemaGroup, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateSchemaGroup not implemented")
 }
 func (UnimplementedProjectServiceServer) DeleteSchemaGroup(context.Context, *DeleteSchemaGroupRequest) (*emptypb.Empty, error) {
