@@ -20,12 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SheetService_CreateSheet_FullMethodName  = "/bytebase.v1.SheetService/CreateSheet"
-	SheetService_GetSheet_FullMethodName     = "/bytebase.v1.SheetService/GetSheet"
-	SheetService_SearchSheets_FullMethodName = "/bytebase.v1.SheetService/SearchSheets"
-	SheetService_UpdateSheet_FullMethodName  = "/bytebase.v1.SheetService/UpdateSheet"
-	SheetService_DeleteSheet_FullMethodName  = "/bytebase.v1.SheetService/DeleteSheet"
-	SheetService_SyncSheets_FullMethodName   = "/bytebase.v1.SheetService/SyncSheets"
+	SheetService_CreateSheet_FullMethodName          = "/bytebase.v1.SheetService/CreateSheet"
+	SheetService_GetSheet_FullMethodName             = "/bytebase.v1.SheetService/GetSheet"
+	SheetService_SearchSheets_FullMethodName         = "/bytebase.v1.SheetService/SearchSheets"
+	SheetService_UpdateSheet_FullMethodName          = "/bytebase.v1.SheetService/UpdateSheet"
+	SheetService_UpdateSheetOrganizer_FullMethodName = "/bytebase.v1.SheetService/UpdateSheetOrganizer"
+	SheetService_DeleteSheet_FullMethodName          = "/bytebase.v1.SheetService/DeleteSheet"
+	SheetService_SyncSheets_FullMethodName           = "/bytebase.v1.SheetService/SyncSheets"
 )
 
 // SheetServiceClient is the client API for SheetService service.
@@ -36,6 +37,7 @@ type SheetServiceClient interface {
 	GetSheet(ctx context.Context, in *GetSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
 	SearchSheets(ctx context.Context, in *SearchSheetsRequest, opts ...grpc.CallOption) (*SearchSheetsResponse, error)
 	UpdateSheet(ctx context.Context, in *UpdateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
+	UpdateSheetOrganizer(ctx context.Context, in *UpdateSheetOrganizerRequest, opts ...grpc.CallOption) (*SheetOrganizer, error)
 	DeleteSheet(ctx context.Context, in *DeleteSheetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	SyncSheets(ctx context.Context, in *SyncSheetsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -84,6 +86,15 @@ func (c *sheetServiceClient) UpdateSheet(ctx context.Context, in *UpdateSheetReq
 	return out, nil
 }
 
+func (c *sheetServiceClient) UpdateSheetOrganizer(ctx context.Context, in *UpdateSheetOrganizerRequest, opts ...grpc.CallOption) (*SheetOrganizer, error) {
+	out := new(SheetOrganizer)
+	err := c.cc.Invoke(ctx, SheetService_UpdateSheetOrganizer_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sheetServiceClient) DeleteSheet(ctx context.Context, in *DeleteSheetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, SheetService_DeleteSheet_FullMethodName, in, out, opts...)
@@ -110,6 +121,7 @@ type SheetServiceServer interface {
 	GetSheet(context.Context, *GetSheetRequest) (*Sheet, error)
 	SearchSheets(context.Context, *SearchSheetsRequest) (*SearchSheetsResponse, error)
 	UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error)
+	UpdateSheetOrganizer(context.Context, *UpdateSheetOrganizerRequest) (*SheetOrganizer, error)
 	DeleteSheet(context.Context, *DeleteSheetRequest) (*emptypb.Empty, error)
 	SyncSheets(context.Context, *SyncSheetsRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSheetServiceServer()
@@ -130,6 +142,9 @@ func (UnimplementedSheetServiceServer) SearchSheets(context.Context, *SearchShee
 }
 func (UnimplementedSheetServiceServer) UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateSheet not implemented")
+}
+func (UnimplementedSheetServiceServer) UpdateSheetOrganizer(context.Context, *UpdateSheetOrganizerRequest) (*SheetOrganizer, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSheetOrganizer not implemented")
 }
 func (UnimplementedSheetServiceServer) DeleteSheet(context.Context, *DeleteSheetRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteSheet not implemented")
@@ -222,6 +237,24 @@ func _SheetService_UpdateSheet_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SheetService_UpdateSheetOrganizer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSheetOrganizerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SheetServiceServer).UpdateSheetOrganizer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SheetService_UpdateSheetOrganizer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SheetServiceServer).UpdateSheetOrganizer(ctx, req.(*UpdateSheetOrganizerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SheetService_DeleteSheet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteSheetRequest)
 	if err := dec(in); err != nil {
@@ -280,6 +313,10 @@ var SheetService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateSheet",
 			Handler:    _SheetService_UpdateSheet_Handler,
+		},
+		{
+			MethodName: "UpdateSheetOrganizer",
+			Handler:    _SheetService_UpdateSheetOrganizer_Handler,
 		},
 		{
 			MethodName: "DeleteSheet",
