@@ -7,24 +7,14 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
-	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
 )
-
-// pgConnectionInfo represents the embedded postgres instance connection info.
-type pgConnectionInfo struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-}
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	g.GET("/instance", func(c echo.Context) error {
@@ -331,23 +321,4 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-
-	// Returns the sample embedded postgres instance connection info.
-	g.GET("/instance/sample-pg", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, pgConnectionInfo{
-			Host:     common.GetPostgresSocketDir(),
-			Port:     s.profile.SampleDatabasePort,
-			Username: postgres.SampleUser,
-		})
-	})
-}
-
-// disallowBytebaseStore prevents users adding Bytebase's own Postgres database.
-// Otherwise, users can take control of the database which is a security issue.
-func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
-	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as socket file extension to differentiate different Postgres instances.
-	if engine == db.Postgres && port == fmt.Sprintf("%v", s.profile.DatastorePort) && host == common.GetPostgresSocketDir() {
-		return errors.Errorf("instance doesn't exist for host %q and port %q", host, port)
-	}
-	return nil
 }

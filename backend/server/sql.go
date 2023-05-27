@@ -41,9 +41,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, connectionInfo); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql ping request").SetInternal(err)
 		}
-		if err := s.disallowBytebaseStore(connectionInfo.Engine, connectionInfo.Host, connectionInfo.Port); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
 
 		password := connectionInfo.Password
 		// Instance detail page has a Test Connection button, if user doesn't input new password and doesn't specify
