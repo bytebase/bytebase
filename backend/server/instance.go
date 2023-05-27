@@ -58,62 +58,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/instance/:instanceID/user", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("instanceID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
-		}
-
-		instanceUsers, err := s.store.ListInstanceUsers(ctx, &store.FindInstanceUserMessage{InstanceUID: id})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", id)).SetInternal(err)
-		}
-		var composedInstanceUsers []*api.InstanceUser
-		for _, instanceUser := range instanceUsers {
-			composedInstanceUsers = append(composedInstanceUsers, &api.InstanceUser{
-				ID:         instanceUser.Name,
-				InstanceID: id,
-				Name:       instanceUser.Name,
-				Grant:      instanceUser.Grant,
-			})
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstanceUsers); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance user list response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.GET("/instance/:instanceID/user/:userID", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		instanceID, err := strconv.Atoi(c.Param("instanceID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
-		}
-		userID := c.Param("userID")
-
-		instanceUser, err := s.store.GetInstanceUser(ctx, &store.FindInstanceUserMessage{InstanceUID: instanceID, Name: &userID})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
-		}
-		if instanceUser == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instanceUser not found with instanceID: %v and userID: %v", instanceID, userID))
-		}
-		composedInstanceUser := &api.InstanceUser{
-			ID:         instanceUser.Name,
-			InstanceID: instanceID,
-			Name:       instanceUser.Name,
-			Grant:      instanceUser.Grant,
-		}
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstanceUser); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
-		}
-		return nil
-	})
-
 	g.POST("/instance/:instanceID/migration", func(c echo.Context) error {
 		// TODO(p0ny): remove this endpoint because we no longer create migration history table on user instances.
 		ctx := c.Request().Context()
