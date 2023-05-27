@@ -276,7 +276,10 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
-	_, err = ctl.listMySheets()
+	_, err = ctl.sheetServiceClient.SearchSheets(ctx, &v1pb.SearchSheetsRequest{
+		Parent: "projects/-",
+		Filter: "creator = users/demo@example.com",
+	})
 	a.NoError(err)
 }
 
