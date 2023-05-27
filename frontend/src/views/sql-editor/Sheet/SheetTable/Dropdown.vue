@@ -19,7 +19,7 @@ import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import type { SheetViewMode } from "../types";
 import { isSheetWritableV1 } from "@/utils";
-import { useSheetV1Store } from "@/store";
+import { useSheetV1Store, pushNotification } from "@/store";
 import {
   Sheet_Visibility,
   Sheet_Source,
@@ -129,7 +129,11 @@ const handleAction = async (key: string) => {
             payload: "{}",
           }
         );
-        emit("refresh");
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: t("sheet.notifications.duplicate-success"),
+        });
         dialogInstance.destroy();
       },
       onNegativeClick() {

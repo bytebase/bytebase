@@ -658,7 +658,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		if database == nil {
 			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("database with id %d not found", *sheet.DatabaseID))
 		}
-		databaseParent = fmt.Sprintf("%s%s/%s%d", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.UID)
+		databaseParent = fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName)
 	}
 
 	visibility := v1pb.Sheet_VISIBILITY_UNSPECIFIED
