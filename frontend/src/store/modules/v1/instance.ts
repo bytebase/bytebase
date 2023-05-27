@@ -152,7 +152,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   ) => {
     const updatedInstance = await instanceServiceClient.addDataSource({
       instance: instance.name,
-      dataSources: dataSource,
+      dataSource: dataSource,
     });
     const [composed] = await upsertInstances([updatedInstance]);
     return composed;
@@ -164,7 +164,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   ) => {
     const updatedInstance = await instanceServiceClient.updateDataSource({
       instance: instance.name,
-      dataSources: dataSource,
+      dataSource: dataSource,
       updateMask,
     });
     const [composed] = await upsertInstances([updatedInstance]);
@@ -176,7 +176,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   ) => {
     const updatedInstance = await instanceServiceClient.removeDataSource({
       instance: instance.name,
-      dataSources: dataSource,
+      dataSource: dataSource,
     });
     const [composed] = await upsertInstances([updatedInstance]);
     return composed;
