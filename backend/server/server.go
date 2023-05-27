@@ -662,7 +662,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	e.Any("/bytebase.v1.*", echo.WrapHandler(wrappedGrpc))
 
 	// Register open API routes
-	s.registerOpenAPIRoutes(e, ce, profile)
+	s.registerOpenAPIRoutes(e)
 
 	// Register pprof endpoints.
 	pprof.Register(e)
@@ -674,19 +674,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof config.Profile) {
-	jwtMiddlewareFunc := func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(openAPIPrefix, s.store, next, prof.Mode, s.secret)
-	}
-	aclMiddlewareFunc := func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(s, openAPIPrefix, ce, next, prof.Readonly)
-	}
-	metricMiddlewareFunc := func(next echo.HandlerFunc) echo.HandlerFunc {
-		return openAPIMetricMiddleware(s, next)
-	}
+func (s *Server) registerOpenAPIRoutes(e *echo.Echo) {
 	e.POST("/v1/sql/advise", s.sqlCheckController)
 	e.POST("/v1/sql/schema/diff", schemaDiff)
-	e.POST("/v1/issues", s.createIssueByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 }
 
 // initMetricReporter will initial the metric scheduler.
