@@ -26,6 +26,7 @@ import (
 
 // ProjectService implements the project service.
 type ProjectService struct {
+	v1pb.UnimplementedProjectServiceServer
 	store           *store.Store
 	activityManager *activity.Manager
 }
