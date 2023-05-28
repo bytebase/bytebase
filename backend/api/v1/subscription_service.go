@@ -58,7 +58,7 @@ func (*SubscriptionService) GetFeatureMatrix(_ context.Context, _ *v1pb.GetFeatu
 			plan := covertToV1PlanType(api.PlanType(i))
 			matrix[plan.String()] = enabled
 		}
-		resp.Feature = append(resp.Feature, &v1pb.Feature{
+		resp.Features = append(resp.Features, &v1pb.Feature{
 			Name:   string(key),
 			Matrix: matrix,
 		})

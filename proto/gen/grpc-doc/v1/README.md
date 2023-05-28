@@ -6437,7 +6437,7 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| feature | [Feature](#bytebase-v1-Feature) | repeated |  |
+| features | [Feature](#bytebase-v1-Feature) | repeated |  |
 
 
 

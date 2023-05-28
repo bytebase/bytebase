@@ -189,7 +189,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         );
 
         const stateMatrix = new Map<FeatureType, boolean[]>();
-        for (const feature of featureMatrix.feature) {
+        for (const feature of featureMatrix.features) {
           const featureType = feature.name as FeatureType;
           stateMatrix.set(
             featureType,

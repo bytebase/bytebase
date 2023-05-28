@@ -85,7 +85,7 @@ export interface Subscription {
 }
 
 export interface FeatureMatrix {
-  feature: Feature[];
+  features: Feature[];
 }
 
 export interface Feature {
@@ -589,12 +589,12 @@ export const Subscription = {
 };
 
 function createBaseFeatureMatrix(): FeatureMatrix {
-  return { feature: [] };
+  return { features: [] };
 }
 
 export const FeatureMatrix = {
   encode(message: FeatureMatrix, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.feature) {
+    for (const v of message.features) {
       Feature.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
@@ -612,7 +612,7 @@ export const FeatureMatrix = {
             break;
           }
 
-          message.feature.push(Feature.decode(reader, reader.uint32()));
+          message.features.push(Feature.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -624,15 +624,15 @@ export const FeatureMatrix = {
   },
 
   fromJSON(object: any): FeatureMatrix {
-    return { feature: Array.isArray(object?.feature) ? object.feature.map((e: any) => Feature.fromJSON(e)) : [] };
+    return { features: Array.isArray(object?.features) ? object.features.map((e: any) => Feature.fromJSON(e)) : [] };
   },
 
   toJSON(message: FeatureMatrix): unknown {
     const obj: any = {};
-    if (message.feature) {
-      obj.feature = message.feature.map((e) => e ? Feature.toJSON(e) : undefined);
+    if (message.features) {
+      obj.features = message.features.map((e) => e ? Feature.toJSON(e) : undefined);
     } else {
-      obj.feature = [];
+      obj.features = [];
     }
     return obj;
   },
@@ -643,7 +643,7 @@ export const FeatureMatrix = {
 
   fromPartial(object: DeepPartial<FeatureMatrix>): FeatureMatrix {
     const message = createBaseFeatureMatrix();
-    message.feature = object.feature?.map((e) => Feature.fromPartial(e)) || [];
+    message.features = object.features?.map((e) => Feature.fromPartial(e)) || [];
     return message;
   },
 };

@@ -85,7 +85,7 @@ message Subscription {
 }
 
 message FeatureMatrix {
-  repeated Feature feature = 1;
+  repeated Feature features = 1;
 }
 
 message Feature {
