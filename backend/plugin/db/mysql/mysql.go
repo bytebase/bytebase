@@ -70,19 +70,6 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	}
 
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-
-	port := connCfg.Port
-	if port == "" {
-		switch dbType {
-		case db.TiDB:
-			port = "4000"
-		case db.OceanBase:
-			port = "2883"
-		default:
-			port = "3306"
-		}
-	}
-
 	if connCfg.SSHConfig.Host != "" {
 		sshClient, err := util.GetSSHClient(connCfg.SSHConfig)
 		if err != nil {
@@ -111,7 +98,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
 	}
 
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
+	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, connCfg.Port, connCfg.Database, strings.Join(params, "&"))
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err

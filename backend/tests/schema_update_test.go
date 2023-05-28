@@ -61,17 +61,20 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
-	// Add an instance.
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironmentUID,
-		Name:          instanceName,
-		Engine:        db.SQLite,
-		Host:          instanceDir,
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       instanceName,
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
 	// Expecting project to have no database.
@@ -82,7 +85,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Zero(len(databases))
 	// Expecting instance to have no database.
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instance.ID,
+		InstanceID: &instanceUID,
 	})
 	a.NoError(err)
 	a.Zero(len(databases))
@@ -99,7 +102,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	a.Equal(1, len(databases))
 	database := databases[0]
-	a.Equal(instance.ID, database.Instance.ID)
+	a.Equal(instanceUID, database.Instance.ID)
 
 	migrationStatementSheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectUID,
@@ -175,7 +178,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Get migration history.
-	histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
+	histories, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{})
 	a.NoError(err)
 	wantHistories := []api.MigrationHistory{
 		{
@@ -236,7 +239,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	a.Equal(bookDataSQLResult, result)
 	// Query clone migration history.
-	histories, err = ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{Database: &cloneDatabaseName})
+	histories, err = ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{Database: &cloneDatabaseName})
 	a.NoError(err)
 	wantCloneHistories := []api.MigrationHistory{
 		{
@@ -273,7 +276,10 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
-	_, err = ctl.listMySheets()
+	_, err = ctl.sheetServiceClient.SearchSheets(ctx, &v1pb.SearchSheetsRequest{
+		Parent: "projects/-",
+		Filter: "creator = users/demo@example.com",
+	})
 	a.NoError(err)
 }
 
@@ -485,17 +491,20 @@ func TestVCS(t *testing.T) {
 			instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), instanceName)
 			a.NoError(err)
 
-			prodEnvironment, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+			prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
-			// Add an instance.
-			instance, err := ctl.addInstance(api.InstanceCreate{
-				ResourceID:    generateRandomString("instance", 10),
-				EnvironmentID: prodEnvironmentUID,
-				Name:          instanceName,
-				Engine:        db.SQLite,
-				Host:          instanceDir,
+			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+				InstanceId: generateRandomString("instance", 10),
+				Instance: &v1pb.Instance{
+					Title:       instanceName,
+					Engine:      v1pb.Engine_SQLITE,
+					Environment: prodEnvironment.Name,
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+				},
 			})
+			a.NoError(err)
+			instanceUID, err := strconv.Atoi(instance.Uid)
 			a.NoError(err)
 
 			// Create an issue that creates a database.
@@ -509,7 +518,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(1, len(databases))
 			database := databases[0]
-			a.Equal(instance.ID, database.Instance.ID)
+			a.Equal(instanceUID, database.Instance.ID)
 
 			// Simulate Git commits for schema update.
 			// We create multiple commits in one push event to test for the behavior of creating one issue per database.
@@ -678,7 +687,7 @@ func TestVCS(t *testing.T) {
 			a.Equal(dumpedSchema4, files[latestFileName])
 
 			// Get migration history.
-			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
+			histories, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{})
 			a.NoError(err)
 
 			var historiesDeref []api.MigrationHistory
@@ -913,22 +922,20 @@ func TestVCS_SDL(t *testing.T) {
 			)
 			a.NoError(err)
 
-			_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+			prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
-			// Add an instance
-			instance, err := ctl.addInstance(
-				api.InstanceCreate{
-					ResourceID:    generateRandomString("instance", 10),
-					EnvironmentID: prodEnvironmentUID,
-					Name:          "pgInstance",
-					Engine:        db.Postgres,
-					Host:          "/tmp",
-					Port:          strconv.Itoa(pgPort),
-					Username:      "bytebase",
-					Password:      "bytebase",
+			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+				InstanceId: generateRandomString("instance", 10),
+				Instance: &v1pb.Instance{
+					Title:       "pgInstance",
+					Engine:      v1pb.Engine_POSTGRES,
+					Environment: prodEnvironment.Name,
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 				},
-			)
+			})
+			a.NoError(err)
+			instanceUID, err := strconv.Atoi(instance.Uid)
 			a.NoError(err)
 
 			// Create an issue that creates a database
@@ -1087,7 +1094,7 @@ ALTER TABLE ONLY public.users
 
 `
 
-			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
+			histories, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{})
 			a.NoError(err)
 			wantHistories := []api.MigrationHistory{
 				{
@@ -1404,19 +1411,20 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					EnvironmentId: strings.ToLower(test.envName),
 				})
 			a.NoError(err)
-			environmentUID, err := strconv.Atoi(environment.Uid)
-			a.NoError(err)
 			// Provision an instance.
 			instanceRootDir := t.TempDir()
 			instanceName := "testInstance1"
 			instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 			a.NoError(err)
-			instance, err := ctl.addInstance(api.InstanceCreate{
-				ResourceID:    generateRandomString("instance", 10),
-				EnvironmentID: environmentUID,
-				Name:          instanceName,
-				Engine:        db.SQLite,
-				Host:          instanceDir,
+
+			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+				InstanceId: generateRandomString("instance", 10),
+				Instance: &v1pb.Instance{
+					Title:       instanceName,
+					Engine:      v1pb.Engine_SQLITE,
+					Environment: environment.Name,
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+				},
 			})
 			a.NoError(err)
 
@@ -1620,19 +1628,17 @@ func TestVCS_SQL_Review(t *testing.T) {
 			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
-			prodEnvironment, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+			prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
-			// Add an instance.
-			instance, err := ctl.addInstance(api.InstanceCreate{
-				ResourceID:    generateRandomString("instance", 10),
-				EnvironmentID: prodEnvironmentUID,
-				Name:          "pgInstance",
-				Engine:        db.Postgres,
-				Host:          "/tmp",
-				Port:          strconv.Itoa(pgPort),
-				Username:      "bytebase",
-				Password:      "bytebase",
+			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+				InstanceId: generateRandomString("instance", 10),
+				Instance: &v1pb.Instance{
+					Title:       "pgInstance",
+					Engine:      v1pb.Engine_POSTGRES,
+					Environment: prodEnvironment.Name,
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
+				},
 			})
 			a.NoError(err)
 
@@ -2104,8 +2110,6 @@ CREATE TABLE public.book (
 			EnvironmentId: strings.ToLower(environmentName),
 		})
 	a.NoError(err)
-	environmentUID, err := strconv.Atoi(environment.Uid)
-	a.NoError(err)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -2126,37 +2130,40 @@ CREATE TABLE public.book (
 			a.NoError(err)
 
 			// Add an instance.
-			var instance *api.Instance
+			var instance *v1pb.Instance
 			switch test.dbType {
 			case db.Postgres:
-				instance, err = ctl.addInstance(api.InstanceCreate{
-					ResourceID:    generateRandomString("instance", 10),
-					EnvironmentID: environmentUID,
-					Name:          test.name,
-					Engine:        db.Postgres,
-					Host:          "/tmp",
-					Port:          strconv.Itoa(dbPort),
-					Username:      "root",
+				instance, err = ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+					InstanceId: generateRandomString("instance", 10),
+					Instance: &v1pb.Instance{
+						Title:       test.name,
+						Engine:      v1pb.Engine_POSTGRES,
+						Environment: environment.Name,
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(dbPort), Username: "root"}},
+					},
 				})
 			case db.MySQL:
-				instance, err = ctl.addInstance(api.InstanceCreate{
-					ResourceID:    generateRandomString("instance", 10),
-					EnvironmentID: environmentUID,
-					Name:          "mysqlInstance",
-					Engine:        db.MySQL,
-					Host:          "127.0.0.1",
-					Port:          strconv.Itoa(dbPort),
-					Username:      "root",
+				instance, err = ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+					InstanceId: generateRandomString("instance", 10),
+					Instance: &v1pb.Instance{
+						Title:       "mysqlInstance",
+						Engine:      v1pb.Engine_MYSQL,
+						Environment: environment.Name,
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(dbPort), Username: "root"}},
+					},
 				})
 			default:
 				a.FailNow("unsupported db type")
 			}
+			a.NoError(err)
+			instanceUID, err := strconv.Atoi(instance.Uid)
+			a.NoError(err)
 
 			a.NoError(err)
 			err = ctl.createDatabase(ctx, projectUID, instance, test.databaseName, "root", nil /* labelMap */)
 			a.NoError(err)
 			databases, err := ctl.getDatabases(api.DatabaseFind{
-				InstanceID: &instance.ID,
+				InstanceID: &instanceUID,
 			})
 			a.NoError(err)
 			// Find databases
@@ -2246,17 +2253,21 @@ func TestMarkTaskAsDone(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	// Add an instance.
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironmentUID,
-		Name:          instanceName,
-		Engine:        db.SQLite,
-		Host:          instanceDir,
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       instanceName,
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+		},
 	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
 	// Expecting project to have no database.
@@ -2267,7 +2278,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a.Zero(len(databases))
 	// Expecting instance to have no database.
 	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instance.ID,
+		InstanceID: &instanceUID,
 	})
 	a.NoError(err)
 	a.Zero(len(databases))
@@ -2284,7 +2295,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a.NoError(err)
 	a.Equal(1, len(databases))
 	database := databases[0]
-	a.Equal(instance.ID, database.Instance.ID)
+	a.Equal(instanceUID, database.Instance.ID)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectUID,
@@ -2514,20 +2525,21 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			)
 			a.NoError(err)
 
-			_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+			prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
 			// Add an instance
-			instance, err := ctl.addInstance(api.InstanceCreate{
-				ResourceID:    generateRandomString("instance", 10),
-				EnvironmentID: prodEnvironmentUID,
-				Name:          "mysqlInstance",
-				Engine:        db.MySQL,
-				Host:          "127.0.0.1",
-				Port:          strconv.Itoa(mysqlPort),
-				Username:      "bytebase",
-				Password:      "bytebase",
+			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+				InstanceId: generateRandomString("instance", 10),
+				Instance: &v1pb.Instance{
+					Title:       "mysqlInstance",
+					Engine:      v1pb.Engine_MYSQL,
+					Environment: prodEnvironment.Name,
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
+				},
 			})
+			a.NoError(err)
+			instanceUID, err := strconv.Atoi(instance.Uid)
 			a.NoError(err)
 
 			// Create an issue that creates a database
@@ -2649,7 +2661,7 @@ WHERE table_schema = '%s';
 				"  PRIMARY KEY (`id`)\n" +
 				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n"
 
-			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
+			histories, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{})
 			a.NoError(err)
 			wantHistories := []api.MigrationHistory{
 				{
@@ -2685,7 +2697,7 @@ WHERE table_schema = '%s';
 			}
 
 			// Test SDL format.
-			sdlHistory, err := ctl.getInstanceSDLMigrationHistory(instance.ID, histories[1].ID)
+			sdlHistory, err := ctl.getInstanceSDLMigrationHistory(instanceUID, histories[1].ID)
 			a.NoError(err)
 			a.Equal(updatedSDL, sdlHistory.Schema)
 			a.Equal(initialSDL, sdlHistory.SchemaPrev)

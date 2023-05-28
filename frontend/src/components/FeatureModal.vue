@@ -103,7 +103,7 @@
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useSubscriptionStore, pushNotification } from "@/store";
+import { useSubscriptionV1Store, pushNotification } from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
@@ -122,7 +122,7 @@ const ok = () => {
   router.push({ name: "setting.workspace.subscription" });
 };
 
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const isRequiredInPlan = Array.isArray(
   subscriptionStore.featureMatrix.get(props.feature)

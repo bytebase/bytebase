@@ -156,9 +156,9 @@ func backfillHistory(ctx context.Context, storeInstance *store.Store, bytebasePg
 				CreatedTs:           h.CreatedTs,
 				UpdaterID:           api.SystemBotID,
 				UpdatedTs:           h.UpdatedTs,
-				InstanceID:          nil,
-				DatabaseID:          nil,
-				IssueID:             nil,
+				InstanceUID:         nil,
+				DatabaseUID:         nil,
+				IssueUID:            nil,
 				ReleaseVersion:      h.ReleaseVersion,
 				Sequence:            int64(h.Sequence),
 				Source:              h.Source,
@@ -336,9 +336,9 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	}
 	if _, err := storeInstance.CreateInstanceChangeHistory(ctx, &store.InstanceChangeHistoryMessage{
 		CreatorID:      api.SystemBotID,
-		InstanceID:     nil,
-		DatabaseID:     nil,
-		IssueID:        nil,
+		InstanceUID:    nil,
+		DatabaseUID:    nil,
+		IssueUID:       nil,
 		ReleaseVersion: serverVersion,
 		// Sequence starts from 1.
 		Sequence:            1,
@@ -367,6 +367,7 @@ func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.V
 	histories, err := storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 		// Metadata database has instanceID nil;
 		InstanceID: nil,
+		ShowFull:   true,
 	})
 	if err != nil {
 		return semver.Version{}, errors.Wrap(err, "failed to get migration history")
@@ -529,6 +530,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 		h, err := storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 			// Metadata database has instanceID nil;
 			InstanceID: nil,
+			ShowFull:   true,
 		})
 		if err != nil {
 			return err

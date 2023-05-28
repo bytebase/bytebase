@@ -109,7 +109,6 @@ p, DBA, /sheet/starred, GET
 p, DBA, /sheet/{sheetID}, GET
 p, DBA, /sheet/{sheetID}, PATCH
 p, DBA, /sheet/{sheetID}, DELETE
-p, DBA, /sheet/{sheetID}/organizer, PATCH
 p, DBA, /debug, GET
 p, DBA, /debug, PATCH
 p, DBA, /debug/log, GET

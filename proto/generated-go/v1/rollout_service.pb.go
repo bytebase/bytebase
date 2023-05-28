@@ -2049,9 +2049,8 @@ type Plan_ChangeDatabaseConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The resource name of the target.
-	// Format: projects/{project}/logicalDatabases/{ldb1}.
-	// Format: projects/{project}/logicalDatabases/{ldb1}/logicalTables/{ltb1}.
-	// Format: instances/{xxx}/databases/{db1}.
+	// Format: instances/{instance-id}/databases/{database-name}.
+	// Format: projects/{project}/deploymentConfig.
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}

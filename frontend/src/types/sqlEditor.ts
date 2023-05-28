@@ -18,6 +18,14 @@ export const EngineTypesUsingSQL = [
   "SPANNER",
 ] as const;
 export type SQLDialect = typeof EngineTypesUsingSQL[number];
+export const EngineToSQLDialectMap = new Map<Engine, SQLDialect>([
+  [Engine.MYSQL, "MYSQL"],
+  [Engine.CLICKHOUSE, "CLICKHOUSE"],
+  [Engine.POSTGRES, "POSTGRES"],
+  [Engine.SNOWFLAKE, "SNOWFLAKE"],
+  [Engine.TIDB, "TIDB"],
+  [Engine.SPANNER, "SPANNER"],
+]);
 
 export const languageOfEngine = (engine?: EngineType | "unknown"): Language => {
   if (engine === "MONGODB") {
@@ -47,6 +55,12 @@ export const dialectOfEngine = (engine = "unknown"): SQLDialect => {
   }
   // Fallback to MYSQL otherwise
   return "MYSQL";
+};
+
+export const dialectOfEngineV1 = (
+  engine: Engine = Engine.UNRECOGNIZED
+): SQLDialect => {
+  return EngineToSQLDialectMap.get(engine) ?? "MYSQL";
 };
 
 export enum SortText {

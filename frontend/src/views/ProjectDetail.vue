@@ -1,20 +1,16 @@
 <template>
   <template v-if="hash === 'overview'">
-    <ProjectOverviewPanel
-      id="overview"
-      :project="projectV1"
-      :database-list="databaseList"
-    />
+    <ProjectOverviewPanel id="overview" :project="projectV1" />
   </template>
   <template v-if="hash === 'databases'">
     <ProjectDeploymentConfigPanel
       v-if="isTenantProject"
       id="deployment-config"
       :project="projectV1"
-      :database-list="databaseList"
+      :database-list="databaseV1List"
       :allow-edit="allowEdit"
     />
-    <ProjectDatabasesPanel v-else :database-list="databaseList" />
+    <ProjectDatabasesPanel v-else :database-list="databaseV1List" />
   </template>
   <template v-if="isDev && hash === 'database-groups'">
     <ProjectDatabaseGroupPanel />
@@ -22,7 +18,7 @@
   <template v-if="hash === 'change-history'">
     <ProjectMigrationHistoryPanel
       id="change-history"
-      :database-list="databaseList"
+      :database-list="databaseV1List"
     />
   </template>
   <template v-if="hash === 'slow-query'">
@@ -61,13 +57,12 @@
   </template>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, watchEffect } from "vue";
-import { cloneDeep } from "lodash-es";
+<script lang="ts" setup>
+import { computed, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 
 import { DEFAULT_PROJECT_ID } from "@/types";
-import { idFromSlug, sortDatabaseListByEnvironmentV1 } from "../utils";
+import { idFromSlug, sortDatabaseV1List } from "../utils";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
 import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
@@ -79,87 +74,62 @@ import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import {
   useDatabaseStore,
-  useEnvironmentV1List,
+  useSearchDatabaseV1List,
+  useDatabaseV1Store,
   useLegacyProjectStore,
   useProjectV1Store,
 } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
 
-export default defineComponent({
-  name: "ProjectDetail",
-  components: {
-    ProjectActivityPanel,
-    ProjectMigrationHistoryPanel,
-    ProjectSlowQueryPanel,
-    ProjectOverviewPanel,
-    ProjectVersionControlPanel,
-    ProjectWebhookPanel,
-    ProjectSettingPanel,
-    ProjectDeploymentConfigPanel,
-    ProjectDatabasesPanel,
-    ProjectDatabaseGroupPanel,
+const props = defineProps({
+  projectWebhookSlug: {
+    default: undefined,
+    type: String,
   },
-  props: {
-    projectWebhookSlug: {
-      default: undefined,
-      type: String,
-    },
-    projectSlug: {
-      required: true,
-      type: String,
-    },
-    allowEdit: {
-      required: true,
-      type: Boolean,
-    },
+  projectSlug: {
+    required: true,
+    type: String,
   },
-  setup(props) {
-    const route = useRoute();
-    const databaseStore = useDatabaseStore();
-    const projectStore = useLegacyProjectStore();
-    const projectV1Store = useProjectV1Store();
-
-    const hash = computed(() => route.hash.replace(/^#?/, ""));
-
-    const project = computed(() => {
-      return projectStore.getProjectById(idFromSlug(props.projectSlug));
-    });
-    const projectV1 = computed(() => {
-      return projectV1Store.getProjectByUID(
-        String(idFromSlug(props.projectSlug))
-      );
-    });
-
-    const environmentList = useEnvironmentV1List(false /* !showDeleted */);
-
-    const prepareDatabaseList = () => {
-      databaseStore.fetchDatabaseListByProjectId(String(project.value.id));
-    };
-
-    watchEffect(prepareDatabaseList);
-
-    const databaseList = computed(() => {
-      const list = cloneDeep(
-        databaseStore
-          .getDatabaseListByProjectId(String(project.value.id))
-          .filter((db) => db.syncStatus === "OK")
-      );
-      return sortDatabaseListByEnvironmentV1(list, environmentList.value);
-    });
-
-    const isTenantProject = computed(() => {
-      return projectV1.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
-    });
-
-    return {
-      DEFAULT_PROJECT_ID,
-      hash,
-      project,
-      projectV1,
-      databaseList,
-      isTenantProject,
-    };
+  allowEdit: {
+    required: true,
+    type: Boolean,
   },
+});
+
+const route = useRoute();
+const legacyDatabaseStore = useDatabaseStore();
+const projectStore = useLegacyProjectStore();
+const projectV1Store = useProjectV1Store();
+
+const hash = computed(() => route.hash.replace(/^#?/, ""));
+
+const project = computed(() => {
+  return projectStore.getProjectById(idFromSlug(props.projectSlug));
+});
+const projectV1 = computed(() => {
+  return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));
+});
+
+const prepareLegacyDatabaseList = () => {
+  legacyDatabaseStore.fetchDatabaseListByProjectId(String(project.value.id));
+};
+
+watchEffect(prepareLegacyDatabaseList);
+
+useSearchDatabaseV1List(
+  computed(() => ({
+    parent: "instances/-",
+    filter: `project == "${projectV1.value.name}"`,
+  }))
+);
+
+const databaseV1List = computed(() => {
+  const list = useDatabaseV1Store().databaseListByProject(projectV1.value.name);
+  return sortDatabaseV1List(list);
+});
+
+const isTenantProject = computed(() => {
+  return projectV1.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 </script>

@@ -2014,6 +2014,9 @@
     "actions": {
       "sync-from-vcs": "从 VCS 同步 SQL 脚本"
     },
+    "notifications": {
+      "duplicate-success": "已成功拷贝至“我的工作表”"
+    },
     "hint-tips": {
       "confirm-to-sync-sheet": "确定要同步工作表?",
       "confirm-to-delete-this-sheet": "确定删除这条工作表?",
@@ -2501,5 +2504,11 @@
       "description": "系统定义的项目数据查询者角色"
     },
     "select-role": "选择角色"
+  },
+  "database-group": {
+    "factor": {
+      "resource_database_name": "数据库名",
+      "resource_table_name": "表名"
+    }
   }
 }

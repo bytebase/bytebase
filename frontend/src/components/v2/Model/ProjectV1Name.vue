@@ -21,18 +21,20 @@ const props = withDefaults(
     tag?: string;
     link?: boolean;
     plain?: boolean;
+    hash?: string;
   }>(),
   {
     tag: "span",
     link: true,
     plain: false,
+    hash: "",
   }
 );
 
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/project/${projectV1Slug(props.project)}`,
+      to: `/project/${projectV1Slug(props.project)}${props.hash}`,
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {

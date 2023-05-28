@@ -168,7 +168,7 @@ import {
   pushNotification,
   useCurrentUserV1,
   useSQLReviewStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
 } from "@/store";
 import {
   payloadValueListToComponentList,
@@ -203,7 +203,7 @@ const store = useSQLReviewStore();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const ROUTE_NAME = "setting.workspace.sql-review";
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
   showDisableModal: false,

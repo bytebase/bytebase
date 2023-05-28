@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/base64"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -11,8 +12,10 @@ import (
 	"golang.org/x/exp/ebnf"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -42,6 +45,8 @@ const (
 	webhookIDPrefix              = "webhooks/"
 	sheetIDPrefix                = "sheets/"
 	databaseGroupNamePrefix      = "databaseGroups/"
+	schemaGroupNamePrefix        = "schemaGroups/"
+	changeHistoryPrefix          = "changeHistories/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -78,6 +83,22 @@ func getProjectID(name string) (string, error) {
 		return "", err
 	}
 	return tokens[0], nil
+}
+
+func getProjectIDDatabaseGroupID(name string) (string, string, error) {
+	tokens, err := getNameParentTokens(name, databaseGroupNamePrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+func getProjectIDDatabaseGroupIDSchemaGroupID(name string) (string, string, string, error) {
+	tokens, err := getNameParentTokens(name, databaseGroupNamePrefix, schemaGroupNamePrefix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], nil
 }
 
 func getProjectIDWebhookID(name string) (string, string, error) {
@@ -137,6 +158,15 @@ func getInstanceDatabaseID(name string) (string, string, error) {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
+}
+
+func getInstanceDatabaseIDChangeHistory(name string) (string, string, string, error) {
+	// the name should be instances/{instance-id}/databases/{database-id}/changeHistories/{changeHistory-id}
+	tokens, err := getNameParentTokens(name, instanceNamePrefix, databaseIDPrefix, changeHistoryPrefix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], nil
 }
 
 func getInstanceDatabaseIDSecretName(name string) (string, string, string, error) {
@@ -632,4 +662,23 @@ func convertEngine(engine v1pb.Engine) db.Type {
 		return db.OceanBase
 	}
 	return db.UnknownType
+}
+
+func marshalPageToken(pageToken *storepb.PageToken) (string, error) {
+	b, err := proto.Marshal(pageToken)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to marshal page token")
+	}
+	return base64.StdEncoding.EncodeToString(b), nil
+}
+
+func unmarshalPageToken(s string, pageToken *storepb.PageToken) error {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return errors.Wrapf(err, "failed to decode page token")
+	}
+	if err := proto.Unmarshal(b, pageToken); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal page token")
+	}
+	return nil
 }

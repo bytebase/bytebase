@@ -23,6 +23,8 @@ import {
   Workflow,
 } from "@/types/proto/v1/project_service";
 import { State } from "@/types/proto/v1/common";
+import { roleListInProjectV1 } from "@/utils";
+import { intersection } from "lodash-es";
 
 interface ProjectSelectOption extends SelectOption {
   value: string;
@@ -32,7 +34,7 @@ interface ProjectSelectOption extends SelectOption {
 const props = withDefaults(
   defineProps<{
     project: string | undefined; // UNKNOWN_ID(-1) to "ALL"
-    allowedProjectRoleList?: string[];
+    allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
     allowedProjectTenantModeList?: TenantMode[];
     allowedProjectWorkflowTypeList?: Workflow[];
     includeAll?: boolean;
@@ -41,7 +43,7 @@ const props = withDefaults(
     filter?: (project: Project, index: number) => boolean;
   }>(),
   {
-    allowedProjectRoleList: () => ["OWNER", "DEVELOPER"],
+    allowedProjectRoleList: () => [],
     allowedProjectTenantModeList: () => [
       TenantMode.TENANT_MODE_DISABLED,
       TenantMode.TENANT_MODE_ENABLED,
@@ -101,6 +103,13 @@ const combinedProjectList = computed(() => {
     if (project.uid === props.project) return true;
     return false;
   });
+
+  if (props.allowedProjectRoleList.length > 0) {
+    list = list.filter((project) => {
+      const roles = roleListInProjectV1(project.iamPolicy, currentUserV1.value);
+      return intersection(props.allowedProjectRoleList, roles).length > 0;
+    });
+  }
 
   if (props.includeDefaultProject) {
     list.unshift(projectV1Store.getProjectByUID(String(DEFAULT_PROJECT_ID)));

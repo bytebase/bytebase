@@ -145,7 +145,7 @@ import {
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
-import { Database } from "../types";
+import { ComposedDatabase } from "../types";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
 import {
   extractEnvironmentResourceName,
@@ -179,7 +179,7 @@ const props = defineProps({
     type: Object as PropType<Project>,
   },
   databaseList: {
-    type: Array as PropType<Database[]>,
+    type: Array as PropType<ComposedDatabase[]>,
     default: () => [],
   },
   allowEdit: {

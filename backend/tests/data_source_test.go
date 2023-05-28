@@ -6,11 +6,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestDataSource(t *testing.T) {
@@ -31,80 +32,86 @@ func TestDataSource(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	_, prodEnvironmentUID, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		ResourceID:    generateRandomString("instance", 10),
-		EnvironmentID: prodEnvironmentUID,
-		Name:          "test",
-		Engine:        db.SQLite,
-		Host:          instanceDir,
-	})
-	a.NoError(err)
-	a.Equal(1, len(instance.DataSourceList))
-
-	adminDataSource := instance.DataSourceList[0]
-	a.Equal(api.AdminDataSourceName, adminDataSource.Name)
-	a.Equal(api.Admin, adminDataSource.Type)
-
-	instanceID := instance.ID
-
-	// create read-only data source.
-	err = ctl.createDataSource(adminDataSource.DatabaseID, api.DataSourceCreate{
-		Name:     api.ReadOnlyDataSourceName,
-		Type:     api.RO,
-		Username: "ro_ds",
-		Password: "",
-		SslCa:    "",
-		SslCert:  "",
-		SslKey:   "",
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       "test",
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Title: api.AdminDataSourceName, Host: instanceDir}},
+		},
 	})
 	a.NoError(err)
 
-	instance, err = ctl.getInstanceByID(instanceID)
+	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
+		Instance: instance.Name,
+		DataSource: &v1pb.DataSource{
+			Title:    api.ReadOnlyDataSourceName,
+			Type:     v1pb.DataSourceType_READ_ONLY,
+			Username: "ro_ds",
+			Password: "",
+			SslCa:    "",
+			SslCert:  "",
+			SslKey:   "",
+		},
+	})
+	a.ErrorContains(err, "Read replica connection is a ENTERPRISE feature")
+	err = ctl.setLicense()
 	a.NoError(err)
-	a.NotEqual(nil, instance)
-	a.Equal(2, len(instance.DataSourceList))
-
-	readOnlyDataSource := instance.DataSourceList[1]
-	a.Equal(api.ReadOnlyDataSourceName, readOnlyDataSource.Name)
-	a.Equal(api.RO, readOnlyDataSource.Type)
-
-	dataSourceNewName := "updated_ro_ds"
-	dataSourceNewPassword := "bytebase"
-	// create read-only data source.
-	err = ctl.patchDataSource(adminDataSource.DatabaseID, readOnlyDataSource.ID, api.DataSourcePatch{
-		Username: &dataSourceNewName,
-		Password: &dataSourceNewPassword,
+	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
+		Instance: instance.Name,
+		DataSource: &v1pb.DataSource{
+			Title:    api.ReadOnlyDataSourceName,
+			Type:     v1pb.DataSourceType_READ_ONLY,
+			Username: "ro_ds",
+			Password: "",
+			SslCa:    "",
+			SslCert:  "",
+			SslKey:   "",
+		},
 	})
 	a.NoError(err)
 
-	dataSourceNewHost := "127.0.0.1"
-	dataSourceNewPort := "8000"
-
-	// update read-only data source read replica fields without enterprise license.
+	instance, err = ctl.instanceServiceClient.GetInstance(ctx, &v1pb.GetInstanceRequest{Name: instance.Name})
+	a.NoError(err)
+	a.Equal(2, len(instance.DataSources))
 	err = ctl.removeLicense()
 	a.NoError(err)
-	err = ctl.patchDataSource(adminDataSource.DatabaseID, readOnlyDataSource.ID, api.DataSourcePatch{
-		Host: &dataSourceNewHost,
-		Port: &dataSourceNewPort,
+
+	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
+		Instance: instance.Name,
+		DataSource: &v1pb.DataSource{
+			Type: v1pb.DataSourceType_READ_ONLY,
+			Host: "127.0.0.1",
+			Port: "8000",
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{"host", "port"},
+		},
 	})
-	a.Equal(err.Error(), "http response error code 403 body \"{\\\"message\\\":\\\"Read replica connection is a ENTERPRISE feature, please upgrade to access it.\\\"}\\n\"")
+	a.ErrorContains(err, "Read replica connection is a ENTERPRISE feature")
 
 	err = ctl.setLicense()
 	a.NoError(err)
-	err = ctl.patchDataSource(adminDataSource.DatabaseID, readOnlyDataSource.ID, api.DataSourcePatch{
-		Host: &dataSourceNewHost,
-		Port: &dataSourceNewPort,
+	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
+		Instance: instance.Name,
+		DataSource: &v1pb.DataSource{
+			Type: v1pb.DataSourceType_READ_ONLY,
+			Host: "127.0.0.1",
+			Port: "8000",
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{"host", "port"},
+		},
 	})
 	a.NoError(err)
 
-	err = ctl.deleteDataSource(adminDataSource.DatabaseID, readOnlyDataSource.ID)
+	_, err = ctl.instanceServiceClient.RemoveDataSource(ctx, &v1pb.RemoveDataSourceRequest{
+		Instance:   instance.Name,
+		DataSource: &v1pb.DataSource{Type: v1pb.DataSourceType_READ_ONLY},
+	})
 	a.NoError(err)
-
-	instance, err = ctl.getInstanceByID(instanceID)
-	a.NoError(err)
-	a.NotEqual(nil, instance)
-	a.Equal(1, len(instance.DataSourceList))
 }

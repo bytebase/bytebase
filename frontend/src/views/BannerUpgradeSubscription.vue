@@ -64,7 +64,7 @@ import { reactive } from "vue";
 import {
   useIdentityProviderStore,
   useInstanceStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
 } from "@/store";
 import { onMounted } from "vue";
 import { computed } from "vue";
@@ -82,7 +82,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const router = useRouter();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 const state = reactive<LocalState>({
   showModal: false,
 });

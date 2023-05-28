@@ -44,10 +44,10 @@
           </template>
 
           <NTabPane name="DATABASES" :tab="$t('common.databases')">
-            <DatabaseTable
+            <DatabaseV1Table
               mode="INSTANCE"
               :scroll-on-page-change="false"
-              :database-list="databaseList"
+              :database-list="databaseV1List"
             />
           </NTabPane>
           <NTabPane name="USERS" :tab="$t('instance.users')">
@@ -99,7 +99,7 @@
   >
     <CreateDatabasePrepForm
       :environment-id="environment?.uid"
-      :instance-id="instanceId"
+      :instance-id="instance.uid"
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </BBModal>
@@ -123,31 +123,29 @@ import {
   isMemberOfProjectV1,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
-import DatabaseTable from "../components/DatabaseTable.vue";
 import { InstanceRoleTable } from "@/components/v2";
 import InstanceForm from "../components/InstanceForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
-import { Database, MigrationSchemaStatus, SQLResultSet } from "../types";
+import { SQLResultSet } from "../types";
 import {
   featureToRef,
   pushNotification,
   useDatabaseStore,
   useInstanceStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
   useSQLStore,
   useDBSchemaStore,
-  useProjectV1Store,
   useCurrentUserV1,
   useInstanceV1Store,
   useEnvironmentV1Store,
   useGracefulRequest,
+  useDatabaseV1Store,
 } from "@/store";
+import { DatabaseV1Table } from "@/components/v2";
 import { State } from "@/types/proto/v1/common";
+import { watchEffect } from "vue";
 
 interface LocalState {
-  migrationSetupStatus: MigrationSchemaStatus;
-  showCreateMigrationSchemaModal: boolean;
-  creatingMigrationSchema: boolean;
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
   showFeatureModal: boolean;
@@ -162,16 +160,14 @@ const props = defineProps({
 
 const instanceStore = useInstanceStore();
 const instanceV1Store = useInstanceV1Store();
-const subscriptionStore = useSubscriptionStore();
+const databaseStore = useDatabaseV1Store();
+const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();
 const sqlStore = useSQLStore();
 
 const state = reactive<LocalState>({
-  migrationSetupStatus: "OK",
-  showCreateMigrationSchemaModal: false,
-  creatingMigrationSchema: false,
   showCreateDatabaseModal: false,
   syncingSchema: false,
   showFeatureModal: false,
@@ -191,8 +187,14 @@ const environment = computed(() => {
 
 const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
-const databaseList = computed(() => {
-  const list = useDatabaseStore().getDatabaseListByInstanceId(instanceId.value);
+watchEffect(() => {
+  databaseStore.searchDatabaseList({
+    parent: instance.value.name,
+  });
+});
+
+const databaseV1List = computed(() => {
+  const list = databaseStore.databaseListByInstance(instance.value.name);
 
   if (
     hasWorkspacePermissionV1(
@@ -206,17 +208,9 @@ const databaseList = computed(() => {
   // In edge case when the user is no longer an Owner or DBA, we only want to display the database
   // belonging to the project which the user is a member of. The returned list above may contain
   // databases not meeting this criteria and we need to filter out them.
-  const filteredList: Database[] = [];
-  for (const database of list) {
-    const projectV1 = useProjectV1Store().getProjectByUID(
-      String(database.project.id)
-    );
-    if (isMemberOfProjectV1(projectV1.iamPolicy, currentUserV1.value)) {
-      filteredList.push(database);
-    }
-  }
-
-  return filteredList;
+  return list.filter((db) => {
+    return isMemberOfProjectV1(db.projectEntity.iamPolicy, currentUserV1.value);
+  });
 });
 
 const instanceRoleList = computed(() => {

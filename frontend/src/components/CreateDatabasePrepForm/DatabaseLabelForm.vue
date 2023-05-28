@@ -31,7 +31,6 @@
 
 import { capitalize } from "lodash-es";
 import { computed, defineComponent } from "vue";
-import type { DatabaseLabel, LabelKeyType, LabelValueType } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import {
   hidePrefix,
@@ -43,7 +42,7 @@ import { BBTextField } from "@/bbkit";
 
 const props = defineProps<{
   project: Project;
-  labelList: DatabaseLabel[];
+  labels: Record<string, string>;
   filter: "required" | "optional";
 }>();
 
@@ -51,7 +50,7 @@ const isDbNameTemplateMode = computed((): boolean => {
   return !!props.project.dbNameTemplate;
 });
 
-const requiredLabelDict = computed((): Set<LabelKeyType> => {
+const requiredLabelDict = computed((): Set<string> => {
   if (!isDbNameTemplateMode.value) {
     // all labels are optional if we have no template
     return new Set();
@@ -62,27 +61,25 @@ const requiredLabelDict = computed((): Set<LabelKeyType> => {
   return new Set(keys);
 });
 
-const formItemList = computed(
-  (): { label: LabelKeyType; required: boolean }[] => {
-    return PRESET_LABEL_KEYS.map((label) => {
-      const required = requiredLabelDict.value.has(label);
-      return {
-        label,
-        required,
-      };
-    });
-  }
-);
+const formItemList = computed((): { label: string; required: boolean }[] => {
+  return PRESET_LABEL_KEYS.map((label) => {
+    const required = requiredLabelDict.value.has(label);
+    return {
+      label,
+      required,
+    };
+  });
+});
 
 const filteredFormItemList = computed(
-  (): { label: LabelKeyType; required: boolean }[] => {
+  (): { label: string; required: boolean }[] => {
     return formItemList.value.filter((item) =>
       props.filter === "required" ? item.required : !item.required
     );
   }
 );
 
-const getLabelPlaceholder = (key: LabelKeyType): string => {
+const getLabelPlaceholder = (key: string): string => {
   // provide "Input Tenant" if Tenant is optional
   // provide "Input {{TENANT}}" if Tenant is required in the template
   key = requiredLabelDict.value.has(key)
@@ -91,23 +88,22 @@ const getLabelPlaceholder = (key: LabelKeyType): string => {
   return key;
 };
 
-const getLabelValue = (key: LabelKeyType): LabelValueType | undefined => {
-  return props.labelList.find((label) => label.key === key)?.value || "";
+const getLabelValue = (key: string): string => {
+  return props.labels[key] ?? "";
 };
 
-const setLabelValue = (key: LabelKeyType, value: LabelValueType) => {
-  const label = props.labelList.find((label) => label.key === key);
-  if (label) {
-    label.value = value;
+const setLabelValue = (key: string, value: string) => {
+  if (value) {
+    props.labels[key] = value;
   } else {
-    props.labelList.push({ key, value });
+    delete props.labels[key];
   }
 };
 
 defineExpose({
   // called by parent component
   validate: (): boolean => {
-    return validateLabelsWithTemplate(props.labelList, requiredLabelDict.value);
+    return validateLabelsWithTemplate(props.labels, requiredLabelDict.value);
   },
 });
 </script>

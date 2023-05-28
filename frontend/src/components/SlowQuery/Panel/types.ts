@@ -1,8 +1,12 @@
 import dayjs from "dayjs";
-import { Instance, Database, UNKNOWN_ID } from "@/types";
-import { ListSlowQueriesRequest } from "@/types/proto/v1/database_service";
+import { UNKNOWN_ID } from "@/types";
+import {
+  Database,
+  ListSlowQueriesRequest,
+} from "@/types/proto/v1/database_service";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { Project } from "@/types/proto/v1/project_service";
+import { Instance } from "@/types/proto/v1/instance_service";
 
 export type SlowQueryFilterParams = {
   project: Project | undefined; // undefined to "All"
@@ -43,11 +47,11 @@ export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
 
   const query: string[] = [];
   request.parent = "instances/-/databases/-";
-  if (database && database.id !== UNKNOWN_ID) {
-    request.parent = `instances/${database.instance.resourceId}/databases/${database.name}`;
-  } else if (instance && instance.id !== UNKNOWN_ID) {
-    request.parent = `instances/${instance.resourceId}/databases/-`;
-  } else if (environment && parseInt(environment.uid) !== UNKNOWN_ID) {
+  if (database && database.uid !== String(UNKNOWN_ID)) {
+    request.parent = database.name;
+  } else if (instance && instance.uid !== String(UNKNOWN_ID)) {
+    request.parent = `${instance.name}/databases/-`;
+  } else if (environment && environment.uid !== String(UNKNOWN_ID)) {
     request.parent = `instances/-/databases/-`;
     query.push(`environment = "${environment.name}"`);
   }

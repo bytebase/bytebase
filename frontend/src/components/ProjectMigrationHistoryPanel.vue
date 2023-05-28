@@ -28,23 +28,23 @@
 <script lang="ts" setup>
 import { PropType, reactive, watchEffect } from "vue";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
-import { Database, InstanceMigration, MigrationHistory } from "../types";
+import { ComposedDatabase, MigrationHistory } from "../types";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { fullDatabasePath } from "../utils";
+import { databaseV1Slug } from "../utils";
 import { useInstanceStore } from "@/store";
 
 // Show at most 5 recent migration history for each database
 const MAX_MIGRATION_HISTORY_COUNT = 5;
 
 interface LocalState {
-  databaseSectionList: Database[];
+  databaseSectionList: ComposedDatabase[];
   migrationHistorySectionList: BBTableSectionDataSource<MigrationHistory>[];
 }
 
 const props = defineProps({
   databaseList: {
     required: true,
-    type: Object as PropType<Database[]>,
+    type: Object as PropType<ComposedDatabase[]>,
   },
 });
 
@@ -55,42 +55,36 @@ const state = reactive<LocalState>({
   migrationHistorySectionList: [],
 });
 
-const fetchMigrationHistory = (databaseList: Database[]) => {
+const fetchMigrationHistory = (databaseList: ComposedDatabase[]) => {
   state.databaseSectionList = [];
   state.migrationHistorySectionList = [];
   for (const database of databaseList) {
     instanceStore
-      .checkMigrationSetup(database.instance.id)
-      .then((migration: InstanceMigration) => {
-        if (migration.status == "OK") {
-          instanceStore
-            .fetchMigrationHistory({
-              instanceId: database.instance.id,
-              databaseName: database.name,
-              limit: MAX_MIGRATION_HISTORY_COUNT,
-            })
-            .then((migrationHistoryList: MigrationHistory[]) => {
-              if (migrationHistoryList.length > 0) {
-                state.databaseSectionList.push(database);
+      .fetchMigrationHistory({
+        instanceId: Number(database.instanceEntity.uid),
+        databaseName: database.databaseName,
+        limit: MAX_MIGRATION_HISTORY_COUNT,
+      })
+      .then((migrationHistoryList: MigrationHistory[]) => {
+        if (migrationHistoryList.length > 0) {
+          state.databaseSectionList.push(database);
 
-                const title = `${database.name} (${database.instance.environment.name})`;
-                const index = state.migrationHistorySectionList.findIndex(
-                  (item: BBTableSectionDataSource<MigrationHistory>) => {
-                    return item.title == title;
-                  }
-                );
-                const newItem = {
-                  title: title,
-                  link: `${fullDatabasePath(database)}#change-history`,
-                  list: migrationHistoryList,
-                };
-                if (index >= 0) {
-                  state.migrationHistorySectionList[index] = newItem;
-                } else {
-                  state.migrationHistorySectionList.push(newItem);
-                }
-              }
-            });
+          const title = `${database.databaseName} (${database.instanceEntity.environmentEntity.title})`;
+          const index = state.migrationHistorySectionList.findIndex(
+            (item: BBTableSectionDataSource<MigrationHistory>) => {
+              return item.title == title;
+            }
+          );
+          const newItem = {
+            title: title,
+            link: `/db/${databaseV1Slug(database)}#change-history`,
+            list: migrationHistoryList,
+          };
+          if (index >= 0) {
+            state.migrationHistorySectionList[index] = newItem;
+          } else {
+            state.migrationHistorySectionList.push(newItem);
+          }
         }
       });
   }

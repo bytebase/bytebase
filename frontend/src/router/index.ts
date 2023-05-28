@@ -53,13 +53,14 @@ import {
   useOnboardingStateStore,
   useTabStore,
   useIdentityProviderStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
   useUserStore,
   useProjectV1Store,
   useProjectWebhookV1Store,
   useEnvironmentV1Store,
   useCurrentUserV1,
   useInstanceV1Store,
+  useDatabaseV1Store,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -739,7 +740,7 @@ const routes: Array<RouteRecordRaw> = [
                       );
 
                       if (
-                        useSubscriptionStore().currentPlan ===
+                        useSubscriptionV1Store().currentPlan ===
                         PlanType.ENTERPRISE
                       ) {
                         // in ENTERPRISE edition
@@ -962,8 +963,9 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return useDatabaseStore().getDatabaseById(idFromSlug(slug))
-                      .name;
+                    return useDatabaseV1Store().getDatabaseByUID(
+                      String(idFromSlug(slug))
+                    ).databaseName;
                   },
                   allowBookmark: true,
                 },
@@ -1509,8 +1511,9 @@ router.beforeEach((to, from, next) => {
       next();
       return;
     }
-    databaseStore
-      .fetchDatabaseById(idFromSlug(databaseSlug))
+    useDatabaseV1Store()
+      .fetchDatabaseByUID(String(idFromSlug(databaseSlug)))
+      .then(() => databaseStore.fetchDatabaseById(idFromSlug(databaseSlug)))
       .then((database: Database) => {
         dbSchemaStore
           .getOrFetchDatabaseMetadataById(database.id, true)

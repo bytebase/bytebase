@@ -2488,5 +2488,11 @@
       "description": "Rol de querier del proyecto definido por el sistema"
     },
     "select-role": "Seleccionar rol"
+  },
+  "database-group": {
+    "factor": {
+      "resource_database_name": "nombre de la base de datos",
+      "resource_table_name": "nombre de la tabla"
+    }
   }
 }

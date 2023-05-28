@@ -35,9 +35,9 @@
 /* eslint-disable vue/no-mutating-props */
 
 import { computed, PropType, watch } from "vue";
-import { Database } from "../../types";
+import { ComposedDatabase } from "../../types";
 import {
-  getLabelValuesFromDatabaseList,
+  getLabelValuesFromDatabaseV1List,
   hidePrefix,
   PRESET_LABEL_KEYS,
   RESERVED_LABEL_KEYS,
@@ -60,7 +60,7 @@ const props = defineProps({
     required: true,
   },
   databaseList: {
-    type: Array as PropType<Database[]>,
+    type: Array as PropType<ComposedDatabase[]>,
     default: () => [],
   },
   editable: {
@@ -75,9 +75,7 @@ defineEmits<{
 
 const keys = computed(() => {
   const availableList = [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
-  const allKeys = props.databaseList.flatMap((db) =>
-    db.labels.map((label) => label.key)
-  );
+  const allKeys = props.databaseList.flatMap((db) => Object.keys(db.labels));
   return uniq(allKeys).filter((key) => availableList.includes(key));
 });
 const allowMultipleValues = computed(() => {
@@ -85,7 +83,7 @@ const allowMultipleValues = computed(() => {
 });
 const values = computed(() => {
   if (!props.selector.key) return [];
-  return getLabelValuesFromDatabaseList(
+  return getLabelValuesFromDatabaseV1List(
     props.selector.key,
     props.databaseList,
     false /* !withEmptyValue */

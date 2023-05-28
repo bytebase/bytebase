@@ -11,9 +11,9 @@
       <heroicons-solid:chevron-right class="flex-shrink-0 h-4 w-4 opacity-70" />
       <span>{{ instance.name }}</span>
     </template>
-    <template v-if="database.id !== UNKNOWN_ID">
+    <template v-if="databaseV1.uid !== String(UNKNOWN_ID)">
       <heroicons-solid:chevron-right class="flex-shrink-0 h-4 w-4 opacity-70" />
-      <span>{{ database.name }}</span>
+      <span>{{ databaseV1.databaseName }}</span>
     </template>
   </label>
 </template>
@@ -23,7 +23,7 @@ import { computed, PropType } from "vue";
 
 import type { TabInfo } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { useDatabaseById, useInstanceById } from "@/store";
+import { useDatabaseV1ByUID, useInstanceById } from "@/store";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 
 const props = defineProps({
@@ -40,5 +40,8 @@ const props = defineProps({
 const connection = computed(() => props.tab.connection);
 
 const instance = useInstanceById(computed(() => connection.value.instanceId));
-const database = useDatabaseById(computed(() => connection.value.databaseId));
+
+const { database: databaseV1 } = useDatabaseV1ByUID(
+  computed(() => String(connection.value.databaseId))
+);
 </script>

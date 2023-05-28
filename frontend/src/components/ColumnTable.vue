@@ -42,16 +42,16 @@
       </BBTableCell>
       <BBTableCell
         v-if="
-          engine != 'POSTGRES' &&
-          engine != 'CLICKHOUSE' &&
-          engine != 'SNOWFLAKE'
+          engine !== Engine.POSTGRES &&
+          engine !== Engine.CLICKHOUSE &&
+          engine !== Engine.SNOWFLAKE
         "
         class="w-8"
       >
         {{ column.characterSet }}
       </BBTableCell>
       <BBTableCell
-        v-if="engine != 'CLICKHOUSE' && engine != 'SNOWFLAKE'"
+        v-if="engine !== Engine.CLICKHOUSE && engine !== Engine.SNOWFLAKE"
         class="w-8"
       >
         {{ column.collation }}
@@ -69,242 +69,228 @@
   />
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { computed, defineComponent, PropType, reactive } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { Column, Database } from "@/types";
+import { Column, ComposedDatabase } from "@/types";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import { featureToRef, useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { BBTableColumn } from "@/bbkit/types";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
-import { getDatabasePathByLegacyDatabase } from "@/store/modules/v1/common";
 import {
   PolicyType,
   SensitiveData,
   SensitiveDataMaskType,
 } from "@/types/proto/v1/org_policy_service";
+import { Engine } from "@/types/proto/v1/common";
 
 type LocalState = {
   showFeatureModal: boolean;
 };
 
-export default defineComponent({
-  name: "ColumnTable",
-  props: {
-    database: {
-      required: true,
-      type: Object as PropType<Database>,
-    },
-    schema: {
-      required: true,
-      type: String,
-    },
-    table: {
-      required: true,
-      type: Object as PropType<TableMetadata>,
-    },
-    columnList: {
-      required: true,
-      type: Object as PropType<ColumnMetadata[]>,
-    },
-    sensitiveDataList: {
-      required: true,
-      type: Array as PropType<SensitiveData[]>,
-    },
+const props = defineProps({
+  database: {
+    required: true,
+    type: Object as PropType<ComposedDatabase>,
   },
-  setup(props) {
-    const { t } = useI18n();
-    const state = reactive<LocalState>({
-      showFeatureModal: false,
-    });
-    const engine = computed(() => {
-      return props.database.instance.engine;
-    });
-
-    const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
-    const showSensitiveColumn = computed(() => {
-      return (
-        hasSensitiveDataFeature.value &&
-        (engine.value === "MYSQL" ||
-          engine.value === "TIDB" ||
-          engine.value === "POSTGRES")
-      );
-    });
-
-    const currentUserV1 = useCurrentUserV1();
-    const allowAdmin = computed(() => {
-      if (
-        hasWorkspacePermissionV1(
-          "bb.permission.workspace.manage-sensitive-data",
-          currentUserV1.value.userRole
-        )
-      ) {
-        // True if the currentUser has workspace level sensitive data
-        // R+W privileges. AKA DBA or Workspace owner
-        return true;
-      }
-
-      // False otherwise
-      return false;
-    });
-
-    const NORMAL_COLUMN_LIST = computed(() => {
-      const columnList: BBTableColumn[] = [
-        {
-          title: t("common.name"),
-        },
-        {
-          title: t("common.type"),
-        },
-        {
-          title: t("common.Default"),
-        },
-        {
-          title: t("database.nullable"),
-        },
-        {
-          title: t("db.character-set"),
-        },
-        {
-          title: t("db.collation"),
-        },
-        {
-          title: t("database.comment"),
-        },
-      ];
-      if (showSensitiveColumn.value) {
-        columnList.unshift({
-          title: t("database.sensitive"),
-          center: true,
-          nowrap: true,
-        });
-      }
-      return columnList;
-    });
-    const POSTGRES_COLUMN_LIST = computed(() => {
-      const columnList: BBTableColumn[] = [
-        {
-          title: t("common.name"),
-        },
-        {
-          title: t("common.type"),
-        },
-        {
-          title: t("common.Default"),
-        },
-        {
-          title: t("database.nullable"),
-        },
-        {
-          title: t("db.collation"),
-        },
-        {
-          title: t("database.comment"),
-        },
-      ];
-      if (showSensitiveColumn.value) {
-        columnList.unshift({
-          title: t("database.sensitive"),
-          center: true,
-          nowrap: true,
-        });
-      }
-      return columnList;
-    });
-    const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed((): BBTableColumn[] => [
-      {
-        title: t("common.name"),
-      },
-      {
-        title: t("common.type"),
-      },
-      {
-        title: t("common.Default"),
-      },
-      {
-        title: t("database.nullable"),
-      },
-      {
-        title: t("database.comment"),
-      },
-    ]);
-
-    const columnNameList = computed(() => {
-      switch (engine.value) {
-        case "POSTGRES":
-          return POSTGRES_COLUMN_LIST.value;
-        case "CLICKHOUSE":
-        case "SNOWFLAKE":
-          return CLICKHOUSE_SNOWFLAKE_COLUMN_LIST.value;
-        default:
-          return NORMAL_COLUMN_LIST.value;
-      }
-    });
-
-    const isSensitiveColumn = (column: Column) => {
-      return (
-        props.sensitiveDataList.findIndex((sensitiveData) => {
-          return (
-            sensitiveData.table === props.table.name &&
-            sensitiveData.column === column.name
-          );
-        }) >= 0
-      );
-    };
-
-    const toggleSensitiveColumn = (column: Column, on: boolean, e: Event) => {
-      if (!hasSensitiveDataFeature.value) {
-        state.showFeatureModal = true;
-
-        // Revert UI states
-        e.preventDefault();
-        e.stopPropagation();
-        (e.target as HTMLInputElement).checked = !on;
-        return;
-      }
-
-      const index = props.sensitiveDataList.findIndex((sensitiveData) => {
-        return (
-          sensitiveData.table === props.table.name &&
-          sensitiveData.column === column.name
-        );
-      });
-      const sensitiveDataList = cloneDeep(props.sensitiveDataList);
-      if (on && index < 0) {
-        // Turn on sensitive
-        sensitiveDataList.push({
-          schema: props.schema,
-          table: props.table.name,
-          column: column.name,
-          maskType: SensitiveDataMaskType.DEFAULT,
-        });
-      } else if (!on && index >= 0) {
-        sensitiveDataList.splice(index, 1);
-      }
-
-      usePolicyV1Store().upsertPolicy({
-        parentPath: getDatabasePathByLegacyDatabase(props.database),
-        policy: {
-          type: PolicyType.SENSITIVE_DATA,
-          sensitiveDataPolicy: {
-            sensitiveData: sensitiveDataList,
-          },
-        },
-        updateMask: ["payload"],
-      });
-    };
-
-    return {
-      engine,
-      state,
-      columnNameList,
-      showSensitiveColumn,
-      allowAdmin,
-      isSensitiveColumn,
-      toggleSensitiveColumn,
-    };
+  schema: {
+    required: true,
+    type: String,
+  },
+  table: {
+    required: true,
+    type: Object as PropType<TableMetadata>,
+  },
+  columnList: {
+    required: true,
+    type: Object as PropType<ColumnMetadata[]>,
+  },
+  sensitiveDataList: {
+    required: true,
+    type: Array as PropType<SensitiveData[]>,
   },
 });
+
+const { t } = useI18n();
+const state = reactive<LocalState>({
+  showFeatureModal: false,
+});
+const engine = computed(() => {
+  return props.database.instanceEntity.engine;
+});
+
+const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+const showSensitiveColumn = computed(() => {
+  return (
+    hasSensitiveDataFeature.value &&
+    (engine.value === Engine.MYSQL ||
+      engine.value === Engine.TIDB ||
+      engine.value === Engine.POSTGRES)
+  );
+});
+
+const currentUserV1 = useCurrentUserV1();
+const allowAdmin = computed(() => {
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-sensitive-data",
+      currentUserV1.value.userRole
+    )
+  ) {
+    // True if the currentUser has workspace level sensitive data
+    // R+W privileges. AKA DBA or Workspace owner
+    return true;
+  }
+
+  // False otherwise
+  return false;
+});
+
+const NORMAL_COLUMN_LIST = computed(() => {
+  const columnList: BBTableColumn[] = [
+    {
+      title: t("common.name"),
+    },
+    {
+      title: t("common.type"),
+    },
+    {
+      title: t("common.Default"),
+    },
+    {
+      title: t("database.nullable"),
+    },
+    {
+      title: t("db.character-set"),
+    },
+    {
+      title: t("db.collation"),
+    },
+    {
+      title: t("database.comment"),
+    },
+  ];
+  if (showSensitiveColumn.value) {
+    columnList.unshift({
+      title: t("database.sensitive"),
+      center: true,
+      nowrap: true,
+    });
+  }
+  return columnList;
+});
+const POSTGRES_COLUMN_LIST = computed(() => {
+  const columnList: BBTableColumn[] = [
+    {
+      title: t("common.name"),
+    },
+    {
+      title: t("common.type"),
+    },
+    {
+      title: t("common.Default"),
+    },
+    {
+      title: t("database.nullable"),
+    },
+    {
+      title: t("db.collation"),
+    },
+    {
+      title: t("database.comment"),
+    },
+  ];
+  if (showSensitiveColumn.value) {
+    columnList.unshift({
+      title: t("database.sensitive"),
+      center: true,
+      nowrap: true,
+    });
+  }
+  return columnList;
+});
+const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed((): BBTableColumn[] => [
+  {
+    title: t("common.name"),
+  },
+  {
+    title: t("common.type"),
+  },
+  {
+    title: t("common.Default"),
+  },
+  {
+    title: t("database.nullable"),
+  },
+  {
+    title: t("database.comment"),
+  },
+]);
+
+const columnNameList = computed(() => {
+  switch (engine.value) {
+    case Engine.POSTGRES:
+      return POSTGRES_COLUMN_LIST.value;
+    case Engine.CLICKHOUSE:
+    case Engine.SNOWFLAKE:
+      return CLICKHOUSE_SNOWFLAKE_COLUMN_LIST.value;
+    default:
+      return NORMAL_COLUMN_LIST.value;
+  }
+});
+
+const isSensitiveColumn = (column: Column) => {
+  return (
+    props.sensitiveDataList.findIndex((sensitiveData) => {
+      return (
+        sensitiveData.table === props.table.name &&
+        sensitiveData.column === column.name
+      );
+    }) >= 0
+  );
+};
+
+const toggleSensitiveColumn = (column: Column, on: boolean, e: Event) => {
+  if (!hasSensitiveDataFeature.value) {
+    state.showFeatureModal = true;
+
+    // Revert UI states
+    e.preventDefault();
+    e.stopPropagation();
+    (e.target as HTMLInputElement).checked = !on;
+    return;
+  }
+
+  const index = props.sensitiveDataList.findIndex((sensitiveData) => {
+    return (
+      sensitiveData.table === props.table.name &&
+      sensitiveData.column === column.name
+    );
+  });
+  const sensitiveDataList = cloneDeep(props.sensitiveDataList);
+  if (on && index < 0) {
+    // Turn on sensitive
+    sensitiveDataList.push({
+      schema: props.schema,
+      table: props.table.name,
+      column: column.name,
+      maskType: SensitiveDataMaskType.DEFAULT,
+    });
+  } else if (!on && index >= 0) {
+    sensitiveDataList.splice(index, 1);
+  }
+
+  usePolicyV1Store().upsertPolicy({
+    parentPath: props.database.name,
+    policy: {
+      type: PolicyType.SENSITIVE_DATA,
+      sensitiveDataPolicy: {
+        sensitiveData: sensitiveDataList,
+      },
+    },
+    updateMask: ["payload"],
+  });
+};
 </script>

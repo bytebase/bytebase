@@ -118,13 +118,14 @@
         <div>
           <h2 class="textlabel flex items-center">
             <span class="mr-1">{{ $t("common.when") }}</span>
-            <div class="tooltip-wrapper">
-              <span class="tooltip w-60">{{
-                $t("task.earliest-allowed-time-hint")
-              }}</span>
-              <!-- Heroicons name: outline/question-mark-circle -->
-              <heroicons-outline:question-mark-circle class="h-4 w-4" />
-            </div>
+            <NTooltip>
+              <template #trigger>
+                <heroicons-outline:question-mark-circle class="h-4 w-4" />
+              </template>
+              <div class="w-60">
+                {{ $t("task.earliest-allowed-time-hint") }}
+              </div>
+            </NTooltip>
           </h2>
           <h2 class="text-gray-600 text-sm">
             <span class="row-span-1">{{ "UTC" + dayjs().format("ZZ") }}</span>
@@ -288,7 +289,7 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive, ref, watch, watchEffect } from "vue";
 import { isEqual } from "lodash-es";
-import { NDatePicker } from "naive-ui";
+import { NDatePicker, NTooltip } from "naive-ui";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";

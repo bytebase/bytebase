@@ -323,7 +323,7 @@ import {
   VCSType,
 } from "@/types";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
-import { hasFeature, useSubscriptionStore } from "@/store";
+import { hasFeature, useSubscriptionV1Store } from "@/store";
 import LearnMoreLink from "./LearnMoreLink.vue";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
@@ -382,7 +382,7 @@ export default defineComponent({
       showFeatureModal: false,
     });
 
-    const subscriptionStore = useSubscriptionStore();
+    const subscriptionStore = useSubscriptionV1Store();
 
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";

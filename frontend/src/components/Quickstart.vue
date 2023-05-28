@@ -123,7 +123,7 @@ import {
   pushNotification,
   useActuatorStore,
   useCurrentUserV1,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
   useUIStateStore,
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -137,7 +137,7 @@ type IntroItem = {
 
 const actuatorStore = useActuatorStore();
 const uiStateStore = useUIStateStore();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 const kbarHandler = useKBarHandler();
 
