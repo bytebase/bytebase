@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
-import { reactive } from "vue";
+import { onMounted, reactive } from "vue";
 import DatabaseGroupTable from "./DatabaseGroupTable.vue";
 
 interface LocalState {
@@ -25,4 +25,8 @@ interface LocalState {
 const state = reactive<LocalState>({
   databaseGroupList: [],
 });
+
+onMounted(()=>{
+
+})
 </script>

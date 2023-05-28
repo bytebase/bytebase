@@ -10,7 +10,7 @@ const useDBGroupStore = defineStore("db-group", () => {
     const cached = dbGroupListMapByProjectId.get(projectId);
     if (cached) return cached;
 
-    const dbGroupList = await projectServiceClient.(projectId);
+    const dbGroupList = await projectServiceClient(projectId);
     dbGroupListMapByProjectId.set(projectId, dbGroupList);
     return dbGroupList;
   };
