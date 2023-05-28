@@ -214,7 +214,7 @@ import { useLanguage } from "../composables/useLanguage";
 import {
   useCurrentUser,
   useDebugStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
   useInboxStore,
   useCurrentUserV1,
 } from "@/store";
@@ -237,7 +237,7 @@ export default defineComponent({
     const { t, availableLocales } = useI18n();
     const debugStore = useDebugStore();
     const inboxStore = useInboxStore();
-    const subscriptionStore = useSubscriptionStore();
+    const subscriptionStore = useSubscriptionV1Store();
     const router = useRouter();
     const route = useRoute();
     const { setLocale, toggleLocales, locale } = useLanguage();

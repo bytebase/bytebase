@@ -14,7 +14,7 @@ import { PropType, computed } from "vue";
 import { FeatureType, planTypeToString } from "@/types";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useSubscriptionStore, pushNotification } from "@/store";
+import { useSubscriptionV1Store, pushNotification } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const props = defineProps({
@@ -36,7 +36,7 @@ const props = defineProps({
 
 const router = useRouter();
 const { t } = useI18n();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const actionText = computed(() => {
   if (!subscriptionStore.canTrial) {

@@ -132,7 +132,7 @@ import {
   pushNotification,
   useDatabaseStore,
   useInstanceStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
   useSQLStore,
   useDBSchemaStore,
   useCurrentUserV1,
@@ -161,7 +161,7 @@ const props = defineProps({
 const instanceStore = useInstanceStore();
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();

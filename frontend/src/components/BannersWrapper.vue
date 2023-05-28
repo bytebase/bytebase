@@ -28,7 +28,7 @@ import {
   useActuatorStore,
   useCurrentUserV1,
   useDebugStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
 } from "@/store/modules";
 import { hasWorkspacePermissionV1, isDev } from "@/utils";
 import BannerDemo from "@/views/BannerDemo.vue";
@@ -40,7 +40,7 @@ import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
 const actuatorStore = useActuatorStore();
 const currentUserV1 = useCurrentUserV1();
 const debugStore = useDebugStore();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const { isDemo, isReadonly, needConfigureExternalUrl } =
   storeToRefs(actuatorStore);

@@ -67,7 +67,7 @@ import {
   useCurrentUserV1,
   pushNotification,
   useSQLReviewStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
   useEnvironmentV1List,
 } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
@@ -105,7 +105,7 @@ const { t } = useI18n();
 const router = useRouter();
 const store = useSQLReviewStore();
 const currentUserV1 = useCurrentUserV1();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;

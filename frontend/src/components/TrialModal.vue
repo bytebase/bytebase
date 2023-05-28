@@ -55,14 +55,14 @@
 <script lang="ts" setup>
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useSubscriptionStore, pushNotification } from "@/store";
+import { useSubscriptionV1Store, pushNotification } from "@/store";
 import { planTypeToString } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
 const router = useRouter();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const learnMore = () => {
   router.push({ name: "setting.workspace.subscription" });

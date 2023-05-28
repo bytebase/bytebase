@@ -53,7 +53,7 @@ import {
   useOnboardingStateStore,
   useTabStore,
   useIdentityProviderStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
   useUserStore,
   useProjectV1Store,
   useProjectWebhookV1Store,
@@ -740,7 +740,7 @@ const routes: Array<RouteRecordRaw> = [
                       );
 
                       if (
-                        useSubscriptionStore().currentPlan ===
+                        useSubscriptionV1Store().currentPlan ===
                         PlanType.ENTERPRISE
                       ) {
                         // in ENTERPRISE edition
