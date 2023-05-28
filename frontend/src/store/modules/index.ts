@@ -29,7 +29,6 @@ export * from "./sql";
 export * from "./sqlEditor";
 export * from "./webTerminal";
 export * from "./connectionTree";
-export * from "./subscription";
 export * from "./tab";
 export * from "./task";
 export * from "./uistate";

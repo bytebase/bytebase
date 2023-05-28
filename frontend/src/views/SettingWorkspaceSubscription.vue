@@ -133,7 +133,7 @@ import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
   pushNotification,
   useCurrentUserV1,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
 } from "@/store";
 import { storeToRefs } from "pinia";
 import { hasWorkspacePermissionV1 } from "@/utils";
@@ -144,7 +144,7 @@ interface LocalState {
   showTrialModal: boolean;
 }
 
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 

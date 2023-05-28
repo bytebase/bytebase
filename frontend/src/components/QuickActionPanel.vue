@@ -316,7 +316,7 @@ import {
   useInstanceV1Store,
   useProjectV1ListByCurrentUser,
   useRouterStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
 } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import InstanceForm from "../components/InstanceForm/";
@@ -347,7 +347,7 @@ const router = useRouter();
 const route = useRoute();
 const routerStore = useRouterStore();
 const commandStore = useCommandStore();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const hasCustomRoleFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.custom-role");

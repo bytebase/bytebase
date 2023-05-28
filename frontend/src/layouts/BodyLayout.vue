@@ -254,7 +254,7 @@ import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
   useActuatorStore,
   useCurrentUserV1,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
 } from "@/store";
 
 interface LocalState {
@@ -273,7 +273,7 @@ export default defineComponent({
   },
   setup() {
     const actuatorStore = useActuatorStore();
-    const subscriptionStore = useSubscriptionStore();
+    const subscriptionStore = useSubscriptionV1Store();
     const route = useRoute();
     const router = useRouter();
 
