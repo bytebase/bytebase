@@ -9,7 +9,6 @@ import {
   Instance,
   InstanceCreate,
   InstanceId,
-  InstanceMigration,
   InstancePatch,
   InstanceState,
   InstanceUserId,
@@ -20,14 +19,12 @@ import {
   ResourceIdentifier,
   ResourceObject,
   RowStatus,
-  SQLResultSet,
   unknown,
   UNKNOWN_ID,
 } from "@/types";
 import { InstanceUser } from "@/types/InstanceUser";
 import { useLegacyEnvironmentStore } from "./environment";
 import { useDataSourceStore } from "./dataSource";
-import { useSQLStore } from "./sql";
 
 function convert(
   instance: ResourceObject,
@@ -339,29 +336,6 @@ export const useInstanceStore = defineStore("instance", {
         instanceUserList,
       });
       return instanceUserList;
-    },
-    async checkMigrationSetup(
-      instanceId: InstanceId
-    ): Promise<InstanceMigration> {
-      const data = (
-        await axios.get(`/api/instance/${instanceId}/migration/status`, {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        })
-      ).data.data;
-
-      return {
-        status: data.attributes.status,
-        error: data.attributes.error,
-      };
-    },
-    async createMigrationSetup(instanceId: InstanceId): Promise<SQLResultSet> {
-      const res = (
-        await axios.post(`/api/instance/${instanceId}/migration`, undefined, {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        })
-      ).data;
-
-      return useSQLStore().convert(res.data) as SQLResultSet;
     },
     async fetchMigrationHistoryById({
       instanceId,
