@@ -54,7 +54,6 @@
     "bookmarks": "书签",
     "quick-action": "快捷操作",
     "archive": "归档",
-    "quickstart": "新手任务",
     "logout": "登出",
     "close": "关闭",
     "latest": "最新",
@@ -957,6 +956,8 @@
     "production-environment": "生产环境"
   },
   "quick-start": {
+    "self": "新手任务",
+    "guide": "可点击步骤进行尝试",
     "view-an-issue": "查看工单",
     "visit-project": "@:common.visit@:common.projects",
     "visit-instance": "@:common.visit@:common.instances",
