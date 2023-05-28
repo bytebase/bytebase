@@ -48,7 +48,7 @@ Most translation work would be done in the Vue file under the `<template>` tag w
 For example:
 
 ```html
-{{ $t("common.quickstart") }}
+{{ $t("quick-start.self") }}
 ```
 
 ### Translate message in `<script>`
@@ -66,7 +66,7 @@ export default {
     const { t } = useI18n()
 
     return {
-      quickStart: t("common.quickstart")
+      quickStart: t("quick-start.self")
     }
   },
   ...

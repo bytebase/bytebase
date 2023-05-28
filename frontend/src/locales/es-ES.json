@@ -54,7 +54,6 @@
     "bookmarks": "Marcadores",
     "quick-action": "Acción rápida",
     "archive": "Archivo",
-    "quickstart": "Inicio rápido",
     "logout": "Cerrar sesión",
     "close": "Cerrar",
     "latest": "Último",
@@ -951,6 +950,8 @@
     "production-environment": "Entorno de producción"
   },
   "quick-start": {
+    "self": "Inicio rápido",
+    "guide": "haga clic en el paso para probarlo",
     "view-an-issue": "Ver una incidencia",
     "visit-project": "@:common.visit @:common.projects",
     "visit-instance": "@:common.visit @:common.instances",

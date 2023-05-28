@@ -91,7 +91,7 @@
           class="menu-item"
           role="menuitem"
           @click.prevent="resetQuickstart"
-          >{{ $t("common.quickstart") }}</a
+          >{{ $t("quick-start.self") }}</a
         >
         <a
           href="https://bytebase.com/docs?source=console"
