@@ -13,6 +13,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLSyntax, &SyntaxAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLSyntax, &SyntaxAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLSyntax, &SyntaxAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLSyntax, &SyntaxAdvisor{})
 }
 
 // SyntaxAdvisor is the advisor for checking syntax.

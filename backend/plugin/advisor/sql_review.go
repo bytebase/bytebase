@@ -478,7 +478,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
-	case db.TiDB, db.MySQL, db.MariaDB, db.Postgres:
+	case db.TiDB, db.MySQL, db.MariaDB, db.Postgres, db.OceanBase:
 		if err := finder.WalkThrough(statements); err != nil {
 			return convertWalkThroughErrorToAdvice(checkContext, err)
 		}
@@ -793,7 +793,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 	switch ruleType {
 	case SchemaRuleStatementRequireWhere:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLWhereRequirement, nil
 		case db.Postgres:
 			return PostgreSQLWhereRequirement, nil
@@ -802,7 +802,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLNoLeadingWildcardLike, nil
 		case db.Postgres:
 			return PostgreSQLNoLeadingWildcardLike, nil
@@ -811,7 +811,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleStatementNoSelectAll:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLNoSelectAll, nil
 		case db.Postgres:
 			return PostgreSQLNoSelectAll, nil
@@ -820,14 +820,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLMigrationCompatibility, nil
 		case db.Postgres:
 			return PostgreSQLMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLNamingTableConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingTableConvention, nil
@@ -836,7 +836,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLNamingIndexConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingIndexConvention, nil
@@ -847,28 +847,28 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleUKNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLNamingUKConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingUKConvention, nil
 		}
 	case SchemaRuleFKNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLNamingFKConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingFKConvention, nil
 		}
 	case SchemaRuleColumnNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLNamingColumnConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingColumnConvention, nil
 		}
 	case SchemaRuleAutoIncrementColumnNaming:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLNamingAutoIncrementColumnConvention, nil
 		}
 	case SchemaRuleTableNameNoKeyword:
@@ -885,7 +885,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLColumnRequirement, nil
 		case db.Postgres:
 			return PostgreSQLColumnRequirement, nil
@@ -894,7 +894,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLColumnNoNull, nil
 		case db.Postgres:
 			return PostgreSQLColumnNoNull, nil
@@ -903,39 +903,39 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleColumnDisallowChangeType:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLColumnDisallowChangingType, nil
 		case db.Postgres:
 			return PostgreSQLColumnDisallowChangingType, nil
 		}
 	case SchemaRuleColumnSetDefaultForNotNull:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLColumnSetDefaultForNotNull, nil
 		}
 	case SchemaRuleColumnDisallowChange:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLColumnDisallowChanging, nil
 		}
 	case SchemaRuleColumnDisallowChangingOrder:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLColumnDisallowChangingOrder, nil
 		}
 	case SchemaRuleColumnCommentConvention:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLColumnCommentConvention, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustInteger:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLAutoIncrementColumnMustInteger, nil
 		}
 	case SchemaRuleColumnTypeDisallowList:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLColumnTypeRestriction, nil
 		case db.Postgres:
 			return PostgreSQLColumnTypeDisallowList, nil
@@ -944,12 +944,12 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleColumnDisallowSetCharset:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLDisallowSetColumnCharset, nil
 		}
 	case SchemaRuleColumnMaximumCharacterLength:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLColumnMaximumCharacterLength, nil
 		case db.Postgres:
 			return PostgreSQLColumnMaximumCharacterLength, nil
@@ -962,22 +962,22 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLAutoIncrementColumnInitialValue, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustUnsigned:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLAutoIncrementColumnMustUnsigned, nil
 		}
 	case SchemaRuleCurrentTimeColumnCountLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLCurrentTimeColumnCountLimit, nil
 		}
 	case SchemaRuleColumnRequireDefault:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLRequireColumnDefault, nil
 		case db.Postgres:
 			return PostgreSQLRequireColumnDefault, nil
@@ -990,7 +990,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLTableRequirePK, nil
 		case db.Postgres:
 			return PostgreSQLTableRequirePK, nil
@@ -999,7 +999,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleTableNoFK:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLTableNoFK, nil
 		case db.Postgres:
 			return PostgreSQLTableNoFK, nil
@@ -1008,19 +1008,19 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLTableDropNamingConvention, nil
 		case db.Postgres:
 			return PostgreSQLTableDropNamingConvention, nil
 		}
 	case SchemaRuleTableCommentConvention:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLTableCommentConvention, nil
 		}
 	case SchemaRuleTableDisallowPartition:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLTableDisallowPartition, nil
 		case db.Postgres:
 			return PostgreSQLTableDisallowPartition, nil
@@ -1032,19 +1032,19 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleDropEmptyDatabase:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLDatabaseAllowDropIfEmpty, nil
 		}
 	case SchemaRuleIndexNoDuplicateColumn:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLIndexNoDuplicateColumn, nil
 		case db.Postgres:
 			return PostgreSQLIndexNoDuplicateColumn, nil
 		}
 	case SchemaRuleIndexKeyNumberLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLIndexKeyNumberLimit, nil
 		case db.Postgres:
 			return PostgreSQLIndexKeyNumberLimit, nil
@@ -1053,45 +1053,45 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleIndexTotalNumberLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLIndexTotalNumberLimit, nil
 		case db.Postgres:
 			return PostgreSQLIndexTotalNumberLimit, nil
 		}
 	case SchemaRuleStatementDisallowCommit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLStatementDisallowCommit, nil
 		case db.Postgres:
 			return PostgreSQLStatementDisallowCommit, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLCharsetAllowlist, nil
 		case db.Postgres:
 			return PostgreSQLEncodingAllowlist, nil
 		}
 	case SchemaRuleCollationAllowlist:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLCollationAllowlist, nil
 		case db.Postgres:
 			return PostgreSQLCollationAllowlist, nil
 		}
 	case SchemaRuleIndexPKTypeLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLIndexPKType, nil
 		}
 	case SchemaRuleIndexTypeNoBlob:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLIndexTypeNoBlob, nil
 		}
 	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL, db.TiDB, db.OceanBase:
 			return MySQLPrimaryKeyTypeAllowlist, nil
 		case db.Postgres:
 			return PostgreSQLPrimaryKeyTypeAllowlist, nil
@@ -1102,14 +1102,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLInsertRowLimit, nil
 		case db.Postgres:
 			return PostgreSQLInsertRowLimit, nil
 		}
 	case SchemaRuleStatementInsertMustSpecifyColumn:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLInsertMustSpecifyColumn, nil
 		case db.Postgres:
 			return PostgreSQLInsertMustSpecifyColumn, nil
@@ -1118,38 +1118,38 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleStatementInsertDisallowOrderByRand:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLInsertDisallowOrderByRand, nil
 		case db.Postgres:
 			return PostgreSQLInsertDisallowOrderByRand, nil
 		}
 	case SchemaRuleStatementDisallowLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLDisallowLimit, nil
 		}
 	case SchemaRuleStatementDisallowOrderBy:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLDisallowOrderBy, nil
 		}
 	case SchemaRuleStatementMergeAlterTable:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLMergeAlterTable, nil
 		case db.Postgres:
 			return PostgreSQLMergeAlterTable, nil
 		}
 	case SchemaRuleStatementAffectedRowLimit:
 		switch engine {
-		case db.MySQL, db.MariaDB:
+		case db.MySQL, db.MariaDB, db.OceanBase:
 			return MySQLStatementAffectedRowLimit, nil
 		case db.Postgres:
 			return PostgreSQLStatementAffectedRowLimit, nil
 		}
 	case SchemaRuleStatementDMLDryRun:
 		switch engine {
-		case db.MySQL, db.TiDB, db.MariaDB:
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			return MySQLStatementDMLDryRun, nil
 		case db.Postgres:
 			return PostgreSQLStatementDMLDryRun, nil
