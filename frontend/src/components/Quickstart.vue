@@ -170,7 +170,7 @@ const introList = computed(() => {
     },
     {
       name: computed(() => t("quick-start.query-data")),
-      link: "/sql-editor/sheet/sample-sheet-101",
+      link: "/sql-editor/sheet/project-sample-101",
       done: computed(() => uiStateStore.getIntroStateByKey("data.query")),
     },
     {

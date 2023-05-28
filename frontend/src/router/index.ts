@@ -1250,7 +1250,7 @@ router.beforeEach((to, from, next) => {
       // Open the "Sample Sheet" when the first time onboarding SQL Editor
       onboardingStateStore.consume("sql-editor");
       next({
-        path: `/sql-editor/sheet/sample-sheet-101`,
+        path: `/sql-editor/sheet/project-sample-101`,
         replace: true,
       });
       return;
