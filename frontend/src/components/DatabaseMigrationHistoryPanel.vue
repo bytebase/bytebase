@@ -120,22 +120,12 @@ const currentUserV1 = useCurrentUserV1();
 const prepareMigrationHistoryList = () => {
   state.loading = true;
   instanceStore
-    .checkMigrationSetup(Number(props.database.instanceEntity.uid))
-    .then((migration) => {
-      state.migrationSetupStatus = migration.status;
-      if (state.migrationSetupStatus == "OK") {
-        instanceStore
-          .fetchMigrationHistory({
-            instanceId: Number(props.database.instanceEntity.uid),
-            databaseName: props.database.databaseName,
-          })
-          .then(() => {
-            state.loading = false;
-          })
-          .catch(() => {
-            state.loading = false;
-          });
-      }
+    .fetchMigrationHistory({
+      instanceId: Number(props.database.instanceEntity.uid),
+      databaseName: props.database.databaseName,
+    })
+    .then(() => {
+      state.loading = false;
     })
     .catch(() => {
       state.loading = false;

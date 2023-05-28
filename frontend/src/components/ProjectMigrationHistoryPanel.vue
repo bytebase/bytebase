@@ -28,11 +28,7 @@
 <script lang="ts" setup>
 import { PropType, reactive, watchEffect } from "vue";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
-import {
-  ComposedDatabase,
-  InstanceMigration,
-  MigrationHistory,
-} from "../types";
+import { ComposedDatabase, MigrationHistory } from "../types";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { databaseV1Slug } from "../utils";
 import { useInstanceStore } from "@/store";
@@ -64,37 +60,31 @@ const fetchMigrationHistory = (databaseList: ComposedDatabase[]) => {
   state.migrationHistorySectionList = [];
   for (const database of databaseList) {
     instanceStore
-      .checkMigrationSetup(Number(database.instanceEntity.uid))
-      .then((migration: InstanceMigration) => {
-        if (migration.status == "OK") {
-          instanceStore
-            .fetchMigrationHistory({
-              instanceId: Number(database.instanceEntity.uid),
-              databaseName: database.databaseName,
-              limit: MAX_MIGRATION_HISTORY_COUNT,
-            })
-            .then((migrationHistoryList: MigrationHistory[]) => {
-              if (migrationHistoryList.length > 0) {
-                state.databaseSectionList.push(database);
+      .fetchMigrationHistory({
+        instanceId: Number(database.instanceEntity.uid),
+        databaseName: database.databaseName,
+        limit: MAX_MIGRATION_HISTORY_COUNT,
+      })
+      .then((migrationHistoryList: MigrationHistory[]) => {
+        if (migrationHistoryList.length > 0) {
+          state.databaseSectionList.push(database);
 
-                const title = `${database.databaseName} (${database.instanceEntity.environmentEntity.title})`;
-                const index = state.migrationHistorySectionList.findIndex(
-                  (item: BBTableSectionDataSource<MigrationHistory>) => {
-                    return item.title == title;
-                  }
-                );
-                const newItem = {
-                  title: title,
-                  link: `/db/${databaseV1Slug(database)}#change-history`,
-                  list: migrationHistoryList,
-                };
-                if (index >= 0) {
-                  state.migrationHistorySectionList[index] = newItem;
-                } else {
-                  state.migrationHistorySectionList.push(newItem);
-                }
-              }
-            });
+          const title = `${database.databaseName} (${database.instanceEntity.environmentEntity.title})`;
+          const index = state.migrationHistorySectionList.findIndex(
+            (item: BBTableSectionDataSource<MigrationHistory>) => {
+              return item.title == title;
+            }
+          );
+          const newItem = {
+            title: title,
+            link: `/db/${databaseV1Slug(database)}#change-history`,
+            list: migrationHistoryList,
+          };
+          if (index >= 0) {
+            state.migrationHistorySectionList[index] = newItem;
+          } else {
+            state.migrationHistorySectionList.push(newItem);
+          }
         }
       });
   }
