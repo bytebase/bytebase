@@ -12,7 +12,9 @@
       </div>
       <div class="bb-grid-cell">{{ item.environment }}</div>
       <div class="bb-grid-cell gap-x-2">
-        <NButton size="small">Configure</NButton>
+        <NButton size="small" @click="$emit('edit', item.databaseGroup)"
+          >Configure</NButton
+        >
       </div>
     </template>
   </BBGrid>
@@ -30,10 +32,15 @@ interface FormatedDatabaseGroup {
   name: string;
   databasePlaceholder: string;
   environment: string;
+  databaseGroup: DatabaseGroup;
 }
 
 const props = defineProps<{
   databaseGroupList: DatabaseGroup[];
+}>();
+
+defineEmits<{
+  (event: "edit", databaseGroup: DatabaseGroup): void;
 }>();
 
 const { t } = useI18n();
@@ -61,16 +68,17 @@ watch(
   async () => {
     const list: FormatedDatabaseGroup[] = [];
     for (const databaseGroup of props.databaseGroupList) {
-      const result = await convertDatabaseGroupExprFromCEL(
+      const convertResult = await convertDatabaseGroupExprFromCEL(
         databaseGroup.databaseExpr?.expression ?? ""
       );
       const environment = environmentStore.getEnvironmentByName(
-        result.environmentId
+        convertResult.environmentId
       );
       list.push({
         name: databaseGroup.name,
         databasePlaceholder: databaseGroup.databasePlaceholder,
         environment: environment?.title || "",
+        databaseGroup,
       });
     }
     formatedDatabaseGroupList.value = list;

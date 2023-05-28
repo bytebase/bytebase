@@ -4,20 +4,24 @@
       <span>Database groups</span>
       <div class="flex flex-row gap-x-2">
         <NButton>New table group</NButton>
-        <NButton @click="state.showCreatingDatabaseGroup = true"
+        <NButton @click="state.showDatabaseGroupPanel = true"
           >New database group</NButton
         >
       </div>
     </div>
     <div class="mt-4">
-      <DatabaseGroupTable :database-group-list="databaseGroupList" />
+      <DatabaseGroupTable
+        :database-group-list="databaseGroupList"
+        @edit="handleConfigureDatabaseGroup"
+      />
     </div>
   </div>
 
   <DatabaseGroupPanel
-    v-if="state.showCreatingDatabaseGroup"
+    v-if="state.showDatabaseGroupPanel"
     :project="project"
-    @close="state.showCreatingDatabaseGroup = false"
+    :database-group="state.editingDatabaseGroup"
+    @close="state.showDatabaseGroupPanel = false"
   />
 </template>
 
@@ -27,9 +31,11 @@ import { useDBGroupStore } from "@/store";
 import { ComposedProject } from "@/types";
 import DatabaseGroupTable from "./DatabaseGroupTable.vue";
 import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
+import { DatabaseGroup } from "@/types/proto/v1/project_service";
 
 interface LocalState {
-  showCreatingDatabaseGroup: boolean;
+  showDatabaseGroupPanel: boolean;
+  editingDatabaseGroup?: DatabaseGroup;
 }
 
 const props = defineProps<{
@@ -38,7 +44,7 @@ const props = defineProps<{
 
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
-  showCreatingDatabaseGroup: false,
+  showDatabaseGroupPanel: false,
 });
 
 const databaseGroupList = computed(() => {
@@ -48,4 +54,9 @@ const databaseGroupList = computed(() => {
 onMounted(async () => {
   await dbGroupStore.getOrFetchDBGroupListByProjectName(props.project.name);
 });
+
+const handleConfigureDatabaseGroup = (databaseGroup: DatabaseGroup) => {
+  state.editingDatabaseGroup = databaseGroup;
+  state.showDatabaseGroupPanel = true;
+};
 </script>

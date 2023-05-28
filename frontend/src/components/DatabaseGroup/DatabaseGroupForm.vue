@@ -77,7 +77,10 @@ import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { ComposedProject, ResourceId, ValidatedMessage } from "@/types";
 import EnvironmentSelect from "../EnvironmentSelect.vue";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
-import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
+import {
+  convertDatabaseGroupExprFromCEL,
+  stringifyDatabaseGroupExpr,
+} from "@/utils/databaseGroup/cel";
 import { useDBGroupStore, useEnvironmentV1Store } from "@/store";
 import { Expr } from "@/types/proto/google/type/expr";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
@@ -111,8 +114,22 @@ const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 const isCreating = computed(() => props.databaseGroup === undefined);
 
-onMounted(() => {
-  // TODO: parse and initial state fields from props.databaseGroup
+onMounted(async () => {
+  const databaseGroup = props.databaseGroup;
+  if (!databaseGroup) {
+    return;
+  }
+
+  const convertResult = await convertDatabaseGroupExprFromCEL(
+    databaseGroup.databaseExpr?.expression ?? ""
+  );
+  const environment = environmentStore.getEnvironmentByName(
+    convertResult.environmentId
+  );
+  state.resourceId = databaseGroup.name.split("/").pop() || "";
+  state.databasePlaceholder = databaseGroup.databasePlaceholder;
+  state.environmentId = environment?.uid;
+  state.expr = convertResult.conditionGroupExpr;
 });
 
 const validateResourceId = async (

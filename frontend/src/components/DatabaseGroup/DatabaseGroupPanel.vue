@@ -18,7 +18,7 @@
         <div class="flex items-center justify-end gap-x-2">
           <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
           <NButton type="primary">
-            {{ $t("common.select") }}
+            {{ $t("common.confirm") }}
           </NButton>
         </div>
       </template>
@@ -28,10 +28,10 @@
 
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent } from "naive-ui";
+import { computed } from "vue";
+import { ComposedProject } from "@/types";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
-import { ComposedProject } from "@/types";
-import { computed } from "vue";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -43,6 +43,7 @@ defineEmits<{
 }>();
 
 const isCreating = computed(() => props.databaseGroup === undefined);
+
 const title = computed(() => {
   return isCreating.value ? "Create database group" : "Edit database group";
 });
