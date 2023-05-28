@@ -1069,13 +1069,32 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		return errors.Wrapf(err, "failed to create onboarding SQL Review policy")
 	}
 
+	// Create a standalone sample SQL sheet.
+	// This is different from another sample SQL sheet created below, which is created as part of
+	// creating a schema change issue.
+	sheetCreate := &api.SheetCreate{
+		CreatorID:  userID,
+		ProjectID:  project.UID,
+		DatabaseID: &database.UID,
+		Name:       "Sample Sheet",
+		Statement:  "SELECT * FROM salary;",
+		Visibility: api.ProjectSheet,
+		Source:     api.SheetFromBytebase,
+		Type:       api.SheetForSQL,
+	}
+	_, err = s.store.CreateSheet(ctx, sheetCreate)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create sample sheet")
+	}
+
+	// Create a schema update issue and start with creating the sheet for the schema update.
 	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
 		CreatorID: api.SystemBotID,
 
 		ProjectID:  project.UID,
 		DatabaseID: &database.UID,
 
-		Name:       "Sheet for Sample Project",
+		Name:       "Alter table sheet for Sample Issue",
 		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 		Visibility: api.ProjectSheet,
 		Source:     api.SheetFromBytebaseArtifact,
@@ -1086,7 +1105,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, userID int) error {
 		return errors.Wrapf(err, "failed to create sheet for sample project")
 	}
 
-	// Create a schema update issue.
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
 			DetailList: []*api.MigrationDetail{
@@ -1157,22 +1175,6 @@ Click "Approve" button to apply the schema update.`,
 	}, userID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding sensitive data policy")
-	}
-
-	// Create a SQL sheet with sample queries.
-	sheetCreate := &api.SheetCreate{
-		CreatorID:  userID,
-		ProjectID:  project.UID,
-		DatabaseID: &database.UID,
-		Name:       "Sample Sheet",
-		Statement:  "SELECT * FROM salary;",
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebase,
-		Type:       api.SheetForSQL,
-	}
-	_, err = s.store.CreateSheet(ctx, sheetCreate)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create sample sheet")
 	}
 
 	return nil
