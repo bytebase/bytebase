@@ -133,7 +133,9 @@ export default defineComponent({
       const list: (ProjectTabItem | null)[] = [
         { name: t("common.overview"), hash: "overview" },
         { name: t("common.databases"), hash: "databases" },
-        { name: "Database groups", hash: "database-groups" },
+        isTenantProject.value
+          ? { name: "Database groups", hash: "database-groups" }
+          : null,
 
         isTenantProject.value
           ? null // Hide "Change History" tab for tenant projects

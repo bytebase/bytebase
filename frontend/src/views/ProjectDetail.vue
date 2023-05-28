@@ -13,7 +13,7 @@
     <ProjectDatabasesPanel v-else :database-list="databaseV1List" />
   </template>
   <template v-if="isDev && hash === 'database-groups'">
-    <ProjectDatabaseGroupPanel />
+    <ProjectDatabaseGroupPanel :project="projectV1" />
   </template>
   <template v-if="hash === 'change-history'">
     <ProjectMigrationHistoryPanel

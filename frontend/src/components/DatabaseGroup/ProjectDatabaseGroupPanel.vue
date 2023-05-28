@@ -4,29 +4,48 @@
       <span>Database groups</span>
       <div class="flex flex-row gap-x-2">
         <NButton>New table group</NButton>
-        <NButton>New database group</NButton>
+        <NButton @click="state.showCreatingDatabaseGroup = true"
+          >New database group</NButton
+        >
       </div>
     </div>
     <div class="mt-4">
-      <DatabaseGroupTable :database-group-list="state.databaseGroupList" />
+      <DatabaseGroupTable :database-group-list="databaseGroupList" />
     </div>
   </div>
+
+  <DatabaseGroupPanel
+    v-if="state.showCreatingDatabaseGroup"
+    :project="project"
+    @close="state.showCreatingDatabaseGroup = false"
+  />
 </template>
 
 <script lang="ts" setup>
-import { DatabaseGroup } from "@/types/proto/v1/project_service";
-import { onMounted, reactive } from "vue";
+import { computed, onMounted, reactive } from "vue";
+import { useDBGroupStore } from "@/store";
+import { ComposedProject } from "@/types";
 import DatabaseGroupTable from "./DatabaseGroupTable.vue";
+import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
 
 interface LocalState {
-  databaseGroupList: DatabaseGroup[];
+  showCreatingDatabaseGroup: boolean;
 }
 
+const props = defineProps<{
+  project: ComposedProject;
+}>();
+
+const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
-  databaseGroupList: [],
+  showCreatingDatabaseGroup: false,
 });
 
-onMounted(()=>{
+const databaseGroupList = computed(() => {
+  return dbGroupStore.getDBGroupListByProjectName(props.project.name);
+});
 
-})
+onMounted(async () => {
+  await dbGroupStore.getOrFetchDBGroupListByProjectName(props.project.name);
+});
 </script>
