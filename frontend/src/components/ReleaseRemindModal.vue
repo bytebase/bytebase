@@ -51,9 +51,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useActuatorStore } from "@/store";
+import { useActuatorV1Store } from "@/store";
 
 defineEmits(["cancel"]);
 
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 </script>

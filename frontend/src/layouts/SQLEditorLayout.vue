@@ -30,15 +30,14 @@
 
 <script lang="ts" setup>
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
-import { ServerInfo } from "@/types";
-import { pushNotification, useActuatorStore } from "@/store";
+import { pushNotification, useActuatorV1Store } from "@/store";
 import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 
 const ping = () => {
-  actuatorStore.fetchServerInfo().then((info: ServerInfo) => {
+  actuatorStore.fetchServerInfo().then((info) => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

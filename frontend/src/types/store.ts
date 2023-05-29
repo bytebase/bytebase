@@ -1,10 +1,4 @@
-import { RemovableRef } from "@vueuse/core";
-import {
-  MigrationHistoryId,
-  QueryHistory,
-  Sheet,
-  OnboardingGuideType,
-} from ".";
+import { MigrationHistoryId, QueryHistory, OnboardingGuideType } from ".";
 import { Activity } from "./activity";
 import { Backup, BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
@@ -20,7 +14,6 @@ import {
   PrincipalId,
   ProjectId,
   VCSId,
-  SheetId,
 } from "./id";
 import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
@@ -33,16 +26,9 @@ import { Project } from "./project";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
 import { Label } from "./label";
-import { ReleaseInfo } from "./actuator";
 import type { DebugLog } from "@/types/debug";
 import type { AuditLog } from "@/types/auditLog";
 import { DatabaseMetadata } from "./proto/store/database";
-import { ActuatorInfo } from "@/types/proto/v1/actuator_service";
-
-export interface ActuatorState {
-  serverInfo?: ActuatorInfo;
-  releaseInfo: RemovableRef<ReleaseInfo>;
-}
 
 export interface AuditLogState {
   auditLogList: AuditLog[];
@@ -156,10 +142,6 @@ export interface SQLEditorState {
   isFetchingQueryHistory: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
-}
-
-export interface SheetState {
-  sheetById: Map<SheetId, Sheet>;
 }
 
 export interface DebugState {
