@@ -2182,7 +2182,8 @@
     "instance": "Instance",
     "project": "Project",
     "idp": "Identity Provider",
-    "role": "Role"
+    "role": "Role",
+    "database-group": "Database Group"
   },
   "resource-id": {
     "self": "{resource} ID",
