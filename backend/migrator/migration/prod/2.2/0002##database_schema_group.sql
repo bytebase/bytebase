@@ -11,7 +11,7 @@ CREATE TABLE db_group (
     expression JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_db_group_unique_resource_id ON db_group(resource_id);
+CREATE UNIQUE INDEX idx_db_group_unique_project_resource_id_resource_id ON db_group(project_resource_id, resource_id);
 
 CREATE INDEX idx_db_group_project_resource_id ON db_group(project_resource_id);
 
@@ -36,7 +36,7 @@ CREATE TABLE schema_group (
     expression JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_schema_group_unique_resource_id ON schema_group(resource_id);
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_resource_id_resource_id ON schema_group(db_group_resource_id, resource_id);
 
 CREATE INDEX idx_schema_group_db_group_resource_id ON schema_group(db_group_resource_id);
 
