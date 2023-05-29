@@ -6036,6 +6036,7 @@ FIXME(d/xz): support spec with deployment config
 | database_schema_baseline | [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline) |  |  |
 | database_schema_update | [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate) |  |  |
 | database_data_update | [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate) |  |  |
+| database_backup | [Task.DatabaseBackup](#bytebase-v1-Task-DatabaseBackup) |  |  |
 | database_restore_restore | [Task.DatabaseRestoreRestore](#bytebase-v1-Task-DatabaseRestoreRestore) |  |  |
 
 
