@@ -1,4 +1,5 @@
 /* eslint-disable */
+import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
@@ -912,6 +913,8 @@ export interface DatabaseGroup {
    * Format: projects/{project}/databaseGroups/{databaseGroup}
    */
   name: string;
+  /** The system-assigned, unique identifier for a resource. */
+  uid: number;
   /**
    * The short name used in actual databases specified by users.
    * For example, the placeholder for db1_2010, db1_2021, db1_2023 will be "db1".
@@ -1006,16 +1009,18 @@ export interface SchemaGroup {
    * Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
    */
   name: string;
-  /**
-   * The table condition that is associated with this schema group.
-   * The table_placeholder in the sheet script will be rendered to the actual table name.
-   */
-  tableExpr?: Expr;
+  /** The system-assigned, unique identifier for a resource. */
+  uid: number;
   /**
    * The table placeholder used for rendering. For example, if set to "tbl", all the table name
    * "tbl" in the SQL script will be rendered to the actual table name.
    */
   tablePlaceholder: string;
+  /**
+   * The table condition that is associated with this schema group.
+   * The table_placeholder in the sheet script will be rendered to the actual table name.
+   */
+  tableExpr?: Expr;
 }
 
 function createBaseGetProjectRequest(): GetProjectRequest {
@@ -3998,7 +4003,7 @@ export const DeleteDatabaseGroupRequest = {
 };
 
 function createBaseDatabaseGroup(): DatabaseGroup {
-  return { name: "", databasePlaceholder: "", databaseExpr: undefined };
+  return { name: "", uid: 0, databasePlaceholder: "", databaseExpr: undefined };
 }
 
 export const DatabaseGroup = {
@@ -4006,11 +4011,14 @@ export const DatabaseGroup = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.uid !== 0) {
+      writer.uint32(16).int64(message.uid);
+    }
     if (message.databasePlaceholder !== "") {
-      writer.uint32(18).string(message.databasePlaceholder);
+      writer.uint32(26).string(message.databasePlaceholder);
     }
     if (message.databaseExpr !== undefined) {
-      Expr.encode(message.databaseExpr, writer.uint32(26).fork()).ldelim();
+      Expr.encode(message.databaseExpr, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -4030,14 +4038,21 @@ export const DatabaseGroup = {
           message.name = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.uid = longToNumber(reader.int64() as Long);
+          continue;
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
           message.databasePlaceholder = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -4055,6 +4070,7 @@ export const DatabaseGroup = {
   fromJSON(object: any): DatabaseGroup {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      uid: isSet(object.uid) ? Number(object.uid) : 0,
       databasePlaceholder: isSet(object.databasePlaceholder) ? String(object.databasePlaceholder) : "",
       databaseExpr: isSet(object.databaseExpr) ? Expr.fromJSON(object.databaseExpr) : undefined,
     };
@@ -4063,6 +4079,7 @@ export const DatabaseGroup = {
   toJSON(message: DatabaseGroup): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = Math.round(message.uid));
     message.databasePlaceholder !== undefined && (obj.databasePlaceholder = message.databasePlaceholder);
     message.databaseExpr !== undefined &&
       (obj.databaseExpr = message.databaseExpr ? Expr.toJSON(message.databaseExpr) : undefined);
@@ -4076,6 +4093,7 @@ export const DatabaseGroup = {
   fromPartial(object: DeepPartial<DatabaseGroup>): DatabaseGroup {
     const message = createBaseDatabaseGroup();
     message.name = object.name ?? "";
+    message.uid = object.uid ?? 0;
     message.databasePlaceholder = object.databasePlaceholder ?? "";
     message.databaseExpr = (object.databaseExpr !== undefined && object.databaseExpr !== null)
       ? Expr.fromPartial(object.databaseExpr)
@@ -4519,7 +4537,7 @@ export const GetSchemaGroupRequest = {
 };
 
 function createBaseSchemaGroup(): SchemaGroup {
-  return { name: "", tableExpr: undefined, tablePlaceholder: "" };
+  return { name: "", uid: 0, tablePlaceholder: "", tableExpr: undefined };
 }
 
 export const SchemaGroup = {
@@ -4527,11 +4545,14 @@ export const SchemaGroup = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.tableExpr !== undefined) {
-      Expr.encode(message.tableExpr, writer.uint32(18).fork()).ldelim();
+    if (message.uid !== 0) {
+      writer.uint32(16).int64(message.uid);
     }
     if (message.tablePlaceholder !== "") {
       writer.uint32(26).string(message.tablePlaceholder);
+    }
+    if (message.tableExpr !== undefined) {
+      Expr.encode(message.tableExpr, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -4551,11 +4572,11 @@ export const SchemaGroup = {
           message.name = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag !== 16) {
             break;
           }
 
-          message.tableExpr = Expr.decode(reader, reader.uint32());
+          message.uid = longToNumber(reader.int64() as Long);
           continue;
         case 3:
           if (tag !== 26) {
@@ -4563,6 +4584,13 @@ export const SchemaGroup = {
           }
 
           message.tablePlaceholder = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.tableExpr = Expr.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4576,16 +4604,18 @@ export const SchemaGroup = {
   fromJSON(object: any): SchemaGroup {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      tableExpr: isSet(object.tableExpr) ? Expr.fromJSON(object.tableExpr) : undefined,
+      uid: isSet(object.uid) ? Number(object.uid) : 0,
       tablePlaceholder: isSet(object.tablePlaceholder) ? String(object.tablePlaceholder) : "",
+      tableExpr: isSet(object.tableExpr) ? Expr.fromJSON(object.tableExpr) : undefined,
     };
   },
 
   toJSON(message: SchemaGroup): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.tableExpr !== undefined && (obj.tableExpr = message.tableExpr ? Expr.toJSON(message.tableExpr) : undefined);
+    message.uid !== undefined && (obj.uid = Math.round(message.uid));
     message.tablePlaceholder !== undefined && (obj.tablePlaceholder = message.tablePlaceholder);
+    message.tableExpr !== undefined && (obj.tableExpr = message.tableExpr ? Expr.toJSON(message.tableExpr) : undefined);
     return obj;
   },
 
@@ -4596,10 +4626,11 @@ export const SchemaGroup = {
   fromPartial(object: DeepPartial<SchemaGroup>): SchemaGroup {
     const message = createBaseSchemaGroup();
     message.name = object.name ?? "";
+    message.uid = object.uid ?? 0;
+    message.tablePlaceholder = object.tablePlaceholder ?? "";
     message.tableExpr = (object.tableExpr !== undefined && object.tableExpr !== null)
       ? Expr.fromPartial(object.tableExpr)
       : undefined;
-    message.tablePlaceholder = object.tablePlaceholder ?? "";
     return message;
   },
 };
@@ -6622,12 +6653,45 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
   ): Promise<Empty>;
 }
 
+declare var self: any | undefined;
+declare var window: any | undefined;
+declare var global: any | undefined;
+var tsProtoGlobalThis: any = (() => {
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
+  }
+  if (typeof self !== "undefined") {
+    return self;
+  }
+  if (typeof window !== "undefined") {
+    return window;
+  }
+  if (typeof global !== "undefined") {
+    return global;
+  }
+  throw "Unable to locate global object";
+})();
+
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
