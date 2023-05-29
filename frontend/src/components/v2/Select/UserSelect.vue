@@ -199,11 +199,11 @@ const combinedUserList = computed(() => {
   return list;
 });
 
-const handleValueUpdated = () => {
+const handleValueUpdated = (value: string | string[]) => {
   if (props.multiple) {
-    emit("update:users", value.value as string[]);
+    emit("update:users", value as string[]);
   } else {
-    emit("update:user", value.value as string);
+    emit("update:user", value as string);
   }
 };
 
