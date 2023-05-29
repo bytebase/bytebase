@@ -2183,7 +2183,8 @@
     "project": "Project",
     "idp": "Identity Provider",
     "role": "Role",
-    "database-group": "Database Group"
+    "database-group": "Database Group",
+    "schema-group": "Table Group"
   },
   "resource-id": {
     "self": "{resource} ID",

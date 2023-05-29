@@ -8,7 +8,7 @@
   >
     <template #item="{ item }: { item: FormatedDatabaseGroup }">
       <div class="bb-grid-cell">
-        {{ item.databasePlaceholder }}
+        {{ item.resourceId }}
       </div>
       <div class="bb-grid-cell">{{ item.environment }}</div>
       <div class="bb-grid-cell gap-x-2">
@@ -29,7 +29,7 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 interface FormatedDatabaseGroup {
-  name: string;
+  resourceId: string;
   databasePlaceholder: string;
   environment: string;
   databaseGroup: DatabaseGroup;
@@ -75,7 +75,7 @@ watch(
         convertResult.environmentId
       );
       list.push({
-        name: databaseGroup.name,
+        resourceId: databaseGroup.name.split("/").pop() || "",
         databasePlaceholder: databaseGroup.databasePlaceholder,
         environment: environment?.title || "",
         databaseGroup,
