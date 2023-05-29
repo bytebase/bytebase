@@ -425,7 +425,7 @@ message Task {
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 4;
     string character_set = 5;
-    string collection = 6;
+    string collation = 6;
     map<string, string> labels = 7;
   }
 
