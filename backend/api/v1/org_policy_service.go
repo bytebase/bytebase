@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -13,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -81,7 +83,12 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 	for _, policy := range policies {
 		parentPath, err := s.getPolicyParentPath(ctx, policy)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			st := status.Convert(err)
+			if st.Code() == codes.NotFound {
+				log.Debug("failed to found resource for policy", zap.Error(err), zap.String("resource_type", string(policy.ResourceType)), zap.Int("resource_id", policy.ResourceUID))
+				continue
+			}
+			return nil, err
 		}
 		p, err := convertToPolicy(parentPath, policy)
 		if err != nil {
