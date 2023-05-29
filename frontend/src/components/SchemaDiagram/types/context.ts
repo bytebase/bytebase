@@ -7,7 +7,7 @@ import type {
   TableMetadata,
   ColumnMetadata,
 } from "@/types/proto/store/database";
-import type { Database } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import type { Geometry, Point, Rect } from "./geometry";
 import type { EditStatus } from "./edit";
 import type { ForeignKey } from "./schema";
@@ -17,7 +17,7 @@ import type { ForeignKey } from "./schema";
 // and used in its descendants.
 export type SchemaDiagramContext = {
   // Props
-  database: Ref<Database>;
+  database: Ref<ComposedDatabase>;
   databaseMetadata: Ref<DatabaseMetadata>;
   editable: Ref<boolean>;
 

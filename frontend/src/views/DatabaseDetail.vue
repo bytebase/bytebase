@@ -226,7 +226,7 @@
   >
     <div class="w-[80vw] h-full">
       <SchemaDiagram
-        :database="legacyDatabase"
+        :database="database"
         :database-metadata="
           dbSchemaStore.getDatabaseMetadataByDatabaseId(Number(database.uid))
         "
@@ -275,7 +275,6 @@ import {
 } from "@/utils";
 import {
   UNKNOWN_ID,
-  Database,
   SQLResultSet,
   DEFAULT_PROJECT_V1_NAME,
   ComposedDatabase,
@@ -287,7 +286,6 @@ import {
   pushNotification,
   useCurrentUserIamPolicy,
   useCurrentUserV1,
-  useDatabaseStore,
   useDatabaseV1Store,
   useDBSchemaStore,
   useGracefulRequest,
@@ -328,7 +326,6 @@ const props = defineProps({
 
 const { t } = useI18n();
 const router = useRouter();
-const databaseStore = useDatabaseStore();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaStore();
 const sqlStore = useSQLStore();
@@ -361,9 +358,6 @@ const state = reactive<LocalState>({
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
-const legacyDatabase = computed((): Database => {
-  return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
-});
 const database = computed(() => {
   return databaseV1Store.getDatabaseByUID(
     String(idFromSlug(props.databaseSlug))
