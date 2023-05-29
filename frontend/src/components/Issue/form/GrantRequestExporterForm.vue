@@ -29,7 +29,7 @@
         />
         <DatabaseSelect
           class="!w-128"
-          :selected-id="state.databaseId"
+          :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
           :mode="'ALL'"
           :environment-id="state.environmentId"
           :project-id="state.projectId"
@@ -39,9 +39,11 @@
         >
           <template #customizeItem="{ database }">
             <div class="flex items-center">
-              <InstanceEngineIcon :instance="database.instance" />
-              <span class="mx-2">{{ database.name }}</span>
-              <span class="text-gray-400">({{ database.instance.name }})</span>
+              <InstanceV1EngineIcon :instance="database.instanceEntity" />
+              <span class="mx-2">{{ database.databaseName }}</span>
+              <span class="text-gray-400">
+                ({{ instanceV1Name(database.instanceEntity) }})
+              </span>
             </div>
           </template>
         </DatabaseSelect>
@@ -114,7 +116,6 @@ import { head } from "lodash-es";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useIssueLogic } from "../logic";
 import {
-  DatabaseId,
   GrantRequestContext,
   GrantRequestPayload,
   Issue,
@@ -124,7 +125,7 @@ import {
   UNKNOWN_ID,
   dialectOfEngine,
 } from "@/types";
-import { memberListInProjectV1 } from "@/utils";
+import { instanceV1Name, memberListInProjectV1 } from "@/utils";
 import {
   convertUserToPrincipal,
   useDatabaseStore,
@@ -134,12 +135,14 @@ import MonacoEditor from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import { convertFromCEL } from "@/utils/issue/cel";
+import { InstanceV1EngineIcon } from "@/components/v2";
+import DatabaseSelect from "@/components/DatabaseSelect.vue";
 
 interface LocalState {
   // For creating
   projectId?: string;
   environmentId?: string;
-  databaseId?: DatabaseId;
+  databaseId?: string;
   selectedDatabaseResourceList: DatabaseResource[];
   maxRowCount: number;
   exportFormat: "CSV" | "JSON";
@@ -160,10 +163,10 @@ const projectId = computed(() => {
 });
 
 const selectedDatabase = computed(() => {
-  if (!state.databaseId || state.databaseId === UNKNOWN_ID) {
+  if (!state.databaseId || state.databaseId === String(UNKNOWN_ID)) {
     return undefined;
   }
-  return databaseStore.getDatabaseById(state.databaseId as DatabaseId);
+  return databaseStore.getDatabaseById(state.databaseId as string);
 });
 
 const dialect = computed((): SQLDialect => {
@@ -216,7 +219,7 @@ const handleEnvironmentSelect = (environmentId: string) => {
   }
 };
 
-const handleDatabaseSelect = (databaseId: DatabaseId) => {
+const handleDatabaseSelect = (databaseId: string) => {
   state.databaseId = databaseId;
   const database = databaseStore.getDatabaseById(
     state.databaseId || UNKNOWN_ID
@@ -281,7 +284,7 @@ watch(
       ) {
         const resource = head(conditionExpression.databaseResources);
         if (resource) {
-          state.databaseId = resource.databaseId;
+          state.databaseId = String(resource.databaseId);
         }
       }
       if (conditionExpression.statement !== undefined) {

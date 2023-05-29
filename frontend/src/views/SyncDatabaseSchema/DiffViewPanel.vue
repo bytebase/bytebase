@@ -56,7 +56,7 @@
           class="w-full flex-1 border"
           :value="statement"
           :auto-focus="false"
-          :dialect="dialectOfEngine(engineType)"
+          :dialect="dialectOfEngineV1(engine)"
           @change="onStatementChange"
           @ready="updateEditorHeight"
         />
@@ -71,11 +71,11 @@ import { CodeDiff } from "v-code-diff";
 import { NTabs, NTab } from "naive-ui";
 
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import { Database, dialectOfEngine } from "@/types";
+import { ComposedDatabase, dialectOfEngineV1 } from "@/types";
 
 const props = defineProps<{
   statement: string;
-  sourceDatabase: Database;
+  sourceDatabase: ComposedDatabase;
   targetDatabaseSchema: string;
   sourceDatabaseSchema: string;
   shouldShowDiff: boolean;
@@ -90,8 +90,8 @@ const $emit = defineEmits<{
 const tab = ref<"diff" | "ddl">("diff");
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
-const engineType = computed(() => {
-  return props.sourceDatabase.instance.engine;
+const engine = computed(() => {
+  return props.sourceDatabase.instanceEntity.engine;
 });
 
 const updateEditorHeight = () => {
