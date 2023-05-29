@@ -272,20 +272,24 @@ func convertToTask(ctx context.Context, s *store.Store, task *store.TaskMessage)
 
 	switch task.Type {
 	case api.TaskDatabaseCreate:
-		return convertToTaskFromDatabaseCreate(task)
+		return convertToTaskFromDatabaseCreate(ctx, s, task)
 	case api.TaskDatabaseSchemaBaseline:
-		return convertToTaskFromSchemaBaseline(task)
+		return convertToTaskFromSchemaBaseline(ctx, s, task)
 	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync:
 		return convertToTaskFromSchemaUpdate(ctx, s, task)
 	case api.TaskDatabaseSchemaUpdateGhostCutover:
 		return convertToTaskFromSchemaUpdateGhostCutover(ctx, s, task)
 	case api.TaskDatabaseDataUpdate:
+		return convertToTaskFromDataUpdate(ctx, s, task)
 	case api.TaskDatabaseBackup:
+		return convertToTaskFromDatabaseBackUp(ctx, s, task)
 	case api.TaskDatabaseRestorePITRRestore:
 	case api.TaskDatabaseRestorePITRCutover:
 	case api.TaskGeneral:
+		fallthrough
+	default:
+		return nil, errors.Errorf("task type %v is not supported", task.Type)
 	}
-	return nil, errors.Errorf("task type %v is not supported", task.Type)
 }
 
 func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, task *store.TaskMessage) (*v1pb.Task, error) {
@@ -376,31 +380,142 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, task *st
 }
 
 func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Store, task *store.TaskMessage) (*v1pb.Task, error) {
+	if task.DatabaseID == nil {
+		return nil, errors.Errorf("database id is nil")
+	}
 	payload := &api.TaskDatabaseSchemaUpdateGhostCutoverPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
+	}
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database")
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
 		Name:           "",
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
-		Status:         convertToTaskStatus(task.Status),
+		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		Type:           convertToTaskType(task.Type),
 		BlockedByTasks: nil,
-		Target:         "",
+		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
 	}
 	return v1pbTask, nil
 }
 
-func convertToTaskStatus(status api.TaskStatus) v1pb.Task_Status {
+func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, task *store.TaskMessage) (*v1pb.Task, error) {
+	payload := &api.TaskDatabaseDataUpdatePayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
+	}
+	sheetName, err := getResourceNameForSheet(ctx, s, payload.SheetID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet resource name")
+	}
+	var rollbackSheetName string
+	if payload.RollbackSheetID != 0 {
+		sheetName, err := getResourceNameForSheet(ctx, s, payload.RollbackSheetID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get rollback sheet resource name")
+		}
+		rollbackSheetName = sheetName
+	}
+	v1pbTask := &v1pb.Task{
+		Name:           "",
+		Uid:            fmt.Sprintf("%d", task.ID),
+		Title:          task.Name,
+		SpecId:         payload.SpecID,
+		Type:           convertToTaskType(task.Type),
+		BlockedByTasks: nil,
+		Target:         "",
+		Payload: &v1pb.Task_DatabaseDataUpdate_{
+			DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
+				Sheet:               sheetName,
+				SchemaVersion:       payload.SchemaVersion,
+				RollbackEnabled:     payload.RollbackEnabled,
+				RollbackSqlStatus:   convertToRollbackSQLStatus(payload.RollbackSQLStatus),
+				TransactionId:       "",
+				ThreadId:            "",
+				ChangeHistory:       "",
+				BinlogFileStart:     "",
+				BinlogFileEnd:       "",
+				BinlogPositionStart: 0,
+				BinlogPositionEnd:   0,
+				RollbackError:       payload.RollbackError,
+				RollbackSheet:       rollbackSheetName,
+				RollbackFromReview:  payload.RollbackFromReview,
+				RollbackFromTask:    payload.RollbackFromTask,
+			},
+		},
+	}
+	return v1pbTask, nil
+}
+
+func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, task *store.TaskMessage) (*v1pb.Task, error) {
+	payload := &api.TaskDatabaseSchemaUpdatePayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
+	}
+	sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet")
+	}
+	if sheet == nil {
+		return nil, errors.Errorf("sheet not found")
+	}
+	sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet project")
+	}
+	if sheetProject == nil {
+		return nil, errors.Errorf("sheet project not found")
+	}
+	v1pbTask := &v1pb.Task{
+		Name:           "",
+		Uid:            fmt.Sprintf("%d", task.ID),
+		Title:          task.Name,
+		SpecId:         payload.SpecID,
+		Type:           convertToTaskType(task.Type),
+		BlockedByTasks: nil,
+		Target:         "",
+		Payload:        &v1pb.Task_DatabaseBackup_{},
+	}
+	return v1pbTask, nil
+}
+
+func getResourceNameForSheet(ctx context.Context, s *store.Store, sheetUID int) (string, error) {
+	sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetUID}, api.SystemBotID)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get sheet")
+	}
+	if sheet == nil {
+		return "", errors.Errorf("sheet not found")
+	}
+	sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get sheet project")
+	}
+	if sheetProject == nil {
+		return "", errors.Errorf("sheet project not found")
+	}
+	return fmt.Sprintf("%s%s/%s%d", projectNamePrefix, sheetProject.ResourceID, sheetIDPrefix, sheet.UID), nil
+}
+
+func convertToTaskStatus(status api.TaskStatus, skipped bool) v1pb.Task_Status {
 	switch status {
 	case api.TaskPending:
 		return v1pb.Task_PENDING
 	case api.TaskPendingApproval:
 		return v1pb.Task_PENDING_APPROVAL
 	case api.TaskRunning:
+		if skipped {
+			return v1pb.Task_SKIPPED
+		}
 		return v1pb.Task_RUNNING
 	case api.TaskDone:
 		return v1pb.Task_DONE
@@ -408,6 +523,7 @@ func convertToTaskStatus(status api.TaskStatus) v1pb.Task_Status {
 		return v1pb.Task_FAILED
 	case api.TaskCanceled:
 		return v1pb.Task_CANCELED
+
 	default:
 		return v1pb.Task_STATUS_UNSPECIFIED
 	}
