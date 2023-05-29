@@ -618,6 +618,7 @@ export enum Task_Status {
   DONE = 4,
   FAILED = 5,
   CANCELED = 6,
+  SKIPPED = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -644,6 +645,9 @@ export function task_StatusFromJSON(object: any): Task_Status {
     case 6:
     case "CANCELED":
       return Task_Status.CANCELED;
+    case 7:
+    case "SKIPPED":
+      return Task_Status.SKIPPED;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -667,6 +671,8 @@ export function task_StatusToJSON(object: Task_Status): string {
       return "FAILED";
     case Task_Status.CANCELED:
       return "CANCELED";
+    case Task_Status.SKIPPED:
+      return "SKIPPED";
     case Task_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
