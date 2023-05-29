@@ -95,11 +95,6 @@ export const useSheetV1Store = defineStore("sheet_v1", {
       }
     },
     async createSheet(parentPath: string, sheet: Partial<Sheet>) {
-      console.log(
-        "createSheet",
-        parentPath,
-        JSON.stringify(omit(sheet, "content"))
-      );
       const createdSheet = await sheetServiceClient.createSheet({
         parent: parentPath,
         sheet,
