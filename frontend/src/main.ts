@@ -16,7 +16,7 @@ import { router } from "./router";
 import {
   pinia,
   pushNotification,
-  useActuatorStore,
+  useActuatorV1Store,
   useAuthStore,
   useSubscriptionV1Store,
 } from "./store";
@@ -167,7 +167,7 @@ app
 // Even using the <suspense>, it's still too late, thus we do the fetch here.
 // We use finally because we always want to mount the app regardless of the error.
 const initActuator = () => {
-  const actuatorStore = useActuatorStore();
+  const actuatorStore = useActuatorV1Store();
   return actuatorStore.fetchServerInfo();
 };
 const initSubscription = () => {
@@ -193,7 +193,7 @@ Promise.all([
   app.mount("#app");
 
   // Try to mount demo vue app instance
-  const serverInfo = useActuatorStore().serverInfo;
+  const serverInfo = useActuatorV1Store().serverInfo;
   if ((serverInfo && serverInfo.demoName) || isDev()) {
     mountDemoApp();
   }

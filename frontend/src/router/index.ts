@@ -44,7 +44,7 @@ import {
   useLegacyProjectStore,
   useSheetV1Store,
   useAuthStore,
-  useActuatorStore,
+  useActuatorV1Store,
   useDatabaseStore,
   useInstanceStore,
   useRouterStore,
@@ -1230,7 +1230,7 @@ router.beforeEach((to, from, next) => {
   }
 
   const currentUserV1 = useCurrentUserV1();
-  const serverInfo = useActuatorStore().serverInfo;
+  const serverInfo = useActuatorV1Store().serverInfo;
 
   // If 2FA is required, redirect to MFA setup page if the user has not enabled 2FA.
   if (hasFeature("bb.feature.2fa") && serverInfo?.require2fa) {

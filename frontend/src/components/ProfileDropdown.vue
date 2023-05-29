@@ -126,7 +126,7 @@ import { hasWorkspacePermissionV1, roleNameV1 } from "@/utils";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
-  useActuatorStore,
+  useActuatorV1Store,
   useAuthStore,
   useCurrentUserV1,
   useDebugStore,
@@ -134,7 +134,7 @@ import {
 } from "@/store";
 import UserAvatar from "./User/UserAvatar.vue";
 
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 const authStore = useAuthStore();
 const debugStore = useDebugStore();
 const uiStateStore = useUIStateStore();

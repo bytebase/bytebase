@@ -1,7 +1,9 @@
 import axios from "axios";
+import { RemovableRef } from "@vueuse/core";
 import { defineStore } from "pinia";
-import { ActuatorState, Release } from "@/types";
+import { Release, ReleaseInfo } from "@/types";
 import { useLocalStorage } from "@vueuse/core";
+import { actuatorServiceClient } from "@/grpcweb";
 import { semverCompare } from "@/utils";
 import { useSilentRequest } from "@/plugins/silent-request";
 import { ActuatorInfo } from "@/types/proto/v1/actuator_service";
@@ -11,7 +13,12 @@ const EXTERNAL_URL_PLACEHOLDER =
 const GITHUB_API_LIST_BYTEBASE_RELEASE =
   "https://api.github.com/repos/bytebase/bytebase/releases";
 
-export const useActuatorStore = defineStore("actuator", {
+interface ActuatorState {
+  serverInfo?: ActuatorInfo;
+  releaseInfo: RemovableRef<ReleaseInfo>;
+}
+
+export const useActuatorV1Store = defineStore("actuator_v1", {
   state: (): ActuatorState => ({
     serverInfo: undefined,
     releaseInfo: useLocalStorage("bytebase_release", {
@@ -64,10 +71,7 @@ export const useActuatorStore = defineStore("actuator", {
       this.serverInfo = serverInfo;
     },
     async fetchServerInfo() {
-      const { data: serverInfo } = await axios.get<ActuatorInfo>(
-        `/v1/actuator/info`
-      );
-
+      const serverInfo = await actuatorServiceClient.getActuatorInfo({});
       this.setServerInfo(serverInfo);
 
       return serverInfo;

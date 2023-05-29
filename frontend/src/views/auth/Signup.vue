@@ -228,7 +228,7 @@ import {
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import {
-  useActuatorStore,
+  useActuatorV1Store,
   useAuthStore,
   useOnboardingStateStore,
 } from "@/store";
@@ -252,7 +252,7 @@ export default defineComponent({
   name: "SignupPage",
   components: { AuthFooter },
   setup() {
-    const actuatorStore = useActuatorStore();
+    const actuatorStore = useActuatorV1Store();
     const router = useRouter();
 
     const state = reactive<LocalState>({
