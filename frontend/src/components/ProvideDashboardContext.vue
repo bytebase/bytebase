@@ -9,7 +9,6 @@ import {
   useRoleStore,
   useUIStateStore,
   useLegacyProjectStore,
-  useDebugStore,
   useUserStore,
   useProjectV1Store,
 } from "@/store";
@@ -31,7 +30,6 @@ export default defineComponent({
       useLegacyProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),
       useLegacyProjectStore().fetchAllProjectList(), // TODO(Jim): For legacy API support only. Remove this after refactored
       useUIStateStore().restoreState(),
-      useDebugStore().fetchDebug(),
     ]);
   },
 });

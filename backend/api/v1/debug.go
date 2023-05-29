@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"runtime/debug"
 	"time"
 
@@ -44,20 +43,13 @@ func (in *DebugInterceptor) DebugInterceptor(ctx context.Context, request any, s
 
 		in.errorRecordRing.RWMutex.Lock()
 		defer in.errorRecordRing.RWMutex.Unlock()
-		in.errorRecordRing.Ring.Value = &v1pb.ErrorRecord{
-			RecordTs:   time.Now().Unix(),
-			Method:     serverInfo.FullMethod,
-			Role:       string(role),
-			Error:      err.Error(),
-			StackTrace: stackTrace,
+		in.errorRecordRing.Ring.Value = &v1pb.DebugLog{
+			RecordTs:    time.Now().Unix(),
+			RequestPath: serverInfo.FullMethod,
+			Role:        string(role),
+			Error:       err.Error(),
+			StackTrace:  stackTrace,
 		}
-
-		fmt.Println("================== BEGIN ================")
-		fmt.Printf("method: %s\n", serverInfo.FullMethod)
-		fmt.Printf("code: %v\n", st.Code())
-		fmt.Printf("role: %v\n", role)
-		fmt.Printf("error: %v\n", err)
-		fmt.Println("================== END ================")
 	}
 
 	return resp, err

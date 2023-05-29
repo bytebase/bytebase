@@ -70,23 +70,15 @@ message ListDebugLogResponse {
 }
 
 message DebugLog {
-  string uid = 1;
-
-  ErrorRecord error_record = 2;
-}
-
-message ErrorRecord {
   int64 record_ts = 1;
 
-  string method = 2;
+  string request_path = 2;
 
-  string request_path = 3;
+  string role = 3;
 
-  string role = 4;
+  string error = 4;
 
-  string error = 5;
-
-  string stack_trace = 6;
+  string stack_trace = 5;
 }
 
 message DeleteCacheRequest {}

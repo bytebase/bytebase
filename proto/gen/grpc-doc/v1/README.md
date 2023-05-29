@@ -7,7 +7,6 @@
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [DebugLog](#bytebase-v1-DebugLog)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
-    - [ErrorRecord](#bytebase-v1-ErrorRecord)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest)
     - [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse)
@@ -526,8 +525,11 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| uid | [string](#string) |  |  |
-| error_record | [ErrorRecord](#bytebase-v1-ErrorRecord) |  |  |
+| record_ts | [int64](#int64) |  |  |
+| request_path | [string](#string) |  |  |
+| role | [string](#string) |  |  |
+| error | [string](#string) |  |  |
+| stack_trace | [string](#string) |  |  |
 
 
 
@@ -538,26 +540,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 ### DeleteCacheRequest
 
-
-
-
-
-
-
-<a name="bytebase-v1-ErrorRecord"></a>
-
-### ErrorRecord
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| record_ts | [int64](#int64) |  |  |
-| method | [string](#string) |  |  |
-| request_path | [string](#string) |  |  |
-| role | [string](#string) |  |  |
-| error | [string](#string) |  |  |
-| stack_trace | [string](#string) |  |  |
 
 
 

@@ -16,9 +16,9 @@
         </button>
       </div>
       <DebugLogTable
-        :debug-log-list="debugLogList.sort((a, b) => b.RecordTs - a.RecordTs)"
+        :debug-log-list="debugLogList.sort((a, b) => b.recordTs - a.recordTs)"
         @view-detail="
-          (log: any) => {
+          (log: DebugLog) => {
             state.modalContent = log
             state.showModal = true;
             dialog!.open();
@@ -51,7 +51,7 @@
                 <NGi span="17">
                   <span v-if="value !== ''">
                     {{
-                      key === "RecordTs"
+                      key === "recordTs"
                         ? dayjs
                             .unix(value as number)
                             .format("YYYY-MM-DD HH:mm:ss Z")
@@ -81,12 +81,19 @@ import dayjs from "dayjs";
 import { useClipboard } from "@vueuse/core";
 import { BBDialog } from "@/bbkit";
 import { useDebugLogList, useNotificationStore } from "@/store";
+import { DebugLog } from "@/types/proto/v1/actuator_service";
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
-const state = reactive({
+
+interface LocalState {
+  showModal: boolean;
+  modalContent?: DebugLog;
+}
+
+const state = reactive<LocalState>({
   showModal: false,
-  modalContent: {},
 });
+
 const logString = computed(() => {
   return JSON.stringify(state.modalContent);
 });
@@ -99,12 +106,12 @@ const notificationStore = useNotificationStore();
 const debugLogList = useDebugLogList();
 
 const logKeyMap = {
-  RecordTs: t("debug-log.table.record-ts"),
-  Method: t("debug-log.table.method"),
-  RequestPath: t("debug-log.table.request-path"),
-  Role: t("debug-log.table.role"),
-  Error: t("debug-log.table.error"),
-  StackTrace: t("debug-log.table.stack-trace"),
+  recordTs: t("debug-log.table.record-ts"),
+  method: t("debug-log.table.method"),
+  requestPath: t("debug-log.table.request-path"),
+  role: t("debug-log.table.role"),
+  error: t("debug-log.table.error"),
+  stackTrace: t("debug-log.table.stack-trace"),
 };
 
 const handleExport = () => {

@@ -47,13 +47,7 @@ export interface ListDebugLogResponse {
 }
 
 export interface DebugLog {
-  uid: string;
-  errorRecord?: ErrorRecord;
-}
-
-export interface ErrorRecord {
   recordTs: number;
-  method: string;
   requestPath: string;
   role: string;
   error: string;
@@ -365,16 +359,25 @@ export const ListDebugLogResponse = {
 };
 
 function createBaseDebugLog(): DebugLog {
-  return { uid: "", errorRecord: undefined };
+  return { recordTs: 0, requestPath: "", role: "", error: "", stackTrace: "" };
 }
 
 export const DebugLog = {
   encode(message: DebugLog, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.uid !== "") {
-      writer.uint32(10).string(message.uid);
+    if (message.recordTs !== 0) {
+      writer.uint32(8).int64(message.recordTs);
     }
-    if (message.errorRecord !== undefined) {
-      ErrorRecord.encode(message.errorRecord, writer.uint32(18).fork()).ldelim();
+    if (message.requestPath !== "") {
+      writer.uint32(18).string(message.requestPath);
+    }
+    if (message.role !== "") {
+      writer.uint32(26).string(message.role);
+    }
+    if (message.error !== "") {
+      writer.uint32(34).string(message.error);
+    }
+    if (message.stackTrace !== "") {
+      writer.uint32(42).string(message.stackTrace);
     }
     return writer;
   },
@@ -383,92 +386,6 @@ export const DebugLog = {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDebugLog();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.uid = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.errorRecord = ErrorRecord.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DebugLog {
-    return {
-      uid: isSet(object.uid) ? String(object.uid) : "",
-      errorRecord: isSet(object.errorRecord) ? ErrorRecord.fromJSON(object.errorRecord) : undefined,
-    };
-  },
-
-  toJSON(message: DebugLog): unknown {
-    const obj: any = {};
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.errorRecord !== undefined &&
-      (obj.errorRecord = message.errorRecord ? ErrorRecord.toJSON(message.errorRecord) : undefined);
-    return obj;
-  },
-
-  create(base?: DeepPartial<DebugLog>): DebugLog {
-    return DebugLog.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<DebugLog>): DebugLog {
-    const message = createBaseDebugLog();
-    message.uid = object.uid ?? "";
-    message.errorRecord = (object.errorRecord !== undefined && object.errorRecord !== null)
-      ? ErrorRecord.fromPartial(object.errorRecord)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseErrorRecord(): ErrorRecord {
-  return { recordTs: 0, method: "", requestPath: "", role: "", error: "", stackTrace: "" };
-}
-
-export const ErrorRecord = {
-  encode(message: ErrorRecord, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.recordTs !== 0) {
-      writer.uint32(8).int64(message.recordTs);
-    }
-    if (message.method !== "") {
-      writer.uint32(18).string(message.method);
-    }
-    if (message.requestPath !== "") {
-      writer.uint32(26).string(message.requestPath);
-    }
-    if (message.role !== "") {
-      writer.uint32(34).string(message.role);
-    }
-    if (message.error !== "") {
-      writer.uint32(42).string(message.error);
-    }
-    if (message.stackTrace !== "") {
-      writer.uint32(50).string(message.stackTrace);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ErrorRecord {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseErrorRecord();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -484,31 +401,24 @@ export const ErrorRecord = {
             break;
           }
 
-          message.method = reader.string();
+          message.requestPath = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.requestPath = reader.string();
+          message.role = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.role = reader.string();
+          message.error = reader.string();
           continue;
         case 5:
           if (tag !== 42) {
-            break;
-          }
-
-          message.error = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
             break;
           }
 
@@ -523,10 +433,9 @@ export const ErrorRecord = {
     return message;
   },
 
-  fromJSON(object: any): ErrorRecord {
+  fromJSON(object: any): DebugLog {
     return {
       recordTs: isSet(object.recordTs) ? Number(object.recordTs) : 0,
-      method: isSet(object.method) ? String(object.method) : "",
       requestPath: isSet(object.requestPath) ? String(object.requestPath) : "",
       role: isSet(object.role) ? String(object.role) : "",
       error: isSet(object.error) ? String(object.error) : "",
@@ -534,10 +443,9 @@ export const ErrorRecord = {
     };
   },
 
-  toJSON(message: ErrorRecord): unknown {
+  toJSON(message: DebugLog): unknown {
     const obj: any = {};
     message.recordTs !== undefined && (obj.recordTs = Math.round(message.recordTs));
-    message.method !== undefined && (obj.method = message.method);
     message.requestPath !== undefined && (obj.requestPath = message.requestPath);
     message.role !== undefined && (obj.role = message.role);
     message.error !== undefined && (obj.error = message.error);
@@ -545,14 +453,13 @@ export const ErrorRecord = {
     return obj;
   },
 
-  create(base?: DeepPartial<ErrorRecord>): ErrorRecord {
-    return ErrorRecord.fromPartial(base ?? {});
+  create(base?: DeepPartial<DebugLog>): DebugLog {
+    return DebugLog.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ErrorRecord>): ErrorRecord {
-    const message = createBaseErrorRecord();
+  fromPartial(object: DeepPartial<DebugLog>): DebugLog {
+    const message = createBaseDebugLog();
     message.recordTs = object.recordTs ?? 0;
-    message.method = object.method ?? "";
     message.requestPath = object.requestPath ?? "";
     message.role = object.role ?? "";
     message.error = object.error ?? "";

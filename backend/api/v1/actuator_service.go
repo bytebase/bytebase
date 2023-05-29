@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -58,8 +57,6 @@ func (s *ActuatorService) UpdateActuatorInfo(ctx context.Context, request *v1pb.
 // ListDebugLog lists the debug log.
 func (s *ActuatorService) ListDebugLog(_ context.Context, _ *v1pb.ListDebugLogRequest) (*v1pb.ListDebugLogResponse, error) {
 	resp := &v1pb.ListDebugLogResponse{}
-	// incrementID is used as primary key in jsonapi.
-	var incrementID int
 
 	s.errorRecordRing.RWMutex.RLock()
 	defer s.errorRecordRing.RWMutex.RUnlock()
@@ -68,15 +65,11 @@ func (s *ActuatorService) ListDebugLog(_ context.Context, _ *v1pb.ListDebugLogRe
 		if p == nil {
 			return
 		}
-		errRecord, ok := p.(*v1pb.ErrorRecord)
+		errRecord, ok := p.(*v1pb.DebugLog)
 		if !ok {
 			return
 		}
-		resp.Logs = append(resp.Logs, &v1pb.DebugLog{
-			Uid:         fmt.Sprintf("%d", incrementID),
-			ErrorRecord: errRecord,
-		})
-		incrementID++
+		resp.Logs = append(resp.Logs, errRecord)
 	})
 
 	return resp, nil

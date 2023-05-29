@@ -27,7 +27,6 @@ import { computed } from "vue";
 import {
   useActuatorV1Store,
   useCurrentUserV1,
-  useDebugStore,
   useSubscriptionV1Store,
 } from "@/store/modules";
 import { hasWorkspacePermissionV1, isDev } from "@/utils";
@@ -39,12 +38,10 @@ import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
 
 const actuatorStore = useActuatorV1Store();
 const currentUserV1 = useCurrentUserV1();
-const debugStore = useDebugStore();
 const subscriptionStore = useSubscriptionV1Store();
 
-const { isDemo, isReadonly, needConfigureExternalUrl } =
+const { isDemo, isReadonly, isDebug, needConfigureExternalUrl } =
   storeToRefs(actuatorStore);
-const { isDebug } = storeToRefs(debugStore);
 const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
 
 const shouldShowDemoBanner = computed(() => {
