@@ -145,7 +145,7 @@ import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { isValidEmail, openWindowForSSO } from "@/utils";
 import {
-  useActuatorStore,
+  useActuatorV1Store,
   useAuthStore,
   useIdentityProviderStore,
 } from "@/store";
@@ -160,7 +160,7 @@ interface LocalState {
 
 const router = useRouter();
 const route = useRoute();
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 const authStore = useAuthStore();
 const identityProviderStore = useIdentityProviderStore();
 

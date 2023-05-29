@@ -25,7 +25,7 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import {
-  useActuatorStore,
+  useActuatorV1Store,
   useCurrentUserV1,
   useDebugStore,
   useSubscriptionV1Store,
@@ -37,7 +37,7 @@ import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
 import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
 
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 const currentUserV1 = useCurrentUserV1();
 const debugStore = useDebugStore();
 const subscriptionStore = useSubscriptionV1Store();

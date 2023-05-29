@@ -37,19 +37,18 @@
 import { storeToRefs } from "pinia";
 import {
   pushNotification,
-  useActuatorStore,
+  useActuatorV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { ServerInfo } from "@/types";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
 import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
 
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
 const ping = () => {
-  actuatorStore.fetchServerInfo().then((info: ServerInfo) => {
+  actuatorStore.fetchServerInfo().then((info) => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

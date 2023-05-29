@@ -11,3 +11,4 @@ export * from "./dataSource";
 export * from "./setting";
 export * from "./instance";
 export * from "./subscription";
+export * from "./actuator";

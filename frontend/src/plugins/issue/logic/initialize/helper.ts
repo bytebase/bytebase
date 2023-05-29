@@ -9,7 +9,7 @@ import {
   TaskDatabaseSchemaUpdatePayload,
   UNKNOWN_ID,
 } from "@/types";
-import { useActuatorStore, useCurrentUser, useIssueStore } from "@/store";
+import { useActuatorV1Store, useCurrentUser, useIssueStore } from "@/store";
 import {
   BuildNewIssueContext,
   ESTABLISH_BASELINE_SQL,
@@ -35,7 +35,7 @@ export class IssueCreateHelper {
   async prepare(): Promise<IssueCreate> {
     const { context, currentUser } = this;
     const { route } = context;
-    const actuatorStore = useActuatorStore();
+    const actuatorStore = useActuatorV1Store();
 
     const baseTemplate = context.template.value.buildIssue({
       environmentList: [],

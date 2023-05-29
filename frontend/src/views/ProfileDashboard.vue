@@ -236,7 +236,7 @@ import { hasWorkspacePermissionV1, roleNameV1 } from "../utils";
 import {
   featureToRef,
   pushNotification,
-  useActuatorStore,
+  useActuatorV1Store,
   useAuthStore,
   useCurrentUserV1,
   useUserStore,
@@ -265,7 +265,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 const authStore = useAuthStore();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();

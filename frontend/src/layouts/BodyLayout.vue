@@ -252,7 +252,7 @@ import { QuickActionType } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
-  useActuatorStore,
+  useActuatorV1Store,
   useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store";
@@ -272,7 +272,7 @@ export default defineComponent({
     QuickActionPanel,
   },
   setup() {
-    const actuatorStore = useActuatorStore();
+    const actuatorStore = useActuatorV1Store();
     const subscriptionStore = useSubscriptionV1Store();
     const route = useRoute();
     const router = useRouter();
