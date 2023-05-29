@@ -1431,7 +1431,7 @@ const testConnection = async (
       try {
         await instanceServiceClient.addDataSource({
           instance: instance.name,
-          dataSources: ds,
+          dataSource: ds,
           validateOnly: true,
         });
         return ok();
@@ -1452,7 +1452,7 @@ const testConnection = async (
         );
         await instanceServiceClient.updateDataSource({
           instance: instance.name,
-          dataSources: ds,
+          dataSource: ds,
           updateMask,
           validateOnly: true,
         });
