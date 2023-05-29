@@ -656,14 +656,8 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Parent)
 	}
 
-	// The id value should be 4-63 characters, and valid characters are /[a-z][0-9]-/.
-	if len(request.DatabaseGroupId) < 4 || len(request.DatabaseGroupId) > 63 {
-		return nil, status.Errorf(codes.InvalidArgument, "database group id %q must be between 4 and 63 characters", request.DatabaseGroupId)
-	}
-	for _, c := range request.DatabaseGroupId {
-		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid database group id %q", request.DatabaseGroupId)
-		}
+	if !isValidResourceID(request.DatabaseGroupId) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid database group id %q", request.DatabaseGroupId)
 	}
 	if request.DatabaseGroup.DatabasePlaceholder == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "database group database placeholder is required")
@@ -868,14 +862,8 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 	}
 
-	// The id value should be 4-63 characters, and valid characters are /[a-z][0-9]-/.
-	if len(request.SchemaGroupId) < 4 || len(request.SchemaGroupId) > 63 {
-		return nil, status.Errorf(codes.InvalidArgument, "schema group id %q must be between 4 and 63 characters", request.SchemaGroupId)
-	}
-	for _, c := range request.SchemaGroupId {
-		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid schema group id %q", request.SchemaGroupId)
-		}
+	if !isValidResourceID(request.SchemaGroupId) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid schema group id %q", request.SchemaGroupId)
 	}
 	if request.SchemaGroup.TablePlaceholder == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "schema group table placeholder is required")
