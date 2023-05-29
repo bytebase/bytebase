@@ -4,7 +4,6 @@ import {
   SimpleExpr,
   convertToCELString,
   emptySimpleExpr,
-  isConditionGroupExpr,
   resolveCELExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
@@ -43,7 +42,7 @@ export const convertDatabaseGroupExprFromCEL = async (
   }
 
   const simpleExpr = resolveCELExpr(celExpr.expr);
-  const [environmentId, conditionGroupExpr] =
+  const [environmentId, ...conditionGroupExpr] =
     getEnvironmentIdAndConditionExpr(simpleExpr);
   if (!environmentId) {
     throw new Error("Invalid CEL expression");
@@ -51,7 +50,7 @@ export const convertDatabaseGroupExprFromCEL = async (
 
   return {
     environmentId,
-    conditionGroupExpr,
+    conditionGroupExpr: wrapAsGroup(...conditionGroupExpr),
   };
 };
 
@@ -62,9 +61,17 @@ const getEnvironmentIdAndConditionExpr = (
     throw ["", emptySimpleExpr()];
   }
 
-  const [left, right] = expr.args;
-  return [
-    left.args[1] as string,
-    isConditionGroupExpr(right) ? right : wrapAsGroup(right),
-  ];
+  const [left, ...right] = expr.args;
+  const environmentName = left.args[1] as string;
+  if (Array.isArray(right)) {
+    return [
+      environmentName,
+      {
+        operator: "_&&_",
+        args: right,
+      },
+    ];
+  } else {
+    return [environmentName, right];
+  }
 };
