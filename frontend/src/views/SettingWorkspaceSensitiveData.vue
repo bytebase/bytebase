@@ -25,23 +25,22 @@
           {{ item.schema ? `${item.schema}.${item.table}` : item.table }}
         </div>
         <div class="bb-grid-cell">
-          {{ item.database.name }}
+          <DatabaseV1Name :database="item.database" :link="false" />
         </div>
         <div class="bb-grid-cell gap-x-1">
-          <InstanceEngineIcon :instance="item.database.instance" />
-          <span class="flex-1 whitespace-pre-wrap">
-            {{ instanceName(item.database.instance) }}
-          </span>
-        </div>
-        <div class="bb-grid-cell">
-          {{ environmentName(item.database.instance.environment) }}
-          <ProductionEnvironmentIcon
-            class="ml-1 w-4 h-4"
-            :environment="item.database.instance.environment"
+          <InstanceV1Name
+            :instance="item.database.instanceEntity"
+            :link="false"
           />
         </div>
         <div class="bb-grid-cell">
-          {{ projectName(item.database.project) }}
+          <EnvironmentV1Name
+            :environment="item.database.instanceEntity.environmentEntity"
+            :link="false"
+          />
+        </div>
+        <div class="bb-grid-cell">
+          <ProjectV1Name :project="item.database.projectEntity" :link="false" />
         </div>
         <div class="bb-grid-cell justify-center !px-2">
           <NPopconfirm @positive-click="removeSensitiveColumn(item)">
@@ -85,11 +84,10 @@ import { NPopconfirm } from "naive-ui";
 import { uniq } from "lodash-es";
 import { useRouter } from "vue-router";
 
-import { featureToRef, useCurrentUserV1, useDatabaseStore } from "@/store";
-import { Database } from "@/types";
-import { BBGridColumn } from "@/bbkit/types";
-import { databaseSlug, hasWorkspacePermissionV1 } from "@/utils";
-import { BBGrid } from "@/bbkit";
+import { featureToRef, useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import { ComposedDatabase } from "@/types";
+import { databaseV1Slug, hasWorkspacePermissionV1 } from "@/utils";
+import { BBGrid, type BBGridColumn } from "@/bbkit";
 import {
   usePolicyListByResourceTypeAndPolicyType,
   usePolicyV1Store,
@@ -99,9 +97,15 @@ import {
   Policy,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
+import {
+  DatabaseV1Name,
+  EnvironmentV1Name,
+  InstanceV1Name,
+  ProjectV1Name,
+} from "@/components/v2";
 
 type SensitiveColumn = {
-  database: Database;
+  database: ComposedDatabase;
   policy: Policy;
   schema: string;
   table: string;
@@ -120,7 +124,7 @@ const state = reactive<LocalState>({
   isLoading: false,
   sensitiveColumnList: [],
 });
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
 const currentUserV1 = useCurrentUserV1();
@@ -145,7 +149,7 @@ const updateList = async () => {
   // Fetch or get all needed databases
   await Promise.all(
     distinctDatabaseIdList.map((databaseId) =>
-      databaseStore.getOrFetchDatabaseById(databaseId)
+      databaseStore.getOrFetchDatabaseByUID(databaseId)
     )
   );
 
@@ -157,7 +161,7 @@ const updateList = async () => {
     }
 
     const databaseId = policy.resourceUid;
-    const database = await databaseStore.getOrFetchDatabaseById(databaseId);
+    const database = await databaseStore.getOrFetchDatabaseByUID(databaseId);
 
     for (const sensitiveData of policy.sensitiveDataPolicy.sensitiveData) {
       const { schema, table, column } = sensitiveData;
@@ -178,7 +182,7 @@ const removeSensitiveColumn = (sensitiveColumn: SensitiveColumn) => {
 
   const { table, column } = sensitiveColumn;
   const policy = policyList.value.find(
-    (policy) => policy.resourceUid == sensitiveColumn.database.id
+    (policy) => policy.resourceUid == sensitiveColumn.database.uid
   );
   if (!policy) return;
   const sensitiveData = policy.sensitiveDataPolicy?.sensitiveData;
@@ -243,7 +247,7 @@ const clickRow = (
   row: number,
   e: MouseEvent
 ) => {
-  let url = `/db/${databaseSlug(item.database)}/table/${item.table}`;
+  let url = `/db/${databaseV1Slug(item.database)}/table/${item.table}`;
   if (item.schema != "") {
     url += `?schema=${item.schema}`;
   }
