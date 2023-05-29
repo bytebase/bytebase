@@ -98,6 +98,8 @@ import {
   useUserStore,
   useSheetV1Store,
   useProjectV1ListByCurrentUser,
+  useProjectV1Store,
+  useEnvironmentV1Store,
 } from "@/store";
 import { getSheetIssueBacktracePayloadV1 } from "@/utils";
 import {
@@ -212,6 +214,8 @@ const currentSheetViewMode = computed((): SheetViewMode => {
 const fetchSheetData = async () => {
   await useUserStore().fetchUserList();
 
+  // TODO: switching view mode very quickly will cause some
+  // race condition problems.
   let sheetList: Sheet[] = [];
   if (currentSheetViewMode.value === "my") {
     sheetList = await sheetV1Store.fetchMySheetList();
@@ -228,6 +232,10 @@ const fetchSheetData = async () => {
 };
 
 onMounted(async () => {
+  // Initialize project list state for iam policy and `project` fields of sheets.
+  await useProjectV1Store().fetchProjectList(true /* include archived */);
+  // Initialize environment list for composing.
+  await useEnvironmentV1Store().fetchEnvironments(true /* include archived */);
   await fetchSheetData();
   state.isLoading = false;
 });

@@ -26,7 +26,7 @@ const id = computed(() => {
 
 const text = computed(() => {
   const { atom } = props;
-  if (atom.type === "project" && atom.id === DEFAULT_PROJECT_ID) {
+  if (atom.type === "project" && atom.id === String(DEFAULT_PROJECT_ID)) {
     return t("database.unassigned-databases");
   }
   return atom.label;

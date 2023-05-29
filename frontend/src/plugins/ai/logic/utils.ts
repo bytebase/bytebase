@@ -1,7 +1,9 @@
 import { watch } from "vue";
-import type { Connection, EngineType } from "@/types";
+import type { Connection } from "@/types";
 import { useCurrentTab } from "@/store";
 import { DatabaseMetadata } from "@/types/proto/store/database";
+import { Engine } from "@/types/proto/v1/common";
+import { engineNameV1 } from "@/utils";
 
 export const onConnectionChanged = (
   fn: (newConn: Connection, oldConn: Connection | undefined) => void,
@@ -27,14 +29,16 @@ export const onConnectionChanged = (
 
 export const databaseMetadataToText = (
   databaseMetadata: DatabaseMetadata | undefined,
-  engineType?: EngineType
+  engine?: Engine
 ) => {
   const prompts: string[] = [];
-  if (engineType) {
+  if (engine) {
     if (databaseMetadata) {
-      prompts.push(`### ${engineType} tables, with their properties:`);
+      prompts.push(
+        `### ${engineNameV1(engine)} tables, with their properties:`
+      );
     } else {
-      prompts.push(`### ${engineType} database`);
+      prompts.push(`### ${engineNameV1(engine)} database`);
     }
   } else {
     if (databaseMetadata) {

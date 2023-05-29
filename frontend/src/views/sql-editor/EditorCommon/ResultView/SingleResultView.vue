@@ -115,9 +115,9 @@ import {
   useTabStore,
   RESULT_ROWS_LIMIT,
   featureToRef,
-  useDatabaseStore,
   useCurrentUserIamPolicy,
   pushNotification,
+  useDatabaseV1Store,
 } from "@/store";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
@@ -145,7 +145,7 @@ const { dark } = useSQLResultViewContext();
 const { t } = useI18n();
 const tabStore = useTabStore();
 const instanceStore = useInstanceStore();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const dataTable = ref<InstanceType<typeof DataTable>>();
 
 const viewMode = computed((): ViewMode => {
@@ -177,10 +177,10 @@ const showExportButton = computed(() => {
 });
 
 const allowToExportData = computed(() => {
-  const database = databaseStore.getDatabaseById(
+  const database = databaseStore.getDatabaseByUID(
     tabStore.currentTab.connection.databaseId
   );
-  return useCurrentUserIamPolicy().allowToExportDatabase(database);
+  return useCurrentUserIamPolicy().allowToExportDatabaseV1(database);
 });
 
 // use a debounced value to improve performance when typing rapidly

@@ -50,7 +50,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { pushNotification, useTabStore, useDatabaseStore } from "@/store";
+import { pushNotification, useDatabaseV1Store, useTabStore } from "@/store";
 import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
 import { UNKNOWN_ID } from "@/types";
 import AdminModeButton from "./AdminModeButton.vue";
@@ -81,7 +81,7 @@ const handleClose = () => {
 
 const gotoAlterSchema = () => {
   const { databaseId } = tabStore.currentTab.connection;
-  if (databaseId === UNKNOWN_ID) {
+  if (databaseId === String(UNKNOWN_ID)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -92,7 +92,7 @@ const gotoAlterSchema = () => {
 
   emit("close");
 
-  const database = useDatabaseStore().getDatabaseById(databaseId);
+  const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
 
   router.push({
     name: "workspace.issue.detail",
@@ -104,7 +104,7 @@ const gotoAlterSchema = () => {
       name: `[${database.name}] ${
         isDDL.value ? "Alter schema" : "Change Data"
       }`,
-      project: database.project.id,
+      project: database.projectEntity.uid,
       databaseList: databaseId,
       sql: sqlStatement.value,
     },

@@ -100,19 +100,18 @@
 <script lang="ts" setup>
 import { computed, defineEmits, reactive } from "vue";
 import {
-  useInstanceStore,
   useTabStore,
   useSQLEditorStore,
-  useInstanceById,
   useUIStateStore,
   useWebTerminalStore,
   featureToRef,
+  useInstanceV1ByUID,
 } from "@/store";
 import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import SharePopover from "./SharePopover.vue";
 import AdminModeButton from "./AdminModeButton.vue";
-import { keyboardShortcutStr } from "@/utils";
+import { formatEngineV1, keyboardShortcutStr } from "@/utils";
 
 interface LocalState {
   requiredFeatureName?: FeatureType;
@@ -130,7 +129,6 @@ const emit = defineEmits<{
 }>();
 
 const state = reactive<LocalState>({});
-const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 const uiStateStore = useUIStateStore();
@@ -146,11 +144,11 @@ const isEmptyStatement = computed(
   () => !tabStore.currentTab || tabStore.currentTab.statement === ""
 );
 const isExecutingSQL = computed(() => tabStore.currentTab.isExecutingSQL);
-const selectedInstance = useInstanceById(
+const { instance: selectedInstance } = useInstanceV1ByUID(
   computed(() => connection.value.instanceId)
 );
 const selectedInstanceEngine = computed(() => {
-  return instanceStore.formatEngine(selectedInstance.value);
+  return formatEngineV1(selectedInstance.value);
 });
 
 const showSheetsFeature = computed(() => {
@@ -184,7 +182,7 @@ const allowSave = computed(() => {
   }
   // Temporarily disable saving and sharing if we are connected to an instance
   // but not a database.
-  if (tabStore.currentTab.connection.databaseId === UNKNOWN_ID) {
+  if (tabStore.currentTab.connection.databaseId === String(UNKNOWN_ID)) {
     return false;
   }
   return true;

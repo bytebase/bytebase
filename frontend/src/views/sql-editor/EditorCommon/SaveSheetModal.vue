@@ -12,11 +12,7 @@
 import { computed, reactive } from "vue";
 
 import { UNKNOWN_ID } from "@/types";
-import { useDatabaseStore, useSheetV1Store, useTabStore } from "@/store";
-import {
-  getDatabasePathByLegacyDatabase,
-  getProjectPathByLegacyProject,
-} from "@/store/modules/v1/common";
+import { useDatabaseV1Store, useSheetV1Store, useTabStore } from "@/store";
 import { defaultTabName, getDefaultTabNameFromConnection } from "@/utils";
 import SaveSheetForm from "./SaveSheetForm.vue";
 import {
@@ -31,7 +27,7 @@ type LocalState = {
 };
 
 const tabStore = useTabStore();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const sheetV1Store = useSheetV1Store();
 
 const state = reactive<LocalState>({
@@ -48,7 +44,7 @@ const allowSave = computed((): boolean => {
   }
   // Temporarily disable saving and sharing if we are connected to an instance
   // but not a database.
-  if (tab.connection.databaseId === UNKNOWN_ID) {
+  if (tab.connection.databaseId === String(UNKNOWN_ID)) {
     return false;
   }
   return true;
@@ -61,29 +57,26 @@ const doSaveSheet = async (sheetTitle?: string) => {
   const sheetId = sheetV1Store.getSheetUid(sheetName ?? "");
 
   const conn = tabStore.currentTab.connection;
-  const database = await databaseStore.getOrFetchDatabaseById(conn.databaseId);
+  const database = await databaseStore.getOrFetchDatabaseByUID(conn.databaseId);
 
   let sheet: Sheet | undefined;
   if (sheetId !== UNKNOWN_ID) {
     sheet = await sheetV1Store.patchSheet({
       name: sheetName,
-      database: getDatabasePathByLegacyDatabase(database),
+      database: database.name,
       title: sheetTitle,
       content: new TextEncoder().encode(statement),
     });
   } else {
-    sheet = await sheetV1Store.createSheet(
-      getProjectPathByLegacyProject(database.project),
-      {
-        title: sheetTitle,
-        content: new TextEncoder().encode(statement),
-        database: getDatabasePathByLegacyDatabase(database),
-        visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
-        source: Sheet_Source.SOURCE_BYTEBASE,
-        type: Sheet_Type.TYPE_SQL,
-        payload: "{}",
-      }
-    );
+    sheet = await sheetV1Store.createSheet(database.project, {
+      title: sheetTitle,
+      content: new TextEncoder().encode(statement),
+      database: database.name,
+      visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
+      source: Sheet_Source.SOURCE_BYTEBASE,
+      type: Sheet_Type.TYPE_SQL,
+      payload: "{}",
+    });
   }
 
   if (sheet) {

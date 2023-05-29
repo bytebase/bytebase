@@ -7,9 +7,11 @@ import {
   Instance,
   Language,
   languageOfEngine,
+  languageOfEngineV1,
   MaybeRef,
 } from "../types";
 import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
+import { Instance as InstanceV1 } from "@/types/proto/v1/instance_service";
 
 export const supportedEngineList = () => {
   const engines: EngineType[] = [
@@ -83,6 +85,14 @@ export const useInstanceEditorLanguage = (
 ) => {
   return computed((): Language => {
     return languageOfEngine(unref(instance)?.engine);
+  });
+};
+
+export const useInstanceV1EditorLanguage = (
+  instance: MaybeRef<InstanceV1 | undefined>
+) => {
+  return computed((): Language => {
+    return languageOfEngineV1(unref(instance)?.engine);
   });
 };
 
