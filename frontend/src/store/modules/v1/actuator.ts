@@ -87,6 +87,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
         actuator: {
           debug,
         },
+        updateMask: ["debug"],
       });
       this.setServerInfo(serverInfo);
     },
