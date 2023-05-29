@@ -104,14 +104,14 @@ export const instanceV1HasBackupRestore = (
   return true;
 };
 
-// export const instanceHasReadonlyMode = (
-//   instanceOrEngine: Instance | EngineType
-// ): boolean => {
-//   const engine = engineOfInstance(instanceOrEngine);
-//   if (engine === "MONGODB") return false;
-//   if (engine === "REDIS") return false;
-//   return true;
-// };
+export const instanceV1HasReadonlyMode = (
+  instanceOrEngine: Instance | Engine
+): boolean => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  if (engine === Engine.MONGODB) return false;
+  if (engine === Engine.REDIS) return false;
+  return true;
+};
 
 export const instanceV1HasCreateDatabase = (
   instanceOrEngine: Instance | Engine
@@ -212,4 +212,14 @@ export const engineNameV1 = (type: Engine): string => {
       return "OceanBase";
   }
   return "";
+};
+
+export const formatEngineV1 = (instance: Instance): string => {
+  switch (instance.engine) {
+    case Engine.POSTGRES:
+      return "PostgreSQL";
+    // Use MySQL as default engine.
+    default:
+      return "MySQL";
+  }
 };

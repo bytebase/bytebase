@@ -24,7 +24,7 @@
   >
     <div class="w-[80vw] h-full">
       <SchemaDiagram
-        :database="databaseV1"
+        :database="database"
         :database-metadata="databaseMetadata"
       />
     </div>
@@ -32,28 +32,23 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { reactive } from "vue";
 import { NButton } from "naive-ui";
 
 import type { DatabaseMetadata } from "@/types/proto/store/database";
-import type { Database } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
-import { useDatabaseV1Store } from "@/store";
 
 type LocalState = {
   show: boolean;
 };
 
-const props = defineProps<{
-  database: Database;
+defineProps<{
+  database: ComposedDatabase;
   databaseMetadata: DatabaseMetadata;
 }>();
 
 const state = reactive<LocalState>({
   show: false,
-});
-
-const databaseV1 = computed(() => {
-  return useDatabaseV1Store().getDatabaseByUID(String(props.database.id));
 });
 </script>

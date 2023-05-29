@@ -39,6 +39,7 @@ import PromptInput from "./PromptInput.vue";
 import HistoryPanel from "./HistoryPanel";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import { OpenAIMessage, OpenAIResponse } from "../types";
+import { engineNameV1 } from "@/utils";
 
 type LocalState = {
   loading: boolean;
@@ -70,14 +71,16 @@ const requestAI = async (query: string) => {
   if (messageList.length === 0) {
     // For the first message of a conversation,
     // add extra database schema metadata info if possible
-    const engineType = context.engineType.value;
+    const engine = context.engine.value;
     const databaseMetadata = context.databaseMetadata.value;
     const prompts: string[] = [];
-    if (engineType) {
+    if (engine) {
       if (databaseMetadata) {
-        prompts.push(`### ${engineType} tables, with their properties:`);
+        prompts.push(
+          `### ${engineNameV1(engine)} tables, with their properties:`
+        );
       } else {
-        prompts.push(`### ${engineType} database`);
+        prompts.push(`### ${engineNameV1(engine)} database`);
       }
     } else {
       if (databaseMetadata) {

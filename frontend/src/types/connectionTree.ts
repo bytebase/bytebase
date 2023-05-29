@@ -1,5 +1,3 @@
-import { InstanceId, DatabaseId, ProjectId } from "../types";
-
 export type ConnectionAtomType = "project" | "instance" | "database";
 
 export enum ConnectionTreeState {
@@ -14,8 +12,8 @@ export enum ConnectionTreeMode {
 }
 
 export interface ConnectionAtom {
-  parentId: ProjectId | InstanceId | DatabaseId;
-  id: ProjectId | InstanceId | DatabaseId;
+  parentId: string;
+  id: string;
   key: string;
   label: string;
   type?: ConnectionAtomType;

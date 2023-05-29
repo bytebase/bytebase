@@ -22,10 +22,10 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import type { Database } from "@/types";
+import type { ComposedDatabase } from "@/types";
 
 defineProps<{
-  database: Database;
+  database: ComposedDatabase;
   schema?: SchemaMetadata;
   table?: TableMetadata;
 }>();

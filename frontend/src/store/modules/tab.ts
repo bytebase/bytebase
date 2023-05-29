@@ -24,7 +24,7 @@ const KEYS = {
 
 // Only store the core fields of a tab.
 // Don't store anything which might be too large.
-const PERSISTENT_TASK_FIELDS = [
+const PERSISTENT_TAB_FIELDS = [
   "id",
   "name",
   "connection",
@@ -34,7 +34,7 @@ const PERSISTENT_TASK_FIELDS = [
   "sheetName",
   "mode",
 ] as const;
-type PersistentTaskInfo = Pick<TabInfo, typeof PERSISTENT_TASK_FIELDS[number]>;
+type PersistentTabInfo = Pick<TabInfo, typeof PERSISTENT_TAB_FIELDS[number]>;
 
 export const useTabStore = defineStore("tab", () => {
   const storage = new WebStorageHelper("bb.sql-editor.tab-list", localStorage);
@@ -59,7 +59,7 @@ export const useTabStore = defineStore("tab", () => {
   });
   const isDisconnected = computed((): boolean => {
     const { instanceId, databaseId } = currentTab.value.connection;
-    if (instanceId === UNKNOWN_ID) {
+    if (instanceId === String(UNKNOWN_ID)) {
       return true;
     }
     const instance = instanceStore.getInstanceById(instanceId);
@@ -67,7 +67,7 @@ export const useTabStore = defineStore("tab", () => {
       // Connecting to instance directly.
       return false;
     }
-    return databaseId === UNKNOWN_ID;
+    return databaseId === String(UNKNOWN_ID);
   });
 
   // actions
@@ -157,8 +157,8 @@ export const useTabStore = defineStore("tab", () => {
   const watchTab = (tab: TabInfo, immediate: boolean) => {
     // Use a throttled watcher to reduce the performance overhead when writing.
     watchThrottled(
-      () => pick(tab, ...PERSISTENT_TASK_FIELDS),
-      (tabPartial: PersistentTaskInfo) => {
+      () => pick(tab, ...PERSISTENT_TAB_FIELDS),
+      (tabPartial: PersistentTabInfo) => {
         storage.save(KEYS.tab(tabPartial.id), tabPartial);
       },
       { deep: true, immediate, throttle: 100, trailing: true }
@@ -200,10 +200,11 @@ export const useTabStore = defineStore("tab", () => {
 
     // Load tab details
     tabIdList.value.forEach((id) => {
-      const tabPartial = storage.load<PersistentTaskInfo | undefined>(
+      const tabPartial = storage.load<PersistentTabInfo | undefined>(
         KEYS.tab(id),
         undefined
       );
+      maybeMigrateLegacyTab(storage, tabPartial);
       // Use a stored tab info if possible.
       // Fallback to getDefaultTab() otherwise.
       const tab = reactive<TabInfo>({
@@ -211,6 +212,9 @@ export const useTabStore = defineStore("tab", () => {
         ...tabPartial,
         id,
       });
+      // Legacy id support
+      tab.connection.databaseId = String(tab.connection.databaseId);
+      tab.connection.instanceId = String(tab.connection.instanceId);
       watchTab(tab, false);
       tabs.value.set(id, tab);
     });
@@ -269,4 +273,21 @@ export const useTabStore = defineStore("tab", () => {
 export const useCurrentTab = () => {
   const store = useTabStore();
   return toRef(store, "currentTab");
+};
+
+const maybeMigrateLegacyTab = (
+  storage: WebStorageHelper,
+  tab: PersistentTabInfo | undefined
+) => {
+  if (!tab) return;
+  const { connection } = tab;
+  if (
+    typeof connection.databaseId === "number" ||
+    typeof connection.instanceId === "number"
+  ) {
+    connection.databaseId = String(connection.databaseId);
+    connection.instanceId = String(connection.instanceId);
+    storage.save(KEYS.tab(tab.id), tab);
+  }
+  return tab;
 };

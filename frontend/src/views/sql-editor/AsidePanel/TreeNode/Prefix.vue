@@ -11,7 +11,7 @@
     <span class="flex items-center gap-x-1">
       <InstancePrefix
         v-if="connectionTreeStore.tree.mode === ConnectionTreeMode.PROJECT"
-        :instance="database.instance"
+        :instance="database.instanceEntity"
         :disabled="atom.disabled"
       />
 
@@ -23,11 +23,16 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 
-import { ConnectionAtom, unknown, ConnectionTreeMode } from "@/types";
+import {
+  ConnectionAtom,
+  ConnectionTreeMode,
+  unknownInstance,
+  unknownDatabase,
+} from "@/types";
 import {
   useConnectionTreeStore,
-  useDatabaseStore,
-  useInstanceStore,
+  useDatabaseV1Store,
+  useInstanceV1Store,
 } from "@/store";
 import InstancePrefix from "./InstancePrefix.vue";
 
@@ -35,25 +40,24 @@ const props = defineProps<{
   atom: ConnectionAtom;
 }>();
 
-const instanceStore = useInstanceStore();
-const databaseStore = useDatabaseStore();
+const instanceStore = useInstanceV1Store();
+const databaseStore = useDatabaseV1Store();
 const connectionTreeStore = useConnectionTreeStore();
 
 const instance = computed(() => {
   const { atom } = props;
   if (atom.type === "instance") {
-    return instanceStore.getInstanceById(atom.id);
+    return instanceStore.getInstanceByUID(atom.id);
   }
 
-  return unknown("INSTANCE");
+  return unknownInstance();
 });
 
 const database = computed(() => {
   const { atom } = props;
   if (atom.type === "database") {
-    const database = databaseStore.getDatabaseById(atom.id);
-    return database;
+    return databaseStore.getDatabaseByUID(atom.id);
   }
-  return unknown("DATABASE");
+  return unknownDatabase();
 });
 </script>

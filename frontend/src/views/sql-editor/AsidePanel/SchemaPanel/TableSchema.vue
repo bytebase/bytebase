@@ -21,7 +21,7 @@
           :table="table"
           @click="
             emit('alter-schema', {
-              databaseId: database.id,
+              databaseId: database.uid,
               schema: schema.name,
               table: table.name,
             })
@@ -54,14 +54,14 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import type { Database, DatabaseId } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import { computed } from "vue";
-import { databaseSlug } from "@/utils";
+import { databaseV1Slug } from "@/utils";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
 
 const props = defineProps<{
-  database: Database;
+  database: ComposedDatabase;
   databaseMetadata: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;
@@ -71,13 +71,13 @@ const emit = defineEmits<{
   (e: "close"): void;
   (
     event: "alter-schema",
-    params: { databaseId: DatabaseId; schema: string; table: string }
+    params: { databaseId: string; schema: string; table: string }
   ): void;
 }>();
 
 const tableDetailLink = computed((): string => {
   const { database, schema, table } = props;
-  let url = `/db/${databaseSlug(database)}/table/${encodeURIComponent(
+  let url = `/db/${databaseV1Slug(database)}/table/${encodeURIComponent(
     table.name
   )}`;
   if (schema.name) {
