@@ -9,9 +9,9 @@ import {
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { useActivityStore } from "./activity";
-import { useDatabaseStore } from "./database";
 import { useSQLStore } from "./sql";
 import { useTabStore } from "./tab";
+import { useDatabaseV1Store } from "./v1/database";
 
 // set the limit to 10000 temporarily to avoid the query timeout and page crash
 export const RESULT_ROWS_LIMIT = 1000;
@@ -41,10 +41,11 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
     async executeQuery({ statement }: Pick<QueryInfo, "statement">) {
       const { instanceId, databaseId } = useTabStore().currentTab.connection;
-      const database = useDatabaseStore().getDatabaseById(databaseId);
-      const databaseName = database.id === UNKNOWN_ID ? "" : database.name;
+      const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
+      const databaseName =
+        database.uid === String(UNKNOWN_ID) ? "" : database.databaseName;
       const queryResult = await useSQLStore().query({
-        instanceId,
+        instanceId: Number(instanceId),
         databaseName,
         statement: statement,
         limit: RESULT_ROWS_LIMIT,
@@ -54,10 +55,11 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
     async executeAdminQuery({ statement }: Pick<QueryInfo, "statement">) {
       const { instanceId, databaseId } = useTabStore().currentTab.connection;
-      const database = useDatabaseStore().getDatabaseById(databaseId);
-      const databaseName = database.id === UNKNOWN_ID ? "" : database.name;
+      const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
+      const databaseName =
+        database.uid === String(UNKNOWN_ID) ? "" : database.databaseName;
       const queryResult = await useSQLStore().adminQuery({
-        instanceId,
+        instanceId: Number(instanceId),
         databaseName,
         statement: statement,
         limit: RESULT_ROWS_LIMIT,

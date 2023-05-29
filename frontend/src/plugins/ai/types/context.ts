@@ -1,8 +1,8 @@
 import type { Ref } from "vue";
 import type Emittery from "emittery";
-import type { EngineType } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto/store/database";
 import { Conversation } from "./conversation";
+import { Engine } from "@/types/proto/v1/common";
 
 export type AIContextEvents = Emittery<{
   "apply-statement": { statement: string; run: boolean };
@@ -19,7 +19,7 @@ export type AIChatInfo = {
 export type AIContext = {
   openAIKey: Ref<string>;
   openAIEndpoint: Ref<string>;
-  engineType: Ref<EngineType | undefined>;
+  engine: Ref<Engine | undefined>;
   databaseMetadata: Ref<DatabaseMetadata | undefined>;
   autoRun: Ref<boolean>;
   showHistoryDialog: Ref<boolean>;

@@ -4,11 +4,9 @@ import slug from "slug";
 import {
   ComposedDatabase,
   unknownEnvironment,
-  UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
-import { instanceV1Slug } from "./instance";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
 import { User } from "@/types/proto/v1/auth_service";
 import {
@@ -17,24 +15,12 @@ import {
   useEnvironmentV1Store,
 } from "@/store";
 import { hasWorkspacePermissionV1 } from "../role";
-import { Instance } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { semverCompare } from "../util";
 
 export const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");
 };
-
-export function connectionV1Slug(
-  instance: Instance,
-  database?: ComposedDatabase
-): string {
-  const parts = [instanceV1Slug(instance)];
-  if (database && database.uid !== String(UNKNOWN_ID)) {
-    parts.push(databaseV1Slug(database));
-  }
-  return parts.join("_");
-}
 
 export const extractDatabaseResourceName = (
   resource: string

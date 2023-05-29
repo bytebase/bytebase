@@ -21,24 +21,23 @@ import { computed, nextTick, ref, watch, watchEffect } from "vue";
 import { editor as Editor } from "monaco-editor";
 
 import {
-  useInstanceStore,
   useTabStore,
   useSQLEditorStore,
-  useDatabaseStore,
   useDBSchemaStore,
-  useInstanceById,
+  useDatabaseV1Store,
+  useInstanceV1ByUID,
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
-  Database,
-  dialectOfEngine,
+  ComposedDatabase,
+  dialectOfEngineV1,
   ExecuteConfig,
   ExecuteOption,
   SQLDialect,
   UNKNOWN_ID,
 } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
-import { useInstanceEditorLanguage } from "@/utils";
+import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
 import {
   checkCursorAtFirstLine,
   checkCursorAtLast,
@@ -72,29 +71,28 @@ const emit = defineEmits<{
 
 const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
 
-const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaStore();
 const sqlEditorStore = useSQLEditorStore();
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
-const selectedInstance = useInstanceById(
+const { instance: selectedInstance } = useInstanceV1ByUID(
   computed(() => tabStore.currentTab.connection.instanceId)
 );
 const selectedDatabase = computed(() => {
   const id = tabStore.currentTab.connection.databaseId;
-  if (id === UNKNOWN_ID) return undefined;
-  return databaseStore.getDatabaseById(id);
+  if (id === String(UNKNOWN_ID)) return undefined;
+  return databaseStore.getDatabaseByUID(id);
 });
 const selectedInstanceEngine = computed(() => {
-  return instanceStore.formatEngine(selectedInstance.value);
+  return formatEngineV1(selectedInstance.value);
 });
-const selectedLanguage = useInstanceEditorLanguage(selectedInstance);
+const selectedLanguage = useInstanceV1EditorLanguage(selectedInstance);
 const selectedDialect = computed((): SQLDialect => {
   const engine = selectedInstance.value.engine;
-  return dialectOfEngine(engine);
+  return dialectOfEngineV1(engine);
 });
 const currentTabId = computed(() => tabStore.currentTabId);
 const isSwitchingTab = ref(false);
@@ -297,18 +295,18 @@ const handleEditorReady = async () => {
 
   watchEffect(async () => {
     if (selectedInstance.value) {
-      const databaseMap: Map<Database, TableMetadata[]> = new Map();
+      const databaseMap: Map<ComposedDatabase, TableMetadata[]> = new Map();
       const databaseList = selectedDatabase.value
         ? [selectedDatabase.value]
-        : databaseStore.getDatabaseListByInstanceId(selectedInstance.value.id);
+        : databaseStore.databaseListByInstance(selectedInstance.value.name);
       for (const database of databaseList) {
         const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
-          database.id
+          Number(database.uid)
         );
         databaseMap.set(database, tableList);
       }
       const connectionScope = selectedDatabase.value ? "database" : "instance";
-      editorRef.value?.setEditorAutoCompletionContext(
+      editorRef.value?.setEditorAutoCompletionContextV1(
         databaseMap,
         connectionScope
       );
@@ -328,22 +326,24 @@ const updateEditorHeight = () => {
   editorRef.value?.setEditorContentHeight(actualHeight);
 };
 
-const EDITOR_OPTIONS = ref<Editor.IStandaloneEditorConstructionOptions>({
-  theme: "bb-dark",
-  minimap: {
-    enabled: false,
-  },
-  scrollbar: {
-    vertical: "hidden",
-    horizontal: "hidden",
-    alwaysConsumeMouseWheel: false,
-  },
-  overviewRulerLanes: 0,
-  lineNumbers: getLineNumber,
-  lineNumbersMinChars: firstLinePrompt.value.length + 1,
-  glyphMargin: false,
-  cursorStyle: "block",
-});
+const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
+  () => ({
+    theme: "bb-dark",
+    minimap: {
+      enabled: false,
+    },
+    scrollbar: {
+      vertical: "hidden",
+      horizontal: "hidden",
+      alwaysConsumeMouseWheel: false,
+    },
+    overviewRulerLanes: 0,
+    lineNumbers: getLineNumber,
+    lineNumbersMinChars: firstLinePrompt.value.length + 1,
+    glyphMargin: false,
+    cursorStyle: "block",
+  })
+);
 watch(
   firstLinePrompt,
   (prompt) => (EDITOR_OPTIONS.value.lineNumbersMinChars = prompt.length + 1)

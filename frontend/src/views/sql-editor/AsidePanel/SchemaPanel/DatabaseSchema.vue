@@ -11,20 +11,20 @@
       </div>
       <div class="flex justify-end gap-x-0.5">
         <SchemaDiagramButton
-          v-if="instanceHasAlterSchema(database.instance)"
+          v-if="instanceV1HasAlterSchema(database.instanceEntity)"
           :database="database"
           :database-metadata="databaseMetadata"
         />
         <ExternalLinkButton
-          :link="`/db/${databaseSlug(database)}`"
+          :link="`/db/${databaseV1Slug(database)}`"
           :tooltip="$t('common.detail')"
         />
         <AlterSchemaButton
-          v-if="instanceHasAlterSchema(database.instance)"
+          v-if="instanceV1HasAlterSchema(database.instanceEntity)"
           :database="database"
           @click="
             emit('alter-schema', {
-              databaseId: database.id,
+              databaseId: database.uid,
               schema: '',
               table: '',
             })
@@ -61,14 +61,15 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import type { Database, DatabaseId } from "@/types";
-import { databaseSlug, instanceHasAlterSchema } from "@/utils";
+import type { ComposedDatabase } from "@/types";
+import { databaseV1Slug, instanceV1HasAlterSchema } from "@/utils";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import SchemaDiagramButton from "./SchemaDiagramButton.vue";
+import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps<{
-  database: Database;
+  database: ComposedDatabase;
   databaseMetadata: DatabaseMetadata;
   headerClickable: boolean;
 }>();
@@ -78,13 +79,13 @@ const emit = defineEmits<{
   (e: "select-table", schema: SchemaMetadata, table: TableMetadata): void;
   (
     event: "alter-schema",
-    params: { databaseId: DatabaseId; schema: string; table: string }
+    params: { databaseId: string; schema: string; table: string }
   ): void;
 }>();
 
-const engine = computed(() => props.database.instance.engine);
+const engine = computed(() => props.database.instanceEntity.engine);
 
-const rowClickable = computed(() => engine.value !== "MONGODB");
+const rowClickable = computed(() => engine.value !== Engine.MONGODB);
 
 const handleClickHeader = () => {
   if (!props.headerClickable) return;

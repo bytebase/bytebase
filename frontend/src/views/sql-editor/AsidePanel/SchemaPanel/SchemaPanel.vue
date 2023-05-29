@@ -42,7 +42,7 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import { useDatabaseById, useDBSchemaStore, useTabStore } from "@/store";
+import { useDatabaseV1ByUID, useDBSchemaStore, useTabStore } from "@/store";
 import DatabaseSchema from "./DatabaseSchema.vue";
 import TableSchema from "./TableSchema.vue";
 
@@ -65,7 +65,7 @@ const dbSchemaStore = useDBSchemaStore();
 const { currentTab } = storeToRefs(useTabStore());
 const conn = computed(() => currentTab.value.connection);
 
-const database = useDatabaseById(computed(() => conn.value.databaseId));
+const { database } = useDatabaseV1ByUID(computed(() => conn.value.databaseId));
 const databaseMetadata = ref<DatabaseMetadata>();
 
 const handleSelectTable = (schema: SchemaMetadata, table: TableMetadata) => {
@@ -73,14 +73,14 @@ const handleSelectTable = (schema: SchemaMetadata, table: TableMetadata) => {
 };
 
 watch(
-  () => database.value.id,
-  async (databaseId) => {
+  () => database.value.uid,
+  async (uid) => {
     state.selected = undefined;
     databaseMetadata.value = undefined;
-    if (databaseId !== UNKNOWN_ID) {
+    if (uid !== String(UNKNOWN_ID)) {
       databaseMetadata.value =
         await dbSchemaStore.getOrFetchDatabaseMetadataById(
-          databaseId,
+          Number(uid),
           /* !skipCache */ false
         );
     }

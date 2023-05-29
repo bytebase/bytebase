@@ -1,4 +1,4 @@
-import { Advice, DatabaseId, InstanceId, SQLResultSet } from "../types";
+import { Advice, SQLResultSet } from "../types";
 
 export type ExecuteConfig = {
   databaseType: string;
@@ -9,8 +9,8 @@ export type ExecuteOption = {
 };
 
 export type Connection = {
-  instanceId: InstanceId;
-  databaseId: DatabaseId;
+  instanceId: string;
+  databaseId: string;
 };
 
 export enum TabMode {
