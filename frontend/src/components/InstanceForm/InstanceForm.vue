@@ -631,7 +631,6 @@ import {
   unknownEnvironment,
 } from "@/types";
 import {
-  hasFeature,
   pushNotification,
   useCurrentUserV1,
   useSettingV1Store,
@@ -641,6 +640,7 @@ import {
   useInstanceV1Store,
   useDatabaseStore,
   useGracefulRequest,
+  featureToRef,
 } from "@/store";
 import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
 import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
@@ -712,6 +712,10 @@ const state = reactive<LocalState>({
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",
 });
+
+const hasReadonlyReplicaFeature = featureToRef(
+  "bb.feature.read-replica-connection"
+);
 
 const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
   return {
@@ -1053,7 +1057,7 @@ const handleMongodbConnectionStringSchemaChange = (event: Event) => {
 
 const handleCurrentDataSourceHostInput = (event: Event) => {
   if (currentDataSource.value.type === DataSourceType.READ_ONLY) {
-    if (!hasFeature("bb.feature.read-replica-connection")) {
+    if (!hasReadonlyReplicaFeature.value) {
       if (currentDataSource.value.host || currentDataSource.value.port) {
         currentDataSource.value.host = adminDataSource.value.host;
         currentDataSource.value.port = adminDataSource.value.port;
@@ -1068,7 +1072,7 @@ const handleCurrentDataSourceHostInput = (event: Event) => {
 
 const handleCurrentDataSourcePortInput = (event: Event) => {
   if (currentDataSource.value.type === DataSourceType.READ_ONLY) {
-    if (!hasFeature("bb.feature.read-replica-connection")) {
+    if (!hasReadonlyReplicaFeature.value) {
       if (currentDataSource.value.host || currentDataSource.value.port) {
         currentDataSource.value.host = adminDataSource.value.host;
         currentDataSource.value.port = adminDataSource.value.port;
@@ -1274,6 +1278,11 @@ const doCreate = async () => {
 const doUpdate = async () => {
   const { instance } = props;
   if (!instance) {
+    return;
+  }
+
+  if (!checkRODataSourceFeature(instance)) {
+    state.showFeatureModal = true;
     return;
   }
 
@@ -1552,5 +1561,42 @@ const extractDataSourceFromEdit = (
   }
 
   return ds;
+};
+
+const checkRODataSourceFeature = (instance: Instance) => {
+  // Early pass if the feature is available.
+  if (hasReadonlyReplicaFeature.value) {
+    return true;
+  }
+
+  // Not editing/creating
+  if (!readonlyDataSource.value) {
+    return true;
+  }
+
+  if (readonlyDataSource.value.pendingCreate) {
+    // pre-flight feature guard check for creating RO datasource
+    return false;
+  } else {
+    // pre-flight feature guard check for updating RO datasource
+    const editing = extractDataSourceFromEdit(
+      instance,
+      readonlyDataSource.value
+    );
+    const original = instance.dataSources.find(
+      (ds) => ds.type === DataSourceType.READ_ONLY
+    );
+    if (original) {
+      const updateMask = calcDataSourceUpdateMask(
+        editing,
+        original,
+        readonlyDataSource.value
+      );
+      if (updateMask.length > 0) {
+        return false;
+      }
+    }
+  }
+  return true;
 };
 </script>
