@@ -180,7 +180,7 @@
     <template v-else-if="state.selectedSubtab === 'schema-diagram'">
       <SchemaDiagram
         :key="currentTab.databaseId"
-        :database="database"
+        :database="databaseV1"
         :database-metadata="databaseMetadata"
         :schema-status="schemaStatus"
         :table-status="tableStatus"
@@ -209,6 +209,7 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
+  useDatabaseV1Store,
   useNotificationStore,
   useSchemaEditorStore,
 } from "@/store";
@@ -267,8 +268,11 @@ const databaseSchema = computed(() => {
     currentTab.value.databaseId
   ) as DatabaseSchema;
 });
-const database = databaseSchema.value.database;
-const databaseEngine = database.instance.engine;
+const database = computed(() => databaseSchema.value.database);
+const databaseV1 = computed(() => {
+  return useDatabaseV1Store().getDatabaseByUID(String(database.value.id));
+});
+const databaseEngine = computed(() => database.value.instance.engine);
 const schemaList = computed(() => {
   return databaseSchema.value.schemaList;
 });
@@ -287,11 +291,11 @@ const shownTableList = computed(() => {
 });
 
 const shouldShowSchemaSelector = computed(() => {
-  return databaseEngine === "POSTGRES";
+  return databaseEngine.value === "POSTGRES";
 });
 
 const allowCreateTable = computed(() => {
-  if (databaseEngine === "POSTGRES") {
+  if (databaseEngine.value === "POSTGRES") {
     return (
       schemaList.value.length > 0 &&
       selectedSchema.value &&
@@ -372,19 +376,23 @@ watch(
         const originSchema = databaseSchema.value.originSchemaList.find(
           (originSchema) => originSchema.id === schema.id
         );
-        const diffSchemaResult = diffSchema(database.id, originSchema, schema);
+        const diffSchemaResult = diffSchema(
+          database.value.id,
+          originSchema,
+          schema
+        );
         if (checkHasSchemaChanges(diffSchemaResult)) {
           const index = databaseEditList.findIndex(
-            (edit) => edit.databaseId === database.id
+            (edit) => edit.databaseId === database.value.id
           );
           if (index !== -1) {
             databaseEditList[index] = {
-              databaseId: database.id,
+              databaseId: database.value.id,
               ...mergeDiffResults([diffSchemaResult, databaseEditList[index]]),
             };
           } else {
             databaseEditList.push({
-              databaseId: database.id,
+              databaseId: database.value.id,
               ...diffSchemaResult,
             });
           }
@@ -437,7 +445,7 @@ const handleCreateNewTable = () => {
   );
   if (selectedSchema) {
     state.tableNameModalContext = {
-      databaseId: database.id,
+      databaseId: database.value.id,
       schemaId: selectedSchema.id,
       tableName: undefined,
     };
@@ -448,18 +456,18 @@ const handleTableItemClick = (table: Table) => {
   editorStore.addTab({
     id: generateUniqueTabId(),
     type: SchemaEditorTabType.TabForTable,
-    databaseId: database.id,
+    databaseId: database.value.id,
     schemaId: state.selectedSchemaId,
     tableId: table.id,
   });
 };
 
 const handleDropTable = (table: Table) => {
-  editorStore.dropTable(database.id, state.selectedSchemaId, table.id);
+  editorStore.dropTable(database.value.id, state.selectedSchemaId, table.id);
 };
 
 const handleRestoreTable = (table: Table) => {
-  editorStore.restoreTable(database.id, state.selectedSchemaId, table.id);
+  editorStore.restoreTable(database.value.id, state.selectedSchemaId, table.id);
 };
 
 const {
