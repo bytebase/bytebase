@@ -28,18 +28,18 @@
 
       <label class="flex items-center text-sm space-x-1">
         <div
-          v-if="selectedInstance.id !== UNKNOWN_ID"
+          v-if="selectedInstance.uid !== String(UNKNOWN_ID)"
           class="flex items-center"
         >
-          <span class="">{{ selectedInstance.environment.name }}</span>
-          <ProductionEnvironmentIcon
-            :environment="selectedInstance.environment"
+          <span class="">{{ selectedInstance.environmentEntity.title }}</span>
+          <ProductionEnvironmentV1Icon
+            :environment="selectedInstance.environmentEntity"
             class="ml-1"
             :class="[isProductionEnvironment && '~!text-yellow-700']"
           />
         </div>
         <div
-          v-if="selectedInstance.id !== UNKNOWN_ID"
+          v-if="selectedInstance.uid !== String(UNKNOWN_ID)"
           class="flex items-center"
         >
           <span class="mx-2">
@@ -47,8 +47,8 @@
               class="flex-shrink-0 h-4 w-4 text-control-light"
             />
           </span>
-          <InstanceEngineIcon :instance="selectedInstance" show-status />
-          <span class="ml-2">{{ selectedInstance.name }}</span>
+          <InstanceV1EngineIcon :instance="selectedInstance" show-status />
+          <span class="ml-2">{{ selectedInstance.title }}</span>
         </div>
         <div
           v-if="selectedDatabaseV1.uid !== String(UNKNOWN_ID)"
@@ -79,16 +79,22 @@ import { computed } from "vue";
 import { NPopover } from "naive-ui";
 import { useRouter } from "vue-router";
 
-import { useTabStore, useInstanceById, useDatabaseV1ByUID } from "@/store";
+import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
 import { TabMode, UNKNOWN_ID } from "@/types";
-import { instanceSlug } from "@/utils";
+import { instanceV1Slug } from "@/utils";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import {
+  InstanceV1EngineIcon,
+  ProductionEnvironmentV1Icon,
+} from "@/components/v2";
 
 const router = useRouter();
 const tabStore = useTabStore();
 
 const connection = computed(() => tabStore.currentTab.connection);
 
-const selectedInstance = useInstanceById(
+const { instance: selectedInstance } = useInstanceV1ByUID(
   computed(() => connection.value.instanceId)
 );
 
@@ -98,7 +104,7 @@ const { database: selectedDatabaseV1 } = useDatabaseV1ByUID(
 
 const isProductionEnvironment = computed(() => {
   const instance = selectedInstance.value;
-  return instance.environment.tier === "PROTECTED";
+  return instance.environmentEntity.tier === EnvironmentTier.PROTECTED;
 });
 
 const isAdminMode = computed(() => {
@@ -106,18 +112,17 @@ const isAdminMode = computed(() => {
 });
 
 const hasReadonlyDataSource = computed(() => {
-  for (const ds of selectedInstance.value.dataSourceList) {
-    if (ds.type === "RO") {
-      return true;
-    }
-  }
-  return false;
+  return (
+    selectedInstance.value.dataSources.findIndex(
+      (ds) => ds.type === DataSourceType.READ_ONLY
+    ) !== -1
+  );
 });
 
 const showReadonlyDatasourceWarning = computed(() => {
   return (
     !isAdminMode.value &&
-    selectedInstance.value.id !== UNKNOWN_ID &&
+    selectedInstance.value.uid !== String(UNKNOWN_ID) &&
     !hasReadonlyDataSource.value
   );
 });
@@ -126,7 +131,7 @@ const gotoInstanceDetailPage = () => {
   const route = router.resolve({
     name: "workspace.instance.detail",
     params: {
-      instanceSlug: instanceSlug(selectedInstance.value),
+      instanceSlug: instanceV1Slug(selectedInstance.value),
     },
   });
   window.open(route.href);

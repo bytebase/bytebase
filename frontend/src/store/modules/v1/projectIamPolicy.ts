@@ -317,6 +317,49 @@ export const useCurrentUserIamPolicy = () => {
     return false;
   };
 
+  const allowToExportDatabaseV1 = (database: ComposedDatabase) => {
+    if (hasWorkspaceSuperPrivilege) {
+      return true;
+    }
+
+    const policy = iamPolicyStore.getProjectIamPolicy(database.project);
+    if (!policy) {
+      return false;
+    }
+    const iamPolicyCheckResult = policy.bindings.map((binding) => {
+      if (
+        binding.role === PresetRoleType.OWNER &&
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        return true;
+      }
+      if (
+        binding.role === PresetRoleType.EXPORTER &&
+        binding.members.find(
+          (member) => member === `user:${currentUser.value.email}`
+        )
+      ) {
+        const conditionExpression = parseConditionExpressionString(
+          binding.condition?.expression || ""
+        );
+        if (conditionExpression.databases) {
+          const databaseResourceName = database.name;
+          return conditionExpression.databases.includes(databaseResourceName);
+        } else {
+          return true;
+        }
+      }
+    });
+    // If one of the binding is true, then the user is allowed to export the database.
+    if (iamPolicyCheckResult.includes(true)) {
+      return true;
+    }
+
+    return false;
+  };
+
   return {
     isMemberOfProject,
     isProjectOwnerOrDeveloper,
@@ -324,5 +367,6 @@ export const useCurrentUserIamPolicy = () => {
     allowToQueryDatabase,
     allowToQueryDatabaseV1,
     allowToExportDatabase,
+    allowToExportDatabaseV1,
   };
 };

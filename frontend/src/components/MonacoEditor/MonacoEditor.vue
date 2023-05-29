@@ -19,7 +19,7 @@ import {
   watchEffect,
 } from "vue";
 import type { editor as Editor } from "monaco-editor";
-import { Database, Language, SQLDialect } from "@/types";
+import { ComposedDatabase, Database, Language, SQLDialect } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import { MonacoHelper, useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
@@ -382,6 +382,29 @@ const setEditorAutoCompletionContext = (
   languageClientRef.value?.changeConnectionScope(connectionScope);
 };
 
+const setEditorAutoCompletionContextV1 = (
+  databaseMap: Map<ComposedDatabase, TableMetadata[]>,
+  connectionScope: "instance" | "database" = "database"
+) => {
+  const databases = [];
+  for (const [database, tableList] of databaseMap) {
+    databases.push({
+      name: database.databaseName,
+      tables: tableList.map((table) => ({
+        database: database.databaseName,
+        name: table.name,
+        columns: table.columns.map((column) => ({
+          name: column.name,
+        })),
+      })),
+    });
+  }
+  languageClientRef.value?.changeSchema({
+    databases: databases,
+  });
+  languageClientRef.value?.changeConnectionScope(connectionScope);
+};
+
 defineExpose({
   editorInstance: editorInstanceRef,
   formatEditorContent,
@@ -390,6 +413,7 @@ defineExpose({
   getEditorContentHeight,
   setEditorContentHeight,
   setEditorAutoCompletionContext,
+  setEditorAutoCompletionContextV1,
 });
 </script>
 

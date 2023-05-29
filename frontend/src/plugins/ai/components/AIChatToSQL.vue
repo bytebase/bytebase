@@ -12,7 +12,7 @@ import type { AIContextEvents } from "../types";
 import { useChatByTab, provideAIContext } from "../logic";
 import {
   useCurrentTab,
-  useInstanceById,
+  useInstanceV1ByUID,
   useMetadataByDatabaseId,
 } from "@/store";
 import ChatPanel from "./ChatPanel.vue";
@@ -50,11 +50,11 @@ const openAIEndpoint = computed(
 );
 const tab = useCurrentTab();
 
-const instance = useInstanceById(
-  computed(() => tab.value.connection.instanceId)
+const { instance } = useInstanceV1ByUID(
+  computed(() => tab.value.connection.databaseId)
 );
 const databaseMetadata = useMetadataByDatabaseId(
-  computed(() => tab.value.connection.databaseId),
+  computed(() => Number(tab.value.connection.databaseId)),
   false /* !skipCache */
 );
 
@@ -72,7 +72,7 @@ const chat = useChatByTab();
 provideAIContext({
   openAIKey,
   openAIEndpoint,
-  engineType: computed(() => instance.value.engine),
+  engine: computed(() => instance.value.engine),
   databaseMetadata: databaseMetadata,
   autoRun,
   showHistoryDialog: toRef(state, "showHistoryDialog"),

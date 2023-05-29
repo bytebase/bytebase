@@ -7,35 +7,36 @@ import { uniqBy } from "lodash-es";
 import { onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  useDatabaseStore,
   useSQLEditorStore,
   useTabStore,
   useDebugStore,
-  useInstanceStore,
   pushNotification,
   useConnectionTreeStore,
   useProjectV1Store,
   useCurrentUserV1,
   useSheetV1Store,
   useInstanceV1Store,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
 } from "@/store";
 import {
   Connection,
   ConnectionAtom,
   ConnectionTreeMode,
   CoreTabInfo,
+  DEFAULT_PROJECT_V1_NAME,
   TabMode,
   UNKNOWN_USER_NAME,
 } from "@/types";
-import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
+import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import {
   emptyConnection,
   idFromSlug,
   sheetNameFromSlug,
   sheetSlugV1,
-  connectionSlug as makeConnectionSlug,
+  connectionV1Slug as makeConnectionV1Slug,
   isSheetReadableV1,
-  isDatabaseAccessible,
+  isDatabaseV1Accessible,
   getDefaultTabNameFromConnection,
   isSimilarTab,
   hasWorkspacePermissionV1,
@@ -48,14 +49,15 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
+import { State } from "@/types/proto/v1/common";
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();
-const instanceStore = useInstanceStore();
-const databaseStore = useDatabaseStore();
+const instanceStore = useInstanceV1Store();
+const databaseStore = useDatabaseV1Store();
 const policyV1Store = usePolicyV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const connectionTreeStore = useConnectionTreeStore();
@@ -80,15 +82,17 @@ const prepareAccessibleDatabaseList = async () => {
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
   const databaseList = (
-    await databaseStore.fetchDatabaseList({
-      syncStatus: "OK",
+    await databaseStore.searchDatabaseList({
+      parent: "instances/-",
     })
-  ).filter((db) =>
-    isDatabaseAccessible(
-      db,
-      connectionTreeStore.accessControlPolicyList,
-      currentUserV1.value
-    )
+  ).filter(
+    (db) =>
+      db.syncState === State.ACTIVE &&
+      isDatabaseV1Accessible(
+        db,
+        connectionTreeStore.accessControlPolicyList,
+        currentUserV1.value
+      )
   );
   connectionTreeStore.tree.databaseList = databaseList;
 };
@@ -106,24 +110,28 @@ const prepareConnectionTree = async () => {
     }
     const { databaseList } = connectionTreeStore.tree;
     const instanceList = uniqBy(
-      databaseList.map((db) => db.instance),
-      (instance) => instance.id
+      databaseList.map((db) => db.instanceEntity),
+      (instance) => instance.uid
     );
     const connectionTree = instanceList.map((instance) => {
-      const node = connectionTreeStore.mapAtom(instance, "instance", 0);
+      const node = connectionTreeStore.mapAtom(instance, "instance", "0");
       return node;
     });
 
     for (const instance of instanceList) {
       const instanceItem = connectionTree.find(
-        (item: ConnectionAtom) => item.id === instance.id
+        (item: ConnectionAtom) => item.id === instance.uid
       )!;
 
       instanceItem.children = databaseList
-        .filter((db) => db.instance.id === instance.id)
+        .filter((db) => db.instanceEntity.uid === instance.uid)
         .map((db) => {
-          const node = connectionTreeStore.mapAtom(db, "database", instance.id);
-          node.disabled = !isDatabaseAccessible(
+          const node = connectionTreeStore.mapAtom(
+            db,
+            "database",
+            instance.uid
+          );
+          node.disabled = !isDatabaseV1Accessible(
             db,
             connectionTreeStore.accessControlPolicyList,
             currentUserV1.value
@@ -139,28 +147,28 @@ const prepareConnectionTree = async () => {
     connectionTreeStore.tree.data = connectionTree;
   } else {
     const databaseList = connectionTreeStore.tree.databaseList.filter((db) => {
-      return db.project.id !== DEFAULT_PROJECT_ID;
+      return db.project !== DEFAULT_PROJECT_V1_NAME;
     });
     const projectList = uniqBy(
-      databaseList.map((db) => db.project),
-      (project) => project.id
+      databaseList.map((db) => db.projectEntity),
+      (project) => project.uid
     );
 
     const projectAtomList = projectList.map((project) => {
-      const node = connectionTreeStore.mapAtom(project, "project", 0);
+      const node = connectionTreeStore.mapAtom(project, "project", "0");
       return node;
     });
 
     projectAtomList.forEach((projectAtom) => {
       projectAtom.children = databaseList
-        .filter((db) => db.project.id === projectAtom.id)
+        .filter((db) => db.projectEntity.uid === projectAtom.id)
         .map((db) => {
           const node = connectionTreeStore.mapAtom(
             db,
             "database",
             projectAtom.id
           );
-          node.disabled = !isDatabaseAccessible(
+          node.disabled = !isDatabaseV1Accessible(
             db,
             connectionTreeStore.accessControlPolicyList,
             currentUserV1.value
@@ -218,8 +226,8 @@ const prepareSheet = async () => {
     // Open the sheet in a "temp" tab otherwise.
     tabStore.selectOrAddTempTab();
 
-    let insId = UNKNOWN_ID,
-      dbId = UNKNOWN_ID;
+    let insId = String(UNKNOWN_ID);
+    let dbId = String(UNKNOWN_ID);
     if (sheet.database) {
       const [instanceName, databaseId] = getInstanceAndDatabaseId(
         sheet.database
@@ -227,8 +235,8 @@ const prepareSheet = async () => {
       const ins = await useInstanceV1Store().getOrFetchInstanceByName(
         `instances/${instanceName}`
       );
-      insId = Number(ins.uid);
-      dbId = Number(databaseId);
+      insId = ins.uid;
+      dbId = databaseId;
     }
 
     tabStore.updateCurrentTab({
@@ -251,8 +259,8 @@ const prepareSheet = async () => {
 const prepareConnectionSlug = async () => {
   const connectionSlug = (route.params.connectionSlug as string) || "";
   const [instanceSlug, databaseSlug = ""] = connectionSlug.split("_");
-  const instanceId = idFromSlug(instanceSlug);
-  const databaseId = idFromSlug(databaseSlug);
+  const instanceId = Number(idFromSlug(instanceSlug));
+  const databaseId = Number(idFromSlug(databaseSlug));
 
   if (Number.isNaN(instanceId) && Number.isNaN(databaseId)) {
     return false;
@@ -286,15 +294,15 @@ const prepareConnectionSlug = async () => {
   if (Number.isNaN(databaseId)) {
     // connected to instance
     const connection = await connectionTreeStore.fetchConnectionByInstanceId(
-      instanceId
+      String(instanceId)
     );
     connect(connection);
   } else {
     // connected to db
     const connection =
       await connectionTreeStore.fetchConnectionByInstanceIdAndDatabaseId(
-        instanceId,
-        databaseId
+        String(instanceId),
+        String(databaseId)
       );
     connect(connection);
   }
@@ -352,23 +360,23 @@ const syncURLWithConnection = () => {
         }
         return;
       }
-      if (instanceId !== UNKNOWN_ID) {
-        const instance = instanceStore.getInstanceById(instanceId);
-        const database = databaseStore.getDatabaseById(databaseId); // might be <<Unknown database>> here
+      if (instanceId !== String(UNKNOWN_ID)) {
+        const instance = instanceStore.getInstanceByUID(instanceId);
+        const database = databaseStore.getDatabaseByUID(databaseId); // might be <<Unknown database>> here
         // Sometimes the instance and/or the database might be <<Unknown>> since
         // they might be deleted somewhere else during the life of the page.
         // So we need to sync the connection values for cleaning up to prevent
         // exceptions.
         tabStore.updateCurrentTab({
           connection: {
-            instanceId: instance.id,
-            databaseId: database.id,
+            instanceId: instance.uid,
+            databaseId: database.uid,
           },
         });
         router.replace({
           name: "sql-editor.detail",
           params: {
-            connectionSlug: makeConnectionSlug(instance, database),
+            connectionSlug: makeConnectionV1Slug(instance, database),
           },
         });
         return;
@@ -384,8 +392,12 @@ const syncURLWithConnection = () => {
 onMounted(async () => {
   if (connectionTreeStore.tree.state === ConnectionTreeState.UNSET) {
     connectionTreeStore.tree.state = ConnectionTreeState.LOADING;
-    // Initial project list state for iam policy.
-    await useProjectV1Store().fetchProjectList();
+    // Initialize project list state for iam policy.
+    await useProjectV1Store().fetchProjectList(true /* include archived */);
+    // Initialize environment list for composing.
+    await useEnvironmentV1Store().fetchEnvironments(
+      true /* include archived */
+    );
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
     connectionTreeStore.tree.state = ConnectionTreeState.LOADED;
