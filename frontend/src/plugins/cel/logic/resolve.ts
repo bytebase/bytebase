@@ -125,14 +125,11 @@ const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
 
 const resolveStringExpr = (expr: CELExpr): StringExpr => {
   const operator = expr.callExpr!.function as StringOperator;
-  const factor = expr.callExpr!.target!;
+  const factor = getFactorName(expr.callExpr!.target!);
   const value = expr.callExpr!.args[0];
   return {
     operator,
-    args: [
-      factor.identExpr!.name as StringFactor,
-      value.constExpr!.stringValue!,
-    ],
+    args: [factor as StringFactor, value.constExpr!.stringValue!],
   };
 };
 
@@ -165,7 +162,7 @@ const resolveCollectionExpr = (expr: CELExpr): CollectionExpr => {
   throw new Error(`cannot resolve expr ${JSON.stringify(expr)}`);
 };
 
-const emptySimpleExpr = (): ConditionGroupExpr => {
+export const emptySimpleExpr = (): ConditionGroupExpr => {
   return {
     operator: LogicalOperatorList[0],
     args: [],
