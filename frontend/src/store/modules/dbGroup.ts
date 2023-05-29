@@ -48,11 +48,15 @@ export const useDBGroupStore = defineStore("db-group", () => {
     databaseGroup: DatabaseGroup,
     databaseGroupId: string
   ) => {
-    await projectServiceClient.createDatabaseGroup({
-      parent: projectName,
-      databaseGroup,
-      databaseGroupId,
-    });
+    const createdDatabaseGroup = await projectServiceClient.createDatabaseGroup(
+      {
+        parent: projectName,
+        databaseGroup,
+        databaseGroupId,
+      }
+    );
+    dbGroupMapById.value.set(createdDatabaseGroup.name, createdDatabaseGroup);
+    return createdDatabaseGroup;
   };
 
   const updateDatabaseGroup = async (databaseGroup: DatabaseGroup) => {
