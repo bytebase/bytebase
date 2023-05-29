@@ -32,7 +32,7 @@ import { computed, ref } from "vue";
 import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
 import {
   useCurrentTab,
-  useInstanceStore,
+  useInstanceV1Store,
   useSheetV1Store,
   useTabStore,
 } from "@/store";
@@ -47,7 +47,7 @@ import {
 import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
-import { getSheetIssueBacktracePayloadV1 } from "@/utils";
+import { formatEngineV1, getSheetIssueBacktracePayloadV1 } from "@/utils";
 
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
@@ -83,12 +83,12 @@ const handleApplyStatement = async (
 ) => {
   tab.value.statement = statement;
   if (run) {
-    const instanceStore = useInstanceStore();
-    const instance = await instanceStore.getOrFetchInstanceById(
+    const instanceStore = useInstanceV1Store();
+    const instance = await instanceStore.getOrFetchInstanceByUID(
       conn.instanceId
     );
     handleExecute(statement, {
-      databaseType: instanceStore.formatEngine(instance),
+      databaseType: formatEngineV1(instance),
     });
   }
 };

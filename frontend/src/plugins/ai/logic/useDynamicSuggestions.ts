@@ -30,7 +30,7 @@ export const useDynamicSuggestions = () => {
 
   const text = computed(() => {
     const meta = context.databaseMetadata.value;
-    const engine = context.engineType.value;
+    const engine = context.engine.value;
 
     if (meta && engine) {
       return databaseMetadataToText(meta, engine);

@@ -51,14 +51,14 @@
 </template>
 
 <script lang="ts">
-import { useActuatorStore } from "@/store";
+import { useActuatorV1Store } from "@/store";
 import { storeToRefs } from "pinia";
 import { defineComponent, ref } from "vue";
 
 export default defineComponent({
   name: "BannerDemo",
   setup() {
-    const actuatorStore = useActuatorStore();
+    const actuatorStore = useActuatorV1Store();
     const show = ref(true);
 
     const { isReadonly } = storeToRefs(actuatorStore);

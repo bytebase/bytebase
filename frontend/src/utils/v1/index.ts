@@ -10,4 +10,5 @@ export * from "./label";
 export * from "./role";
 export * from "./user";
 export * from "./instance";
+export * from "./sqlEditor";
 export * from "./sheet";

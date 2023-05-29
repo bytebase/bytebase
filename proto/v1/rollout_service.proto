@@ -377,6 +377,7 @@ message Task {
     DONE = 4;
     FAILED = 5;
     CANCELED = 6;
+    SKIPPED = 7;
   }
   // Status is the status of the task.
   // TODO(p0ny): migrate old task status and use this field as a summary of the task runs.
@@ -513,6 +514,7 @@ message Task {
     DatabaseSchemaBaseline database_schema_baseline = 8;
     DatabaseSchemaUpdate database_schema_update = 9;
     DatabaseDataUpdate database_data_update = 10;
+    DatabaseBackup database_backup = 14;
     DatabaseRestoreRestore database_restore_restore = 11;
   }
 }

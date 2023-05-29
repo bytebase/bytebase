@@ -656,14 +656,8 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Parent)
 	}
 
-	// The id value should be 4-63 characters, and valid characters are /[a-z][0-9]-/.
-	if len(request.DatabaseGroupId) < 4 || len(request.DatabaseGroupId) > 63 {
-		return nil, status.Errorf(codes.InvalidArgument, "database group id %q must be between 4 and 63 characters", request.DatabaseGroupId)
-	}
-	for _, c := range request.DatabaseGroupId {
-		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid database group id %q", request.DatabaseGroupId)
-		}
+	if !isValidResourceID(request.DatabaseGroupId) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid database group id %q", request.DatabaseGroupId)
 	}
 	if request.DatabaseGroup.DatabasePlaceholder == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "database group database placeholder is required")
@@ -674,16 +668,16 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	storeDatabaseGroup := &store.DatabaseGroupMessage{
-		ResourceID:        request.DatabaseGroupId,
-		ProjectResourceID: project.ResourceID,
-		Placeholder:       request.DatabaseGroup.DatabasePlaceholder,
-		Expression:        request.DatabaseGroup.DatabaseExpr,
+		ResourceID:  request.DatabaseGroupId,
+		ProjectUID:  project.UID,
+		Placeholder: request.DatabaseGroup.DatabasePlaceholder,
+		Expression:  request.DatabaseGroup.DatabaseExpr,
 	}
 	databaseGroup, err := s.store.CreateDatabaseGroup(ctx, principalID, storeDatabaseGroup)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPIDatabaseGroup(databaseGroup), nil
+	return convertStoreToAPIDatabaseGroup(databaseGroup, projectResourceID), nil
 }
 
 // UpdateDatabaseGroup updates a database group.
@@ -705,6 +699,7 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
 	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ProjectUID: &project.UID,
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
@@ -732,11 +727,11 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 		}
 	}
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	databaseGroup, err := s.store.UpdateDatabaseGroup(ctx, principalID, databaseGroupResourceID, &updateDatabaseGroup)
+	databaseGroup, err := s.store.UpdateDatabaseGroup(ctx, principalID, existedDatabaseGroup.UID, &updateDatabaseGroup)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPIDatabaseGroup(databaseGroup), nil
+	return convertStoreToAPIDatabaseGroup(databaseGroup, projectResourceID), nil
 }
 
 // DeleteDatabaseGroup deletes a database group.
@@ -758,6 +753,7 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
 	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ProjectUID: &project.UID,
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
@@ -767,7 +763,7 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 	}
 
-	err = s.store.DeleteDatabaseGroup(ctx, databaseGroupResourceID)
+	err = s.store.DeleteDatabaseGroup(ctx, existedDatabaseGroup.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -793,14 +789,14 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
 	databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{
-		ProjectResourceID: &projectResourceID,
+		ProjectUID: &project.UID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	var apiDatabaseGroups []*v1pb.DatabaseGroup
 	for _, databaseGroup := range databaseGroups {
-		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroup(databaseGroup))
+		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroup(databaseGroup, projectResourceID))
 	}
 	return &v1pb.ListDatabaseGroupsResponse{
 		DatabaseGroups: apiDatabaseGroups,
@@ -826,6 +822,7 @@ func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.Get
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ProjectUID: &project.UID,
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
@@ -834,7 +831,7 @@ func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.Get
 	if databaseGroup == nil {
 		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 	}
-	return convertStoreToAPIDatabaseGroup(databaseGroup), nil
+	return convertStoreToAPIDatabaseGroup(databaseGroup, projectResourceID), nil
 }
 
 // CreateSchemaGroup creates a database group.
@@ -865,14 +862,8 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 	}
 
-	// The id value should be 4-63 characters, and valid characters are /[a-z][0-9]-/.
-	if len(request.SchemaGroupId) < 4 || len(request.SchemaGroupId) > 63 {
-		return nil, status.Errorf(codes.InvalidArgument, "schema group id %q must be between 4 and 63 characters", request.SchemaGroupId)
-	}
-	for _, c := range request.SchemaGroupId {
-		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid schema group id %q", request.SchemaGroupId)
-		}
+	if !isValidResourceID(request.SchemaGroupId) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid schema group id %q", request.SchemaGroupId)
 	}
 	if request.SchemaGroup.TablePlaceholder == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "schema group table placeholder is required")
@@ -883,16 +874,16 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	storeSchemaGroup := &store.SchemaGroupMessage{
-		ResourceID:              request.SchemaGroupId,
-		DatabaseGroupResourceID: databaseGroup.ResourceID,
-		Placeholder:             request.SchemaGroup.TablePlaceholder,
-		Expression:              request.SchemaGroup.TableExpr,
+		ResourceID:       request.SchemaGroupId,
+		DatabaseGroupUID: databaseGroup.UID,
+		Placeholder:      request.SchemaGroup.TablePlaceholder,
+		Expression:       request.SchemaGroup.TableExpr,
 	}
 	schemaGroup, err := s.store.CreateSchemaGroup(ctx, principalID, storeSchemaGroup)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPISchemaGroup(schemaGroup, projectResourceID), nil
+	return convertStoreToAPISchemaGroup(schemaGroup, projectResourceID, databaseGroupResourceID), nil
 }
 
 // UpdateSchemaGroup updates a schema group.
@@ -914,6 +905,7 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ProjectUID: &project.UID,
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
@@ -923,7 +915,8 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 	}
 	existedSchemaGroup, err := s.store.GetSchemaGroup(ctx, &store.FindSchemaGroupMessage{
-		ResourceID: &schemaGroupResourceID,
+		DatabaseGroupUID: &databaseGroup.UID,
+		ResourceID:       &schemaGroupResourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -944,16 +937,17 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 			if request.SchemaGroup.TableExpr == nil {
 				return nil, status.Errorf(codes.InvalidArgument, "schema group table expr is required")
 			}
+			updateSchemaGroup.Expression = request.SchemaGroup.TableExpr
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
 		}
 	}
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	schemaGroup, err := s.store.UpdateSchemaGroup(ctx, principalID, schemaGroupResourceID, &updateSchemaGroup)
+	schemaGroup, err := s.store.UpdateSchemaGroup(ctx, principalID, existedSchemaGroup.UID, &updateSchemaGroup)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPISchemaGroup(schemaGroup, projectResourceID), nil
+	return convertStoreToAPISchemaGroup(schemaGroup, projectResourceID, databaseGroupResourceID), nil
 }
 
 // DeleteSchemaGroup deletes a schema group.
@@ -975,6 +969,7 @@ func (s *ProjectService) DeleteSchemaGroup(ctx context.Context, request *v1pb.De
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ProjectUID: &project.UID,
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
@@ -984,7 +979,8 @@ func (s *ProjectService) DeleteSchemaGroup(ctx context.Context, request *v1pb.De
 		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 	}
 	existedSchemaGroup, err := s.store.GetSchemaGroup(ctx, &store.FindSchemaGroupMessage{
-		ResourceID: &schemaGroupResourceID,
+		DatabaseGroupUID: &databaseGroup.UID,
+		ResourceID:       &schemaGroupResourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -993,7 +989,7 @@ func (s *ProjectService) DeleteSchemaGroup(ctx context.Context, request *v1pb.De
 		return nil, status.Errorf(codes.NotFound, "schema group %q not found", schemaGroupResourceID)
 	}
 
-	err = s.store.DeleteSchemaGroup(ctx, schemaGroupResourceID)
+	err = s.store.DeleteSchemaGroup(ctx, existedSchemaGroup.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -1019,6 +1015,7 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ProjectUID: &project.UID,
 		ResourceID: &databaseResourceID,
 	})
 	if err != nil {
@@ -1029,14 +1026,14 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 	}
 
 	schemaGroups, err := s.store.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{
-		DatabaseGroupResourceID: &databaseResourceID,
+		DatabaseGroupUID: &databaseGroup.UID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	var apiSchemaGroups []*v1pb.SchemaGroup
 	for _, schemaGroup := range schemaGroups {
-		apiSchemaGroups = append(apiSchemaGroups, convertStoreToAPISchemaGroup(schemaGroup, projectResourceID))
+		apiSchemaGroups = append(apiSchemaGroups, convertStoreToAPISchemaGroup(schemaGroup, projectResourceID, databaseGroup.ResourceID))
 	}
 	return &v1pb.ListSchemaGroupsResponse{
 		SchemaGroups: apiSchemaGroups,
@@ -1062,6 +1059,7 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectResourceID)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ProjectUID: &project.UID,
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
@@ -1071,7 +1069,8 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 	}
 	schemaGroup, err := s.store.GetSchemaGroup(ctx, &store.FindSchemaGroupMessage{
-		ResourceID: &schemaGroupResourceID,
+		DatabaseGroupUID: &databaseGroup.UID,
+		ResourceID:       &schemaGroupResourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1079,20 +1078,20 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 	if schemaGroup == nil {
 		return nil, status.Errorf(codes.NotFound, "schema group %q not found", schemaGroupResourceID)
 	}
-	return convertStoreToAPISchemaGroup(schemaGroup, schemaGroupResourceID), nil
+	return convertStoreToAPISchemaGroup(schemaGroup, projectResourceID, databaseGroupResourceID), nil
 }
 
-func convertStoreToAPIDatabaseGroup(databaseGroup *store.DatabaseGroupMessage) *v1pb.DatabaseGroup {
+func convertStoreToAPIDatabaseGroup(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
 	return &v1pb.DatabaseGroup{
-		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, databaseGroup.ProjectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
+		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
 	}
 }
 
-func convertStoreToAPISchemaGroup(schemaGroup *store.SchemaGroupMessage, projectResourceID string) *v1pb.SchemaGroup {
+func convertStoreToAPISchemaGroup(schemaGroup *store.SchemaGroupMessage, projectResourceID, databaseGroupResourceID string) *v1pb.SchemaGroup {
 	return &v1pb.SchemaGroup{
-		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, schemaGroup.DatabaseGroupResourceID, schemaGroupNamePrefix, schemaGroup.ResourceID),
+		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroupResourceID, schemaGroupNamePrefix, schemaGroup.ResourceID),
 		TablePlaceholder: schemaGroup.Placeholder,
 		TableExpr:        schemaGroup.Expression,
 	}

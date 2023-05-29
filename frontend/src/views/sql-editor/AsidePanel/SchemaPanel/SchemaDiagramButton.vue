@@ -36,7 +36,7 @@ import { reactive } from "vue";
 import { NButton } from "naive-ui";
 
 import type { DatabaseMetadata } from "@/types/proto/store/database";
-import type { Database } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 
 type LocalState = {
@@ -44,7 +44,7 @@ type LocalState = {
 };
 
 defineProps<{
-  database: Database;
+  database: ComposedDatabase;
   databaseMetadata: DatabaseMetadata;
 }>();
 

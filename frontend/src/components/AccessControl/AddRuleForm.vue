@@ -1,14 +1,14 @@
 <template>
-  <div class="w-160 space-y-2 relative">
+  <div class="w-[calc(100vw-8rem)] max-w-[60rem] space-y-2 relative">
     <div>
-      <BBTableSearch
-        class="w-60"
+      <SearchBox
+        v-model:value="state.searchText"
+        style="width: 15rem"
         :placeholder="$t('database.search-database')"
-        @change-text="(text: string) => (state.searchText = text)"
       />
     </div>
 
-    <DatabaseTable
+    <DatabaseV1Table
       mode="ALL_TINY"
       class="overflow-y-auto"
       style="max-height: calc(100vh - 320px)"
@@ -17,7 +17,7 @@
       :database-list="databaseList"
       :show-selection-column="true"
       @select-database="
-          (db: Database) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
+          (db: ComposedDatabase) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
         "
     >
       <template #selection-all="{ databaseList: renderedDatabaseList }">
@@ -42,7 +42,7 @@
           @input="(e: any) => toggleDatabaseSelection(database, e.target.checked)"
         />
       </template>
-    </DatabaseTable>
+    </DatabaseV1Table>
 
     <div
       v-if="!state.isLoading && databaseList.length === 0"
@@ -100,14 +100,15 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 
-import type { Database, DatabaseId } from "@/types";
-import { filterDatabaseByKeyword } from "@/utils";
+import type { ComposedDatabase } from "@/types";
+import { filterDatabaseV1ByKeyword } from "@/utils";
 import { Policy } from "@/types/proto/v1/org_policy_service";
+import { SearchBox } from "@/components/v2";
 
 type LocalState = {
   isLoading: boolean;
   searchText: string;
-  selectedDatabaseIdList: Set<DatabaseId>;
+  selectedDatabaseIdList: Set<string>;
 };
 
 const props = defineProps({
@@ -116,14 +117,14 @@ const props = defineProps({
     default: () => [],
   },
   databaseList: {
-    type: Array as PropType<Database[]>,
+    type: Array as PropType<ComposedDatabase[]>,
     default: () => [],
   },
 });
 
 const emit = defineEmits<{
   (e: "cancel"): void;
-  (e: "add", databaseList: Database[]): void;
+  (e: "add", databaseList: ComposedDatabase[]): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -134,7 +135,7 @@ const state = reactive<LocalState>({
 
 const presetDatabaseIdList = computed(() => {
   const databaseIdList = props.policyList.map(
-    (policy) => policy.resourceUid as DatabaseId
+    (policy) => policy.resourceUid as string
   );
   return new Set(databaseIdList);
 });
@@ -142,12 +143,12 @@ const presetDatabaseIdList = computed(() => {
 const databaseList = computed(() => {
   // Don't show the databases already have access control policy.
   let list = props.databaseList.filter(
-    (db) => !presetDatabaseIdList.value.has(`${db.id}`)
+    (db) => !presetDatabaseIdList.value.has(db.uid)
   );
 
   const keyword = state.searchText.trim();
   list = list.filter((db) =>
-    filterDatabaseByKeyword(db, keyword, [
+    filterDatabaseV1ByKeyword(db, keyword, [
       "name",
       "project",
       "instance",
@@ -168,20 +169,20 @@ const tryAdd = () => {
   emit("add", selectedDatabaseList);
 };
 
-const toggleDatabaseSelection = (database: Database, on: boolean) => {
+const toggleDatabaseSelection = (database: ComposedDatabase, on: boolean) => {
   if (on) {
-    state.selectedDatabaseIdList.add(database.id);
+    state.selectedDatabaseIdList.add(database.uid);
   } else {
-    state.selectedDatabaseIdList.delete(database.id);
+    state.selectedDatabaseIdList.delete(database.uid);
   }
 };
 
-const isDatabaseSelected = (database: Database) => {
-  return state.selectedDatabaseIdList.has(database.id);
+const isDatabaseSelected = (database: ComposedDatabase) => {
+  return state.selectedDatabaseIdList.has(database.uid);
 };
 
 const getAllSelectionState = (
-  databaseList: Database[]
+  databaseList: ComposedDatabase[]
 ): { checked: boolean; indeterminate: boolean } => {
   const checked = databaseList.every((db) => isDatabaseSelected(db));
   const indeterminate =
@@ -194,17 +195,17 @@ const getAllSelectionState = (
 };
 
 const toggleAllDatabasesSelection = (
-  databaseList: Database[],
+  databaseList: ComposedDatabase[],
   on: boolean
 ): void => {
   const set = state.selectedDatabaseIdList;
   if (on) {
     databaseList.forEach((db) => {
-      set.add(db.id);
+      set.add(db.uid);
     });
   } else {
     databaseList.forEach((db) => {
-      set.delete(db.id);
+      set.delete(db.uid);
     });
   }
 };

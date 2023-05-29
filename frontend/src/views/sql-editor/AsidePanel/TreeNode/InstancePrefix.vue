@@ -1,14 +1,14 @@
 <template>
-  <InstanceEngineIcon :instance="instance" />
+  <InstanceV1EngineIcon :instance="instance" />
   <span class="text-sm -mr-0.5" :class="[!disabled && 'text-gray-500']">
     (
   </span>
-  <ProductionEnvironmentIcon
-    :environment="instance.environment"
+  <ProductionEnvironmentV1Icon
+    :environment="instance.environmentEntity"
     class="w-4 h-4 text-inherit"
   />
   <span class="text-sm" :class="[!disabled && 'text-gray-500']">
-    {{ instance.environment.name }}
+    {{ instance.environmentEntity.title }}
   </span>
   <span class="text-sm -ml-0.5" :class="[!disabled && 'text-gray-500']">
     )
@@ -16,11 +16,15 @@
 </template>
 
 <script setup lang="ts">
-import type { Instance } from "@/types";
+import {
+  InstanceV1EngineIcon,
+  ProductionEnvironmentV1Icon,
+} from "@/components/v2";
+import { ComposedInstance } from "@/types";
 
 withDefaults(
   defineProps<{
-    instance: Instance;
+    instance: ComposedInstance;
     disabled?: boolean;
   }>(),
   {

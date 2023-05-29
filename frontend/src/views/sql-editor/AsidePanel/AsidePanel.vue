@@ -54,20 +54,21 @@ import { computed, ref, watchEffect } from "vue";
 import {
   useConnectionTreeStore,
   useCurrentUserV1,
-  useInstanceStore,
+  useInstanceV1Store,
   useTabStore,
 } from "@/store";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SchemaPanel from "./SchemaPanel/";
 import { Splitpanes, Pane } from "splitpanes";
-import { ConnectionTreeMode, DatabaseId, UNKNOWN_ID } from "@/types";
+import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import { Engine } from "@/types/proto/v1/common";
 
 defineEmits<{
   (
     event: "alter-schema",
-    params: { databaseId: DatabaseId; schema: string; table: string }
+    params: { databaseId: string; schema: string; table: string }
   ): void;
 }>();
 
@@ -91,11 +92,11 @@ const hasInstanceView = computed((): boolean => {
 
 const showSchemaPanel = computed(() => {
   const conn = tabStore.currentTab.connection;
-  if (conn.databaseId === UNKNOWN_ID) {
+  if (conn.databaseId === String(UNKNOWN_ID)) {
     return false;
   }
-  const instance = useInstanceStore().getInstanceById(conn.instanceId);
-  if (instance.engine === "REDIS") {
+  const instance = useInstanceV1Store().getInstanceByUID(conn.instanceId);
+  if (instance.engine === Engine.REDIS) {
     return false;
   }
   return true;

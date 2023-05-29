@@ -607,6 +607,7 @@ export interface Task {
   databaseSchemaBaseline?: Task_DatabaseSchemaBaseline | undefined;
   databaseSchemaUpdate?: Task_DatabaseSchemaUpdate | undefined;
   databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
+  databaseBackup?: Task_DatabaseBackup | undefined;
   databaseRestoreRestore?: Task_DatabaseRestoreRestore | undefined;
 }
 
@@ -618,6 +619,7 @@ export enum Task_Status {
   DONE = 4,
   FAILED = 5,
   CANCELED = 6,
+  SKIPPED = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -644,6 +646,9 @@ export function task_StatusFromJSON(object: any): Task_Status {
     case 6:
     case "CANCELED":
       return Task_Status.CANCELED;
+    case 7:
+    case "SKIPPED":
+      return Task_Status.SKIPPED;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -667,6 +672,8 @@ export function task_StatusToJSON(object: Task_Status): string {
       return "FAILED";
     case Task_Status.CANCELED:
       return "CANCELED";
+    case Task_Status.SKIPPED:
+      return "SKIPPED";
     case Task_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -3010,6 +3017,7 @@ function createBaseTask(): Task {
     databaseSchemaBaseline: undefined,
     databaseSchemaUpdate: undefined,
     databaseDataUpdate: undefined,
+    databaseBackup: undefined,
     databaseRestoreRestore: undefined,
   };
 }
@@ -3051,6 +3059,9 @@ export const Task = {
     }
     if (message.databaseDataUpdate !== undefined) {
       Task_DatabaseDataUpdate.encode(message.databaseDataUpdate, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.databaseBackup !== undefined) {
+      Task_DatabaseBackup.encode(message.databaseBackup, writer.uint32(114).fork()).ldelim();
     }
     if (message.databaseRestoreRestore !== undefined) {
       Task_DatabaseRestoreRestore.encode(message.databaseRestoreRestore, writer.uint32(90).fork()).ldelim();
@@ -3149,6 +3160,13 @@ export const Task = {
 
           message.databaseDataUpdate = Task_DatabaseDataUpdate.decode(reader, reader.uint32());
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.databaseBackup = Task_DatabaseBackup.decode(reader, reader.uint32());
+          continue;
         case 11:
           if (tag !== 90) {
             break;
@@ -3185,6 +3203,7 @@ export const Task = {
       databaseDataUpdate: isSet(object.databaseDataUpdate)
         ? Task_DatabaseDataUpdate.fromJSON(object.databaseDataUpdate)
         : undefined,
+      databaseBackup: isSet(object.databaseBackup) ? Task_DatabaseBackup.fromJSON(object.databaseBackup) : undefined,
       databaseRestoreRestore: isSet(object.databaseRestoreRestore)
         ? Task_DatabaseRestoreRestore.fromJSON(object.databaseRestoreRestore)
         : undefined,
@@ -3216,6 +3235,8 @@ export const Task = {
     message.databaseDataUpdate !== undefined && (obj.databaseDataUpdate = message.databaseDataUpdate
       ? Task_DatabaseDataUpdate.toJSON(message.databaseDataUpdate)
       : undefined);
+    message.databaseBackup !== undefined &&
+      (obj.databaseBackup = message.databaseBackup ? Task_DatabaseBackup.toJSON(message.databaseBackup) : undefined);
     message.databaseRestoreRestore !== undefined && (obj.databaseRestoreRestore = message.databaseRestoreRestore
       ? Task_DatabaseRestoreRestore.toJSON(message.databaseRestoreRestore)
       : undefined);
@@ -3248,6 +3269,9 @@ export const Task = {
       : undefined;
     message.databaseDataUpdate = (object.databaseDataUpdate !== undefined && object.databaseDataUpdate !== null)
       ? Task_DatabaseDataUpdate.fromPartial(object.databaseDataUpdate)
+      : undefined;
+    message.databaseBackup = (object.databaseBackup !== undefined && object.databaseBackup !== null)
+      ? Task_DatabaseBackup.fromPartial(object.databaseBackup)
       : undefined;
     message.databaseRestoreRestore =
       (object.databaseRestoreRestore !== undefined && object.databaseRestoreRestore !== null)

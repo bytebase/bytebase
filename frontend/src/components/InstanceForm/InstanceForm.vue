@@ -634,7 +634,7 @@ import {
   pushNotification,
   useCurrentUserV1,
   useSettingV1Store,
-  useActuatorStore,
+  useActuatorV1Store,
   useEnvironmentV1Store,
   useInstanceStore,
   useInstanceV1Store,
@@ -702,7 +702,7 @@ const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
 const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 
 const state = reactive<LocalState>({
   currentDataSourceType: DataSourceType.ADMIN,

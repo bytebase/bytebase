@@ -34,7 +34,7 @@ import { computed, nextTick, ref, toRef, watch } from "vue";
 import { uniqueId } from "lodash-es";
 import Emittery from "emittery";
 
-import { Database } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -57,7 +57,7 @@ import { provideSchemaDiagramContext } from "./common";
 
 const props = withDefaults(
   defineProps<{
-    database: Database;
+    database: ComposedDatabase;
     databaseMetadata: DatabaseMetadata;
     editable?: boolean;
     schemaStatus?: (schema: SchemaMetadata) => EditStatus;
