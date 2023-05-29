@@ -379,9 +379,6 @@ export const useDatabaseStore = defineStore("database", {
       return databaseList;
     },
     async fetchDatabaseById(databaseId: DatabaseId) {
-      if (databaseId == -1) {
-        debugger;
-      }
       const url = `/api/database/${databaseId}`;
       const data = (await axios.get(url)).data;
       const database = convert(data.data, data.included);
@@ -403,9 +400,6 @@ export const useDatabaseStore = defineStore("database", {
       databaseId: DatabaseId,
       sdl = false
     ): Promise<string> {
-      if (databaseId == -1) {
-        debugger;
-      }
       let url = `/api/database/${databaseId}/schema`;
       if (sdl) {
         url += "?sdl=true";
