@@ -603,7 +603,7 @@ export interface Task {
   blockedByTasks: string[];
   /** Format: instances/{instance}/databases/{database} */
   target: string;
-  databaseCase?: Task_DatabaseCreate | undefined;
+  databaseCreate?: Task_DatabaseCreate | undefined;
   databaseSchemaBaseline?: Task_DatabaseSchemaBaseline | undefined;
   databaseSchemaUpdate?: Task_DatabaseSchemaUpdate | undefined;
   databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
@@ -3006,7 +3006,7 @@ function createBaseTask(): Task {
     type: 0,
     blockedByTasks: [],
     target: "",
-    databaseCase: undefined,
+    databaseCreate: undefined,
     databaseSchemaBaseline: undefined,
     databaseSchemaUpdate: undefined,
     databaseDataUpdate: undefined,
@@ -3040,8 +3040,8 @@ export const Task = {
     if (message.target !== "") {
       writer.uint32(50).string(message.target);
     }
-    if (message.databaseCase !== undefined) {
-      Task_DatabaseCreate.encode(message.databaseCase, writer.uint32(58).fork()).ldelim();
+    if (message.databaseCreate !== undefined) {
+      Task_DatabaseCreate.encode(message.databaseCreate, writer.uint32(58).fork()).ldelim();
     }
     if (message.databaseSchemaBaseline !== undefined) {
       Task_DatabaseSchemaBaseline.encode(message.databaseSchemaBaseline, writer.uint32(66).fork()).ldelim();
@@ -3126,7 +3126,7 @@ export const Task = {
             break;
           }
 
-          message.databaseCase = Task_DatabaseCreate.decode(reader, reader.uint32());
+          message.databaseCreate = Task_DatabaseCreate.decode(reader, reader.uint32());
           continue;
         case 8:
           if (tag !== 66) {
@@ -3175,7 +3175,7 @@ export const Task = {
       type: isSet(object.type) ? task_TypeFromJSON(object.type) : 0,
       blockedByTasks: Array.isArray(object?.blockedByTasks) ? object.blockedByTasks.map((e: any) => String(e)) : [],
       target: isSet(object.target) ? String(object.target) : "",
-      databaseCase: isSet(object.databaseCase) ? Task_DatabaseCreate.fromJSON(object.databaseCase) : undefined,
+      databaseCreate: isSet(object.databaseCreate) ? Task_DatabaseCreate.fromJSON(object.databaseCreate) : undefined,
       databaseSchemaBaseline: isSet(object.databaseSchemaBaseline)
         ? Task_DatabaseSchemaBaseline.fromJSON(object.databaseSchemaBaseline)
         : undefined,
@@ -3205,8 +3205,8 @@ export const Task = {
       obj.blockedByTasks = [];
     }
     message.target !== undefined && (obj.target = message.target);
-    message.databaseCase !== undefined &&
-      (obj.databaseCase = message.databaseCase ? Task_DatabaseCreate.toJSON(message.databaseCase) : undefined);
+    message.databaseCreate !== undefined &&
+      (obj.databaseCreate = message.databaseCreate ? Task_DatabaseCreate.toJSON(message.databaseCreate) : undefined);
     message.databaseSchemaBaseline !== undefined && (obj.databaseSchemaBaseline = message.databaseSchemaBaseline
       ? Task_DatabaseSchemaBaseline.toJSON(message.databaseSchemaBaseline)
       : undefined);
@@ -3236,8 +3236,8 @@ export const Task = {
     message.type = object.type ?? 0;
     message.blockedByTasks = object.blockedByTasks?.map((e) => e) || [];
     message.target = object.target ?? "";
-    message.databaseCase = (object.databaseCase !== undefined && object.databaseCase !== null)
-      ? Task_DatabaseCreate.fromPartial(object.databaseCase)
+    message.databaseCreate = (object.databaseCreate !== undefined && object.databaseCreate !== null)
+      ? Task_DatabaseCreate.fromPartial(object.databaseCreate)
       : undefined;
     message.databaseSchemaBaseline =
       (object.databaseSchemaBaseline !== undefined && object.databaseSchemaBaseline !== null)
