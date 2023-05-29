@@ -377,6 +377,7 @@ message Task {
     DONE = 4;
     FAILED = 5;
     CANCELED = 6;
+    SKIPPED = 7;
   }
   // Status is the status of the task.
   // TODO(p0ny): migrate old task status and use this field as a summary of the task runs.
