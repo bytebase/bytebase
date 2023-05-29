@@ -25,7 +25,7 @@
         :key="database.name"
         class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
-        <span>{{ database.name }}</span>
+        <span>{{ database.databaseName }}</span>
         <div class="flex flex-row justify-end items-center">
           <InstanceV1EngineIcon :instance="database.instanceEntity" />
           <span class="ml-1 text-sm text-gray-400">{{
@@ -62,7 +62,7 @@
         :key="database.name"
         class="w-full flex flex-row justify-between items-center"
       >
-        <span>{{ database.name }}</span>
+        <span>{{ database.databaseName }}</span>
         <div class="flex flex-row justify-end items-center">
           <InstanceV1EngineIcon :instance="database.instanceEntity" />
           <span class="ml-1 text-sm text-gray-400">{{
