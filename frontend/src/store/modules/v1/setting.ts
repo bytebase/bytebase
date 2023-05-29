@@ -7,7 +7,7 @@ import {
 } from "@/types/proto/v1/setting_service";
 import { settingNamePrefix } from "@/store/modules/v1/common";
 import { SettingName } from "@/types/setting";
-import { useActuatorStore } from "../actuator";
+import { useActuatorV1Store } from "./actuator";
 
 interface SettingState {
   settingMapByName: Map<string, Setting>;
@@ -84,7 +84,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
         },
       });
       // Fetch the latest server info.
-      await useActuatorStore().fetchServerInfo();
+      await useActuatorV1Store().fetchServerInfo();
     },
   },
 });

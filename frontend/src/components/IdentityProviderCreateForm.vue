@@ -589,7 +589,7 @@ import {
   OIDCIdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
 import { useIdentityProviderStore } from "@/store/modules/idp";
-import { pushNotification, useActuatorStore } from "@/store";
+import { pushNotification, useActuatorV1Store } from "@/store";
 import {
   IdentityProviderTemplate,
   identityProviderTemplateList,
@@ -651,11 +651,11 @@ const identityProviderTypeList = computed(() => {
 const redirectUrl = computed(() => {
   if (state.type === IdentityProviderType.OAUTH2) {
     return `${
-      useActuatorStore().serverInfo?.externalUrl || window.origin
+      useActuatorV1Store().serverInfo?.externalUrl || window.origin
     }/oauth/callback`;
   } else if (state.type === IdentityProviderType.OIDC) {
     return `${
-      useActuatorStore().serverInfo?.externalUrl || window.origin
+      useActuatorV1Store().serverInfo?.externalUrl || window.origin
     }/oidc/callback`;
   } else {
     throw new Error(`identity provider type ${state.type} is invalid`);

@@ -130,7 +130,7 @@ import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   pushNotification,
-  useActuatorStore,
+  useActuatorV1Store,
   useCurrentUserV1,
   useSubscriptionV1Store,
   useUIStateStore,
@@ -144,7 +144,7 @@ type IntroItem = {
   click?: () => void;
 };
 
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 const uiStateStore = useUIStateStore();
 const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();

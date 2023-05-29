@@ -125,11 +125,9 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 		resource_id,
 		placeholder,
 		expression
-	FROM db_group
- 	WHERE %s ORDER BY id DESC;`, strings.Join(where, " AND "))
+	FROM db_group WHERE %s ORDER BY id DESC;`, strings.Join(where, " AND "))
 
 	var databaseGroups []*DatabaseGroupMessage
-
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
