@@ -82,7 +82,7 @@ const renderDummy = () => {
 const handleScreenshot = async () => {
   busy.value = true;
   try {
-    await dummy.value?.capture(`${database.value.name}.png`);
+    await dummy.value?.capture(`${database.value.databaseName}.png`);
   } catch {
     pushNotification({
       module: "bytebase",
