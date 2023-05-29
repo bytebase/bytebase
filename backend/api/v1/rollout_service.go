@@ -215,6 +215,233 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	return convertToPlan(plan), nil
 }
 
+func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRolloutRequest) (*v1pb.Rollout, error) {
+	projectID, rolloutID, err := getProjectIDRolloutID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+	}
+	pipeline, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get pipeline, error: %v", err)
+	}
+	stages, err := s.store.ListStageV2(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get stages, error: %v", err)
+	}
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get tasks, error: %v", err)
+	}
+
+	rollout := &v1pb.Rollout{
+		Name:   request.Name,
+		Uid:    fmt.Sprintf("%d", pipeline.ID),
+		Plan:   "",
+		Title:  pipeline.Name,
+		Stages: []*v1pb.Stage{},
+	}
+
+	return nil, status.Errorf(codes.Unimplemented, "method GetRollout not implemented")
+}
+
+func convertToRollout(project *store.ProjectMessage, pipeline *store.PipelineMessage, stages []*store.StageMessage, tasks []*store.TaskMessage) *v1pb.Rollout {
+	return &v1pb.Rollout{
+		Name:   "",
+		Uid:    "",
+		Plan:   "",
+		Title:  "",
+		Stages: []*v1pb.Stage{},
+	}
+}
+
+func convertToTask(ctx context.Context, s *store.Store, task *store.TaskMessage) (*v1pb.Task, error) {
+	v1pbTask := &v1pb.Task{
+		Name:  "",
+		Uid:   fmt.Sprintf("%d", task.ID),
+		Title: task.Name,
+	}
+
+	switch task.Type {
+	case api.TaskDatabaseCreate:
+		return convertToTaskFromDatabaseCreate(task)
+	case api.TaskDatabaseSchemaBaseline:
+		return convertToTaskFromSchemaBaseline(task)
+	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync:
+		return convertToTaskFromSchemaUpdate(ctx, s, task)
+	case api.TaskDatabaseSchemaUpdateGhostCutover:
+		return convertToTaskFromSchemaUpdateGhostCutover(ctx, s, task)
+	case api.TaskDatabaseDataUpdate:
+	case api.TaskDatabaseBackup:
+	case api.TaskDatabaseRestorePITRRestore:
+	case api.TaskDatabaseRestorePITRCutover:
+	case api.TaskGeneral:
+	}
+	return nil, errors.Errorf("task type %v is not supported", task.Type)
+}
+
+func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, task *store.TaskMessage) (*v1pb.Task, error) {
+	payload := &api.TaskDatabaseCreatePayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
+	}
+	v1pbTask := &v1pb.Task{
+		Name:           "",
+		Uid:            fmt.Sprintf("%d", task.ID),
+		Title:          task.Name,
+		SpecId:         payload.SpecID,
+		Type:           convertToTaskType(task.Type),
+		BlockedByTasks: nil,
+		Target:         "",
+		Payload: &v1pb.Task_DatabaseCreate_{
+			DatabaseCreate: &v1pb.Task_DatabaseCreate{
+				Project:      "",
+				Database:     payload.DatabaseName,
+				Table:        payload.TableName,
+				Sheet:        "",
+				CharacterSet: payload.CharacterSet,
+				Collation:    payload.Collation,
+			},
+		},
+	}
+
+	return v1pbTask, nil
+}
+
+func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, task *store.TaskMessage) (*v1pb.Task, error) {
+	payload := &api.TaskDatabaseSchemaBaselinePayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
+	}
+	v1pbTask := &v1pb.Task{
+		Name:           "",
+		Uid:            fmt.Sprintf("%d", task.ID),
+		Title:          task.Name,
+		SpecId:         payload.SpecID,
+		Type:           convertToTaskType(task.Type),
+		BlockedByTasks: nil,
+		Target:         "",
+		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
+			DatabaseSchemaBaseline: &v1pb.Task_DatabaseSchemaBaseline{
+				SchemaVersion: payload.SchemaVersion,
+			},
+		},
+	}
+	return v1pbTask, nil
+}
+
+func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, task *store.TaskMessage) (*v1pb.Task, error) {
+	payload := &api.TaskDatabaseSchemaUpdatePayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
+	}
+	sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet")
+	}
+	if sheet == nil {
+		return nil, errors.Errorf("sheet not found")
+	}
+	sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet project")
+	}
+	if sheetProject == nil {
+		return nil, errors.Errorf("sheet project not found")
+	}
+	v1pbTask := &v1pb.Task{
+		Name:           "",
+		Uid:            fmt.Sprintf("%d", task.ID),
+		Title:          task.Name,
+		SpecId:         payload.SpecID,
+		Type:           convertToTaskType(task.Type),
+		BlockedByTasks: nil,
+		Target:         "",
+		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
+			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
+				Sheet:         fmt.Sprintf("%s%s/%s%d", projectNamePrefix, sheetProject.ResourceID, sheetIDPrefix, sheet.UID),
+				SchemaVersion: payload.SchemaVersion,
+			},
+		},
+	}
+	return v1pbTask, nil
+}
+
+func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Store, task *store.TaskMessage) (*v1pb.Task, error) {
+	payload := &api.TaskDatabaseSchemaUpdateGhostCutoverPayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
+	}
+	v1pbTask := &v1pb.Task{
+		Name:           "",
+		Uid:            fmt.Sprintf("%d", task.ID),
+		Title:          task.Name,
+		SpecId:         payload.SpecID,
+		Status:         convertToTaskStatus(task.Status),
+		Type:           convertToTaskType(task.Type),
+		BlockedByTasks: nil,
+		Target:         "",
+		Payload:        nil,
+	}
+	return v1pbTask, nil
+}
+
+func convertToTaskStatus(status api.TaskStatus) v1pb.Task_Status {
+	switch status {
+	case api.TaskPending:
+		return v1pb.Task_PENDING
+	case api.TaskPendingApproval:
+		return v1pb.Task_PENDING_APPROVAL
+	case api.TaskRunning:
+		return v1pb.Task_RUNNING
+	case api.TaskDone:
+		return v1pb.Task_DONE
+	case api.TaskFailed:
+		return v1pb.Task_FAILED
+	case api.TaskCanceled:
+		return v1pb.Task_CANCELED
+	default:
+		return v1pb.Task_STATUS_UNSPECIFIED
+	}
+}
+
+func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
+	switch taskType {
+	case api.TaskGeneral:
+		return v1pb.Task_GENERAL
+	case api.TaskDatabaseCreate:
+		return v1pb.Task_DATABASE_CREATE
+	case api.TaskDatabaseSchemaBaseline:
+		return v1pb.Task_DATABASE_SCHEMA_BASELINE
+	case api.TaskDatabaseSchemaUpdate:
+		return v1pb.Task_DATABASE_SCHEMA_UPDATE
+	case api.TaskDatabaseSchemaUpdateSDL:
+		return v1pb.Task_DATABASE_SCHEMA_UPDATE_SDL
+	case api.TaskDatabaseSchemaUpdateGhostSync:
+		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST_SYNC
+	case api.TaskDatabaseSchemaUpdateGhostCutover:
+		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER
+	case api.TaskDatabaseDataUpdate:
+		return v1pb.Task_DATABASE_DATA_UPDATE
+	case api.TaskDatabaseBackup:
+		return v1pb.Task_DATABASE_BACKUP
+	case api.TaskDatabaseRestorePITRRestore:
+		return v1pb.Task_DATABASE_RESTORE_RESTORE
+	case api.TaskDatabaseRestorePITRCutover:
+		return v1pb.Task_DATABASE_RESTORE_CUTOVER
+	default:
+		return v1pb.Task_TYPE_UNSPECIFIED
+	}
+}
+
 func validateSteps(_ []*v1pb.Plan_Step) error {
 	// FIXME: impl this func
 	// targets should be unique
@@ -414,6 +641,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		return []api.TaskCreate{
 			{
 				InstanceID:        instance.UID,
+				DatabaseID:        nil,
 				Name:              fmt.Sprintf("Create database %v", payload.DatabaseName),
 				Status:            api.TaskPendingApproval,
 				Type:              api.TaskDatabaseCreate,
