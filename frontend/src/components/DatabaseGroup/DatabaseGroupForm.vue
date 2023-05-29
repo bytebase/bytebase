@@ -11,7 +11,7 @@
         />
         <ResourceIdField
           ref="resourceIdField"
-          resource-type="dbGroup"
+          resource-type="database-group"
           :readonly="!isCreating"
           :value="state.resourceId"
           :resource-title="state.databasePlaceholder"
@@ -59,10 +59,6 @@
         />
       </div>
     </div>
-
-    <div>
-      <button @click="convertToCELString">test</button>
-    </div>
   </div>
 </template>
 
@@ -77,12 +73,8 @@ import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { ComposedProject, ResourceId, ValidatedMessage } from "@/types";
 import EnvironmentSelect from "../EnvironmentSelect.vue";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
-import {
-  convertDatabaseGroupExprFromCEL,
-  stringifyDatabaseGroupExpr,
-} from "@/utils/databaseGroup/cel";
+import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
 import { useDBGroupStore, useEnvironmentV1Store } from "@/store";
-import { Expr } from "@/types/proto/google/type/expr";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useI18n } from "vue-i18n";
 import { getErrorCode } from "@/utils/grpcweb";
@@ -161,25 +153,12 @@ const validateResourceId = async (
   return [];
 };
 
-const convertToCELString = async () => {
-  const environment = environmentStore.getEnvironmentByUID(
-    state.environmentId || ""
-  );
-  const celString = stringifyDatabaseGroupExpr({
-    environmentId: environment.name,
-    conditionGroupExpr: state.expr,
-  });
-  const resourceId = resourceIdField.value?.resourceId || "";
-  await dbGroupStore.createDatabaseGroup(
-    props.project.name,
-    {
-      name: `${props.project.name}/databaseGroups/${resourceId}`,
-      databasePlaceholder: state.databasePlaceholder,
-      databaseExpr: Expr.fromJSON({
-        expression: celString,
-      }),
-    },
-    resourceId
-  );
-};
+defineExpose({
+  getFormState: () => {
+    return {
+      ...state,
+      resourceId: resourceIdField.value?.resourceId || "",
+    };
+  },
+});
 </script>

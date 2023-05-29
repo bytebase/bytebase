@@ -26,6 +26,7 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
 import { useDBGroupStore } from "@/store";
 import { ComposedProject } from "@/types";
@@ -56,7 +57,7 @@ onMounted(async () => {
 });
 
 const handleConfigureDatabaseGroup = (databaseGroup: DatabaseGroup) => {
-  state.editingDatabaseGroup = databaseGroup;
+  state.editingDatabaseGroup = cloneDeep(databaseGroup);
   state.showDatabaseGroupPanel = true;
 };
 </script>

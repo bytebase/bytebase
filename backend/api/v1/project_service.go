@@ -726,6 +726,7 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 			if request.DatabaseGroup.DatabaseExpr == nil {
 				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
 			}
+			updateDatabaseGroup.Expression = request.DatabaseGroup.DatabaseExpr
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
 		}
