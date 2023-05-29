@@ -112,7 +112,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { useI18n } from "vue-i18n";
 
@@ -121,16 +121,15 @@ import {
   hasWorkspacePermissionV1,
   instanceV1HasCreateDatabase,
   isMemberOfProjectV1,
-} from "../utils";
-import ArchiveBanner from "../components/ArchiveBanner.vue";
-import { InstanceRoleTable } from "@/components/v2";
-import InstanceForm from "../components/InstanceForm/";
-import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
-import { SQLResultSet } from "../types";
+} from "@/utils";
+import ArchiveBanner from "@/components/ArchiveBanner.vue";
+import InstanceForm from "@/components/InstanceForm/";
+import CreateDatabasePrepForm from "@/components/CreateDatabasePrepForm.vue";
+import { InstanceRoleTable, DatabaseV1Table } from "@/components/v2";
+import { SQLResultSet } from "@/types";
 import {
   featureToRef,
   pushNotification,
-  useDatabaseStore,
   useInstanceStore,
   useSubscriptionV1Store,
   useSQLStore,
@@ -141,9 +140,7 @@ import {
   useGracefulRequest,
   useDatabaseV1Store,
 } from "@/store";
-import { DatabaseV1Table } from "@/components/v2";
 import { State } from "@/types/proto/v1/common";
-import { watchEffect } from "vue";
 
 interface LocalState {
   showCreateDatabaseModal: boolean;
@@ -302,11 +299,11 @@ const syncSchema = () => {
       // Clear the db schema metadata cache entities.
       // So we will re-fetch new values when needed.
       const dbSchemaStore = useDBSchemaStore();
-      const databaseList = useDatabaseStore().getDatabaseListByInstanceId(
-        instanceId.value
+      const databaseList = useDatabaseV1Store().databaseListByInstance(
+        instance.value.name
       );
       databaseList.forEach((database) =>
-        dbSchemaStore.removeCacheByDatabaseId(database.id)
+        dbSchemaStore.removeCacheByDatabaseId(Number(database.uid))
       );
     })
     .catch(() => {
