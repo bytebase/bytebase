@@ -6071,7 +6071,7 @@ FIXME(d/xz): support spec with deployment config
 | table | [string](#string) |  | table name |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | character_set | [string](#string) |  |  |
-| collection | [string](#string) |  |  |
+| collation | [string](#string) |  |  |
 | labels | [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry) | repeated |  |
 
 

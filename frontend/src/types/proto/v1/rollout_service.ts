@@ -789,7 +789,7 @@ export interface Task_DatabaseCreate {
   /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
   characterSet: string;
-  collection: string;
+  collation: string;
   labels: { [key: string]: string };
 }
 
@@ -3258,7 +3258,7 @@ export const Task = {
 };
 
 function createBaseTask_DatabaseCreate(): Task_DatabaseCreate {
-  return { project: "", database: "", table: "", sheet: "", characterSet: "", collection: "", labels: {} };
+  return { project: "", database: "", table: "", sheet: "", characterSet: "", collation: "", labels: {} };
 }
 
 export const Task_DatabaseCreate = {
@@ -3278,8 +3278,8 @@ export const Task_DatabaseCreate = {
     if (message.characterSet !== "") {
       writer.uint32(42).string(message.characterSet);
     }
-    if (message.collection !== "") {
-      writer.uint32(50).string(message.collection);
+    if (message.collation !== "") {
+      writer.uint32(50).string(message.collation);
     }
     Object.entries(message.labels).forEach(([key, value]) => {
       Task_DatabaseCreate_LabelsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
@@ -3334,7 +3334,7 @@ export const Task_DatabaseCreate = {
             break;
           }
 
-          message.collection = reader.string();
+          message.collation = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
@@ -3362,7 +3362,7 @@ export const Task_DatabaseCreate = {
       table: isSet(object.table) ? String(object.table) : "",
       sheet: isSet(object.sheet) ? String(object.sheet) : "",
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
-      collection: isSet(object.collection) ? String(object.collection) : "",
+      collation: isSet(object.collation) ? String(object.collation) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -3379,7 +3379,7 @@ export const Task_DatabaseCreate = {
     message.table !== undefined && (obj.table = message.table);
     message.sheet !== undefined && (obj.sheet = message.sheet);
     message.characterSet !== undefined && (obj.characterSet = message.characterSet);
-    message.collection !== undefined && (obj.collection = message.collection);
+    message.collation !== undefined && (obj.collation = message.collation);
     obj.labels = {};
     if (message.labels) {
       Object.entries(message.labels).forEach(([k, v]) => {
@@ -3400,7 +3400,7 @@ export const Task_DatabaseCreate = {
     message.table = object.table ?? "";
     message.sheet = object.sheet ?? "";
     message.characterSet = object.characterSet ?? "";
-    message.collection = object.collection ?? "";
+    message.collation = object.collation ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = String(value);
