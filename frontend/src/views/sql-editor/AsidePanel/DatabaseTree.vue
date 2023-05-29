@@ -74,7 +74,7 @@ import {
   emptyConnection,
   getDefaultTabNameFromConnection,
   hasWorkspacePermissionV1,
-  instanceHasReadonlyMode,
+  instanceV1HasReadonlyMode,
   instanceOfConnectionAtom,
   instanceV1HasAlterSchema,
   isDescendantOf,
@@ -136,7 +136,7 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
     const items: DropdownOptionWithConnectionAtom[] = [];
     if (isConnectableAtom(atom)) {
       const instance = instanceOfConnectionAtom(atom);
-      if (instance && instanceHasReadonlyMode(instance)) {
+      if (instance && instanceV1HasReadonlyMode(instance)) {
         items.push({
           key: "connect",
           label: t("sql-editor.connect"),
