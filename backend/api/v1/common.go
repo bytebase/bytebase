@@ -86,7 +86,7 @@ func getProjectID(name string) (string, error) {
 }
 
 func getProjectIDDatabaseGroupID(name string) (string, string, error) {
-	tokens, err := getNameParentTokens(name, databaseGroupNamePrefix)
+	tokens, err := getNameParentTokens(name, projectNamePrefix, databaseGroupNamePrefix)
 	if err != nil {
 		return "", "", err
 	}
@@ -94,7 +94,7 @@ func getProjectIDDatabaseGroupID(name string) (string, string, error) {
 }
 
 func getProjectIDDatabaseGroupIDSchemaGroupID(name string) (string, string, string, error) {
-	tokens, err := getNameParentTokens(name, databaseGroupNamePrefix, schemaGroupNamePrefix)
+	tokens, err := getNameParentTokens(name, projectNamePrefix, databaseGroupNamePrefix, schemaGroupNamePrefix)
 	if err != nil {
 		return "", "", "", err
 	}
