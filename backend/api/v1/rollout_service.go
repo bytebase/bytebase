@@ -517,20 +517,6 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	return v1pbTask, nil
 }
 
-func convertToRollbackSQLStatus(status api.RollbackSQLStatus) v1pb.Task_DatabaseDataUpdate_RollbackSqlStatus {
-	switch status {
-	case api.RollbackSQLStatusPending:
-		return v1pb.Task_DatabaseDataUpdate_PENDING
-	case api.RollbackSQLStatusDone:
-		return v1pb.Task_DatabaseDataUpdate_DONE
-	case api.RollbackSQLStatusFailed:
-		return v1pb.Task_DatabaseDataUpdate_FAILED
-
-	default:
-		return v1pb.Task_DatabaseDataUpdate_ROLLBACK_SQL_STATUS_UNSPECIFIED
-	}
-}
-
 func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
@@ -687,24 +673,6 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 	return v1pbTask, nil
 }
 
-func getResourceNameForSheet(ctx context.Context, s *store.Store, sheetUID int) (string, error) {
-	sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetUID}, api.SystemBotID)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get sheet")
-	}
-	if sheet == nil {
-		return "", errors.Errorf("sheet not found")
-	}
-	sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get sheet project")
-	}
-	if sheetProject == nil {
-		return "", errors.Errorf("sheet project not found")
-	}
-	return fmt.Sprintf("%s%s/%s%d", projectNamePrefix, sheetProject.ResourceID, sheetIDPrefix, sheet.UID), nil
-}
-
 func convertToTaskStatus(status api.TaskStatus, skipped bool) v1pb.Task_Status {
 	switch status {
 	case api.TaskPending:
@@ -754,6 +722,20 @@ func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_RESTORE_CUTOVER
 	default:
 		return v1pb.Task_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToRollbackSQLStatus(status api.RollbackSQLStatus) v1pb.Task_DatabaseDataUpdate_RollbackSqlStatus {
+	switch status {
+	case api.RollbackSQLStatusPending:
+		return v1pb.Task_DatabaseDataUpdate_PENDING
+	case api.RollbackSQLStatusDone:
+		return v1pb.Task_DatabaseDataUpdate_DONE
+	case api.RollbackSQLStatusFailed:
+		return v1pb.Task_DatabaseDataUpdate_FAILED
+
+	default:
+		return v1pb.Task_DatabaseDataUpdate_ROLLBACK_SQL_STATUS_UNSPECIFIED
 	}
 }
 
@@ -1815,4 +1797,22 @@ func (s *RolloutService) createPipeline(ctx context.Context, creatorID int, pipe
 	}
 
 	return pipelineCreated, nil
+}
+
+func getResourceNameForSheet(ctx context.Context, s *store.Store, sheetUID int) (string, error) {
+	sheet, err := s.GetSheetV2(ctx, &api.SheetFind{ID: &sheetUID}, api.SystemBotID)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get sheet")
+	}
+	if sheet == nil {
+		return "", errors.Errorf("sheet not found")
+	}
+	sheetProject, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheet.ProjectUID})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get sheet project")
+	}
+	if sheetProject == nil {
+		return "", errors.Errorf("sheet project not found")
+	}
+	return fmt.Sprintf("%s%s/%s%d", projectNamePrefix, sheetProject.ResourceID, sheetIDPrefix, sheet.UID), nil
 }
