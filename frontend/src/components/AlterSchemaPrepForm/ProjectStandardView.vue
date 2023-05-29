@@ -92,13 +92,13 @@
                 <span
                   class="font-medium ml-2 text-main"
                   :class="database.syncState !== State.ACTIVE && 'opacity-40'"
-                  >{{ database.name }}</span
+                  >{{ database.databaseName }}</span
                 >
               </div>
               <div
                 class="flex items-center gap-x-1 textinfolabel ml-6 pl-0 md:ml-0 md:pl-0 md:justify-end"
               >
-                <InstanceEngineIcon :instance="database.instance" />
+                <InstanceV1EngineIcon :instance="database.instanceEntity" />
                 <span class="flex-1 whitespace-pre-wrap">
                   {{ instanceV1Name(database.instanceEntity) }}
                 </span>
@@ -129,7 +129,7 @@ import { NCollapse, NCollapseItem } from "naive-ui";
 
 import { ComposedDatabase } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { EnvironmentV1Name } from "@/components/v2";
+import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { Project } from "@/types/proto/v1/project_service";
 import { State } from "@/types/proto/v1/common";
 import { instanceV1Name } from "@/utils";
