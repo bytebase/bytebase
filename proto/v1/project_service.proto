@@ -674,7 +674,7 @@ message DatabaseGroup {
   string name = 1;
 
   // The system-assigned, unique identifier for a resource.
-  int64 uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The short name used in actual databases specified by users.
   // For example, the placeholder for db1_2010, db1_2021, db1_2023 will be "db1".
@@ -757,7 +757,7 @@ message SchemaGroup {
   string name = 1;
 
   // The system-assigned, unique identifier for a resource.
-  int64 uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The table placeholder used for rendering. For example, if set to "tbl", all the table name
   // "tbl" in the SQL script will be rendered to the actual table name.

@@ -1096,7 +1096,7 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 func convertStoreToAPIDatabaseGroup(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
 	return &v1pb.DatabaseGroup{
 		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
-		Uid:                 databaseGroup.UID,
+		Uid:                 strconv.FormatInt(databaseGroup.UID, 10),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
 	}
@@ -1105,7 +1105,7 @@ func convertStoreToAPIDatabaseGroup(databaseGroup *store.DatabaseGroupMessage, p
 func convertStoreToAPISchemaGroup(schemaGroup *store.SchemaGroupMessage, projectResourceID, databaseGroupResourceID string) *v1pb.SchemaGroup {
 	return &v1pb.SchemaGroup{
 		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroupResourceID, schemaGroupNamePrefix, schemaGroup.ResourceID),
-		Uid:              schemaGroup.UID,
+		Uid:              strconv.FormatInt(schemaGroup.UID, 10),
 		TablePlaceholder: schemaGroup.Placeholder,
 		TableExpr:        schemaGroup.Expression,
 	}
