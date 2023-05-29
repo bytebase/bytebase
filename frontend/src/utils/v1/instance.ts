@@ -1,9 +1,10 @@
 import slug from "slug";
-import { keyBy } from "lodash-es";
+import { keyBy, orderBy } from "lodash-es";
 
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { ComposedInstance } from "@/types";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");
@@ -21,6 +22,18 @@ export const extractInstanceResourceName = (name: string) => {
   const pattern = /(?:^|\/)instances\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
+};
+
+export const sortInstanceV1List = (instanceList: ComposedInstance[]) => {
+  return orderBy(
+    instanceList,
+    [
+      (instance) => instance.environmentEntity.order,
+      (instance) => Number(instance.uid),
+      (instance) => instance.title,
+    ],
+    ["desc", "asc", "asc"]
+  );
 };
 
 export const hostPortOfInstanceV1 = (instance: Instance) => {
