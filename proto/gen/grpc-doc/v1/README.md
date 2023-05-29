@@ -6325,6 +6325,7 @@ Type is the database change type.
 | DONE | 4 |  |
 | FAILED | 5 |  |
 | CANCELED | 6 |  |
+| SKIPPED | 7 |  |
 
 
 
