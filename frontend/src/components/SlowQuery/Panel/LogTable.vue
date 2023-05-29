@@ -41,21 +41,21 @@
         </div>
         <div class="bb-grid-cell">
           {{
-            instanceHasSlowQueryDetail(item.database.instance)
+            instanceV1HasSlowQueryDetail(item.database.instanceEntity)
               ? item.log.statistics.maximumRowsExamined
               : "-"
           }}
         </div>
         <div class="bb-grid-cell">
           {{
-            instanceHasSlowQueryDetail(item.database.instance)
+            instanceV1HasSlowQueryDetail(item.database.instanceEntity)
               ? item.log.statistics.averageRowsExamined
               : "-"
           }}
         </div>
         <div class="bb-grid-cell">
           {{
-            instanceHasSlowQueryDetail(item.database.instance)
+            instanceV1HasSlowQueryDetail(item.database.instanceEntity)
               ? item.log.statistics.maximumRowsSent
               : "-"
           }}
@@ -64,19 +64,22 @@
           {{ item.log.statistics.averageRowsSent }}
         </div>
         <div v-if="showProjectColumn" class="bb-grid-cell">
-          <ProjectName :project="item.database.project" :link="false" />
+          <ProjectV1Name :project="item.database.projectEntity" :link="false" />
         </div>
         <div v-if="showEnvironmentColumn" class="bb-grid-cell">
-          <EnvironmentName
-            :environment="item.database.instance.environment"
+          <EnvironmentV1Name
+            :environment="item.database.instanceEntity.environmentEntity"
             :link="false"
           />
         </div>
         <div v-if="showInstanceColumn" class="bb-grid-cell">
-          <InstanceName :instance="item.database.instance" :link="false" />
+          <InstanceV1Name
+            :instance="item.database.instanceEntity"
+            :link="false"
+          />
         </div>
         <div v-if="showDatabaseColumn" class="bb-grid-cell">
-          <DatabaseName :database="item.database" :link="false" />
+          <DatabaseV1Name :database="item.database" :link="false" />
         </div>
         <div class="bb-grid-cell whitespace-nowrap !pr-4">
           {{
@@ -106,8 +109,12 @@ import { useI18n } from "vue-i18n";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import type { ComposedSlowQueryLog } from "@/types";
-import { DatabaseName, InstanceName, EnvironmentName } from "@/components/v2";
-import { instanceHasSlowQueryDetail } from "@/utils";
+import {
+  DatabaseV1Name,
+  InstanceV1Name,
+  EnvironmentV1Name,
+} from "@/components/v2";
+import { instanceV1HasSlowQueryDetail } from "@/utils";
 
 export type SlowQueryLogRow = BBGridRow<ComposedSlowQueryLog>;
 
