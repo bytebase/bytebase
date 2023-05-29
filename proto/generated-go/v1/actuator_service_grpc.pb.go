@@ -20,8 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ActuatorService_GetActuatorInfo_FullMethodName = "/bytebase.v1.ActuatorService/GetActuatorInfo"
-	ActuatorService_DeleteCache_FullMethodName     = "/bytebase.v1.ActuatorService/DeleteCache"
+	ActuatorService_GetActuatorInfo_FullMethodName    = "/bytebase.v1.ActuatorService/GetActuatorInfo"
+	ActuatorService_UpdateActuatorInfo_FullMethodName = "/bytebase.v1.ActuatorService/UpdateActuatorInfo"
+	ActuatorService_DeleteCache_FullMethodName        = "/bytebase.v1.ActuatorService/DeleteCache"
+	ActuatorService_ListDebugLog_FullMethodName       = "/bytebase.v1.ActuatorService/ListDebugLog"
 )
 
 // ActuatorServiceClient is the client API for ActuatorService service.
@@ -29,7 +31,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ActuatorServiceClient interface {
 	GetActuatorInfo(ctx context.Context, in *GetActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
+	UpdateActuatorInfo(ctx context.Context, in *UpdateActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
 	DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	ListDebugLog(ctx context.Context, in *ListDebugLogRequest, opts ...grpc.CallOption) (*ListDebugLogResponse, error)
 }
 
 type actuatorServiceClient struct {
@@ -49,9 +53,27 @@ func (c *actuatorServiceClient) GetActuatorInfo(ctx context.Context, in *GetActu
 	return out, nil
 }
 
+func (c *actuatorServiceClient) UpdateActuatorInfo(ctx context.Context, in *UpdateActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error) {
+	out := new(ActuatorInfo)
+	err := c.cc.Invoke(ctx, ActuatorService_UpdateActuatorInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *actuatorServiceClient) DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, ActuatorService_DeleteCache_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *actuatorServiceClient) ListDebugLog(ctx context.Context, in *ListDebugLogRequest, opts ...grpc.CallOption) (*ListDebugLogResponse, error) {
+	out := new(ListDebugLogResponse)
+	err := c.cc.Invoke(ctx, ActuatorService_ListDebugLog_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +85,9 @@ func (c *actuatorServiceClient) DeleteCache(ctx context.Context, in *DeleteCache
 // for forward compatibility
 type ActuatorServiceServer interface {
 	GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error)
+	UpdateActuatorInfo(context.Context, *UpdateActuatorInfoRequest) (*ActuatorInfo, error)
 	DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error)
+	ListDebugLog(context.Context, *ListDebugLogRequest) (*ListDebugLogResponse, error)
 	mustEmbedUnimplementedActuatorServiceServer()
 }
 
@@ -74,8 +98,14 @@ type UnimplementedActuatorServiceServer struct {
 func (UnimplementedActuatorServiceServer) GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetActuatorInfo not implemented")
 }
+func (UnimplementedActuatorServiceServer) UpdateActuatorInfo(context.Context, *UpdateActuatorInfoRequest) (*ActuatorInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateActuatorInfo not implemented")
+}
 func (UnimplementedActuatorServiceServer) DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteCache not implemented")
+}
+func (UnimplementedActuatorServiceServer) ListDebugLog(context.Context, *ListDebugLogRequest) (*ListDebugLogResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListDebugLog not implemented")
 }
 func (UnimplementedActuatorServiceServer) mustEmbedUnimplementedActuatorServiceServer() {}
 
@@ -108,6 +138,24 @@ func _ActuatorService_GetActuatorInfo_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActuatorService_UpdateActuatorInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateActuatorInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActuatorServiceServer).UpdateActuatorInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActuatorService_UpdateActuatorInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActuatorServiceServer).UpdateActuatorInfo(ctx, req.(*UpdateActuatorInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ActuatorService_DeleteCache_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteCacheRequest)
 	if err := dec(in); err != nil {
@@ -126,6 +174,24 @@ func _ActuatorService_DeleteCache_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActuatorService_ListDebugLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDebugLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActuatorServiceServer).ListDebugLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActuatorService_ListDebugLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActuatorServiceServer).ListDebugLog(ctx, req.(*ListDebugLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ActuatorService_ServiceDesc is the grpc.ServiceDesc for ActuatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -138,8 +204,16 @@ var ActuatorService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ActuatorService_GetActuatorInfo_Handler,
 		},
 		{
+			MethodName: "UpdateActuatorInfo",
+			Handler:    _ActuatorService_UpdateActuatorInfo_Handler,
+		},
+		{
 			MethodName: "DeleteCache",
 			Handler:    _ActuatorService_DeleteCache_Handler,
+		},
+		{
+			MethodName: "ListDebugLog",
+			Handler:    _ActuatorService_ListDebugLog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
