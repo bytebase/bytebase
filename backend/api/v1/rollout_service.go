@@ -217,6 +217,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	return convertToPlan(plan), nil
 }
 
+// GetRollout gets a rollout.
 func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRolloutRequest) (*v1pb.Rollout, error) {
 	projectID, rolloutID, err := getProjectIDRolloutID(request.Name)
 	if err != nil {
@@ -253,7 +254,7 @@ func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRollou
 
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, pipeline *store.PipelineMessage, stages []*store.StageMessage, tasks []*store.TaskMessage) (*v1pb.Rollout, error) {
 	rollout := &v1pb.Rollout{
-		Name:   fmt.Sprintf("%s%s/%s%s", projectNamePrefix, project.ResourceID, rolloutPrefix, pipeline.ID),
+		Name:   fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, pipeline.ID),
 		Uid:    fmt.Sprintf("%d", pipeline.ID),
 		Plan:   "",
 		Title:  pipeline.Name,
@@ -314,7 +315,7 @@ func convertToStage(ctx context.Context, s *store.Store, project *store.ProjectM
 		return nil, errors.Errorf("environment %d not found", stage.EnvironmentID)
 	}
 	return &v1pb.Stage{
-		Name:        fmt.Sprintf("%s%s/%s%s/%s%s", projectNamePrefix, project.ResourceID, rolloutPrefix, stage.PipelineID, stagePrefix, stage.ID),
+		Name:        fmt.Sprintf("%s%s/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, stage.PipelineID, stagePrefix, stage.ID),
 		Uid:         fmt.Sprintf("%d", stage.ID),
 		Environment: fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
 		Title:       stage.Name,
@@ -327,7 +328,7 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	case api.TaskDatabaseCreate:
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
 	case api.TaskDatabaseSchemaBaseline:
-		return convertToTaskFromSchemaBaseline(ctx, s, project, task)
+		return convertToTaskFromSchemaBaseline(project, task)
 	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
 	case api.TaskDatabaseSchemaUpdateGhostCutover:
@@ -352,8 +353,12 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
+	sheet, err := getResourceNameForSheet(ctx, s, payload.SheetID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
+	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%s/%s%s/%s%s", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
@@ -365,7 +370,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Project:      "",
 				Database:     payload.DatabaseName,
 				Table:        payload.TableName,
-				Sheet:        "",
+				Sheet:        sheet,
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
 			},
@@ -375,13 +380,13 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	return v1pbTask, nil
 }
 
-func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+func convertToTaskFromSchemaBaseline(project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	payload := &api.TaskDatabaseSchemaBaselinePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%s/%s%s/%s%s", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
@@ -417,7 +422,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		return nil, errors.Errorf("sheet project not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%s/%s%s/%s%s", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
@@ -450,7 +455,7 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%s/%s%s/%s%s", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
@@ -482,7 +487,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%s/%s%s/%s%s", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
@@ -558,7 +563,7 @@ func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, projec
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%s/%s%s/%s%s", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
@@ -567,7 +572,7 @@ func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, projec
 		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseBackup_{
 			DatabaseBackup: &v1pb.Task_DatabaseBackup{
-				Backup: fmt.Sprintf("%s%s/%s%s/%s%s", instanceNamePrefix, databaseBackup.InstanceID, databaseIDPrefix, databaseBackup.DatabaseName, backupPrefix, backup.UID),
+				Backup: fmt.Sprintf("%s%s/%s%s/%s%d", instanceNamePrefix, databaseBackup.InstanceID, databaseIDPrefix, databaseBackup.DatabaseName, backupPrefix, backup.UID),
 			},
 		},
 	}
@@ -593,7 +598,7 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 		DatabaseRestoreRestore: &v1pb.Task_DatabaseRestoreRestore{},
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%s/%s%s/%s%s", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
@@ -640,7 +645,7 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 			return nil, errors.Errorf("database not found")
 		}
 		v1pbTaskPayload.DatabaseRestoreRestore.Source = &v1pb.Task_DatabaseRestoreRestore_Backup{
-			Backup: fmt.Sprintf("%s%s/%s%s/%s%s", instanceNamePrefix, databaseBackup.InstanceID, databaseIDPrefix, databaseBackup.DatabaseName, backupPrefix, backup.UID),
+			Backup: fmt.Sprintf("%s%s/%s%s/%s%d", instanceNamePrefix, databaseBackup.InstanceID, databaseIDPrefix, databaseBackup.DatabaseName, backupPrefix, backup.UID),
 		}
 	}
 	if payload.PointInTimeTs != nil {
@@ -669,7 +674,7 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%s/%s%s/%s%s", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
+		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
