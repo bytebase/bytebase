@@ -75,6 +75,11 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseListByInstance = (instance: string) => {
     return databaseList.value.filter((db) => db.instance === instance);
   };
+  const databaseListByEnvironment = (environment: string) => {
+    return databaseList.value.filter(
+      (db) => db.instanceEntity.environment === environment
+    );
+  };
   const getDatabaseByUID = (uid: string) => {
     if (uid === String(EMPTY_ID)) return emptyDatabase();
     if (uid === String(UNKNOWN_ID)) return unknownDatabase();
@@ -114,6 +119,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     databaseListByUser,
     databaseListByProject,
     databaseListByInstance,
+    databaseListByEnvironment,
     fetchDatabaseByUID,
     getDatabaseByUID,
     getOrFetchDatabaseByUID,

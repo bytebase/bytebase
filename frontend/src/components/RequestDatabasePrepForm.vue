@@ -81,7 +81,7 @@
             />
             <div v-else class="flex flex-row space-x-4">
               <DatabaseSelect
-                :selected-id="state.databaseId as number"
+                :selected-id="state.databaseId"
                 :mode="'ENVIRONMENT'"
                 :environment-id="state.environmentId"
                 @select-database-id="
@@ -137,7 +137,7 @@ import isEmpty from "lodash-es/isEmpty";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { DatabaseId, UNKNOWN_ID } from "../types";
+import { UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
 import {
   useCurrentUserV1,
@@ -151,7 +151,7 @@ interface LocalState {
   // Radio button only accept string value
   create: "ON" | "OFF";
   databaseName: string;
-  databaseId: DatabaseId;
+  databaseId: string;
   readonly: boolean;
 }
 
@@ -184,7 +184,7 @@ export default defineComponent({
       projectId: String(UNKNOWN_ID),
       create: "ON",
       databaseName: "",
-      databaseId: UNKNOWN_ID,
+      databaseId: String(UNKNOWN_ID),
       readonly: true,
     });
 
@@ -210,7 +210,7 @@ export default defineComponent({
         state.environmentId !== String(UNKNOWN_ID) &&
         state.projectId !== String(UNKNOWN_ID) &&
         ((state.create == "ON" && !isEmpty(state.databaseName)) ||
-          (state.create == "OFF" && state.databaseId != UNKNOWN_ID)) &&
+          (state.create == "OFF" && state.databaseId !== String(UNKNOWN_ID))) &&
         !alreadyGranted.value
       );
     });
