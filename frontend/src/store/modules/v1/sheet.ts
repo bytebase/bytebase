@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { sheetServiceClient } from "@/grpcweb";
-import { isEqual, isUndefined, isEmpty, omit } from "lodash-es";
+import { isEqual, isUndefined, isEmpty } from "lodash-es";
 import { Sheet, SheetOrganizer } from "@/types/proto/v1/sheet_service";
 import { useTabStore } from "../tab";
 import { useCurrentUserV1 } from "../auth";
