@@ -509,7 +509,7 @@ message Task {
   }
 
   oneof payload {
-    DatabaseCreate database_case = 7;
+    DatabaseCreate database_create = 7;
     DatabaseSchemaBaseline database_schema_baseline = 8;
     DatabaseSchemaUpdate database_schema_update = 9;
     DatabaseDataUpdate database_data_update = 10;
