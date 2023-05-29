@@ -48,6 +48,7 @@ import {
   idFromSlug,
   hasWorkspacePermissionV1,
   hasPermissionInProjectV1,
+  isDev,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
@@ -133,7 +134,9 @@ export default defineComponent({
       const list: (ProjectTabItem | null)[] = [
         { name: t("common.overview"), hash: "overview" },
         { name: t("common.databases"), hash: "databases" },
-        isTenantProject.value
+
+        // TODO(steven): remove this after we release the feature.
+        isDev() && isTenantProject.value
           ? { name: "Database groups", hash: "database-groups" }
           : null,
 
