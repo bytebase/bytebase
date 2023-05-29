@@ -6032,7 +6032,7 @@ FIXME(d/xz): support spec with deployment config
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
 | blocked_by_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| database_case | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
+| database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
 | database_schema_baseline | [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline) |  |  |
 | database_schema_update | [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate) |  |  |
 | database_data_update | [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate) |  |  |
@@ -6071,7 +6071,7 @@ FIXME(d/xz): support spec with deployment config
 | table | [string](#string) |  | table name |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | character_set | [string](#string) |  |  |
-| collection | [string](#string) |  |  |
+| collation | [string](#string) |  |  |
 | labels | [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry) | repeated |  |
 
 
