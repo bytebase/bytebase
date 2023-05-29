@@ -26,6 +26,8 @@ import {
 } from "./";
 import { useIssueLogic } from ".";
 import { User } from "@/types/proto/v1/auth_service";
+import { Review } from "@/types/proto/v1/review_service";
+import { extractIssueReviewContext } from "@/plugins/issue/logic";
 
 export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
   const { create, activeTaskOfPipeline, allowApplyTaskStatusTransition } =
@@ -164,6 +166,8 @@ export const calcApplicableIssueStatusTransitionList = (
   const transitionTypeList: IssueStatusTransitionType[] = [];
   const currentUserV1 = useCurrentUserV1();
 
+  console.log(issue.type, issue.name);
+
   if (allowUserToApplyIssueStatusTransition(issueEntity, currentUserV1.value)) {
     const actions = APPLICABLE_ISSUE_ACTION_LIST.get(issueEntity.status);
     if (actions) {
@@ -175,6 +179,14 @@ export const calcApplicableIssueStatusTransitionList = (
   transitionTypeList.forEach((type) => {
     const transition = ISSUE_STATUS_TRANSITION_LIST.get(type);
     if (!transition) return;
+
+    if (type === "RESOLVE") {
+      // If an issue is not "Approved" in review stage
+      // it cannot be Resolved.
+      if (!isIssueReviewDone(issue)) {
+        return;
+      }
+    }
 
     if (isDatabaseRelatedIssueType(issue.type)) {
       const currentTask = activeTask(issue.pipeline);
@@ -245,3 +257,19 @@ const allowUserToApplyIssueStatusTransition = (issue: Issue, user: User) => {
 
   return false;
 };
+
+function isIssueReviewDone(issue: Issue) {
+  const review = computed(() => {
+    try {
+      return Review.fromJSON(issue.payload.approval);
+    } catch {
+      return Review.fromJSON({});
+    }
+  });
+  const context = extractIssueReviewContext(
+    computed(() => issue),
+    review
+  );
+  console.log("is issue review done", issue.id, issue.name, context.done.value);
+  return context.done.value;
+}
