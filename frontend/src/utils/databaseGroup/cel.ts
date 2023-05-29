@@ -42,8 +42,6 @@ export const convertDatabaseGroupExprFromCEL = async (
     throw new Error("Invalid CEL expression");
   }
 
-  console.log("celExpr", celExpr);
-
   const simpleExpr = resolveCELExpr(celExpr.expr);
   const [environmentId, conditionGroupExpr] =
     getEnvironmentIdAndConditionExpr(simpleExpr);
