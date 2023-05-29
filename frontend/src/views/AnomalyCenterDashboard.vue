@@ -128,25 +128,25 @@
 <script lang="ts">
 import { computed, defineComponent, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
+import { cloneDeep } from "lodash-es";
 
-import AnomalyTable from "../components/AnomalyTable.vue";
+import AnomalyTable from "@/components/AnomalyTable.vue";
 import { Anomaly, UNKNOWN_USER_NAME } from "../types";
 import {
-  databaseSlug,
-  instanceSlug,
+  databaseV1Slug,
+  instanceV1Slug,
   hasWorkspacePermissionV1,
-  sortDatabaseListByEnvironmentV1,
-  sortInstanceListByEnvironmentV1,
-} from "../utils";
-import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
-import { cloneDeep } from "lodash-es";
+  sortDatabaseV1List,
+  sortInstanceV1List,
+} from "@/utils";
+import { BBTabFilterItem, BBTableSectionDataSource } from "@/bbkit/types";
 import {
   featureToRef,
   useAnomalyList,
   useCurrentUserV1,
-  useDatabaseStore,
+  useDatabaseV1Store,
   useEnvironmentV1List,
-  useInstanceList,
+  useInstanceV1List,
 } from "@/store";
 
 const DATABASE_TAB = 0;
@@ -168,7 +168,7 @@ export default defineComponent({
   name: "AnomalyCenterDashboard",
   components: { AnomalyTable },
   setup() {
-    const databaseStore = useDatabaseStore();
+    const databaseStore = useDatabaseV1Store();
     const { t } = useI18n();
 
     const currentUserV1 = useCurrentUserV1();
@@ -188,31 +188,33 @@ export default defineComponent({
     const prepareDatabaseList = () => {
       // It will also be called when user logout
       if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-        databaseStore.fetchDatabaseList();
+        databaseStore.searchDatabaseList({
+          parent: "instances/-",
+        });
       }
     };
 
     watchEffect(prepareDatabaseList);
 
     const databaseList = computed(() => {
-      return databaseStore.getDatabaseListByUser(currentUserV1.value);
+      return databaseStore.databaseListByUser(currentUserV1.value);
     });
 
-    const instanceList = useInstanceList();
+    const { instanceList } = useInstanceV1List();
 
     const allAnomalyList = useAnomalyList();
 
     const databaseAnomalySectionList = computed(
       (): BBTableSectionDataSource<Anomaly>[] => {
         const sectionList: BBTableSectionDataSource<Anomaly>[] = [];
-        const dbList = state.searchText ? [] : cloneDeep(databaseList.value);
+        let dbList = state.searchText ? [] : cloneDeep(databaseList.value);
         if (state.searchText) {
           for (const database of databaseList.value) {
             if (
-              database.name
+              database.databaseName
                 .toLowerCase()
                 .includes(state.searchText.toLowerCase()) ||
-              database.instance.environment.name
+              database.instanceEntity.environmentEntity.title
                 .toLowerCase()
                 .includes(state.searchText.toLowerCase())
             ) {
@@ -221,17 +223,17 @@ export default defineComponent({
           }
         }
 
-        sortDatabaseListByEnvironmentV1(dbList, environmentList.value);
+        dbList = sortDatabaseV1List(dbList);
 
         for (const database of dbList) {
           const anomalyListOfDatabase = allAnomalyList.value.filter(
-            (anomaly) => anomaly.databaseId === database.id
+            (anomaly) => String(anomaly.databaseId) === String(database.uid)
           );
 
           if (anomalyListOfDatabase.length > 0) {
             sectionList.push({
-              title: `${database.name} (${database.instance.environment.name})`,
-              link: `/db/${databaseSlug(database)}`,
+              title: `${database.databaseName} (${database.instanceEntity.environmentEntity.title})`,
+              link: `/db/${databaseV1Slug(database)}`,
               list: anomalyListOfDatabase,
             });
           }
@@ -244,14 +246,14 @@ export default defineComponent({
     const instanceAnomalySectionList = computed(
       (): BBTableSectionDataSource<Anomaly>[] => {
         const sectionList: BBTableSectionDataSource<Anomaly>[] = [];
-        const insList = state.searchText ? [] : cloneDeep(instanceList.value);
+        let insList = state.searchText ? [] : cloneDeep(instanceList.value);
         if (state.searchText) {
           for (const instance of instanceList.value) {
             if (
-              instance.name
+              instance.title
                 .toLowerCase()
                 .includes(state.searchText.toLowerCase()) ||
-              instance.environment.name
+              instance.environmentEntity.title
                 .toLowerCase()
                 .includes(state.searchText.toLowerCase())
             ) {
@@ -260,16 +262,16 @@ export default defineComponent({
           }
         }
 
-        sortInstanceListByEnvironmentV1(insList, environmentList.value);
+        insList = sortInstanceV1List(insList);
 
         for (const instance of insList) {
           const anomalyListOfInstance = allAnomalyList.value.filter(
-            (anomaly) => anomaly.instanceId === instance.id
+            (anomaly) => String(anomaly.instanceId) === instance.uid
           );
           if (anomalyListOfInstance.length > 0) {
             sectionList.push({
-              title: `${instance.name} (${instance.environment.name})`,
-              link: `/instance/${instanceSlug(instance)}`,
+              title: `${instance.title} (${instance.environmentEntity.title})`,
+              link: `/instance/${instanceV1Slug(instance)}`,
               list: anomalyListOfInstance,
             });
           }
@@ -286,7 +288,7 @@ export default defineComponent({
         let highCount = 0;
         let mediumCount = 0;
         const anomalyListOfDatabase = allAnomalyList.value.filter(
-          (anomaly) => anomaly.databaseId === database.id
+          (anomaly) => String(anomaly.databaseId) === database.uid
         );
         for (const anomaly of anomalyListOfDatabase) {
           switch (anomaly.severity) {
@@ -301,14 +303,16 @@ export default defineComponent({
               break;
           }
         }
-        const summary = envMap.get(String(database.instance.environment.id));
+        const summary = envMap.get(
+          database.instanceEntity.environmentEntity.uid
+        );
         if (summary) {
           summary.criticalCount += criticalCount;
           summary.highCount += highCount;
           summary.mediumCount += mediumCount;
         } else {
-          envMap.set(String(database.instance.environment.id), {
-            environmentName: database.instance.environment.name,
+          envMap.set(String(database.instanceEntity.environmentEntity.uid), {
+            environmentName: database.instanceEntity.environmentEntity.title,
             criticalCount,
             highCount,
             mediumCount,
@@ -334,7 +338,7 @@ export default defineComponent({
         let highCount = 0;
         let mediumCount = 0;
         const anomalyListOfInstance = allAnomalyList.value.filter(
-          (anomaly) => anomaly.instanceId === instance.id
+          (anomaly) => String(anomaly.instanceId) === instance.uid
         );
         for (const anomaly of anomalyListOfInstance) {
           switch (anomaly.severity) {
@@ -349,14 +353,14 @@ export default defineComponent({
               break;
           }
         }
-        const summary = envMap.get(String(instance.environment.id));
+        const summary = envMap.get(instance.environmentEntity.uid);
         if (summary) {
           summary.criticalCount += criticalCount;
           summary.highCount += highCount;
           summary.mediumCount += mediumCount;
         } else {
-          envMap.set(String(instance.environment.id), {
-            environmentName: instance.environment.name,
+          envMap.set(instance.environmentEntity.uid, {
+            environmentName: instance.environmentEntity.title,
             criticalCount,
             highCount,
             mediumCount,
