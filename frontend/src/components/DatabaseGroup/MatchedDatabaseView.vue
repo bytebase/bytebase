@@ -22,14 +22,14 @@
     <div v-show="state.showMatchedDatabaseList" class="w-full">
       <div
         v-for="database in matchedDatabaseList"
-        :key="database.id"
+        :key="database.name"
         class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
         <span>{{ database.name }}</span>
         <div class="flex flex-row justify-end items-center">
-          <InstanceEngineIcon :instance="database.instance" />
+          <InstanceV1EngineIcon :instance="database.instanceEntity" />
           <span class="ml-1 text-sm text-gray-400">{{
-            database.instance.name
+            database.instanceEntity.title
           }}</span>
         </div>
       </div>
@@ -59,12 +59,15 @@
     <div v-show="state.showUnmatchedDatabaseList">
       <div
         v-for="database in matchedDatabaseList"
-        :key="database.id"
+        :key="database.name"
         class="w-full flex flex-row justify-between items-center"
       >
         <span>{{ database.name }}</span>
-        <div>
-          <span>{{ database.instance.name }}</span>
+        <div class="flex flex-row justify-end items-center">
+          <InstanceV1EngineIcon :instance="database.instanceEntity" />
+          <span class="ml-1 text-sm text-gray-400">{{
+            database.instanceEntity.title
+          }}</span>
         </div>
       </div>
     </div>
@@ -74,9 +77,10 @@
 <script lang="ts" setup>
 import { computed, ref, watch, reactive } from "vue";
 import { ConditionGroupExpr } from "@/plugins/cel";
-import { useDatabaseStore } from "@/store";
-import { ComposedProject, Database } from "@/types";
-import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
+import { useDatabaseV1Store } from "@/store";
+import { ComposedDatabase, ComposedProject } from "@/types";
+import { sortDatabaseV1List } from "@/utils";
+import { InstanceV1EngineIcon } from "../v2";
 
 interface LocalState {
   showMatchedDatabaseList: boolean;
@@ -89,20 +93,15 @@ const props = defineProps<{
   expr: ConditionGroupExpr;
 }>();
 
-const databaseStore = useDatabaseStore();
 const state = reactive<LocalState>({
   showMatchedDatabaseList: false,
   showUnmatchedDatabaseList: false,
 });
-const matchedDatabaseList = ref<Database[]>([]);
-const unmatchedDatabaseList = ref<Database[]>([]);
+const matchedDatabaseList = ref<ComposedDatabase[]>([]);
+const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
 const databaseList = computed(() => {
-  const list = databaseStore.getDatabaseListByProjectId(
-    String(props.project.uid)
-  );
-  return list.filter(
-    (item) => item.instance.environment.id == props.environmentId
-  );
+  const list = useDatabaseV1Store().databaseListByProject(props.project.name);
+  return sortDatabaseV1List(list);
 });
 
 watch(
