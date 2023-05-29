@@ -51,3 +51,10 @@ export const instanceHasSlowQueryDetail = (instance: Instance) => {
 
   return false;
 };
+
+export const instanceV1HasSlowQueryDetail = (instance: InstanceV1) => {
+  const { engine } = instance;
+  if (engine === Engine.MYSQL) return true;
+
+  return false;
+};

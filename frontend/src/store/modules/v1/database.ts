@@ -80,6 +80,26 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       (db) => db.instanceEntity.environment === environment
     );
   };
+  const getDatabaseByName = (name: string) => {
+    return databaseMapByName.get(name) ?? unknownDatabase();
+  };
+  const fetchDatabaseByName = async (name: string) => {
+    const database = await databaseServiceClient.getDatabase({
+      name,
+    });
+
+    const [composed] = await upsertDatabaseMap([database]);
+
+    return composed;
+  };
+  const getOrFetchDatabaseByName = async (name: string) => {
+    const existed = databaseMapByName.get(name);
+    if (existed) {
+      return existed;
+    }
+    await fetchDatabaseByUID(name);
+    return getDatabaseByUID(name);
+  };
   const getDatabaseByUID = (uid: string) => {
     if (uid === String(EMPTY_ID)) return emptyDatabase();
     if (uid === String(UNKNOWN_ID)) return unknownDatabase();
@@ -120,6 +140,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     databaseListByProject,
     databaseListByInstance,
     databaseListByEnvironment,
+    getDatabaseByName,
+    fetchDatabaseByName,
+    getOrFetchDatabaseByName,
     fetchDatabaseByUID,
     getDatabaseByUID,
     getOrFetchDatabaseByUID,
