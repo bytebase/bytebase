@@ -425,7 +425,7 @@ message Task {
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 4;
     string character_set = 5;
-    string collection = 6;
+    string collation = 6;
     map<string, string> labels = 7;
   }
 
@@ -509,7 +509,7 @@ message Task {
   }
 
   oneof payload {
-    DatabaseCreate database_case = 7;
+    DatabaseCreate database_create = 7;
     DatabaseSchemaBaseline database_schema_baseline = 8;
     DatabaseSchemaUpdate database_schema_update = 9;
     DatabaseDataUpdate database_data_update = 10;
