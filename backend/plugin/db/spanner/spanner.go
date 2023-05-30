@@ -497,7 +497,7 @@ func getDatabaseFromDSN(dsn string) (string, error) {
 }
 
 // QueryConn2 queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	stmts, err := sanitizeSQL(statement)
 	if err != nil {
 		return nil, err
@@ -505,7 +505,7 @@ func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement 
 
 	var results []*v1pb.QueryResult
 	for _, statement := range stmts {
-		result, err := driver.querySingleSQL(ctx, conn, statement, queryContext)
+		result, err := d.querySingleSQL(ctx, statement, queryContext)
 		if err != nil {
 			results = append(results, &v1pb.QueryResult{
 				Error: err.Error(),
@@ -518,7 +518,7 @@ func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement 
 	return results, nil
 }
 
-func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (d *Driver) querySingleSQL(ctx context.Context, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement = getStatementWithResultLimit(statement, queryContext.Limit)
 	iter := d.client.Single().Query(ctx, spanner.NewStatement(statement))
 	defer iter.Stop()
