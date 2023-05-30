@@ -23,7 +23,7 @@
             </div>
           </NTooltip>
         </template>
-        <template #oversize v-if="isSheetOversize">
+        <template v-if="isSheetOversize" #oversize>
           {{ $t("sheet.content-oversize-warning") }}
         </template>
       </i18n-t>
