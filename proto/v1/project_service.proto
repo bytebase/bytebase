@@ -668,6 +668,18 @@ message DeleteDatabaseGroupRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+enum DatabaseGroupView {
+  // The default / unset value.
+  // The API will default to the BASIC view.
+  DATABASE_GROUP_VIEW_UNSPECIFIED = 0;
+
+  // Include basic information about the database group, but exclude the list of matched databases and unmatched databases.
+  DATABASE_GROUP_VIEW_BASIC = 1;
+
+  // Include everything.
+  DATABASE_GROUP_VIEW_FULL = 2;
+}
+
 message DatabaseGroup {
   // The name of the database group.
   // Format: projects/{project}/databaseGroups/{databaseGroup}
@@ -679,6 +691,17 @@ message DatabaseGroup {
 
   // The condition that is associated with this database group.
   google.type.Expr database_expr = 3;
+
+  message Database {
+    // The resource name of the database.
+    // Format: instances/{instance}/databases/{database}
+    string name = 1;
+  }
+  // The list of databases that match the database group condition.
+  repeated Database matched_databases = 4;
+
+  // The list of databases that match the database group condition.
+  repeated Database unmatched_databases = 5;
 }
 
 message CreateSchemaGroupRequest {
@@ -746,6 +769,21 @@ message GetSchemaGroupRequest {
   // The name of the database group to retrieve.
   // Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The view to return. Defaults to SCHEMA_GROUP_VIEW_BASIC.
+  SchemaGroupView view = 2;
+}
+
+enum SchemaGroupView {
+  // The default / unset value.
+  // The API will default to the BASIC view.
+  SCHEMA_GROUP_VIEW_UNSPECIFIED = 0;
+
+  // Include basic information about the schema group, but exclude the list of matched tables and unmatched tables.
+  SCHEMA_GROUP_VIEW_BASIC = 1;
+
+  // Include everything.
+  SCHEMA_GROUP_VIEW_FULL = 2;
 }
 
 message SchemaGroup {
@@ -763,4 +801,18 @@ message SchemaGroup {
   // In the future, we can introduce schema_expr if users use schema (Postgres schema) for groups.
   // Its keyword will be {{SCHEMA}}.
   // All the expressions will be used to filter the schema objects in DatabaseSchema.
+  message Table {
+    // The resource name of the database.
+    // Format: instances/{instance}/databases/{database}
+    string database = 1;
+
+    string schema = 2;
+
+    string table = 3;
+  }
+  // The list of databases that match the database group condition.
+  repeated Table matched_tables = 4;
+
+  // The list of databases that match the database group condition.
+  repeated Table unmatched_tables = 5;
 }
