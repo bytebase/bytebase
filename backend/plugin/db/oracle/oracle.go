@@ -4,6 +4,7 @@ package oracle
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -139,6 +140,45 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 }
 
 // QueryConn2 queries a SQL statement in a given connection.
-func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, errors.New("not implemented")
+func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	singleSQLs, err := parser.SplitMultiSQL(parser.Oracle, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+
+	var results []*v1pb.QueryResult
+	for _, singleSQL := range singleSQLs {
+		result, err := driver.querySingleSQL(ctx, conn, singleSQL, queryContext)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+		} else {
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+func getOracleStatementWithResultLimit(stmt string, limit int) string {
+	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit)
+}
+
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	statement := singleSQL.Text
+	statement = strings.TrimRight(statement, " \n\t;")
+	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
+		statement = getOracleStatementWithResultLimit(statement, queryContext.Limit)
+	}
+
+	if queryContext.ReadOnly {
+		// Oracle does not support transaction isolation level for read-only queries.
+		queryContext.ReadOnly = false
+	}
+
+	return util.Query2(ctx, db.Oracle, conn, statement, queryContext)
 }

@@ -214,6 +214,37 @@ func replaceCharacterWithPercentEncoding(s string) string {
 }
 
 // QueryConn2 queries a SQL statement in a given connection.
-func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, errors.New("not implemented")
+func (driver *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	connectionURI := getMongoDBConnectionURI(driver.connCfg)
+	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
+	// 1. Query always short, so it's safe to execute in the command line.
+	// 2. We cannot catch the output if we use the --file option.
+
+	mongoshArgs := []string{
+		connectionURI,
+		"--quiet",
+		"--eval",
+		statement,
+	}
+
+	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
+	var errContent bytes.Buffer
+	var outContent bytes.Buffer
+	mongoshCmd.Stderr = &errContent
+	mongoshCmd.Stdout = &outContent
+	if err := mongoshCmd.Run(); err != nil {
+		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: %s", errContent.String())
+	}
+	field := []string{"result"}
+	types := []string{"TEXT"}
+	rows := []*v1pb.QueryRow{{
+		Values: []*v1pb.RowValue{{
+			Kind: &v1pb.RowValue_StringValue{StringValue: outContent.String()},
+		}},
+	}}
+	return []*v1pb.QueryResult{{
+		ColumnNames:     field,
+		ColumnTypeNames: types,
+		Rows:            rows,
+	}}, nil
 }
