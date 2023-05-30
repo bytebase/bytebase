@@ -97,8 +97,8 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     if (existed) {
       return existed;
     }
-    await fetchDatabaseByUID(name);
-    return getDatabaseByUID(name);
+    await fetchDatabaseByName(name);
+    return getDatabaseByName(name);
   };
   const getDatabaseByUID = (uid: string) => {
     if (uid === String(EMPTY_ID)) return emptyDatabase();
@@ -131,6 +131,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
     return composed;
   };
+  const fetchDatabaseSchema = async (name: string) => {
+    const schema = await databaseServiceClient.getDatabaseSchema({
+      name,
+    });
+    return schema;
+  };
 
   return {
     databaseList,
@@ -147,6 +153,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     getDatabaseByUID,
     getOrFetchDatabaseByUID,
     updateDatabase,
+    fetchDatabaseSchema,
   };
 });
 
@@ -169,6 +176,29 @@ export const useSearchDatabaseV1List = (
   );
 
   return { databaseList, ready };
+};
+
+export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
+  const store = useDatabaseV1Store();
+  const ready = ref(true);
+  watch(
+    () => unref(name),
+    (name) => {
+      if (store.getDatabaseByName(name).uid === String(UNKNOWN_ID)) {
+        ready.value = false;
+        store.fetchDatabaseByName(name).then(() => {
+          ready.value = true;
+        });
+      }
+    },
+    { immediate: true }
+  );
+  const database = computed(() => store.getDatabaseByName(unref(name)));
+
+  return {
+    database,
+    ready,
+  };
 };
 
 export const useDatabaseV1ByUID = (uid: MaybeRef<string>) => {
