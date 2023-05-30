@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	snow "github.com/snowflakedb/gosnowflake"
@@ -258,6 +259,38 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 }
 
 // QueryConn2 queries a SQL statement in a given connection.
-func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, errors.New("not implemented")
+func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	// TODO(rebelice): support multiple queries in a single statement.
+	var results []*v1pb.QueryResult
+
+	result, err := driver.querySingleSQL(ctx, conn, parser.SingleSQL{Text: statement}, queryContext)
+	if err != nil {
+		results = append(results, &v1pb.QueryResult{
+			Error: err.Error(),
+		})
+	} else {
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+func getStatementWithResultLimit(stmt string, limit int) string {
+	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+}
+
+func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	statement := singleSQL.Text
+	statement = strings.TrimRight(statement, " \n\t;")
+	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
+		statement = getStatementWithResultLimit(statement, queryContext.Limit)
+	}
+
+	// Snowflake doesn't support READ ONLY transactions.
+	// https://github.com/snowflakedb/gosnowflake/blob/0450f0b16a4679b216baecd3fd6cdce739dbb683/connection.go#L166
+	if queryContext.ReadOnly {
+		queryContext.ReadOnly = false
+	}
+
+	return util.Query2(ctx, db.Snowflake, conn, statement, queryContext)
 }
