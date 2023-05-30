@@ -6031,7 +6031,7 @@ FIXME(d/xz): support spec with deployment config
 | status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. TODO(p0ny): migrate old task status and use this field as a summary of the task runs. |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
 | blocked_by_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
-| target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
+| target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
 | database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
 | database_schema_baseline | [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline) |  |  |
 | database_schema_update | [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate) |  |  |
@@ -6108,13 +6108,6 @@ FIXME(d/xz): support spec with deployment config
 | schema_version | [string](#string) |  |  |
 | rollback_enabled | [bool](#bool) |  | Build the rollback SQL if rollback_enabled. |
 | rollback_sql_status | [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus) |  | The status of the rollback SQL generation. |
-| transaction_id | [string](#string) |  | transaction_id is the ID of the transaction executing the migration. It is only use for Oracle to find Rollback SQL statement now. |
-| thread_id | [string](#string) |  | thread_id is the ID of the connection executing the migration. We use it to filter the binlog events of the migration transaction. |
-| change_history | [string](#string) |  | change_history is the resource name of the change history. We use it to get the schema when the transaction ran. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
-| binlog_file_start | [string](#string) |  |  |
-| binlog_file_end | [string](#string) |  |  |
-| binlog_position_start | [int64](#int64) |  |  |
-| binlog_position_end | [int64](#int64) |  |  |
 | rollback_error | [string](#string) |  |  |
 | rollback_sheet | [string](#string) |  | rollback_sheet is the resource name of the sheet that stores the generated rollback SQL statement. Format: projects/{project}/sheets/{sheet} |
 | rollback_from_review | [string](#string) |  | rollback_from_review is the resource name of the review that the rollback SQL statement is generated from. Format: projects/{project}/reviews/{review} |
