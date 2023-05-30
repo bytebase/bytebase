@@ -601,7 +601,10 @@ export interface Task {
   type: Task_Type;
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
   blockedByTasks: string[];
-  /** Format: instances/{instance}/databases/{database} */
+  /**
+   * Format: instances/{instance} if the task is DatabaseCreate.
+   * Format: instances/{instance}/databases/{database}
+   */
   target: string;
   databaseCreate?: Task_DatabaseCreate | undefined;
   databaseSchemaBaseline?: Task_DatabaseSchemaBaseline | undefined;
@@ -823,26 +826,6 @@ export interface Task_DatabaseDataUpdate {
   rollbackEnabled: boolean;
   /** The status of the rollback SQL generation. */
   rollbackSqlStatus: Task_DatabaseDataUpdate_RollbackSqlStatus;
-  /**
-   * transaction_id is the ID of the transaction executing the migration.
-   * It is only use for Oracle to find Rollback SQL statement now.
-   */
-  transactionId: string;
-  /**
-   * thread_id is the ID of the connection executing the migration.
-   * We use it to filter the binlog events of the migration transaction.
-   */
-  threadId: string;
-  /**
-   * change_history is the resource name of the change history.
-   * We use it to get the schema when the transaction ran.
-   * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-   */
-  changeHistory: string;
-  binlogFileStart: string;
-  binlogFileEnd: string;
-  binlogPositionStart: number;
-  binlogPositionEnd: number;
   rollbackError: string;
   /**
    * rollback_sheet is the resource name of
@@ -3636,13 +3619,6 @@ function createBaseTask_DatabaseDataUpdate(): Task_DatabaseDataUpdate {
     schemaVersion: "",
     rollbackEnabled: false,
     rollbackSqlStatus: 0,
-    transactionId: "",
-    threadId: "",
-    changeHistory: "",
-    binlogFileStart: "",
-    binlogFileEnd: "",
-    binlogPositionStart: 0,
-    binlogPositionEnd: 0,
     rollbackError: "",
     rollbackSheet: "",
     rollbackFromReview: "",
@@ -3664,38 +3640,17 @@ export const Task_DatabaseDataUpdate = {
     if (message.rollbackSqlStatus !== 0) {
       writer.uint32(32).int32(message.rollbackSqlStatus);
     }
-    if (message.transactionId !== "") {
-      writer.uint32(42).string(message.transactionId);
-    }
-    if (message.threadId !== "") {
-      writer.uint32(50).string(message.threadId);
-    }
-    if (message.changeHistory !== "") {
-      writer.uint32(58).string(message.changeHistory);
-    }
-    if (message.binlogFileStart !== "") {
-      writer.uint32(66).string(message.binlogFileStart);
-    }
-    if (message.binlogFileEnd !== "") {
-      writer.uint32(74).string(message.binlogFileEnd);
-    }
-    if (message.binlogPositionStart !== 0) {
-      writer.uint32(80).int64(message.binlogPositionStart);
-    }
-    if (message.binlogPositionEnd !== 0) {
-      writer.uint32(88).int64(message.binlogPositionEnd);
-    }
     if (message.rollbackError !== "") {
-      writer.uint32(98).string(message.rollbackError);
+      writer.uint32(42).string(message.rollbackError);
     }
     if (message.rollbackSheet !== "") {
-      writer.uint32(106).string(message.rollbackSheet);
+      writer.uint32(50).string(message.rollbackSheet);
     }
     if (message.rollbackFromReview !== "") {
-      writer.uint32(114).string(message.rollbackFromReview);
+      writer.uint32(58).string(message.rollbackFromReview);
     }
     if (message.rollbackFromTask !== "") {
-      writer.uint32(122).string(message.rollbackFromTask);
+      writer.uint32(66).string(message.rollbackFromTask);
     }
     return writer;
   },
@@ -3740,73 +3695,24 @@ export const Task_DatabaseDataUpdate = {
             break;
           }
 
-          message.transactionId = reader.string();
+          message.rollbackError = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.threadId = reader.string();
+          message.rollbackSheet = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.changeHistory = reader.string();
+          message.rollbackFromReview = reader.string();
           continue;
         case 8:
           if (tag !== 66) {
-            break;
-          }
-
-          message.binlogFileStart = reader.string();
-          continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.binlogFileEnd = reader.string();
-          continue;
-        case 10:
-          if (tag !== 80) {
-            break;
-          }
-
-          message.binlogPositionStart = longToNumber(reader.int64() as Long);
-          continue;
-        case 11:
-          if (tag !== 88) {
-            break;
-          }
-
-          message.binlogPositionEnd = longToNumber(reader.int64() as Long);
-          continue;
-        case 12:
-          if (tag !== 98) {
-            break;
-          }
-
-          message.rollbackError = reader.string();
-          continue;
-        case 13:
-          if (tag !== 106) {
-            break;
-          }
-
-          message.rollbackSheet = reader.string();
-          continue;
-        case 14:
-          if (tag !== 114) {
-            break;
-          }
-
-          message.rollbackFromReview = reader.string();
-          continue;
-        case 15:
-          if (tag !== 122) {
             break;
           }
 
@@ -3829,13 +3735,6 @@ export const Task_DatabaseDataUpdate = {
       rollbackSqlStatus: isSet(object.rollbackSqlStatus)
         ? task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(object.rollbackSqlStatus)
         : 0,
-      transactionId: isSet(object.transactionId) ? String(object.transactionId) : "",
-      threadId: isSet(object.threadId) ? String(object.threadId) : "",
-      changeHistory: isSet(object.changeHistory) ? String(object.changeHistory) : "",
-      binlogFileStart: isSet(object.binlogFileStart) ? String(object.binlogFileStart) : "",
-      binlogFileEnd: isSet(object.binlogFileEnd) ? String(object.binlogFileEnd) : "",
-      binlogPositionStart: isSet(object.binlogPositionStart) ? Number(object.binlogPositionStart) : 0,
-      binlogPositionEnd: isSet(object.binlogPositionEnd) ? Number(object.binlogPositionEnd) : 0,
       rollbackError: isSet(object.rollbackError) ? String(object.rollbackError) : "",
       rollbackSheet: isSet(object.rollbackSheet) ? String(object.rollbackSheet) : "",
       rollbackFromReview: isSet(object.rollbackFromReview) ? String(object.rollbackFromReview) : "",
@@ -3850,13 +3749,6 @@ export const Task_DatabaseDataUpdate = {
     message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
     message.rollbackSqlStatus !== undefined &&
       (obj.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusToJSON(message.rollbackSqlStatus));
-    message.transactionId !== undefined && (obj.transactionId = message.transactionId);
-    message.threadId !== undefined && (obj.threadId = message.threadId);
-    message.changeHistory !== undefined && (obj.changeHistory = message.changeHistory);
-    message.binlogFileStart !== undefined && (obj.binlogFileStart = message.binlogFileStart);
-    message.binlogFileEnd !== undefined && (obj.binlogFileEnd = message.binlogFileEnd);
-    message.binlogPositionStart !== undefined && (obj.binlogPositionStart = Math.round(message.binlogPositionStart));
-    message.binlogPositionEnd !== undefined && (obj.binlogPositionEnd = Math.round(message.binlogPositionEnd));
     message.rollbackError !== undefined && (obj.rollbackError = message.rollbackError);
     message.rollbackSheet !== undefined && (obj.rollbackSheet = message.rollbackSheet);
     message.rollbackFromReview !== undefined && (obj.rollbackFromReview = message.rollbackFromReview);
@@ -3874,13 +3766,6 @@ export const Task_DatabaseDataUpdate = {
     message.schemaVersion = object.schemaVersion ?? "";
     message.rollbackEnabled = object.rollbackEnabled ?? false;
     message.rollbackSqlStatus = object.rollbackSqlStatus ?? 0;
-    message.transactionId = object.transactionId ?? "";
-    message.threadId = object.threadId ?? "";
-    message.changeHistory = object.changeHistory ?? "";
-    message.binlogFileStart = object.binlogFileStart ?? "";
-    message.binlogFileEnd = object.binlogFileEnd ?? "";
-    message.binlogPositionStart = object.binlogPositionStart ?? 0;
-    message.binlogPositionEnd = object.binlogPositionEnd ?? 0;
     message.rollbackError = object.rollbackError ?? "";
     message.rollbackSheet = object.rollbackSheet ?? "";
     message.rollbackFromReview = object.rollbackFromReview ?? "";
