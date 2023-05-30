@@ -158,7 +158,7 @@ const allowEdit = computed((): boolean => {
 const allowSave = computed((): boolean => {
   const openAIKeyUpdated =
     state.openAIKey !== maskKey(openAIKeySetting?.value?.stringValue) ||
-    !state.openAIKey.includes("***");
+    (state.openAIKey && !state.openAIKey.includes("***"));
   return (
     allowEdit.value &&
     (openAIKeyUpdated ||
