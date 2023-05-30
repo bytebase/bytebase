@@ -214,7 +214,6 @@ import {
   useSchemaEditorStore,
 } from "@/store";
 import {
-  DatabaseId,
   DatabaseTabContext,
   DatabaseSchema,
   SchemaEditorTabType,
@@ -236,6 +235,7 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
+import { Engine } from "@/types/proto/v1/common";
 
 type SubtabType = "table-list" | "schema-diagram" | "raw-sql";
 
@@ -245,7 +245,7 @@ interface LocalState {
   isFetchingDDL: boolean;
   statement: string;
   tableNameModalContext?: {
-    databaseId: DatabaseId;
+    databaseId: string;
     schemaId: string;
     tableName: string | undefined;
   };
@@ -270,9 +270,9 @@ const databaseSchema = computed(() => {
 });
 const database = computed(() => databaseSchema.value.database);
 const databaseV1 = computed(() => {
-  return useDatabaseV1Store().getDatabaseByUID(String(database.value.id));
+  return useDatabaseV1Store().getDatabaseByUID(database.value.uid);
 });
-const databaseEngine = computed(() => database.value.instance.engine);
+const databaseEngine = computed(() => database.value.instanceEntity.engine);
 const schemaList = computed(() => {
   return databaseSchema.value.schemaList;
 });
@@ -291,11 +291,11 @@ const shownTableList = computed(() => {
 });
 
 const shouldShowSchemaSelector = computed(() => {
-  return databaseEngine.value === "POSTGRES";
+  return databaseEngine.value === Engine.POSTGRES;
 });
 
 const allowCreateTable = computed(() => {
-  if (databaseEngine.value === "POSTGRES") {
+  if (databaseEngine.value === Engine.POSTGRES) {
     return (
       schemaList.value.length > 0 &&
       selectedSchema.value &&
@@ -377,22 +377,22 @@ watch(
           (originSchema) => originSchema.id === schema.id
         );
         const diffSchemaResult = diffSchema(
-          database.value.id,
+          database.value.uid,
           originSchema,
           schema
         );
         if (checkHasSchemaChanges(diffSchemaResult)) {
           const index = databaseEditList.findIndex(
-            (edit) => edit.databaseId === database.value.id
+            (edit) => String(edit.databaseId) === database.value.uid
           );
           if (index !== -1) {
             databaseEditList[index] = {
-              databaseId: database.value.id,
+              databaseId: Number(database.value.uid),
               ...mergeDiffResults([diffSchemaResult, databaseEditList[index]]),
             };
           } else {
             databaseEditList.push({
-              databaseId: database.value.id,
+              databaseId: Number(database.value.uid),
               ...diffSchemaResult,
             });
           }
@@ -445,7 +445,7 @@ const handleCreateNewTable = () => {
   );
   if (selectedSchema) {
     state.tableNameModalContext = {
-      databaseId: database.value.id,
+      databaseId: database.value.uid,
       schemaId: selectedSchema.id,
       tableName: undefined,
     };
@@ -456,18 +456,22 @@ const handleTableItemClick = (table: Table) => {
   editorStore.addTab({
     id: generateUniqueTabId(),
     type: SchemaEditorTabType.TabForTable,
-    databaseId: database.value.id,
+    databaseId: database.value.uid,
     schemaId: state.selectedSchemaId,
     tableId: table.id,
   });
 };
 
 const handleDropTable = (table: Table) => {
-  editorStore.dropTable(database.value.id, state.selectedSchemaId, table.id);
+  editorStore.dropTable(database.value.uid, state.selectedSchemaId, table.id);
 };
 
 const handleRestoreTable = (table: Table) => {
-  editorStore.restoreTable(database.value.id, state.selectedSchemaId, table.id);
+  editorStore.restoreTable(
+    database.value.uid,
+    state.selectedSchemaId,
+    table.id
+  );
 };
 
 const {

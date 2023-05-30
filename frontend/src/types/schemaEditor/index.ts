@@ -1,4 +1,4 @@
-import { Database, DatabaseId } from "..";
+import { ComposedDatabase } from "../v1";
 import { Schema } from "./atomType";
 
 export * from "./atomType";
@@ -12,7 +12,7 @@ export enum SchemaEditorTabType {
 export interface DatabaseTabContext {
   id: string;
   type: SchemaEditorTabType.TabForDatabase;
-  databaseId: DatabaseId;
+  databaseId: string;
   selectedSchemaId?: string;
   selectedSubtab?: string;
 }
@@ -21,7 +21,7 @@ export interface DatabaseTabContext {
 export interface TableTabContext {
   id: string;
   type: SchemaEditorTabType.TabForTable;
-  databaseId: DatabaseId;
+  databaseId: string;
   schemaId: string;
   tableId: string;
   selectedSubtab?: string;
@@ -32,7 +32,7 @@ export type TabContext = DatabaseTabContext | TableTabContext;
 type TabId = string;
 
 export interface DatabaseSchema {
-  database: Database;
+  database: ComposedDatabase;
   schemaList: Schema[];
   originSchemaList: Schema[];
 }
@@ -42,14 +42,14 @@ export interface SchemaEditorState {
     tabMap: Map<TabId, TabContext>;
     currentTabId?: TabId;
   };
-  databaseSchemaById: Map<DatabaseId, DatabaseSchema>;
+  databaseSchemaById: Map<string, DatabaseSchema>;
 }
 
 /**
  * Type definition for API message.
  */
 export interface DatabaseEdit {
-  databaseId: DatabaseId;
+  databaseId: number;
 
   createSchemaList: CreateSchemaContext[];
   renameSchemaList: RenameSchemaContext[];

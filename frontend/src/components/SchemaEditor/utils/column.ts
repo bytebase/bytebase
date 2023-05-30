@@ -1,9 +1,8 @@
 import { isEqual, isUndefined } from "lodash-es";
 import { useSchemaEditorStore } from "@/store";
-import { DatabaseId } from "@/types";
 
 export const isColumnChanged = (
-  databaseId: DatabaseId,
+  databaseId: string,
   schemaId: string,
   tableId: string,
   columnId: string

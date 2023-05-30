@@ -29,6 +29,7 @@ import { useInstanceStore } from "./instance";
 import { usePipelineStore } from "./pipeline";
 import { useLegacyProjectStore } from "./project";
 import { convertEntityList } from "./utils";
+import { useDatabaseV1Store, useInstanceV1Store } from "./v1";
 
 function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
   const result: Issue = {
@@ -196,17 +197,21 @@ export const useIssueStore = defineStore("issue", {
       if (isDatabaseRelatedIssueType(issue.type)) {
         const instanceStore = useInstanceStore();
         const databaseStore = useDatabaseStore();
+        const instanceV1Store = useInstanceV1Store();
+        const databaseV1Store = useDatabaseV1Store();
         for (const stage of issue.pipeline!.stageList) {
           for (const task of stage.taskList) {
             instanceStore.setInstanceById({
               instanceId: task.instance.id,
               instance: task.instance,
             });
+            instanceV1Store.getOrFetchInstanceByUID(String(task.instance.id));
 
             if (task.database) {
               databaseStore.upsertDatabaseList({
                 databaseList: [task.database],
               });
+              databaseV1Store.getOrFetchDatabaseByUID(String(task.database.id));
             }
           }
         }
