@@ -696,6 +696,7 @@
       "progress": "Progress",
       "updated": "Updated",
       "approver": "Approver",
+      "creator": "Creator",
       "assignee": "Assignee"
     },
     "stage-select": {

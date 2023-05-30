@@ -694,6 +694,7 @@
       "progress": "进度",
       "updated": "更新于",
       "approver": "审批人",
+      "creator": "创建人",
       "assignee": "发布人"
     },
     "stage-select": {
