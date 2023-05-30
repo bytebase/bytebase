@@ -497,6 +497,84 @@ func getDatabaseFromDSN(dsn string) (string, error) {
 }
 
 // QueryConn2 queries a SQL statement in a given connection.
-func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, errors.New("not implemented")
+func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	stmts, err := sanitizeSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*v1pb.QueryResult
+	for _, statement := range stmts {
+		result, err := driver.querySingleSQL(ctx, conn, statement, queryContext)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+		} else {
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	statement = getStatementWithResultLimit(statement, queryContext.Limit)
+	iter := d.client.Single().Query(ctx, spanner.NewStatement(statement))
+	defer iter.Stop()
+
+	row, err := iter.Next()
+	if err == iterator.Done {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	data := []*v1pb.QueryRow{}
+	columnNames := getColumnNames(iter)
+	columnTypeNames, err := getColumnTypeNames(iter)
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		rowData, err := readRow2(row)
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, rowData)
+
+		row, err = iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// spanner doesn't mask the sensitive fields.
+	// Return the all false boolean slice here as the placeholder.
+	sensitiveInfo := make([]bool, len(columnNames))
+
+	return &v1pb.QueryResult{
+		ColumnNames:     columnNames,
+		ColumnTypeNames: columnTypeNames,
+		Rows:            data,
+		Masked:          sensitiveInfo,
+	}, nil
+}
+
+func readRow2(row *spanner.Row) (*v1pb.QueryRow, error) {
+	result := &v1pb.QueryRow{}
+	for i := 0; i < row.Size(); i++ {
+		var col spanner.GenericColumnValue
+		if err := row.Column(i, &col); err != nil {
+			return nil, err
+		}
+		result.Values = append(result.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_ValueValue{ValueValue: col.Value}})
+	}
+
+	return result, nil
 }
