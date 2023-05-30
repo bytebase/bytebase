@@ -52,11 +52,12 @@
         v-else-if="selectedDatabase"
         class="flex flex-row justify-start items-center"
       >
-        <InstanceEngineIcon
+        <InstanceV1EngineIcon
+          :instance="selectedDatabase.instanceEntity"
+          :link="false"
           class="mr-1"
-          :instance="selectedDatabase.instance"
         />
-        {{ selectedDatabase.name }}
+        {{ selectedDatabase.databaseName }}
       </div>
     </div>
     <div class="w-full flex flex-row justify-start items-center">
@@ -123,20 +124,17 @@ import {
   PresetRoleType,
   SQLDialect,
   UNKNOWN_ID,
-  dialectOfEngine,
+  dialectOfEngineV1,
 } from "@/types";
-import { instanceV1Name, memberListInProjectV1 } from "@/utils";
-import {
-  convertUserToPrincipal,
-  useDatabaseStore,
-  useProjectV1Store,
-} from "@/store";
+import { extractUserUID, instanceV1Name, memberListInProjectV1 } from "@/utils";
+import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import { convertFromCEL } from "@/utils/issue/cel";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import DatabaseSelect from "@/components/DatabaseSelect.vue";
+import { Engine } from "@/types/proto/v1/common";
 
 interface LocalState {
   // For creating
@@ -150,7 +148,7 @@ interface LocalState {
 }
 
 const { create, issue } = useIssueLogic();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   selectedDatabaseResourceList: [],
   maxRowCount: 1000,
@@ -166,12 +164,12 @@ const selectedDatabase = computed(() => {
   if (!state.databaseId || state.databaseId === String(UNKNOWN_ID)) {
     return undefined;
   }
-  return databaseStore.getDatabaseById(state.databaseId as string);
+  return databaseStore.getDatabaseByUID(state.databaseId);
 });
 
 const dialect = computed((): SQLDialect => {
   const db = selectedDatabase.value;
-  return dialectOfEngine(db?.instance.engine || "MYSQL");
+  return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
 });
 
 onMounted(() => {
@@ -199,21 +197,21 @@ const handleProjectSelect = async (projectId: string) => {
   );
   const projectOwner = head(ownerList);
   if (projectOwner) {
-    const ownerPrincipal = convertUserToPrincipal(projectOwner.user);
-    issueCreate.assigneeId = ownerPrincipal.id;
+    const userUID = extractUserUID(projectOwner.user.name);
+    issueCreate.assigneeId = Number(userUID);
   }
 };
 
 const handleEnvironmentSelect = (environmentId: string) => {
   state.environmentId = environmentId;
-  const database = databaseStore.getDatabaseById(
-    state.databaseId || UNKNOWN_ID
+  const database = databaseStore.getDatabaseByUID(
+    state.databaseId || String(UNKNOWN_ID)
   );
   // Unselect database if it doesn't belong to the newly selected environment.
   if (
     database &&
-    String(database.id) !== String(UNKNOWN_ID) &&
-    String(database.instance.environment.id) !== state.environmentId
+    database.uid !== String(UNKNOWN_ID) &&
+    database.instanceEntity.environmentEntity.uid !== state.environmentId
   ) {
     state.databaseId = undefined;
   }
@@ -221,12 +219,12 @@ const handleEnvironmentSelect = (environmentId: string) => {
 
 const handleDatabaseSelect = (databaseId: string) => {
   state.databaseId = databaseId;
-  const database = databaseStore.getDatabaseById(
-    state.databaseId || UNKNOWN_ID
+  const database = databaseStore.getDatabaseByUID(
+    state.databaseId || String(UNKNOWN_ID)
   );
-  if (database && String(database.id) !== String(UNKNOWN_ID)) {
-    state.environmentId = String(database.instance.environment.id);
-    handleProjectSelect(String(database.projectId));
+  if (database && database.uid !== String(UNKNOWN_ID)) {
+    state.environmentId = database.instanceEntity.environmentEntity.uid;
+    handleProjectSelect(database.projectEntity.uid);
   }
 };
 
@@ -249,7 +247,7 @@ watch(
       if (state.databaseId) {
         context.databaseResources = [
           {
-            databaseId: state.databaseId,
+            databaseId: Number(state.databaseId),
           },
         ];
       } else {
