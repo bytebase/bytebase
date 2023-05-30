@@ -529,26 +529,36 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		Type:           convertToTaskType(task.Type),
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
-		Payload: &v1pb.Task_DatabaseDataUpdate_{
-			DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
-				Sheet:               sheetName,
-				SchemaVersion:       payload.SchemaVersion,
-				RollbackEnabled:     payload.RollbackEnabled,
-				RollbackSqlStatus:   convertToRollbackSQLStatus(payload.RollbackSQLStatus),
-				TransactionId:       "",
-				ThreadId:            "",
-				ChangeHistory:       "",
-				BinlogFileStart:     "",
-				BinlogFileEnd:       "",
-				BinlogPositionStart: 0,
-				BinlogPositionEnd:   0,
-				RollbackError:       payload.RollbackError,
-				RollbackSheet:       rollbackSheetName,
-				RollbackFromReview:  "",
-				RollbackFromTask:    "",
-			},
+		Payload:        nil,
+	}
+	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
+		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
+			Sheet:              sheetName,
+			SchemaVersion:      payload.SchemaVersion,
+			RollbackEnabled:    payload.RollbackEnabled,
+			RollbackSqlStatus:  convertToRollbackSQLStatus(payload.RollbackSQLStatus),
+			RollbackError:      payload.RollbackError,
+			RollbackSheet:      rollbackSheetName,
+			RollbackFromReview: "",
+			RollbackFromTask:   "",
 		},
 	}
+	if payload.RollbackFromIssueID != 0 && payload.RollbackFromTaskID != 0 {
+		rollbackFromIssue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{
+			UID: &payload.RollbackFromIssueID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get rollback issue %q", payload.RollbackFromIssueID)
+		}
+		rollbackFromTask, err := s.GetTaskV2ByID(ctx, payload.RollbackFromTaskID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get rollback task %q", payload.RollbackFromTaskID)
+		}
+		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromReview = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, project.ResourceID, reviewPrefix, rollbackFromIssue.UID)
+		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromTask = fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, rollbackFromIssue.Project.ResourceID, rolloutPrefix, rollbackFromTask.PipelineID, stagePrefix, rollbackFromTask.StageID, taskPrefix, rollbackFromTask.ID)
+	}
+
+	v1pbTask.Payload = v1pbTaskPayload
 	return v1pbTask, nil
 }
 
