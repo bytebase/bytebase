@@ -20,7 +20,7 @@
               {{ $t("common.project") }}
             </label>
 
-            <ProjectName :project="database.project" />
+            <ProjectV1Name :project="database.projectEntity" />
           </div>
 
           <div class="contents">
@@ -28,7 +28,9 @@
               {{ $t("common.environment") }}
             </label>
 
-            <EnvironmentName :environment="database.instance.environment" />
+            <EnvironmentV1Name
+              :environment="database.instanceEntity.environmentEntity"
+            />
           </div>
 
           <div class="contents">
@@ -36,7 +38,7 @@
               {{ $t("common.instance") }}
             </label>
 
-            <InstanceName :instance="database.instance" />
+            <InstanceV1Name :instance="database.instanceEntity" />
           </div>
 
           <div class="contents">
@@ -44,7 +46,7 @@
               {{ $t("common.database") }}
             </label>
 
-            <DatabaseName :database="database" />
+            <DatabaseV1Name :database="database" />
           </div>
 
           <div class="contents">
@@ -64,7 +66,7 @@
         </div>
         <IndexAdvisor v-if="slowQueryLog" :slow-query-log="slowQueryLog" />
         <div
-          v-if="instanceHasSlowQueryDetail(database.instance)"
+          v-if="instanceV1HasSlowQueryDetail(database.instanceEntity)"
           class="flex-1 overflow-auto border"
         >
           <BBGrid
@@ -129,12 +131,12 @@ import { NButton, NDrawer, NDrawerContent } from "naive-ui";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import type { ComposedSlowQueryLog } from "@/types";
 import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
-import { instanceHasSlowQueryDetail } from "@/utils";
+import { instanceV1HasSlowQueryDetail } from "@/utils";
 import {
-  DatabaseName,
-  InstanceName,
-  EnvironmentName,
-  ProjectName,
+  DatabaseV1Name,
+  InstanceV1Name,
+  EnvironmentV1Name,
+  ProjectV1Name,
 } from "@/components/v2";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import IndexAdvisor from "./IndexAdvisor.vue";

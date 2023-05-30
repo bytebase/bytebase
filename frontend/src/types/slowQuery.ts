@@ -1,10 +1,10 @@
-import type { Database } from "./database";
+import type { ComposedDatabase } from "./v1/database";
 import type { SlowQueryLog } from "./proto/v1/database_service";
 import { ComposedInstance } from "./v1/instance";
 
 export type ComposedSlowQueryLog = {
   log: SlowQueryLog;
-  database: Database;
+  database: ComposedDatabase;
 };
 
 export type ComposedSlowQueryPolicy = {
