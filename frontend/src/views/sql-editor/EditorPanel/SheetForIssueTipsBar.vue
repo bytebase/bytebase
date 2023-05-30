@@ -3,13 +3,8 @@
     <div class="flex-shrink-0">
       <heroicons-solid:information-circle class="h-5 w-5 text-yellow-400" />
     </div>
-    <div class="ml-3">
-      <i18n-t
-        v-if="payload"
-        tag="h3"
-        keypath="sheet.from-issue-warning"
-        class="text-sm font-medium text-yellow-800"
-      >
+    <div class="ml-3 text-sm font-medium text-yellow-800">
+      <i18n-t v-if="payload" tag="h3" keypath="sheet.from-issue-warning">
         <template #issue>
           <NTooltip :disabled="loading || !issue">
             <template #trigger>
