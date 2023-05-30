@@ -784,6 +784,177 @@ func convertToRollbackSQLStatus(status api.RollbackSQLStatus) v1pb.Task_Database
 	}
 }
 
+// UpdatePlan updates a plan.
+// Currently, only Spec.Config.Sheet can be updated.
+func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRequest) (*v1pb.Plan, error) {
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "steps":
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid update_mask path %q", path)
+		}
+	}
+	planID, err := getPlanID(request.Plan.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	oldPlan, err := s.store.GetPlan(ctx, planID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get plan %q: %v", request.Plan.Name, err)
+	}
+	if oldPlan == nil {
+		return nil, status.Errorf(codes.NotFound, "plan %q not found", request.Plan.Name)
+	}
+	oldSteps := convertToPlanSteps(oldPlan.Config.Steps)
+
+	removed, added, updated := diffSpecs(oldSteps, request.Plan.Steps)
+	if len(removed) > 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot remove specs from plan")
+	}
+	if len(added) > 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot add specs to plan")
+	}
+	if len(updated) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "no specs updated")
+	}
+
+	updatedByID := make(map[string]*v1pb.Plan_Spec)
+	for _, spec := range updated {
+		updatedByID[spec.Id] = spec
+	}
+
+	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
+	if oldPlan.PipelineUID != nil {
+		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to list tasks: %v", err)
+		}
+		for _, task := range tasks {
+			switch task.Type {
+			case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
+				var taskPayload struct {
+					SpecID  string `json:"specId"`
+					SheetID int    `json:"sheetId"`
+				}
+				if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
+				}
+				spec, ok := updatedByID[taskPayload.SpecID]
+				if !ok {
+					continue
+				}
+				config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
+				if !ok {
+					continue
+				}
+				sheetID, _, err := getProjectResourceIDSheetID(config.ChangeDatabaseConfig.Sheet)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
+				}
+				sheetIDInt, err := strconv.Atoi(sheetID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to convert sheet id %q to int, error: %v", sheetID, err)
+				}
+				sheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{
+					ID: &sheetIDInt,
+				}, api.SystemBotID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
+				}
+				if sheet == nil {
+					return nil, status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
+				}
+				if _, err := s.store.UpdateTaskV2(ctx, &api.TaskPatch{
+					ID:        task.ID,
+					UpdaterID: updaterID,
+					SheetID:   &sheet.UID,
+				}); err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
+				}
+			}
+		}
+	}
+
+	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:       oldPlan.UID,
+		UpdaterID: updaterID,
+		Config: &storepb.PlanConfig{
+			Steps: convertPlanSteps(request.Plan.Steps),
+		},
+	}); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update plan %q: %v", request.Plan.Name, err)
+	}
+
+	updatedPlan, err := s.store.GetPlan(ctx, oldPlan.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get updated plan %q: %v", request.Plan.Name, err)
+	}
+	if updatedPlan == nil {
+		return nil, status.Errorf(codes.NotFound, "updated plan %q not found", request.Plan.Name)
+	}
+	return convertToPlan(updatedPlan), nil
+}
+
+// diffSpecs check if there are any specs removed, added or updated in the new plan.
+// Only updating sheet is taken into account.
+func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.Plan_Spec, []*v1pb.Plan_Spec, []*v1pb.Plan_Spec) {
+	oldSpecs := make(map[string]*v1pb.Plan_Spec)
+	newSpecs := make(map[string]*v1pb.Plan_Spec)
+	var removed, added, updated []*v1pb.Plan_Spec
+	for _, step := range oldSteps {
+		for _, spec := range step.Specs {
+			oldSpecs[spec.Id] = spec
+		}
+	}
+	for _, step := range newSteps {
+		for _, spec := range step.Specs {
+			newSpecs[spec.Id] = spec
+		}
+	}
+	for _, step := range oldSteps {
+		for _, spec := range step.Specs {
+			if _, ok := newSpecs[spec.Id]; !ok {
+				removed = append(removed, spec)
+				break
+			}
+		}
+	}
+	for _, step := range newSteps {
+		for _, spec := range step.Specs {
+			if _, ok := oldSpecs[spec.Id]; !ok {
+				added = append(added, spec)
+				break
+			}
+		}
+	}
+	for _, step := range newSteps {
+		for _, spec := range step.Specs {
+			if oldSpec, ok := oldSpecs[spec.Id]; ok {
+				if isSpecSheetUpdated(oldSpec, spec) {
+					updated = append(updated, spec)
+					break
+				}
+			}
+		}
+	}
+	return removed, added, updated
+}
+
+func isSpecSheetUpdated(specA *v1pb.Plan_Spec, specB *v1pb.Plan_Spec) bool {
+	configA, ok := specA.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
+	if !ok {
+		return false
+	}
+	configB, ok := specB.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
+	if !ok {
+		return false
+	}
+	return configA.ChangeDatabaseConfig.Sheet != configB.ChangeDatabaseConfig.Sheet
+}
+
 func validateSteps(_ []*v1pb.Plan_Step) error {
 	// FIXME: impl this func
 	// targets should be unique
@@ -1504,6 +1675,11 @@ func convertToPlanSpecCreateDatabaseConfig(config *storepb.PlanConfig_Spec_Creat
 }
 
 func convertToPlanCreateDatabaseConfig(c *storepb.PlanConfig_CreateDatabaseConfig) *v1pb.Plan_CreateDatabaseConfig {
+	// c.CreateDatabaseConfig is defined as optional in proto
+	// so we need to test if it's nil
+	if c == nil {
+		return nil
+	}
 	return &v1pb.Plan_CreateDatabaseConfig{
 		Target:       c.Target,
 		Database:     c.Database,
@@ -1523,10 +1699,42 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Target:          c.Target,
 			Sheet:           c.Sheet,
-			Type:            v1pb.Plan_ChangeDatabaseConfig_Type(c.Type),
+			Type:            convertToPlanSpecChangeDatabaseConfigType(c.Type),
 			SchemaVersion:   c.SchemaVersion,
 			RollbackEnabled: c.RollbackEnabled,
+			RollbackDetail:  convertToPlanSpecChangeDatabaseConfigRollbackDetail(c.RollbackDetail),
 		},
+	}
+}
+
+func convertToPlanSpecChangeDatabaseConfigRollbackDetail(d *storepb.PlanConfig_ChangeDatabaseConfig_RollbackDetail) *v1pb.Plan_ChangeDatabaseConfig_RollbackDetail {
+	if d == nil {
+		return nil
+	}
+	return &v1pb.Plan_ChangeDatabaseConfig_RollbackDetail{
+		RollbackFromReview: d.RollbackFromReview,
+		RollbackFromTask:   d.RollbackFromReview,
+	}
+}
+
+func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) v1pb.Plan_ChangeDatabaseConfig_Type {
+	switch t {
+	case storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED:
+		return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
+	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
+		return v1pb.Plan_ChangeDatabaseConfig_BASELINE
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST
+	case storepb.PlanConfig_ChangeDatabaseConfig_BRANCH:
+		return v1pb.Plan_ChangeDatabaseConfig_BRANCH
+	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+		return v1pb.Plan_ChangeDatabaseConfig_DATA
+	default:
+		return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 	}
 }
 
@@ -1547,11 +1755,8 @@ func convertToPlanSpecRestoreDatabaseConfig(config *storepb.PlanConfig_Spec_Rest
 			PointInTime: source.PointInTime,
 		}
 	}
-	// c.CreateDatabaseConfig is defined as optional in proto
-	// so we need to test if it's nil
-	if c.CreateDatabaseConfig != nil {
-		v1Config.RestoreDatabaseConfig.CreateDatabaseConfig = convertToPlanCreateDatabaseConfig(c.CreateDatabaseConfig)
-	}
+
+	v1Config.RestoreDatabaseConfig.CreateDatabaseConfig = convertToPlanCreateDatabaseConfig(c.CreateDatabaseConfig)
 	return v1Config
 }
 
