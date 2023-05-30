@@ -1,5 +1,4 @@
 /* eslint-disable */
-import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
@@ -47,7 +46,7 @@ export interface ListDebugLogResponse {
 }
 
 export interface DebugLog {
-  recordTs: number;
+  recordTs?: Date;
   requestPath: string;
   role: string;
   error: string;
@@ -359,13 +358,13 @@ export const ListDebugLogResponse = {
 };
 
 function createBaseDebugLog(): DebugLog {
-  return { recordTs: 0, requestPath: "", role: "", error: "", stackTrace: "" };
+  return { recordTs: undefined, requestPath: "", role: "", error: "", stackTrace: "" };
 }
 
 export const DebugLog = {
   encode(message: DebugLog, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.recordTs !== 0) {
-      writer.uint32(8).int64(message.recordTs);
+    if (message.recordTs !== undefined) {
+      Timestamp.encode(toTimestamp(message.recordTs), writer.uint32(10).fork()).ldelim();
     }
     if (message.requestPath !== "") {
       writer.uint32(18).string(message.requestPath);
@@ -390,11 +389,11 @@ export const DebugLog = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.recordTs = longToNumber(reader.int64() as Long);
+          message.recordTs = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
@@ -435,7 +434,7 @@ export const DebugLog = {
 
   fromJSON(object: any): DebugLog {
     return {
-      recordTs: isSet(object.recordTs) ? Number(object.recordTs) : 0,
+      recordTs: isSet(object.recordTs) ? fromJsonTimestamp(object.recordTs) : undefined,
       requestPath: isSet(object.requestPath) ? String(object.requestPath) : "",
       role: isSet(object.role) ? String(object.role) : "",
       error: isSet(object.error) ? String(object.error) : "",
@@ -445,7 +444,7 @@ export const DebugLog = {
 
   toJSON(message: DebugLog): unknown {
     const obj: any = {};
-    message.recordTs !== undefined && (obj.recordTs = Math.round(message.recordTs));
+    message.recordTs !== undefined && (obj.recordTs = message.recordTs.toISOString());
     message.requestPath !== undefined && (obj.requestPath = message.requestPath);
     message.role !== undefined && (obj.role = message.role);
     message.error !== undefined && (obj.error = message.error);
@@ -459,7 +458,7 @@ export const DebugLog = {
 
   fromPartial(object: DeepPartial<DebugLog>): DebugLog {
     const message = createBaseDebugLog();
-    message.recordTs = object.recordTs ?? 0;
+    message.recordTs = object.recordTs ?? undefined;
     message.requestPath = object.requestPath ?? "";
     message.role = object.role ?? "";
     message.error = object.error ?? "";
@@ -966,25 +965,6 @@ export interface ActuatorServiceClient<CallOptionsExt = {}> {
   ): Promise<ListDebugLogResponse>;
 }
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -1012,20 +992,6 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
-}
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
-
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
-if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any;
-  _m0.configure();
 }
 
 function isSet(value: any): boolean {

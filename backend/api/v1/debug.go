@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -42,7 +43,7 @@ func (in *DebugInterceptor) DebugInterceptor(ctx context.Context, request any, s
 			in.errorRecordRing.RWMutex.Lock()
 			defer in.errorRecordRing.RWMutex.Unlock()
 			in.errorRecordRing.Ring.Value = &v1pb.DebugLog{
-				RecordTs:    time.Now().Unix(),
+				RecordTs:    timestamppb.New(time.Now()),
 				RequestPath: serverInfo.FullMethod,
 				Role:        string(role),
 				Error:       err.Error(),

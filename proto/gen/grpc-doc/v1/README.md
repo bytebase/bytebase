@@ -525,7 +525,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| record_ts | [int64](#int64) |  |  |
+| record_ts | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | request_path | [string](#string) |  |  |
 | role | [string](#string) |  |  |
 | error | [string](#string) |  |  |

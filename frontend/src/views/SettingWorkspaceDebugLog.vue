@@ -16,7 +16,12 @@
         </button>
       </div>
       <DebugLogTable
-        :debug-log-list="debugLogList.sort((a, b) => b.recordTs - a.recordTs)"
+        :debug-log-list="
+          debugLogList.sort(
+            (a, b) =>
+              (b.recordTs?.getTime() ?? 0) - (a.recordTs?.getTime() ?? 0)
+          )
+        "
         @view-detail="
           (log: DebugLog) => {
             state.modalContent = log
@@ -52,9 +57,7 @@
                   <span v-if="value !== ''">
                     {{
                       key === "recordTs"
-                        ? dayjs
-                            .unix(value as number)
-                            .format("YYYY-MM-DD HH:mm:ss Z")
+                        ? dayjs(value as Date).format("YYYY-MM-DD HH:mm:ss Z")
                         : value
                     }}
                   </span>
