@@ -2,7 +2,7 @@
 import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
-import { NullValue, nullValueFromJSON, nullValueToJSON } from "../google/protobuf/struct";
+import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
@@ -63,7 +63,11 @@ export interface RowValue {
   int64Value?: number | undefined;
   stringValue?: string | undefined;
   uint32Value?: number | undefined;
-  uint64Value?: number | undefined;
+  uint64Value?:
+    | number
+    | undefined;
+  /** value_value is used for Spanner only. */
+  valueValue?: any;
 }
 
 export interface Advice {
@@ -531,6 +535,7 @@ function createBaseRowValue(): RowValue {
     stringValue: undefined,
     uint32Value: undefined,
     uint64Value: undefined,
+    valueValue: undefined,
   };
 }
 
@@ -565,6 +570,9 @@ export const RowValue = {
     }
     if (message.uint64Value !== undefined) {
       writer.uint32(80).uint64(message.uint64Value);
+    }
+    if (message.valueValue !== undefined) {
+      Value.encode(Value.wrap(message.valueValue), writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -646,6 +654,13 @@ export const RowValue = {
 
           message.uint64Value = longToNumber(reader.uint64() as Long);
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.valueValue = Value.unwrap(Value.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -667,6 +682,7 @@ export const RowValue = {
       stringValue: isSet(object.stringValue) ? String(object.stringValue) : undefined,
       uint32Value: isSet(object.uint32Value) ? Number(object.uint32Value) : undefined,
       uint64Value: isSet(object.uint64Value) ? Number(object.uint64Value) : undefined,
+      valueValue: isSet(object?.valueValue) ? object.valueValue : undefined,
     };
   },
 
@@ -684,6 +700,7 @@ export const RowValue = {
     message.stringValue !== undefined && (obj.stringValue = message.stringValue);
     message.uint32Value !== undefined && (obj.uint32Value = Math.round(message.uint32Value));
     message.uint64Value !== undefined && (obj.uint64Value = Math.round(message.uint64Value));
+    message.valueValue !== undefined && (obj.valueValue = message.valueValue);
     return obj;
   },
 
@@ -703,6 +720,7 @@ export const RowValue = {
     message.stringValue = object.stringValue ?? undefined;
     message.uint32Value = object.uint32Value ?? undefined;
     message.uint64Value = object.uint64Value ?? undefined;
+    message.valueValue = object.valueValue ?? undefined;
     return message;
   },
 };
