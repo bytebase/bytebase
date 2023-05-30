@@ -50,8 +50,9 @@ const (
 
 	// issueNameTemplate should be consistent with UI issue names generated from the frontend except for the timestamp.
 	// Because we cannot get the correct timezone of the client here.
-	// Example: "[db-5] Alter schema".
-	issueNameTemplate = "[%s] %s"
+	// Example: "[db-5] Alter schema: add an email column".
+	issueNameTemplate    = "[%s] %s: %s"
+	sdlIssueNameTemplate = "[%s] %s"
 )
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
@@ -1149,7 +1150,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 				activityCreateList = append(activityCreateList, activityCreateListForFile...)
 				if len(migrationDetailListForFile) != 0 {
 					databaseName := fileInfo.migrationInfo.Database
-					issueName := fmt.Sprintf(issueNameTemplate, databaseName, "Alter schema")
+					issueName := fmt.Sprintf(sdlIssueNameTemplate, databaseName, "Alter schema")
 					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repo.BaseDirectory+"/"))
 					if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repo.ProjectID, migrationDetailListForFile); err != nil {
 						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
@@ -1189,7 +1190,8 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	}
 	// The files are grouped by database names before calling this function, so they have the same database name here.
 	databaseName := fileInfoList[0].migrationInfo.Database
-	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType)
+	description := strings.ReplaceAll(fileInfoList[0].migrationInfo.Description, "_", " ")
+	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType, description)
 	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
 	if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repo.ProjectID, migrationDetailList); err != nil {
 		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
