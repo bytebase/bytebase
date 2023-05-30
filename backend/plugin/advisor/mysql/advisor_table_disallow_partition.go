@@ -20,6 +20,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
 }
 
 // TableDisallowPartitionAdvisor is the advisor checking for disallow table partition.

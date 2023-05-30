@@ -23,6 +23,8 @@ const (
 	MariaDB Type = "MARIADB"
 	// Oracle is the database type for Oracle.
 	Oracle Type = "ORACLE"
+	// OceanBase is the database type for OceanBase.
+	OceanBase Type = "OCEANBASE"
 )
 
 // ConvertToAdvisorDBType will convert db type into advisor db type.
@@ -36,6 +38,8 @@ func ConvertToAdvisorDBType(dbType string) (Type, error) {
 		return TiDB, nil
 	case string(Oracle):
 		return Oracle, nil
+	case string(OceanBase):
+		return OceanBase, nil
 	}
 
 	return "", errors.Errorf("unsupported db type %s for advisor", dbType)
