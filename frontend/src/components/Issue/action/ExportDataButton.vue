@@ -47,13 +47,12 @@ import {
   PresetRoleType,
   UNKNOWN_ID,
 } from "@/types";
-import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { pushNotification, useDatabaseStore, useSQLStore } from "@/store";
-import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { head } from "lodash-es";
 import { unparse } from "papaparse";
 import dayjs from "dayjs";
 import { BBSpin } from "@/bbkit";
+import { convertFromCEL } from "@/utils/issue/cel";
 
 interface LocalState {
   databaseId: DatabaseId;
@@ -67,7 +66,6 @@ interface LocalState {
 const { changeIssueStatus } = useExtraIssueLogic();
 const { issue } = useIssueLogic();
 const databaseStore = useDatabaseStore();
-const instanceV1Store = useInstanceV1Store();
 const state = reactive<LocalState>({
   databaseId: UNKNOWN_ID,
   statement: "",
@@ -97,33 +95,26 @@ onMounted(async () => {
   if (payload.role !== PresetRoleType.EXPORTER) {
     throw "Only support EXPORTER role";
   }
-  const expressionList = payload.condition.expression.split(" && ");
-  for (const expression of expressionList) {
-    const fields = expression.split(" ");
-    if (fields[0] === "request.statement") {
-      state.statement = atob(JSON.parse(fields[2]));
-    } else if (fields[0] === "resource.database") {
-      const databaseIdList = [];
-      for (const url of JSON.parse(fields[2])) {
-        const value = url.split("/");
-        const instanceName = value[1] || "";
-        const databaseName = value[3] || "";
-        const instance = await instanceV1Store.getOrFetchInstanceByName(
-          instanceNamePrefix + instanceName
-        );
-        const databaseList =
-          await databaseStore.getOrFetchDatabaseListByInstanceId(instance.uid);
-        const database = databaseList.find((db) => db.name === databaseName);
-        if (database) {
-          databaseIdList.push(database.id);
-        }
-      }
-      state.databaseId = head(databaseIdList) || UNKNOWN_ID;
-    } else if (fields[0] === "request.row_limit") {
-      state.maxRowCount = Number(fields[2]);
-    } else if (fields[0] === "request.export_format") {
-      state.exportFormat = JSON.parse(fields[2]) as "CSV" | "JSON";
+  const conditionExpression = await convertFromCEL(
+    payload.condition.expression
+  );
+  if (
+    conditionExpression.databaseResources !== undefined &&
+    conditionExpression.databaseResources.length > 0
+  ) {
+    const resource = head(conditionExpression.databaseResources);
+    if (resource) {
+      state.databaseId = String(resource.databaseId);
     }
+  }
+  if (conditionExpression.statement !== undefined) {
+    state.statement = conditionExpression.statement;
+  }
+  if (conditionExpression.rowLimit !== undefined) {
+    state.maxRowCount = conditionExpression.rowLimit;
+  }
+  if (conditionExpression.exportFormat !== undefined) {
+    state.exportFormat = conditionExpression.exportFormat as "CSV" | "JSON";
   }
 });
 
