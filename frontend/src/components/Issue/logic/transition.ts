@@ -166,8 +166,6 @@ export const calcApplicableIssueStatusTransitionList = (
   const transitionTypeList: IssueStatusTransitionType[] = [];
   const currentUserV1 = useCurrentUserV1();
 
-  console.log(issue.type, issue.name);
-
   if (allowUserToApplyIssueStatusTransition(issueEntity, currentUserV1.value)) {
     const actions = APPLICABLE_ISSUE_ACTION_LIST.get(issueEntity.status);
     if (actions) {
@@ -270,6 +268,5 @@ function isIssueReviewDone(issue: Issue) {
     computed(() => issue),
     review
   );
-  console.log("is issue review done", issue.id, issue.name, context.done.value);
   return context.done.value;
 }

@@ -141,7 +141,6 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
   hasFeature,
-  useDatabaseStore,
   useDatabaseV1Store,
   useInstanceStore,
   useProjectV1Store,
@@ -183,7 +182,6 @@ const router = useRouter();
 const dialog = useDialog();
 const projectStore = useProjectV1Store();
 const legacyInstanceStore = useInstanceStore();
-const legacyDatabaseStore = useDatabaseStore();
 const databaseStore = useDatabaseV1Store();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
@@ -408,13 +406,13 @@ watch(
         state.sourceSchema.migrationHistory = head(migrationHistoryList);
       } else {
         // If database has no migration history, we will use its latest schema.
-        const schema = await legacyDatabaseStore.fetchDatabaseSchemaById(
-          Number(databaseId)
+        const schema = await databaseStore.fetchDatabaseSchema(
+          `${database.name}/schema`
         );
         state.sourceSchema.migrationHistory = {
           id: UNKNOWN_ID,
           updatedTs: Date.now() / 1000,
-          schema: schema,
+          schema: schema.schema,
           version: "Latest version",
           description: "the latest schema of database",
         } as any as MigrationHistory;

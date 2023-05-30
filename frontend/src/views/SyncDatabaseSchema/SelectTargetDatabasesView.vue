@@ -212,7 +212,6 @@ import {
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
-  useDatabaseStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1ByUID,
@@ -251,7 +250,6 @@ const props = defineProps({
 
 const { t } = useI18n();
 const environmentV1Store = useEnvironmentV1Store();
-const legacyDatabaseStore = useDatabaseStore();
 const databaseStore = useDatabaseV1Store();
 const diffViewerRef = ref<HTMLDivElement>();
 const state = reactive<LocalState>({
@@ -394,15 +392,18 @@ watch(
       if (databaseSchemaCache[id]) {
         continue;
       }
-      const schema = await legacyDatabaseStore.fetchDatabaseSchemaById(id);
-      databaseSchemaCache[id] = schema;
+      const db = databaseStore.getDatabaseByUID(id);
+      const schema = await databaseStore.fetchDatabaseSchema(
+        `${db.name}/schema`
+      );
+      databaseSchemaCache[id] = schema.schema;
       if (databaseDiffCache[id]) {
         continue;
       } else {
         const schemaDiff = await getSchemaDiff(
           sourceDatabase.value.instanceEntity.engine,
           /* the current schema of the database to be updated */
-          schema,
+          schema.schema,
           /* the schema to be updated to */
           sourceDatabaseSchema.value
         );
