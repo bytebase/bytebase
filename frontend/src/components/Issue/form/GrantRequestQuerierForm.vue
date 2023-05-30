@@ -149,12 +149,8 @@ import {
   PresetRoleType,
   UNKNOWN_ID,
 } from "@/types";
-import { memberListInProjectV1 } from "@/utils";
-import {
-  convertUserToPrincipal,
-  useDatabaseStore,
-  useProjectV1Store,
-} from "@/store";
+import { extractUserUID, memberListInProjectV1 } from "@/utils";
+import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import { convertFromCEL } from "@/utils/issue/cel";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import RequiredStar from "@/components/RequiredStar.vue";
@@ -175,7 +171,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const { create, issue } = useIssueLogic();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   showSelectDatabasePanel: false,
   projectId: undefined,
@@ -242,13 +238,15 @@ const handleProjectSelect = async (projectId: string) => {
   );
   const projectOwner = head(ownerList);
   if (projectOwner) {
-    const ownerPrincipal = convertUserToPrincipal(projectOwner.user);
-    (issue.value as IssueCreate).assigneeId = ownerPrincipal.id;
+    const userUID = extractUserUID(projectOwner.user.name);
+    (issue.value as IssueCreate).assigneeId = Number(userUID);
   }
   state.selectedDatabaseResourceList =
     state.selectedDatabaseResourceList.filter((resource) => {
-      const database = databaseStore.getDatabaseById(resource.databaseId);
-      return String(database.project.id) === projectId;
+      const database = databaseStore.getDatabaseByUID(
+        String(resource.databaseId)
+      );
+      return database.projectEntity.uid === projectId;
     });
 };
 

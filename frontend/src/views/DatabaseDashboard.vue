@@ -152,6 +152,7 @@ const prepareDatabaseList = async () => {
     });
     state.databaseV1List = sortDatabaseV1List(databaseV1List);
 
+    // For legacy support
     await databaseStore.fetchDatabaseList();
     const databaseList = databaseStore.getDatabaseListByUser(
       currentUserV1.value

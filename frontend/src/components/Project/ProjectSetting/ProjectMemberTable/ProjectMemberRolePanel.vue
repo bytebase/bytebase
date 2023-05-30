@@ -91,7 +91,7 @@ import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
 import { PresetRoleType } from "@/types";
 import {
   useCurrentUserV1,
-  useDatabaseStore,
+  useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
@@ -115,7 +115,7 @@ import {
 } from "@/utils/issue/cel";
 import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
 
-interface FormattedCondition {
+export interface FormattedCondition {
   databaseResource?: DatabaseResource;
   expiration?: Date;
   description?: string;
@@ -137,7 +137,7 @@ const { t } = useI18n();
 const dialog = useDialog();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
@@ -280,8 +280,8 @@ const handleDeleteCondition = async (condition: FormattedCondition) => {
     return;
   }
 
-  const database = await databaseStore.getOrFetchDatabaseById(
-    condition.databaseResource.databaseId
+  const database = await databaseStore.getOrFetchDatabaseByUID(
+    String(condition.databaseResource.databaseId)
   );
   const title = t("project.settings.members.revoke-role-from-user", {
     role: `${displayRoleTitle(condition.rawRole.role)} - ${database.name}`,
@@ -348,8 +348,10 @@ const extractDatabaseName = (databaseResource?: DatabaseResource) => {
   if (!databaseResource) {
     return "*";
   }
-  const database = databaseStore.getDatabaseById(databaseResource.databaseId);
-  return database.name;
+  const database = databaseStore.getDatabaseByUID(
+    String(databaseResource.databaseId)
+  );
+  return database.databaseName;
 };
 
 const extractSchemaName = (databaseResource?: DatabaseResource) => {
