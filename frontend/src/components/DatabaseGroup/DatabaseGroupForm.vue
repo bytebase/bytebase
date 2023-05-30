@@ -14,6 +14,7 @@
       <div>
         <p class="text-lg mb-2">Environment</p>
         <EnvironmentSelect
+          :disabled="!isCreating"
           :selected-id="state.environmentId"
           @select-environment-id="
             (environmentId) => {
@@ -36,6 +37,7 @@
       <div v-if="resourceType === 'SCHEMA_GROUP'">
         <p class="text-lg mb-2">Database group</p>
         <DatabaseGroupSelect
+          :disabled="!isCreating"
           :project-id="project.name"
           :selected-id="state.selectedDatabaseGroupId"
           @select-database-group-id="
@@ -92,6 +94,12 @@ import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import MatchedTableView from "./MatchedTableView.vue";
 import ResourceIdInput from "../v2/Form/ResourceIdInput.vue";
 import DatabaseGroupSelect from "./DatabaseGroupSelect.vue";
+import {
+  databaseGroupNamePrefix,
+  getProjectNameAndDatabaseGroupName,
+  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
+} from "@/store/modules/v1/common";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -135,14 +143,21 @@ onMounted(async () => {
   if (props.resourceType === "DATABASE_GROUP") {
     expression =
       (databaseGroup as DatabaseGroup).databaseExpr?.expression ?? "";
+    const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
+      databaseGroup.name
+    );
+    state.resourceId = databaseGroupName;
   } else {
     expression = (databaseGroup as SchemaGroup).tableExpr?.expression ?? "";
+    const [projectName, databaseGroupName, schemaGroupName] =
+      getProjectNameAndDatabaseGroupNameAndSchemaGroupName(databaseGroup.name);
+    state.resourceId = schemaGroupName;
+    state.selectedDatabaseGroupId = `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
   }
   const convertResult = await convertDatabaseGroupExprFromCEL(expression);
   const environment = environmentStore.getEnvironmentByName(
     convertResult.environmentId
   );
-  state.resourceId = databaseGroup.name.split("/").pop() || "";
   state.environmentId = environment?.uid;
   state.expr = convertResult.conditionGroupExpr;
 });

@@ -17,6 +17,8 @@ export const idpNamePrefix = "idps/";
 export const policyNamePrefix = "policies/";
 export const settingNamePrefix = "settings/";
 export const sheetNamePrefix = "sheets/";
+export const databaseGroupNamePrefix = "databaseGroups/";
+export const schemaGroupNamePrefix = "schemaGroups/";
 
 export const getNameParentTokens = (
   name: string,
@@ -79,6 +81,35 @@ export const getUserEmailFromIdentifier = (identifier: string): string => {
 export const getIdentityProviderResourceId = (name: string): ResourceId => {
   const tokens = getNameParentTokens(name, [idpNamePrefix]);
   return tokens[0];
+};
+
+export const getProjectNameAndDatabaseGroupName = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    databaseGroupNamePrefix,
+  ]);
+
+  if (tokens.length !== 2) {
+    return ["", ""];
+  }
+
+  return tokens;
+};
+
+export const getProjectNameAndDatabaseGroupNameAndSchemaGroupName = (
+  name: string
+): string[] => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    databaseGroupNamePrefix,
+    schemaGroupNamePrefix,
+  ]);
+
+  if (tokens.length !== 3) {
+    return ["", "", ""];
+  }
+
+  return tokens;
 };
 
 export const getEnvironmentPathByLegacyEnvironment = (
