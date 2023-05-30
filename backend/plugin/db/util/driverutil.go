@@ -809,7 +809,6 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			}
 			rowData = append(rowData, nil)
 		}
-		fmt.Sprintf("%v")
 
 		data = append(data, rowData)
 	}
