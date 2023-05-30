@@ -644,6 +644,7 @@
     "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)"
   },
   "issue": {
+    "my-issues": "Mis Incidencias",
     "waiting-approval": "Esperando Aprobación",
     "waiting-rollout": "Esperando Implementación",
     "opened-by-at": "abierta por {creator} a las {time}",
@@ -690,6 +691,7 @@
       "progress": "Progreso",
       "updated": "Actualizado",
       "approver": "Aprobador",
+      "creator": "Creador",
       "assignee": "Asignado"
     },
     "stage-select": {
