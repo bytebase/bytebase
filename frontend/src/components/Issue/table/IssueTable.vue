@@ -112,6 +112,14 @@
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell w-36">
         <div class="flex flex-row items-center">
+          <BBAvatar :size="'SMALL'" :username="issue.creator.name" />
+          <span class="ml-2">
+            {{ issue.creator.name }}
+          </span>
+        </div>
+      </BBTableCell>
+      <BBTableCell class="hidden sm:table-cell w-36">
+        <div class="flex flex-row items-center">
           <BBAvatar
             :size="'SMALL'"
             :username="
@@ -189,6 +197,9 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "issue.table.approver",
       },
       {
+        title: "issue.table.creator",
+      },
+      {
         title: "issue.table.assignee",
       },
     ],
@@ -213,6 +224,9 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
       },
       {
         title: "issue.table.approver",
+      },
+      {
+        title: "issue.table.creator",
       },
       {
         title: "issue.table.assignee",
