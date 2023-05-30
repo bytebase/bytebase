@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	bbparser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var (
@@ -280,4 +281,64 @@ func splitAndTransformDelimiter(statement string) ([]string, error) {
 		trunks = append(trunks, out.String())
 	}
 	return trunks, nil
+}
+
+// QueryConn2 queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+
+	var results []*v1pb.QueryResult
+	for _, singleSQL := range singleSQLs {
+		result, err := driver.querySingleSQL(ctx, conn, singleSQL, queryContext)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+		} else {
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (string, error) {
+	switch driver.dbType {
+	case db.MySQL, db.MariaDB:
+		// MySQL 5.7 doesn't support WITH clause.
+		return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit), nil
+	case db.TiDB:
+		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit), nil
+	default:
+		return "", errors.Errorf("unsupported database type %s", driver.dbType)
+	}
+}
+
+func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bbparser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	if singleSQL.Empty {
+		return nil, nil
+	}
+	statement := singleSQL.Text
+
+	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
+		var err error
+		statement, err = driver.getStatementWithResultLimit(statement, queryContext.Limit)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if driver.dbType == db.TiDB && queryContext.ReadOnly {
+		// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
+		// https://github.com/pingcap/tidb/issues/34626
+		queryContext.ReadOnly = false
+	}
+
+	return util.Query2(ctx, driver.dbType, conn, statement, queryContext)
 }

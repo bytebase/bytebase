@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -493,4 +494,9 @@ func getDatabaseFromDSN(dsn string) (string, error) {
 		}
 	}
 	return matches["DATABASEGROUP"], nil
+}
+
+// QueryConn2 queries a SQL statement in a given connection.
+func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	return nil, errors.New("not implemented")
 }

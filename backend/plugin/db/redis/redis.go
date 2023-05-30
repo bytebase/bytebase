@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var (
@@ -227,4 +228,9 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, schemaOnly bool) (string, er
 // Restore the database from src, which is a full backup.
 func (*Driver) Restore(context.Context, io.Reader) error {
 	return errors.New("redis: not supported")
+}
+
+// QueryConn2 queries a SQL statement in a given connection.
+func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	return nil, errors.New("not implemented")
 }
