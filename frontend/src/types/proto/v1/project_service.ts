@@ -246,6 +246,96 @@ export function operatorTypeToJSON(object: OperatorType): string {
   }
 }
 
+export enum DatabaseGroupView {
+  /**
+   * DATABASE_GROUP_VIEW_UNSPECIFIED - The default / unset value.
+   * The API will default to the BASIC view.
+   */
+  DATABASE_GROUP_VIEW_UNSPECIFIED = 0,
+  /** DATABASE_GROUP_VIEW_BASIC - Include basic information about the database group, but exclude the list of matched databases and unmatched databases. */
+  DATABASE_GROUP_VIEW_BASIC = 1,
+  /** DATABASE_GROUP_VIEW_FULL - Include everything. */
+  DATABASE_GROUP_VIEW_FULL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function databaseGroupViewFromJSON(object: any): DatabaseGroupView {
+  switch (object) {
+    case 0:
+    case "DATABASE_GROUP_VIEW_UNSPECIFIED":
+      return DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED;
+    case 1:
+    case "DATABASE_GROUP_VIEW_BASIC":
+      return DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC;
+    case 2:
+    case "DATABASE_GROUP_VIEW_FULL":
+      return DatabaseGroupView.DATABASE_GROUP_VIEW_FULL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DatabaseGroupView.UNRECOGNIZED;
+  }
+}
+
+export function databaseGroupViewToJSON(object: DatabaseGroupView): string {
+  switch (object) {
+    case DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED:
+      return "DATABASE_GROUP_VIEW_UNSPECIFIED";
+    case DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC:
+      return "DATABASE_GROUP_VIEW_BASIC";
+    case DatabaseGroupView.DATABASE_GROUP_VIEW_FULL:
+      return "DATABASE_GROUP_VIEW_FULL";
+    case DatabaseGroupView.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum SchemaGroupView {
+  /**
+   * SCHEMA_GROUP_VIEW_UNSPECIFIED - The default / unset value.
+   * The API will default to the BASIC view.
+   */
+  SCHEMA_GROUP_VIEW_UNSPECIFIED = 0,
+  /** SCHEMA_GROUP_VIEW_BASIC - Include basic information about the schema group, but exclude the list of matched tables and unmatched tables. */
+  SCHEMA_GROUP_VIEW_BASIC = 1,
+  /** SCHEMA_GROUP_VIEW_FULL - Include everything. */
+  SCHEMA_GROUP_VIEW_FULL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function schemaGroupViewFromJSON(object: any): SchemaGroupView {
+  switch (object) {
+    case 0:
+    case "SCHEMA_GROUP_VIEW_UNSPECIFIED":
+      return SchemaGroupView.SCHEMA_GROUP_VIEW_UNSPECIFIED;
+    case 1:
+    case "SCHEMA_GROUP_VIEW_BASIC":
+      return SchemaGroupView.SCHEMA_GROUP_VIEW_BASIC;
+    case 2:
+    case "SCHEMA_GROUP_VIEW_FULL":
+      return SchemaGroupView.SCHEMA_GROUP_VIEW_FULL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SchemaGroupView.UNRECOGNIZED;
+  }
+}
+
+export function schemaGroupViewToJSON(object: SchemaGroupView): string {
+  switch (object) {
+    case SchemaGroupView.SCHEMA_GROUP_VIEW_UNSPECIFIED:
+      return "SCHEMA_GROUP_VIEW_UNSPECIFIED";
+    case SchemaGroupView.SCHEMA_GROUP_VIEW_BASIC:
+      return "SCHEMA_GROUP_VIEW_BASIC";
+    case SchemaGroupView.SCHEMA_GROUP_VIEW_FULL:
+      return "SCHEMA_GROUP_VIEW_FULL";
+    case SchemaGroupView.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface GetProjectRequest {
   /**
    * The name of the project to retrieve.
@@ -866,6 +956,8 @@ export interface GetDatabaseGroupRequest {
    * Format: projects/{project}/databaseGroups/{databaseGroup}
    */
   name: string;
+  /** The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. */
+  view: DatabaseGroupView;
 }
 
 export interface CreateDatabaseGroupRequest {
@@ -919,6 +1011,18 @@ export interface DatabaseGroup {
   databasePlaceholder: string;
   /** The condition that is associated with this database group. */
   databaseExpr?: Expr;
+  /** The list of databases that match the database group condition. */
+  matchedDatabases: DatabaseGroup_Database[];
+  /** The list of databases that match the database group condition. */
+  unmatchedDatabases: DatabaseGroup_Database[];
+}
+
+export interface DatabaseGroup_Database {
+  /**
+   * The resource name of the database.
+   * Format: instances/{instance}/databases/{database}
+   */
+  name: string;
 }
 
 export interface CreateSchemaGroupRequest {
@@ -998,6 +1102,8 @@ export interface GetSchemaGroupRequest {
    * Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup}
    */
   name: string;
+  /** The view to return. Defaults to SCHEMA_GROUP_VIEW_BASIC. */
+  view: SchemaGroupView;
 }
 
 export interface SchemaGroup {
@@ -1016,6 +1122,25 @@ export interface SchemaGroup {
    * "tbl" in the SQL script will be rendered to the actual table name.
    */
   tablePlaceholder: string;
+  /** The list of databases that match the database group condition. */
+  matchedTables: SchemaGroup_Table[];
+  /** The list of databases that match the database group condition. */
+  unmatchedTables: SchemaGroup_Table[];
+}
+
+/**
+ * In the future, we can introduce schema_expr if users use schema (Postgres schema) for groups.
+ * Its keyword will be {{SCHEMA}}.
+ * All the expressions will be used to filter the schema objects in DatabaseSchema.
+ */
+export interface SchemaGroup_Table {
+  /**
+   * The resource name of the database.
+   * Format: instances/{instance}/databases/{database}
+   */
+  database: string;
+  schema: string;
+  table: string;
 }
 
 function createBaseGetProjectRequest(): GetProjectRequest {
@@ -3725,13 +3850,16 @@ export const ListDatabaseGroupsResponse = {
 };
 
 function createBaseGetDatabaseGroupRequest(): GetDatabaseGroupRequest {
-  return { name: "" };
+  return { name: "", view: 0 };
 }
 
 export const GetDatabaseGroupRequest = {
   encode(message: GetDatabaseGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.view !== 0) {
+      writer.uint32(16).int32(message.view);
     }
     return writer;
   },
@@ -3750,6 +3878,13 @@ export const GetDatabaseGroupRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.view = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3760,12 +3895,16 @@ export const GetDatabaseGroupRequest = {
   },
 
   fromJSON(object: any): GetDatabaseGroupRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      view: isSet(object.view) ? databaseGroupViewFromJSON(object.view) : 0,
+    };
   },
 
   toJSON(message: GetDatabaseGroupRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.view !== undefined && (obj.view = databaseGroupViewToJSON(message.view));
     return obj;
   },
 
@@ -3776,6 +3915,7 @@ export const GetDatabaseGroupRequest = {
   fromPartial(object: DeepPartial<GetDatabaseGroupRequest>): GetDatabaseGroupRequest {
     const message = createBaseGetDatabaseGroupRequest();
     message.name = object.name ?? "";
+    message.view = object.view ?? 0;
     return message;
   },
 };
@@ -3998,7 +4138,7 @@ export const DeleteDatabaseGroupRequest = {
 };
 
 function createBaseDatabaseGroup(): DatabaseGroup {
-  return { name: "", databasePlaceholder: "", databaseExpr: undefined };
+  return { name: "", databasePlaceholder: "", databaseExpr: undefined, matchedDatabases: [], unmatchedDatabases: [] };
 }
 
 export const DatabaseGroup = {
@@ -4011,6 +4151,12 @@ export const DatabaseGroup = {
     }
     if (message.databaseExpr !== undefined) {
       Expr.encode(message.databaseExpr, writer.uint32(26).fork()).ldelim();
+    }
+    for (const v of message.matchedDatabases) {
+      DatabaseGroup_Database.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    for (const v of message.unmatchedDatabases) {
+      DatabaseGroup_Database.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -4043,6 +4189,20 @@ export const DatabaseGroup = {
 
           message.databaseExpr = Expr.decode(reader, reader.uint32());
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.matchedDatabases.push(DatabaseGroup_Database.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.unmatchedDatabases.push(DatabaseGroup_Database.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4057,6 +4217,12 @@ export const DatabaseGroup = {
       name: isSet(object.name) ? String(object.name) : "",
       databasePlaceholder: isSet(object.databasePlaceholder) ? String(object.databasePlaceholder) : "",
       databaseExpr: isSet(object.databaseExpr) ? Expr.fromJSON(object.databaseExpr) : undefined,
+      matchedDatabases: Array.isArray(object?.matchedDatabases)
+        ? object.matchedDatabases.map((e: any) => DatabaseGroup_Database.fromJSON(e))
+        : [],
+      unmatchedDatabases: Array.isArray(object?.unmatchedDatabases)
+        ? object.unmatchedDatabases.map((e: any) => DatabaseGroup_Database.fromJSON(e))
+        : [],
     };
   },
 
@@ -4066,6 +4232,16 @@ export const DatabaseGroup = {
     message.databasePlaceholder !== undefined && (obj.databasePlaceholder = message.databasePlaceholder);
     message.databaseExpr !== undefined &&
       (obj.databaseExpr = message.databaseExpr ? Expr.toJSON(message.databaseExpr) : undefined);
+    if (message.matchedDatabases) {
+      obj.matchedDatabases = message.matchedDatabases.map((e) => e ? DatabaseGroup_Database.toJSON(e) : undefined);
+    } else {
+      obj.matchedDatabases = [];
+    }
+    if (message.unmatchedDatabases) {
+      obj.unmatchedDatabases = message.unmatchedDatabases.map((e) => e ? DatabaseGroup_Database.toJSON(e) : undefined);
+    } else {
+      obj.unmatchedDatabases = [];
+    }
     return obj;
   },
 
@@ -4080,6 +4256,64 @@ export const DatabaseGroup = {
     message.databaseExpr = (object.databaseExpr !== undefined && object.databaseExpr !== null)
       ? Expr.fromPartial(object.databaseExpr)
       : undefined;
+    message.matchedDatabases = object.matchedDatabases?.map((e) => DatabaseGroup_Database.fromPartial(e)) || [];
+    message.unmatchedDatabases = object.unmatchedDatabases?.map((e) => DatabaseGroup_Database.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDatabaseGroup_Database(): DatabaseGroup_Database {
+  return { name: "" };
+}
+
+export const DatabaseGroup_Database = {
+  encode(message: DatabaseGroup_Database, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseGroup_Database {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseGroup_Database();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseGroup_Database {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: DatabaseGroup_Database): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseGroup_Database>): DatabaseGroup_Database {
+    return DatabaseGroup_Database.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DatabaseGroup_Database>): DatabaseGroup_Database {
+    const message = createBaseDatabaseGroup_Database();
+    message.name = object.name ?? "";
     return message;
   },
 };
@@ -4463,13 +4697,16 @@ export const ListSchemaGroupsResponse = {
 };
 
 function createBaseGetSchemaGroupRequest(): GetSchemaGroupRequest {
-  return { name: "" };
+  return { name: "", view: 0 };
 }
 
 export const GetSchemaGroupRequest = {
   encode(message: GetSchemaGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.view !== 0) {
+      writer.uint32(16).int32(message.view);
     }
     return writer;
   },
@@ -4488,6 +4725,13 @@ export const GetSchemaGroupRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.view = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4498,12 +4742,16 @@ export const GetSchemaGroupRequest = {
   },
 
   fromJSON(object: any): GetSchemaGroupRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      view: isSet(object.view) ? schemaGroupViewFromJSON(object.view) : 0,
+    };
   },
 
   toJSON(message: GetSchemaGroupRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.view !== undefined && (obj.view = schemaGroupViewToJSON(message.view));
     return obj;
   },
 
@@ -4514,12 +4762,13 @@ export const GetSchemaGroupRequest = {
   fromPartial(object: DeepPartial<GetSchemaGroupRequest>): GetSchemaGroupRequest {
     const message = createBaseGetSchemaGroupRequest();
     message.name = object.name ?? "";
+    message.view = object.view ?? 0;
     return message;
   },
 };
 
 function createBaseSchemaGroup(): SchemaGroup {
-  return { name: "", tableExpr: undefined, tablePlaceholder: "" };
+  return { name: "", tableExpr: undefined, tablePlaceholder: "", matchedTables: [], unmatchedTables: [] };
 }
 
 export const SchemaGroup = {
@@ -4532,6 +4781,12 @@ export const SchemaGroup = {
     }
     if (message.tablePlaceholder !== "") {
       writer.uint32(26).string(message.tablePlaceholder);
+    }
+    for (const v of message.matchedTables) {
+      SchemaGroup_Table.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    for (const v of message.unmatchedTables) {
+      SchemaGroup_Table.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -4564,6 +4819,20 @@ export const SchemaGroup = {
 
           message.tablePlaceholder = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.matchedTables.push(SchemaGroup_Table.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.unmatchedTables.push(SchemaGroup_Table.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4578,6 +4847,12 @@ export const SchemaGroup = {
       name: isSet(object.name) ? String(object.name) : "",
       tableExpr: isSet(object.tableExpr) ? Expr.fromJSON(object.tableExpr) : undefined,
       tablePlaceholder: isSet(object.tablePlaceholder) ? String(object.tablePlaceholder) : "",
+      matchedTables: Array.isArray(object?.matchedTables)
+        ? object.matchedTables.map((e: any) => SchemaGroup_Table.fromJSON(e))
+        : [],
+      unmatchedTables: Array.isArray(object?.unmatchedTables)
+        ? object.unmatchedTables.map((e: any) => SchemaGroup_Table.fromJSON(e))
+        : [],
     };
   },
 
@@ -4586,6 +4861,16 @@ export const SchemaGroup = {
     message.name !== undefined && (obj.name = message.name);
     message.tableExpr !== undefined && (obj.tableExpr = message.tableExpr ? Expr.toJSON(message.tableExpr) : undefined);
     message.tablePlaceholder !== undefined && (obj.tablePlaceholder = message.tablePlaceholder);
+    if (message.matchedTables) {
+      obj.matchedTables = message.matchedTables.map((e) => e ? SchemaGroup_Table.toJSON(e) : undefined);
+    } else {
+      obj.matchedTables = [];
+    }
+    if (message.unmatchedTables) {
+      obj.unmatchedTables = message.unmatchedTables.map((e) => e ? SchemaGroup_Table.toJSON(e) : undefined);
+    } else {
+      obj.unmatchedTables = [];
+    }
     return obj;
   },
 
@@ -4600,6 +4885,92 @@ export const SchemaGroup = {
       ? Expr.fromPartial(object.tableExpr)
       : undefined;
     message.tablePlaceholder = object.tablePlaceholder ?? "";
+    message.matchedTables = object.matchedTables?.map((e) => SchemaGroup_Table.fromPartial(e)) || [];
+    message.unmatchedTables = object.unmatchedTables?.map((e) => SchemaGroup_Table.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSchemaGroup_Table(): SchemaGroup_Table {
+  return { database: "", schema: "", table: "" };
+}
+
+export const SchemaGroup_Table = {
+  encode(message: SchemaGroup_Table, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.database !== "") {
+      writer.uint32(10).string(message.database);
+    }
+    if (message.schema !== "") {
+      writer.uint32(18).string(message.schema);
+    }
+    if (message.table !== "") {
+      writer.uint32(26).string(message.table);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaGroup_Table {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaGroup_Table();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.table = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaGroup_Table {
+    return {
+      database: isSet(object.database) ? String(object.database) : "",
+      schema: isSet(object.schema) ? String(object.schema) : "",
+      table: isSet(object.table) ? String(object.table) : "",
+    };
+  },
+
+  toJSON(message: SchemaGroup_Table): unknown {
+    const obj: any = {};
+    message.database !== undefined && (obj.database = message.database);
+    message.schema !== undefined && (obj.schema = message.schema);
+    message.table !== undefined && (obj.table = message.table);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaGroup_Table>): SchemaGroup_Table {
+    return SchemaGroup_Table.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SchemaGroup_Table>): SchemaGroup_Table {
+    const message = createBaseSchemaGroup_Table();
+    message.database = object.database ?? "";
+    message.schema = object.schema ?? "";
+    message.table = object.table ?? "";
     return message;
   },
 };
