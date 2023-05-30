@@ -81,7 +81,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
           workspaceProfileSettingValue: profileSetting,
         },
       });
-      // Fetch the latest server info.
+      // Fetch the latest server info to refresh the disallow signup flag.
       await useActuatorV1Store().fetchServerInfo();
     },
   },
