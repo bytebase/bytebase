@@ -116,7 +116,4 @@ p, OWNER, /sheet/starred, GET
 p, OWNER, /sheet/{sheetID}, GET
 p, OWNER, /sheet/{sheetID}, PATCH
 p, OWNER, /sheet/{sheetID}, DELETE
-p, OWNER, /debug, GET
-p, OWNER, /debug, PATCH
-p, OWNER, /debug/log, GET
 p, OWNER, /anomaly, GET

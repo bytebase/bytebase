@@ -26,7 +26,6 @@ import { Project } from "./project";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
 import { Label } from "./label";
-import type { DebugLog } from "@/types/debug";
 import type { AuditLog } from "@/types/auditLog";
 import { DatabaseMetadata } from "./proto/store/database";
 
@@ -146,9 +145,6 @@ export interface SQLEditorState {
 
 export interface DebugState {
   isDebug: boolean;
-}
-export interface DebugLogState {
-  debugLogList: DebugLog[];
 }
 
 export interface OnboardingGuideState {

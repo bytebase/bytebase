@@ -9,7 +9,6 @@ import { useRoute, useRouter } from "vue-router";
 import {
   useSQLEditorStore,
   useTabStore,
-  useDebugStore,
   pushNotification,
   useConnectionTreeStore,
   useProjectV1Store,
@@ -422,7 +421,6 @@ onMounted(async () => {
 
   await setConnectionFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();
-  await useDebugStore().fetchDebug();
   await useSettingV1Store().fetchSettingList();
 
   syncURLWithConnection();

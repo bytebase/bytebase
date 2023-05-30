@@ -5,8 +5,12 @@
 
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
+    - [DebugLog](#bytebase-v1-DebugLog)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
+    - [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest)
+    - [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse)
+    - [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
@@ -510,6 +514,26 @@ Actuator concept is similar to the Spring Boot Actuator.
 | require_2fa | [bool](#bool) |  | require_2fa is the flag to require 2FA for all users. |
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
 | gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
+| debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
+
+
+
+
+
+
+<a name="bytebase-v1-DebugLog"></a>
+
+### DebugLog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| record_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| request_path | [string](#string) |  |  |
+| role | [string](#string) |  |  |
+| error | [string](#string) |  |  |
+| stack_trace | [string](#string) |  |  |
 
 
 
@@ -535,6 +559,56 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
+
+<a name="bytebase-v1-ListDebugLogRequest"></a>
+
+### ListDebugLogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 50 logs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListDebugLog` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDebugLog` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListDebugLogResponse"></a>
+
+### ListDebugLogResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| logs | [DebugLog](#bytebase-v1-DebugLog) | repeated | The logs from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateActuatorInfoRequest"></a>
+
+### UpdateActuatorInfoRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| actuator | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  | The actuator to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
  
 
  
@@ -550,7 +624,9 @@ Actuator concept is similar to the Spring Boot Actuator.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
+| UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| ListDebugLog | [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest) | [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse) |  |
 
  
 
