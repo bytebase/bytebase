@@ -18,6 +18,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var (
@@ -210,4 +211,9 @@ func replaceCharacterWithPercentEncoding(s string) string {
 		s = strings.ReplaceAll(s, k, v)
 	}
 	return s
+}
+
+// QueryConn2 queries a SQL statement in a given connection.
+func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	return nil, errors.New("not implemented")
 }

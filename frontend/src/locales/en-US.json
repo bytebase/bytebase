@@ -2029,7 +2029,8 @@
       "confirm-to-duplicate-sheet": "Confirm to duplicate this sheet?"
     },
     "linked-issue": "Linked issue",
-    "from-sheet-warning": "The sheet comes from issue {issue}. It is read-only and only part of it is displayed."
+    "from-issue-warning": "The sheet comes from issue {issue} in read-only mode. {oversize}",
+    "content-oversize-warning": "Only display part of the sheet due to oversize."
   },
   "engine": {
     "mysql": "MySQL",
