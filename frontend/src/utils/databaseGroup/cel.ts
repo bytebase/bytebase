@@ -37,6 +37,26 @@ export const stringifyDatabaseGroupExpr = (
   }
 };
 
+export const convertCELStringToExpr = async (cel: string) => {
+  if (cel === "") {
+    return emptySimpleExpr();
+  }
+
+  try {
+    const { expression: celExpr } = await celServiceClient.parse({
+      expression: cel,
+    });
+    if (!celExpr || !celExpr.expr) {
+      return emptySimpleExpr();
+    }
+
+    return wrapAsGroup(resolveCELExpr(celExpr.expr));
+  } catch (error) {
+    console.error(error);
+    return emptySimpleExpr();
+  }
+};
+
 export const convertDatabaseGroupExprFromCEL = async (
   cel: string
 ): Promise<DatabaseGroupExpr> => {

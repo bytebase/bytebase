@@ -50,7 +50,10 @@ export const useDBGroupStore = defineStore("db-group", () => {
 
   const createDatabaseGroup = async (
     projectName: string,
-    databaseGroup: DatabaseGroup,
+    databaseGroup: Pick<
+      DatabaseGroup,
+      "name" | "databasePlaceholder" | "databaseExpr"
+    >,
     databaseGroupId: string
   ) => {
     // Note: use resource id as placeholder right now.
@@ -66,7 +69,12 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return createdDatabaseGroup;
   };
 
-  const updateDatabaseGroup = async (databaseGroup: DatabaseGroup) => {
+  const updateDatabaseGroup = async (
+    databaseGroup: Pick<
+      DatabaseGroup,
+      "name" | "databasePlaceholder" | "databaseExpr"
+    >
+  ) => {
     const rawDatabaseGroup = dbGroupMapById.value.get(databaseGroup.name);
     if (!rawDatabaseGroup) {
       throw new Error("Database group not found");
@@ -85,11 +93,11 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return updatedDatabaseGroup;
   };
 
-  const deleteDatabaseGroup = async (databaseGroup: DatabaseGroup) => {
+  const deleteDatabaseGroup = async (name: string) => {
     await projectServiceClient.deleteDatabaseGroup({
-      name: databaseGroup.name,
+      name: name,
     });
-    dbGroupMapById.value.delete(databaseGroup.name);
+    dbGroupMapById.value.delete(name);
   };
 
   const getOrFetchSchemaGroupById = async (schemaGroupId: string) => {
@@ -127,7 +135,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
 
   const createSchemaGroup = async (
     dbGroupName: string,
-    schemaGroup: SchemaGroup,
+    schemaGroup: Pick<SchemaGroup, "name" | "tablePlaceholder" | "tableExpr">,
     schemaGroupId: string
   ) => {
     // Note: use resource id as placeholder right now.
@@ -141,7 +149,9 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return createdSchemaGroup;
   };
 
-  const updateSchemaGroup = async (schemaGroup: SchemaGroup) => {
+  const updateSchemaGroup = async (
+    schemaGroup: Pick<SchemaGroup, "name" | "tablePlaceholder" | "tableExpr">
+  ) => {
     const rawSchemaGroup = schemaGroupMapById.value.get(schemaGroup.name);
     if (!rawSchemaGroup) {
       throw new Error("Schema group not found");
@@ -158,11 +168,11 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return updatedSchemaGroup;
   };
 
-  const deleteSchemaGroup = async (schemaGroup: SchemaGroup) => {
+  const deleteSchemaGroup = async (name: string) => {
     await projectServiceClient.deleteSchemaGroup({
-      name: schemaGroup.name,
+      name: name,
     });
-    schemaGroupMapById.value.delete(schemaGroup.name);
+    schemaGroupMapById.value.delete(name);
   };
 
   return {
