@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var (
@@ -445,4 +446,9 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 		return []any{field, types, rows}, nil
 	}
 	return util.Query(ctx, db.Postgres, conn, statement, queryContext)
+}
+
+// QueryConn2 queries a SQL statement in a given connection.
+func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	return nil, errors.New("not implemented")
 }

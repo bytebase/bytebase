@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // Type is the type of a database.
@@ -492,6 +493,9 @@ type Driver interface {
 	Execute(ctx context.Context, statement string, createDatabase bool) (int64, error)
 	// Used for execute readonly SELECT statement
 	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]any, error)
+	// Used for execute readonly SELECT statement
+	// TODO(rebelice): remove QueryConn and rename QueryConn2 to QueryConn when legacy code is removed.
+	QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]*v1pb.QueryResult, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.
