@@ -7,7 +7,6 @@ export * from "./bookmark";
 export * from "./command";
 export * from "./database";
 export * from "./dataSource";
-export * from "./debug";
 export * from "./environment";
 export * from "./gitlab";
 export * from "./help";

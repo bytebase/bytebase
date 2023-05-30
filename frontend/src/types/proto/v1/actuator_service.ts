@@ -2,11 +2,55 @@
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
+import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
 export interface GetActuatorInfoRequest {
+}
+
+export interface UpdateActuatorInfoRequest {
+  /** The actuator to update. */
+  actuator?: ActuatorInfo;
+  /** The list of fields to update. */
+  updateMask?: string[];
+}
+
+export interface ListDebugLogRequest {
+  /**
+   * The maximum number of logs to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 logs will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListDebugLog` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListDebugLog` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListDebugLogResponse {
+  /** The logs from the specified request. */
+  logs: DebugLog[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
+export interface DebugLog {
+  recordTime?: Date;
+  requestPath: string;
+  role: string;
+  error: string;
+  stackTrace: string;
 }
 
 export interface DeleteCacheRequest {
@@ -45,6 +89,8 @@ export interface ActuatorInfo {
   workspaceId: string;
   /** gitops_webhook_url is the webhook URL for GitOps. */
   gitopsWebhookUrl: string;
+  /** debug flag means if the debug mode is enabled. */
+  debug: boolean;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -87,6 +133,336 @@ export const GetActuatorInfoRequest = {
 
   fromPartial(_: DeepPartial<GetActuatorInfoRequest>): GetActuatorInfoRequest {
     const message = createBaseGetActuatorInfoRequest();
+    return message;
+  },
+};
+
+function createBaseUpdateActuatorInfoRequest(): UpdateActuatorInfoRequest {
+  return { actuator: undefined, updateMask: undefined };
+}
+
+export const UpdateActuatorInfoRequest = {
+  encode(message: UpdateActuatorInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.actuator !== undefined) {
+      ActuatorInfo.encode(message.actuator, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateActuatorInfoRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateActuatorInfoRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.actuator = ActuatorInfo.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateActuatorInfoRequest {
+    return {
+      actuator: isSet(object.actuator) ? ActuatorInfo.fromJSON(object.actuator) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateActuatorInfoRequest): unknown {
+    const obj: any = {};
+    message.actuator !== undefined &&
+      (obj.actuator = message.actuator ? ActuatorInfo.toJSON(message.actuator) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateActuatorInfoRequest>): UpdateActuatorInfoRequest {
+    return UpdateActuatorInfoRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<UpdateActuatorInfoRequest>): UpdateActuatorInfoRequest {
+    const message = createBaseUpdateActuatorInfoRequest();
+    message.actuator = (object.actuator !== undefined && object.actuator !== null)
+      ? ActuatorInfo.fromPartial(object.actuator)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
+function createBaseListDebugLogRequest(): ListDebugLogRequest {
+  return { pageSize: 0, pageToken: "" };
+}
+
+export const ListDebugLogRequest = {
+  encode(message: ListDebugLogRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.pageSize !== 0) {
+      writer.uint32(8).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(18).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListDebugLogRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListDebugLogRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListDebugLogRequest {
+    return {
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListDebugLogRequest): unknown {
+    const obj: any = {};
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListDebugLogRequest>): ListDebugLogRequest {
+    return ListDebugLogRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListDebugLogRequest>): ListDebugLogRequest {
+    const message = createBaseListDebugLogRequest();
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListDebugLogResponse(): ListDebugLogResponse {
+  return { logs: [], nextPageToken: "" };
+}
+
+export const ListDebugLogResponse = {
+  encode(message: ListDebugLogResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.logs) {
+      DebugLog.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListDebugLogResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListDebugLogResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.logs.push(DebugLog.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListDebugLogResponse {
+    return {
+      logs: Array.isArray(object?.logs) ? object.logs.map((e: any) => DebugLog.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListDebugLogResponse): unknown {
+    const obj: any = {};
+    if (message.logs) {
+      obj.logs = message.logs.map((e) => e ? DebugLog.toJSON(e) : undefined);
+    } else {
+      obj.logs = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListDebugLogResponse>): ListDebugLogResponse {
+    return ListDebugLogResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ListDebugLogResponse>): ListDebugLogResponse {
+    const message = createBaseListDebugLogResponse();
+    message.logs = object.logs?.map((e) => DebugLog.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseDebugLog(): DebugLog {
+  return { recordTime: undefined, requestPath: "", role: "", error: "", stackTrace: "" };
+}
+
+export const DebugLog = {
+  encode(message: DebugLog, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.recordTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.recordTime), writer.uint32(10).fork()).ldelim();
+    }
+    if (message.requestPath !== "") {
+      writer.uint32(18).string(message.requestPath);
+    }
+    if (message.role !== "") {
+      writer.uint32(26).string(message.role);
+    }
+    if (message.error !== "") {
+      writer.uint32(34).string(message.error);
+    }
+    if (message.stackTrace !== "") {
+      writer.uint32(42).string(message.stackTrace);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DebugLog {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDebugLog();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.recordTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.requestPath = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.role = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.stackTrace = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DebugLog {
+    return {
+      recordTime: isSet(object.recordTime) ? fromJsonTimestamp(object.recordTime) : undefined,
+      requestPath: isSet(object.requestPath) ? String(object.requestPath) : "",
+      role: isSet(object.role) ? String(object.role) : "",
+      error: isSet(object.error) ? String(object.error) : "",
+      stackTrace: isSet(object.stackTrace) ? String(object.stackTrace) : "",
+    };
+  },
+
+  toJSON(message: DebugLog): unknown {
+    const obj: any = {};
+    message.recordTime !== undefined && (obj.recordTime = message.recordTime.toISOString());
+    message.requestPath !== undefined && (obj.requestPath = message.requestPath);
+    message.role !== undefined && (obj.role = message.role);
+    message.error !== undefined && (obj.error = message.error);
+    message.stackTrace !== undefined && (obj.stackTrace = message.stackTrace);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DebugLog>): DebugLog {
+    return DebugLog.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DebugLog>): DebugLog {
+    const message = createBaseDebugLog();
+    message.recordTime = object.recordTime ?? undefined;
+    message.requestPath = object.requestPath ?? "";
+    message.role = object.role ?? "";
+    message.error = object.error ?? "";
+    message.stackTrace = object.stackTrace ?? "";
     return message;
   },
 };
@@ -151,6 +527,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     require2fa: false,
     workspaceId: "",
     gitopsWebhookUrl: "",
+    debug: false,
   };
 }
 
@@ -197,6 +574,9 @@ export const ActuatorInfo = {
     }
     if (message.gitopsWebhookUrl !== "") {
       writer.uint32(114).string(message.gitopsWebhookUrl);
+    }
+    if (message.debug === true) {
+      writer.uint32(120).bool(message.debug);
     }
     return writer;
   },
@@ -306,6 +686,13 @@ export const ActuatorInfo = {
 
           message.gitopsWebhookUrl = reader.string();
           continue;
+        case 15:
+          if (tag !== 120) {
+            break;
+          }
+
+          message.debug = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -331,6 +718,7 @@ export const ActuatorInfo = {
       require2fa: isSet(object.require2fa) ? Boolean(object.require2fa) : false,
       workspaceId: isSet(object.workspaceId) ? String(object.workspaceId) : "",
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? String(object.gitopsWebhookUrl) : "",
+      debug: isSet(object.debug) ? Boolean(object.debug) : false,
     };
   },
 
@@ -350,6 +738,7 @@ export const ActuatorInfo = {
     message.require2fa !== undefined && (obj.require2fa = message.require2fa);
     message.workspaceId !== undefined && (obj.workspaceId = message.workspaceId);
     message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
+    message.debug !== undefined && (obj.debug = message.debug);
     return obj;
   },
 
@@ -373,6 +762,7 @@ export const ActuatorInfo = {
     message.require2fa = object.require2fa ?? false;
     message.workspaceId = object.workspaceId ?? "";
     message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
+    message.debug = object.debug ?? false;
     return message;
   },
 };
@@ -393,6 +783,76 @@ export const ActuatorServiceDefinition = {
           8410: [new Uint8Array([0])],
           578365826: [
             new Uint8Array([19, 18, 17, 47, 118, 49, 47, 97, 99, 116, 117, 97, 116, 111, 114, 47, 105, 110, 102, 111]),
+          ],
+        },
+      },
+    },
+    updateActuatorInfo: {
+      name: "UpdateActuatorInfo",
+      requestType: UpdateActuatorInfoRequest,
+      requestStream: false,
+      responseType: ActuatorInfo,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [
+            new Uint8Array([
+              20,
+              97,
+              99,
+              116,
+              117,
+              97,
+              116,
+              111,
+              114,
+              44,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              95,
+              109,
+              97,
+              115,
+              107,
+            ]),
+          ],
+          578365826: [
+            new Uint8Array([
+              29,
+              58,
+              8,
+              97,
+              99,
+              116,
+              117,
+              97,
+              116,
+              111,
+              114,
+              50,
+              17,
+              47,
+              118,
+              49,
+              47,
+              97,
+              99,
+              116,
+              117,
+              97,
+              116,
+              111,
+              114,
+              47,
+              105,
+              110,
+              102,
+              111,
+            ]),
           ],
         },
       },
@@ -433,6 +893,43 @@ export const ActuatorServiceDefinition = {
         },
       },
     },
+    listDebugLog: {
+      name: "ListDebugLog",
+      requestType: ListDebugLogRequest,
+      requestStream: false,
+      responseType: ListDebugLogResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              20,
+              18,
+              18,
+              47,
+              118,
+              49,
+              47,
+              97,
+              99,
+              116,
+              117,
+              97,
+              116,
+              111,
+              114,
+              47,
+              100,
+              101,
+              98,
+              117,
+              103,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -441,7 +938,15 @@ export interface ActuatorServiceImplementation<CallContextExt = {}> {
     request: GetActuatorInfoRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ActuatorInfo>>;
+  updateActuatorInfo(
+    request: UpdateActuatorInfoRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ActuatorInfo>>;
   deleteCache(request: DeleteCacheRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
+  listDebugLog(
+    request: ListDebugLogRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListDebugLogResponse>>;
 }
 
 export interface ActuatorServiceClient<CallOptionsExt = {}> {
@@ -449,7 +954,15 @@ export interface ActuatorServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<GetActuatorInfoRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ActuatorInfo>;
+  updateActuatorInfo(
+    request: DeepPartial<UpdateActuatorInfoRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ActuatorInfo>;
   deleteCache(request: DeepPartial<DeleteCacheRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
+  listDebugLog(
+    request: DeepPartial<ListDebugLogRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListDebugLogResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

@@ -9,7 +9,6 @@ export * from "./common";
 export * from "./const";
 export * from "./database";
 export * from "./dataSource";
-export * from "./debug";
 export * from "./environment";
 export * from "./error";
 export * from "./errorList";

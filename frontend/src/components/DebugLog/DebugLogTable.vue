@@ -9,24 +9,21 @@
     <template #body="{ rowData: debugLog }">
       <BBTableCell :left-padding="4" class="table-cell w-56">
         <div>
-          {{ dayjs.unix(debugLog.RecordTs).format("YYYY-MM-DD HH:mm:ss Z") }}
+          {{ dayjs(debugLog.recordTime).format("YYYY-MM-DD HH:mm:ss Z") }}
         </div>
       </BBTableCell>
-      <BBTableCell class="table-cell w-20">
-        <HTTPMethodTag :method="debugLog.Method" />
-      </BBTableCell>
       <BBTableCell class="table-cell w-28">
-        <div>{{ debugLog.RequestPath }}</div>
+        <div>{{ debugLog.requestPath }}</div>
       </BBTableCell>
       <BBTableCell class="table-cell w-20">
-        <span v-if="!debugLog.Role" class="italic text-gray-500">{{
+        <span v-if="!debugLog.role" class="italic text-gray-500">{{
           $t("debug-log.table.empty")
         }}</span>
-        <div v-else>{{ debugLog.Role }}</div>
+        <div v-else>{{ debugLog.role }}</div>
       </BBTableCell>
       <BBTableCell class="table-cell pt-3">
         <EllipsisText class="max-w-full" :line-clamp="2">{{
-          debugLog.Error
+          debugLog.error
         }}</EllipsisText>
       </BBTableCell>
       <BBTableCell class="table-cell w-28">
@@ -54,9 +51,8 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { DebugLog } from "@/types/debug";
-import HTTPMethodTag from "./HTTPMethodTag.vue";
 import EllipsisText from "../EllipsisText.vue";
+import { DebugLog } from "@/types/proto/v1/actuator_service";
 
 defineProps({
   debugLogList: {
@@ -74,9 +70,6 @@ const { t } = useI18n();
 const columnList = computed(() => [
   {
     title: t("debug-log.table.record-ts"),
-  },
-  {
-    title: t("debug-log.table.method"),
   },
   {
     title: t("debug-log.table.request-path"),

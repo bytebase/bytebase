@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/v1";
@@ -16,12 +17,69 @@ service ActuatorService {
     option (google.api.method_signature) = "";
   }
 
+  rpc UpdateActuatorInfo(UpdateActuatorInfoRequest) returns (ActuatorInfo) {
+    option (google.api.http) = {
+      patch: "/v1/actuator/info"
+      body: "actuator"
+    };
+    option (google.api.method_signature) = "actuator,update_mask";
+  }
+
   rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/actuator/cache"};
+  }
+
+  rpc ListDebugLog(ListDebugLogRequest) returns (ListDebugLogResponse) {
+    option (google.api.http) = {get: "/v1/actuator/debug"};
+    option (google.api.method_signature) = "";
   }
 }
 
 message GetActuatorInfoRequest {}
+
+message UpdateActuatorInfoRequest {
+  // The actuator to update.
+  ActuatorInfo actuator = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListDebugLogRequest {
+  // The maximum number of logs to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 logs will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListDebugLog` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListDebugLog` must match
+  // the call that provided the page token.
+  string page_token = 2;
+}
+
+message ListDebugLogResponse {
+  // The logs from the specified request.
+  repeated DebugLog logs = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message DebugLog {
+  google.protobuf.Timestamp record_time = 1;
+
+  string request_path = 2;
+
+  string role = 3;
+
+  string error = 4;
+
+  string stack_trace = 5;
+}
 
 message DeleteCacheRequest {}
 
@@ -69,4 +127,7 @@ message ActuatorInfo {
 
   // gitops_webhook_url is the webhook URL for GitOps.
   string gitops_webhook_url = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // debug flag means if the debug mode is enabled.
+  bool debug = 15;
 }
