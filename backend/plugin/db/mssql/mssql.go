@@ -11,7 +11,6 @@ import (
 	// Import go-ora Oracle driver.
 	_ "github.com/microsoft/go-mssqldb"
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
-	"github.com/pkg/errors"
 
 	"go.uber.org/zap"
 
@@ -127,7 +126,47 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	return util.Query(ctx, db.MSSQL, conn, statement, queryContext)
 }
 
+func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
+	// TODO(d): support SELECT 1 (mssql: No column name was specified for column 1 of 'result').
+	return fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, limit)
+}
+
 // QueryConn2 queries a SQL statement in a given connection.
-func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, errors.New("not implemented")
+func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	singleSQLs, err := parser.SplitMultiSQL(parser.MSSQL, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+
+	var results []*v1pb.QueryResult
+	for _, singleSQL := range singleSQLs {
+		result, err := driver.querySingleSQL(ctx, conn, singleSQL, queryContext)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+		} else {
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	statement := singleSQL.Text
+	statement = strings.TrimRight(statement, " \n\t;")
+	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
+		statement = getMSSQLStatementWithResultLimit(statement, queryContext.Limit)
+	}
+
+	if queryContext.ReadOnly {
+		// MSSQL does not support transaction isolation level for read-only queries.
+		queryContext.ReadOnly = false
+	}
+
+	return util.Query2(ctx, db.MSSQL, conn, statement, queryContext)
 }
