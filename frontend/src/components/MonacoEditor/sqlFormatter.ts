@@ -12,7 +12,8 @@ type FormatterLanguage = FormatOptions["language"];
 const convertDialectToFormatterLanguage = (
   dialect: SQLDialect
 ): FormatterLanguage => {
-  if (dialect === "MYSQL" || dialect === "TIDB") return "mysql";
+  if (dialect === "MYSQL" || dialect === "TIDB" || dialect === "OCEANBASE")
+    return "mysql";
   if (dialect === "POSTGRES") return "postgresql";
   if (dialect === "SNOWFLAKE") return "snowflake";
   return "sql";

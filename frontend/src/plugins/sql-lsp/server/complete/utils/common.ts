@@ -10,7 +10,7 @@ export enum SortText {
 }
 
 export const isDialectWithSchema = (dialect: SQLDialect) => {
-  const DIALECTS_WITHOUT_SCHEMA: SQLDialect[] = ["MYSQL", "TIDB"];
+  const DIALECTS_WITHOUT_SCHEMA: SQLDialect[] = ["MYSQL", "TIDB", "OCEANBASE"];
   if (DIALECTS_WITHOUT_SCHEMA.includes(dialect)) {
     return false;
   }
