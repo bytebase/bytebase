@@ -19,14 +19,18 @@
       <template #footer>
         <div class="w-full flex justify-between items-center">
           <div>
-            <NButton type="error" @click="doDelete">{{
+            <NButton v-if="!isCreating" type="error" @click="doDelete">{{
               $t("common.delete")
             }}</NButton>
           </div>
           <div class="flex flex-row justify-end items-center gap-x-2">
             <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
-            <NButton type="primary" @click="doConfirm">
-              {{ $t("common.confirm") }}
+            <NButton
+              type="primary"
+              :disabled="!allowConfirm"
+              @click="doConfirm"
+            >
+              {{ isCreating ? $t("common.save") : $t("common.confirm") }}
             </NButton>
           </div>
         </div>
@@ -73,6 +77,28 @@ const title = computed(() => {
   } else {
     throw new Error("Unknown resource type");
   }
+});
+
+const allowConfirm = computed(() => {
+  if (!formRef.value) {
+    return true;
+  }
+
+  if (!isCreating.value) {
+    return true;
+  }
+
+  const formState = formRef.value.getFormState();
+  if (props.resourceType === "DATABASE_GROUP") {
+    return formState.resourceId && formState.environmentId;
+  } else if (props.resourceType === "SCHEMA_GROUP") {
+    return (
+      formState.resourceId &&
+      formState.environmentId &&
+      formState.selectedDatabaseGroupId
+    );
+  }
+  return false;
 });
 
 const doDelete = () => {
