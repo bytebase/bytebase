@@ -976,6 +976,8 @@ export interface CreateDatabaseGroupRequest {
    * are /[a-z][0-9]-/.
    */
   databaseGroupId: string;
+  /** If set, validate the create request and preview the full database group response, but do not actually create it. */
+  validateOnly: boolean;
 }
 
 export interface UpdateDatabaseGroupRequest {
@@ -3921,7 +3923,7 @@ export const GetDatabaseGroupRequest = {
 };
 
 function createBaseCreateDatabaseGroupRequest(): CreateDatabaseGroupRequest {
-  return { parent: "", databaseGroup: undefined, databaseGroupId: "" };
+  return { parent: "", databaseGroup: undefined, databaseGroupId: "", validateOnly: false };
 }
 
 export const CreateDatabaseGroupRequest = {
@@ -3934,6 +3936,9 @@ export const CreateDatabaseGroupRequest = {
     }
     if (message.databaseGroupId !== "") {
       writer.uint32(26).string(message.databaseGroupId);
+    }
+    if (message.validateOnly === true) {
+      writer.uint32(32).bool(message.validateOnly);
     }
     return writer;
   },
@@ -3966,6 +3971,13 @@ export const CreateDatabaseGroupRequest = {
 
           message.databaseGroupId = reader.string();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.validateOnly = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3980,6 +3992,7 @@ export const CreateDatabaseGroupRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       databaseGroup: isSet(object.databaseGroup) ? DatabaseGroup.fromJSON(object.databaseGroup) : undefined,
       databaseGroupId: isSet(object.databaseGroupId) ? String(object.databaseGroupId) : "",
+      validateOnly: isSet(object.validateOnly) ? Boolean(object.validateOnly) : false,
     };
   },
 
@@ -3989,6 +4002,7 @@ export const CreateDatabaseGroupRequest = {
     message.databaseGroup !== undefined &&
       (obj.databaseGroup = message.databaseGroup ? DatabaseGroup.toJSON(message.databaseGroup) : undefined);
     message.databaseGroupId !== undefined && (obj.databaseGroupId = message.databaseGroupId);
+    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
     return obj;
   },
 
@@ -4003,6 +4017,7 @@ export const CreateDatabaseGroupRequest = {
       ? DatabaseGroup.fromPartial(object.databaseGroup)
       : undefined;
     message.databaseGroupId = object.databaseGroupId ?? "";
+    message.validateOnly = object.validateOnly ?? false;
     return message;
   },
 };
