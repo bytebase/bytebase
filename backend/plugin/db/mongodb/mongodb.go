@@ -18,6 +18,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var (

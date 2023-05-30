@@ -284,7 +284,7 @@ func splitAndTransformDelimiter(statement string) ([]string, error) {
 }
 
 // QueryConn2 queries a SQL statement in a given connection.
-func (*Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
 	if err != nil {
 		return nil, err
@@ -293,6 +293,19 @@ func (*Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string,
 		return nil, nil
 	}
 
+	var results []*v1pb.QueryResult
+	for _, singleSQL := range singleSQLs {
+		result, err := driver.querySingleSQL(ctx, conn, singleSQL, queryContext)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+		} else {
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
 }
 
 func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (string, error) {
@@ -321,7 +334,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		}
 	}
 
-	if driver.dbType == db.TiDB {
+	if driver.dbType == db.TiDB && queryContext.ReadOnly {
 		// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
 		// https://github.com/pingcap/tidb/issues/34626
 		queryContext.ReadOnly = false
