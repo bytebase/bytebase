@@ -156,7 +156,7 @@ func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement 
 	return results, nil
 }
 
-func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := singleSQL.Text
 	statement = strings.TrimRight(statement, " \n\t;")
 	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
