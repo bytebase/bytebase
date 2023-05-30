@@ -17,17 +17,24 @@ export const stringifyDatabaseGroupExpr = (
   databaseGroupExpr: DatabaseGroupExpr
 ): string => {
   const { environmentId, conditionGroupExpr } = databaseGroupExpr;
-  return convertToCELString({
-    operator: "_&&_",
-    args: [
-      // Make the environment ID a condition first to avoid confusion when converting from CEL string.
-      {
-        operator: "_==_",
-        args: ["resource.environment_id", environmentId],
-      },
-      conditionGroupExpr,
-    ],
-  });
+  if (conditionGroupExpr.args.length > 0) {
+    return convertToCELString({
+      operator: "_&&_",
+      args: [
+        // Make the environment ID a condition first to avoid confusion when converting from CEL string.
+        {
+          operator: "_==_",
+          args: ["resource.environment_name", environmentId],
+        },
+        conditionGroupExpr,
+      ],
+    });
+  } else {
+    return convertToCELString({
+      operator: "_==_",
+      args: ["resource.environment_name", environmentId],
+    });
+  }
 };
 
 export const convertDatabaseGroupExprFromCEL = async (
@@ -57,6 +64,12 @@ export const convertDatabaseGroupExprFromCEL = async (
 const getEnvironmentIdAndConditionExpr = (
   expr: SimpleExpr
 ): [string, ConditionGroupExpr] => {
+  if (expr.operator === "_==_") {
+    const [left, right] = expr.args;
+    if (left === "resource.environment_name") {
+      return [right as string, emptySimpleExpr()];
+    }
+  }
   if (expr.operator !== "_&&_") {
     throw ["", emptySimpleExpr()];
   }

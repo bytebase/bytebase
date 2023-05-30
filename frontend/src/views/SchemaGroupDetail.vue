@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="state.schemaGroup"
+    v-if="state.isLoaded"
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
     v-bind="$attrs"
@@ -26,7 +26,6 @@
           </div>
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
-            data-label="bb-database-detail-info-block"
           >
             <dt class="sr-only">{{ $t("common.environment") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
@@ -51,7 +50,6 @@
 
         <div
           class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
-          data-label="bb-database-detail-action-buttons-container"
         >
           <button
             type="button"
@@ -71,7 +69,7 @@
           <ExprEditor
             :expr="state.expr!"
             :allow-admin="false"
-            :resource-type="'DATABASE_GROUP'"
+            :resource-type="'SCHEMA_GROUP'"
           />
         </div>
         <div class="col-span-2">
@@ -90,13 +88,13 @@
     v-if="state.showConfigurePanel"
     :project="project"
     :resource-type="'SCHEMA_GROUP'"
-    :database-group="state.schemaGroup"
+    :database-group="schemaGroup"
     @close="state.showConfigurePanel = false"
   />
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, computed } from "vue";
+import { reactive, computed } from "vue";
 import {
   useDBGroupStore,
   useEnvironmentV1Store,
@@ -107,18 +105,17 @@ import {
   projectNamePrefix,
   schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
-import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
 import { ConditionGroupExpr } from "@/plugins/cel";
 import { Environment } from "@/types/proto/v1/environment_service";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
+import { watch } from "vue";
 
 interface LocalState {
+  isLoaded: boolean;
   showConfigurePanel: boolean;
-  databaseGroup?: DatabaseGroup;
-  schemaGroup?: SchemaGroup;
   environment?: Environment;
   expr?: ConditionGroupExpr;
 }
@@ -142,6 +139,7 @@ const environmentStore = useEnvironmentV1Store();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
+  isLoaded: false,
   showConfigurePanel: false,
 });
 const project = computed(() => {
@@ -149,23 +147,31 @@ const project = computed(() => {
     `${projectNamePrefix}${props.projectName}`
   );
 });
-
-onMounted(async () => {
-  const databaseGroup = await dbGroupStore.getOrFetchDBGroupById(
-    `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}`
-  );
-
-  const expression = databaseGroup.databaseExpr?.expression ?? "";
-  const convertResult = await convertDatabaseGroupExprFromCEL(expression);
-  const environment = environmentStore.getEnvironmentByName(
-    convertResult.environmentId
-  );
-
-  state.environment = environment;
-  state.expr = convertResult.conditionGroupExpr;
-  state.databaseGroup = databaseGroup;
-  state.schemaGroup = await dbGroupStore.getOrFetchSchemaGroupById(
+const schemaGroup = computed(() => {
+  return dbGroupStore.getSchemaGroupByName(
     `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}/${schemaGroupNamePrefix}${props.schemaGroupName}`
   );
 });
+
+watch(
+  () => [props, schemaGroup.value],
+  async () => {
+    const schemaGroup = await dbGroupStore.getOrFetchSchemaGroupById(
+      `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}/${schemaGroupNamePrefix}${props.schemaGroupName}`
+    );
+
+    const expression = schemaGroup.tableExpr?.expression ?? "";
+    const convertResult = await convertDatabaseGroupExprFromCEL(expression);
+    const environment = environmentStore.getEnvironmentByName(
+      convertResult.environmentId
+    );
+
+    state.environment = environment;
+    state.expr = convertResult.conditionGroupExpr;
+    state.isLoaded = true;
+  },
+  {
+    immediate: true,
+  }
+);
 </script>

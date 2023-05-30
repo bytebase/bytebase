@@ -44,6 +44,10 @@ export const useDBGroupStore = defineStore("db-group", () => {
     );
   };
 
+  const getDBGroupByName = (name: string) => {
+    return dbGroupMapById.value.get(name);
+  };
+
   const createDatabaseGroup = async (
     projectName: string,
     databaseGroup: DatabaseGroup,
@@ -99,11 +103,26 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return schemaGroup;
   };
 
-  const getOrFetchSchemaListByDBGroupName = async (dbGroupName: string) => {
+  const getOrFetchSchemaGroupListByDBGroupName = async (
+    dbGroupName: string
+  ) => {
     const { schemaGroups } = await projectServiceClient.listSchemaGroups({
       parent: dbGroupName,
     });
+    for (const schemaGroup of schemaGroups) {
+      schemaGroupMapById.value.set(schemaGroup.name, schemaGroup);
+    }
     return schemaGroups;
+  };
+
+  const getSchemaGroupListByDBGroupName = (dbGroupName: string) => {
+    return Array.from(schemaGroupMapById.value.values()).filter((schemaGroup) =>
+      schemaGroup.name.startsWith(dbGroupName)
+    );
+  };
+
+  const getSchemaGroupByName = (name: string) => {
+    return schemaGroupMapById.value.get(name);
   };
 
   const createSchemaGroup = async (
@@ -150,11 +169,14 @@ export const useDBGroupStore = defineStore("db-group", () => {
     getOrFetchDBGroupById,
     getOrFetchDBGroupListByProjectName,
     getDBGroupListByProjectName,
+    getDBGroupByName,
     createDatabaseGroup,
     updateDatabaseGroup,
     deleteDatabaseGroup,
     getOrFetchSchemaGroupById,
-    getOrFetchSchemaListByDBGroupName,
+    getOrFetchSchemaGroupListByDBGroupName,
+    getSchemaGroupListByDBGroupName,
+    getSchemaGroupByName,
     createSchemaGroup,
     updateSchemaGroup,
     deleteSchemaGroup,

@@ -25,7 +25,7 @@ export const StringFactorList = [
   "request.export_format",
 
   // Database/table group related factors
-  "resource.environment_id", // using `environment.resource_id`
+  "resource.environment_name", // using `environment.name`
   "resource.database_name",
   "resource.table_name",
 ] as const;

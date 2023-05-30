@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="state.databaseGroup"
+    v-if="state.isLoaded"
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
     v-bind="$attrs"
@@ -26,7 +26,6 @@
           </div>
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
-            data-label="bb-database-detail-info-block"
           >
             <dt class="sr-only">{{ $t("common.environment") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
@@ -38,8 +37,6 @@
                 icon-class="textinfolabel"
               />
             </dd>
-            <dt class="sr-only">{{ $t("common.instance") }}</dt>
-            <dt class="sr-only">{{ $t("common.project") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel"
                 >{{ $t("common.project") }}&nbsp;-&nbsp;</span
@@ -51,7 +48,6 @@
 
         <div
           class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
-          data-label="bb-database-detail-action-buttons-container"
         >
           <button
             type="button"
@@ -84,18 +80,25 @@
         </div>
       </div>
 
-      <template v-if="state.schemaGroupList">
-        <hr class="mt-8 my-4" />
-        <div class="w-full max-w-5xl px-4">
+      <hr class="mt-8 my-4" />
+      <div class="w-full max-w-5xl px-4">
+        <div class="w-full flex flex-row justify-between items-center">
+          <p class="my-4">Table group</p>
           <div>
-            <p class="my-4">Table group</p>
+            <button
+              type="button"
+              class="btn-normal"
+              @click.prevent="handleCreateSchemaGroup"
+            >
+              New table group
+            </button>
           </div>
-          <SchemaGroupTable
-            :schema-group-list="state.schemaGroupList"
-            @edit="handleEditSchemaGroup"
-          />
         </div>
-      </template>
+        <SchemaGroupTable
+          :schema-group-list="schemaGroupList"
+          @edit="handleEditSchemaGroup"
+        />
+      </div>
     </main>
   </div>
 
@@ -109,7 +112,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, computed } from "vue";
+import { onMounted, reactive, computed, watch } from "vue";
 import {
   useDBGroupStore,
   useEnvironmentV1Store,
@@ -130,8 +133,7 @@ import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
 
 interface LocalState {
-  schemaGroupList?: SchemaGroup[];
-  databaseGroup?: DatabaseGroup;
+  isLoaded: boolean;
   environment?: Environment;
   expr?: ConditionGroupExpr;
 }
@@ -156,10 +158,23 @@ const props = defineProps({
 const environmentStore = useEnvironmentV1Store();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
-const state = reactive<LocalState>({});
+const state = reactive<LocalState>({
+  isLoaded: false,
+});
 const editState = reactive<EditDatabaseGroupState>({
   showConfigurePanel: false,
   type: "DATABASE_GROUP",
+});
+const databaseGroupResourceName = computed(() => {
+  return `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
+});
+const databaseGroup = computed(() => {
+  return dbGroupStore.getDBGroupByName(databaseGroupResourceName.value);
+});
+const schemaGroupList = computed(() => {
+  return dbGroupStore.getSchemaGroupListByDBGroupName(
+    databaseGroupResourceName.value
+  );
 });
 const project = computed(() => {
   return projectStore.getProjectByName(
@@ -168,27 +183,18 @@ const project = computed(() => {
 });
 
 onMounted(async () => {
-  const databaseGroup = await dbGroupStore.getOrFetchDBGroupById(
-    `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}`
-  );
-
-  const expression = databaseGroup.databaseExpr?.expression ?? "";
-  const convertResult = await convertDatabaseGroupExprFromCEL(expression);
-  const environment = environmentStore.getEnvironmentByName(
-    convertResult.environmentId
-  );
-
-  state.environment = environment;
-  state.expr = convertResult.conditionGroupExpr;
-  state.databaseGroup = databaseGroup;
-  state.schemaGroupList = await dbGroupStore.getOrFetchSchemaListByDBGroupName(
-    databaseGroup.name
-  );
+  await dbGroupStore.getOrFetchDBGroupById(databaseGroupResourceName.value);
 });
 
 const handleEditDatabaseGroup = () => {
   editState.type = "DATABASE_GROUP";
-  editState.databaseGroup = state.databaseGroup;
+  editState.databaseGroup = databaseGroup.value;
+  editState.showConfigurePanel = true;
+};
+
+const handleCreateSchemaGroup = () => {
+  editState.type = "SCHEMA_GROUP";
+  editState.databaseGroup = undefined;
   editState.showConfigurePanel = true;
 };
 
@@ -197,4 +203,27 @@ const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
   editState.databaseGroup = schemaGroup;
   editState.showConfigurePanel = true;
 };
+
+watch(
+  () => [databaseGroup.value],
+  async () => {
+    if (!databaseGroup.value) {
+      return;
+    }
+
+    const expression = databaseGroup.value.databaseExpr?.expression ?? "";
+    const convertResult = await convertDatabaseGroupExprFromCEL(expression);
+    state.environment = environmentStore.getEnvironmentByName(
+      convertResult.environmentId
+    );
+    state.expr = convertResult.conditionGroupExpr;
+    await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(
+      databaseGroup.value.name
+    );
+    state.isLoaded = true;
+  },
+  {
+    immediate: true,
+  }
+);
 </script>
