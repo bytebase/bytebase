@@ -50,6 +50,7 @@ import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import { useDBGroupStore, useEnvironmentV1Store } from "@/store";
 import { ResourceType } from "./common/ExprEditor/context";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
+import { convertToCELString } from "@/plugins/cel/logic";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -108,13 +109,9 @@ const doDelete = () => {
     negativeText: t("common.cancel"),
     onPositiveClick: async () => {
       if (props.resourceType === "DATABASE_GROUP") {
-        await dbGroupStore.deleteDatabaseGroup(
-          props.databaseGroup as DatabaseGroup
-        );
+        await dbGroupStore.deleteDatabaseGroup(props.databaseGroup!.name);
       } else if (props.resourceType === "SCHEMA_GROUP") {
-        await dbGroupStore.deleteSchemaGroup(
-          props.databaseGroup as SchemaGroup
-        );
+        await dbGroupStore.deleteSchemaGroup(props.databaseGroup!.name);
       } else {
         throw new Error("Unknown resource type");
       }
@@ -172,13 +169,7 @@ const doConfirm = async () => {
         return;
       }
 
-      const environment = environmentStore.getEnvironmentByUID(
-        formState.environmentId || ""
-      );
-      const celString = stringifyDatabaseGroupExpr({
-        environmentId: environment.name,
-        conditionGroupExpr: formState.expr,
-      });
+      const celString = convertToCELString(formState.expr);
       const resourceId = formState.resourceId;
       await dbGroupStore.createSchemaGroup(
         formState.selectedDatabaseGroupId,
@@ -192,13 +183,7 @@ const doConfirm = async () => {
         resourceId
       );
     } else {
-      const environment = environmentStore.getEnvironmentByUID(
-        formState.environmentId || ""
-      );
-      const celString = stringifyDatabaseGroupExpr({
-        environmentId: environment.name,
-        conditionGroupExpr: formState.expr,
-      });
+      const celString = convertToCELString(formState.expr);
       await dbGroupStore.updateSchemaGroup({
         ...props.databaseGroup!,
         tablePlaceholder: "",

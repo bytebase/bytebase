@@ -86,7 +86,10 @@ import ExprEditor from "./common/ExprEditor";
 import { ResourceType } from "./common/ExprEditor/context";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { ComposedProject, ResourceId, ValidatedMessage } from "@/types";
-import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
+import {
+  convertCELStringToExpr,
+  convertDatabaseGroupExprFromCEL,
+} from "@/utils/databaseGroup/cel";
 import { useDBGroupStore, useEnvironmentV1Store } from "@/store";
 import { getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "../EnvironmentSelect.vue";
@@ -139,27 +142,31 @@ onMounted(async () => {
     return;
   }
 
-  let expression = "";
   if (props.resourceType === "DATABASE_GROUP") {
-    expression =
+    const expression =
       (databaseGroup as DatabaseGroup).databaseExpr?.expression ?? "";
     const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
       databaseGroup.name
     );
     state.resourceId = databaseGroupName;
+    const convertResult = await convertDatabaseGroupExprFromCEL(expression);
+    if (convertResult.environmentId) {
+      const environment = environmentStore.getEnvironmentByName(
+        convertResult.environmentId
+      );
+      state.environmentId = environment?.uid;
+    }
+    state.expr = convertResult.conditionGroupExpr;
   } else {
-    expression = (databaseGroup as SchemaGroup).tableExpr?.expression ?? "";
+    const expression =
+      (databaseGroup as SchemaGroup).tableExpr?.expression ?? "";
     const [projectName, databaseGroupName, schemaGroupName] =
       getProjectNameAndDatabaseGroupNameAndSchemaGroupName(databaseGroup.name);
     state.resourceId = schemaGroupName;
     state.selectedDatabaseGroupId = `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
+    const convertResult = await convertCELStringToExpr(expression);
+    state.expr = convertResult;
   }
-  const convertResult = await convertDatabaseGroupExprFromCEL(expression);
-  const environment = environmentStore.getEnvironmentByName(
-    convertResult.environmentId
-  );
-  state.environmentId = environment?.uid;
-  state.expr = convertResult.conditionGroupExpr;
 });
 
 const validateResourceId = async (
