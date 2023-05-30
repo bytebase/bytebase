@@ -31,6 +31,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
@@ -558,7 +559,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	}
 
 	limit := int(pageToken.Limit)
-	if limit == 0 {
+	if limit <= 0 {
 		limit = 10
 	}
 	if limit > 1000 {
@@ -589,15 +590,24 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
 		}
+		converted, err := convertToChangeHistories(changeHistories[:limit])
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert change histories, error: %v", err)
+		}
 		return &v1pb.ListChangeHistoriesResponse{
-			ChangeHistories: convertToChangeHistories(changeHistories[:limit]),
+			ChangeHistories: converted,
 			NextPageToken:   nextPageToken,
 		}, nil
 	}
 
 	// no subsequent pages
+	converted, err := convertToChangeHistories(changeHistories)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert change histories, error: %v", err)
+	}
 	return &v1pb.ListChangeHistoriesResponse{
-		ChangeHistories: convertToChangeHistories(changeHistories),
+		ChangeHistories: converted,
+		NextPageToken:   "",
 	}, nil
 }
 
@@ -648,18 +658,30 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	if len(changeHistory) > 1 {
 		return nil, status.Errorf(codes.Internal, "expect to find one change history, got %d", len(changeHistory))
 	}
-	return convertToChangeHistory(changeHistory[0]), nil
+	converted, err := convertToChangeHistory(changeHistory[0])
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert change history, error: %v", err)
+	}
+	return converted, nil
 }
 
-func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) []*v1pb.ChangeHistory {
+func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.ChangeHistory, error) {
 	var changeHistories []*v1pb.ChangeHistory
 	for _, history := range h {
-		changeHistories = append(changeHistories, convertToChangeHistory(history))
+		converted, err := convertToChangeHistory(history)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert change history")
+		}
+		changeHistories = append(changeHistories, converted)
 	}
-	return changeHistories
+	return changeHistories, nil
 }
 
-func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) *v1pb.ChangeHistory {
+func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
+	_, version, _, err := util.FromStoredVersion(h.Version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert stored version %q", h.Version)
+	}
 	v1pbHistory := &v1pb.ChangeHistory{
 		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", instanceNamePrefix, h.InstanceID, databaseIDPrefix, h.DatabaseName, changeHistoryPrefix, h.UID),
 		Uid:               h.UID,
@@ -671,7 +693,7 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) *v1pb.ChangeH
 		Source:            convertToChangeHistorySource(h.Source),
 		Type:              convertToChangeHistoryType(h.Type),
 		Status:            convertToChangeHistoryStatus(h.Status),
-		Version:           h.Version,
+		Version:           version,
 		Description:       h.Description,
 		Statement:         h.Statement,
 		Schema:            h.Schema,
@@ -682,7 +704,7 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) *v1pb.ChangeH
 	if h.IssueUID != nil {
 		v1pbHistory.Review = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, h.IssueProjectID, reviewPrefix, *h.IssueUID)
 	}
-	return v1pbHistory
+	return v1pbHistory, nil
 }
 
 func convertToChangeHistorySource(source db.MigrationSource) v1pb.ChangeHistory_Source {
