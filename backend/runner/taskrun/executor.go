@@ -159,7 +159,7 @@ func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfac
 
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to get connection for instance %q", instance.ResourceID)
+		return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
 	}
 	defer driver.Close(ctx)
 
