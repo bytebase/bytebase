@@ -1,12 +1,13 @@
 <template>
-  <div v-if="payload" class="w-full p-4 flex bg-yellow-50">
+  <div v-if="payload || isSheetOversize" class="w-full p-4 flex bg-yellow-50">
     <div class="flex-shrink-0">
       <heroicons-solid:information-circle class="h-5 w-5 text-yellow-400" />
     </div>
     <div class="ml-3">
       <i18n-t
+        v-if="payload"
         tag="h3"
-        keypath="sheet.from-sheet-warning"
+        keypath="sheet.from-issue-warning"
         class="text-sm font-medium text-yellow-800"
       >
         <template #issue>
@@ -27,7 +28,13 @@
             </div>
           </NTooltip>
         </template>
+        <template #oversize v-if="isSheetOversize">
+          {{ $t("sheet.content-oversize-warning") }}
+        </template>
       </i18n-t>
+      <div v-else-if="isSheetOversize">
+        {{ $t("sheet.content-oversize-warning") }}
+      </div>
     </div>
   </div>
 </template>
@@ -79,4 +86,15 @@ watch(
   },
   { immediate: true }
 );
+
+const isSheetOversize = computed(() => {
+  if (!sheet.value) {
+    return false;
+  }
+
+  return (
+    new TextDecoder().decode(sheet.value.content).length <
+    sheet.value.contentSize
+  );
+});
 </script>
