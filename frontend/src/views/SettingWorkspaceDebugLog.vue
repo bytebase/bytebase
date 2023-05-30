@@ -19,7 +19,7 @@
         :debug-log-list="
           debugLogList.sort(
             (a, b) =>
-              (b.recordTs?.getTime() ?? 0) - (a.recordTs?.getTime() ?? 0)
+              (b.recordTime?.getTime() ?? 0) - (a.recordTime?.getTime() ?? 0)
           )
         "
         @view-detail="
@@ -56,7 +56,7 @@
                 <NGi span="17">
                   <span v-if="value !== ''">
                     {{
-                      key === "recordTs"
+                      key === "recordTime"
                         ? dayjs(value as Date).format("YYYY-MM-DD HH:mm:ss Z")
                         : value
                     }}
@@ -109,7 +109,7 @@ const notificationStore = useNotificationStore();
 const debugLogList = useDebugLogList();
 
 const logKeyMap = {
-  recordTs: t("debug-log.table.record-ts"),
+  recordTime: t("debug-log.table.record-ts"),
   method: t("debug-log.table.method"),
   requestPath: t("debug-log.table.request-path"),
   role: t("debug-log.table.role"),

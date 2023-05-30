@@ -43,7 +43,7 @@ func (in *DebugInterceptor) DebugInterceptor(ctx context.Context, request any, s
 			in.errorRecordRing.RWMutex.Lock()
 			defer in.errorRecordRing.RWMutex.Unlock()
 			in.errorRecordRing.Ring.Value = &v1pb.DebugLog{
-				RecordTs:    timestamppb.New(time.Now()),
+				RecordTime:  timestamppb.New(time.Now()),
 				RequestPath: serverInfo.FullMethod,
 				Role:        string(role),
 				Error:       err.Error(),
