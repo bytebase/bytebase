@@ -20,9 +20,11 @@ import (
 	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // FormatErrorWithQuery will format the error with failed query.
@@ -209,6 +211,73 @@ func Query(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string
 	return []any{columnNames, columnTypeNames, data, fieldMaskInfo}, nil
 }
 
+// Query2 will execute a readonly / SELECT query.
+// TODO(rebelice): remove Query function and rename Query2 to Query after frontend is ready to use the new API.
+func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, statement)
+	if err != nil {
+		return nil, FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	columnNames, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
+	}
+
+	if len(fieldList) != 0 && len(fieldList) != len(columnNames) {
+		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
+	}
+
+	var fieldMaskInfo []bool
+	for i := range columnNames {
+		if len(fieldList) > 0 && fieldList[i].Sensitive {
+			fieldMaskInfo = append(fieldMaskInfo, true)
+		} else {
+			fieldMaskInfo = append(fieldMaskInfo, false)
+		}
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	var columnTypeNames []string
+	for _, v := range columnTypes {
+		// DatabaseTypeName returns the database system name of the column type.
+		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
+	}
+
+	data, err := readRows2(rows, dbType, columnTypes, columnTypeNames, fieldList)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &v1pb.QueryResult{
+		ColumnNames:     columnNames,
+		ColumnTypeNames: columnTypeNames,
+		Rows:            data,
+		Masked:          fieldMaskInfo,
+	}, nil
+}
+
 // query will execute a query.
 func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, _ int) ([]any, error) {
 	rows, err := conn.QueryContext(ctx, statement)
@@ -251,6 +320,71 @@ func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement s
 	// Return the all false boolean slice here as the placeholder.
 	sensitiveInfo := make([]bool, len(columnNames))
 	return []any{columnNames, columnTypeNames, data, sensitiveInfo}, nil
+}
+
+// TODO(rebelice): remove the readRows and rename readRows2 to readRows if legacy API is deprecated.
+func readRows2(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]*v1pb.QueryRow, error) {
+	if dbType == db.ClickHouse {
+		// TODO(rebelice): implement clickhouse support
+		return nil, errors.New("clickhouse is not supported")
+	}
+	var data []*v1pb.QueryRow
+	for rows.Next() {
+		scanArgs := make([]any, len(columnTypes))
+		for i, v := range columnTypeNames {
+			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
+			switch v {
+			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+				scanArgs[i] = new(sql.NullString)
+			case "BOOL":
+				scanArgs[i] = new(sql.NullBool)
+			case "INT", "INTEGER":
+				scanArgs[i] = new(sql.NullInt64)
+			case "FLOAT":
+				scanArgs[i] = new(sql.NullFloat64)
+			default:
+				scanArgs[i] = new(sql.NullString)
+			}
+		}
+
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, err
+		}
+
+		var rowData *v1pb.QueryRow
+		for i := range columnTypes {
+			if len(fieldList) > 0 && fieldList[i].Sensitive {
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}})
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: v.Bool}})
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String}})
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: v.Int64}})
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: v.Int32}})
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
+				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: v.Float64}})
+				continue
+			}
+			// If none of them match, set nil to its value.
+			rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
+		}
+
+		data = append(data, rowData)
+	}
+
+	return data, nil
 }
 
 func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]any, error) {
@@ -675,6 +809,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			}
 			rowData = append(rowData, nil)
 		}
+		fmt.Sprintf("%v")
 
 		data = append(data, rowData)
 	}

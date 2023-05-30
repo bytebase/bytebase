@@ -211,3 +211,8 @@ func replaceCharacterWithPercentEncoding(s string) string {
 	}
 	return s
 }
+
+// QueryConn2 queries a SQL statement in a given connection.
+func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	return nil, errors.New("not implemented")
+}
