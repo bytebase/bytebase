@@ -724,6 +724,9 @@ message CreateSchemaGroupRequest {
   // This value should be 4-63 characters, and valid characters
   // are /[a-z][0-9]-/.
   string schema_group_id = 3;
+
+  // If set, validate the create request and preview the full schema group response, but do not actually create it.
+  bool validate_only = 4;
 }
 
 message UpdateSchemaGroupRequest {
