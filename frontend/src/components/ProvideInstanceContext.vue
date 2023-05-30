@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts">
-import { useDatabaseStore, useInstanceV1Store } from "@/store";
+import { useInstanceV1Store } from "@/store";
 import { defineComponent, watchEffect } from "vue";
 import { idFromSlug } from "../utils";
 
@@ -19,9 +19,6 @@ export default defineComponent({
     const prepareInstanceContext = async function () {
       const uid = String(idFromSlug(props.instanceSlug));
       await Promise.all([
-        useDatabaseStore().fetchDatabaseListByInstanceId(
-          idFromSlug(props.instanceSlug)
-        ),
         useInstanceV1Store()
           .getOrFetchInstanceByUID(uid)
           .then((instance) => {
