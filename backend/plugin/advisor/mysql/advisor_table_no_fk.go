@@ -18,6 +18,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.

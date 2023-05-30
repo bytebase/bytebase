@@ -18,6 +18,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.

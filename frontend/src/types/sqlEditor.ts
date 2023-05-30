@@ -16,6 +16,7 @@ export const EngineTypesUsingSQL = [
   "SNOWFLAKE",
   "TIDB",
   "SPANNER",
+  "OCEANBASE",
 ] as const;
 export type SQLDialect = typeof EngineTypesUsingSQL[number];
 export const EngineToSQLDialectMap = new Map<Engine, SQLDialect>([
@@ -25,6 +26,7 @@ export const EngineToSQLDialectMap = new Map<Engine, SQLDialect>([
   [Engine.SNOWFLAKE, "SNOWFLAKE"],
   [Engine.TIDB, "TIDB"],
   [Engine.SPANNER, "SPANNER"],
+  [Engine.OCEANBASE, "OCEANBASE"],
 ]);
 
 export const languageOfEngine = (engine?: EngineType | "unknown"): Language => {

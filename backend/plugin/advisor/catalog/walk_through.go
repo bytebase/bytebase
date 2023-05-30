@@ -205,7 +205,7 @@ func (e *WalkThroughError) Error() string {
 // WalkThrough will collect the catalog schema in the databaseState as it walks through the stmt.
 func (d *DatabaseState) WalkThrough(stmt string) error {
 	switch d.dbType {
-	case db.MySQL, db.TiDB, db.MariaDB:
+	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 		return d.mysqlWalkThrough(stmt)
 	case db.Postgres:
 		if err := d.pgWalkThrough(stmt); err != nil {

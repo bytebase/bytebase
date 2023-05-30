@@ -55,6 +55,7 @@ paths:
         - MYSQL
         - POSTGRES
         - TIDB
+        - OCEANBASE
         in: body
         name: databaseType
         schema:

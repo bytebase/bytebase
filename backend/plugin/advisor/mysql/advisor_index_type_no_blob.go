@@ -25,6 +25,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
 }
 
 // IndexTypeNoBlobAdvisor is the advisor checking for index type no blob.
