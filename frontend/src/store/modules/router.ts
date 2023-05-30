@@ -221,6 +221,21 @@ export const useRouterStore = defineStore("router", {
         }
       }
 
+      {
+        // /projects/proj-nt-iq3z/database-groups/test/schema-groups/asd123
+        const schemaGroupDetailComponents = currentRoute.path.match(
+          "/projects/([0-9a-zA-Z_-]+)/database-groups/([0-9a-zA-Z_-]+)/schema-groups/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined];
+
+        if (schemaGroupDetailComponents.length === 4) {
+          return {
+            projectName: schemaGroupDetailComponents[1],
+            databaseGroupName: schemaGroupDetailComponents[2],
+            schemaGroupName: schemaGroupDetailComponents[3],
+          };
+        }
+      }
+
       return {};
     },
   },

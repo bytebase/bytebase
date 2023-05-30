@@ -68,6 +68,11 @@ export type RouterSlug = {
   sheetSlug?: string;
   sqlReviewPolicySlug?: string;
   ssoName?: string;
+
+  // Resource names.
+  projectName?: string;
+  databaseGroupName?: string;
+  schemaGroupName?: string;
 };
 
 // Quick Action Type
