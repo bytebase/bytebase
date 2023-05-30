@@ -263,6 +263,7 @@
     - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
     - [CreateSchemaGroupRequest](#bytebase-v1-CreateSchemaGroupRequest)
     - [DatabaseGroup](#bytebase-v1-DatabaseGroup)
+    - [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database)
     - [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest)
     - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
     - [DeleteSchemaGroupRequest](#bytebase-v1-DeleteSchemaGroupRequest)
@@ -288,6 +289,7 @@
     - [Schedule](#bytebase-v1-Schedule)
     - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
     - [SchemaGroup](#bytebase-v1-SchemaGroup)
+    - [SchemaGroup.Table](#bytebase-v1-SchemaGroup-Table)
     - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
@@ -303,8 +305,10 @@
     - [Webhook](#bytebase-v1-Webhook)
   
     - [Activity.Type](#bytebase-v1-Activity-Type)
+    - [DatabaseGroupView](#bytebase-v1-DatabaseGroupView)
     - [OperatorType](#bytebase-v1-OperatorType)
     - [SchemaChange](#bytebase-v1-SchemaChange)
+    - [SchemaGroupView](#bytebase-v1-SchemaGroupView)
     - [SchemaVersion](#bytebase-v1-SchemaVersion)
     - [TenantMode](#bytebase-v1-TenantMode)
     - [Visibility](#bytebase-v1-Visibility)
@@ -4229,6 +4233,23 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | name | [string](#string) |  | The name of the database group. Format: projects/{project}/databaseGroups/{databaseGroup} |
 | database_placeholder | [string](#string) |  | The short name used in actual databases specified by users. For example, the placeholder for db1_2010, db1_2021, db1_2023 will be &#34;db1&#34;. |
 | database_expr | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this database group. |
+| matched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
+| unmatched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseGroup-Database"></a>
+
+### DatabaseGroup.Database
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The resource name of the database. Format: instances/{instance}/databases/{database} |
 
 
 
@@ -4322,6 +4343,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database group to retrieve. Format: projects/{project}/databaseGroups/{databaseGroup} |
+| view | [DatabaseGroupView](#bytebase-v1-DatabaseGroupView) |  | The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. |
 
 
 
@@ -4397,6 +4419,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database group to retrieve. Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup} |
+| view | [SchemaGroupView](#bytebase-v1-SchemaGroupView) |  | The view to return. Defaults to SCHEMA_GROUP_VIEW_BASIC. |
 
 
 
@@ -4638,6 +4661,27 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | name | [string](#string) |  | The name of the schema group. Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup} |
 | table_expr | [google.type.Expr](#google-type-Expr) |  | The table condition that is associated with this schema group. The table_placeholder in the sheet script will be rendered to the actual table name. |
 | table_placeholder | [string](#string) |  | The table placeholder used for rendering. For example, if set to &#34;tbl&#34;, all the table name &#34;tbl&#34; in the SQL script will be rendered to the actual table name. |
+| matched_tables | [SchemaGroup.Table](#bytebase-v1-SchemaGroup-Table) | repeated | The list of databases that match the database group condition. |
+| unmatched_tables | [SchemaGroup.Table](#bytebase-v1-SchemaGroup-Table) | repeated | The list of databases that match the database group condition. |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaGroup-Table"></a>
+
+### SchemaGroup.Table
+In the future, we can introduce schema_expr if users use schema (Postgres schema) for groups.
+Its keyword will be {{SCHEMA}}.
+All the expressions will be used to filter the schema objects in DatabaseSchema.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The resource name of the database. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
 
 
 
@@ -4900,6 +4944,19 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="bytebase-v1-DatabaseGroupView"></a>
+
+### DatabaseGroupView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATABASE_GROUP_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| DATABASE_GROUP_VIEW_BASIC | 1 | Include basic information about the database group, but exclude the list of matched databases and unmatched databases. |
+| DATABASE_GROUP_VIEW_FULL | 2 | Include everything. |
+
+
+
 <a name="bytebase-v1-OperatorType"></a>
 
 ### OperatorType
@@ -4923,6 +4980,19 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | SCHEMA_CHANGE_UNSPECIFIED | 0 |  |
 | DDL | 1 |  |
 | SDL | 2 |  |
+
+
+
+<a name="bytebase-v1-SchemaGroupView"></a>
+
+### SchemaGroupView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SCHEMA_GROUP_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| SCHEMA_GROUP_VIEW_BASIC | 1 | Include basic information about the schema group, but exclude the list of matched tables and unmatched tables. |
+| SCHEMA_GROUP_VIEW_FULL | 2 | Include everything. |
 
 
 
