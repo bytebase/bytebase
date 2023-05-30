@@ -652,6 +652,9 @@ message CreateDatabaseGroupRequest {
   // This value should be 4-63 characters, and valid characters
   // are /[a-z][0-9]-/.
   string database_group_id = 3;
+
+  // If set, validate the create request and preview the full database group response, but do not actually create it.
+  bool validate_only = 4;
 }
 
 message UpdateDatabaseGroupRequest {
@@ -701,16 +704,10 @@ message DatabaseGroup {
     string name = 1;
   }
   // The list of databases that match the database group condition.
-  repeated Database matched_databases = 4 [
-    (google.api.field_behavior) = OUTPUT_ONLY,
-    (google.api.field_behavior) = OPTIONAL
-  ];
+  repeated Database matched_databases = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The list of databases that match the database group condition.
-  repeated Database unmatched_databases = 5 [
-    (google.api.field_behavior) = OUTPUT_ONLY,
-    (google.api.field_behavior) = OPTIONAL
-  ];
+  repeated Database unmatched_databases = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message CreateSchemaGroupRequest {

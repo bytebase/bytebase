@@ -668,13 +668,17 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	storeDatabaseGroup := &store.DatabaseGroupMessage{
 		ResourceID:  request.DatabaseGroupId,
 		ProjectUID:  project.UID,
 		Placeholder: request.DatabaseGroup.DatabasePlaceholder,
 		Expression:  request.DatabaseGroup.DatabaseExpr,
 	}
+	if request.ValidateOnly {
+		return s.convertStoreToAPIDatabaseGroupFull(ctx, storeDatabaseGroup, projectResourceID)
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	databaseGroup, err := s.store.CreateDatabaseGroup(ctx, principalID, storeDatabaseGroup)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
