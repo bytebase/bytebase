@@ -8,7 +8,12 @@ import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 
 // The engine type for rule template
-export type SchemaRuleEngineType = "MYSQL" | "POSTGRES" | "TIDB" | "ORACLE";
+export type SchemaRuleEngineType =
+  | "MYSQL"
+  | "POSTGRES"
+  | "TIDB"
+  | "ORACLE"
+  | "OCEANBASE";
 
 // The category type for rule template
 export type CategoryType =

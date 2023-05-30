@@ -5,6 +5,7 @@ export const EngineTypesUsingSQL = [
   "SNOWFLAKE",
   "TIDB",
   "SPANNER",
+  "OCEANBASE",
 ] as const;
 
 export type SQLDialect = typeof EngineTypesUsingSQL[number];

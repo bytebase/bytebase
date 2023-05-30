@@ -21,6 +21,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
 }
 
 // CollationAllowlistAdvisor is the advisor checking for collation allowlist.

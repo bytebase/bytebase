@@ -20,6 +20,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
 }
 
 // DisallowOrderByAdvisor is the advisor checking for no ORDER BY clause in DELETE/UPDATE statements.

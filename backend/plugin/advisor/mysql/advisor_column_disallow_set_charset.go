@@ -20,6 +20,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
 }
 
 // ColumnDisallowSetCharsetAdvisor is the advisor checking for disallow set column charset.
