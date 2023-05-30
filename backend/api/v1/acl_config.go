@@ -30,6 +30,8 @@ var ownerAndDBAMethods = map[string]bool{
 	"RoleService/CreateRole":                 true,
 	"RoleService/UpdateRole":                 true,
 	"RoleService/DeleteRole":                 true,
+	"ActuatorService/UpdateActuatorInfo":     true,
+	"ActuatorService/ListDebugLog":           true,
 }
 
 var projectOwnerMethods = map[string]bool{

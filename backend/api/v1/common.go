@@ -298,6 +298,18 @@ func getPlanID(name string) (int64, error) {
 	return planID, nil
 }
 
+func getProjectIDRolloutID(name string) (string, int, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix)
+	if err != nil {
+		return "", 0, err
+	}
+	rolloutID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, errors.Errorf("invalid rollout ID %q", tokens[1])
+	}
+	return tokens[0], rolloutID, nil
+}
+
 func getRoleID(name string) (string, error) {
 	tokens, err := getNameParentTokens(name, rolePrefix)
 	if err != nil {

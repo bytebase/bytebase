@@ -2007,7 +2007,8 @@
       "confirm-to-duplicate-sheet": "¿Confirmar para duplicar esta hoja?"
     },
     "linked-issue": "Incidencia vinculada",
-    "from-sheet-warning": "La hoja proviene de la incidencia {issue}. Es de solo lectura y solo se muestra una parte de ella."
+    "from-issue-warning": "La hoja proviene de la incidencia {issue} en modo de solo lectura. {oversize}",
+    "content-oversize-warning": "Mostrar solo parte de la hoja debido al tamaño excesivo."
   },
   "engine": {
     "mysql": "MySQL",
