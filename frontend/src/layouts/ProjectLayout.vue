@@ -27,11 +27,7 @@
     :responsive="false"
     :tab-item-list="tabItemList"
     :selected-index="state.selectedIndex"
-    @select-index="
-      (index: number) => {
-        selectTab(index);
-      }
-    "
+    @select-index="selectTab"
   />
 
   <div class="py-6 px-6">
@@ -44,18 +40,26 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, reactive, watch } from "vue";
+import { computed, defineComponent, nextTick, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
+import { startCase } from "lodash-es";
+
 import {
   idFromSlug,
-  hasProjectPermission,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
+  hasPermissionInProjectV1,
+  isDev,
 } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import { Project, DEFAULT_PROJECT_ID } from "../types";
-import { useCurrentUser, useProjectStore } from "@/store";
+import {
+  useCurrentUserIamPolicy,
+  useCurrentUserV1,
+  useLegacyProjectStore,
+  useProjectV1Store,
+} from "@/store";
 
 type ProjectTabItem = {
   name: string;
@@ -85,11 +89,22 @@ export default defineComponent({
     const router = useRouter();
     const { t } = useI18n();
 
-    const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
+    const currentUserV1 = useCurrentUserV1();
+    const legacyProjectStore = useLegacyProjectStore();
+    const projectV1Store = useProjectV1Store();
 
     const project = computed((): Project => {
-      return projectStore.getProjectById(idFromSlug(props.projectSlug));
+      return legacyProjectStore.getProjectById(idFromSlug(props.projectSlug));
+    });
+    const projectV1 = computed(() => {
+      return projectV1Store.getProjectByUID(
+        String(idFromSlug(props.projectSlug))
+      );
+    });
+    const currentUserIamPolicy = useCurrentUserIamPolicy();
+
+    const isDefaultProject = computed((): boolean => {
+      return project.value.id === DEFAULT_PROJECT_ID;
     });
 
     const isTenantProject = computed((): boolean => {
@@ -97,25 +112,50 @@ export default defineComponent({
     });
 
     const projectTabItemList = computed((): ProjectTabItem[] => {
+      if (
+        !currentUserIamPolicy.isMemberOfProject(
+          `projects/${project.value.resourceId}`
+        )
+      ) {
+        return [{ name: t("common.databases"), hash: "databases" }];
+      }
+      if (
+        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+          `projects/${project.value.resourceId}`
+        )
+      ) {
+        const list = [{ name: t("common.databases"), hash: "databases" }];
+        if (!isDefaultProject.value) {
+          list.push({ name: t("common.settings"), hash: "setting" });
+        }
+        return list;
+      }
+
       const list: (ProjectTabItem | null)[] = [
         { name: t("common.overview"), hash: "overview" },
+        { name: t("common.databases"), hash: "databases" },
+
+        // TODO(steven): remove this after we release the feature.
+        isDev() && isTenantProject.value
+          ? { name: "Database groups", hash: "database-groups" }
+          : null,
 
         isTenantProject.value
-          ? null // Hide "Migration History" tab for tenant projects
-          : { name: t("common.migration-history"), hash: "migration-history" },
+          ? null // Hide "Change History" tab for tenant projects
+          : { name: t("common.change-history"), hash: "change-history" },
+
+        { name: startCase(t("slow-query.slow-queries")), hash: "slow-query" },
 
         { name: t("common.activities"), hash: "activity" },
-        { name: t("common.version-control"), hash: "version-control" },
-        { name: t("common.webhooks"), hash: "webhook" },
-
-        isTenantProject.value
-          ? {
-              name: t("common.deployment-config"),
-              hash: "deployment-config",
-            }
-          : null, // Show "Deployment Config" only for tenant projects
-
-        { name: t("common.settings"), hash: "setting" },
+        isDefaultProject.value
+          ? null
+          : { name: t("common.gitops"), hash: "gitops" },
+        isDefaultProject.value
+          ? null
+          : { name: t("common.webhooks"), hash: "webhook" },
+        isDefaultProject.value
+          ? null
+          : { name: t("common.settings"), hash: "setting" },
       ];
       const filteredList = list.filter(
         (item) => item !== null
@@ -146,25 +186,22 @@ export default defineComponent({
       }
 
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-project",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         return true;
       }
 
-      for (const member of project.value.memberList) {
-        if (member.principal.id == currentUser.value.id) {
-          if (
-            hasProjectPermission(
-              "bb.permission.project.manage-general",
-              member.role
-            )
-          ) {
-            return true;
-          }
-        }
+      if (
+        hasPermissionInProjectV1(
+          projectV1.value.iamPolicy,
+          currentUserV1.value,
+          "bb.permission.project.manage-general"
+        )
+      ) {
+        return true;
       }
       return false;
     });
@@ -200,9 +237,11 @@ export default defineComponent({
     };
 
     watch(
-      () => router.currentRoute.value.hash,
+      () => [router.currentRoute.value.hash],
       () => {
-        selectProjectTabOnHash();
+        nextTick(() => {
+          selectProjectTabOnHash();
+        });
       },
       {
         immediate: true,

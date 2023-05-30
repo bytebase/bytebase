@@ -7,12 +7,12 @@ on:
 
 jobs:
   build-linux-binary:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2.2.4
         with:
-          version: 7.11.0
+          version: 8.0.0
       - uses: actions/setup-node@v3
         with:
           node-version: "18"
@@ -22,15 +22,15 @@ jobs:
         working-directory: frontend
       - run: pnpm release
         working-directory: frontend
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: 1.20.1
           check-latest: true
           cache: true
       - name: Build
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with:
-          args: release --skip-publish --config .goreleaser-for-linux.yaml
+          args: release --skip-publish --config scripts/.goreleaser-for-linux.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload
@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2.2.4
         with:
-          version: 7.11.0
+          version: 8.0.0
       - uses: actions/setup-node@v3
         with:
           node-version: "18"
@@ -54,15 +54,15 @@ jobs:
         working-directory: frontend
       - run: pnpm release
         working-directory: frontend
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: 1.20.1
           check-latest: true
           cache: true
       - name: Build
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with:
-          args: release --skip-publish --config .goreleaser-for-darwin.yaml
+          args: release --skip-publish --config scripts/.goreleaser-for-darwin.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload
@@ -72,12 +72,12 @@ jobs:
           path: dist/bytebase*
   draft-release:
     needs: [build-linux-binary, build-darwin-binary]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2.2.4
         with:
-          version: 7.11.0
+          version: 8.0.0
       - uses: actions/setup-node@v3
         with:
           node-version: "18"
@@ -87,9 +87,9 @@ jobs:
         working-directory: frontend
       - run: pnpm release
         working-directory: frontend
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: 1.20.1
           check-latest: true
           cache: true
       - name: Make directories
@@ -114,8 +114,8 @@ jobs:
           rm ./darwin/bytebase*checksums.txt
           rm ./linux/bytebase*checksums.txt
       - name: Release
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with:
-          args: release --config .goreleaser-release.yaml
+          args: release --config scripts/.goreleaser-release.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

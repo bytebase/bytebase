@@ -5,15 +5,11 @@
     >
       <div class="px-4 py-5 sm:px-6">
         <h3 class="text-lg leading-6 font-medium text-main">
-          {{
-            $t("version-control.setting.add-git-provider.confirm.confirm-info")
-          }}
+          {{ $t("gitops.setting.add-git-provider.confirm.confirm-info") }}
         </h3>
         <p class="mt-1 textinfolabel">
           {{
-            $t(
-              "version-control.setting.add-git-provider.confirm.confirm-description"
-            )
+            $t("gitops.setting.add-git-provider.confirm.confirm-description")
           }}
         </p>
       </div>
@@ -23,24 +19,34 @@
         </dt>
         <dd class="col-start-2 col-span-3 text-sm text-main">
           <div
-            v-if="config.type == 'GITLAB_SELF_HOST'"
+            v-if="config.uiType == 'GITLAB_SELF_HOST'"
             class="flex flex-row items-center space-x-2"
           >
             <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
             <div class="whitespace-nowrap">
-              {{
-                $t(
-                  "version-control.setting.add-git-provider.gitlab-self-host-ce-ee"
-                )
-              }}
+              {{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
             </div>
           </div>
           <div
-            v-if="config.type == 'GITHUB_COM'"
+            v-else-if="config.uiType == 'GITLAB_COM'"
+            class="flex flex-row items-center space-x-2"
+          >
+            <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
+            <div class="whitespace-nowrap">GitLab.com</div>
+          </div>
+          <div
+            v-else-if="config.uiType == 'GITHUB_COM'"
             class="flex flex-row items-center space-x-2"
           >
             <img class="h-6 w-auto" src="../assets/github-logo.svg" />
             <div class="whitespace-nowrap">GitHub.com</div>
+          </div>
+          <div
+            v-else-if="config.uiType == 'BITBUCKET_ORG'"
+            class="flex flex-row items-center space-x-2"
+          >
+            <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
+            <div class="whitespace-nowrap">Bitbucket.org</div>
           </div>
         </dd>
       </div>

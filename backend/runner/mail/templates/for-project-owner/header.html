@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<meta content="text/html; charset=UTF-8" />
+<html lang="en">
+    <head>
+        <style type="text/css">
+            .mail-heading {
+                font-size: 40px;
+                line-height: 1.3;
+                font-weight: 700;
+                text-align: center;
+                letter-spacing:-1px;
+            }
+            .mail-text {
+                font-size: 16px;
+                line-height: 20px;
+                margin-top: 16px;
+                margin-left:0;
+                margin-right:0;
+                word-wrap: normal;
+            }
+            .project-title {
+                font-size: 32px;
+                line-height: 20px;
+                word-wrap: normal;
+            }
+            .environment-title {
+                font-size: 24px;
+                line-height: 20px;
+                word-wrap: normal;
+            }
+            .hint-text {
+                font-size: 20px;
+                line-height: 20px;
+                word-wrap: normal;
+            }
+            .text-center {
+                text-align: center;
+            }
+            .sql-text {
+                font-size: 16px;
+                line-height: 20px;
+                word-wrap: normal;
+                font-family: monospace;
+            }
+
+            #slow-query td, #slow-query th {
+                border: 1px solid #ddd;
+                padding: 8px;
+            }
+
+            #slow-query tr:nth-child(even){background-color: #f2f2f2;}
+
+            #slow-query tr:hover {background-color: #ddd;}
+
+            #slow-query th {
+                padding-top: 12px;
+                padding-bottom: 12px;
+                text-align: left;
+                background-color: #4f46e5;
+                color: white;
+            }
+        </style>
+    </head>
+    <body style="background-color: #ffffff;font-family:-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Roboto,Oxygen-Sans,Ubuntu,Cantarell,&quot;Helvetica Neue&quot;,monospace,sans-serif">
+        <h1 data-id="mail-heading" class="mail-heading">{{PROJECT_NAME}} database slow query weekly report {{BEGIN_DATE}} ~ {{END_DATE}}</h1>
+        <p data-id="mail-first-graph" class="mail-text" style="text-align: center;">
+            Below is the {{PROJECT_NAME}} slow query for {{BEGIN_DATE}} ~ {{END_DATE}}, each database lists at most 5 slow queries.
+            <br>
+        </p>
+        <div style="margin-top: 32px;">
+            <h2 class="project-title text-center"><a href="{{PROJECT_LINK}}">{{PROJECT_NAME}}</a> </h2>

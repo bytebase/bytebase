@@ -1,0 +1,32 @@
+- statement: CREATE TABLE t(a serial primary key, b int default 1)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+- statement: |-
+    CREATE TABLE t(
+      a int,
+      b int default 1
+    )
+  want:
+    - status: WARN
+      code: 420
+      title: column.require-default
+      content: Column "t"."a" in schema "public" doesn't have DEFAULT
+      line: 2
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a BLOB;
+    ALTER TABLE tech_book ADD COLUMN b timestamp;
+  want:
+    - status: WARN
+      code: 420
+      title: column.require-default
+      content: Column "tech_book"."a" in schema "public" doesn't have DEFAULT
+      line: 1
+    - status: WARN
+      code: 420
+      title: column.require-default
+      content: Column "tech_book"."b" in schema "public" doesn't have DEFAULT
+      line: 2

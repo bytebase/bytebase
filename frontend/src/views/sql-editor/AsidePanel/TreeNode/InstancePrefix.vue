@@ -1,0 +1,34 @@
+<template>
+  <InstanceV1EngineIcon :instance="instance" />
+  <span class="text-sm -mr-0.5" :class="[!disabled && 'text-gray-500']">
+    (
+  </span>
+  <ProductionEnvironmentV1Icon
+    :environment="instance.environmentEntity"
+    class="w-4 h-4 text-inherit"
+  />
+  <span class="text-sm" :class="[!disabled && 'text-gray-500']">
+    {{ instance.environmentEntity.title }}
+  </span>
+  <span class="text-sm -ml-0.5" :class="[!disabled && 'text-gray-500']">
+    )
+  </span>
+</template>
+
+<script setup lang="ts">
+import {
+  InstanceV1EngineIcon,
+  ProductionEnvironmentV1Icon,
+} from "@/components/v2";
+import { ComposedInstance } from "@/types";
+
+withDefaults(
+  defineProps<{
+    instance: ComposedInstance;
+    disabled?: boolean;
+  }>(),
+  {
+    disabled: false,
+  }
+);
+</script>

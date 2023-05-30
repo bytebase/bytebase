@@ -27,9 +27,14 @@ module.exports = {
     { pattern: /^text-yellow-/ },
     { pattern: /^text-red-/ },
     { pattern: /^grid-cols-/ },
+    { pattern: /^(uppercase|lowercase|capitalize)$/ },
   ],
   theme: {
     extend: {
+      screens: {
+        "3xl": "1920px",
+        "4xl": "2160px",
+      },
       colors: {
         accent: "var(--color-accent)",
         "accent-disabled": "var(--color-accent-disabled)",
@@ -79,6 +84,7 @@ module.exports = {
         176: "44rem",
         192: "48rem",
         208: "52rem",
+        320: "80rem",
       },
       animation: {
         "ping-slow": "ping-slow 2500ms cubic-bezier(0.4, 0, 0.6, 1) infinite",
@@ -97,6 +103,7 @@ module.exports = {
       },
     },
   },
+  darkMode: "class",
   variants: {
     extend: {
       ringWidth: ["focus-visible"],

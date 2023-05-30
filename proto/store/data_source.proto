@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message DataSourceOptions {
+  // srv is a boolean flag that indicates whether the host is a DNS SRV record.
+  bool srv = 1;
+
+  // authentication_database is the database name to authenticate against, which stores the user credentials.
+  string authentication_database = 2;
+
+  // sid and service_name are used for Oracle.
+  string sid = 3;
+  string service_name = 4;
+  // SSH related
+  // The hostname of the SSH server agent.
+  string ssh_host = 5;
+  // The port of the SSH server agent. It's 22 typically.
+  string ssh_port = 6;
+  // The user to login the server.
+  string ssh_user = 7;
+  // The password to login the server. If it's empty string, no password is required.
+  string ssh_obfuscated_password = 8;
+  // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
+  string ssh_obfuscated_private_key = 9;
+}

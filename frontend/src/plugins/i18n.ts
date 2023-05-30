@@ -4,7 +4,7 @@ import { useLocalStorage } from "@vueuse/core";
 import _ from "lodash-es";
 
 const localPathPrefix = "../locales/";
-const validLocaleList = ["en-US", "zh-CN"];
+const validLocaleList = ["en-US", "zh-CN", "es-ES"];
 
 const getValidLocale = () => {
   const storage = useLocalStorage("bytebase_options", {}) as any;
@@ -70,6 +70,8 @@ const i18n = createI18n({
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 export const t = i18n.global.t;
+
+export const te = i18n.global.te;
 
 export const curLocale = i18n.global.locale;
 

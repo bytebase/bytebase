@@ -129,19 +129,9 @@ import type {
   IssueStatusTransition,
   IssueStatusTransitionType,
 } from "@/types";
-import {
-  ASSIGNEE_APPLICABLE_ACTION_LIST,
-  CREATOR_APPLICABLE_ACTION_LIST,
-  ISSUE_STATUS_TRANSITION_LIST,
-  SYSTEM_BOT_ID,
-} from "@/types";
-import { allTaskList, hasWorkspacePermission } from "@/utils";
-import {
-  pushNotification,
-  refreshIssueList,
-  useCurrentUser,
-  useIssueStore,
-} from "@/store";
+import { ISSUE_STATUS_TRANSITION_LIST } from "@/types";
+import { pushNotification, refreshIssueList, useIssueStore } from "@/store";
+import { calcApplicableIssueStatusTransitionList } from "./logic";
 
 type RequestStats = {
   total: number;
@@ -181,63 +171,12 @@ const state = reactive<LocalState>({
   },
 });
 
-const currentUser = useCurrentUser();
 const issueStore = useIssueStore();
 const { t } = useI18n();
 
-const getApplicableIssueStatusTransitionList = (
-  issue: Issue
-): IssueStatusTransition[] => {
-  const actionList: IssueStatusTransitionType[] = [];
-
-  // The current user is the assignee of the issue
-  // or the assignee is SYSTEM_BOT and the current user can manage issue.
-  // Users with manage issue permission can change the assignee. If they do
-  // want to change the issue status, we require them to first change the assignee
-  // and then change the issue status to avoid accidental click.
-  const isAssignee =
-    currentUser.value.id === issue.assignee?.id ||
-    (issue.assignee?.id == SYSTEM_BOT_ID &&
-      hasWorkspacePermission(
-        "bb.permission.workspace.manage-issue",
-        currentUser.value.role
-      ));
-  const isCreator = currentUser.value.id === issue.creator.id;
-  if (isAssignee) {
-    actionList.push(...ASSIGNEE_APPLICABLE_ACTION_LIST.get(issue.status)!);
-  }
-  if (isCreator) {
-    CREATOR_APPLICABLE_ACTION_LIST.get(issue.status)!.forEach((item) => {
-      if (actionList.indexOf(item) === -1) {
-        actionList.push(item);
-      }
-    });
-  }
-
-  const applicableActionList: IssueStatusTransition[] = [];
-
-  actionList.forEach((type) => {
-    const transition = ISSUE_STATUS_TRANSITION_LIST.get(type)!;
-    const taskList = allTaskList(issue.pipeline);
-    if (taskList.some((task) => task.status === "RUNNING")) {
-      // Disallow any issue status transition if some of the tasks are in RUNNING state.
-      return;
-    }
-    if (type === "RESOLVE") {
-      // Disallow to "resolve" issue if some of the tasks are NOT DONE.
-      if (taskList.some((task) => task.status !== "DONE")) {
-        return;
-      }
-    }
-    applicableActionList.push(transition);
-  });
-
-  return applicableActionList;
-};
-
 const issueTransitionList = computed(() => {
   return props.issueList.map((issue) => {
-    const transitions = getApplicableIssueStatusTransitionList(issue);
+    const transitions = calcApplicableIssueStatusTransitionList(issue);
     return { issue, transitions };
   });
 });

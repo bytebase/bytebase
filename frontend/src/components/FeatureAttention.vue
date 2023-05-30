@@ -14,7 +14,8 @@ import { PropType, computed } from "vue";
 import { FeatureType, planTypeToString } from "@/types";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useSubscriptionStore, pushNotification } from "@/store";
+import { useSubscriptionV1Store, pushNotification } from "@/store";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const props = defineProps({
   feature: {
@@ -35,8 +36,7 @@ const props = defineProps({
 
 const router = useRouter();
 const { t } = useI18n();
-const subscriptionStore = useSubscriptionStore();
-const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
+const subscriptionStore = useSubscriptionV1Store();
 
 const actionText = computed(() => {
   if (!subscriptionStore.canTrial) {
@@ -51,15 +51,21 @@ const actionText = computed(() => {
 });
 
 const descriptionText = computed(() => {
+  const startTrial = subscriptionStore.canUpgradeTrial
+    ? t("subscription.upgrade-trial")
+    : t("subscription.trial-for-days", {
+        days: subscriptionStore.trialingDays,
+      });
+  if (!Array.isArray(subscriptionStore.featureMatrix.get(props.feature))) {
+    return `${props.description}\n${startTrial}`;
+  }
+
+  const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
   const trialText = t("subscription.required-plan-with-trial", {
     requiredPlan: t(
       `subscription.plan.${planTypeToString(requiredPlan)}.title`
     ),
-    startTrial: subscriptionStore.canUpgradeTrial
-      ? t("subscription.upgrade-trial").toLowerCase()
-      : t("subscription.trial-for-days", {
-          days: subscriptionStore.trialingDays,
-        }).toLowerCase(),
+    startTrial: startTrial,
   });
 
   return `${props.description}\n${trialText}`;
@@ -68,7 +74,7 @@ const descriptionText = computed(() => {
 const onClick = () => {
   if (subscriptionStore.canTrial) {
     const isUpgrade = subscriptionStore.canUpgradeTrial;
-    subscriptionStore.trialSubscription(requiredPlan).then(() => {
+    subscriptionStore.trialSubscription(PlanType.ENTERPRISE).then(() => {
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -76,7 +82,9 @@ const onClick = () => {
         description: isUpgrade
           ? t("subscription.successfully-upgrade-trial", {
               plan: t(
-                `subscription.plan.${planTypeToString(requiredPlan)}.title`
+                `subscription.plan.${planTypeToString(
+                  subscriptionStore.currentPlan
+                )}.title`
               ),
             })
           : t("subscription.successfully-start-trial", {

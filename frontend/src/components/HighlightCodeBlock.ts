@@ -14,19 +14,19 @@ export default defineComponent({
     },
     tag: {
       type: String,
-      default: "div",
+      default: "pre",
     },
   },
   render() {
     const { code, language, tag } = this.$props;
+    const { class: additionalClass } = this.$attrs;
 
     const result = hljs.highlight(code, {
       language: language,
     });
-    result.language;
 
     return h(tag, {
-      class: language,
+      class: [language, additionalClass],
       innerHTML: result.value,
     });
   },

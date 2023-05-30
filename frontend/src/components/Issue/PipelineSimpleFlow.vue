@@ -1,54 +1,68 @@
 <template>
   <div class="pipeline-standard-flow divide-y">
-    <PipelineStageList>
-      <template #task-name-of-stage="{ stage }">
-        {{ taskNameOfStage(stage) }}
-      </template>
-    </PipelineStageList>
+    <PipelineStageList />
 
-    <div
-      v-if="shouldShowTaskBar"
-      class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
-    >
-      <template v-for="(task, i) in taskList" :key="i">
-        <div
-          class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center overflow-hidden"
-          :class="taskClass(task)"
-          @click="onClickTask(task, i)"
-        >
-          <div class="flex-1">
+    <div v-if="shouldShowTaskBar" class="relative">
+      <div
+        ref="taskBar"
+        class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 max-h-48 overflow-y-auto"
+        :class="{
+          'more-bottom': taskBarScrollState.bottom,
+          'more-top': taskBarScrollState.top,
+        }"
+      >
+        <template v-for="(task, i) in taskList" :key="i">
+          <div
+            class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 justify-between items-center overflow-hidden"
+            :class="taskClass(task)"
+            :data-task-id="create ? '' : (task as Task).id"
+            @click="onClickTask(task, i)"
+          >
             <div class="flex items-center pb-1">
-              <TaskStatusIcon
-                :create="create"
-                :active="isActiveTask(task)"
-                :status="task.status"
-                class="transform scale-75"
-              />
-              <heroicons-solid:arrow-narrow-right
-                v-if="isActiveTask(task)"
-                class="name w-5 h-5"
-              />
-              <div class="name">
-                {{ databaseForTask(task).name }}
-                <span v-if="schemaVersionForTask(task)" class="schema-version">
-                  ({{ schemaVersionForTask(task) }})
+              <div class="flex items-center flex-1 gap-x-1">
+                <TaskStatusIcon
+                  :create="create"
+                  :active="isActiveTask(task)"
+                  :status="task.status"
+                  :task="task"
+                  class="transform scale-75"
+                />
+                <div class="name flex-1 space-x-1 overflow-x-hidden">
+                  <heroicons-solid:arrow-narrow-right
+                    v-if="isActiveTask(task)"
+                    class="w-5 h-5 inline-block"
+                  />
+                  <span>{{ databaseForTask(task).name }}</span>
+                  <span
+                    v-if="schemaVersionForTask(task)"
+                    class="schema-version"
+                  >
+                    ({{ schemaVersionForTask(task) }})
+                  </span>
+                </div>
+              </div>
+              <TaskExtraActionsButton :task="(task as Task)" />
+            </div>
+            <div class="flex items-center justify-between px-1 py-1">
+              <div class="flex flex-1 items-center whitespace-pre-wrap">
+                <InstanceEngineIcon
+                  :instance="databaseForTask(task).instance"
+                />
+                <span class="flex-1 ml-2 overflow-x-hidden whitespace-pre-wrap">
+                  {{ instanceName(databaseForTask(task).instance) }}
                 </span>
               </div>
             </div>
-            <div class="flex items-center px-1 py-1 whitespace-pre-wrap">
-              <InstanceEngineIcon :instance="databaseForTask(task).instance" />
-              <span class="flex-1 ml-2 overflow-x-hidden whitespace-pre-wrap">{{
-                instanceName(databaseForTask(task).instance)
-              }}</span>
-            </div>
           </div>
-        </div>
-      </template>
+        </template>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { computed, ref } from "vue";
+
 import { useDatabaseStore } from "@/store";
 import {
   Database,
@@ -60,9 +74,10 @@ import {
   TaskDatabaseCreatePayload,
   unknown,
 } from "@/types";
-import { activeTaskInStage, taskSlug } from "@/utils";
-import { computed, watchEffect } from "vue";
+import { taskSlug } from "@/utils";
 import { useIssueLogic } from "./logic";
+import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
+import { useVerticalScrollState } from "@/composables/useScrollState";
 
 const {
   create,
@@ -75,19 +90,8 @@ const {
 } = useIssueLogic();
 const databaseStore = useDatabaseStore();
 
-const taskNameOfStage = (stage: Stage | StageCreate) => {
-  if (create.value) {
-    return stage.taskList[0].status;
-  }
-  const activeTask = activeTaskInStage(stage as Stage);
-  const { taskList } = stage as Stage;
-  for (let i = 0; i < stage.taskList.length; i++) {
-    if (taskList[i].id == activeTask.id) {
-      return `${activeTask.name} (${i + 1}/${stage.taskList.length})`;
-    }
-  }
-  return activeTask.name;
-};
+const taskBar = ref<HTMLDivElement>();
+const taskBarScrollState = useVerticalScrollState(taskBar, 192);
 
 const pipeline = computed(() => issue.value.pipeline!);
 
@@ -183,12 +187,6 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
 
   selectStageOrTask(stageId, ts);
 };
-
-watchEffect(() => {
-  if (create.value) {
-    databaseStore.fetchDatabaseListByProjectId(project.value.id);
-  }
-});
 </script>
 
 <style scoped lang="postcss">
@@ -196,10 +194,10 @@ watchEffect(() => {
   @apply border-info;
 }
 .task .name {
-  @apply ml-1 overflow-x-hidden whitespace-nowrap overflow-ellipsis;
+  @apply whitespace-pre-wrap break-all;
 }
 .task .schema-version {
-  @apply ml-1 text-sm;
+  @apply text-sm;
 }
 .task.active .name {
   @apply font-bold;
@@ -220,5 +218,22 @@ watchEffect(() => {
 }
 .task.status_failed .name {
   @apply text-red-500;
+}
+
+.task-list::before {
+  @apply absolute top-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  content: "";
+  box-shadow: none;
+}
+.task-list::after {
+  @apply absolute bottom-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  content: "";
+  box-shadow: none;
+}
+.task-list.more-top::before {
+  box-shadow: inset 0 0.5rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
+}
+.task-list.more-bottom::after {
+  box-shadow: inset 0 -0.5rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
 }
 </style>

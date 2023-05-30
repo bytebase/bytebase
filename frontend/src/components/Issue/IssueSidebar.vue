@@ -1,7 +1,7 @@
 <template>
   <aside class="pr-0.5">
     <h2 class="sr-only">Details</h2>
-    <div class="grid gap-y-6 gap-x-6 grid-cols-3">
+    <div class="grid gap-y-6 gap-x-1 grid-cols-3">
       <template v-if="!create">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ $t("common.status") }}
@@ -19,24 +19,32 @@
         </div>
       </template>
 
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        {{ $t("common.assignee")
-        }}<span v-if="create" class="text-red-600">*</span>
+      <template v-if="!create">
+        <IssueReviewSidebarSection />
+      </template>
+
+      <h2 class="textlabel flex items-center col-span-1 col-start-1 gap-x-1">
+        <span>{{ $t("common.assignee") }}</span>
+        <span>
+          <NTooltip>
+            <template #trigger>
+              <heroicons-outline:question-mark-circle />
+            </template>
+            <div>{{ $t("issue.assignee-tooltip") }}</div>
+          </NTooltip>
+        </span>
+        <span v-if="create" class="text-red-600">*</span>
+        <AssigneeAttentionButton />
       </h2>
       <!-- Only DBA can be assigned to the issue -->
       <div class="col-span-2" data-label="bb-assignee-select-container">
-        <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           class="w-full"
           :disabled="!allowEditAssignee"
-          :selectedId="create ? (issue as IssueCreate).assigneeId : (issue as Issue).assignee?.id"
-          :custom-filter="filterPrincipal"
+          :selected-id="assigneeId"
+          :custom-filter="filterUser"
           data-label="bb-assignee-select"
-          @select-principal-id="
-            (principalId: number) => {
-              updateAssigneeId(principalId)
-            }
-          "
+          @select-user-id="updateAssigneeId"
         />
       </div>
 
@@ -71,7 +79,7 @@
       </template>
     </div>
     <div
-      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
+      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-1 grid-cols-3"
     >
       <template v-if="showStageSelect">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -79,8 +87,8 @@
         </h2>
         <div class="col-span-2">
           <StageSelect
-            :pipeline="(issue as Issue).pipeline"
-            :selected-id="(selectedStage as Stage).id"
+            :pipeline="(issue as Issue).pipeline!"
+            :selected-id="(selectedStage as Stage).id as number"
             @select-stage-id="(stageId) => selectStageOrTask(stageId)"
           />
         </div>
@@ -92,13 +100,15 @@
         </h2>
         <div class="col-span-2">
           <TaskSelect
-            :pipeline="(issue as Issue).pipeline"
+            :pipeline="(issue as Issue).pipeline!"
             :stage="(selectedStage as Stage)"
             :selected-id="(selectedTask as Task).id"
             @select-task-id="(taskId) => selectTaskId(taskId)"
           />
         </div>
       </template>
+
+      <TaskRollbackView />
 
       <template v-if="!isTenantMode">
         <!--
@@ -108,13 +118,14 @@
         <div>
           <h2 class="textlabel flex items-center">
             <span class="mr-1">{{ $t("common.when") }}</span>
-            <div class="tooltip-wrapper">
-              <span class="tooltip w-60">{{
-                $t("task.earliest-allowed-time-hint")
-              }}</span>
-              <!-- Heroicons name: outline/question-mark-circle -->
-              <heroicons-outline:question-mark-circle class="h-4 w-4" />
-            </div>
+            <NTooltip>
+              <template #trigger>
+                <heroicons-outline:question-mark-circle class="h-4 w-4" />
+              </template>
+              <div class="w-60">
+                {{ $t("task.earliest-allowed-time-hint") }}
+              </div>
+            </NTooltip>
           </h2>
           <h2 class="text-gray-600 text-sm">
             <span class="row-span-1">{{ "UTC" + dayjs().format("ZZ") }}</span>
@@ -165,37 +176,41 @@
             }
           "
         >
-          {{ databaseName }}
-          <br />
-          <span class="text-control-light">{{
-            showDatabaseCreationLabel
-          }}</span>
+          <div class="flex items-center">
+            <span>{{ databaseName }}</span>
+            <SQLEditorButton
+              v-if="databaseEntity"
+              class="ml-1"
+              :database="databaseEntity"
+            />
+          </div>
+          <div class="text-control-light">{{ showDatabaseCreationLabel }}</div>
         </div>
       </template>
 
-      <template v-if="showInstance">
-        <h2 class="textlabel flex items-center col-span-1 col-start-1">
-          <span class="mr-1">{{ $t("common.instance") }}</span>
-          <InstanceEngineIcon :instance="instance" />
-        </h2>
-        <router-link
-          :to="`/instance/${instanceSlug(instance)}`"
-          class="col-span-2 text-sm font-medium text-main hover:underline"
-        >
-          {{ instanceName(instance) }}
-        </router-link>
-      </template>
+      <h2 class="textlabel flex items-center col-span-1 col-start-1">
+        <span class="mr-1">{{ $t("common.instance") }}</span>
+        <InstanceEngineIcon :instance="instance" />
+      </h2>
+      <router-link
+        v-if="allowManageInstance"
+        :to="`/instance/${instanceSlug(instance)}`"
+        class="col-span-2 text-sm font-medium text-main hover:underline"
+      >
+        {{ instanceName(instance) }}
+      </router-link>
+      <span v-else class="col-span-2 text-sm font-medium text-main">
+        {{ instanceName(instance) }}
+      </span>
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.environment") }}
       </h2>
-      <router-link
-        :to="`/environment/${environmentSlug(environment)}`"
-        class="col-span-2 text-sm font-medium text-main hover:underline flex items-center"
-      >
-        {{ environmentName(environment) }}
-        <ProtectedEnvironmentIcon class="ml-1" :environment="environment" />
-      </router-link>
+      <EnvironmentV1Name
+        :environment="environment"
+        :link="true"
+        class="col-span-2 !text-sm !font-medium !text-main !hover:underline flex items-center"
+      />
 
       <template v-for="label in visibleLabelList" :key="label.key">
         <h2
@@ -204,23 +219,23 @@
           {{ hidePrefix(label.key) }}
         </h2>
 
-        <div class="col-span-2 text-sm font-medium text-main capitalize">
+        <div class="col-span-2 text-sm font-medium text-main">
           {{ label.value }}
         </div>
       </template>
     </div>
     <div
-      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-6 grid-cols-3"
+      class="mt-6 border-t border-block-border pt-6 grid gap-y-6 gap-x-1 grid-cols-3"
     >
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         {{ $t("common.project") }}
       </h2>
-      <router-link
-        :to="`/project/${projectSlug(project)}`"
+      <ProjectV1Name
+        :project="project"
+        :link="true"
+        :plain="true"
         class="col-span-2 text-sm font-medium text-main hover:underline"
-      >
-        {{ projectName(project) }}
-      </router-link>
+      />
 
       <template v-if="!create">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -272,25 +287,27 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, watch } from "vue";
+import { computed, PropType, reactive, ref, watch, watchEffect } from "vue";
 import { isEqual } from "lodash-es";
-import { NDatePicker } from "naive-ui";
+import { NDatePicker, NTooltip } from "naive-ui";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+
 import StageSelect from "./StageSelect.vue";
 import TaskSelect from "./TaskSelect.vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
+import { IssueReviewSidebarSection } from "./review";
 import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
+import TaskRollbackView from "./rollback/TaskRollbackView.vue";
 import InstanceEngineIcon from "../InstanceEngineIcon.vue";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import MemberSelect from "../MemberSelect.vue";
 import FeatureModal from "../FeatureModal.vue";
+import { EnvironmentV1Name } from "@/components/v2";
 import { InputField } from "@/plugins";
-import type {
+import {
   Database,
-  Environment,
-  Project,
   Issue,
   IssueCreate,
   Task,
@@ -299,32 +316,36 @@ import type {
   StageCreate,
   Instance,
   DatabaseLabel,
-  Principal,
+  UNKNOWN_ID,
 } from "@/types";
 import {
   allTaskList,
   databaseSlug,
-  isReservedDatabaseLabel,
-  hasWorkspacePermission,
+  hasWorkspacePermissionV1,
   hidePrefix,
   taskSlug,
-  isOwnerOfProject,
   extractDatabaseNameFromTask,
+  PRESET_LABEL_KEYS,
+  extractUserUID,
 } from "@/utils";
 import {
   hasFeature,
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
-  useEnvironmentStore,
-  useLabelList,
-  useProjectStore,
+  useEnvironmentV1Store,
+  useProjectV1Store,
 } from "@/store";
 import {
+  allowUserToBeAssignee,
+  allowUserToChangeAssignee,
+  useCurrentRollOutPolicyForActiveEnvironment,
   useExtraIssueLogic,
   useIssueLogic,
-  useAllowProjectOwnerToApprove,
 } from "./logic";
-import ProtectedEnvironmentIcon from "@/components/Environment/ProtectedEnvironmentIcon.vue";
+import { SQLEditorButton } from "@/components/DatabaseDetail";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { ProjectV1Name } from "@/components/v2";
+import { User } from "@/types/proto/v1/auth_service";
 
 dayjs.extend(isSameOrAfter);
 
@@ -345,7 +366,7 @@ const props = defineProps({
 });
 
 const router = useRouter();
-const projectStore = useProjectStore();
+const projectV1Store = useProjectV1Store();
 
 const {
   create,
@@ -375,9 +396,10 @@ const allowEdit = computed(() => {
   // is performing the issue based on the old value.
   // For now, we choose to be on the safe side at the cost of flexibility.
   const issueEntity = issue.value as Issue;
+  const currentUserUID = extractUserUID(currentUserV1.value.name);
   return (
-    issueEntity.status == "OPEN" &&
-    issueEntity.assignee?.id == currentUser.value.id
+    issueEntity.status === "OPEN" &&
+    String(issueEntity.assignee?.id) === currentUserUID
   );
 });
 
@@ -392,7 +414,7 @@ watch(selectedTask, (cur) => {
   state.earliestAllowedTs = cur.earliestAllowedTs;
 });
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const fieldValue = <T = string>(field: InputField): T => {
   return issue.value.payload[field.id] as T;
@@ -403,36 +425,41 @@ const databaseName = computed((): string | undefined => {
 });
 
 const environment = computed((): Environment => {
-  if (create.value) {
-    const stage = selectedStage.value as StageCreate;
-    return useEnvironmentStore().getEnvironmentById(stage.environmentId);
-  }
-  const stage = selectedStage.value as Stage;
-  return stage.environment;
+  const environmentId = create.value
+    ? (selectedStage.value as StageCreate).environmentId
+    : (selectedStage.value as Stage).environment.id;
+
+  return useEnvironmentV1Store().getEnvironmentByUID(String(environmentId));
 });
 
-const project = computed((): Project => {
-  if (create.value) {
-    return projectStore.getProjectById((issue.value as IssueCreate).projectId);
-  }
-  return (issue.value as Issue).project;
+const project = computed(() => {
+  const projectUID = create.value
+    ? (issue.value as IssueCreate).projectId
+    : (issue.value as Issue).project.id;
+  return projectV1Store.getProjectByUID(String(projectUID));
 });
 
-const labelList = useLabelList();
+const assigneeId = computed(() => {
+  if (create.value) {
+    return String((issue.value as IssueCreate).assigneeId);
+  }
+  return String((issue.value as Issue).assignee.id);
+});
+
+const databaseEntity = ref<Database>();
 
 const visibleLabelList = computed((): DatabaseLabel[] => {
   // transform non-reserved labels to db properties
   if (!props.database) return [];
-  if (labelList.value.length === 0) return [];
 
-  return props.database.labels.filter(
-    (label) => !isReservedDatabaseLabel(label, labelList.value)
+  return props.database.labels.filter((label) =>
+    PRESET_LABEL_KEYS.includes(label.key)
   );
 });
 
 const showStageSelect = computed((): boolean => {
   return (
-    !create.value && allTaskList((issue.value as Issue).pipeline).length > 1
+    !create.value && allTaskList((issue.value as Issue).pipeline!).length > 1
   );
 });
 
@@ -444,10 +471,10 @@ const showTaskSelect = computed((): boolean => {
   return taskList.length > 1;
 });
 
-const showInstance = computed((): boolean => {
-  return hasWorkspacePermission(
+const allowManageInstance = computed((): boolean => {
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-instance",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -455,30 +482,7 @@ const allowEditAssignee = computed(() => {
   if (create.value) {
     return true;
   }
-  const issueEntity = issue.value as Issue;
-  if (issueEntity.status !== "OPEN") {
-    return false;
-  }
-
-  // Who can re-assign the issue?
-  // - The issue creator
-  // - The current assignee
-  // - Workspace owners and DBAs (they always have the highest privileges)
-  if (currentUser.value.id === issueEntity.creator.id) {
-    return true;
-  }
-  if (currentUser.value.id === issueEntity.assignee.id) {
-    return true;
-  }
-  if (
-    hasWorkspacePermission(
-      "bb.permission.workspace.manage-issue",
-      currentUser.value.role
-    )
-  ) {
-    return true;
-  }
-  return false;
+  return allowUserToChangeAssignee(currentUserV1.value, issue.value as Issue);
 });
 
 const allowEditEarliestAllowedTime = computed(() => {
@@ -488,10 +492,11 @@ const allowEditEarliestAllowedTime = computed(() => {
   // only the assignee is allowed to modify EarliestAllowedTime
   const issueEntity = issue.value as Issue;
   const task = selectedTask.value as Task;
+  const currentUserUID = extractUserUID(currentUserV1.value.name);
   return (
-    issueEntity.status == "OPEN" &&
-    (task.status == "PENDING" || task.status == "PENDING_APPROVAL") &&
-    currentUser.value.id == issueEntity.assignee.id
+    issueEntity.status === "OPEN" &&
+    (task.status === "PENDING" || task.status === "PENDING_APPROVAL") &&
+    currentUserUID === String(issueEntity.assignee.id)
   );
 });
 
@@ -551,6 +556,30 @@ const clickDatabase = () => {
   }
 };
 
+watchEffect(() => {
+  if (props.database) {
+    databaseEntity.value = props.database;
+  } else {
+    const name = databaseName.value;
+    if (name) {
+      useDatabaseStore()
+        .fetchDatabaseByInstanceIdAndName({
+          instanceId: props.instance.id,
+          name,
+        })
+        .then((db) => {
+          if (db && db.id !== UNKNOWN_ID) {
+            databaseEntity.value = db;
+          } else {
+            databaseEntity.value = undefined;
+          }
+        });
+    } else {
+      databaseEntity.value = undefined;
+    }
+  }
+});
+
 const isDayPassed = (ts: number) => !dayjs(ts).isSameOrAfter(now, "day");
 
 const updateEarliestAllowedTs = (newTimestampMS: number) => {
@@ -572,17 +601,16 @@ const selectTaskId = (taskId: TaskId) => {
   if (!task) return;
   const slug = taskSlug(task.name, task.id);
   const stage = selectedStage.value as Stage;
-  selectStageOrTask(stage.id, slug);
+  selectStageOrTask(stage.id as number, slug);
 };
-
-const allowProjectOwnerToApprove = useAllowProjectOwnerToApprove();
-const filterPrincipal = (principal: Principal): boolean => {
-  if (allowProjectOwnerToApprove.value) {
-    return isOwnerOfProject(principal, project.value);
-  }
-  return hasWorkspacePermission(
-    "bb.permission.workspace.manage-issue",
-    principal.role
+const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
+const filterUser = (user: User): boolean => {
+  return allowUserToBeAssignee(
+    user,
+    project.value,
+    project.value.iamPolicy,
+    rollOutPolicy.value.policy,
+    rollOutPolicy.value.assigneeGroup
   );
 };
 </script>

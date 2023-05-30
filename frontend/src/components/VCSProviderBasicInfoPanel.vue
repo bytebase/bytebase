@@ -1,40 +1,64 @@
 <!-- eslint-disable vue/no-mutating-props -->
 <template>
   <div class="textlabel">
-    {{ $t("version-control.setting.add-git-provider.choose") }}
+    {{ $t("gitops.setting.add-git-provider.choose") }}
     <span class="text-red-600">*</span>
   </div>
   <div class="pt-4 radio-set-row">
-    <div class="radio space-x-2">
+    <label class="radio space-x-2">
       <input
-        v-model="config.type"
+        v-model="config.uiType"
         name="Self-host GitLab"
         tabindex="-1"
         type="radio"
         class="btn"
         value="GITLAB_SELF_HOST"
-        @change="changeType()"
+        @change="changeUIType()"
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
-      <label class="whitespace-nowrap"
-        >{{
-          $t("version-control.setting.add-git-provider.gitlab-self-host-ce-ee")
-        }}
-      </label>
-    </div>
-    <div class="radio space-x-2">
+      <span class="whitespace-nowrap">
+        {{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
+      </span>
+    </label>
+    <label class="radio space-x-2">
       <input
-        v-model="config.type"
+        v-model="config.uiType"
+        name="GitLab.com"
+        tabindex="-1"
+        type="radio"
+        class="btn"
+        value="GITLAB_COM"
+        @change="changeUIType()"
+      />
+      <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
+      <span class="whitespace-nowrap">GitLab.com</span>
+    </label>
+    <label class="radio space-x-2">
+      <input
+        v-model="config.uiType"
         name="GitHub.com"
         tabindex="-1"
         type="radio"
         class="btn"
         value="GITHUB_COM"
-        @change="changeType()"
+        @change="changeUIType()"
       />
       <img class="h-6 w-auto" src="../assets/github-logo.svg" />
-      <label class="whitespace-nowrap">GitHub.com</label>
-    </div>
+      <span class="whitespace-nowrap">GitHub.com</span>
+    </label>
+    <label class="radio space-x-2">
+      <input
+        v-model="config.uiType"
+        name="Bitbucket.org"
+        tabindex="-1"
+        type="radio"
+        class="btn"
+        value="BITBUCKET_ORG"
+        @change="changeUIType()"
+      />
+      <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
+      <span class="whitespace-nowrap">Bitbucket.org</span>
+    </label>
   </div>
   <div class="mt-4 relative">
     <div class="relative flex justify-start">
@@ -46,15 +70,9 @@
   <div class="mt-2 flex flex-row itmes-center space-x-4 text-xs">
     <div class="flex flex-row space-x-2 items-center text-control">
       <div class="h-5 w-5">
-        <img src="../assets/gitlab-logo.svg" />
-      </div>
-      <label class="whitespace-nowrap">GitLab.com </label>
-    </div>
-    <div class="flex flex-row space-x-2 items-center text-control">
-      <div class="h-5 w-5">
         <img src="../assets/github-logo.svg" />
       </div>
-      <label class="whitespace-nowrap">GitHub Enterprise </label>
+      <label class="whitespace-nowrap">GitHub Enterprise</label>
     </div>
   </div>
   <div class="mt-6 pt-6 border-t border-block-border textlabel">
@@ -62,9 +80,7 @@
   </div>
   <p class="mt-1 textinfolabel">
     {{
-      $t(
-        "version-control.setting.add-git-provider.basic-info.gitlab-instance-url-label"
-      )
+      $t("gitops.setting.add-git-provider.basic-info.gitlab-instance-url-label")
     }}
   </p>
   <BBTextField
@@ -75,21 +91,13 @@
     @input="changeUrl(($event.target as HTMLInputElement).value)"
   />
   <p v-if="state.showUrlError" class="mt-2 text-sm text-error">
-    {{
-      $t(
-        "version-control.setting.add-git-provider.basic-info.instance-url-error"
-      )
-    }}
+    {{ $t("gitops.setting.add-git-provider.basic-info.instance-url-error") }}
   </p>
   <div class="mt-4 textlabel">
-    {{ $t("version-control.setting.add-git-provider.basic-info.display-name") }}
+    {{ $t("gitops.setting.add-git-provider.basic-info.display-name") }}
   </div>
   <p class="mt-1 textinfolabel">
-    {{
-      $t(
-        "version-control.setting.add-git-provider.basic-info.display-name-label"
-      )
-    }}
+    {{ $t("gitops.setting.add-git-provider.basic-info.display-name-label") }}
   </p>
   <BBTextField
     class="mt-2 w-full"
@@ -139,39 +147,59 @@ export default defineComponent({
     });
 
     const namePlaceholder = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
-        return t("version-control.setting.add-git-provider.gitlab-self-host");
-      } else if (props.config.type == "GITHUB_COM") {
+      if (props.config.type == "GITLAB") {
+        if (props.config.uiType == "GITLAB_SELF_HOST") {
+          return t("gitops.setting.add-git-provider.gitlab-self-host");
+        } else if (props.config.uiType == "GITLAB_COM") {
+          return "GitLab.com";
+        }
+      } else if (props.config.type == "GITHUB") {
         return "GitHub.com";
+      } else if (props.config.type == "BITBUCKET") {
+        return "Bitbucket.org";
       }
       return "";
     });
 
     const instanceUrlLabel = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+      if (props.config.type == "GITLAB") {
         return t(
-          "version-control.setting.add-git-provider.basic-info.gitlab-instance-url"
+          "gitops.setting.add-git-provider.basic-info.gitlab-instance-url"
         );
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.type == "GITHUB") {
         return t(
-          "version-control.setting.add-git-provider.basic-info.github-instance-url"
+          "gitops.setting.add-git-provider.basic-info.github-instance-url"
+        );
+      } else if (props.config.type == "BITBUCKET") {
+        return t(
+          "gitops.setting.add-git-provider.basic-info.bitbucket-instance-url"
         );
       }
       return "";
     });
 
     const instanceUrlPlaceholder = computed((): string => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
-        return "https://gitlab.example.com";
-      } else if (props.config.type == "GITHUB_COM") {
+      if (props.config.type == "GITLAB") {
+        if (props.config.uiType == "GITLAB_SELF_HOST") {
+          return "https://gitlab.example.com";
+        } else if (props.config.uiType == "GITLAB_COM") {
+          return "https://gitlab.com";
+        }
+      } else if (props.config.type == "GITHUB") {
         return "https://github.com";
+      } else if (props.config.type == "BITBUCKET") {
+        return "https://bitbucket.org";
       }
       return "";
     });
 
     // github.com instance url is always https://github.com
     const instanceUrlDisabled = computed((): boolean => {
-      return props.config.type == "GITHUB_COM";
+      return (
+        props.config.type == "GITHUB" ||
+        props.config.type == "BITBUCKET" ||
+        (props.config.type == "GITLAB" && props.config.uiType == "GITLAB_COM")
+      );
     });
 
     const changeUrl = (value: string) => {
@@ -201,19 +229,37 @@ export default defineComponent({
     };
 
     // FIXME: Unexpected mutation of "config" prop. Do we care?
-    const changeType = () => {
-      if (props.config.type == "GITLAB_SELF_HOST") {
+    const changeUIType = () => {
+      if (props.config.uiType == "GITLAB_SELF_HOST") {
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.type = "GITLAB";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.name = t(
-          "version-control.setting.add-git-provider.gitlab-self-host"
+          "gitops.setting.add-git-provider.gitlab-self-host"
         );
-      } else if (props.config.type == "GITHUB_COM") {
+      } else if (props.config.uiType == "GITLAB_COM") {
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.type = "GITLAB";
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.instanceUrl = "https://gitlab.com";
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.name = "GitLab.com";
+      } else if (props.config.uiType == "GITHUB_COM") {
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.type = "GITHUB";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "https://github.com";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.name = "GitHub.com";
+      } else if (props.config.uiType == "BITBUCKET_ORG") {
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.type = "BITBUCKET";
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.instanceUrl = "https://bitbucket.org";
+        // eslint-disable-next-line vue/no-mutating-props
+        props.config.name = "Bitbucket.org";
       }
     };
 
@@ -224,7 +270,7 @@ export default defineComponent({
       instanceUrlPlaceholder,
       instanceUrlDisabled,
       changeUrl,
-      changeType,
+      changeUIType,
     };
   },
 });

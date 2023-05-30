@@ -1,24 +1,10 @@
-import {
-  AuthProvider,
-  DeploymentConfig,
-  EnvironmentId,
-  MigrationHistoryId,
-  Policy,
-  PolicyType,
-  QueryHistory,
-  View,
-  DBExtension,
-  Sheet,
-  OnboardingGuideType,
-} from ".";
+import { MigrationHistoryId, QueryHistory, OnboardingGuideType } from ".";
 import { Activity } from "./activity";
-import { ServerInfo } from "./actuator";
 import { Backup, BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
 import { Command } from "./common";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
-import { Environment } from "./environment";
 import {
   CommandId,
   DatabaseId,
@@ -28,46 +14,24 @@ import {
   PrincipalId,
   ProjectId,
   VCSId,
-  SheetId,
 } from "./id";
 import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
 import { InstanceUser } from "./InstanceUser";
 import { Issue } from "./issue";
 import { IssueSubscriber } from "./issueSubscriber";
-import { Member } from "./member";
 import { Notification } from "./notification";
-import { PlanType } from "./plan";
 import { Principal } from "./principal";
 import { Project } from "./project";
-import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
-import { Setting, SettingName } from "./setting";
-import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Label } from "./label";
-import { ConnectionAtom } from "./sqlEditor";
 import type { DebugLog } from "@/types/debug";
+import type { AuditLog } from "@/types/auditLog";
+import { DatabaseMetadata } from "./proto/store/database";
 
-export interface ActuatorState {
-  serverInfo?: ServerInfo;
-}
-
-export interface AuthState {
-  authProviderList: AuthProvider[];
-  currentUser: Principal;
-}
-
-export interface SettingState {
-  settingByName: Map<SettingName, Setting>;
-}
-
-export interface PlanState {
-  plan: PlanType;
-}
-
-export interface MemberState {
-  memberList: Member[];
+export interface AuditLogState {
+  auditLogList: AuditLog[];
 }
 
 export interface PrincipalState {
@@ -90,6 +54,7 @@ export interface InboxState {
 
 export interface IssueState {
   issueById: Map<IssueId, Issue>;
+  isCreatingIssue: boolean;
 }
 
 export interface IssueSubscriberState {
@@ -105,20 +70,8 @@ export interface StageState {}
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface TaskState {}
 
-export interface PolicyState {
-  policyMapByEnvironmentId: Map<EnvironmentId, Map<PolicyType, Policy>>;
-}
-
 export interface ProjectState {
   projectById: Map<ProjectId, Project>;
-}
-
-export interface ProjectWebhookState {
-  projectWebhookList: Map<ProjectId, ProjectWebhook[]>;
-}
-
-export interface EnvironmentState {
-  environmentList: Environment[];
 }
 
 export interface InstanceState {
@@ -138,22 +91,15 @@ export interface DatabaseState {
   // In those cases, we will iterate through this map and compute the list on the fly.
   // We save it by instance because database belongs to instance and saving this way
   // follows that hierarchy.
-  databaseListByInstanceId: Map<InstanceId, Database[]>;
+  databaseListByInstanceId: Map<string, Database[]>;
   // Used exclusively for project panel, we do this to avoid interference from databaseListByInstanceId
   // where updating databaseListByInstanceId will cause reloading project related UI due to reactivity
-  databaseListByProjectId: Map<ProjectId, Database[]>;
+  databaseListByProjectId: Map<string, Database[]>;
 }
 
-export interface TableState {
-  tableListByDatabaseId: Map<DatabaseId, Table[]>;
-}
-
-export interface ViewState {
-  viewListByDatabaseId: Map<DatabaseId, View[]>;
-}
-
-export interface DBExtensionState {
-  dbExtensionListByDatabaseId: Map<DatabaseId, DBExtension[]>;
+export interface DBSchemaState {
+  requestCache: Map<DatabaseId, Promise<DatabaseMetadata>>;
+  databaseMetadataById: Map<DatabaseId, DatabaseMetadata>;
 }
 
 export interface BackupState {
@@ -169,7 +115,7 @@ export interface VCSState {
 }
 
 export interface RepositoryState {
-  // repositoryListByVCSId are used in workspace version control panel, while repositoryByProjectId are used in project version control panel.
+  // repositoryListByVCSId are used in workspace GitOps panel, while repositoryByProjectId are used in project GitOps panel.
   // Because they are used separately, so we don't need to worry about repository inconsistency issue between them.
   repositoryListByVCSId: Map<VCSId, Repository[]>;
   repositoryByProjectId: Map<ProjectId, Repository>;
@@ -190,33 +136,12 @@ export interface LabelState {
   labelList: Label[];
 }
 
-export enum ConnectionTreeState {
-  UNSET,
-  LOADING,
-  LOADED,
-}
-
 export interface SQLEditorState {
-  connectionTree: {
-    data: ConnectionAtom[];
-    state: ConnectionTreeState;
-  };
-  expandedTreeNodeKeys: string[];
-  selectedTable: Table;
   shouldFormatContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
-}
-
-export interface DeploymentState {
-  deploymentConfigByProjectId: Map<ProjectId, DeploymentConfig>;
-}
-
-export interface SheetState {
-  sheetList: Sheet[];
-  sheetById: Map<SheetId, Sheet>;
 }
 
 export interface DebugState {

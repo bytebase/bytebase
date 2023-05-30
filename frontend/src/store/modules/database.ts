@@ -1,8 +1,8 @@
+import { isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import axios from "axios";
-import { computed, unref, watch } from "vue";
+import { computed, unref, watch, markRaw } from "vue";
 import {
-  Backup,
   Database,
   DatabaseFind,
   DatabaseId,
@@ -11,23 +11,21 @@ import {
   DataSource,
   empty,
   EMPTY_ID,
-  EnvironmentId,
   Instance,
   InstanceId,
   MaybeRef,
-  PrincipalId,
   Project,
-  ProjectId,
   ResourceIdentifier,
   ResourceObject,
   unknown,
   UNKNOWN_ID,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
-import { useBackupStore } from "./backup";
 import { useDataSourceStore } from "./dataSource";
 import { useInstanceStore } from "./instance";
-import { useProjectStore } from "./project";
+import { useLegacyProjectStore } from "./project";
+import { hasWorkspacePermissionV1, isMemberOfProjectV1 } from "@/utils";
+import { useProjectV1Store } from "./v1";
+import { User } from "@/types/proto/v1/auth_service";
 
 function convert(
   database: ResourceObject,
@@ -56,23 +54,14 @@ function convert(
     dataSourceList.push(dataSource);
   }
 
-  const sourceBackupId = database.relationships!.sourceBackup.data
-    ? (database.relationships!.sourceBackup.data as ResourceIdentifier).id
-    : undefined;
-  let sourceBackup: Backup | undefined = undefined;
-
   const instanceStore = useInstanceStore();
-  const projectStore = useProjectStore();
-  const backupStore = useBackupStore();
+  const projectStore = useLegacyProjectStore();
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = instanceStore.convert(item, includedList);
     }
     if (item.type == "project" && item.id == projectId) {
       project = projectStore.convert(item, includedList);
-    }
-    if (item.type == "backup" && item.id == sourceBackupId) {
-      sourceBackup = backupStore.convert(item, includedList);
     }
   }
 
@@ -99,29 +88,13 @@ function convert(
   const databaseWPartial = {
     ...(database.attributes as Omit<
       Database,
-      | "id"
-      | "instance"
-      | "project"
-      | "dataSourceList"
-      | "sourceBackup"
-      | "labels"
-      | "creator"
-      | "updater"
+      "id" | "instance" | "project" | "dataSourceList" | "labels"
     >),
     id: parseInt(database.id),
-    creator: getPrincipalFromIncludedList(
-      database.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      database.relationships!.updater.data,
-      includedList
-    ),
     instance,
     project,
     labels,
     dataSourceList: [],
-    sourceBackup,
   };
 
   for (const item of includedList || []) {
@@ -140,10 +113,10 @@ function convert(
     }
   }
 
-  return {
+  return markRaw({
     ...(databaseWPartial as Omit<Database, "dataSourceList">),
     dataSourceList,
-  };
+  });
 }
 
 const databaseSorter = (a: Database, b: Database): number => {
@@ -179,35 +152,60 @@ export const useDatabaseStore = defineStore("database", {
     ): Database {
       return convert(database, includedList);
     },
-    getDatabaseListByInstanceId(instanceId: InstanceId): Database[] {
-      return this.databaseListByInstanceId.get(instanceId) || [];
-    },
-    getDatabaseListByPrincipalId(userId: PrincipalId): Database[] {
+    getDatabaseList(): Database[] {
       const list: Database[] = [];
       for (const [_, databaseList] of this.databaseListByInstanceId) {
-        databaseList.forEach((item: Database) => {
-          for (const member of item.project.memberList) {
-            if (member.principal.id == userId) {
-              list.push(item);
-              break;
-            }
-          }
-        });
+        list.push(...databaseList);
       }
       return list;
     },
-    getDatabaseListByEnvironmentId(environmentId: EnvironmentId): Database[] {
+    getDatabaseListByInstanceId(instanceId: InstanceId): Database[] {
+      return this.databaseListByInstanceId.get(String(instanceId)) || [];
+    },
+    async getOrFetchDatabaseListByInstanceId(
+      instanceId: InstanceId
+    ): Promise<Database[]> {
+      const databaseList = this.databaseListByInstanceId.get(
+        String(instanceId)
+      );
+      if (isUndefined(databaseList)) {
+        await this.fetchDatabaseListByInstanceId(String(instanceId));
+      }
+      return this.databaseListByInstanceId.get(String(instanceId)) || [];
+    },
+    getDatabaseListByUser(user: User): Database[] {
+      const canManageDatabase = hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-database",
+        user.userRole
+      );
       const list: Database[] = [];
       for (const [_, databaseList] of this.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
-          if (item.instance.environment.id == environmentId) {
+          const projectV1 = useProjectV1Store().getProjectByUID(
+            String(item.project.id)
+          );
+          if (
+            canManageDatabase ||
+            isMemberOfProjectV1(projectV1.iamPolicy, user)
+          ) {
             list.push(item);
           }
         });
       }
       return list;
     },
-    getDatabaseListByProjectId(projectId: ProjectId): Database[] {
+    getDatabaseListByEnvironmentId(environmentId: string): Database[] {
+      const list: Database[] = [];
+      for (const [_, databaseList] of this.databaseListByInstanceId) {
+        databaseList.forEach((item: Database) => {
+          if (String(item.instance.environment.id) === environmentId) {
+            list.push(item);
+          }
+        });
+      }
+      return list;
+    },
+    getDatabaseListByProjectId(projectId: string): Database[] {
       return this.databaseListByProjectId.get(projectId) || [];
     },
     getDatabaseById(databaseId: DatabaseId, instanceId?: InstanceId): Database {
@@ -216,7 +214,8 @@ export const useDatabaseStore = defineStore("database", {
       }
 
       if (instanceId) {
-        const list = this.databaseListByInstanceId.get(instanceId) || [];
+        const list =
+          this.databaseListByInstanceId.get(String(instanceId)) || [];
         return (
           list.find((item) => item.id == databaseId) ||
           (unknown("DATABASE") as Database)
@@ -237,9 +236,24 @@ export const useDatabaseStore = defineStore("database", {
       projectId,
     }: {
       databaseList: Database[];
-      projectId: ProjectId;
+      projectId: string;
     }) {
       this.databaseListByProjectId.set(projectId, databaseList);
+    },
+    removeDatabaseListFromProject(databaseList: Database[]) {
+      for (const database of databaseList) {
+        const listByProject = this.databaseListByProjectId.get(
+          String(database.project.id)
+        );
+        if (listByProject) {
+          const i = listByProject.findIndex(
+            (item: Database) => item.id == database.id
+          );
+          if (i >= 0) {
+            listByProject.splice(i, 1);
+          }
+        }
+      }
     },
     upsertDatabaseList({
       databaseList,
@@ -249,11 +263,11 @@ export const useDatabaseStore = defineStore("database", {
       instanceId?: InstanceId;
     }) {
       if (instanceId) {
-        this.databaseListByInstanceId.set(instanceId, databaseList);
+        this.databaseListByInstanceId.set(String(instanceId), databaseList);
       } else {
         for (const database of databaseList) {
           const listByInstance = this.databaseListByInstanceId.get(
-            database.instance.id
+            String(database.instance.id)
           );
           if (listByInstance) {
             const i = listByInstance.findIndex(
@@ -265,11 +279,13 @@ export const useDatabaseStore = defineStore("database", {
               listByInstance.push(database);
             }
           } else {
-            this.databaseListByInstanceId.set(database.instance.id, [database]);
+            this.databaseListByInstanceId.set(String(database.instance.id), [
+              database,
+            ]);
           }
 
           const listByProject = this.databaseListByProjectId.get(
-            database.project.id
+            String(database.project.id)
           );
           if (listByProject) {
             const i = listByProject.findIndex(
@@ -281,7 +297,9 @@ export const useDatabaseStore = defineStore("database", {
               listByProject.push(database);
             }
           } else {
-            this.databaseListByProjectId.set(database.project.id, [database]);
+            this.databaseListByProjectId.set(String(database.project.id), [
+              database,
+            ]);
           }
         }
       }
@@ -317,7 +335,7 @@ export const useDatabaseStore = defineStore("database", {
       const databaseList = await this.fetchDatabaseList({
         instanceId,
       });
-
+      this.databaseListByInstanceId.set(String(instanceId), databaseList);
       return databaseList;
     },
     async fetchDatabaseByInstanceIdAndName({
@@ -334,7 +352,7 @@ export const useDatabaseStore = defineStore("database", {
 
       return databaseList[0];
     },
-    async fetchDatabaseListByProjectId(projectId: ProjectId) {
+    async fetchDatabaseListByProjectId(projectId: string) {
       const databaseList = await this.fetchDatabaseList({
         projectId,
       });
@@ -343,7 +361,7 @@ export const useDatabaseStore = defineStore("database", {
 
       return databaseList;
     },
-    async fetchDatabaseListByEnvironmentId(environmentId: EnvironmentId) {
+    async fetchDatabaseListByEnvironmentId(environmentId: string) {
       // Don't fetch the data source info as the current user may not have access to the
       // database of this particular environment.
       const data = (
@@ -378,26 +396,32 @@ export const useDatabaseStore = defineStore("database", {
       }
       return this.fetchDatabaseById(databaseId);
     },
-    async fetchDatabaseSchemaById(databaseId: DatabaseId): Promise<string> {
-      const url = `/api/database/${databaseId}/schema`;
+    async fetchDatabaseSchemaById(
+      databaseId: DatabaseId,
+      sdl = false
+    ): Promise<string> {
+      let url = `/api/database/${databaseId}/schema`;
+      if (sdl) {
+        url += "?sdl=true";
+      }
       const schema = (await axios.get(url)).data as string;
       return schema;
     },
     async transferProject({
-      databaseId,
+      database,
       projectId,
       labels,
     }: {
-      databaseId: DatabaseId;
-      projectId: ProjectId;
+      database: Database;
+      projectId: string;
       labels?: DatabaseLabel[];
     }) {
-      const attributes: any = { projectId };
+      const attributes: any = { projectId: Number(projectId) };
       if (labels) {
         attributes.labels = JSON.stringify(labels);
       }
       const data = (
-        await axios.patch(`/api/database/${databaseId}`, {
+        await axios.patch(`/api/database/${database.id}`, {
           data: {
             type: "databasePatch",
             attributes,
@@ -406,7 +430,7 @@ export const useDatabaseStore = defineStore("database", {
       ).data;
 
       const updatedDatabase = convert(data.data, data.included);
-
+      this.removeDatabaseListFromProject([database]);
       this.upsertDatabaseList({
         databaseList: [updatedDatabase],
       });

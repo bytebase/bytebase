@@ -9,7 +9,6 @@
       :allow-edit="allowEdit"
       :show-header="true"
       :database-list="databaseList"
-      :label-list="labelList"
       @remove="removeStage(deployment)"
       @prev="reorder(i, -1)"
       @next="reorder(i, 1)"
@@ -22,13 +21,9 @@
 /* eslint-disable vue/no-mutating-props */
 
 import { defineComponent, PropType } from "vue";
-import {
-  AvailableLabel,
-  Database,
-  Deployment,
-  DeploymentSchedule,
-} from "../../types";
 import DeploymentStage from "./DeploymentStage.vue";
+import { ComposedDatabase } from "@/types";
+import { Schedule, ScheduleDeployment } from "@/types/proto/v1/project_service";
 
 export default defineComponent({
   name: "DeploymentConfigTool",
@@ -39,23 +34,19 @@ export default defineComponent({
       default: false,
     },
     schedule: {
-      type: Object as PropType<DeploymentSchedule>,
+      type: Object as PropType<Schedule>,
       required: true,
     },
     databaseList: {
-      type: Array as PropType<Database[]>,
-      default: () => [],
-    },
-    labelList: {
-      type: Array as PropType<AvailableLabel[]>,
+      type: Array as PropType<ComposedDatabase[]>,
       default: () => [],
     },
   },
   setup(props) {
-    const keyMap = new WeakMap<Deployment, number>();
+    const keyMap = new WeakMap<ScheduleDeployment, number>();
     // Map each Deployment object to an unique key to keep it being "moved"
     // rather than "replaced" when re-ordering. (BYT-758)
-    const getKey = (dep: Deployment): number => {
+    const getKey = (dep: ScheduleDeployment): number => {
       let key = keyMap.get(dep);
       if (!key) {
         key = Math.random();
@@ -64,7 +55,7 @@ export default defineComponent({
       return key;
     };
 
-    const removeStage = (deployment: Deployment) => {
+    const removeStage = (deployment: ScheduleDeployment) => {
       const array = props.schedule.deployments;
       const index = array.indexOf(deployment);
       if (index >= 0) {

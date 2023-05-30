@@ -1,0 +1,880 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service DatabaseService {
+  rpc GetDatabase(GetDatabaseRequest) returns (Database) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*}/databases"};
+    option (google.api.method_signature) = "";
+  }
+
+  // Search for databases that the caller has both projects.get permission on, and also satisfy the specified query.
+  rpc SearchDatabases(SearchDatabasesRequest) returns (SearchDatabasesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*}/databases:search"};
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
+    option (google.api.http) = {
+      patch: "/v1/{database.name=instances/*/databases/*}"
+      body: "database"
+    };
+    option (google.api.method_signature) = "database,update_mask";
+  }
+
+  rpc BatchUpdateDatabases(BatchUpdateDatabasesRequest) returns (BatchUpdateDatabasesResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=instances/*}/databases:batchUpdate"
+      body: "*"
+    };
+  }
+
+  rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
+  }
+
+  rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
+  }
+
+  rpc GetBackupSetting(GetBackupSettingRequest) returns (BackupSetting) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/backupSetting}"};
+  }
+
+  rpc UpdateBackupSetting(UpdateBackupSettingRequest) returns (BackupSetting) {
+    option (google.api.http) = {
+      patch: "/v1/{setting.name=instances/*/databases/*/backupSetting}"
+      body: "setting"
+    };
+  }
+
+  rpc CreateBackup(CreateBackupRequest) returns (Backup) {
+    option (google.api.http) = {
+      post: "/v1/{parent=instances/*/databases/*}/backups"
+      body: "backup"
+    };
+  }
+
+  rpc ListBackup(ListBackupRequest) returns (ListBackupResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/backups"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/slowQueries"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/secrets"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
+    option (google.api.http) = {
+      patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}";
+      body: "secret";
+    };
+  }
+
+  rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/secrets/*}"};
+  }
+
+  rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
+    option (google.api.http) = {post: "/v1/{parent=instances/*/databases/*}:adviseIndex"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc ListChangeHistories(ListChangeHistoriesRequest) returns (ListChangeHistoriesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changeHistories"};
+    option (google.api.method_signature) = "parent";
+  }
+  rpc GetChangeHistory(GetChangeHistoryRequest) returns (ChangeHistory) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changeHistories/*}"};
+    option (google.api.method_signature) = "name";
+  }
+}
+
+message GetDatabaseRequest {
+  // The name of the database to retrieve.
+  // Format: instances/{instance}/databases/{database}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListDatabasesRequest {
+  // The parent, which owns this collection of databases.
+  // Format: instances/{instance}
+  // Use "instances/-" to list all databases.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of databases to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 databases will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListDatabases` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListDatabases` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Filter is used to filter databases returned in the list.
+  // For example, "project = projects/{project}" can be used to list databases in a project.
+  string filter = 4;
+}
+
+message ListDatabasesResponse {
+  // The databases from the specified request.
+  repeated Database databases = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message SearchDatabasesRequest {
+  // The parent, which owns this collection of databases.
+  // Format: instances/{instance}
+  // Use "instances/-" to list all databases.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of databases to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 databases will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListDatabases` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListDatabases` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Filter is used to filter databases returned in the list.
+  // For example, "project = projects/{project}" can be used to list databases in a project.
+  string filter = 4;
+}
+
+message SearchDatabasesResponse {
+  // The databases from the specified request.
+  repeated Database databases = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message UpdateDatabaseRequest {
+  // The database to update.
+  //
+  // The database's `name` field is used to identify the database to update.
+  // Format: instances/{instance}/databases/{database}
+  Database database = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message BatchUpdateDatabasesRequest {
+  // The parent resource shared by all databases being updated.
+  // Format: instances/{instance}
+  // If the operation spans parents, a dash (-) may be accepted as a wildcard.
+  // We only support updating the project of databases for now.
+  string parent = 1;
+
+  // The request message specifying the resources to update.
+  // A maximum of 1000 databases can be modified in a batch.
+  repeated UpdateDatabaseRequest requests = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchUpdateDatabasesResponse {
+  // Databases updated.
+  repeated Database databases = 1;
+}
+
+message GetDatabaseMetadataRequest {
+  // The name of the database to retrieve metadata.
+  // Format: instances/{instance}/databases/{database}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetDatabaseSchemaRequest {
+  // The name of the database to retrieve schema.
+  // Format: instances/{instance}/databases/{database}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetBackupSettingRequest {
+  // The name of the database to retrieve backup setting.
+  // Format: instances/{instance}/databases/{database}/backupSetting
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateBackupSettingRequest {
+  // The database backup setting to update.
+  BackupSetting setting = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// CreateBackupRequest is the request message for CreateBackup.
+message CreateBackupRequest {
+  // The parent resource where this backup will be created.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  Backup backup = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// ListBackupRequest is the request message for ListBackup.
+message ListBackupRequest {
+  // The parent resource where this backup will be created.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Not used. The maximum number of backups to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 backups will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used. A page token, received from a previous `ListBackup` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListBackup` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListBackupResponse {
+  // The backups from the specified request.
+  repeated Backup backups = 1;
+
+  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message Database {
+  // The name of the database.
+  // Format: instances/{instance}/databases/{database}
+  // {database} is the database name in the instance.
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The existence of a database on latest sync.
+  State sync_state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The latest synchronization time.
+  google.protobuf.Timestamp successful_sync_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The project for a database.
+  // Format: projects/{project}
+  string project = 5;
+
+  // The version of database schema.
+  string schema_version = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Labels will be used for deployment and policy control.
+  map<string, string> labels = 7;
+}
+
+// DatabaseMetadata is the metadata for databases.
+message DatabaseMetadata {
+  string name = 1;
+
+  // The schemas is the list of schemas in a database.
+  repeated SchemaMetadata schemas = 2;
+
+  // The character_set is the character set of a database.
+  string character_set = 3;
+
+  // The collation is the collation of a database.
+  string collation = 4;
+
+  // The extensions is the list of extensions in a database.
+  repeated ExtensionMetadata extensions = 5;
+}
+
+// SchemaMetadata is the metadata for schemas.
+// This is the concept of schema in Postgres, but it's a no-op for MySQL.
+message SchemaMetadata {
+  // The name is the schema name.
+  // It is an empty string for databases without such concept such as MySQL.
+  string name = 1;
+
+  // The tables is the list of tables in a schema.
+  repeated TableMetadata tables = 2;
+
+  // The views is the list of views in a schema.
+  repeated ViewMetadata views = 3;
+
+  // The functions is the list of functions in a schema.
+  repeated FunctionMetadata functions = 4;
+}
+
+// TableMetadata is the metadata for tables.
+message TableMetadata {
+  // The name is the name of a table.
+  string name = 1;
+
+  // The columns is the ordered list of columns in a table.
+  repeated ColumnMetadata columns = 2;
+
+  // The indexes is the list of indexes in a table.
+  repeated IndexMetadata indexes = 3;
+
+  // The engine is the engine of a table.
+  string engine = 4;
+
+  // The collation is the collation of a table.
+  string collation = 5;
+
+  // The row_count is the estimated number of rows of a table.
+  int64 row_count = 6;
+
+  // The data_size is the estimated data size of a table.
+  int64 data_size = 7;
+
+  // The index_size is the estimated index size of a table.
+  int64 index_size = 8;
+
+  // The data_free is the estimated free data size of a table.
+  int64 data_free = 9;
+
+  // The create_options is the create option of a table.
+  string create_options = 10;
+
+  // The comment is the comment of a table.
+  string comment = 11;
+
+  // The foreign_keys is the list of foreign keys in a table.
+  repeated ForeignKeyMetadata foreign_keys = 12;
+}
+
+// ColumnMetadata is the metadata for columns.
+message ColumnMetadata {
+  // The name is the name of a column.
+  string name = 1;
+
+  // The position is the position in columns.
+  int32 position = 2;
+
+  // The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default.
+  google.protobuf.StringValue default = 3;
+
+  // The nullable is the nullable of a column.
+  bool nullable = 4;
+
+  // The type is the type of a column.
+  string type = 5;
+
+  // The character_set is the character_set of a column.
+  string character_set = 6;
+
+  // The collation is the collation of a column.
+  string collation = 7;
+
+  // The comment is the comment of a column.
+  string comment = 8;
+}
+
+// ViewMetadata is the metadata for views.
+message ViewMetadata {
+  // The name is the name of a view.
+  string name = 1;
+
+  // The definition is the definition of a view.
+  string definition = 2;
+
+  // The comment is the comment of a view.
+  string comment = 3;
+
+  // The dependent_columns is the list of dependent columns of a view.
+  repeated DependentColumn dependent_columns = 4;
+}
+
+// DependentColumn is the metadata for dependent columns.
+message DependentColumn {
+  // The schema is the schema of a reference column.
+  string schema = 1;
+
+  // The table is the table of a reference column.
+  string table = 2;
+
+  // The column is the name of a reference column.
+  string column = 3;
+}
+
+// FunctionMetadata is the metadata for functions.
+message FunctionMetadata {
+  // The name is the name of a view.
+  string name = 1;
+
+  // The definition is the definition of a view.
+  string definition = 2;
+}
+
+// IndexMetadata is the metadata for indexes.
+message IndexMetadata {
+  // The name is the name of an index.
+  string name = 1;
+
+  // The expressions are the ordered columns or expressions of an index.
+  // This could refer to a column or an expression.
+  repeated string expressions = 2;
+
+  // The type is the type of an index.
+  string type = 3;
+
+  // The unique is whether the index is unique.
+  bool unique = 4;
+
+  // The primary is whether the index is a primary key index.
+  bool primary = 5;
+
+  // The visible is whether the index is visible.
+  bool visible = 6;
+
+  // The comment is the comment of an index.
+  string comment = 7;
+}
+
+// ExtensionMetadata is the metadata for extensions.
+message ExtensionMetadata {
+  // The name is the name of an extension.
+  string name = 1;
+
+  // The schema is the extension that is installed to. But the extension usage is not limited to the schema.
+  string schema = 2;
+
+  // The version is the version of an extension.
+  string version = 3;
+
+  // The description is the description of an extension.
+  string description = 4;
+}
+
+// ForeignKeyMetadata is the metadata for foreign keys.
+message ForeignKeyMetadata {
+  // The name is the name of a foreign key.
+  string name = 1;
+
+  // The columns are the ordered referencing columns of a foreign key.
+  repeated string columns = 2;
+
+  // The referenced_schema is the referenced schema name of a foreign key.
+  // It is an empty string for databases without such concept such as MySQL.
+  string referenced_schema = 3;
+
+  // The referenced_table is the referenced table name of a foreign key.
+  string referenced_table = 4;
+
+  // The referenced_columns are the ordered referenced columns of a foreign key.
+  repeated string referenced_columns = 5;
+
+  // The on_delete is the on delete action of a foreign key.
+  string on_delete = 6;
+
+  // The on_update is the on update action of a foreign key.
+  string on_update = 7;
+
+  // The match_type is the match type of a foreign key.
+  // The match_type is the PostgreSQL specific field.
+  // It's empty string for other databases.
+  string match_type = 8;
+}
+
+// DatabaseMetadata is the metadata for databases.
+message DatabaseSchema {
+  // The schema dump from database.
+  string schema = 1;
+}
+
+// BackupSetting is the setting for database backup.
+message BackupSetting {
+  // The name of the database backup setting.
+  // Format: instances/{instance}/databases/{database}/backupSettings
+  string name = 1;
+
+  // The default maximum age of a Backup created via this BackupPlan.
+  // If specified, a Backup will be automatically deleted after its age reaches.
+  // If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.
+  // It will be rounded up to the number of days.
+  google.protobuf.Duration backup_retain_duration = 2;
+
+  // Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.
+  // Support hour of day, day of week. (UTC time)
+  //
+  // Default (empty): Disable automatic backup.
+  string cron_schedule = 3;
+
+  // hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created.
+  string hook_url = 4;
+}
+
+// The message of the backup.
+message Backup {
+  // The type of the backup.
+  enum BackupType {
+    // The type of the backup is unknown.
+    BACKUP_TYPE_UNSPECIFIED = 0;
+
+    // The backup is created by user.
+    MANUAL = 1;
+
+    // The backup is created by automatic backup.
+    AUTOMATIC = 2;
+
+    // The backup is created automatically after doing PITR.
+    PITR = 3;
+  }
+
+  // The state of the backup.
+  enum BackupState {
+    // The state of the backup is unknown.
+    BACKUP_STATE_UNSPECIFIED = 0;
+
+    // The backup is being pending to create.
+    PENDING_CREATE = 1;
+
+    // The backup is ready to use.
+    DONE = 2;
+
+    // The backup is being deleted.
+    FAILED = 3;
+  }
+
+  // The resource name of the database backup. backup-name is specified by the client.
+  // Format: instances/{instance}/databases/{database}/backups/{backup-name}
+  string name = 1;
+
+  // The timestamp when the backup resource was created initially.
+  google.protobuf.Timestamp create_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the backup resource was updated.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The state of the backup.
+  BackupState state = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The type of the backup.
+  BackupType backup_type = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The comment of the backup.
+  string comment = 6;
+}
+
+// ListSlowQueriesRequest is the request of listing slow query.
+message ListSlowQueriesRequest {
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The filter of the slow query log.
+  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+  // Support filter by project and start_time in SlowQueryDetails for now.
+  // For example:
+  // Search the slow query log of the specific project:
+  //   - the specific project: project = "projects/{project}"
+  // Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
+  //   - start_time > "2022-01-01T12:00:00.000Z"
+  //   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
+  //   - Currently we only support filtering down to date granularity.
+  string filter = 2;
+
+  // The order by of the slow query log.
+  // Support order by count, latest_log_time, average_query_time, maximum_query_time,
+  // average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
+  // For example:
+  //  - order by count: order_by = "count"
+  //  - order by latest_log_time desc: order_by = "latest_log_time desc"
+  // Default: order by average_query_time desc.
+  string order_by = 3;
+}
+
+// ListSlowQueriesResponse is the response of listing slow query.
+message ListSlowQueriesResponse {
+  // The slow query logs.
+  repeated SlowQueryLog slow_query_logs = 1;
+}
+
+// SlowQueryLog is the slow query log.
+message SlowQueryLog {
+  // The resource of the slow query log.
+  // The format is "instances/{instance}/databases/{database}".
+  string resource = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The project of the slow query log.
+  // The format is "projects/{project}".
+  string project = 2;
+
+  // The statistics of the slow query log.
+  SlowQueryStatistics statistics = 3;
+}
+
+// SlowQueryStatistics is the statistics of the slow query log.
+message SlowQueryStatistics {
+  // The fingerprint of the slow query log.
+  string sql_fingerprint = 1;
+
+  // The count of the slow query log.
+  int64 count = 2;
+
+  // The latest log time of the slow query log.
+  google.protobuf.Timestamp latest_log_time = 3;
+
+  // The average query time of the slow query log.
+  google.protobuf.Duration average_query_time = 4;
+
+  // The maximum query time of the slow query log.
+  google.protobuf.Duration maximum_query_time = 5;
+
+  // The average rows sent of the slow query log.
+  int64 average_rows_sent = 6;
+
+  // The maximum rows sent of the slow query log.
+  int64 maximum_rows_sent = 7;
+
+  // The average rows examined of the slow query log.
+  int64 average_rows_examined = 8;
+
+  // The maximum rows examined of the slow query log.
+  int64 maximum_rows_examined = 9;
+
+  // The percentage of the query time.
+  double query_time_percent = 10;
+
+  // The percentage of the count.
+  double count_percent = 11;
+
+  // Samples are details of the sample slow query logs with the same fingerprint.
+  repeated SlowQueryDetails samples = 12;
+}
+
+// SlowQueryDetails is the details of the slow query log.
+message SlowQueryDetails {
+  // The start time of the slow query log.
+  google.protobuf.Timestamp start_time = 1;
+
+  // The query time of the slow query log.
+  google.protobuf.Duration query_time = 2;
+
+  // The lock time of the slow query log.
+  google.protobuf.Duration lock_time = 3;
+
+  // The rows sent of the slow query log.
+  int64 rows_sent = 4;
+
+  // The rows examined of the slow query log.
+  int64 rows_examined = 5;
+
+  // The sql text of the slow query log.
+  string sql_text = 6;
+}
+
+message ListSecretsRequest {
+  // The parent of the secret.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Not used. The maximum number of databases to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 databases will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used. A page token, received from a previous `ListSecrets` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListSecrets` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListSecretsResponse {
+  // The list of secrets.
+  repeated Secret secrets = 1;
+
+  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message UpdateSecretRequest {
+  // The secret to be created or updated.
+  Secret secret = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The mask of the fields to be updated.
+  google.protobuf.FieldMask update_mask = 2;
+
+  // If true, the secret will be created if it does not exist.
+  bool allow_missing = 3;
+}
+
+message DeleteSecretRequest {
+  // The name of the secret to be deleted.
+  // Format:
+  // instances/{instance}/databases/{database}/secrets/{secret}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Secret is the secret of the database now.
+message Secret {
+  // name is the unique name of the secret, which is specified by the client.
+  // Format:
+  // instances/{instance}/databases/{database}/secrets/{secret}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Not used. The timestamp when the secret resource was created initially.
+  google.protobuf.Timestamp created_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Not used. The timestamp when the secret resource was updated.
+  google.protobuf.Timestamp updated_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The value of the secret.
+  string value = 4 [(google.api.field_behavior) = INPUT_ONLY];
+
+  // The description of the secret.
+  string description = 5;
+}
+
+// AdviseIndexRequest is the request of advising index.
+message AdviseIndexRequest {
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The statement to be advised.
+  string statement = 2;
+}
+
+// AdviseIndexResponse is the response of advising index.
+message AdviseIndexResponse {
+  // The current index of the statement used.
+  string current_index = 1;
+
+  // The suggested index of the statement.
+  string suggestion = 2;
+
+  // The create index statement of the suggested index.
+  string create_index_statement = 3;
+}
+
+message ChangeHistory {
+  // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+  string name = 1;
+  string uid = 2;
+
+  // Format: users/hello@world.com
+  string creator = 3;
+  // Format: users/hello@world.com
+  string updater = 4;
+  google.protobuf.Timestamp create_time = 5;
+  google.protobuf.Timestamp update_time = 6;
+
+  // release version of Bytebase
+  string release_version = 7;
+
+  enum Source {
+    SOURCE_UNSPECIFIED = 0;
+    UI = 1;
+    VCS = 2;
+    LIBRARY = 3;
+  }
+  Source source = 8;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    BASELINE = 1;
+    MIGRATE = 2;
+    MIGRATE_SDL = 3;
+    MIGRATE_GHOST = 4;
+    BRANCH = 5;
+    DATA = 6;
+  }
+  Type type = 9;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    DONE = 2;
+    FAILED = 3;
+  }
+  Status status = 10;
+
+  string version = 11;
+
+  string description = 12;
+  string statement = 13;
+  string schema = 14;
+  string prev_schema = 15;
+  google.protobuf.Duration execution_duration = 16;
+  // Format: projects/{project}/reviews/{review}
+  string review = 17;
+
+  // FIXME: vcs push event to be done.
+}
+
+enum ChangeHistoryView {
+  // The default / unset value.
+  // The API will default to the BASIC view.
+  CHANGE_HISTORY_VIEW_UNSPECIFIED = 0;
+  CHANGE_HISTORY_VIEW_BASIC = 1;
+  CHANGE_HISTORY_VIEW_FULL = 2;
+}
+
+message ListChangeHistoriesRequest {
+  // The parent of the change histories.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of change histories to return. The service may return fewer than this value.
+  // If unspecified, at most 10 change histories will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used. A page token, received from a previous `ListChangeHistories` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListChangeHistories` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  ChangeHistoryView view = 4;
+}
+
+message ListChangeHistoriesResponse {
+  // The list of change histories.
+  repeated ChangeHistory change_histories = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message GetChangeHistoryRequest {
+  // The name of the change history to retrieve.
+  // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+  string name = 1;
+  ChangeHistoryView view = 2;
+}

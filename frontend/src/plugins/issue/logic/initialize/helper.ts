@@ -5,11 +5,17 @@ import {
   IssueCreate,
   Principal,
   SYSTEM_BOT_ID,
+  Task,
   TaskDatabaseSchemaUpdatePayload,
   UNKNOWN_ID,
 } from "@/types";
-import { useActuatorStore, useCurrentUser, useIssueStore } from "@/store";
-import { BuildNewIssueContext, VALIDATE_ONLY_SQL } from "../common";
+import { useActuatorV1Store, useCurrentUser, useIssueStore } from "@/store";
+import {
+  BuildNewIssueContext,
+  ESTABLISH_BASELINE_SQL,
+  VALIDATE_ONLY_SQL,
+} from "../common";
+import { isDatabaseRelatedIssueType } from "@/utils";
 
 export class IssueCreateHelper {
   issueCreate: IssueCreate | null;
@@ -29,7 +35,7 @@ export class IssueCreateHelper {
   async prepare(): Promise<IssueCreate> {
     const { context, currentUser } = this;
     const { route } = context;
-    const actuatorStore = useActuatorStore();
+    const actuatorStore = useActuatorV1Store();
 
     const baseTemplate = context.template.value.buildIssue({
       environmentList: [],
@@ -94,32 +100,32 @@ export class IssueCreateHelper {
         parseInt(route.query.assignee as string) || UNKNOWN_ID;
     }
 
-    // copy the generated pipeline to issueCreate
-    // issueCreate is an editable object for the whole issue UI
-    issueCreate.pipeline = {
-      name: issue.pipeline.name,
-      stageList: issue.pipeline.stageList.map((stage) => ({
-        name: stage.name,
-        environmentId: stage.environment.id,
-        taskList: stage.taskList.map((task) => {
-          const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
-          // if we are using VALIDATE_ONLY_SQL, set it back to empty
-          // otherwise keep it as-is
-          const statement =
-            payload.statement === VALIDATE_ONLY_SQL ? "" : payload.statement;
-          return {
-            name: task.name,
-            status: task.status,
-            type: task.type,
-            instanceId: task.instance.id,
-            databaseId: task.database?.id,
-            databaseName: task.database?.name,
-            statement,
-            earliestAllowedTs: task.earliestAllowedTs,
-          };
-        }),
-      })),
-    };
+    // Only generate pipeline for database related issues.
+    if (isDatabaseRelatedIssueType(issueCreate.type)) {
+      // copy the generated pipeline to issueCreate
+      // issueCreate is an editable object for the whole issue UI
+      issueCreate.pipeline = {
+        name: issue.pipeline.name,
+        stageList: issue.pipeline.stageList.map((stage) => ({
+          name: stage.name,
+          environmentId: stage.environment.id,
+          taskList: stage.taskList.map((task) => {
+            const statement = defaultStatementOfTask(task);
+            return {
+              name: task.name,
+              status: task.status,
+              type: task.type,
+              instanceId: task.instance.id,
+              databaseId: task.database?.id,
+              databaseName: task.database?.name,
+              statement,
+              sheetId: UNKNOWN_ID,
+              earliestAllowedTs: task.earliestAllowedTs,
+            };
+          }),
+        })),
+      };
+    }
 
     // cleanup input fields, not used yet.
     for (const field of template.value.inputFieldList) {
@@ -138,3 +144,14 @@ export class IssueCreateHelper {
     return issueCreate;
   }
 }
+
+const defaultStatementOfTask = (task: Task) => {
+  if (task.type === "bb.task.database.schema.baseline") {
+    return ESTABLISH_BASELINE_SQL;
+  }
+
+  // if we are using VALIDATE_ONLY_SQL, set it back to empty
+  // otherwise keep it as-is
+  const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
+  return payload.statement === VALIDATE_ONLY_SQL ? "" : payload.statement;
+};

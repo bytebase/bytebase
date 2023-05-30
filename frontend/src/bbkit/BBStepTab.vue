@@ -1,6 +1,9 @@
 <template>
   <div>
-    <ol class="flex space-y-0 space-x-8">
+    <ol
+      class="flex space-y-0 space-x-8"
+      :class="[sticky && 'sticky top-0 bg-white z-10']"
+    >
       <li v-for="(step, index) in stepItemList" :key="index" class="flex-1">
         <div
           class="group flex flex-col pt-4 border-t-4"
@@ -40,7 +43,7 @@
         </div>
       </li>
     </ol>
-    <div class="mt-4 mb-4">
+    <div class="mt-4 mb-4" :class="paneClass">
       <template v-for="(step, index) in stepItemList" :key="index">
         <slot
           v-if="state.currentStep == index"
@@ -53,10 +56,20 @@
         />
       </template>
     </div>
-    <div class="pt-4 border-t border-block-border flex justify-between">
-      <button type="button" class="btn-normal" @click.prevent="cancel">
-        {{ $t("bbkit.common.cancel") }}
-      </button>
+    <div
+      class="pt-4 border-t border-block-border flex justify-between"
+      :class="[sticky && 'pb-4 bg-white sticky bottom-0 z-10']"
+    >
+      <div>
+        <button
+          v-if="showCancel"
+          type="button"
+          class="btn-normal"
+          @click.prevent="cancel"
+        >
+          {{ $t("bbkit.common.cancel") }}
+        </button>
+      </div>
       <div class="flex flex-row space-x-2">
         <button
           v-if="state.currentStep != 0"
@@ -95,6 +108,7 @@
 <script lang="ts" setup>
 import { reactive, withDefaults } from "vue";
 import { BBStepTabItem } from "./types";
+import { VueClass } from "@/utils/types";
 
 interface LocalState {
   done: boolean;
@@ -104,12 +118,18 @@ interface LocalState {
 withDefaults(
   defineProps<{
     stepItemList: BBStepTabItem[];
+    showCancel?: boolean;
     allowNext?: boolean;
     finishTitle?: string;
+    sticky?: boolean;
+    paneClass?: VueClass;
   }>(),
   {
+    showCancel: true,
     allowNext: true,
     finishTitle: "bbkit.common.finish",
+    sticky: false,
+    paneClass: undefined,
   }
 );
 

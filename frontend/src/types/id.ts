@@ -1,7 +1,8 @@
-// Use number as the ID type, though the ID type could be transparent to the client and just
-// use string, however, that requires server to do string to int conversion since we store
-// ID as auto incremental int in the database.
-export type IdType = number;
+// ResourceId is an unique identifier.
+export type ResourceId = string;
+
+// IdType includes auto incremental int in database and resource id.
+export type IdType = number | ResourceId;
 
 export type ExecutionId = IdType;
 
@@ -39,27 +40,17 @@ export type EnvironmentId = IdType;
 
 export type InstanceId = IdType;
 
-export type InstanceUserId = IdType;
+export type InstanceUserId = string;
 
 export type DataSourceId = IdType;
 
 export type DatabaseId = IdType;
 
-export type TableId = IdType;
-
-export type ViewId = IdType;
-
-export type DBExtensionId = IdType;
-
-export type ColumnId = IdType;
-
-export type TableIndexId = IdType;
-
 export type VCSId = IdType;
 
 export type RepositoryId = IdType;
 
-export type MigrationHistoryId = IdType;
+export type MigrationHistoryId = string;
 
 export type BackupId = IdType;
 
@@ -78,5 +69,3 @@ export type SheetId = IdType;
 export type ContainerId = IssueId;
 
 export type LabelId = IdType;
-
-export type DeploymentConfigId = IdType;

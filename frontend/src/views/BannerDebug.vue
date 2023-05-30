@@ -1,6 +1,6 @@
 <template>
   <div class="bg-warning">
-    <div class="text-center py-3 px-3 font-medium text-white truncate">
+    <div class="text-center py-1 px-3 font-medium text-white truncate">
       {{ $t("banner.debug") }}
     </div>
   </div>

@@ -53,6 +53,10 @@ export default defineConfig(() => {
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/api/, ""),
         },
+        "/hook": {
+          target: "http://localhost:8080/",
+          changeOrigin: true,
+        },
         "/v1": {
           target: "http://localhost:8080/v1",
           changeOrigin: true,

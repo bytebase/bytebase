@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "generated-go/v1";
+
+service RoleService {
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option (google.api.http) = {get: "/v1/roles"};
+  }
+  rpc CreateRole(CreateRoleRequest) returns (Role) {
+    option (google.api.http) = {
+      post: "/v1/roles"
+      body: "role"
+    };
+  }
+  rpc UpdateRole(UpdateRoleRequest) returns (Role) {
+    option (google.api.http) = {
+      patch: "/v1/{role.name=roles/*}"
+      body: "role"
+    };
+    option (google.api.method_signature) = "role,update_mask";
+  }
+  rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=roles/*}"};
+    option (google.api.method_signature) = "name";
+  }
+}
+
+message ListRolesRequest {
+  // The maximum number of roles to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 reviews will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListRoles` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListRoles` must match
+  // the call that provided the page token.
+  string page_token = 2;
+}
+
+message ListRolesResponse {
+  repeated Role roles = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateRoleRequest {
+  Role role = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the role, which will become the final component
+  // of the role's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][A-Z][0-9]/.
+  string role_id = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateRoleRequest {
+  Role role = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteRoleRequest {
+  // Format: roles/{role}
+  string name = 1;
+}
+
+message Role {
+  // Format: roles/{role}
+  string name = 1;
+  string title = 2;
+  string description = 3;
+}

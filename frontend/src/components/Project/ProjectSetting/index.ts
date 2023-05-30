@@ -1,3 +1,5 @@
-import ProjectAdvancedSettingPanel from "./ProjectAdvancedSettingPanel.vue";
+import ProjectGeneralSettingPanel from "./ProjectGeneralSettingPanel.vue";
+import ProjectMemberTable from "./ProjectMemberTable";
 
-export { ProjectAdvancedSettingPanel };
+export * from "./ProjectMemberTable";
+export { ProjectGeneralSettingPanel, ProjectMemberTable };

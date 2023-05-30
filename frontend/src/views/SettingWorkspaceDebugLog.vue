@@ -16,7 +16,7 @@
         </button>
       </div>
       <DebugLogTable
-        :debug-log-list="debugLogList"
+        :debug-log-list="debugLogList.sort((a, b) => b.RecordTs - a.RecordTs)"
         @view-detail="
           (log: any) => {
             state.modalContent = log
@@ -31,6 +31,7 @@
         :negative-text="$t('common.close')"
         :positive-text="$t('debug-log.table.operation.copy')"
         data-label="bb-migration-mode-dialog"
+        :closable="true"
         @before-positive-click="handleCopy"
       >
         <div class="w-192 font-mono">

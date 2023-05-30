@@ -5,7 +5,7 @@
         :tab-item-list="tabItemList"
         :selected-index="state.selectedIndex"
         @select-index="
-          (index) => {
+          (index: number) => {
             state.selectedIndex = index;
           }
         "
@@ -13,51 +13,56 @@
       <BBTableSearch
         ref="searchField"
         class="w-56"
-        :placeholder="
-          state.selectedIndex == PROJECT_TAB
-            ? $t('archive.project-search-bar-placeholder')
-            : state.selectedIndex == INSTANCE_TAB
-            ? $t('archive.instance-search-bar-placeholder')
-            : $t('archive.environment-search-bar-placeholder')
-        "
-        @change-text="(text) => changeSearchText(text)"
+        :placeholder="searchFieldPlaceholder"
+        @change-text="(text: string) => changeSearchText(text)"
       />
     </div>
-    <ProjectTable
+    <ProjectV1Table
       v-if="state.selectedIndex == PROJECT_TAB"
-      :project-list="filteredProjectList(projectList)"
+      :project-list="filteredProjectList"
+      class="border-x-0"
     />
     <InstanceTable
       v-else-if="state.selectedIndex == INSTANCE_TAB"
       :instance-list="filteredInstanceList(instanceList)"
     />
-    <EnvironmentTable
+    <EnvironmentV1Table
       v-else-if="state.selectedIndex == ENVIRONMENT_TAB"
-      :environment-list="filteredEnvironmentList(environmentList)"
+      :environment-list="filteredEnvironmentList"
+    />
+    <IdentityProviderTable
+      v-else-if="state.selectedIndex == SSO_TAB"
+      :identity-provider-list="filteredSSOList(deletedSSOList)"
     />
   </div>
 </template>
 
 <script lang="ts">
 import { computed, defineComponent, reactive, watchEffect } from "vue";
-import EnvironmentTable from "../components/EnvironmentTable.vue";
 import InstanceTable from "../components/InstanceTable.vue";
-import ProjectTable from "../components/ProjectTable.vue";
-import { Environment, Instance, Project, UNKNOWN_ID } from "../types";
-import { hasWorkspacePermission } from "../utils";
+import { EnvironmentV1Table, ProjectV1Table } from "../components/v2";
+import { Instance } from "../types";
+import {
+  filterProjectV1ListByKeyword,
+  hasWorkspacePermissionV1,
+} from "../utils";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import {
-  useCurrentUser,
-  useEnvironmentList,
-  useEnvironmentStore,
+  useCurrentUserV1,
+  useEnvironmentV1Store,
+  useIdentityProviderStore,
   useInstanceStore,
-  useProjectStore,
+  useProjectV1ListByCurrentUser,
 } from "@/store";
+import { IdentityProvider } from "@/types/proto/v1/idp_service";
+import IdentityProviderTable from "@/components/IdentityProviderTable.vue";
+import { State } from "@/types/proto/v1/common";
 
 const PROJECT_TAB = 0;
 const INSTANCE_TAB = 1;
 const ENVIRONMENT_TAB = 2;
+const SSO_TAB = 3;
 
 interface LocalState {
   selectedIndex: number;
@@ -66,53 +71,69 @@ interface LocalState {
 
 export default defineComponent({
   name: "Archive",
-  components: { EnvironmentTable, InstanceTable, ProjectTable },
+  components: {
+    EnvironmentV1Table,
+    InstanceTable,
+    ProjectV1Table,
+    IdentityProviderTable,
+  },
   setup() {
     const { t } = useI18n();
     const instanceStore = useInstanceStore();
-    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       selectedIndex: PROJECT_TAB,
       searchText: "",
     });
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
+
+    const searchFieldPlaceholder = computed(() => {
+      if (state.selectedIndex == PROJECT_TAB) {
+        return t("archive.project-search-bar-placeholder");
+      } else if (state.selectedIndex == INSTANCE_TAB) {
+        return t("archive.instance-search-bar-placeholder");
+      } else if (state.selectedIndex == ENVIRONMENT_TAB) {
+        return t("archive.environment-search-bar-placeholder");
+      } else if (state.selectedIndex == SSO_TAB) {
+        return t("archive.sso-search-bar-placeholder");
+      } else {
+        return "";
+      }
+    });
+
+    const { projectList } = useProjectV1ListByCurrentUser(
+      true /* showDeleted */
+    );
 
     const prepareList = () => {
-      // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
-        projectStore.fetchProjectListByUser({
-          userId: currentUser.value.id,
-          rowStatusList: ["ARCHIVED"],
-        });
-      }
-
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-instance",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         instanceStore.fetchInstanceList(["ARCHIVED"]);
 
-        useEnvironmentStore().fetchEnvironmentList(["ARCHIVED"]);
+        useEnvironmentV1Store().fetchEnvironments(true);
       }
     };
 
     watchEffect(prepareList);
 
-    const projectList = computed((): Project[] => {
-      return projectStore.getProjectListByUser(currentUser.value.id, [
-        "ARCHIVED",
-      ]);
-    });
-
     const instanceList = computed((): Instance[] => {
       return instanceStore.getInstanceList(["ARCHIVED"]);
     });
 
-    const environmentList = useEnvironmentList(["ARCHIVED"]);
+    const environmentList = computed(() => {
+      return useEnvironmentV1Store().environmentList.filter(
+        (env) => env.state === State.DELETED
+      );
+    });
+
+    const deletedSSOList = computed(() => {
+      return useIdentityProviderStore().deletedIdentityProviderList;
+    });
 
     const tabItemList = computed((): BBTabFilterItem[] => {
       const list: BBTabFilterItem[] = [
@@ -120,36 +141,41 @@ export default defineComponent({
       ];
 
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-instance",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         list.push({ title: t("common.instance"), alert: false });
       }
 
       if (
-        hasWorkspacePermission(
+        hasWorkspacePermissionV1(
           "bb.permission.workspace.manage-environment",
-          currentUser.value.role
+          currentUserV1.value.userRole
         )
       ) {
         list.push({ title: t("common.environment"), alert: false });
       }
 
+      if (
+        hasWorkspacePermissionV1(
+          "bb.permission.workspace.manage-sso",
+          currentUserV1.value.userRole
+        )
+      ) {
+        list.push({ title: t("settings.sidebar.sso"), alert: false });
+      }
+
       return list;
     });
 
-    const filteredProjectList = (list: Project[]) => {
-      if (!state.searchText) {
-        return list;
-      }
-      return list.filter((project) => {
-        return project.name
-          .toLowerCase()
-          .includes(state.searchText.toLowerCase());
-      });
-    };
+    const filteredProjectList = computed(() => {
+      const list = projectList.value.filter(
+        (project) => project.state === State.DELETED
+      );
+      return filterProjectV1ListByKeyword(list, state.searchText);
+    });
 
     const filteredInstanceList = (list: Instance[]) => {
       if (!state.searchText) {
@@ -162,12 +188,23 @@ export default defineComponent({
       });
     };
 
-    const filteredEnvironmentList = (list: Environment[]) => {
-      if (!state.searchText) {
+    const filteredEnvironmentList = computed(() => {
+      const list = environmentList.value;
+      const keyword = state.searchText.trim().toLowerCase();
+      if (!keyword) {
         return list;
       }
       return list.filter((environment) => {
-        return environment.name
+        environment.title.toLowerCase().includes(keyword);
+      });
+    });
+
+    const filteredSSOList = (list: IdentityProvider[]) => {
+      if (!state.searchText) {
+        return list;
+      }
+      return list.filter((identityProvider) => {
+        return identityProvider.name
           .toLowerCase()
           .includes(state.searchText.toLowerCase());
       });
@@ -181,14 +218,17 @@ export default defineComponent({
       PROJECT_TAB,
       INSTANCE_TAB,
       ENVIRONMENT_TAB,
+      SSO_TAB,
       state,
-      projectList,
       instanceList,
       environmentList,
+      deletedSSOList,
       tabItemList,
+      searchFieldPlaceholder,
       filteredProjectList,
       filteredInstanceList,
       filteredEnvironmentList,
+      filteredSSOList,
       changeSearchText,
     };
   },

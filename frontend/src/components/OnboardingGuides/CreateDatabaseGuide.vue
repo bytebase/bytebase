@@ -18,12 +18,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { lastTask } from "@/utils";
-import {
-  useDatabaseStore,
-  useInstanceList,
-  useIssueStore,
-  useProjectStore,
-} from "@/store";
+import { useInstanceList, useIssueStore, useProjectV1List } from "@/store";
 import GuideDialog from "@/plugins/demo/components/GuideDialog.vue";
 import CreateDatabaseGuideFinished from "./CreateDatabaseGuideFinished.vue";
 import { useI18n } from "vue-i18n";
@@ -121,7 +116,7 @@ const guideStepList = computed(() => {
 });
 
 const instanceList = useInstanceList();
-const projectList = computed(() => useProjectStore().projectList);
+const { projectList } = useProjectV1List(false /* !showDeleted */);
 const issueList = computed(() => useIssueStore().issueList);
 
 const shownGuideList = computed(() => {
@@ -157,7 +152,7 @@ watch(
     }
     if (issueList.value.length > 0) {
       const issue = issueList.value[0];
-      const task = lastTask(issue.pipeline);
+      const task = lastTask(issue.pipeline!);
       if (task.status === "PENDING_APPROVAL") {
         tempGuideIndex = 3;
       } else if (task.status === "PENDING" || task.status === "RUNNING") {
@@ -165,11 +160,10 @@ watch(
       } else {
         tempGuideIndex = 5;
       }
-    }
 
-    const databaseList = await useDatabaseStore().fetchDatabaseList();
-    if (databaseList.length > 0 && route.name === "workspace.home") {
-      tempGuideIndex = 6;
+      if (tempGuideIndex === 5 && route.name === "workspace.home") {
+        tempGuideIndex = 6;
+      }
     }
 
     guideIndex.value = tempGuideIndex;

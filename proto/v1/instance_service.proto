@@ -1,0 +1,262 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service InstanceService {
+  rpc GetInstance(GetInstanceRequest) returns (Instance) {
+    option (google.api.http) = {get: "/v1/{name=instances/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
+    option (google.api.http) = {get: "/v1/instances"};
+    option (google.api.method_signature) = "";
+  }
+
+  rpc CreateInstance(CreateInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v1/instances"
+      body: "instance"
+    };
+    option (google.api.method_signature) = "instance";
+  }
+
+  rpc UpdateInstance(UpdateInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      patch: "/v1/{instance.name=instances/*}"
+      body: "instance"
+    };
+    option (google.api.method_signature) = "instance,update_mask";
+  }
+
+  rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=instances/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*}:undelete"
+      body: "*"
+    };
+  }
+
+  rpc AddDataSource(AddDataSourceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v1/{instance=instances/*}:addDataSource"
+      body: "*"
+    };
+  }
+
+  rpc RemoveDataSource(RemoveDataSourceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v1/{instance=instances/*}:removeDataSource"
+      body: "*"
+    };
+  }
+
+  rpc UpdateDataSource(UpdateDataSourceRequest) returns (Instance) {
+    option (google.api.http) = {
+      patch: "/v1/{instance=instances/*}:updateDataSource"
+      body: "*"
+    };
+  }
+
+  rpc SyncSlowQueries(SyncSlowQueriesRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/{instance=instances/*}:syncSlowQueries"
+      body: "*"
+    };
+  }
+}
+
+message GetInstanceRequest {
+  // The name of the instance to retrieve.
+  // Format: instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListInstancesRequest {
+  // The maximum number of instances to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 instances will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListInstances` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListInstances` must match
+  // the call that provided the page token.
+  string page_token = 2;
+
+  // Show deleted instances if specified.
+  bool show_deleted = 3;
+}
+
+message ListInstancesResponse {
+  // The instances from the specified request.
+  repeated Instance instances = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateInstanceRequest {
+  // The instance to create.
+  Instance instance = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the instance, which will become the final component of
+  // the instance's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string instance_id = 2;
+
+  // Validate only also tests the data source connection.
+  bool validate_only = 3;
+}
+
+message UpdateInstanceRequest {
+  // The instance to update.
+  //
+  // The instance's `name` field is used to identify the instance to update.
+  // Format: instances/{instance}
+  Instance instance = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteInstanceRequest {
+  // The name of the instance to delete.
+  // Format: instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
+  bool force = 2;
+}
+
+message UndeleteInstanceRequest {
+  // The name of the deleted instance.
+  // Format: instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message AddDataSourceRequest {
+  // The name of the instance to add a data source to.
+  // Format: instances/{instance}
+  string instance = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Identified by type.
+  // Only READ_ONLY data source can be added.
+  DataSource data_source = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Validate only also tests the data source connection.
+  bool validate_only = 3;
+}
+
+message RemoveDataSourceRequest {
+  // The name of the instance to remove a data source from.
+  // Format: instances/{instance}
+  string instance = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Identified by type.
+  // Only READ_ONLY data source can be removed.
+  DataSource data_source = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateDataSourceRequest {
+  // The name of the instance to update a data source.
+  // Format: instances/{instance}
+  string instance = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Identified by type.
+  DataSource data_source = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 3;
+
+  // Validate only also tests the data source connection.
+  bool validate_only = 4;
+}
+
+message SyncSlowQueriesRequest {
+  // The name of the instance to sync slow queries.
+  // Format: instances/{instance}
+  string instance = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Instance {
+  // The name of the instance.
+  // Format: instances/{instance}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 3;
+
+  string title = 4;
+
+  Engine engine = 5;
+
+  string engine_version = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string external_link = 7;
+
+  repeated DataSource data_sources = 8;
+
+  // The environment resource.
+  // Format: environments/prod where prod is the environment resource ID.
+  string environment = 9;
+}
+
+message DataSource {
+  string title = 1;
+  DataSourceType type = 2;
+  string username = 3;
+  string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_ca = 5 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_cert = 6 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
+  string host = 8;
+  string port = 9;
+  string database = 10;
+  // srv and authentication_database are used for MongoDB.
+  bool srv = 11;
+  string authentication_database = 12;
+  // sid and service_name are used for Oracle.
+  string sid = 13;
+  string service_name = 14;
+  // Connection over SSH.
+  // The hostname of the SSH server agent.
+  // Required.
+  string ssh_host = 15;
+  // The port of the SSH server agent. It's 22 typically.
+  // Required.
+  string ssh_port = 16;
+  // The user to login the server.
+  // Required.
+  string ssh_user = 17;
+  // The password to login the server. If it's empty string, no password is required.
+  string ssh_password = 18 [(google.api.field_behavior) = INPUT_ONLY];
+  // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
+  string ssh_private_key = 19 [(google.api.field_behavior) = INPUT_ONLY];
+}
+
+enum DataSourceType {
+  DATA_SOURCE_UNSPECIFIED = 0;
+  ADMIN = 1;
+  READ_ONLY = 2;
+}

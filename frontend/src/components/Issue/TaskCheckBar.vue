@@ -3,34 +3,25 @@
     v-if="task.taskCheckRunList.length > 0"
     class="flex items-start space-x-4"
   >
+    <div class="textlabel h-[26px] inline-flex items-center">
+      {{ $t("task.task-checks") }}
+    </div>
+
     <TaskCheckBadgeBar
       :task-check-run-list="task.taskCheckRunList"
       @select-task-check-type="viewCheckRunDetail"
     />
 
-    <button
-      v-if="showRunCheckButton"
-      type="button"
-      class="btn-small py-0.5 inline-flex items-center gap-1"
-      :disabled="hasRunningTaskCheck"
-      @click.prevent="runChecks"
-    >
-      <template v-if="hasRunningTaskCheck">
-        <BBSpin class="w-4 h-4" />
-        {{ $t("task.checking") }}
-      </template>
-      <template v-else>
-        <heroicons-outline:play class="w-4 h-4" />
-        {{ $t("task.run-task") }}
-      </template>
-    </button>
+    <RunTaskCheckButton v-if="allowRunTask" @run-checks="runChecks" />
 
     <BBModal
       v-if="state.showModal"
       :title="$t('task.check-result.title', { name: task.name })"
+      class="!w-[56rem]"
+      header-class="whitespace-pre-wrap break-all gap-x-1"
       @close="dismissDialog"
     >
-      <div class="space-y-4 w-208">
+      <div class="space-y-4">
         <div>
           <TaskCheckBadgeBar
             :task-check-run-list="task.taskCheckRunList"
@@ -53,6 +44,7 @@
         <TaskCheckRunPanel
           v-if="selectedTaskCheckRun"
           :task-check-run="selectedTaskCheckRun"
+          :task="task"
         />
         <div class="pt-4 flex justify-end">
           <button
@@ -75,6 +67,7 @@ import { cloneDeep } from "lodash-es";
 import { Task, TaskCheckRun, TaskCheckStatus, TaskCheckType } from "@/types";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import TaskCheckRunPanel from "./TaskCheckRunPanel.vue";
+import RunTaskCheckButton from "./RunTaskCheckButton.vue";
 import { BBTabFilterItem } from "@/bbkit/types";
 import { humanizeTs } from "@/utils";
 
@@ -86,7 +79,7 @@ interface LocalState {
 
 export default defineComponent({
   name: "TaskCheckBar",
-  components: { TaskCheckBadgeBar, TaskCheckRunPanel },
+  components: { TaskCheckBadgeBar, TaskCheckRunPanel, RunTaskCheckButton },
   props: {
     allowRunTask: {
       type: Boolean,
@@ -141,25 +134,6 @@ export default defineComponent({
       return tabTaskCheckRunList.value[index];
     });
 
-    const showRunCheckButton = computed((): boolean => {
-      if (!props.allowRunTask) return false;
-      return (
-        props.task.status == "PENDING" ||
-        props.task.status == "PENDING_APPROVAL" ||
-        props.task.status == "RUNNING" ||
-        props.task.status == "FAILED"
-      );
-    });
-
-    const hasRunningTaskCheck = computed((): boolean => {
-      for (const check of props.task.taskCheckRunList) {
-        if (check.status == "RUNNING") {
-          return true;
-        }
-      }
-      return false;
-    });
-
     // Returns the most severe status
     const taskCheckStatus = (taskCheckRun: TaskCheckRun): TaskCheckStatus => {
       let value: TaskCheckStatus = "SUCCESS";
@@ -185,8 +159,8 @@ export default defineComponent({
       state.selectedTaskCheckType = undefined;
     };
 
-    const runChecks = () => {
-      emit("run-checks", props.task);
+    const runChecks = (taskList: Task[]) => {
+      emit("run-checks", taskList);
     };
 
     return {
@@ -194,8 +168,6 @@ export default defineComponent({
       tabTaskCheckRunList,
       tabItemList,
       selectedTaskCheckRun,
-      showRunCheckButton,
-      hasRunningTaskCheck,
       taskCheckStatus,
       viewCheckRunDetail,
       dismissDialog,

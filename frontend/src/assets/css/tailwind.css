@@ -62,9 +62,60 @@
   --color-control-border: #d1d5db;
 }
 
+/*
+  Colors for dark theme
+  Only used by Web Terminal now
+*/
+:root {
+  /* same as vs-dark theme's bg, not pure black. */
+  --color-dark-bg: #1e1e1e;
+
+  /* The Matrix green */
+  --color-matrix-green: #00cc00;
+  /* The matrix green lighter */
+  --color-matrix-green-hover: #88ff88;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .bb-grid {
+    @apply grid border-block-border;
+  }
+  .bb-grid-row {
+    @apply contents;
+  }
+  .bb-grid-header-cell {
+    @apply flex items-center bg-gray-50 text-left text-xs font-medium text-gray-500 tracking-wider;
+  }
+  .bb-grid:not(.compact) .bb-grid-header-cell {
+    @apply px-2 py-2;
+    @apply first:pl-4 last:pr-4;
+  }
+  .bb-grid.compact .bb-grid-header-cell {
+    @apply px-1 py-2;
+    @apply first:pl-2 last:pr-2;
+  }
+  .bb-grid-cell {
+    @apply border-t border-block-border flex items-center text-sm leading-5 whitespace-pre-wrap break-all;
+  }
+  .bb-grid:not(.compact) .bb-grid-cell {
+    @apply px-2 py-2;
+    @apply first:pl-4 last:pr-4;
+  }
+  .bb-grid.compact .bb-grid-cell {
+    @apply px-1 py-2;
+    @apply first:pl-2 last:pr-2;
+  }
+  .bb-grid-row.clickable:hover > .bb-grid-cell {
+    @apply cursor-pointer bg-gray-100;
+  }
+  .bb-grid.hide-header .bb-grid-row:first-child .bb-grid-cell {
+    @apply border-t-0;
+  }
+}
 
 .btn-primary {
   @apply select-none inline-flex border border-transparent rounded-md text-accent-text bg-accent hover:bg-accent-hover disabled:bg-accent disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm leading-5 font-medium focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2;
@@ -186,6 +237,10 @@
   @apply cursor-pointer text-blue-600 hover:underline hover:text-blue-800 focus:outline-none;
 }
 
+.light-link {
+  @apply cursor-pointer text-blue-400 hover:underline hover:text-blue-200 focus:outline-none;
+}
+
 .icon-link {
   @apply cursor-pointer text-control hover:bg-link-hover focus:outline-none;
 }
@@ -203,12 +258,22 @@
 }
 
 .tooltip-left {
-  @apply invisible absolute -top-1 right-6  px-2 py-1 rounded bg-black bg-opacity-75 text-white;
+  @apply invisible absolute -top-1 right-6 px-2 py-1 rounded bg-black bg-opacity-75 text-white;
+}
+
+.tooltip-top {
+  @apply invisible absolute !-top-1 !left-1/2 !-translate-x-1/2 px-2 py-1 rounded bg-black bg-opacity-75 text-white;
 }
 
 .tooltip-wrapper:hover .tooltip,
 .tooltip-wrapper:hover .tooltip-left {
   @apply visible z-50;
+}
+
+@layer base {
+  .bg-dark-bg {
+    background-color: var(--color-dark-bg);
+  }
 }
 
 @layer utilities {
@@ -270,6 +335,15 @@
 .fade-slow-enter-from,
 .fade-slow-leave-to {
   @apply opacity-0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  @apply transition-transform ease-in-out duration-150;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  @apply translate-y-full;
 }
 
 @keyframes thumb-up {

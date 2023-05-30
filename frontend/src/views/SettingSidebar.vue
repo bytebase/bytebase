@@ -1,9 +1,10 @@
 <template>
   <!-- Navigation -->
-  <nav class="flex-1 flex flex-col px-3 overflow-y-auto">
+  <nav class="flex-1 flex flex-col px-2 overflow-y-auto">
+    <BytebaseLogo class="w-full px-2" />
     <div class="space-y-1">
       <button
-        class="group flex items-center px-2 py-2 text-base leading-5 font-normal rounded-md text-gray-700 focus:outline-none"
+        class="group flex items-center px-1 py-2 text-base leading-5 font-normal rounded-md text-gray-700 focus:outline-none"
         @click.prevent="goBack"
       >
         <heroicons-outline:chevron-left
@@ -41,12 +42,20 @@
           >
             {{ $t("settings.sidebar.general") }}
           </router-link>
-          <!-- <router-link
-            to="/setting/agent"
+          <router-link
+            to="/setting/member"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            :class="[
+              route.name === 'workspace.profile' &&
+                'router-link-active bg-link-hover',
+            ]"
+            >{{ $t("settings.sidebar.members") }}</router-link
           >
-            Agents
-          </router-link>-->
+          <router-link
+            to="/setting/role"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("settings.sidebar.custom-roles") }}</router-link
+          >
           <router-link
             v-if="showProjectItem"
             to="/setting/project"
@@ -54,58 +63,105 @@
             >{{ $t("common.projects") }}</router-link
           >
           <router-link
-            to="/setting/member"
+            to="/setting/subscription"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.members") }}</router-link
-          >
-          <!--
-            Label Management is visible to all
-            but only editable to Owners and DBAs
-          -->
-          <router-link
-            to="/setting/label"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.labels") }}</router-link
+            >{{ $t("settings.sidebar.subscription") }}</router-link
           >
           <router-link
-            v-if="showIMIntegrationItem"
-            to="/setting/im-integration"
-            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
-          >
-            {{ $t("settings.sidebar.im-integration") }}
-            <BBBetaBadge class="ml-1" />
-          </router-link>
-          <router-link
-            v-if="showVCSItem"
-            to="/setting/version-control"
+            v-if="showDebugLogItem"
+            to="/setting/debug-log"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.version-control") }}</router-link
+            >{{ $t("settings.sidebar.debug-log") }}</router-link
           >
+        </div>
+      </div>
+      <div class="mt-8">
+        <div
+          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
+        >
+          <heroicons-solid:shield-check class="mr-3 w-5 h-5" />
+          {{ $t("settings.sidebar.security-and-policy") }}
+        </div>
+        <div class="space-y-1">
           <router-link
             to="/setting/sql-review"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("sql-review.title") }}</router-link
           >
           <router-link
-            to="/setting/subscription"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.subscription") }}</router-link
+            to="/setting/slow-query"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2 capitalize"
+            >{{ $t("slow-query.self") }}</router-link
           >
           <router-link
-            v-if="showDebugItem"
-            to="/setting/debug-log"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.debug-log") }}</router-link
+            to="/setting/risk-center"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
           >
-          <!-- <router-link
-            to="/setting/billing"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            {{ $t("custom-approval.risk.risk-center") }}
+          </router-link>
+          <router-link
+            to="/setting/custom-approval"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
           >
-            Billing
-          </router-link>-->
-          <!-- <div class="pl-9 mt-1">
-            <BBOutline :title="'Integrations'" :itemList="integrationList" />
-          </div>-->
+            {{ $t("custom-approval.self") }}
+          </router-link>
+          <router-link
+            v-if="showSensitiveDataItem"
+            to="/setting/sensitive-data"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+          >
+            {{ $t("settings.sidebar.sensitive-data") }}
+          </router-link>
+          <router-link
+            v-if="showAccessControlItem"
+            to="/setting/access-control"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+          >
+            {{ $t("settings.sidebar.access-control") }}
+          </router-link>
+          <router-link
+            v-if="showAuditLogItem"
+            to="/setting/audit-log"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("settings.sidebar.audit-log") }}</router-link
+          >
+        </div>
+      </div>
+      <div v-if="showIntegrationSection" class="mt-8">
+        <div
+          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
+        >
+          <heroicons-solid:link class="mr-3 w-5 h-5" />
+          {{ $t("settings.sidebar.integration") }}
+        </div>
+        <div class="space-y-1">
+          <router-link
+            v-if="showVCSItem"
+            to="/setting/gitops"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("settings.sidebar.gitops") }}</router-link
+          >
+          <router-link
+            v-if="showSSOItem"
+            to="/setting/sso"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+          >
+            {{ $t("settings.sidebar.sso") }}
+          </router-link>
+          <router-link
+            v-if="showIMIntegrationItem"
+            to="/setting/im-integration"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+          >
+            {{ $t("settings.sidebar.im-integration") }}
+          </router-link>
+          <router-link
+            v-if="showMailDeliveryItem"
+            to="/setting/mail-delivery"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+          >
+            {{ $t("settings.sidebar.mail-delivery") }}
+          </router-link>
         </div>
       </div>
     </div>
@@ -114,40 +170,80 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useRouter } from "vue-router";
-import { hasWorkspacePermission } from "../utils";
-import { useCurrentUser, useRouterStore } from "@/store";
+import { useRoute, useRouter } from "vue-router";
+import { hasWorkspacePermissionV1 } from "../utils";
+import { useCurrentUserV1, useRouterStore } from "@/store";
+import BytebaseLogo from "@/components/BytebaseLogo.vue";
 
 const routerStore = useRouterStore();
+const route = useRoute();
 const router = useRouter();
+const currentUserV1 = useCurrentUserV1();
 
-const currentUser = useCurrentUser();
-
-const showDebugItem = computed((): boolean => {
-  return hasWorkspacePermission(
-    "bb.permission.workspace.debug",
-    currentUser.value.role
+const showProjectItem = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-project",
+    currentUserV1.value.userRole
   );
 });
 
-const showProjectItem = computed((): boolean => {
-  return hasWorkspacePermission(
-    "bb.permission.workspace.manage-project",
-    currentUser.value.role
+const showSensitiveDataItem = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-sensitive-data",
+    currentUserV1.value.userRole
+  );
+});
+
+const showAccessControlItem = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-access-control",
+    currentUserV1.value.userRole
   );
 });
 
 const showIMIntegrationItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-im-integration",
-    currentUser.value.role
+    currentUserV1.value.userRole
+  );
+});
+
+const showSSOItem = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-sso",
+    currentUserV1.value.userRole
   );
 });
 
 const showVCSItem = computed((): boolean => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-vcs-provider",
-    currentUser.value.role
+    currentUserV1.value.userRole
+  );
+});
+
+const showIntegrationSection = computed(() => {
+  return showVCSItem.value || showIMIntegrationItem.value || showSSOItem.value;
+});
+
+const showDebugLogItem = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.debug-log",
+    currentUserV1.value.userRole
+  );
+});
+
+const showAuditLogItem = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.audit-log",
+    currentUserV1.value.userRole
+  );
+});
+
+const showMailDeliveryItem = computed((): boolean => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-mail-delivery",
+    currentUserV1.value.userRole
   );
 });
 

@@ -8,6 +8,7 @@
       <RepositorySetupWizard
         :create="state.showWizardForCreate"
         :project="project"
+        :project-v1="projectV1"
         @cancel="cancelWizard"
         @finish="finishWizard"
       />
@@ -41,9 +42,9 @@
           </div>
           <div class="flex space-x-4">
             <input
-              id="workflow-version-control"
+              id="workflow-gitops"
               v-model="state.workflowType"
-              name="Version control workflow"
+              name="GitOps workflow"
               tabindex="-1"
               type="radio"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
@@ -51,7 +52,7 @@
               :disabled="!allowEdit"
             />
             <div class="-mt-1">
-              <label for="workflow-version-control" class="textlabel">{{
+              <label for="workflow-gitops" class="textlabel">{{
                 $t("workflow.gitops-workflow")
               }}</label>
               <div class="mt-1 textinfolabel">
@@ -76,6 +77,7 @@
       <template v-else-if="project.workflowType == 'VCS'">
         <RepositoryPanel
           :project="project"
+          :project-v1="projectV1"
           :repository="repository"
           :allow-edit="allowEdit"
           @change-repository="enterWizard(false)"
@@ -93,6 +95,7 @@ import RepositoryPanel from "./RepositoryPanel.vue";
 import { Project, ProjectWorkflowType, UNKNOWN_ID } from "../types";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useRepositoryStore } from "@/store";
+import { Project as ProjectV1 } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   workflowType: ProjectWorkflowType;
@@ -115,6 +118,10 @@ export default defineComponent({
       default: true,
       type: Boolean,
     },
+    projectV1: {
+      required: true,
+      type: Object as PropType<ProjectV1>,
+    },
   },
   async setup(props) {
     const { t } = useI18n();
@@ -134,9 +141,9 @@ export default defineComponent({
     watchEffect(prepareRepository);
 
     watch(
-      () => props.project,
-      (cur) => {
-        state.workflowType = cur.workflowType;
+      () => props.project.workflowType,
+      (type) => {
+        state.workflowType = type;
       }
     );
 

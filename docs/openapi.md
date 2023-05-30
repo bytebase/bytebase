@@ -6,17 +6,18 @@ Bytebase OpenAPI implements the OpenAPI specification with Swagger.
 
 ### Required tools
 
-* [`swag`](https://github.com/swaggo/swag) for the Swagger command line.
-* [`echo-swagger`](https://github.com/swaggo/echo-swagger) Swagger middleware for echo.
+- [`swag`](https://github.com/swaggo/swag) for the Swagger command line.
+- [`echo-swagger`](https://github.com/swaggo/echo-swagger) Swagger middleware for echo.
 
 ### Comment for OpenAPIs
 
-1. Add general API annotations in `./server/server.go`.
+1. Add general API annotations in `./backend/server/server.go`.
 2. Add API operation annotations in your controller code.
 
-> Note: you need to comment for a specific controller function, otherwise the swagger cannot extract the comment as docs. For example:
+> **Note**
+> You need to comment for a specific controller function, otherwise the swagger cannot extract the comment as docs. For example:
 
-* ❌ Incorrect
+❌ Incorrect
 
 ```go
 // Swagger doc (cannot work)
@@ -29,7 +30,7 @@ e.GET("/healthz", func(c echo.Context) error {
 })
 ```
 
-* ✅ Correct
+✅ Correct
 
 ```go
 // Swagger doc (this can work)
@@ -51,7 +52,7 @@ Every time you changed the comments, you need to re-run the following command to
 ```bash
 cd bytebase
 # generate swagger doc
-swag init -g ./server.go -d ./server --output docs/openapi --parseDependency
+swag init -g ./backend/server.go -d ./backend/server --output docs/openapi --parseDependency
 ```
 
 This should generate new docs under `./docs/openapi` folder based on your comments.

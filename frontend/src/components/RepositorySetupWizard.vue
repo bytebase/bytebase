@@ -4,7 +4,7 @@
       <i18n-t keypath="repository.setup-wizard-guide">
         <template #guide>
           <a
-            href="https://bytebase.com/docs/vcs-integration/enable-version-control-workflow?source=console"
+            href="https://bytebase.com/docs/vcs-integration/enable-gitops-workflow?source=console"
             target="_blank"
             class="normal-link"
           >
@@ -14,7 +14,7 @@
       </i18n-t>
     </div>
     <BBStepTab
-      class="pt-4"
+      class="mt-4 mb-8"
       :step-item-list="stepList"
       :allow-next="allowNext"
       @try-change-step="tryChangeStep"
@@ -139,7 +139,6 @@ import {
   ExternalRepositoryInfo,
   OAuthToken,
   Project,
-  ProjectPatch,
   ProjectRepositoryConfig,
   RepositoryCreate,
   unknown,
@@ -147,21 +146,26 @@ import {
 } from "../types";
 import { projectSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useProjectStore, useRepositoryStore, hasFeature } from "@/store";
+import { useRepositoryStore, hasFeature, useProjectV1Store } from "@/store";
+import {
+  Project as ProjectV1,
+  SchemaChange,
+} from "@/types/proto/v1/project_service";
+import { cloneDeep } from "lodash-es";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
-  "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
+  "{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
 // Default schema path template is co-locate with the corresponding db's migration files and use .(dot) to appear the first.
-const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql";
+const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql";
 // Default sheet path tempalte is to organize script files for SQL Editor.
 const DEFAULT_SHEET_PATH_TEMPLATE =
-  "script/{{ENV_NAME}}##{{DB_NAME}}##{{NAME}}.sql";
+  "script/{{ENV_ID}}##{{DB_NAME}}##{{NAME}}.sql";
 
-// For tenant mode projects, {{ENV_NAME}} is not supported.
+// For tenant mode projects, {{ENV_ID}} and {{DB_NAME}} is not supported.
 const DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE =
-  "{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
-const DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE = ".{{DB_NAME}}##LATEST.sql";
+  "{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
+const DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE = ".LATEST.sql";
 const DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE = "script/{{NAME}}.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
@@ -194,6 +198,10 @@ export default defineComponent({
     project: {
       required: true,
       type: Object as PropType<Project>,
+    },
+    projectV1: {
+      required: true,
+      type: Object as PropType<ProjectV1>,
     },
   },
   emits: ["cancel", "finish"],
@@ -307,19 +315,26 @@ export default defineComponent({
 
       const createFunc = async () => {
         let externalId = state.config.repositoryInfo.externalId;
-        if (state.config.vcs.type == "GITHUB_COM") {
+        if (
+          state.config.vcs.type == "GITHUB" ||
+          state.config.vcs.type == "BITBUCKET"
+        ) {
           externalId = state.config.repositoryInfo.fullPath;
         }
 
         // Update project schemaChangeType field firstly.
         if (state.config.schemaChangeType !== props.project.schemaChangeType) {
-          const projectPatch: ProjectPatch = {
-            schemaChangeType: state.config.schemaChangeType,
-          };
-          await useProjectStore().patchProject({
-            projectId: props.project.id,
-            projectPatch,
-          });
+          const projectPatch = cloneDeep(props.projectV1);
+          projectPatch.schemaChange =
+            state.config.schemaChangeType === "DDL"
+              ? SchemaChange.DDL
+              : SchemaChange.SDL;
+          const updateMask = ["schema_change"];
+          await useProjectV1Store().updateProject(projectPatch, updateMask);
+          // WARNING: using mixed new/old APIs so we need to force update the
+          // legacy project entity's local value manually
+          /* eslint-disable-next-line vue/no-mutating-props */
+          props.project.schemaChangeType = state.config.schemaChangeType;
         }
 
         const repositoryCreate: RepositoryCreate = {
@@ -377,7 +392,7 @@ export default defineComponent({
         params: {
           projectSlug: projectSlug(props.project),
         },
-        hash: "#version-control",
+        hash: "#gitops",
       });
     };
 

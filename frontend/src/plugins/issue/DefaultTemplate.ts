@@ -12,26 +12,6 @@ const template: IssueTemplate = {
       type: "bb.issue.general",
       description: "",
       assigneeId: UNKNOWN_ID,
-      pipeline: {
-        stageList: [
-          {
-            name: "Troubleshoot database",
-            environmentId: UNKNOWN_ID,
-            taskList: [
-              {
-                name: "Troubleshoot database",
-                status: "PENDING_APPROVAL",
-                type: "bb.task.general",
-                instanceId: UNKNOWN_ID,
-                databaseId: UNKNOWN_ID,
-                statement: "",
-                earliestAllowedTs: 0,
-              },
-            ],
-          },
-        ],
-        name: "Create database pipeline",
-      },
       createContext: {},
       payload: {},
     };

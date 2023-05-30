@@ -1,15 +1,16 @@
 import { computed, Ref } from "vue";
+import { v4 as uuidv4 } from "uuid";
 import { isEmpty } from "lodash-es";
 import {
   Issue,
   IssueCreate,
-  Project,
   Stage,
   StageCreate,
   StageId,
   Task,
   TaskCreate,
   TaskStatus,
+  UNKNOWN_ID,
 } from "@/types";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -18,11 +19,27 @@ import {
   idFromSlug,
   indexFromSlug,
   issueSlug,
+  maybeSetSheetBacktracePayloadByIssue,
+  sheetIdOfTask,
   stageSlug,
   taskSlug,
 } from "@/utils";
-import { useDatabaseStore, useIssueStore, useProjectStore } from "@/store";
+import {
+  useDatabaseStore,
+  useIssueStore,
+  useProjectV1Store,
+  useSheetV1Store,
+  useSheetStatementByUid,
+} from "@/store";
 import { flattenTaskList, TaskTypeWithStatement } from "./common";
+import { maybeCreateBackTraceComments } from "../rollback/common";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import { sheetNamePrefix } from "@/store/modules/v1/common";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 
 export const useBaseIssueLogic = (params: {
   create: Ref<boolean>;
@@ -32,29 +49,30 @@ export const useBaseIssueLogic = (params: {
   const route = useRoute();
   const router = useRouter();
   const issueStore = useIssueStore();
-  const projectStore = useProjectStore();
+  const projectV1Store = useProjectV1Store();
   const databaseStore = useDatabaseStore();
+  const sheetV1Store = useSheetV1Store();
 
-  const project = computed((): Project => {
-    if (create.value) {
-      return projectStore.getProjectById(
-        (issue.value as IssueCreate).projectId
-      );
-    }
-    return (issue.value as Issue).project;
+  const project = computed(() => {
+    const projectUID = create.value
+      ? (issue.value as IssueCreate).projectId
+      : (issue.value as Issue).project.id;
+    return projectV1Store.getProjectByUID(String(projectUID));
   });
 
-  const createIssue = (issue: IssueCreate) => {
+  const createIssue = async (issue: IssueCreate) => {
     // Set issue.pipeline and issue.payload to empty
     // because we are no longer passing parameters via issue.pipeline
     // we are using issue.createContext instead
     delete issue.pipeline;
     issue.payload = {};
 
-    issueStore.createIssue(issue).then((createdIssue) => {
-      // Use replace to omit the new issue url in the navigation history.
-      router.replace(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
-    });
+    const createdIssue = await issueStore.createIssue(issue);
+    await maybeCreateBackTraceComments(createdIssue);
+    await maybeSetSheetBacktracePayloadByIssue(createdIssue);
+
+    // Use replace to omit the new issue url in the navigation history.
+    router.replace(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
   };
 
   const selectedStage = computed((): Stage | StageCreate => {
@@ -69,7 +87,7 @@ export const useBaseIssueLogic = (params: {
         return issue.value.pipeline!.stageList[index];
       }
       const stageId = idFromSlug(stageSlug);
-      const stageList = (issue.value as Issue).pipeline.stageList;
+      const stageList = (issue.value as Issue).pipeline!.stageList;
       for (const stage of stageList) {
         if (stage.id == stageId) {
           return stage;
@@ -77,7 +95,7 @@ export const useBaseIssueLogic = (params: {
       }
     } else if (!create.value && taskSlug) {
       const taskId = idFromSlug(taskSlug);
-      const stageList = (issue.value as Issue).pipeline.stageList;
+      const stageList = (issue.value as Issue).pipeline!.stageList;
       for (const stage of stageList) {
         for (const task of stage.taskList) {
           if (task.id == taskId) {
@@ -89,7 +107,7 @@ export const useBaseIssueLogic = (params: {
     if (create.value) {
       return issue.value.pipeline!.stageList[0];
     }
-    return activeStage((issue.value as Issue).pipeline);
+    return activeStage((issue.value as Issue).pipeline!);
   });
 
   const selectStageOrTask = (
@@ -158,17 +176,24 @@ export const useBaseIssueLogic = (params: {
     return (selectedTask.value as Task).database;
   });
 
+  const isGhostMode = computed((): boolean => {
+    return issue.value.type === "bb.issue.database.schema.update.ghost";
+  });
+
   const isTenantMode = computed((): boolean => {
-    if (project.value.tenantMode !== "TENANT") return false;
+    // To sync databases schema in tenant mode, we use normal project logic to create issue.
+    if (create.value && route.query.mode !== "tenant") return false;
+    if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED)
+      return false;
 
     // We support single database migration in tenant mode projects.
     // So a pipeline should be tenant mode when it contains more
     // than one tasks.
-    return flattenTaskList(issue.value).length > 1;
-  });
-
-  const isGhostMode = computed((): boolean => {
-    return issue.value.type === "bb.issue.database.schema.update.ghost";
+    return (
+      flattenTaskList(issue.value).filter((task) =>
+        TaskTypeWithStatement.includes(task.type)
+      ).length > 1
+    );
   });
 
   const isPITRMode = computed((): boolean => {
@@ -194,13 +219,45 @@ export const useBaseIssueLogic = (params: {
 
     for (const task of stage.taskList) {
       if (TaskTypeWithStatement.includes(task.type)) {
-        if (isEmpty((task as TaskCreate).statement)) {
+        if (
+          isEmpty((task as TaskCreate).statement) &&
+          ((task as TaskCreate).sheetId === undefined ||
+            (task as TaskCreate).sheetId === UNKNOWN_ID)
+        ) {
           return false;
         }
       }
     }
     return true;
   };
+
+  const selectedStatement = computed((): string => {
+    const task = selectedTask.value;
+    if (create.value) {
+      const taskCreate = task as TaskCreate;
+      if (taskCreate.sheetId && taskCreate.sheetId !== UNKNOWN_ID) {
+        return useSheetStatementByUid(taskCreate.sheetId).value || "";
+      }
+      return (task as TaskCreate).statement;
+    }
+    return (
+      useSheetStatementByUid(sheetIdOfTask(task as Task) || UNKNOWN_ID).value ||
+      ""
+    );
+  });
+
+  const allowApplyTaskStateToOthers = computed(() => {
+    if (!create.value) {
+      return false;
+    }
+    const taskList = flattenTaskList<TaskCreate>(issue.value);
+    // Allowed when more than one tasks need SQL statement or sheet.
+    const count = taskList.filter((task) =>
+      TaskTypeWithStatement.includes(task.type)
+    ).length;
+
+    return count > 1;
+  });
 
   const allowApplyIssueStatusTransition = () => {
     // no extra logic by default
@@ -218,6 +275,54 @@ export const useBaseIssueLogic = (params: {
     return true;
   };
 
+  const applyTaskStateToOthers = async (task: TaskCreate) => {
+    const taskList = flattenTaskList<TaskCreate>(issue.value);
+    const sheetId = task.sheetId;
+    const statement = task.statement;
+    let sheet = undefined;
+
+    if (sheetId && sheetId !== UNKNOWN_ID) {
+      sheet = await sheetV1Store.getOrFetchSheetByName(
+        `${project.value.name}/${sheetNamePrefix}${sheetId}`
+      );
+    }
+
+    for (const taskItem of taskList) {
+      if (TaskTypeWithStatement.includes(taskItem.type)) {
+        if (sheet) {
+          if (
+            new TextDecoder().decode(sheet.content).length < sheet.contentSize
+          ) {
+            taskItem.sheetId = sheetId;
+          } else {
+            let database = "";
+            if (taskItem.databaseId) {
+              database = (
+                await databaseStore.getOrFetchDatabaseById(taskItem.databaseId)
+              ).name;
+            }
+            const newSheet = await sheetV1Store.createSheet(
+              project.value.name,
+              {
+                title: uuidv4(),
+                content: new TextEncoder().encode(statement),
+                database: database,
+                visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+                source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+                type: Sheet_Type.TYPE_SQL,
+                payload: "{}",
+              }
+            );
+            taskItem.sheetId = sheetV1Store.getSheetUid(newSheet.name);
+          }
+          taskItem.statement = "";
+        } else {
+          taskItem.statement = statement;
+        }
+      }
+    }
+  };
+
   return {
     project,
     isTenantMode,
@@ -231,6 +336,9 @@ export const useBaseIssueLogic = (params: {
     selectTask,
     taskStatusOfStage,
     isValidStage,
+    selectedStatement,
+    allowApplyTaskStateToOthers,
+    applyTaskStateToOthers,
     allowApplyIssueStatusTransition,
     allowApplyTaskStatusTransition,
   };

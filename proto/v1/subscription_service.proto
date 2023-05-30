@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "generated-go/v1";
+
+service SubscriptionService {
+  rpc GetSubscription(GetSubscriptionRequest) returns (Subscription) {
+    option (google.api.http) = {get: "/v1/subscription"};
+    option (google.api.method_signature) = "";
+  }
+  rpc GetFeatureMatrix(GetFeatureMatrixRequest) returns (FeatureMatrix) {
+    option (google.api.http) = {get: "/v1/feature"};
+    option (google.api.method_signature) = "";
+  }
+  rpc UpdateSubscription(UpdateSubscriptionRequest) returns (Subscription) {
+    option (google.api.http) = {
+      patch: "/v1/subscription"
+      body: "patch"
+    };
+    option (google.api.method_signature) = "patch";
+  }
+  rpc TrialSubscription(TrialSubscriptionRequest) returns (Subscription) {
+    option (google.api.http) = {
+      post: "/v1/subscription/trial"
+      body: "trial"
+    };
+    option (google.api.method_signature) = "trial";
+  }
+}
+
+message GetSubscriptionRequest {}
+
+message GetFeatureMatrixRequest {}
+
+message UpdateSubscriptionRequest {
+  PatchSubscription patch = 1;
+}
+
+message TrialSubscriptionRequest {
+  TrialSubscription trial = 1;
+}
+
+enum PlanType {
+  PLAN_TYPE_UNSPECIFIED = 0;
+
+  FREE = 1;
+
+  TEAM = 2;
+
+  ENTERPRISE = 3;
+}
+
+message PatchSubscription {
+  string license = 1;
+}
+
+message TrialSubscription {
+  PlanType plan = 1;
+
+  int32 days = 2;
+
+  int32 instance_count = 4;
+}
+
+message Subscription {
+  int32 instance_count = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp expires_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp started_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  PlanType plan = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  bool trialing = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string org_id = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string org_name = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message FeatureMatrix {
+  repeated Feature features = 1;
+}
+
+message Feature {
+  // Name is the feature name.
+  string name = 1;
+
+  // Matrix is the feature matrix for different plan. The key is the plan enum in string value.
+  map<string, bool> matrix = 2;
+}

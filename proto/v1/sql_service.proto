@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service SQLService {
+  rpc Pretty(PrettyRequest) returns (PrettyResponse) {
+    option (google.api.http) = {
+      post: "/v1/sql/pretty"
+      body: "*"
+    };
+  }
+  rpc Query(QueryRequest) returns (QueryResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*}:query"
+      body: "*"
+    };
+  }
+}
+
+message QueryRequest {
+  // The name is the instance name to execute the query against.
+  // Format: instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The connection database name to execute the query against.
+  // For PostgreSQL, it's required.
+  // For other database engines, it's optional. Use empty string to execute against without specifying a database.
+  string connection_database = 2;
+
+  // The SQL statement to execute.
+  string statement = 3;
+
+  // The maximum number of rows to return.
+  int32 limit = 4;
+}
+
+message QueryResponse {
+  // The query results.
+  repeated QueryResult results = 1;
+
+  // The query advices.
+  repeated Advice advices = 2;
+}
+
+message QueryResult {
+  // Column names of the query result.
+  repeated string column_names = 1;
+
+  // Column types of the query result.
+  repeated string column_type_names = 2;
+
+  // Rows of the query result.
+  repeated QueryRow rows = 3;
+
+  // Columns are masked or not.
+  repeated bool masked = 4;
+
+  // The error message if the query failed.
+  string error = 5;
+}
+
+message QueryRow {
+  // Row values of the query result.
+  repeated string values = 1;
+}
+
+message Advice {
+  enum Status {
+    // Unspecified.
+    STATUS_UNSPECIFIED = 0;
+    SUCCESS = 1;
+    WARNING = 2;
+    ERROR = 3;
+  }
+  // The advice status.
+  Status status = 1;
+
+  // The advice code.
+  int32 code = 2;
+
+  // The advice title.
+  string title = 3;
+
+  // The advice content.
+  string content = 4;
+
+  // The advice line number in the SQL statement.
+  int32 line = 5;
+
+  // The advice detail.
+  string detail = 6;
+}
+
+message PrettyRequest {
+  Engine engine = 1;
+
+  // The SDL format SQL schema information that was dumped from a database engine.
+  // This information will be sorted to match the order of statements in the userSchema.
+  string current_schema = 2;
+
+  // The expected SDL schema. This schema will be checked for correctness and normalized.
+  string expected_schema = 3;
+}
+
+message PrettyResponse {
+  // The pretty-formatted version of current schema.
+  string current_schema = 1;
+
+  // The expected SDL schema after normalizing.
+  string expected_schema = 2;
+}

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+option go_package = "generated-go/v1";
+
+enum State {
+  STATE_UNSPECIFIED = 0;
+  ACTIVE = 1;
+  DELETED = 2;
+}
+
+enum Engine {
+  ENGINE_UNSPECIFIED = 0;
+  CLICKHOUSE = 1;
+  MYSQL = 2;
+  POSTGRES = 3;
+  SNOWFLAKE = 4;
+  SQLITE = 5;
+  TIDB = 6;
+  MONGODB = 7;
+  REDIS = 8;
+  ORACLE = 9;
+  SPANNER = 10;
+  MSSQL = 11;
+  REDSHIFT = 12;
+  MARIADB = 13;
+  OCEANBASE = 14;
+}

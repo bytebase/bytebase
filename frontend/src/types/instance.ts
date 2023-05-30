@@ -1,16 +1,59 @@
 import { DataSource } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
-import { Principal } from "./principal";
+import { InstanceId, MigrationHistoryId, ResourceId } from "./id";
+import { Engine } from "./proto/v1/common";
 import { VCSPushEvent } from "./vcs";
 
-export type EngineType =
-  | "CLICKHOUSE"
-  | "MYSQL"
-  | "POSTGRES"
-  | "SNOWFLAKE"
-  | "TIDB";
+export const EngineTypeList = [
+  "CLICKHOUSE",
+  "MYSQL",
+  "POSTGRES",
+  "SNOWFLAKE",
+  "TIDB",
+  "MONGODB",
+  "SPANNER",
+  "REDIS",
+  "ORACLE",
+  "MSSQL",
+  "REDSHIFT",
+  "MARIADB",
+  "OCEANBASE",
+] as const;
+
+export type EngineType = typeof EngineTypeList[number];
+
+export function convertEngineType(type: EngineType): Engine {
+  switch (type) {
+    case "CLICKHOUSE":
+      return Engine.CLICKHOUSE;
+    case "MYSQL":
+      return Engine.MYSQL;
+    case "POSTGRES":
+      return Engine.POSTGRES;
+    case "SNOWFLAKE":
+      return Engine.SNOWFLAKE;
+    case "TIDB":
+      return Engine.TIDB;
+    case "MONGODB":
+      return Engine.MONGODB;
+    case "SPANNER":
+      return Engine.SPANNER;
+    case "REDIS":
+      return Engine.REDIS;
+    case "ORACLE":
+      return Engine.ORACLE;
+    case "MSSQL":
+      return Engine.MSSQL;
+    case "REDSHIFT":
+      return Engine.REDSHIFT;
+    case "MARIADB":
+      return Engine.MARIADB;
+    case "OCEANBASE":
+      return Engine.OCEANBASE;
+  }
+  return Engine.ENGINE_UNSPECIFIED;
+}
 
 export function defaultCharset(type: EngineType): string {
   switch (type) {
@@ -19,9 +62,54 @@ export function defaultCharset(type: EngineType): string {
       return "";
     case "MYSQL":
     case "TIDB":
+    case "MARIADB":
+    case "OCEANBASE":
       return "utf8mb4";
     case "POSTGRES":
       return "UTF8";
+    case "MONGODB":
+      return "";
+    case "SPANNER":
+      return "";
+    case "REDIS":
+      return "";
+    case "ORACLE":
+      return "UTF8";
+    case "MSSQL":
+      return "";
+    case "REDSHIFT":
+      return "UNICODE";
+  }
+}
+
+export function engineName(type: EngineType): string {
+  switch (type) {
+    case "CLICKHOUSE":
+      return "ClickHouse";
+    case "MYSQL":
+      return "MySQL";
+    case "POSTGRES":
+      return "PostgreSQL";
+    case "SNOWFLAKE":
+      return "Snowflake";
+    case "TIDB":
+      return "TiDB";
+    case "MONGODB":
+      return "MongoDB";
+    case "SPANNER":
+      return "Spanner";
+    case "REDIS":
+      return "Redis";
+    case "ORACLE":
+      return "Oracle";
+    case "MSSQL":
+      return "MSSQL";
+    case "REDSHIFT":
+      return "Redshift";
+    case "MARIADB":
+      return "MariaDB";
+    case "OCEANBASE":
+      return "OceanBase";
   }
 }
 
@@ -32,42 +120,53 @@ export function defaultCollation(type: EngineType): string {
       return "";
     case "MYSQL":
     case "TIDB":
+    case "MARIADB":
+    case "OCEANBASE":
       return "utf8mb4_general_ci";
     // For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
     // If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
     // install it.
     case "POSTGRES":
       return "";
+    case "MONGODB":
+      return "";
+    case "SPANNER":
+      return "";
+    case "REDIS":
+      return "";
+    case "ORACLE":
+      return "BINARY_CI";
+    case "MSSQL":
+      return "";
+    case "REDSHIFT":
+      return "";
   }
 }
 
 export type Instance = {
   id: InstanceId;
+  resourceId: string;
+  rowStatus: RowStatus;
 
   // Related fields
   environment: Environment;
   // An instance must have a admin data source, maybe a read-only data source.
   dataSourceList: DataSource[];
 
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-  rowStatus: RowStatus;
-
   // Domain specific fields
   name: string;
   engine: EngineType;
   engineVersion: string;
   externalLink?: string;
-  host: string;
-  port?: string;
+  srv: boolean;
+  authenticationDatabase: string;
 };
 
 export type InstanceCreate = {
+  resourceId: ResourceId;
+
   // Related fields
-  environmentId: EnvironmentId;
+  environmentId: number;
 
   // Domain specific fields
   name: string;
@@ -75,12 +174,26 @@ export type InstanceCreate = {
   externalLink?: string;
   host: string;
   port?: string;
+  database?: string;
   // In mysql, username can be empty which means anonymous user
   username?: string;
   password?: string;
   sslCa?: string;
   sslCert?: string;
   sslKey?: string;
+  // DNS SRV record is only used for MongoDB.
+  srv: boolean;
+  // For MongoDB, the auth database is used to authenticate the user.
+  authenticationDatabase: string;
+  // sid and serviceName are used for Oracle database. Required one of them.
+  sid: string;
+  serviceName: string;
+  // Connection over SSH.
+  sshHost: string;
+  sshPort: string;
+  sshUser: string;
+  sshPassword: string;
+  sshPrivateKey: string;
 };
 
 export type InstancePatch = {
@@ -90,8 +203,6 @@ export type InstancePatch = {
   // Domain specific fields
   name?: string;
   externalLink?: string;
-  host?: string;
-  port?: string;
 };
 
 export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";

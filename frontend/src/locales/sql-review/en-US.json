@@ -2,7 +2,8 @@
   "engine": {
     "mysql": "MySQL",
     "tidb": "TiDB",
-    "postgres": "PostgreSQL"
+    "postgres": "PostgreSQL",
+    "oracle": "Oracle"
   },
   "category": {
     "engine": "Engine",
@@ -19,24 +20,26 @@
     "bb-sql-review-prod": "Advanced Template",
     "bb-sql-review-prod-desc": "Comprehensive policy where you have total protection and best practices for your databases.",
     "bb-sql-review-dev": "Basic Template",
-    "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage."
+    "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage.",
+    "bb-sql-review-sample": "Sample Template",
+    "bb-sql-review-sample-desc": "A minimum template with DROP protection and disallow column nullable."
   },
   "rule": {
     "engine-mysql-use-innodb": {
-      "title": "Use Innodb",
-      "description": "Require InnoDB as the storage engine for MySQL."
+      "title": "Enforce InnoDB storage engine",
+      "description": "InnoDB is the default storage engine for MySQL that provides transaction support. It also provides better performance for high-concurrency and low-latency scenarios, and supports online data backup and recovery. It is the preferred choice for OLTP businesses. Suggestion error level: Error"
     },
     "table-require-pk": {
-      "title": "Require primary key",
-      "description": "Require the table to have a primary key."
+      "title": "Enforce inclusion of primary key in a table",
+      "description": "In addition to carry business meaning, primary key are also beneficial for high-concurrency queries in MySQL. Various data synchronization, comparison, and rollback tools often require tables to have primary key. Suggestion error level: Error"
     },
     "table-no-foreign-key": {
-      "title": "No foreign key",
-      "description": "Disallow the foreign key in the table."
+      "title": "Prohibit using foreign key constraints",
+      "description": "The advantages and disadvantages of foreign key are highly controversial. Using foreign key may significantly increase the difficulty of database changes, scalability (such as sharding), etc. And may even prevent the use of some tools. Therefore, another option is to implement foreign key constraints at the application layer. Suggestion error level: Warning"
     },
     "table-drop-naming-convention": {
-      "title": "Drop table with naming convention",
-      "description": "Only tables named with specific patterns can be deleted. The requires users to do a rename before dropping the table. The table name must have \"_del\" suffix by default.",
+      "title": "Restrict the naming format of tables to be deleted",
+      "description": "For example, by requring the \"_del\" suffix, it can effectively prevent accidental deletions. Suggestion error level: Error",
       "component": {
         "format": {
           "title": "Table name format (regex)"
@@ -44,8 +47,8 @@
       }
     },
     "table-disallow-partition": {
-      "title": "Disallow partition",
-      "description": ""
+      "title": "Prohibit using partition table",
+      "description": "In some database engines, partitioned tables are not mature, and the use and maintenance are inconvenient. Therefore, it is more inclined to use manual data partitioning methods such as database and table sharding. Suggestion error level: Warning"
     },
     "table-comment": {
       "title": "Comment convention",
@@ -60,8 +63,8 @@
       }
     },
     "naming-table": {
-      "title": "Table naming check",
-      "description": "Enforce the table name format and length limit. Default snake_lower_case with 63 characters.",
+      "title": "Enforce table naming format",
+      "description": "The default format is all lowercase letters, separated by underscores between words, and no more than 63 characters long, such as \"abc\" and \"abc_def\". Suggestion error level: Warning",
       "component": {
         "format": {
           "title": "Table name format (regex)"
@@ -72,8 +75,8 @@
       }
     },
     "naming-column": {
-      "title": "Column naming check",
-      "description": "Enforce the column name format and length limit. Default snake_lower_case with 63 characters.",
+      "title": "Enforce column naming format",
+      "description": "The default format is all lowercase letters, separated by underscores between words, which is no more than 63 characters long, such as \"abc\" and \"abc_def\". Suggestion error level: Warning",
       "component": {
         "format": {
           "title": "Column name format (regex)"
@@ -84,8 +87,8 @@
       }
     },
     "naming-index-uk": {
-      "title": "Unique key naming check",
-      "description": "Enforce the unique key name format and length limit. Default uk_<table_name>_<column_list> or empty within 63 characters.",
+      "title": "Enforce unique key naming format",
+      "description": "The name is allowed to be empty and named by the database. If not empty, the default format is \"uk_<table name>_<unique key column name combination>\", which is no more than 63 characters long, such as \"uk_my_table_id_name\". Suggestion error level: Warning",
       "component": {
         "format": {
           "title": "Unique key name format",
@@ -100,8 +103,8 @@
       }
     },
     "naming-index-pk": {
-      "title": "Primary key naming check",
-      "description": "Enforce the primary key name format and length limit. Default pk_<table_name>_<column_list> or empty within 63 characters.",
+      "title": "Enforce primary key naming format",
+      "description": "The name is allowed to be empty and named by the database. If not empty, the default format is \"pk_<table name>_<unique key column name combination>\", which is no more than 63 characters long, such as \"pk_my_table_id_name\". Suggestion error level: Warning",
       "component": {
         "format": {
           "title": "Primary key name format",
@@ -116,8 +119,8 @@
       }
     },
     "naming-index-fk": {
-      "title": "Foreign key naming check",
-      "description": "Enforce the foreign key name format and length limit. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column> or empty within 63 characters.",
+      "title": "Enforce foreign key naming format",
+      "description": "The name is allowed to be empty and named by the database. If not empty, the default format is \"fk_<table name>_<unique key column name combination>\", which is no more than 63 characters long, such as \"fk_my_table_id_name\". Suggestion error level: Warning",
       "component": {
         "format": {
           "title": "Foreign key name format",
@@ -134,8 +137,8 @@
       }
     },
     "naming-index-idx": {
-      "title": "Index naming check",
-      "description": "Enforce the index name format and length limit. Default idx_<table_name>_<column_list> or empty within 63 characters.",
+      "title": "Enforce index naming format",
+      "description": "The name is allowed to be empty and named by the database. If not empty, the default format is \"idx_<table name>_<unique key column name combination>\", which is no more than 63 characters long, such as \"idx_my_table_id_name\". Suggestion error level: Warning",
       "component": {
         "format": {
           "title": "Index name format",
@@ -150,8 +153,8 @@
       }
     },
     "naming-column-auto-increment": {
-      "title": "Auto-increment column naming check",
-      "description": "Enforce the auto-increment column name format and length limit. Default id within 63 characters.",
+      "title": " Enforce auto-increment column naming format",
+      "description": "The default column name is \"ID\", and is no more than 63 characters long.",
       "component": {
         "format": {
           "title": "Auto-increment column name format (regex)"
@@ -161,9 +164,26 @@
         }
       }
     },
+    "naming-table-no-keyword": {
+      "title": "Prohibit using keywords as table names",
+      "description": ""
+    },
+    "naming-identifier-no-keyword": {
+      "title": "Prohibit using keywords as identifiers",
+      "description": ""
+    },
+    "naming-identifier-case": {
+      "title": "Enforce identifier case",
+      "description": "",
+      "component": {
+        "upper": {
+          "title": "Upper case"
+        }
+      }
+    },
     "column-required": {
-      "title": "Required columns",
-      "description": "Enforce the required columns in each table.",
+      "title": "Enforce the inclusion of specific columns in a table",
+      "description": "Some common columns are helpful for better application maintenance. For example, adding a business-independent \"ID\" column as the primary key avoids primary key conflicts caused by business changes (such as business mergers), and in some scenarios can also bring better data insertion performance. Suggested error level: Warning",
       "component": {
         "list": {
           "title": "Required column names"
@@ -171,8 +191,8 @@
       }
     },
     "column-type-disallow-list": {
-      "title": "Type disallow list",
-      "description": "Set the disallow list for column type.",
+      "title": "Prohibit the use of certain column data types",
+      "description": "Abusing column types can have serious negative effects on system maintainability and performance. For example, using \"LOB\" column to store large amounts of audio and video data may cause database performance to decrease, backup and recovery times to lengthen, and data synchronization tools incompatible. Suggested error level: Error",
       "component": {
         "list": {
           "title": "Disallow list"
@@ -180,40 +200,40 @@
       }
     },
     "column-no-null": {
-      "title": "Disallow NULL",
+      "title": "Enforce \"NOT NULL\" constraints on columns",
       "description": "Columns cannot have NULL value."
     },
     "column-disallow-set-charset": {
-      "title": "Disallow set charset",
-      "description": "Disallow set charset for column."
+      "title": "Prohibit defining character set in column properties",
+      "description": "It is recommended to set the charset at the database level or table level. Setting the charset at finer granularity can bring unnecessary complexities. Suggested error level: Error."
     },
     "column-disallow-change-type": {
-      "title": "Disallow changing type",
-      "description": "Disallow change column type."
+      "title": "Prohibit modifying column types",
+      "description": "Modifying column types may affect system performance, maintainability, and even lead to data loss. Suggested error level: Warning"
     },
     "column-disallow-change": {
-      "title": "Disallow \"CHANGE COLUMN\" statement",
-      "description": ""
+      "title": "Prohibit using \"CHANGE COLUMN\" statement",
+      "description": "\"CHANGE COLUMN\" is unique to MySQL syntax and can be used to modify column names and other properties at the same time. However, it may cause the column name to be mistakenly changed when modifying properties. It is recommended to still use standard \"RENAME\" and \"MODIFY\" statements to distinguish between the two types of changes. Suggested error level: Error"
     },
     "column-disallow-changing-order": {
-      "title": "Disallow changing order",
-      "description": "Disallow changing column order."
+      "title": "Prohibit changing the order of columns in a table",
+      "description": "Modifying the order of columns may cause some applications or views that depend on the default order of the original table to produce unexpected results, such as \"select *\". Suggested error level: Warning"
     },
     "column-set-default-for-not-null": {
-      "title": "Set default value for NOT NULL column",
-      "description": "Require default value for not NULL column."
+      "title": "Enforce default value on \"NOT NULL\" columns",
+      "description": "For a 'NOT NULL' column, if a value is not assigned to the column when inserting a new row and the column does not have a default value, the database will reject the insertion of that row. Setting a default value for a new column can also ensure compatibility with legacy application. Suggested error level: Error"
     },
     "column-auto-increment-must-integer": {
-      "title": "Use integer for auto-increment column",
-      "description": "Auto-increment column requires integer type."
+      "title": "Enforce the use of \"INTEGER\" data type for auto-increment columns",
+      "description": "MySQL's auto-increment column are generally used as business-independent primary key. Using integer types occupies less storage space and makes the primary key index structure more compact, bringing better query and DML performance. Suggested error level: Error"
     },
     "column-auto-increment-must-unsigned": {
-      "title": "Set unsigned attribute on auto-increment column",
-      "description": "Auto-increment column must be the UNSIGNED type."
+      "title": "Enforce the use of \"UNSIGNED\" data type for auto-increment columns",
+      "description": "Unsigned types do not store negative numbers, and the range of values that can be stored by the same type is doubled, which can avoid auto-increment columns overflow. Suggested error level: Warning"
     },
     "column-comment": {
-      "title": "Comment convention",
-      "description": "Configure whether the column requires comments and the maximum comment length.",
+      "title": "Enforce adding comments to columns",
+      "description": "Adding comments to columns is a good development practice, but excessively long comments can decrease the readability of the schema.Suggested error level: Warning",
       "component": {
         "required": {
           "title": "Require comment"
@@ -224,8 +244,17 @@
       }
     },
     "column-maximum-character-length": {
-      "title": "Maximum CHAR length",
-      "description": "Force to change CHAR to VARCHAR if maximum length is reached.",
+      "title": "Restrict the length of \"CHAR\" data type",
+      "description": "\"CHAR\" is a fixed-length type. For example, the CHAR(20) column will occupy 20 character spaces even if only one character is stored, causing waste. When the string is too long and the length is not fixed, consider using VARCHAR for MySQL and using TEXT for PostgreSQL. Suggestion error level: Error",
+      "component": {
+        "number": {
+          "title": "Maximum length"
+        }
+      }
+    },
+    "column-maximum-varchar-length": {
+      "title": "Restrict the length of \"VARCHAR\" data type",
+      "description": "",
       "component": {
         "number": {
           "title": "Maximum length"
@@ -233,8 +262,8 @@
       }
     },
     "column-auto-increment-initial-value": {
-      "title": "Auto-increment initial value",
-      "description": "Set initial value for auto-increment column.",
+      "title": "Restrict the initial value of auto-increment columns",
+      "description": "based on management requirements to limit the initial value of the auto-increment column. Suggestion error level: Warning",
       "component": {
         "number": {
           "title": "Initial value"
@@ -242,52 +271,52 @@
       }
     },
     "column-current-time-count-limit": {
-      "title": "Limit the count of current time columns",
-      "description": "Limit the count of NOW(), CURRENT_TIME() and CURRENT_TIMESTAMP() columns."
+      "title": "Restrict the number of columns in the table that acquire system time",
+      "description": "Only columns recording the creation time of the record with \"DEFAULT NOW()\" and recording the update time of the record with \"DEFAULT NOW() ON UPDATE\" need to call function to get system time. It is meaningless and will increase resource overhead to record system time in other columns. Suggestion error level: Error"
     },
     "column-require-default": {
-      "title": "Require column default value",
-      "description": ""
+      "title": "Enforce setting default value on columns",
+      "description": "Setting default values that satisfy business logic can effectively improve the data quality of downstream  analytical pipeline. This rule does not check \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\" types. Suggestion error level: Warning"
     },
     "statement-select-no-select-all": {
-      "title": "Disallow \"SELECT *\"",
-      "description": "Disallow 'SELECT *' statement."
+      "title": "Prohibit using \"SELECT *\"",
+      "description": "SELECT * to fetch entire row data may cause unnecessary resource overhead and may also cause unexpected results in applications once the table adds or removes columns. Suggestion error level: Error"
     },
     "statement-where-require": {
-      "title": "Require \"WHERE\"",
-      "description": "Require 'WHERE' clause."
+      "title": "Enforce the presence of \"WHERE\" condition in statements",
+      "description": "Queries without WHERE clause may cause huge uncessary resource overhead, and DMLs may cause massive accidental data loss. Suggestion error level: Error"
     },
     "statement-where-no-leading-wildcard-like": {
-      "title": "Disallow leading wildcard like",
-      "description": "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed."
+      "title": "Prohibit using leading wildcard in filter conditions",
+      "description": "When using leading wildcard, such as \"LIKE '%ABC'\", the database optimizer cannot use fast index scan, and fallback to full table scan or full index scan, which may cause serious performance impact. Suggestion error level: Error"
     },
     "statement-disallow-commit": {
-      "title": "Disallow commit",
-      "description": "Disallow using commit in the issue."
+      "title": "Prohibit explicit \"COMMIT\" statement",
+      "description": "In some cases, multiple statements are required to be included in a transaction committed by the system, in order to quickly rerun in case of partial failure. Therefore, explicit \"COMMIT\" is not allowed. Suggestion error level: Warning"
     },
     "statement-disallow-limit": {
-      "title": "Disallow \"LIMIT\"",
-      "description": "Disallow \"LIMIT\" for \"INSERT\", \"UPDATE\", \"DELETE\" statement."
+      "title": "Prohibit using \"LIMIT\" clause in DML statements",
+      "description": "If LIMIT is used in DML statements without an ORDER BY clause, the affected rows order are not fixed, which may cause data inconsistency between the primary and replica databases in some replication modes. Suggestion error level: Error"
     },
     "statement-disallow-order-by": {
-      "title": "Disallow \"ORDER BY\"",
-      "description": "Disallow \"ORDER BY\" for \"UPDATE\", \"DELETE\" statement."
+      "title": "Prohibit using \"ORDER BY\" clause in \"UPDATE\" and \"DELETE\" statements",
+      "description": "Sorting operations are extremely resource-intensive, so for update and delete operations, it is recommended to use a deterministic filtering condition as much as possible instead of using ORDER BY and LIMIT. Suggestion error level: Error"
     },
     "statement-merge-alter-table": {
-      "title": "Merge \"ALTER TABLE\"",
-      "description": "Disallow using multiply \"ALTER TABLE\" statement for same table."
+      "title": "Prohibit issuing multiple independent changes on the same table",
+      "description": "Every change to a table may cause a table-level lock and consume a large amount of resources. If there are multiple changes to the same table, they should be merged into a single change statement. Suggestion error level: Error"
     },
     "statement-insert-must-specify-column": {
-      "title": "\"INSERT\" statement must specify column",
-      "description": "Must specify the column to insert. For example, \"INSERT INTO t (id,name) VALUES(...)\"."
+      "title": "Enforce specifying column names in \"INSERT\" statements",
+      "description": "The \"INSERT INTO table VALUES (...)\" statement does not explicit list column names. Once the column order changes or columns are added or dropped, the statement may faile or generate unexpected data. Suggestion error level: Error"
     },
     "statement-insert-disallow-order-by-rand": {
-      "title": "Disallow \"ORDER BY rand()\" statement",
-      "description": ""
+      "title": "Prohibit using \"ORDER BY rand()\" in \"INSERT\" statement",
+      "description": "Randomly sorting the data to be inserted is meaningless and will only consume uncessary resources. Suggestion error level: Error"
     },
     "statement-insert-row-limit": {
-      "title": "Insert row limit",
-      "description": "",
+      "title": "Restrict the maximum number of inserted rows",
+      "description": "Reveal the number of rows to be inserted can help determine whether the statement meets business expectations. Suggestion error level: Warning",
       "component": {
         "number": {
           "title": "Maximum insert amount"
@@ -295,8 +324,8 @@
       }
     },
     "statement-affected-row-limit": {
-      "title": "Affected row limit",
-      "description": "Limit the \"DELETE\" and \"UPDATE\" affected row",
+      "title": "Restrict the maximum number of updated or deleted rows.",
+      "description": "Reveal the number of rows to be updated or deleted can help determine whether the statement meets business expectations. Suggestion error level: Warning",
       "component": {
         "number": {
           "title": "Maximum affected rows"
@@ -304,32 +333,44 @@
       }
     },
     "statement-dml-dry-run": {
-      "title": "Dry run DML statements",
-      "description": "Dry run DML statements by EXPLAIN."
+      "title": "Validate the executability of DML statements",
+      "description": "When the syntax is correct, but the table name is incorrect or the permission is insufficient, it can be discovered by dry run before the actual execution. Suggestion error level: Warning"
+    },
+    "statement-disallow-add-column-with-default": {
+      "title": "Restrict adding columns with default values to a table",
+      "description": "Before PostgreSQL 11, adding a column with a default value cause table locking and unable to read and write, which may cause business interruption. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this rule. Suggestion error level: Warning"
+    },
+    "statement-add-check-not-valid": {
+      "title": "Enforce including \"NOT VALID\" option when adding \"CHECK\" constraints",
+      "description": "Before PostgreSQL 11, adding a CHECK constraint need to verify the existing data and lock the table. This blocks read and write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and manually validate existing data after the change is completed. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this rule. Suggestion error level: Warning"
+    },
+    "statement-disallow-add-not-null": {
+      "title": "Restrict adding \"NOT NULL\" constraint to existing columns",
+      "description": "Before PostgreSQL 11, adding a NOT NULL constraint need to verify the existing data. This blocks read and write, which may cause business interruption. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this specification. Suggestion error level: Warning"
     },
     "schema-backward-compatibility": {
-      "title": "Backward compatibility",
-      "description": "MySQL and TiDB support checking whether the schema change is backward compatible."
+      "title": "Check application backward compatibility",
+      "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
     },
     "database-drop-empty-database": {
-      "title": "Drop database restriction",
-      "description": "Can only drop the database if there's no table in it."
+      "title": "Prohibit deleting non-empty database",
+      "description": "Deletion is only allowed when there are no tables in the database, which can greatly avoid accidental deletion. Suggested error level: Error"
     },
     "index-no-duplicate-column": {
-      "title": "Disallow duplicate column",
-      "description": ""
+      "title": "Prohibit indexes containing duplicate columns",
+      "description": "Creating an index with duplicate columns will result in failure. Suggestion error level: Error"
     },
     "index-type-no-blob": {
-      "title": "Disallow BLOB",
-      "description": "Disallow using BLOB type column in index."
+      "title": "Prohibit creating indexes on \"BLOB\" and \"TEXT\" data type columns",
+      "description": "The \"BLOB\" type is usually used to store binary data and should not be used as a query condition. If an index is created on this column type by mistake, it will consume a lot of resources and cause serious performance impact. Suggestion error level: Error"
     },
     "index-pk-type-limit": {
       "title": "Primary key type limit",
       "description": "Enforce the primary key type to be INT or BIGINT."
     },
     "index-key-number-limit": {
-      "title": "Column count limit in index",
-      "description": "Limit the related row count in a single index.",
+      "title": "Restrict the number of columns in a single index",
+      "description": "A composite index with over 5 columns does not significantly improve query performance, but it occupies a lot of space and reduces DML performance. Suggestion error level: Warning",
       "component": {
         "number": {
           "title": "Maximum column count"
@@ -337,17 +378,30 @@
       }
     },
     "index-total-number-limit": {
-      "title": "Index count limit",
-      "description": "",
+      "title": "Restrict the number of indexes on a single table",
+      "description": "Although indexes can improve query performance, they also occupy a lot of space and reduce DML performance. Therefore, it is not recommended to create more than 5 indexes in a table. Suggestion error level: Warning",
       "component": {
         "number": {
           "title": "Maximum index count"
         }
       }
     },
+    "index-primary-key-type-allowlist": {
+      "title": "Allowable list of primary key types",
+      "description": "The appropriate primary key type can optimize storage structure, reduce space usage, and beneficial for insert and query performance. Suggestion error level: Warning",
+      "component": {
+        "list": {
+          "title": "Allow list"
+        }
+      }
+    },
+    "index-create-concurrently": {
+      "title": "Enforce concurrent index creation",
+      "description": "In PostgreSQL 11 and above, using the standard statement to create an index will cause table locking and unable to write. Using the \"CONCURRENTLY\" mode can avoid this problem. Suggestion error level: Warning"
+    },
     "system-charset-allowlist": {
-      "title": "Charset allow list",
-      "description": "",
+      "title": "Allowable list of Charset",
+      "description": "The character set determines which characters can be stored in the table. Using the wrong character set may result in certain characters in the application being unable to be stored and displayed correctly, such as CJK and Emoji. Suggested error level: Error",
       "component": {
         "list": {
           "title": "Allow list"
@@ -355,11 +409,20 @@
       }
     },
     "system-collation-allowlist": {
-      "title": "Collation allow list",
-      "description": "",
+      "title": "Allowable list of Collation",
+      "description": "The collation determines the rules for character comparison and sorting. For example, when using a case-insensitive collation, \"ABC\" and \"abc\" will be treated as the same string in queries. Suggested error level: Error",
       "component": {
         "list": {
           "title": "Allow list"
+        }
+      }
+    },
+    "system-comment-length": {
+      "title": "Restrict the length of comments",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "Maximum comment length"
         }
       }
     }

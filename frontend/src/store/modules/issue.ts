@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, watch, WatchCallback } from "vue";
+import { computed, ref, unref, watch, WatchCallback, watchEffect } from "vue";
 import axios from "axios";
 import {
   empty,
@@ -12,62 +12,26 @@ import {
   IssuePatch,
   IssueState,
   IssueStatusPatch,
+  MaybeRef,
   Pipeline,
   Principal,
   Project,
   ResourceIdentifier,
   ResourceObject,
   unknown,
+  UNKNOWN_ID,
 } from "@/types";
+import { isDatabaseRelatedIssueType } from "@/utils";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 import { usePipelineStore } from "./pipeline";
-import { useProjectStore } from "./project";
+import { useLegacyProjectStore } from "./project";
 import { convertEntityList } from "./utils";
 
 function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
-  const projectId = (issue.relationships!.project.data as ResourceIdentifier)
-    .id;
-  let project: Project = unknown("PROJECT") as Project;
-  project.id = parseInt(projectId);
-
-  const pipelineId = (issue.relationships!.pipeline.data as ResourceIdentifier)
-    .id;
-  let pipeline = unknown("PIPELINE") as Pipeline;
-  pipeline.id = parseInt(pipelineId);
-
-  const projectStore = useProjectStore();
-  const pipelineStore = usePipelineStore();
-  for (const item of includedList || []) {
-    if (
-      item.type == "project" &&
-      (issue.relationships!.project.data as ResourceIdentifier).id == item.id
-    ) {
-      project = projectStore.convert(item, includedList || []);
-    }
-
-    if (
-      item.type == "pipeline" &&
-      issue.relationships!.pipeline.data &&
-      (issue.relationships!.pipeline.data as ResourceIdentifier).id == item.id
-    ) {
-      pipeline = pipelineStore.convert(item, includedList);
-    }
-  }
-
-  const subscriberList = [] as Principal[];
-  if (issue.relationships!.subscriberList.data) {
-    for (const subscriberData of issue.relationships!.subscriberList
-      .data as ResourceIdentifier[]) {
-      subscriberList.push(
-        getPrincipalFromIncludedList(subscriberData, includedList)
-      );
-    }
-  }
-
-  return {
+  const result: Issue = {
     ...(issue.attributes as Omit<
       Issue,
       "id" | "project" | "creator" | "updater" | "assignee" | "subscriberList"
@@ -85,10 +49,63 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
       issue.relationships!.assignee.data,
       includedList
     ),
-    project,
-    pipeline,
-    subscriberList: subscriberList,
+    project: unknown("PROJECT") as Project,
+    pipeline: undefined,
+    subscriberList: [],
   };
+
+  try {
+    result.payload = JSON.parse(issue.attributes.payload as string);
+  } catch {
+    result.payload = {};
+  }
+  const projectStore = useLegacyProjectStore();
+
+  // Compose issue pipeline.
+  if (isDatabaseRelatedIssueType(result.type)) {
+    const pipelineStore = usePipelineStore();
+    const pipelineId = (
+      issue.relationships!.pipeline.data as ResourceIdentifier
+    ).id;
+    let pipeline = unknown("PIPELINE") as Pipeline;
+    pipeline.id = parseInt(pipelineId);
+
+    for (const item of includedList || []) {
+      if (
+        item.type == "pipeline" &&
+        issue.relationships!.pipeline.data &&
+        (issue.relationships!.pipeline.data as ResourceIdentifier).id == item.id
+      ) {
+        pipeline = pipelineStore.convert(item, includedList);
+      }
+    }
+    result.pipeline = pipeline;
+  }
+
+  // Compose issue project.
+  for (const item of includedList || []) {
+    if (
+      item.type == "project" &&
+      (issue.relationships!.project.data as ResourceIdentifier).id == item.id
+    ) {
+      result.project = projectStore.convert(item, includedList || []);
+    }
+  }
+
+  // Compose issue subscriberList.
+  const subscriberList = [] as Principal[];
+  if (issue.relationships!.subscriberList.data) {
+    for (const subscriberData of issue.relationships!.subscriberList
+      .data as ResourceIdentifier[]) {
+      subscriberList.push(
+        getPrincipalFromIncludedList(subscriberData, includedList)
+      );
+    }
+  }
+
+  result.subscriberList = subscriberList;
+
+  return result;
 }
 
 function getIssueFromIncludedList(
@@ -115,6 +132,7 @@ function getIssueFromIncludedList(
 export const useIssueStore = defineStore("issue", {
   state: (): IssueState => ({
     issueById: new Map(),
+    isCreatingIssue: false,
   }),
   getters: {
     issueList: (state) => {
@@ -147,9 +165,9 @@ export const useIssueStore = defineStore("issue", {
         getIssueFromIncludedList
       );
 
-      issueList.forEach((issue) =>
-        this.setIssueById({ issueId: issue.id, issue })
-      );
+      // The issue list API returns incomplete issue entities (without
+      // task.instance and task.database compositions)
+      // So we shouldn't store the incomplete cache items in issueById set here.
 
       const nextToken = isPagedResponse(responseData, "issues")
         ? responseData.data.attributes.nextToken
@@ -175,46 +193,61 @@ export const useIssueStore = defineStore("issue", {
       // so that we should also update instance/database store, otherwise, we may get
       // unknown instance/database when navigating to other UI from the issue detail page
       // since other UIs are getting instance/database by id from the store.
-      const instanceStore = useInstanceStore();
-      const databaseStore = useDatabaseStore();
-      for (const stage of issue.pipeline.stageList) {
-        for (const task of stage.taskList) {
-          instanceStore.setInstanceById({
-            instanceId: task.instance.id,
-            instance: task.instance,
-          });
-
-          if (task.database) {
-            databaseStore.upsertDatabaseList({
-              databaseList: [task.database],
+      if (isDatabaseRelatedIssueType(issue.type)) {
+        const instanceStore = useInstanceStore();
+        const databaseStore = useDatabaseStore();
+        for (const stage of issue.pipeline!.stageList) {
+          for (const task of stage.taskList) {
+            instanceStore.setInstanceById({
+              instanceId: task.instance.id,
+              instance: task.instance,
             });
+
+            if (task.database) {
+              databaseStore.upsertDatabaseList({
+                databaseList: [task.database],
+              });
+            }
           }
         }
       }
       return issue;
     },
+    async getOrFetchIssueById(issueId: IssueId) {
+      if (issueId === EMPTY_ID) return empty("ISSUE");
+      if (issueId === UNKNOWN_ID) return unknown("ISSUE");
+      if (!this.issueById.has(issueId)) {
+        await this.fetchIssueById(issueId);
+      }
+      return this.getIssueById(issueId);
+    },
     async createIssue(newIssue: IssueCreate) {
-      const data = (
-        await axios.post(`/api/issue`, {
-          data: {
-            type: "IssueCreate",
-            attributes: {
-              ...newIssue,
-              // Server expects payload as string, so we stringify first.
-              createContext: JSON.stringify(newIssue.createContext),
-              payload: JSON.stringify(newIssue.payload),
+      try {
+        this.isCreatingIssue = true;
+        const data = (
+          await axios.post(`/api/issue`, {
+            data: {
+              type: "IssueCreate",
+              attributes: {
+                ...newIssue,
+                // Server expects payload as string, so we stringify first.
+                createContext: JSON.stringify(newIssue.createContext),
+                payload: JSON.stringify(newIssue.payload),
+              },
             },
-          },
-        })
-      ).data;
-      const createdIssue = convert(data.data, data.included);
+          })
+        ).data;
+        const createdIssue = convert(data.data, data.included);
 
-      this.setIssueById({
-        issueId: createdIssue.id,
-        issue: createdIssue,
-      });
+        this.setIssueById({
+          issueId: createdIssue.id,
+          issue: createdIssue,
+        });
 
-      return createdIssue;
+        return createdIssue;
+      } finally {
+        this.isCreatingIssue = false;
+      }
     },
     async validateIssue(newIssue: IssueCreate) {
       const data = (
@@ -339,4 +372,24 @@ export const refreshIssueList = () => {
 };
 export const useRefreshIssueList = (callback: WatchCallback) => {
   watch(REFRESH_ISSUE_LIST, callback);
+};
+
+export const useIssueById = (issueId: MaybeRef<IssueId>, lazy = false) => {
+  const store = useIssueStore();
+
+  watchEffect(() => {
+    const id = unref(issueId);
+    if (id !== UNKNOWN_ID) {
+      if (lazy && store.issueById.has(id)) {
+        // Don't fetch again if we have a local copy
+        // when lazy === true
+        return;
+      }
+      store.fetchIssueById(id);
+    }
+  });
+
+  return computed(() => {
+    return store.getIssueById(unref(issueId));
+  });
 };

@@ -1,0 +1,13 @@
+version: v1
+name: buf.build/bytebase/bytebase
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - BASIC
+  except:
+    - PACKAGE_DIRECTORY_MATCH
+deps:
+  - buf.build/googleapis/googleapis
+  - buf.build/grpc-ecosystem/grpc-gateway

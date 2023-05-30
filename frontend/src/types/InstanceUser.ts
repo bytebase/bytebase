@@ -10,3 +10,9 @@ export type InstanceUser = {
   name: string;
   grant: string;
 };
+
+export const INTERNAL_RDS_INSTANCE_USER_LIST = [
+  "rds_ad",
+  "rdsadmin",
+  "rds_iam",
+];

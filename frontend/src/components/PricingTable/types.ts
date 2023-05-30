@@ -5,8 +5,9 @@ export interface LocalPlan extends Plan {
   image: string;
   buttonText: string;
   highlight: boolean;
-  isFreePlan: boolean;
   isAvailable: boolean;
+  pricing: string;
   pricePrefix: string;
-  priceUnit: string;
+  priceSuffix: string;
+  canTrial: boolean;
 }

@@ -1,62 +1,195 @@
 import { computed } from "vue";
 import {
-  EnvironmentId,
+  Issue,
   IssueCreate,
   IssueType,
   Pipeline,
-  PipelineApprovalPolicyPayload,
-  Policy,
+  SYSTEM_BOT_ID,
 } from "@/types";
 import { useIssueLogic } from ".";
-import { usePolicyByEnvironmentAndType } from "@/store";
+import {
+  isDatabaseRelatedIssueType,
+  isOwnerOfProjectV1,
+  hasWorkspacePermissionV1,
+  extractUserUID,
+} from "@/utils";
+import {
+  Policy,
+  PolicyType,
+  ApprovalStrategy,
+  ApprovalGroup,
+} from "@/types/proto/v1/org_policy_service";
+import { DeploymentType } from "@/types/proto/v1/deployment";
+import {
+  usePolicyByParentAndType,
+  defaultApprovalStrategy,
+} from "@/store/modules/v1/policy";
+import { useEnvironmentV1Store } from "@/store";
+import { IamPolicy, Project } from "@/types/proto/v1/project_service";
+import { User } from "@/types/proto/v1/auth_service";
 
-export const useAllowProjectOwnerToApprove = () => {
+export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   const { create, issue, activeStageOfPipeline } = useIssueLogic();
 
-  const activeEnvironmentId = computed((): EnvironmentId => {
-    if (create.value) {
-      // When creating an issue, activeEnvironmentId is the first stage's environmentId
-      const stage = (issue.value as IssueCreate).pipeline!.stageList[0];
-      return stage.environmentId;
-    }
+  // TODO(steven): figure out how to handle this for grant request issues.
+  if (!isDatabaseRelatedIssueType(issue.value.type)) {
+    return computed(() => ({
+      policy: ApprovalStrategy.MANUAL,
+      assigneeGroup: undefined,
+    }));
+  }
 
-    const stage = activeStageOfPipeline(issue.value.pipeline as Pipeline);
-    return stage.environment.id;
+  const activeEnvironment = computed(() => {
+    const environmentId = create.value
+      ? (issue.value as IssueCreate).pipeline!.stageList[0].environmentId
+      : activeStageOfPipeline(issue.value.pipeline as Pipeline).environment.id;
+    return useEnvironmentV1Store().getEnvironmentByUID(String(environmentId));
   });
 
-  const activeEnvironmentApprovalPolicy = usePolicyByEnvironmentAndType(
+  const activeEnvironmentApprovalPolicy = usePolicyByParentAndType(
     computed(() => ({
-      environmentId: activeEnvironmentId.value,
-      type: "bb.policy.pipeline-approval",
+      parentPath: activeEnvironment.value.name,
+      policyType: PolicyType.DEPLOYMENT_APPROVAL,
     }))
   );
 
-  const allowProjectOwnerAsAssignee = computed((): boolean => {
+  return computed(() => {
     const policy = activeEnvironmentApprovalPolicy.value;
-    if (!policy) return false;
-
-    return allowProjectOwnerToApprove(policy, issue.value.type);
+    return extractRollOutPolicyValue(policy, issue.value.type);
   });
+};
 
-  return allowProjectOwnerAsAssignee;
+export const extractRollOutPolicyValue = (
+  policy: Policy | undefined,
+  issueType: IssueType
+): {
+  policy: ApprovalStrategy;
+  assigneeGroup?: ApprovalGroup;
+} => {
+  if (!policy || !policy.deploymentApprovalPolicy) {
+    return {
+      policy: defaultApprovalStrategy,
+      assigneeGroup: ApprovalGroup.APPROVAL_GROUP_DBA,
+    };
+  }
+
+  if (
+    policy.deploymentApprovalPolicy.defaultStrategy ===
+    ApprovalStrategy.AUTOMATIC
+  ) {
+    return { policy: ApprovalStrategy.AUTOMATIC };
+  }
+
+  const deploymentType = issueTypeToV1DeploymentType(issueType);
+  const assigneeGroup =
+    policy.deploymentApprovalPolicy.deploymentApprovalStrategies.find(
+      (group) => group.deploymentType === deploymentType
+    );
+
+  if (
+    !assigneeGroup ||
+    assigneeGroup.approvalGroup === ApprovalGroup.APPROVAL_GROUP_DBA
+  ) {
+    return {
+      policy: ApprovalStrategy.MANUAL,
+      assigneeGroup: ApprovalGroup.APPROVAL_GROUP_DBA,
+    };
+  }
+
+  return {
+    policy: ApprovalStrategy.MANUAL,
+    assigneeGroup: ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER,
+  };
+};
+
+export const allowUserToBeAssignee = (
+  user: User,
+  project: Project,
+  projectIamPolicy: IamPolicy,
+  policy: ApprovalStrategy,
+  assigneeGroup: ApprovalGroup | undefined
+): boolean => {
+  const hasWorkspaceIssueManagementPermission = hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-issue",
+    user.userRole
+  );
+
+  if (policy === ApprovalStrategy.AUTOMATIC) {
+    // DBA / workspace owner
+    return hasWorkspaceIssueManagementPermission;
+  }
+
+  if (assigneeGroup === ApprovalGroup.APPROVAL_GROUP_DBA) {
+    // DBA / workspace owner
+    return hasWorkspaceIssueManagementPermission;
+  }
+
+  if (assigneeGroup === ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER) {
+    // Project owner
+    return isOwnerOfProjectV1(projectIamPolicy, user);
+  }
+
+  console.assert(false, "should never reach this line");
+  return false;
+};
+
+export const allowUserToChangeAssignee = (user: User, issue: Issue) => {
+  if (issue.status !== "OPEN") {
+    return false;
+  }
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      user.userRole
+    )
+  ) {
+    return true;
+  }
+
+  const userUID = extractUserUID(user.name);
+  if (String(issue.assignee.id) === String(SYSTEM_BOT_ID)) {
+    return userUID === String(issue.creator.id);
+  }
+  return userUID === String(issue.assignee.id);
 };
 
 export const allowProjectOwnerToApprove = (
   policy: Policy,
   issueType: IssueType
 ): boolean => {
-  const payload = policy.payload as PipelineApprovalPolicyPayload;
-  if (payload.value === "MANUAL_APPROVAL_NEVER") {
+  const strategy =
+    policy.deploymentApprovalPolicy?.defaultStrategy ?? defaultApprovalStrategy;
+  if (strategy === ApprovalStrategy.AUTOMATIC) {
     return false;
   }
 
-  const assigneeGroup = payload.assigneeGroupList.find(
-    (group) => group.issueType === issueType
-  );
+  const deploymentType = issueTypeToV1DeploymentType(issueType);
+  const assigneeGroup = (
+    policy.deploymentApprovalPolicy?.deploymentApprovalStrategies ?? []
+  ).find((group) => group.deploymentType === deploymentType);
 
   if (!assigneeGroup) {
     return false;
   }
 
-  return assigneeGroup.value === "PROJECT_OWNER";
+  return (
+    assigneeGroup.approvalGroup === ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER
+  );
+};
+
+const issueTypeToV1DeploymentType = (issueType: IssueType): DeploymentType => {
+  switch (issueType) {
+    case "bb.issue.database.create":
+      return DeploymentType.DATABASE_CREATE;
+    case "bb.issue.database.schema.update":
+      return DeploymentType.DATABASE_DDL;
+    case "bb.issue.database.schema.update.ghost":
+      return DeploymentType.DATABASE_DDL_GHOST;
+    case "bb.issue.database.data.update":
+      return DeploymentType.DATABASE_DML;
+    case "bb.issue.database.restore.pitr":
+      return DeploymentType.DATABASE_RESTORE_PITR;
+    default:
+      return DeploymentType.DEPLOYMENT_TYPE_UNSPECIFIED;
+  }
 };

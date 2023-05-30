@@ -4,7 +4,9 @@ import {
   BackupId,
   DatabaseId,
   InstanceId,
+  IssueId,
   ProjectId,
+  SheetId,
   TaskId,
   TaskRunId,
 } from "../id";
@@ -37,6 +39,7 @@ export type TaskStatus =
 
 export type TaskGeneralPayload = {
   statement: string;
+  sheetId: SheetId;
 };
 
 export type TaskEarliestAllowedTimePayload = {
@@ -44,40 +47,57 @@ export type TaskEarliestAllowedTimePayload = {
 };
 
 export type TaskDatabaseCreatePayload = {
+  skipped: boolean;
+  skippedReason: string;
   projectId: ProjectId;
   statement: string;
+  sheetId: SheetId;
   databaseName: string;
   characterSet: string;
   collation: string;
 };
 
 export type TaskDatabaseSchemaBaselinePayload = {
+  skipped: boolean;
+  skippedReason: string;
   statement: string;
+  sheetId: SheetId;
   schemaVersion: string;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdatePayload = {
+  skipped: boolean;
+  skippedReason: string;
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateSDLPayload = {
+  skipped: boolean;
+  skippedReason: string;
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateGhostSyncPayload = {
+  skipped: boolean;
+  skippedReason: string;
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
-  // empty by now
-  // more input and output parameters in the future
+  skipped: boolean;
+  skippedReason: string;
 };
 
 export type TaskDatabasePITRRestorePayload = {
+  skipped: boolean;
+  skippedReason: string;
   projectId: ProjectId;
   pointInTimeTs: number; // UNIX timestamp
   databaseName?: string; // used when PITR to new DB
@@ -85,8 +105,8 @@ export type TaskDatabasePITRRestorePayload = {
 };
 
 export type TaskDatabasePITRCutoverPayload = {
-  // empty by now
-  // more input and output parameters in the future
+  skipped: boolean;
+  skippedReason: string;
 };
 
 export type TaskDatabasePITRDeletePayload = {
@@ -94,9 +114,20 @@ export type TaskDatabasePITRDeletePayload = {
   // more input and output parameters in the future
 };
 
+export type RollbackSQLStatus = "PENDING" | "DONE" | "FAILED";
+
 export type TaskDatabaseDataUpdatePayload = {
+  skipped: boolean;
+  skippedReason: string;
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
+  rollbackEnabled: boolean;
+  rollbackSqlStatus?: RollbackSQLStatus;
+  rollbackSheetId?: SheetId;
+  rollbackError?: string;
+  rollbackFromIssueId?: IssueId;
+  rollbackFromTaskId?: TaskId;
 };
 
 export type TaskDatabaseRestorePayload = {
@@ -169,20 +200,24 @@ export type TaskCreate = {
   type: TaskType;
   instanceId: InstanceId;
   databaseId?: DatabaseId;
+  sheetId: SheetId;
+  // statement is only using in UI to show the SQL statement when creating issue.
   statement: string;
   databaseName?: string;
   characterSet?: string;
   collation?: string;
   backupId?: BackupId;
   earliestAllowedTs: number;
+  rollbackEnabled?: boolean;
 };
 
 export type TaskPatch = {
-  statement?: string;
+  sheetId?: SheetId;
   earliestAllowedTs?: number;
-
+  rollbackEnabled?: boolean;
   updatedTs?: number;
 };
+
 export type TaskStatusPatch = {
   // Domain specific fields
   status: TaskStatus;
@@ -228,31 +263,11 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.advise"
   | "bb.task-check.database.statement.type"
   | "bb.task-check.database.connect"
-  | "bb.task-check.instance.migration-schema"
   | "bb.task-check.database.ghost.sync"
   | "bb.task-check.issue.lgtm"
-  | "bb.task-check.pitr.mysql";
-
-export type TaskCheckDatabaseStatementAdvisePayload = {
-  statement: string;
-};
-
-export type TaskCheckDatabaseSchemaUpdateGhostPayload = {
-  statement: string;
-  instanceId: InstanceId;
-  databaseName: string;
-  tableName: string;
-};
-
-export type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload = {
-  // empty by now
-  // more to come
-};
-
-export type TaskCheckDatabaseStatementTypePayload = {
-  statement: string;
-  dbType: string;
-};
+  | "bb.task-check.pitr.mysql"
+  | "bb.task-check.database.statement.type.report"
+  | "bb.task-check.database.statement.affected-rows.report";
 
 export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";
 
@@ -263,7 +278,9 @@ export type TaskCheckResult = {
   code: ErrorCode;
   title: string;
   content: string;
+  line: number | undefined;
   namespace: TaskCheckNamespace;
+  details?: string;
 };
 
 export type TaskCheckRunResultPayload = {

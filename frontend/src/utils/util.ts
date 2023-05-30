@@ -3,7 +3,8 @@ import dayOfYear from "dayjs/plugin/dayOfYear";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
-import { round } from "lodash-es";
+import { escapeRegExp, round } from "lodash-es";
+import semver from "semver";
 
 dayjs.extend(dayOfYear);
 dayjs.extend(duration);
@@ -30,6 +31,11 @@ export function humanizeTs(ts: number): string {
     return time.local().format("MMM D");
   }
   return time.local().format("MMM D YYYY");
+}
+
+export function humanizeDuration(seconds: number): string {
+  if (seconds <= 1) return "Less than 1s";
+  return `${seconds}s`;
 }
 
 export function bytesToString(size: number): string {
@@ -83,9 +89,9 @@ export function isUrl(str: string): boolean {
 }
 
 // Performs inline swap, also handles negative index (counting from the end)
-// array_swap([1, 2, 3, 4], 1, 2) => [1, 3, 2, 4]
-// array_swap([1, 2, 3, 4], -1, -2) => [1, 2, 4, 3]
-export function array_swap(arr: any[], old_index: number, new_index: number) {
+// arraySwap([1, 2, 3, 4], 1, 2) => [1, 3, 2, 4]
+// arraySwap([1, 2, 3, 4], -1, -2) => [1, 2, 4, 3]
+export function arraySwap(arr: any[], old_index: number, new_index: number) {
   while (old_index < 0) {
     old_index += arr.length;
   }
@@ -101,12 +107,22 @@ export function array_swap(arr: any[], old_index: number, new_index: number) {
   arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
 }
 
-export function sizeToFit(el: HTMLTextAreaElement | undefined) {
+export function sizeToFit(
+  el: HTMLTextAreaElement | undefined,
+  padding = 2,
+  max = -1,
+  min = -1
+) {
   if (!el) return;
 
   el.style.height = "auto";
-  // Extra 2px is to prevent jiggling upon entering the text
-  el.style.height = `${el.scrollHeight + 2}px`;
+  requestAnimationFrame(() => {
+    // Extra several pixels are to prevent jiggling upon entering the text
+    let height = el.scrollHeight + padding;
+    if (max >= 0 && height > max) height = max;
+    if (min >= 0 && height < min) height = min;
+    el.style.height = `${height}px`;
+  });
 }
 
 export function isValidEmail(email: string) {
@@ -160,6 +176,16 @@ export function getHighlightHTMLByKeyWords(s: string, k: string) {
   return s.replaceAll(k, `<b class="text-accent">${k}</b>`);
 }
 
+export function getHighlightHTMLByRegExp(
+  s: string,
+  pattern: string,
+  caseSensitive = false
+) {
+  const flags = caseSensitive ? "g" : "gi";
+  const re = new RegExp(escapeRegExp(pattern), flags);
+  return s.replaceAll(re, (k) => `<b class="text-accent">${k}</b>`);
+}
+
 export type Defer<T> = {
   promise: Promise<T>;
   resolve: (value: T | PromiseLike<T>) => void;
@@ -187,3 +213,75 @@ export function emitStorageChangedEvent() {
 export function removeElementBySelector(selector: string) {
   document.body.querySelectorAll(selector).forEach((e) => e.remove());
 }
+
+type CompareFunc = "gt" | "lt" | "eq" | "neq" | "gte" | "lte";
+// semverCompare compares version string v1 is greater than v2.
+// It should be used to handle the database pseudo semantic version likes "8.0.29-0ubuntu0.20.04.3".
+export function semverCompare(
+  v1: string,
+  v2: string,
+  method: CompareFunc = "gt"
+) {
+  const formattedV1 = semver.coerce(v1);
+  const formattedV2 = semver.coerce(v2);
+  if (!formattedV1 || !formattedV2) {
+    return false;
+  }
+
+  return semver[method](formattedV1, formattedV2);
+}
+
+export function clearObject(obj: any) {
+  const keys = Object.keys(obj);
+  keys.forEach((key) => delete obj[key]);
+  return obj;
+}
+
+const MODIFIERS = [
+  "cmd",
+  "ctrl",
+  "cmd_or_ctrl",
+  "opt",
+  "alt",
+  "opt_or_alt",
+  "shift",
+] as const;
+export type ModifierKey = typeof MODIFIERS[number];
+
+export const modifierKeyText = (mod: ModifierKey) => {
+  const isMac = navigator.userAgent.search("Mac") !== -1;
+  if (mod === "cmd" || (mod === "cmd_or_ctrl" && isMac)) {
+    return "⌘"; // U+2318
+  }
+  if (mod === "ctrl" && isMac) {
+    return "⌃"; // U+2303
+  }
+  if ((mod === "ctrl" && !isMac) || (mod === "cmd_or_ctrl" && !isMac)) {
+    return "Ctrl";
+  }
+  if (mod === "opt" || (mod === "opt_or_alt" && isMac)) {
+    return "⌥"; // U+2325
+  }
+  if (mod === "alt" || (mod === "opt_or_alt" && !isMac)) {
+    return "Alt";
+  }
+  if (mod === "shift" && isMac) {
+    return "⇧"; // U+21E7
+  }
+  if (mod === "shift" && !isMac) {
+    return "Shift";
+  }
+  console.assert(false, "should never reach this line");
+  return "";
+};
+
+export const keyboardShortcutStr = (str: string) => {
+  const parts = str.split("+");
+  return parts
+    .map((part) => {
+      const mod = part as ModifierKey;
+      if (MODIFIERS.includes(mod)) return modifierKeyText(mod);
+      return part;
+    })
+    .join("+");
+};

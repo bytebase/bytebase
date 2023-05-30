@@ -1,0 +1,288 @@
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <select id="testIf">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            WHERE
+            1=1
+            <if test="category != null and category !=''">
+                AND category = #{category}
+            </if>
+            <if test="price != null and price !=''">
+                AND price = ${price}
+                <if test="price >= 00">
+                    AND name = 'Fuji'
+                </if>
+            </if>
+        </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            WHERE
+            1=1  AND category = ?  AND price = ?  AND name = 'Fuji';
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+      <select id="testChoose">
+          SELECT
+          name,
+          category,
+          price
+          FROM
+          fruits
+          WHERE category = 'apple'
+          <choose>
+              <when test="name != null">
+                  AND name = #{name}
+              </when>
+              <when test="category == 'banana'">
+                  AND category = #{category}
+                  <if test="price != null and price !=''">
+                      AND price = ${price}
+                  </if>
+              </when>
+              <otherwise>
+                  AND category = 'apple'
+              </otherwise>
+          </choose>
+      </select>
+    </mapper>
+  sql: |
+    SELECT
+          name,
+          category,
+          price
+          FROM
+          fruits
+          WHERE category = 'apple'    AND name = ?   AND category = ?  AND price = ?  AND category = 'apple';
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+      <select id="testWhere">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            <where>
+                AND category = 'apple'
+                OR price = 200
+            </where>
+      </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple'
+                OR price = 200;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+    <select id="testTrim">
+          SELECT
+          name,
+          category,
+          price
+          FROM
+          fruits
+          <where>
+              OR category = 'apple'
+              OR price = 200
+          </where>
+      </select>
+    </mapper>
+  sql: |
+    SELECT
+          name,
+          category,
+          price
+          FROM
+          fruits WHERE category = 'apple'
+              OR price = 200;
+- xml: |-
+    <mapper namespace="Test">
+        <select id="testWhereIf">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            <where>
+                AND category = 'apple'
+                <if test="price != null and price !=''">
+                    AND price = ${price}
+                </if>
+            </where>
+        </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple'  AND price = ?;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <update id="testSet">
+            UPDATE
+            fruits
+            <set>
+                <if test="category != null and category !=''">
+                    category = #{category},
+                </if>
+                <if test="price != null and price !=''">
+                    price = ${price},
+                </if>
+            </set>
+            WHERE
+            name = #{name}
+        </update>
+    </mapper>
+  sql: |
+    UPDATE
+            fruits SET category = ?,  price = ? WHERE
+            name = ?;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <select id="testTrimAndChoose" resultMap="RESULT_MAP">
+          select users_id, name, age, sex from users
+          <trim prefix="where" suffixOverrides="and" suffix=" group by users_id">
+              <choose>
+                <when test="usersname != null and usersname != ''">
+                    name like #{usersname} and
+                </when>
+                <when test="age != null">
+                    age >= #{age} and
+                </when>
+                <otherwise>
+                    users_id is not null and
+                </otherwise>
+              </choose>
+          </trim>
+        </select>
+    </mapper>
+  sql: |
+    select users_id, name, age, sex from users where name like ? and   age >= ? and  users_id is not null   group by users_id;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <select id="testForeach">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits
+            <where>
+                category = 'apple' AND
+                <foreach collection="apples" item="name" open="(" close=")" separator="OR">
+                    name = #{name}
+                </foreach>
+            </where>
+        </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM
+            fruits WHERE category = 'apple' AND (name = ? OR name = ?);
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <sql id="someTable">
+            fruits
+            <where>
+                category = 'apple'
+                AND price = 200
+            </where>
+        </sql>
+        <select id="testInclude">
+            SELECT
+            name,
+            category,
+            price
+            FROM
+            <include refid="someTable" />
+        </select>
+    </mapper>
+  sql: |
+    SELECT
+            name,
+            category,
+            price
+            FROM fruits WHERE category = 'apple'
+                AND price = 200;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <sql id="sometable">
+            ${prefix}Table
+        </sql>
+        <sql id="someinclude">
+            from
+            <include refid="${include_target}"/>
+        </sql>
+        <select id="select" resultType="map">
+            select
+            field1, field2, field3
+            <include refid="someinclude">
+                <property name="prefix" value="Some"/>
+                <property name="include_target" value="sometable"/>
+            </include>
+        </select>
+    </mapper>
+  sql: |
+    select
+            field1, field2, field3 from SomeTable;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <sql id="sometable">
+            ${prefix}Table
+        </sql>
+        <sql id="someinclude">
+            FROM
+            <include refid="${include_target}"/>
+        </sql>
+        <select id="selectUsers" parameterType="int" resultType="hashmap">
+            SELECT * FROM users;
+        </select>
+        <select id="selectSuccess" resultType="map">
+            SELECT * FROM users
+            <where>
+                <if test="id != null">
+                    AND id = #{id}
+                </if>
+                <if test="name != null">
+                    AND name = #{name}
+                </if>
+            </where>
+        </select>
+        <insert id="insert">
+            INSERT INTO users (id, name) VALUES (#{id}, #{name})
+        </insert>
+            <select id="select" resultType="map">
+            SELECT
+            *
+            <include refid="someinclude">
+                <property name="prefix" value="Some"/>
+                <property name="include_target" value="sometable"/>
+            </include>
+        </select>
+    </mapper>
+  sql: |
+    SELECT * FROM users;
+    SELECT * FROM users WHERE id = ?  AND name = ?;
+    INSERT INTO users (id, name) VALUES (?, ?);
+    SELECT
+            * FROM SomeTable;

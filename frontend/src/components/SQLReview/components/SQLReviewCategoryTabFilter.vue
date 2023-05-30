@@ -5,7 +5,7 @@
     @select-index="
       (index) => {
         state.selectedIndex = index;
-        $emit('select', index == 0 ? null : categoryList[index - 1].id);
+        $emit('select', index == 0 ? undefined : categoryList[index - 1].id);
       }
     "
   />
@@ -13,7 +13,7 @@
 
 <script lang="ts" setup>
 import { computed, reactive, PropType, watch } from "vue";
-import { BBTabFilterItem } from "@/bbkit/types";
+import { BBTabFilter, type BBTabFilterItem } from "@/bbkit";
 import { useI18n } from "vue-i18n";
 import { CategoryType } from "@/types/sqlReview";
 

@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message SheetPayload {
+  message VCSPayload {
+    string file_name = 1;
+    string file_path = 2;
+    int64 size = 3;
+    string author = 4;
+    string last_commit_id = 5;
+    int64 last_sync_ts = 6;
+  }
+  VCSPayload vcs_payload = 1;
+
+  message UsedByIssue {
+    int64 issue_id = 1;
+    string issue_title = 2;
+  }
+  // used_by_issues link to the issues where the sheet is used.
+  repeated UsedByIssue used_by_issues = 2;
+}

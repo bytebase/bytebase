@@ -6,123 +6,123 @@
     :placeholder="$t('instance.select')"
     :show-prefix-item="true"
     :error="!validate()"
-    @select-item="(instance) => $emit('select-instance-id', instance.id)"
+    @select-item="(instance: ComposedInstance) => $emit('select-instance-id', instance.uid)"
   >
-    <template #menuItem="{ item: instance }">
-      {{ instanceName(instance) }}
+    <template #menuItem="{ item: instance }: { item: ComposedInstance }">
+      <div class="flex items-center gap-x-2">
+        <InstanceV1EngineIcon :instance="instance" />
+        <span>{{ instanceV1Name(instance) }}</span>
+      </div>
     </template>
   </BBSelect>
 </template>
 
-<script lang="ts">
-import { useInstanceStore } from "@/store";
-import { computed, defineComponent, PropType, reactive, watch } from "vue";
-import { Instance, UNKNOWN_ID } from "../types";
+<script lang="ts" setup>
+import { useInstanceV1List } from "@/store";
+import { computed, PropType, reactive, watch } from "vue";
+import { ComposedInstance, UNKNOWN_ID } from "../types";
+import { State } from "@/types/proto/v1/common";
+import { instanceV1Name } from "@/utils";
+import { InstanceV1EngineIcon } from "./v2";
 
 interface LocalState {
-  selectedInstance?: Instance;
+  selectedInstance?: ComposedInstance;
 }
 
-export default defineComponent({
-  name: "InstanceSelect",
-  components: {},
-  props: {
-    selectedId: {
-      type: Number,
-      default: undefined,
-    },
-    environmentId: {
-      type: Number,
-      default: undefined,
-    },
-    filter: {
-      type: Function as PropType<(instance: Instance) => boolean>,
-      default: undefined,
-    },
-    disabled: {
-      default: false,
-      type: Boolean,
-    },
-    required: {
-      type: Boolean,
-      default: false,
-    },
+const props = defineProps({
+  selectedId: {
+    type: String,
+    default: undefined,
   },
-  emits: ["select-instance-id"],
-  setup(props, { emit }) {
-    const instanceStore = useInstanceStore();
-    const state = reactive<LocalState>({
-      selectedInstance: undefined,
-    });
-
-    const rawInstanceList = computed(() => {
-      if (props.environmentId) {
-        return instanceStore.getInstanceListByEnvironmentId(
-          props.environmentId,
-          ["NORMAL", "ARCHIVED"]
-        );
-      }
-      return instanceStore.getInstanceList(["NORMAL", "ARCHIVED"]);
-    });
-
-    const instanceList = computed(() => {
-      const list = rawInstanceList.value.filter((instance) => {
-        if (instance.rowStatus === "NORMAL") {
-          return true;
-        }
-        // instance.rowStatus === "ARCHIVED"
-        if (instance.id === state.selectedInstance?.id) {
-          return true;
-        }
-        return false;
-      });
-
-      if (!props.filter) {
-        return list;
-      }
-      return list.filter(props.filter);
-    });
-
-    const validate = (): boolean => {
-      if (!props.required) {
-        return true;
-      }
-      return (
-        !!state.selectedInstance && state.selectedInstance.id !== UNKNOWN_ID
-      );
-    };
-
-    // The instance list might change if environmentId changes, and the previous selected id
-    // might not exist in the new list. In such case, we need to invalidate the selection
-    // and emit the event.
-    const invalidateSelectionIfNeeded = () => {
-      if (
-        state.selectedInstance &&
-        !instanceList.value.find(
-          (item) => item.id == state.selectedInstance?.id
-        )
-      ) {
-        state.selectedInstance = undefined;
-        emit("select-instance-id", undefined);
-      }
-    };
-
-    watch(
-      [() => props.selectedId, instanceList],
-      ([selectedId, list]) => {
-        invalidateSelectionIfNeeded();
-        state.selectedInstance = list.find(
-          (instance) => instance.id === selectedId
-        );
-      },
-      { immediate: true }
-    );
-
-    return {
-      state,
-      instanceList,
-      validate,
-    };
+  environmentId: {
+    type: String,
+    default: undefined,
+  },
+  filter: {
+    type: Function as PropType<(instance: ComposedInstance) => boolean>,
+    default: undefined,
+  },
+  disabled: {
+    default: false,
+    type: Boolean,
+  },
+  required: {
+    type: Boolean,
+    default: false,
   },
 });
+
+const emit = defineEmits<{
+  (event: "select-instance-id", uid: string | undefined): void;
+}>();
+
+const state = reactive<LocalState>({
+  selectedInstance: undefined,
+});
+const { instanceList: allInstanceList, ready } = useInstanceV1List(
+  true /* showDeleted */
+);
+
+const rawInstanceList = computed(() => {
+  const list = [...allInstanceList.value];
+  if (props.environmentId && props.environmentId !== String(UNKNOWN_ID)) {
+    return list.filter(
+      (instance) => instance.environmentEntity.uid === props.environmentId
+    );
+  }
+  return list;
+});
+
+const instanceList = computed(() => {
+  const list = rawInstanceList.value.filter((instance) => {
+    if (instance.state === State.ACTIVE) {
+      return true;
+    }
+    // instance.rowStatus === "ARCHIVED"
+    if (instance.uid === state.selectedInstance?.uid) {
+      return true;
+    }
+    return false;
+  });
+
+  if (!props.filter) {
+    return list;
+  }
+  return list.filter(props.filter);
+});
+
+const validate = (): boolean => {
+  if (!props.required) {
+    return true;
+  }
+  return (
+    !!state.selectedInstance &&
+    state.selectedInstance.uid !== String(UNKNOWN_ID)
+  );
+};
+
+// The instance list might change if environmentId changes, and the previous selected id
+// might not exist in the new list. In such case, we need to invalidate the selection
+// and emit the event.
+const invalidateSelectionIfNeeded = () => {
+  if (
+    ready.value &&
+    state.selectedInstance &&
+    !instanceList.value.find((item) => item.uid == state.selectedInstance?.uid)
+  ) {
+    state.selectedInstance = undefined;
+    emit("select-instance-id", undefined);
+  }
+};
+
+watch(
+  [() => props.selectedId, instanceList],
+  ([selectedId, list]) => {
+    invalidateSelectionIfNeeded();
+    state.selectedInstance = list.find(
+      (instance) => instance.uid === selectedId
+    );
+  },
+  { immediate: true }
+);
 </script>

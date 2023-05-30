@@ -52,13 +52,13 @@
         </template>
       </BBTableCell>
       <!-- Started -->
-      <BBTableCell class="table-cell w-12">{{
-        humanizeTs(taskRun.createdTs)
-      }}</BBTableCell>
+      <BBTableCell class="table-cell w-12">
+        {{ dayjs(taskRun.createdTs * 1000).format("YYYY-MM-DD HH:mm") }}
+      </BBTableCell>
       <!-- Ended -->
-      <BBTableCell class="table-cell w-12">{{
-        humanizeTs(taskRun.updatedTs)
-      }}</BBTableCell>
+      <BBTableCell class="table-cell w-12">
+        {{ humanizeDuration(taskRun.updatedTs - taskRun.createdTs) }}
+      </BBTableCell>
     </template>
   </BBTable>
 </template>
@@ -100,7 +100,7 @@ const columnList = computed((): BBTableColumn[] => [
     title: t("task.started"),
   },
   {
-    title: t("task.ended"),
+    title: t("task.execution-time"),
   },
 ]);
 
@@ -142,10 +142,12 @@ const comment = (taskRun: TaskRun): string => {
 const commentLink = (task: Task, taskRun: TaskRun): CommentLink => {
   if (taskRun.status == "DONE") {
     switch (taskRun.type) {
+      case "bb.task.database.schema.baseline":
       case "bb.task.database.schema.update":
+      case "bb.task.database.schema.update-sdl":
       case "bb.task.database.data.update": {
         return {
-          title: t("task.view-migration"),
+          title: t("task.view-change"),
           link: `/db/${databaseSlug(
             task.database!
           )}/history/${migrationHistorySlug(
@@ -169,8 +171,8 @@ const commentLink = (task: Task, taskRun: TaskRun): CommentLink => {
         taskRun.code == MigrationErrorCode.MIGRATION_BASELINE_MISSING)
     ) {
       return {
-        title: t("task.view-migration-history"),
-        link: `/db/${databaseSlug(task.database!)}#migration-history`,
+        title: t("task.view-change-history"),
+        link: `/db/${databaseSlug(task.database!)}#change-history`,
       };
     }
   }

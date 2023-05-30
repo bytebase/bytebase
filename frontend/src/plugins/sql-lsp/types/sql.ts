@@ -1,1 +1,10 @@
-export type SQLDialect = "mysql" | "postgresql";
+export const EngineTypesUsingSQL = [
+  "MYSQL",
+  "CLICKHOUSE",
+  "POSTGRES",
+  "SNOWFLAKE",
+  "TIDB",
+  "SPANNER",
+] as const;
+
+export type SQLDialect = typeof EngineTypesUsingSQL[number];

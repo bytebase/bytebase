@@ -1,4 +1,4 @@
-import { Advice, DatabaseId, InstanceId, SheetId } from "../types";
+import { Advice, SQLResultSet } from "../types";
 
 export type ExecuteConfig = {
   databaseType: string;
@@ -9,14 +9,16 @@ export type ExecuteOption = {
 };
 
 export type Connection = {
-  instanceId: InstanceId;
-  databaseId: DatabaseId;
+  instanceId: string;
+  databaseId: string;
 };
 
 export enum TabMode {
   ReadOnly = 1,
   Admin = 2,
 }
+
+export type EditMode = "SQL-EDITOR" | "CHAT-TO-SQL";
 
 export interface TabInfo {
   id: string;
@@ -27,16 +29,17 @@ export interface TabInfo {
   statement: string;
   selectedStatement: string;
   mode: TabMode;
+  editMode: EditMode;
   executeParams?: {
     query: string;
     config: ExecuteConfig;
     option?: Partial<ExecuteOption>;
   };
   isExecutingSQL: boolean;
-  // [columnNames: string[], types: string[], data: any[][]]
-  queryResult?: [string[], string[], any[][]];
-  sheetId?: SheetId;
+  queryResult?: SQLResultSet;
+  sheetName?: string;
   adviceList?: Advice[];
 }
 
+export type CoreTabInfo = Pick<TabInfo, "connection" | "sheetName" | "mode">;
 export type AnyTabInfo = Partial<TabInfo>;

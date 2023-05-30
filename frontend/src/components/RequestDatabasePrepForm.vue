@@ -5,12 +5,11 @@
         <label for="project" class="textlabel">
           Project <span style="color: red">*</span>
         </label>
-        <!-- eslint-disable vue/attribute-hyphenation -->
         <ProjectSelect
           id="project"
           class="mt-1"
           name="project"
-          :selectedId="state.projectId"
+          :selected-id="state.projectId"
           @select-project-id="
             (projectId) => {
               state.projectId = projectId;
@@ -23,12 +22,11 @@
         <label for="environment" class="textlabel">
           Environment <span style="color: red">*</span>
         </label>
-        <!-- eslint-disable vue/attribute-hyphenation -->
         <EnvironmentSelect
           id="environment"
           class="mt-1 w-full"
           name="environment"
-          :selectedId="state.environmentId"
+          :selected-id="state.environmentId"
           @select-environment-id="
             (environmentId) => {
               state.environmentId = environmentId;
@@ -78,15 +76,14 @@
               :required="true"
               :value="state.databaseName"
               :placeholder="'New database name'"
-              @end-editing="(text) => (state.databaseName = text)"
+              @end-editing="(text: string) => (state.databaseName = text)"
               @input="state.databaseName = $event.target.value"
             />
             <div v-else class="flex flex-row space-x-4">
-              <!-- eslint-disable vue/attribute-hyphenation -->
               <DatabaseSelect
-                :selectedId="state.databaseId"
+                :selected-id="state.databaseId"
                 :mode="'ENVIRONMENT'"
-                :environmentId="state.environmentId"
+                :environment-id="state.environmentId"
                 @select-database-id="
                   (databaseId) => {
                     state.databaseId = databaseId;
@@ -97,7 +94,7 @@
                 :label="'Read only'"
                 :value="state.readonly"
                 @toggle="
-                  (on) => {
+                  (on: boolean) => {
                     state.readonly = on;
                   }
                 "
@@ -140,17 +137,21 @@ import isEmpty from "lodash-es/isEmpty";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { DatabaseId, EnvironmentId, ProjectId, UNKNOWN_ID } from "../types";
+import { UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
-import { useCurrentUser, useDatabaseStore, useEnvironmentStore } from "@/store";
+import {
+  useCurrentUserV1,
+  useDatabaseStore,
+  useEnvironmentV1Store,
+} from "@/store";
 
 interface LocalState {
-  environmentId: EnvironmentId;
-  projectId: ProjectId;
+  environmentId: string;
+  projectId: string;
   // Radio button only accept string value
   create: "ON" | "OFF";
   databaseName: string;
-  databaseId: DatabaseId;
+  databaseId: string;
   readonly: boolean;
 }
 
@@ -162,7 +163,7 @@ export default defineComponent({
     const databaseStore = useDatabaseStore();
     const router = useRouter();
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
     const keyboardHandler = (e: KeyboardEvent) => {
       if (e.code == "Escape") {
@@ -179,11 +180,11 @@ export default defineComponent({
     });
 
     const state = reactive<LocalState>({
-      environmentId: UNKNOWN_ID,
-      projectId: UNKNOWN_ID,
+      environmentId: String(UNKNOWN_ID),
+      projectId: String(UNKNOWN_ID),
       create: "ON",
       databaseName: "",
-      databaseId: UNKNOWN_ID,
+      databaseId: String(UNKNOWN_ID),
       readonly: true,
     });
 
@@ -199,17 +200,17 @@ export default defineComponent({
       const database = databaseStore.getDatabaseById(state.databaseId);
       return allowDatabaseAccess(
         database,
-        currentUser.value,
+        currentUserV1.value,
         state.readonly ? "RO" : "RW"
       );
     });
 
     const allowRequest = computed(() => {
       return (
-        state.environmentId != UNKNOWN_ID &&
-        state.projectId != UNKNOWN_ID &&
+        state.environmentId !== String(UNKNOWN_ID) &&
+        state.projectId !== String(UNKNOWN_ID) &&
         ((state.create == "ON" && !isEmpty(state.databaseName)) ||
-          (state.create == "OFF" && state.databaseId != UNKNOWN_ID)) &&
+          (state.create == "OFF" && state.databaseId !== String(UNKNOWN_ID))) &&
         !alreadyGranted.value
       );
     });
@@ -221,7 +222,7 @@ export default defineComponent({
     const request = () => {
       emit("dismiss");
 
-      const environment = useEnvironmentStore().getEnvironmentById(
+      const environment = useEnvironmentV1Store().getEnvironmentByUID(
         state.environmentId
       );
       if (state.create == "ON") {

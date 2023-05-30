@@ -2,7 +2,6 @@
 
 import { Environment } from "../environment";
 import { EnvironmentId, StageId } from "../id";
-import { Principal } from "../principal";
 import { Pipeline } from "./pipeline";
 import { Task, TaskCreate, TaskStatus } from "./task";
 
@@ -14,12 +13,6 @@ export type Stage = {
   taskList: Task[];
   pipeline: Pipeline;
   environment: Environment;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   // Domain specific fields
   name: string;
@@ -42,3 +35,5 @@ export type StageAllTaskStatusPatch = {
 
   updatedTs: number;
 };
+
+export type StageStatusUpdateType = "BEGIN" | "END";

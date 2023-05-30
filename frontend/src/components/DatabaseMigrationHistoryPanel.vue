@@ -3,22 +3,22 @@
     <div
       class="flex flex-row items-center text-lg leading-6 font-medium text-main space-x-2"
     >
-      <span>{{ $t("migration-history.self") }}</span>
+      <span>{{ $t("change-history.self") }}</span>
       <BBTooltipButton
-        v-if="!isTenantProject && allowEdit"
+        v-if="showEstablishBaselineButton"
         type="primary"
         :disabled="!allowMigrate"
         tooltip-mode="DISABLED-ONLY"
         data-label="bb-establish-baseline-button"
         @click="state.showBaselineModal = true"
       >
-        {{ $t("migration-history.establish-baseline") }}
-        <template v-if="isTenantProject" #tooltip>
-          <div class="w-52 whitespace-pre-wrap">
+        {{ $t("change-history.establish-baseline") }}
+        <template v-if="database.project === DEFAULT_PROJECT_V1_NAME" #tooltip>
+          <div class="whitespace-pre-line">
             {{
-              $t("issue.not-allowed-to-single-database-in-tenant-mode", {
+              $t("issue.not-allowed-to-operate-unassigned-database", {
                 operation: $t(
-                  "migration-history.establish-baseline"
+                  "change-history.establish-baseline"
                 ).toLowerCase(),
               })
             }}
@@ -28,7 +28,7 @@
       <div>
         <BBSpin
           v-if="state.loading"
-          :title="$t('migration-history.refreshing-history')"
+          :title="$t('change-history.refreshing-history')"
         />
       </div>
     </div>
@@ -42,7 +42,7 @@
       :style="`WARN`"
       :title="attentionTitle"
       :action-text="
-        allowConfigInstance ? $t('migration-history.config-instance') : ''
+        allowConfigInstance ? $t('change-history.config-instance') : ''
       "
       @click-action="configInstance"
     />
@@ -50,42 +50,42 @@
 
   <BBAlert
     v-if="state.showBaselineModal"
-    data-label="bb-migration-history-establish-baseline-alert"
+    data-label="bb-change-history-establish-baseline-alert"
     :style="'INFO'"
-    :ok-text="$t('migration-history.establish-baseline')"
+    :ok-text="$t('change-history.establish-baseline')"
     :cancel-text="$t('common.cancel')"
     :title="
-      $t('migration-history.establish-database-baseline', {
-        name: database.name,
+      $t('change-history.establish-database-baseline', {
+        name: database.databaseName,
       })
     "
-    :description="$t('migration-history.establish-baseline-description')"
+    :description="$t('change-history.establish-baseline-description')"
     @ok="doCreateBaseline"
     @cancel="state.showBaselineModal = false"
   >
   </BBAlert>
 </template>
 
-<script lang="ts">
-import {
-  computed,
-  defineComponent,
-  onBeforeMount,
-  PropType,
-  reactive,
-} from "vue";
+<script lang="ts" setup>
+import { computed, onBeforeMount, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
+import { useRouter } from "vue-router";
+
+import MigrationHistoryTable from "@/components/MigrationHistoryTable.vue";
 import {
-  Database,
-  InstanceMigration,
+  ComposedDatabase,
+  DEFAULT_PROJECT_V1_NAME,
   MigrationHistory,
   MigrationSchemaStatus,
-} from "../types";
-import { useRouter } from "vue-router";
-import { BBTableSectionDataSource } from "../bbkit/types";
-import { hasWorkspacePermission, instanceSlug } from "../utils";
-import { useCurrentUser, useInstanceStore } from "@/store";
+} from "@/types";
+import { BBTableSectionDataSource } from "@/bbkit/types";
+import {
+  hasWorkspacePermissionV1,
+  instanceV1HasAlterSchema,
+  instanceV1Slug,
+} from "@/utils";
+import { useCurrentUserV1, useInstanceStore } from "@/store";
+import { TenantMode } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
@@ -93,155 +93,139 @@ interface LocalState {
   loading: boolean;
 }
 
-export default defineComponent({
-  name: "DatabaseMigrationHistoryPanel",
-  components: { MigrationHistoryTable },
-  props: {
-    database: {
-      required: true,
-      type: Object as PropType<Database>,
-    },
-    allowEdit: {
-      required: true,
-      type: Boolean,
-    },
+const props = defineProps({
+  database: {
+    required: true,
+    type: Object as PropType<ComposedDatabase>,
   },
-  setup(props) {
-    const { t } = useI18n();
-
-    const instanceStore = useInstanceStore();
-    const router = useRouter();
-
-    const state = reactive<LocalState>({
-      migrationSetupStatus: "OK",
-      showBaselineModal: false,
-      loading: false,
-    });
-
-    const currentUser = useCurrentUser();
-
-    const prepareMigrationHistoryList = () => {
-      state.loading = true;
-      instanceStore
-        .checkMigrationSetup(props.database.instance.id)
-        .then((migration: InstanceMigration) => {
-          state.migrationSetupStatus = migration.status;
-          if (state.migrationSetupStatus == "OK") {
-            instanceStore
-              .fetchMigrationHistory({
-                instanceId: props.database.instance.id,
-                databaseName: props.database.name,
-              })
-              .then(() => {
-                state.loading = false;
-              })
-              .catch(() => {
-                state.loading = false;
-              });
-          }
-        })
-        .catch(() => {
-          state.loading = false;
-        });
-    };
-
-    onBeforeMount(prepareMigrationHistoryList);
-
-    const allowConfigInstance = computed(() => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-instance",
-        currentUser.value.role
-      );
-    });
-
-    const isTenantProject = computed(() => {
-      return props.database.project.tenantMode === "TENANT";
-    });
-
-    const allowMigrate = computed(() => {
-      if (!props.allowEdit) return false;
-
-      if (state.migrationSetupStatus !== "OK") return false;
-
-      // Migrating single database in tenant mode is not allowed
-      // Since this will probably cause different migration version across a group of tenant databases
-      return !isTenantProject.value;
-    });
-
-    const attentionTitle = computed((): string => {
-      if (state.migrationSetupStatus == "NOT_EXIST") {
-        return (
-          t("migration-history.instance-missing-migration-schema", {
-            name: props.database.instance.name,
-          }) +
-          (allowConfigInstance.value
-            ? ""
-            : " " + t("migration-history.contact-dba"))
-        );
-      } else if (state.migrationSetupStatus == "UNKNOWN") {
-        return (
-          t("migration-history.instance-bad-connection", {
-            name: props.database.instance.name,
-          }) +
-          (allowConfigInstance.value
-            ? ""
-            : " " + t("migration-history.contact-dba"))
-        );
-      }
-      return "";
-    });
-
-    const migrationHistoryList = computed(() => {
-      return instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
-        props.database.instance.id,
-        props.database.name
-      );
-    });
-
-    const migrationHistorySectionList = computed(
-      (): BBTableSectionDataSource<MigrationHistory>[] => {
-        return [
-          {
-            title: "",
-            list: migrationHistoryList.value,
-          },
-        ];
-      }
-    );
-
-    const configInstance = () => {
-      router.push(`/instance/${instanceSlug(props.database.instance)}`);
-    };
-
-    const doCreateBaseline = () => {
-      state.showBaselineModal = false;
-
-      router.push({
-        name: "workspace.issue.detail",
-        params: {
-          issueSlug: "new",
-        },
-        query: {
-          template: "bb.issue.database.schema.baseline",
-          name: t("migration-history.establish-database-baseline", {
-            name: props.database.name,
-          }),
-          project: props.database.project.id,
-          databaseList: `${props.database.id}`,
-        },
-      });
-    };
-
-    return {
-      state,
-      allowConfigInstance,
-      isTenantProject,
-      allowMigrate,
-      attentionTitle,
-      migrationHistorySectionList,
-      configInstance,
-      doCreateBaseline,
-    };
+  allowEdit: {
+    required: true,
+    type: Boolean,
   },
 });
+
+const { t } = useI18n();
+
+const instanceStore = useInstanceStore();
+const router = useRouter();
+
+const state = reactive<LocalState>({
+  migrationSetupStatus: "OK",
+  showBaselineModal: false,
+  loading: false,
+});
+
+const currentUserV1 = useCurrentUserV1();
+
+const prepareMigrationHistoryList = () => {
+  state.loading = true;
+  instanceStore
+    .fetchMigrationHistory({
+      instanceId: Number(props.database.instanceEntity.uid),
+      databaseName: props.database.databaseName,
+    })
+    .then(() => {
+      state.loading = false;
+    })
+    .catch(() => {
+      state.loading = false;
+    });
+};
+
+onBeforeMount(prepareMigrationHistoryList);
+
+const allowConfigInstance = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-instance",
+    currentUserV1.value.userRole
+  );
+});
+const isTenantProject = computed(() => {
+  return (
+    props.database.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
+  );
+});
+
+const showEstablishBaselineButton = computed(() => {
+  if (!instanceV1HasAlterSchema(props.database.instanceEntity)) {
+    return false;
+  }
+  if (isTenantProject.value) return false;
+  if (!props.allowEdit) return false;
+  return true;
+});
+
+const allowMigrate = computed(() => {
+  if (!props.allowEdit) return false;
+
+  if (state.migrationSetupStatus !== "OK") return false;
+
+  if (props.database.projectEntity.name === DEFAULT_PROJECT_V1_NAME) {
+    return false;
+  }
+
+  // Migrating single database in tenant mode is not allowed
+  // Since this will probably cause different migration version across a group of tenant databases
+  return !isTenantProject.value;
+});
+
+const attentionTitle = computed((): string => {
+  if (state.migrationSetupStatus == "NOT_EXIST") {
+    return (
+      t("change-history.instance-missing-change-schema", {
+        name: props.database.instance,
+      }) +
+      (allowConfigInstance.value ? "" : " " + t("change-history.contact-dba"))
+    );
+  } else if (state.migrationSetupStatus == "UNKNOWN") {
+    return (
+      t("change-history.instance-bad-connection", {
+        name: props.database.instance,
+      }) +
+      (allowConfigInstance.value ? "" : " " + t("change-history.contact-dba"))
+    );
+  }
+  return "";
+});
+
+const migrationHistoryList = computed(() => {
+  return instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
+    Number(props.database.instanceEntity.uid),
+    props.database.databaseName
+  );
+});
+
+const migrationHistorySectionList = computed(
+  (): BBTableSectionDataSource<MigrationHistory>[] => {
+    return [
+      {
+        title: "",
+        list: migrationHistoryList.value,
+      },
+    ];
+  }
+);
+
+const configInstance = () => {
+  router.push(`/instance/${instanceV1Slug(props.database.instanceEntity)}`);
+};
+
+const doCreateBaseline = () => {
+  state.showBaselineModal = false;
+
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query: {
+      template: "bb.issue.database.schema.baseline",
+      name: t("change-history.establish-database-baseline", {
+        name: props.database.databaseName,
+      }),
+      project: props.database.projectEntity.uid,
+      databaseList: `${props.database.uid}`,
+    },
+  });
+};
 </script>

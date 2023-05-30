@@ -1,12 +1,12 @@
 apiVersion: v2
 name: bytebase
-version: 1.0.0
+version: 1.0.3
 description: Safe database schema change and version control for DevOps teams.
 type: application
 home: https://bytebase.com/
 sources:
   - https://github.com/bytebase/bytebase
-icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/assets/logo-full.svg
+icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo-full.svg
 maintainers:
   - name: Bytebase
     email: support@bytebase.com

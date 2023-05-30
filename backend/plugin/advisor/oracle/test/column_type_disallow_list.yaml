@@ -1,0 +1,54 @@
+- statement: CREATE TABLE t(a char(5));
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE t(a int, b JSON);
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column "B" is
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE t(d char(5));
+    ALTER TABLE t add a JSON;
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column "A" is
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t(d char(5));
+    ALTER TABLE t MODIFY d BINARY_FLOAT;
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type BINARY_FLOAT but column "D" is
+      line: 2
+      details: ""
+- statement: CREATE TABLE t(a int, b BINARY_FLOAT);
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type BINARY_FLOAT but column "B" is
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE t(d char(5));
+    ALTER TABLE t add a BINARY_FLOAT;
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type BINARY_FLOAT but column "A" is
+      line: 2
+      details: ""

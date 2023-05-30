@@ -1,34 +1,23 @@
 import { defineStore } from "pinia";
 import dayjs from "dayjs";
-import type {
+import {
   SQLEditorState,
   QueryInfo,
-  DatabaseId,
   QueryHistory,
-  InstanceId,
-  Connection,
   ActivitySQLEditorQueryPayload,
+  SingleSQLResult,
 } from "@/types";
-import { ConnectionTreeState, UNKNOWN_ID, unknown } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { useActivityStore } from "./activity";
-import { useDatabaseStore } from "./database";
-import { useInstanceStore } from "./instance";
-import { useTableStore } from "./table";
 import { useSQLStore } from "./sql";
 import { useTabStore } from "./tab";
-import { emptyConnection } from "@/utils";
+import { useDatabaseV1Store } from "./v1/database";
 
 // set the limit to 10000 temporarily to avoid the query timeout and page crash
-export const RESULT_ROWS_LIMIT = 10000;
+export const RESULT_ROWS_LIMIT = 1000;
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
-    connectionTree: {
-      data: [],
-      state: ConnectionTreeState.UNSET,
-    },
-    expandedTreeNodeKeys: [],
-    selectedTable: unknown("TABLE"),
     isShowExecutingHint: false,
     shouldFormatContent: false,
     // Related data and status
@@ -52,10 +41,11 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
     async executeQuery({ statement }: Pick<QueryInfo, "statement">) {
       const { instanceId, databaseId } = useTabStore().currentTab.connection;
-      const database = useDatabaseStore().getDatabaseById(databaseId);
-      const databaseName = database.id === UNKNOWN_ID ? "" : database.name;
+      const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
+      const databaseName =
+        database.uid === String(UNKNOWN_ID) ? "" : database.databaseName;
       const queryResult = await useSQLStore().query({
-        instanceId,
+        instanceId: Number(instanceId),
         databaseName,
         statement: statement,
         limit: RESULT_ROWS_LIMIT,
@@ -65,60 +55,17 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
     async executeAdminQuery({ statement }: Pick<QueryInfo, "statement">) {
       const { instanceId, databaseId } = useTabStore().currentTab.connection;
-      const database = useDatabaseStore().getDatabaseById(databaseId);
-      const databaseName = database.id === UNKNOWN_ID ? "" : database.name;
+      const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
+      const databaseName =
+        database.uid === String(UNKNOWN_ID) ? "" : database.databaseName;
       const queryResult = await useSQLStore().adminQuery({
-        instanceId,
+        instanceId: Number(instanceId),
         databaseName,
         statement: statement,
         limit: RESULT_ROWS_LIMIT,
       });
 
       return queryResult;
-    },
-    async fetchConnectionByInstanceIdAndDatabaseId(
-      instanceId: InstanceId,
-      databaseId: DatabaseId
-    ): Promise<Connection> {
-      try {
-        await Promise.all([
-          useDatabaseStore().getOrFetchDatabaseById(databaseId),
-          useInstanceStore().getOrFetchInstanceById(instanceId),
-          useTableStore().getOrFetchTableListByDatabaseId(databaseId),
-        ]);
-
-        return {
-          instanceId,
-          databaseId,
-        };
-      } catch {
-        // Fallback to disconnected if error occurs such as 404.
-        return { instanceId: UNKNOWN_ID, databaseId: UNKNOWN_ID };
-      }
-    },
-    async fetchConnectionByInstanceId(
-      instanceId: InstanceId
-    ): Promise<Connection> {
-      try {
-        const [databaseList] = await Promise.all([
-          useDatabaseStore().getDatabaseListByInstanceId(instanceId),
-          useInstanceStore().getOrFetchInstanceById(instanceId),
-        ]);
-        const tableStore = useTableStore();
-        await Promise.all(
-          databaseList.map((db) =>
-            tableStore.getOrFetchTableListByDatabaseId(db.id)
-          )
-        );
-
-        return {
-          instanceId,
-          databaseId: UNKNOWN_ID,
-        };
-      } catch {
-        // Fallback to disconnected if error occurs such as 404.
-        return { instanceId: UNKNOWN_ID, databaseId: UNKNOWN_ID };
-      }
     },
     async fetchQueryHistoryList() {
       this.setIsFetchingQueryHistory(true);
@@ -153,55 +100,9 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
   },
 });
 
-export const searchConnectionByName = (
-  instanceId: InstanceId,
-  databaseId: DatabaseId,
-  instanceName: string,
-  databaseName: string
-): Connection => {
-  const connection = emptyConnection();
-  const store = useSQLEditorStore();
-
-  if (instanceId !== UNKNOWN_ID) {
-    // If we found instanceId and/or databaseId, use the IDs first.
-    connection.instanceId = instanceId;
-    if (databaseId !== UNKNOWN_ID) {
-      connection.databaseId = databaseId;
-    }
-
-    return connection;
-  }
-
-  // Search the instance and database by name otherwise.
-  // Remain this part for legacy sheet support.
-  const rootNodes = store.connectionTree.data;
-  for (let i = 0; i < rootNodes.length; i++) {
-    const maybeInstanceNode = rootNodes[i];
-    if (maybeInstanceNode.type !== "instance") {
-      // Skip if we met dirty data.
-      continue;
-    }
-    if (maybeInstanceNode.label === instanceName) {
-      connection.instanceId = maybeInstanceNode.id;
-      if (databaseName) {
-        const { children = [] } = maybeInstanceNode;
-        for (let j = 0; j < children.length; j++) {
-          const maybeDatabaseNode = children[j];
-          if (maybeDatabaseNode.type !== "database") {
-            // Skip if we met dirty data.
-            continue;
-          }
-          if (maybeDatabaseNode.label === databaseName) {
-            connection.databaseId = maybeDatabaseNode.id;
-            // Don't go further since we've found the databaseId
-            break;
-          }
-        }
-      }
-      // Don't go further since we've found the instanceId
-      break;
-    }
-  }
-
-  return connection;
+export const mockAffectedRows0 = (): SingleSQLResult => {
+  return {
+    data: [["Affected Rows"], ["BIGINT"], [[0]], [false]],
+    error: "",
+  };
 };

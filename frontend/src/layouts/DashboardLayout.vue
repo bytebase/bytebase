@@ -1,14 +1,6 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
     <BannersWrapper />
-    <nav
-      class="bg-white border-b border-block-border"
-      data-label="bb-dashboard-header"
-    >
-      <div class="max-w-full mx-auto px-4">
-        <DashboardHeader />
-      </div>
-    </nav>
     <!-- Suspense is experimental, be aware of the potential change -->
     <Suspense>
       <template #default>
@@ -33,24 +25,22 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { ServerInfo } from "@/types";
-import { pushNotification, useActuatorStore } from "@/store";
-import DashboardHeader from "@/views/DashboardHeader.vue";
+import { pushNotification, useActuatorV1Store } from "@/store";
 import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
 import BannersWrapper from "@/components/BannersWrapper.vue";
+import { ActuatorInfo } from "@/types/proto/v1/actuator_service";
 
 export default defineComponent({
   name: "DashboardLayout",
   components: {
-    DashboardHeader,
     ProvideDashboardContext,
     BannersWrapper,
   },
   setup() {
-    const actuatorStore = useActuatorStore();
+    const actuatorStore = useActuatorV1Store();
 
     const ping = () => {
-      actuatorStore.fetchServerInfo().then((info: ServerInfo) => {
+      actuatorStore.fetchServerInfo().then((info: ActuatorInfo) => {
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",

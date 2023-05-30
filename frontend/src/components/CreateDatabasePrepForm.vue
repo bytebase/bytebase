@@ -16,45 +16,16 @@
         />
       </div>
 
-      <!-- Providing a preview of generated database name in template mode -->
-      <div v-if="isDbNameTemplateMode" class="w-full">
-        <label for="name" class="textlabel">
-          {{ $t("create-db.generated-database-name") }}
-          <NTooltip trigger="hover" placement="top">
-            <template #trigger>
-              <heroicons-outline:question-mark-circle
-                class="w-4 h-4 inline-block"
-              />
-            </template>
-            <div class="whitespace-nowrap">
-              {{
-                $t("create-db.db-name-generated-by-template", {
-                  template: project.dbNameTemplate,
-                })
-              }}
-            </div>
-          </NTooltip>
-        </label>
-        <input
-          id="name"
-          disabled
-          name="name"
-          type="text"
-          class="textfield mt-1 w-full"
-          :value="generatedDatabaseName"
-        />
-      </div>
-
       <div class="w-full">
         <label for="name" class="textlabel">
           {{ $t("create-db.new-database-name") }}
           <span class="text-red-600">*</span>
         </label>
         <input
-          id="name"
+          id="databaseName"
           v-model="state.databaseName"
           required
-          name="name"
+          name="databaseName"
           type="text"
           class="textfield mt-1 w-full"
         />
@@ -65,17 +36,36 @@
             </template>
           </i18n-t>
         </span>
+        <DatabaseNameTemplateTips
+          v-if="isDbNameTemplateMode"
+          :project="project"
+          :name="state.databaseName"
+          :labels="state.labels"
+        />
       </div>
 
-      <div v-if="selectedInstance.engine == 'CLICKHOUSE'" class="w-full">
+      <div v-if="selectedInstance.engine === Engine.MONGODB" class="w-full">
+        <label for="name" class="textlabel">
+          {{ $t("create-db.new-collection-name") }}
+          <span class="text-red-600">*</span>
+        </label>
+        <input
+          id="tableName"
+          v-model="state.tableName"
+          required
+          name="tableName"
+          type="text"
+          class="textfield mt-1 w-full"
+        />
+      </div>
+
+      <div v-if="selectedInstance.engine === Engine.CLICKHOUSE" class="w-full">
         <label for="name" class="textlabel">
           {{ $t("create-db.cluster") }}
-          <span class="text-red-600">*</span>
         </label>
         <input
           id="name"
           v-model="state.cluster"
-          required
           name="cluster"
           type="text"
           class="textfield mt-1 w-full"
@@ -87,7 +77,7 @@
         v-if="isTenantProject"
         ref="labelForm"
         :project="project"
-        :label-list="state.labelList"
+        :labels="state.labels"
         filter="required"
       />
 
@@ -108,7 +98,7 @@
 
       <div class="w-full">
         <div class="flex flex-row items-center space-x-1">
-          <InstanceEngineIcon
+          <InstanceV1EngineIcon
             v-if="state.instanceId"
             :instance="selectedInstance"
           />
@@ -117,15 +107,15 @@
           </label>
         </div>
         <div class="flex flex-row space-x-2 items-center">
-          <!-- eslint-disable vue/attribute-hyphenation -->
           <InstanceSelect
             id="instance"
             class="mt-1"
             name="instance"
             required
             :disabled="!allowEditInstance"
-            :selectedId="state.instanceId"
-            :environmentId="state.environmentId"
+            :selected-id="state.instanceId"
+            :environment-id="state.environmentId"
+            :filter="instanceV1HasCreateDatabase"
             @select-instance-id="selectInstance"
           />
         </div>
@@ -136,34 +126,32 @@
           {{ $t("create-db.database-owner-name") }}
           <span class="text-red-600">*</span>
         </label>
-        <InstanceUserSelect
+        <InstanceRoleSelect
           id="instance-user"
           class="mt-1"
           name="instance-user"
-          :instanceId="state.instanceId"
-          :selectedId="state.instanceUserId"
-          @select="selectInstanceUser"
+          :instance-id="state.instanceId"
+          :role="state.instanceRole"
+          :filter="filterInstanceRole"
+          @select="selectInstanceRole"
         />
       </div>
 
       <!-- Providing other dropdowns for optional labels as if they are normal optional props of DB -->
       <DatabaseLabelForm
+        v-if="isTenantProject"
         class="w-full"
         :project="project"
-        :label-list="state.labelList"
+        :labels="state.labels"
         filter="optional"
       />
 
-      <template
-        v-if="
-          selectedInstance.engine != 'CLICKHOUSE' &&
-          selectedInstance.engine != 'SNOWFLAKE'
-        "
-      >
+      <template v-if="showCollationAndCharacterSet">
         <div class="w-full">
           <label for="charset" class="textlabel">
             {{
-              selectedInstance.engine == "POSTGRES"
+              selectedInstance.engine === Engine.POSTGRES ||
+              selectedInstance.engine === Engine.REDSHIFT
                 ? $t("db.encoding")
                 : $t("db.character-set")
             }}</label
@@ -174,7 +162,7 @@
             name="charset"
             type="text"
             class="textfield mt-1 w-full"
-            :placeholder="defaultCharset(selectedInstance.engine)"
+            :placeholder="defaultCharsetOfEngineV1(selectedInstance.engine)"
           />
         </div>
 
@@ -189,7 +177,7 @@
             type="text"
             class="textfield mt-1 w-full"
             :placeholder="
-              defaultCollation(selectedInstance.engine) || 'default'
+              defaultCollationOfEngineV1(selectedInstance.engine) || 'default'
             "
           />
         </div>
@@ -200,15 +188,14 @@
           {{ $t("common.assignee") }} <span class="text-red-600">*</span>
         </label>
         <!-- DBA and Owner always have all access, so we only need to grant to developer -->
-        <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           id="user"
           class="mt-1 w-full"
           name="user"
-          :allowed-role-list="['OWNER', 'DBA']"
-          :selectedId="state.assigneeId"
+          :allowed-role-list="[UserRole.OWNER, UserRole.DBA]"
+          :selected-id="state.assigneeId"
           :placeholder="'Select assignee'"
-          @select-principal-id="selectAssignee"
+          @select-user-id="selectAssignee"
         />
       </div>
     </div>
@@ -244,399 +231,368 @@
   </div>
 </template>
 
-<script lang="ts">
-import {
-  computed,
-  reactive,
-  PropType,
-  watchEffect,
-  defineComponent,
-  ref,
-} from "vue";
+<script lang="ts" setup>
+import { computed, reactive, PropType, watchEffect, ref, toRef } from "vue";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
-import { NTooltip } from "naive-ui";
-import { DatabaseLabelForm } from "./CreateDatabasePrepForm/";
-import InstanceSelect from "../components/InstanceSelect.vue";
-import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import ProjectSelect from "../components/ProjectSelect.vue";
-import MemberSelect from "../components/MemberSelect.vue";
-import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
+import { useEventListener } from "@vueuse/core";
+
 import {
-  EnvironmentId,
-  InstanceId,
-  ProjectId,
+  DatabaseLabelForm,
+  DatabaseNameTemplateTips,
+  useDBNameTemplateInputState,
+} from "./CreateDatabasePrepForm/";
+import InstanceSelect from "./InstanceSelect.vue";
+import EnvironmentSelect from "./EnvironmentSelect.vue";
+import ProjectSelect from "./ProjectSelect.vue";
+import MemberSelect from "./MemberSelect.vue";
+import InstanceRoleSelect from "./InstanceRoleSelect.vue";
+import {
   IssueCreate,
   SYSTEM_BOT_ID,
-  PrincipalId,
   Backup,
-  defaultCharset,
-  defaultCollation,
-  unknown,
-  Project,
-  DatabaseLabel,
+  defaultCharsetOfEngineV1,
+  defaultCollationOfEngineV1,
   CreateDatabaseContext,
   UNKNOWN_ID,
-  Instance,
-  InstanceUserId,
   PITRContext,
+  ComposedInstance,
+  unknownInstance,
 } from "../types";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import {
-  buildDatabaseNameByTemplateAndLabelList,
-  hasWorkspacePermission,
+  extractEnvironmentResourceName,
+  hasWorkspacePermissionV1,
+  instanceV1HasCollationAndCharacterSet,
+  instanceV1HasCreateDatabase,
   issueSlug,
 } from "../utils";
-import { useEventListener } from "@vueuse/core";
 import {
   hasFeature,
-  useCurrentUser,
-  useEnvironmentStore,
-  useInstanceStore,
+  useCurrentUserV1,
+  useEnvironmentV1Store,
+  useInstanceV1Store,
   useIssueStore,
-  useProjectStore,
+  useProjectV1Store,
 } from "@/store";
+import { UserRole } from "@/types/proto/v1/auth_service";
+import { Engine } from "@/types/proto/v1/common";
+import { InstanceV1EngineIcon } from "./v2";
+import { InstanceRole } from "@/types/proto/v1/instance_role_service";
 
 interface LocalState {
-  projectId?: ProjectId;
-  environmentId?: EnvironmentId;
-  instanceId?: InstanceId;
-  instanceUserId?: InstanceUserId;
-  labelList: DatabaseLabel[];
+  projectId?: string;
+  environmentId?: string;
+  instanceId?: string;
+  instanceRole?: string;
+  labels: Record<string, string>;
   databaseName: string;
+  tableName: string;
   characterSet: string;
   collation: string;
   cluster: string;
-  assigneeId?: PrincipalId;
+  assigneeId?: string;
   showFeatureModal: boolean;
   creating: boolean;
 }
 
-export default defineComponent({
-  name: "CreateDatabasePrepForm",
-  components: {
-    NTooltip,
-    InstanceSelect,
-    EnvironmentSelect,
-    ProjectSelect,
-    MemberSelect,
-    InstanceEngineIcon,
-    DatabaseLabelForm,
+const props = defineProps({
+  projectId: {
+    type: String,
+    default: undefined,
   },
-  props: {
-    projectId: {
-      type: Number as PropType<ProjectId>,
-      default: undefined,
-    },
-    environmentId: {
-      type: Number as PropType<EnvironmentId>,
-      default: undefined,
-    },
-    instanceId: {
-      type: Number as PropType<InstanceId>,
-      default: undefined,
-    },
-    // If specified, then we are creating a database from the backup.
-    backup: {
-      type: Object as PropType<Backup>,
-      default: undefined,
-    },
+  environmentId: {
+    type: String,
+    default: undefined,
   },
-  emits: ["dismiss"],
-  setup(props, { emit }) {
-    const instanceStore = useInstanceStore();
-    const router = useRouter();
-
-    const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
-
-    useEventListener("keydown", (e: KeyboardEvent) => {
-      if (e.code == "Escape") {
-        cancel();
-      }
-    });
-
-    // Refresh the instance list
-    const prepareInstanceList = () => {
-      instanceStore.fetchInstanceList();
-    };
-
-    watchEffect(prepareInstanceList);
-
-    const showAssigneeSelect = computed(() => {
-      // If the role can't change assignee after creating the issue, then we will show the
-      // assignee select in the prep stage here to request a particular assignee.
-      return !hasWorkspacePermission(
-        "bb.permission.workspace.manage-issue",
-        currentUser.value.role
-      );
-    });
-
-    const state = reactive<LocalState>({
-      databaseName: "",
-      projectId: props.projectId,
-      environmentId: props.environmentId,
-      instanceId: props.instanceId,
-      labelList: [],
-      characterSet: "",
-      collation: "",
-      cluster: "",
-      assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
-      showFeatureModal: false,
-      creating: false,
-    });
-
-    const project = computed((): Project => {
-      if (!state.projectId) return unknown("PROJECT") as Project;
-      return projectStore.getProjectById(state.projectId) as Project;
-    });
-
-    const isReservedName = computed(() => {
-      return state.databaseName.toLowerCase() == "bytebase";
-    });
-
-    const isTenantProject = computed((): boolean => {
-      if (project.value.id === UNKNOWN_ID) return false;
-
-      return project.value.tenantMode === "TENANT";
-    });
-
-    // reference to <DatabaseLabelForm /> to call validate()
-    const labelForm = ref<InstanceType<typeof DatabaseLabelForm> | null>(null);
-
-    const isDbNameTemplateMode = computed((): boolean => {
-      if (project.value.id === UNKNOWN_ID) return false;
-
-      // true if dbNameTemplate is not empty
-      return !!project.value.dbNameTemplate;
-    });
-
-    const generatedDatabaseName = computed((): string => {
-      if (!isDbNameTemplateMode.value) {
-        // don't modify anything if we are not in template mode
-        return state.databaseName;
-      }
-
-      return buildDatabaseNameByTemplateAndLabelList(
-        project.value.dbNameTemplate,
-        state.databaseName,
-        state.labelList,
-        true // keepEmpty: true to keep non-selected values as original placeholders
-      );
-    });
-
-    const allowCreate = computed(() => {
-      // If we are not in template mode, none of labels are required
-      // So we just treat this case as 'yes, valid'
-      const isLabelValid = isDbNameTemplateMode.value
-        ? labelForm.value?.validate()
-        : true;
-      return (
-        !isEmpty(state.databaseName) &&
-        validDatabaseOwnerName.value &&
-        !isReservedName.value &&
-        isLabelValid &&
-        state.projectId &&
-        state.environmentId &&
-        state.instanceId &&
-        state.assigneeId
-      );
-    });
-
-    // If project has been specified, then we disallow changing it.
-    const allowEditProject = computed(() => {
-      return !props.projectId;
-    });
-
-    // If environment has been specified, then we disallow changing it.
-    const allowEditEnvironment = computed(() => {
-      return !props.environmentId;
-    });
-
-    // If instance has been specified, then we disallow changing it.
-    const allowEditInstance = computed(() => {
-      return !props.instanceId;
-    });
-
-    const selectedInstance = computed((): Instance => {
-      return state.instanceId
-        ? instanceStore.getInstanceById(state.instanceId)
-        : (unknown("INSTANCE") as Instance);
-    });
-
-    const requireDatabaseOwnerName = computed((): boolean => {
-      const instance = selectedInstance.value;
-      if (instance.id === UNKNOWN_ID) {
-        return false;
-      }
-      return instance.engine === "POSTGRES";
-    });
-
-    const validDatabaseOwnerName = computed((): boolean => {
-      if (!requireDatabaseOwnerName.value) {
-        return true;
-      }
-
-      return state.instanceUserId !== undefined;
-    });
-
-    const selectProject = (projectId: ProjectId) => {
-      state.projectId = projectId;
-    };
-
-    const selectEnvironment = (environmentId: EnvironmentId) => {
-      state.environmentId = environmentId;
-    };
-
-    const selectInstance = (instanceId: InstanceId) => {
-      state.instanceId = instanceId;
-    };
-
-    const selectInstanceUser = (instanceUserId?: InstanceUserId) => {
-      state.instanceUserId = instanceUserId;
-    };
-
-    const selectAssignee = (assigneeId: PrincipalId) => {
-      state.assigneeId = assigneeId;
-    };
-
-    const cancel = () => {
-      emit("dismiss");
-    };
-
-    const create = async () => {
-      if (!allowCreate.value) {
-        return;
-      }
-
-      let newIssue: IssueCreate;
-
-      const databaseName = isDbNameTemplateMode.value
-        ? generatedDatabaseName.value
-        : state.databaseName;
-      const instanceId = state.instanceId as InstanceId;
-      let owner = "";
-      if (requireDatabaseOwnerName.value && state.instanceUserId) {
-        const instanceUser = await useInstanceStore().fetchInstanceUser(
-          instanceId,
-          state.instanceUserId
-        );
-        owner = instanceUser.name;
-      }
-
-      if (isTenantProject.value) {
-        if (!hasFeature("bb.feature.multi-tenancy")) {
-          state.showFeatureModal = true;
-          return;
-        }
-      }
-      // Do not submit non-selected optional labels
-      const labelList = state.labelList.filter((label) => !!label.value);
-
-      const createDatabaseContext: CreateDatabaseContext = {
-        instanceId: instanceId,
-        databaseName: databaseName,
-        owner,
-        characterSet:
-          state.characterSet || defaultCharset(selectedInstance.value.engine),
-        collation:
-          state.collation || defaultCollation(selectedInstance.value.engine),
-        cluster: state.cluster,
-        labels: JSON.stringify(labelList),
-      };
-
-      if (props.backup) {
-        // If props.backup is specified, we create a PITR issue
-        // with createDatabaseContext
-        const createContext: PITRContext = {
-          databaseId: props.backup.databaseId,
-          backupId: props.backup.id,
-          createDatabaseContext,
-        };
-        newIssue = {
-          name: `Create database '${databaseName}' from backup '${props.backup.name}'`,
-          type: "bb.issue.database.restore.pitr",
-          description: `Creating database '${databaseName}' from backup '${props.backup.name}'`,
-          assigneeId: state.assigneeId!,
-          projectId: state.projectId!,
-          pipeline: {
-            stageList: [],
-            name: "",
-          },
-          createContext,
-          payload: {},
-        };
-      } else {
-        // Otherwise we create a simple database.create issue.
-        newIssue = {
-          name: `Create database '${databaseName}'`,
-          type: "bb.issue.database.create",
-          description: "",
-          assigneeId: state.assigneeId!,
-          projectId: state.projectId!,
-          pipeline: {
-            stageList: [],
-            name: "",
-          },
-          createContext: createDatabaseContext,
-          payload: {},
-        };
-      }
-
-      state.creating = true;
-      useIssueStore()
-        .createIssue(newIssue)
-        .then(
-          (createdIssue) => {
-            router.push(
-              `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
-            );
-          },
-          () => {
-            state.creating = false;
-          }
-        );
-    };
-
-    // update `state.labelList` when selected Environment changed
-    watchEffect(() => {
-      const envId = state.environmentId;
-      const { labelList } = state;
-      const key = "bb.environment";
-      const index = labelList.findIndex((label) => label.key === key);
-      if (envId) {
-        const env = useEnvironmentStore().getEnvironmentById(envId);
-        if (index >= 0) labelList[index].value = env.name;
-        else labelList.unshift({ key, value: env.name });
-      } else {
-        if (index >= 0) labelList.splice(index, 1);
-      }
-    });
-
-    return {
-      defaultCharset,
-      defaultCollation,
-      state,
-      isReservedName,
-      project,
-      isTenantProject,
-      isDbNameTemplateMode,
-      generatedDatabaseName,
-      labelForm,
-      allowCreate,
-      allowEditProject,
-      allowEditEnvironment,
-      allowEditInstance,
-      selectedInstance,
-      requireDatabaseOwnerName,
-      showAssigneeSelect,
-      selectProject,
-      selectEnvironment,
-      selectInstance,
-      selectInstanceUser,
-      selectAssignee,
-      cancel,
-      create,
-    };
+  instanceId: {
+    type: String,
+    default: undefined,
   },
+  // If specified, then we are creating a database from the backup.
+  backup: {
+    type: Object as PropType<Backup>,
+    default: undefined,
+  },
+});
+
+const emit = defineEmits<{
+  (event: "dismiss"): void;
+}>();
+
+const instanceV1Store = useInstanceV1Store();
+const router = useRouter();
+
+const currentUserV1 = useCurrentUserV1();
+const projectV1Store = useProjectV1Store();
+
+useEventListener("keydown", (e: KeyboardEvent) => {
+  if (e.code == "Escape") {
+    cancel();
+  }
+});
+
+const showAssigneeSelect = computed(() => {
+  // If the role can't change assignee after creating the issue, then we will show the
+  // assignee select in the prep stage here to request a particular assignee.
+  return !hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-issue",
+    currentUserV1.value.userRole
+  );
+});
+
+const state = reactive<LocalState>({
+  databaseName: "",
+  projectId: props.projectId,
+  environmentId: props.environmentId,
+  instanceId: props.instanceId,
+  labels: {},
+  tableName: "",
+  characterSet: "",
+  collation: "",
+  cluster: "",
+  assigneeId: showAssigneeSelect.value ? undefined : String(SYSTEM_BOT_ID),
+  showFeatureModal: false,
+  creating: false,
+});
+
+const project = computed(() => {
+  return projectV1Store.getProjectByUID(state.projectId ?? String(UNKNOWN_ID));
+});
+
+const isReservedName = computed(() => {
+  return state.databaseName.toLowerCase() == "bytebase";
+});
+
+const isTenantProject = computed((): boolean => {
+  if (parseInt(project.value.uid, 10) === UNKNOWN_ID) {
+    return false;
+  }
+
+  return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
+});
+
+// reference to <DatabaseLabelForm /> to call validate()
+const labelForm = ref<InstanceType<typeof DatabaseLabelForm> | null>(null);
+
+const isDbNameTemplateMode = computed((): boolean => {
+  if (parseInt(project.value.uid, 10) === UNKNOWN_ID) return false;
+
+  if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
+    return false;
+  }
+
+  // true if dbNameTemplate is not empty
+  return !!project.value.dbNameTemplate;
+});
+
+const allowCreate = computed(() => {
+  // If we are not in template mode, none of labels are required
+  // So we just treat this case as 'yes, valid'
+  const isLabelValid = isDbNameTemplateMode.value
+    ? labelForm.value?.validate()
+    : true;
+  return (
+    !isEmpty(state.databaseName) &&
+    validDatabaseOwnerName.value &&
+    !isReservedName.value &&
+    isLabelValid &&
+    state.projectId &&
+    state.environmentId &&
+    state.instanceId &&
+    state.assigneeId
+  );
+});
+
+// If project has been specified, then we disallow changing it.
+const allowEditProject = computed(() => {
+  return !props.projectId;
+});
+
+// If environment has been specified, then we disallow changing it.
+const allowEditEnvironment = computed(() => {
+  return !props.environmentId;
+});
+
+// If instance has been specified, then we disallow changing it.
+const allowEditInstance = computed(() => {
+  return !props.instanceId;
+});
+
+const selectedInstance = computed((): ComposedInstance => {
+  return state.instanceId
+    ? instanceV1Store.getInstanceByUID(state.instanceId)
+    : unknownInstance();
+});
+
+const showCollationAndCharacterSet = computed((): boolean => {
+  const instance = selectedInstance.value;
+  return instanceV1HasCollationAndCharacterSet(instance);
+});
+
+const requireDatabaseOwnerName = computed((): boolean => {
+  const instance = selectedInstance.value;
+  if (instance.uid === String(UNKNOWN_ID)) {
+    return false;
+  }
+  return [Engine.POSTGRES, Engine.REDSHIFT].includes(instance.engine);
+});
+
+const validDatabaseOwnerName = computed((): boolean => {
+  if (!requireDatabaseOwnerName.value) {
+    return true;
+  }
+
+  return state.instanceRole !== undefined;
+});
+
+useDBNameTemplateInputState(project, {
+  databaseName: toRef(state, "databaseName"),
+  labels: toRef(state, "labels"),
+});
+
+const selectProject = (projectId: string) => {
+  state.projectId = projectId;
+};
+
+const selectEnvironment = (environmentId: string) => {
+  state.environmentId = environmentId;
+};
+
+const selectInstance = (instanceId: string | undefined) => {
+  if (!instanceId) return;
+  state.instanceId = instanceId;
+};
+
+const selectInstanceRole = (name?: string) => {
+  state.instanceRole = name;
+};
+
+const selectAssignee = (assigneeId: string) => {
+  state.assigneeId = assigneeId;
+};
+
+const filterInstanceRole = (user: InstanceRole) => {
+  if (INTERNAL_RDS_INSTANCE_USER_LIST.includes(user.roleName)) {
+    return false;
+  }
+  return true;
+};
+
+const cancel = () => {
+  emit("dismiss");
+};
+
+const create = async () => {
+  if (!allowCreate.value) {
+    return;
+  }
+
+  let newIssue: IssueCreate;
+
+  const databaseName = state.databaseName;
+  const tableName = state.tableName;
+  const instanceId = Number(state.instanceId);
+  let owner = "";
+  if (requireDatabaseOwnerName.value && state.instanceRole) {
+    const instanceUser = await instanceV1Store.fetchInstanceRoleByName(
+      state.instanceRole
+    );
+    owner = instanceUser.roleName;
+  }
+
+  if (isTenantProject.value) {
+    if (!hasFeature("bb.feature.multi-tenancy")) {
+      state.showFeatureModal = true;
+      return;
+    }
+  }
+  // Do not submit non-selected optional labels
+  const labels = Object.keys(state.labels)
+    .map((key) => {
+      const value = state.labels[key];
+      return { key, value };
+    })
+    .filter((kv) => !!kv.value);
+
+  const createDatabaseContext: CreateDatabaseContext = {
+    instanceId,
+    databaseName: databaseName,
+    tableName: tableName,
+    owner,
+    characterSet:
+      state.characterSet ||
+      defaultCharsetOfEngineV1(selectedInstance.value.engine),
+    collation:
+      state.collation ||
+      defaultCollationOfEngineV1(selectedInstance.value.engine),
+    cluster: state.cluster,
+    labels: JSON.stringify(labels),
+  };
+
+  if (props.backup) {
+    // If props.backup is specified, we create a PITR issue
+    // with createDatabaseContext
+    const createContext: PITRContext = {
+      databaseId: props.backup.databaseId,
+      backupId: props.backup.id,
+      createDatabaseContext,
+    };
+    newIssue = {
+      name: `Create database '${databaseName}' from backup '${props.backup.name}'`,
+      type: "bb.issue.database.restore.pitr",
+      description: `Creating database '${databaseName}' from backup '${props.backup.name}'`,
+      assigneeId: parseInt(state.assigneeId!, 10),
+      projectId: parseInt(state.projectId!, 10),
+      pipeline: {
+        stageList: [],
+        name: "",
+      },
+      createContext,
+      payload: {},
+    };
+  } else {
+    // Otherwise we create a simple database.create issue.
+    newIssue = {
+      name: `Create database '${databaseName}'`,
+      type: "bb.issue.database.create",
+      description: "",
+      assigneeId: parseInt(state.assigneeId!, 10),
+      projectId: parseInt(state.projectId!, 10),
+      pipeline: {
+        stageList: [],
+        name: "",
+      },
+      createContext: createDatabaseContext,
+      payload: {},
+    };
+  }
+
+  state.creating = true;
+  useIssueStore()
+    .createIssue(newIssue)
+    .then(
+      (createdIssue) => {
+        router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
+      },
+      () => {
+        state.creating = false;
+      }
+    );
+};
+
+// update `state.labelList` when selected Environment changed
+watchEffect(() => {
+  const envId = state.environmentId;
+  const { labels } = state;
+  const key = "bb.environment";
+  if (envId) {
+    const env = useEnvironmentV1Store().getEnvironmentByUID(envId);
+    const resourceId = extractEnvironmentResourceName(env.name);
+    labels[key] = resourceId;
+  } else {
+    delete labels[key];
+  }
 });
 </script>

@@ -1,3 +1,3 @@
-import SslCertificateForm from "./SslCertificateForm.vue";
+import InstanceForm from "./InstanceForm.vue";
 
-export { SslCertificateForm };
+export default InstanceForm;

@@ -5,34 +5,43 @@ import {
   IssueId,
   PrincipalId,
   ProjectId,
+  SheetId,
+  TaskId,
 } from "./id";
 import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { MigrationType } from "./instance";
+import { Expr } from "./proto/google/type/expr";
+import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
 
 type IssueTypeGeneral = "bb.issue.general";
+
+type IssueTypeDataSource = "bb.issue.data-source.request";
 
 type IssueTypeDatabase =
   | "bb.issue.database.create"
   | "bb.issue.database.grant"
   | "bb.issue.database.schema.update"
   | "bb.issue.database.data.update"
+  | "bb.issue.database.rollback"
   | "bb.issue.database.schema.update.ghost"
   | "bb.issue.database.restore.pitr";
 
-type IssueTypeDataSource = "bb.issue.data-source.request";
+type IssueTypeGrantRequest = "bb.issue.grant.request";
 
 export type IssueType =
   | IssueTypeGeneral
+  | IssueTypeDataSource
   | IssueTypeDatabase
-  | IssueTypeDataSource;
+  | IssueTypeGrantRequest;
 
 export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
 
 export type CreateDatabaseContext = {
   instanceId: InstanceId;
   databaseName: string;
+  tableName: string;
   // Only applicable to PostgreSQL for "WITH OWNER <<owner>>"
   owner: string;
   characterSet: string;
@@ -45,10 +54,12 @@ export type CreateDatabaseContext = {
 
 export type MigrationDetail = {
   migrationType: MigrationType;
-  databaseId: DatabaseId;
-  databaseName: string;
   statement: string;
+  sheetId: SheetId;
   earliestAllowedTs: number;
+  databaseId?: DatabaseId;
+  rollbackEnabled?: boolean;
+  rollbackDetail?: RollbackDetail;
 };
 
 export type UpdateSchemaGhostDetail = MigrationDetail & {
@@ -56,12 +67,16 @@ export type UpdateSchemaGhostDetail = MigrationDetail & {
   // more input parameters in the future
 };
 
-export type MigrationContext = {
-  detailList: MigrationDetail[];
+// RollbackDetail is the detail for rolling back a task.
+export type RollbackDetail = {
+  // IssueID is the id of the issue to rollback.
+  issueId: IssueId;
+  // TaskID is the task id to rollback.
+  taskId: TaskId;
 };
 
-export type UpdateSchemaGhostContext = {
-  detailList: UpdateSchemaGhostDetail[];
+export type MigrationContext = {
+  detailList: MigrationDetail[];
 };
 
 export type PITRContext = {
@@ -74,21 +89,45 @@ export type PITRContext = {
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type EmptyContext = {};
 
+export interface GrantRequestContext {
+  role: "EXPORTER" | "QUERIER";
+  // Conditions in CEL expression.
+  databaseResources: DatabaseResource[];
+  expireDays: number;
+  maxRowCount: number;
+  statement: string;
+  exportFormat: "CSV" | "JSON";
+}
+
 export type IssueCreateContext =
   | CreateDatabaseContext
   | MigrationContext
-  | UpdateSchemaGhostContext
   | PITRContext
+  | GrantRequestContext
   | EmptyContext;
 
-export type IssuePayload = { [key: string]: any };
+export interface GrantRequestPayload {
+  // The requested role, e.g. roles/EXPORTER
+  role: string;
+  // The requested user, e.g. users/hello@bytebase.com
+  user: string;
+  // IAM binding condition in expr.
+  condition: Expr;
+}
+
+export type IssuePayload =
+  | {
+      approval: any;
+      grantRequest: GrantRequestPayload;
+    }
+  | { [key: string]: any };
 
 export type Issue = {
   id: IssueId;
 
   // Related fields
   project: Project;
-  pipeline: Pipeline;
+  pipeline?: Pipeline;
 
   // Standard fields
   creator: Principal;
@@ -102,13 +141,14 @@ export type Issue = {
   type: IssueType;
   description: string;
   assignee: Principal;
+  assigneeNeedAttention: boolean;
   subscriberList: Principal[];
   payload: IssuePayload;
 };
 
 export type IssueCreate = {
   // Related fields
-  projectId: ProjectId;
+  projectId: number;
   pipeline?: PipelineCreate;
 
   // Domain specific fields
@@ -140,6 +180,7 @@ export type IssuePatch = {
   name?: string;
   description?: string;
   assigneeId?: PrincipalId;
+  assigneeNeedAttention?: boolean;
   payload?: IssuePayload;
 };
 
@@ -193,16 +234,7 @@ export const ISSUE_STATUS_TRANSITION_LIST: Map<
 
 // The first transition in the list is the primary action and the rests are
 // the normal action. For now there are at most 1 primary 1 normal action.
-export const CREATOR_APPLICABLE_ACTION_LIST: Map<
-  IssueStatus,
-  IssueStatusTransitionType[]
-> = new Map([
-  ["OPEN", ["CANCEL"]],
-  ["DONE", ["REOPEN"]],
-  ["CANCELED", ["REOPEN"]],
-]);
-
-export const ASSIGNEE_APPLICABLE_ACTION_LIST: Map<
+export const APPLICABLE_ISSUE_ACTION_LIST: Map<
   IssueStatus,
   IssueStatusTransitionType[]
 > = new Map([

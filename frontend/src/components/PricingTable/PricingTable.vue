@@ -34,24 +34,34 @@
                 {{ $t(`subscription.plan.${plan.title}.desc`) }}
               </p>
 
-              <p class="mt-4 flex items-baseline text-gray-900 text-xl">
-                <span v-if="plan.pricePrefix" class="text-xl 2xl:text-3xl">
-                  {{ plan.pricePrefix }}&nbsp;</span
-                >
-                <span class="text-4xl">
-                  ${{ plan.pricePerInstancePerMonth }}
+              <p
+                class="mt-4 flex items-baseline text-gray-900 text-xl space-x-2"
+              >
+                <span v-if="plan.pricePrefix" class="text-3xl">
+                  {{ plan.pricePrefix }}
                 </span>
-                {{ plan.priceUnit }}
+                <span
+                  :class="[
+                    'font-bold',
+                    plan.type == PlanType.ENTERPRISE ? 'text-3xl' : 'text-4xl',
+                  ]"
+                >
+                  {{ plan.pricing }}
+                </span>
+                {{ plan.priceSuffix }}
               </p>
 
-              <div class="text-gray-400">
-                {{ $t("subscription.per-instance") }}
-              </div>
-              <div class="text-gray-400">
+              <div
+                :class="[
+                  'mt-2 text-gray-600 h-12',
+                  plan.type == PlanType.TEAM ? 'font-bold' : '',
+                ]"
+              >
                 {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
 
               <button
+                v-if="plan.buttonText"
                 type="button"
                 :class="[
                   plan.highlight
@@ -64,10 +74,11 @@
                 {{ plan.buttonText }}
               </button>
               <div
-                v-if="plan.trialDays"
-                class="font-bold text-sm my-2 text-center"
+                v-if="plan.canTrial && subscriptionStore.canTrial"
+                class="font-bold text-sm my-2 text-center underline cursor-pointer"
+                @click="emit('on-trial')"
               >
-                {{ $t("subscription.free-trial") }}
+                {{ $t("subscription.start-free-trial") }}
               </div>
             </div>
           </td>
@@ -86,7 +97,7 @@
         </template>
       </i18n-t>
     </div>
-    <table class="w-full h-px table-fixed mb-16">
+    <table class="w-full table-fixed mb-16 border-l border-r border-b">
       <caption class="sr-only">
         Feature comparison
       </caption>
@@ -94,7 +105,7 @@
         <template v-for="section in FEATURE_SECTIONS" :key="section.type">
           <tr>
             <th
-              class="bg-gray-50 py-3 pl-6 text-sm font-medium text-gray-900 text-left"
+              class="bg-gray-50 py-3 pl-6 text-base font-medium text-gray-900 text-left"
               colspan="4"
               scope="colgroup"
             >
@@ -128,9 +139,9 @@
       <tfoot>
         <tr class="border-t border-gray-200">
           <th class="sr-only" scope="row">Choose your plan</th>
-          <td v-for="plan in plans" :key="plan.type" class="pt-5 px-6">
+          <td v-for="plan in plans" :key="plan.type" class="py-5 px-6">
             <button
-              v-if="!plan.isFreePlan"
+              v-if="plan.buttonText"
               class="block w-full bg-gray-800 border border-gray-800 rounded-md py-2 text-lg font-semibold text-white text-center hover:bg-gray-900"
               @click="onButtonClick(plan)"
             >
@@ -162,18 +173,32 @@
           {{ $t(`subscription.plan.${plan.title}.desc`) }}
         </p>
 
-        <p class="mt-4 flex items-baseline text-gray-900 text-xl">
-          <span class="text-4xl"> ${{ plan.pricePerInstancePerMonth }} </span>
-          &nbsp;
-          {{ $t("subscription.per-instance") }}
-          {{ $t("subscription.per-month") }}
+        <p class="mt-4 flex items-baseline text-gray-900 text-xl space-x-2">
+          <span v-if="plan.pricePrefix" class="text-3xl">
+            {{ plan.pricePrefix }}
+          </span>
+          <span
+            :class="[
+              'font-bold',
+              plan.type == PlanType.ENTERPRISE ? 'text-3xl' : 'text-4xl',
+            ]"
+          >
+            {{ plan.pricing }}
+          </span>
+          {{ plan.priceSuffix }}
         </p>
 
-        <div class="text-gray-400">
+        <div
+          :class="[
+            'text-gray-600',
+            plan.type == PlanType.TEAM ? 'font-bold' : '',
+          ]"
+        >
           {{ $t(`subscription.${plan.title}-price-intro`) }}
         </div>
 
         <button
+          v-if="plan.buttonText"
           type="button"
           :class="[
             plan.highlight
@@ -185,8 +210,12 @@
         >
           {{ plan.buttonText }}
         </button>
-        <div v-if="plan.trialDays" class="font-bold text-sm my-2 text-center">
-          {{ $t("subscription.free-trial") }}
+        <div
+          v-if="plan.canTrial && subscriptionStore.canTrial"
+          class="font-bold text-sm my-2 text-center underline cursor-pointer"
+          @click="emit('on-trial')"
+        >
+          {{ $t("subscription.start-free-trial") }}
         </div>
 
         <div v-if="plan.isAvailable" class="px-4 py-8 text-right text-gray-500">
@@ -206,11 +235,11 @@
         <caption class="sr-only">
           Feature comparison
         </caption>
-        <tbody class="border-t border-gray-200 divide-y divide-gray-200">
+        <tbody class="border border-gray-200 divide-y divide-gray-200">
           <template v-for="section in FEATURE_SECTIONS" :key="section.type">
             <tr>
               <th
-                class="bg-gray-50 py-3 pl-6 text-sm font-medium text-gray-900 text-left"
+                class="bg-gray-50 py-3 pl-6 text-base font-medium text-gray-900 text-left"
                 scope="colgroup"
               >
                 {{ $t(`subscription.feature-sections.${section.type}.title`) }}
@@ -237,7 +266,7 @@
         </tbody>
       </table>
       <button
-        v-if="!plan.isFreePlan"
+        v-if="plan.buttonText"
         type="button"
         :class="[
           plan.highlight
@@ -256,10 +285,11 @@
 <script lang="ts" setup>
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { Plan, PlanType, PLANS, FEATURE_SECTIONS } from "@/types";
-import { useSubscriptionStore } from "@/store";
+import { Plan, PLANS, FEATURE_SECTIONS } from "@/types";
+import { useSubscriptionV1Store } from "@/store";
 import { LocalPlan } from "./types";
 import FeatureItem from "./FeatureItem.vue";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   isMonthly: boolean;
@@ -271,12 +301,13 @@ const emit = defineEmits(["on-trial"]);
 const minimumInstanceCount = 5;
 
 const { t } = useI18n();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 const state = reactive<LocalState>({
   isMonthly: false,
   instanceCount:
     subscriptionStore.subscription?.instanceCount ?? minimumInstanceCount,
 });
+const enterprisePlanFormLink = "https://www.bytebase.com/contact-us";
 
 watch(
   () => subscriptionStore.subscription,
@@ -293,45 +324,79 @@ const plans = computed((): LocalPlan[] => {
     buttonText: getButtonText(plan),
     highlight: plan.type === PlanType.TEAM,
     isAvailable: plan.type === PlanType.TEAM,
-    isFreePlan: plan.type === PlanType.FREE,
     label: t(`subscription.plan.${plan.title}.label`),
-    pricePrefix:
-      plan.type === PlanType.ENTERPRISE ? t("subscription.start-from") : "",
-    priceUnit:
+    pricing:
       plan.type === PlanType.ENTERPRISE
-        ? t("subscription.price-unit-for-enterprise")
+        ? t("subscription.contact-us")
+        : `$${plan.pricePerInstancePerMonth}`,
+    pricePrefix: "",
+    priceSuffix:
+      plan.type === PlanType.TEAM
+        ? t("subscription.price-unit-for-team")
+        : plan.type === PlanType.ENTERPRISE
+        ? ""
         : t("subscription.per-month"),
+    // only support free trial for enterprise in console.
+    canTrial: plan.type === PlanType.ENTERPRISE && plan.trialDays > 0,
   }));
 });
 
 const getButtonText = (plan: Plan): string => {
-  if (plan.type === PlanType.FREE) return t("subscription.deploy");
-  if (plan.type === PlanType.ENTERPRISE) return t("subscription.contact-us");
-
-  if (subscriptionStore.isTrialing) return t("subscription.subscribe");
-  if (plan.type === subscriptionStore.subscription?.plan)
-    return t("subscription.upgrade");
-  if (plan.trialDays) return t("subscription.start-trial");
-
-  return t("subscription.subscribe");
+  switch (plan.type) {
+    case PlanType.FREE:
+      return "";
+    case PlanType.TEAM:
+      if (subscriptionStore.currentPlan === PlanType.FREE) {
+        return t("subscription.button.upgrade");
+      }
+      if (subscriptionStore.currentPlan === PlanType.TEAM) {
+        return t("subscription.button.view-subscription");
+      }
+      if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
+        return "";
+      }
+      break;
+    case PlanType.ENTERPRISE:
+      if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
+        if (subscriptionStore.isTrialing) {
+          return t("subscription.button.contact-us");
+        }
+        return t("subscription.button.view-subscription");
+      } else {
+        return t("subscription.button.contact-us");
+      }
+  }
+  return "";
 };
 
 const onButtonClick = (plan: Plan) => {
-  if (plan.type === PlanType.TEAM) {
-    if (subscriptionStore.canTrial && !subscriptionStore.isTrialing) {
-      emit("on-trial");
+  switch (plan.type) {
+    case PlanType.TEAM:
+      if (subscriptionStore.currentPlan === PlanType.FREE) {
+        window.open(
+          "https://hub.bytebase.com/workspace?source=console.subscription",
+          "__blank"
+        );
+      } else if (subscriptionStore.currentPlan === PlanType.TEAM) {
+        window.open(
+          "https://hub.bytebase.com/subscription?source=console.subscription",
+          "__blank"
+        );
+      }
       return;
-    }
-    window.open(
-      "https://bytebase.com/pricing?source=console.subscription",
-      "__blank"
-    );
-  } else if (plan.type === PlanType.ENTERPRISE) {
-    window.open(
-      "mailto:support@bytebase.com?subject=Request for enterprise plan"
-    );
-  } else {
-    window.open("https://bytebase.com/docs?source=console", "_self");
+    case PlanType.ENTERPRISE:
+      if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
+        if (subscriptionStore.isTrialing) {
+          window.open(enterprisePlanFormLink, "__blank");
+        } else {
+          window.open(
+            "https://hub.bytebase.com/subscription?source=console.subscription",
+            "__blank"
+          );
+        }
+      } else {
+        window.open(enterprisePlanFormLink, "__blank");
+      }
   }
 };
 </script>

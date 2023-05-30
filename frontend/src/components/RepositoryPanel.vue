@@ -1,48 +1,79 @@
 <template>
   <div class="text-lg leading-6 font-medium text-main">
-    <i18n-t keypath="repository.version-control-status">
+    <i18n-t keypath="repository.gitops-status">
       <template #status>
         <span class="text-success"> {{ $t("common.enabled") }} </span>
       </template>
     </i18n-t>
   </div>
   <div class="mt-2 textinfolabel">
-    <i18n-t keypath="repository.version-control-description-file-path">
-      <template #fullPath>
-        <a class="normal-link" :href="repository.webUrl" target="_blank">{{
-          repository.fullPath
-        }}</a>
-      </template>
-      <template #fullPathTemplate>
-        <span class="font-medium text-main"
-          >{{ state.repositoryConfig.baseDirectory }}/{{
-            state.repositoryConfig.filePathTemplate
-          }}</span
-        >
-      </template>
-    </i18n-t>
-    <span>&nbsp;</span>
-    <i18n-t keypath="repository.version-control-description-branch">
-      <template #branch>
-        <span class="font-medium text-main">
-          <template v-if="state.repositoryConfig.branchFilter">
-            {{ state.repositoryConfig.branchFilter }}
-          </template>
-          <template v-else>
-            {{ $t("common.default") }}
-          </template>
-        </span>
-      </template>
-    </i18n-t>
-    <template v-if="state.repositoryConfig.schemaPathTemplate">
+    <template v-if="isProjectSchemaChangeTypeDDL">
+      <i18n-t keypath="repository.gitops-description-file-path">
+        <template #fullPath>
+          <a class="normal-link" :href="repository.webUrl" target="_blank">{{
+            repository.fullPath
+          }}</a>
+        </template>
+        <template #fullPathTemplate>
+          <span class="font-medium text-main"
+            >{{ state.repositoryConfig.baseDirectory }}/{{
+              state.repositoryConfig.filePathTemplate
+            }}</span
+          >
+        </template>
+      </i18n-t>
       <span>&nbsp;</span>
-      <i18n-t
-        keypath="repository.version-control-description-description-schema-path"
-      >
+      <i18n-t keypath="repository.gitops-description-branch">
+        <template #branch>
+          <span class="font-medium text-main">
+            <template v-if="state.repositoryConfig.branchFilter">
+              {{ state.repositoryConfig.branchFilter }}
+            </template>
+            <template v-else>
+              {{ $t("common.default") }}
+            </template>
+          </span>
+        </template>
+      </i18n-t>
+      <template v-if="state.repositoryConfig.schemaPathTemplate">
+        <span>&nbsp;</span>
+        <i18n-t keypath="repository.gitops-description-description-schema-path">
+          <template #schemaPathTemplate>
+            <span class="font-medium text-main">{{
+              state.repositoryConfig.schemaPathTemplate
+            }}</span>
+          </template>
+        </i18n-t>
+      </template>
+    </template>
+    <template v-if="isProjectSchemaChangeTypeSDL">
+      <i18n-t keypath="repository.gitops-description-sdl">
+        <template #fullPath>
+          <a class="normal-link" :href="repository.webUrl" target="_blank">
+            {{ repository.fullPath }}
+          </a>
+        </template>
+        <template #branch>
+          <span class="font-medium text-main">
+            <template v-if="state.repositoryConfig.branchFilter">
+              {{ state.repositoryConfig.branchFilter }}
+            </template>
+            <template v-else>
+              {{ $t("common.default") }}
+            </template>
+          </span>
+        </template>
+        <template #filePathTemplate>
+          <span class="font-medium text-main">
+            {{ state.repositoryConfig.baseDirectory }}/{{
+              state.repositoryConfig.filePathTemplate
+            }}
+          </span>
+        </template>
         <template #schemaPathTemplate>
-          <span class="font-medium text-main">{{
-            state.repositoryConfig.schemaPathTemplate
-          }}</span>
+          <span class="font-medium text-main">
+            {{ state.repositoryConfig.schemaPathTemplate }}
+          </span>
         </template>
       </i18n-t>
     </template>
@@ -239,17 +270,21 @@ import {
   ExternalRepositoryInfo,
   RepositoryConfig,
   Project,
-  ProjectPatch,
   SchemaChangeType,
 } from "../types";
 import { useI18n } from "vue-i18n";
 import {
   hasFeature,
   pushNotification,
-  useProjectStore,
+  useProjectV1Store,
   useRepositoryStore,
 } from "@/store";
-import { isDev } from "@/utils";
+import {
+  Project as ProjectV1,
+  SchemaChange,
+  Workflow,
+} from "@/types/proto/v1/project_service";
+import { cloneDeep } from "lodash-es";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -270,6 +305,10 @@ export default defineComponent({
     project: {
       required: true,
       type: Object as PropType<Project>,
+    },
+    projectV1: {
+      required: true,
+      type: Object as PropType<ProjectV1>,
     },
     repository: {
       required: true,
@@ -326,6 +365,14 @@ export default defineComponent({
       };
     });
 
+    const isProjectSchemaChangeTypeDDL = computed(() => {
+      return state.schemaChangeType === "DDL";
+    });
+
+    const isProjectSchemaChangeTypeSDL = computed(() => {
+      return state.schemaChangeType === "SDL";
+    });
+
     const allowUpdate = computed(() => {
       return (
         !isEmpty(state.repositoryConfig.branchFilter) &&
@@ -358,17 +405,26 @@ export default defineComponent({
       restoreToUIWorkflowType(false);
     };
 
-    const restoreToUIWorkflowType = (checkSQLReviewCI: boolean) => {
+    const restoreToUIWorkflowType = async (checkSQLReviewCI: boolean) => {
       if (checkSQLReviewCI && props.repository.enableSQLReviewCI) {
         state.showRestoreSQLReviewCIModal = true;
         return;
       }
-      repositoryStore.deleteRepositoryByProjectId(props.project.id).then(() => {
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("repository.restore-ui-workflow-success"),
-        });
+      await repositoryStore.deleteRepositoryByProjectId(props.project.id);
+
+      const projectPatch = cloneDeep(props.projectV1);
+      projectPatch.workflow = Workflow.UI;
+      const updateMask = ["workflow"];
+      await useProjectV1Store().updateProject(projectPatch, updateMask);
+      // WARNING: using mixed new/old APIs so we need to force update the
+      // legacy project entity's local value manually
+      /* eslint-disable-next-line vue/no-mutating-props */
+      props.project.workflowType = "UI";
+
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("repository.restore-ui-workflow-success"),
       });
     };
 
@@ -453,17 +509,18 @@ export default defineComponent({
       }
 
       // Update project schemaChangeType field firstly.
-      if (
-        isDev() &&
-        state.schemaChangeType !== props.project.schemaChangeType
-      ) {
-        const projectPatch: ProjectPatch = {
-          schemaChangeType: state.schemaChangeType,
-        };
-        await useProjectStore().patchProject({
-          projectId: props.project.id,
-          projectPatch,
-        });
+      if (state.schemaChangeType !== props.project.schemaChangeType) {
+        const projectPatch = cloneDeep(props.projectV1);
+        projectPatch.schemaChange =
+          state.schemaChangeType === "DDL"
+            ? SchemaChange.DDL
+            : SchemaChange.SDL;
+        const updateMask = ["schema_change"];
+        await useProjectV1Store().updateProject(projectPatch, updateMask);
+        // WARNING: using mixed new/old APIs so we need to force update the
+        // legacy project entity's local value manually
+        /* eslint-disable-next-line vue/no-mutating-props */
+        props.project.schemaChangeType = state.schemaChangeType;
       }
 
       const disableSQLReview = disableSQLReviewCI.value;
@@ -482,7 +539,7 @@ export default defineComponent({
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: t("repository.update-version-control-config-success"),
+        title: t("repository.update-gitops-config-success"),
       });
     };
 
@@ -490,6 +547,8 @@ export default defineComponent({
       state,
       repositoryInfo,
       allowUpdate,
+      isProjectSchemaChangeTypeDDL,
+      isProjectSchemaChangeTypeSDL,
       restoreToUIWorkflowType,
       onSQLReviewCIModalClose,
       doUpdate,

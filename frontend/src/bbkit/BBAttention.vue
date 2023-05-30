@@ -1,7 +1,7 @@
 <template>
   <div
-    class="rounded-md p-4 flex flex-col md:flex-row justify-between"
-    :class="`bg-${color}-50`"
+    class="rounded-md p-4 flex flex-col md:flex-row md:items-center"
+    :class="`bg-${color}-50 ${additionalSideClasses}`"
   >
     <div class="flex">
       <div class="flex-shrink-0">
@@ -24,15 +24,17 @@
       </div>
       <div class="ml-3">
         <h3 class="text-sm font-medium" :class="`text-${color}-800`">
-          {{ $t(title) }}
+          {{ displayTitle }}
         </h3>
-        <div
-          v-if="description"
-          class="mt-2 text-sm"
-          :class="`text-${color}-700`"
-        >
-          <p class="whitespace-pre-wrap">{{ $t(description) }}</p>
-        </div>
+        <slot name="default">
+          <div
+            v-if="description"
+            class="mt-2 text-sm"
+            :class="`text-${color}-700`"
+          >
+            <p class="whitespace-pre-wrap">{{ $t(description) }}</p>
+          </div>
+        </slot>
       </div>
     </div>
     <div
@@ -52,7 +54,8 @@
 
 <script lang="ts" setup>
 import { computed, withDefaults } from "vue";
-import { BBAttentionStyle } from "./types";
+import { BBAttentionSide, BBAttentionStyle } from "./types";
+import { useI18n } from "vue-i18n";
 
 const props = withDefaults(
   defineProps<{
@@ -60,18 +63,28 @@ const props = withDefaults(
     title?: string;
     description?: string;
     actionText?: string;
+    side?: BBAttentionSide;
   }>(),
   {
     style: "INFO",
     title: "bbkit.attention.default",
     description: "",
     actionText: "",
+    side: "BETWEEN",
   }
 );
 
 defineEmits<{
   (event: "click-action"): void;
 }>();
+
+const { t, te } = useI18n();
+
+const displayTitle = computed(() => {
+  const { title } = props;
+  if (te(title)) return t(title);
+  return title;
+});
 
 // eslint-disable-next-line vue/return-in-computed-property
 const color = computed(() => {
@@ -82,6 +95,17 @@ const color = computed(() => {
       return "yellow";
     case "CRITICAL":
       return "red";
+  }
+});
+
+const additionalSideClasses = computed(() => {
+  switch (props.side) {
+    case "BETWEEN":
+      return "justify-between";
+    case "CENTER":
+      return "justify-center";
+    default:
+      return "";
   }
 });
 </script>

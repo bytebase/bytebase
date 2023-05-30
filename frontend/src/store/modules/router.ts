@@ -155,10 +155,10 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /setting/version-control/:vcsId
+        // /setting/gitops/:vcsId
         // Total 2 elements, 2nd element is the version control system id
         const vcsComponents = currentRoute.path.match(
-          "/setting/version-control/([0-9a-zA-Z_-]+)"
+          "/setting/gitops/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
         if (vcsComponents[1]) {
           return {
@@ -203,6 +203,20 @@ export const useRouterStore = defineStore("router", {
         if (sqlEditorComponents[1]) {
           return {
             connectionSlug: sqlEditorComponents[1],
+          };
+        }
+      }
+
+      {
+        // /setting/sso/:ssoName
+        const ssoComponents = currentRoute.path.match("/setting/sso/(.+)") || [
+          "/",
+          undefined,
+        ];
+
+        if (ssoComponents[1]) {
+          return {
+            ssoName: ssoComponents[1],
           };
         }
       }

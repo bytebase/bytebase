@@ -5,7 +5,22 @@
         {{ $t("project.overview.recent-activity") }}
       </p>
       <div class="relative">
-        <ActivityTable :activity-list="state.activityList" />
+        <!-- show the first 5 activities -->
+        <!-- But won't show "Load more", since we have a "View all" link below -->
+        <PagedActivityTableVue
+          :activity-find="{
+            typePrefix: ['bb.project.', 'bb.database.'],
+            container: project.uid,
+            order: 'DESC',
+          }"
+          session-key="project-activity"
+          :page-size="5"
+          :hide-load-more="true"
+        >
+          <template #table="{ activityList }">
+            <ActivityTable :activity-list="activityList" />
+          </template>
+        </PagedActivityTableVue>
         <div
           v-if="state.isFetchingActivityList"
           class="absolute inset-0 flex flex-col items-center justify-center bg-white/70"
@@ -25,87 +40,40 @@
     </div>
 
     <div class="space-y-2">
-      <div
-        class="text-lg font-medium leading-7 text-main flex items-center justify-between"
-      >
-        {{ $t("common.database") }}
-        <div v-if="isTenantProject">
-          <label for="search" class="sr-only">Search</label>
-          <div class="relative rounded-md shadow-sm">
-            <div
-              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
-              aria-hidden="true"
-            >
-              <heroicons-solid:search class="mr-3 h-4 w-4 text-control" />
-            </div>
-            <input
-              v-model="state.databaseNameFilter"
-              type="text"
-              autocomplete="off"
-              name="search"
-              class="focus:ring-main focus:border-main block w-full pl-9 sm:text-sm border-control-border rounded-md"
-              :placeholder="$t('database.search-database-name')"
-            />
-          </div>
-        </div>
-      </div>
-
-      <YAxisRadioGroup
-        v-if="isTenantProject && state.yAxisLabel"
-        v-model:label="state.yAxisLabel"
-        :label-list="selectableLabelList"
-        class="text-sm font-normal py-1"
-      />
-
-      <template v-if="databaseList.length > 0">
-        <template v-if="isTenantProject">
-          <TenantDatabaseTable
-            v-if="state.yAxisLabel"
-            :database-list="filteredDatabaseList"
-            :project="project"
-            :x-axis-label="state.xAxisLabel"
-            :y-axis-label="state.yAxisLabel"
-            :label-list="labelList"
-          />
-          <div v-else class="w-full h-40 flex justify-center items-center">
-            <NSpin />
-          </div>
-        </template>
-        <DatabaseTable v-else :mode="'PROJECT'" :database-list="databaseList" />
-      </template>
-      <div v-else class="text-center textinfolabel">
-        <i18n-t keypath="project.overview.no-db-prompt" tag="p">
-          <template #newDb>
-            <span class="text-main">{{
-              $t("quick-action.new-db")
-            }}</span></template
-          >
-          <template #transferInDb>
-            <span class="text-main">{{
-              $t("quick-action.transfer-in-db")
-            }}</span></template
-          >
-        </i18n-t>
-      </div>
-    </div>
-
-    <div class="space-y-2">
       <p class="text-lg font-medium leading-7 text-main">
         {{ $t("common.issue") }}
       </p>
 
-      <!-- show OPEN issues with pageSize=10 -->
       <div>
+        <WaitingForMyApprovalIssueTable
+          v-if="hasCustomApprovalFeature"
+          session-key="project-waiting-approval"
+          :issue-find="{
+            statusList: ['OPEN'],
+            projectId: project.uid,
+          }"
+        >
+          <template #table="{ issueList, loading }">
+            <IssueTable
+              :show-placeholder="!loading"
+              :title="$t('issue.waiting-approval')"
+              :issue-list="issueList"
+            />
+          </template>
+        </WaitingForMyApprovalIssueTable>
+
+        <!-- show OPEN issues with pageSize=10 -->
         <PagedIssueTable
           session-key="project-open"
           :issue-find="{
             statusList: ['OPEN'],
-            projectId: project.id,
+            projectId: project.uid,
           }"
           :page-size="10"
         >
           <template #table="{ issueList, loading }">
             <IssueTable
+              class="-mt-px"
               :mode="'PROJECT'"
               :title="$t('project.overview.in-progress')"
               :issue-list="issueList"
@@ -120,7 +88,7 @@
           session-key="project-closed"
           :issue-find="{
             statusList: ['DONE', 'CANCELED'],
-            projectId: project.id,
+            projectId: project.uid,
           }"
           :page-size="5"
           :hide-load-more="true"
@@ -138,7 +106,7 @@
 
         <div class="w-full flex justify-end mt-2 px-4">
           <router-link
-            :to="`/issue?status=closed&project=${project.id}`"
+            :to="`/issue?status=closed&project=${project.uid}`"
             class="normal-link"
           >
             {{ $t("project.overview.view-all-closed") }}
@@ -149,135 +117,33 @@
   </div>
 </template>
 
-<script lang="ts">
-import {
-  reactive,
-  watchEffect,
-  PropType,
-  computed,
-  defineComponent,
-  watch,
-} from "vue";
-import { NSpin } from "naive-ui";
+<script lang="ts" setup>
+import { reactive, PropType } from "vue";
 import ActivityTable from "../components/ActivityTable.vue";
-import DatabaseTable from "../components/DatabaseTable.vue";
-import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
-import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
-import { findDefaultGroupByLabel } from "../utils";
-import { useActivityStore, useLabelList } from "@/store";
-import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
-
-// Show at most 5 activity
-const ACTIVITY_LIMIT = 5;
+import { Issue } from "../types";
+import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
+import PagedActivityTableVue from "./PagedActivityTable.vue";
+import { featureToRef } from "@/store";
+import { Project } from "@/types/proto/v1/project_service";
 
 interface LocalState {
-  activityList: Activity[];
   isFetchingActivityList: boolean;
   progressIssueList: Issue[];
   closedIssueList: Issue[];
-  databaseNameFilter: string;
-  xAxisLabel: LabelKeyType;
-  yAxisLabel: LabelKeyType | undefined;
 }
 
-export default defineComponent({
-  name: "ProjectOverviewPanel",
-  components: {
-    ActivityTable,
-    DatabaseTable,
-    TenantDatabaseTable,
-    IssueTable,
-    YAxisRadioGroup,
-    NSpin,
-    PagedIssueTable,
-  },
-  props: {
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-    databaseList: {
-      required: true,
-      type: Object as PropType<Database[]>,
-    },
-  },
-  setup(props) {
-    const state = reactive<LocalState>({
-      activityList: [],
-      isFetchingActivityList: false,
-      progressIssueList: [],
-      closedIssueList: [],
-      databaseNameFilter: "",
-      xAxisLabel: "bb.environment",
-      yAxisLabel: undefined,
-    });
-    const activityStore = useActivityStore();
-
-    const prepareActivityList = () => {
-      state.isFetchingActivityList = true;
-      state.activityList = [];
-      const requests = [
-        activityStore.fetchActivityListForDatabaseByProjectId({
-          projectId: props.project.id,
-          limit: ACTIVITY_LIMIT,
-        }),
-        activityStore.fetchActivityListForProject({
-          projectId: props.project.id,
-          limit: ACTIVITY_LIMIT,
-        }),
-      ];
-
-      Promise.all(requests).then((lists) => {
-        const flattenList = lists.flatMap((list) => list);
-        flattenList.sort((a, b) => -(a.createdTs - b.createdTs)); // by createdTs DESC
-        state.activityList = flattenList.slice(0, ACTIVITY_LIMIT);
-
-        state.isFetchingActivityList = false;
-      });
-    };
-
-    const isTenantProject = computed((): boolean => {
-      return props.project.tenantMode === "TENANT";
-    });
-
-    const prepare = () => {
-      prepareActivityList();
-    };
-
-    watch(() => props.project.id, prepare, { immediate: true });
-
-    const labelList = useLabelList();
-
-    const filteredDatabaseList = computed(() => {
-      const filter = state.databaseNameFilter.toLocaleLowerCase();
-      if (!filter) return props.databaseList;
-
-      return props.databaseList.filter((database) =>
-        database.name.toLowerCase().includes(filter)
-      );
-    });
-
-    // make "bb.environment" non-selectable because it was already specified to the x-axis
-    const selectableLabelList = computed(() => {
-      const excludes = new Set([state.xAxisLabel]);
-      return labelList.value.filter((label) => !excludes.has(label.key));
-    });
-
-    watchEffect(() => {
-      state.yAxisLabel = findDefaultGroupByLabel(
-        selectableLabelList.value,
-        filteredDatabaseList.value
-      );
-    });
-
-    return {
-      state,
-      isTenantProject,
-      filteredDatabaseList,
-      labelList,
-      selectableLabelList,
-    };
+defineProps({
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
   },
 });
+
+const state = reactive<LocalState>({
+  isFetchingActivityList: false,
+  progressIssueList: [],
+  closedIssueList: [],
+});
+const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 </script>

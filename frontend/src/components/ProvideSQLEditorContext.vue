@@ -4,56 +4,77 @@
 
 <script lang="ts" setup>
 import { uniqBy } from "lodash-es";
-import { reactive, onMounted, computed, watch } from "vue";
+import { onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  useCurrentUser,
-  useDatabaseStore,
   useSQLEditorStore,
   useTabStore,
-  useSheetStore,
   useDebugStore,
-  useInstanceStore,
   pushNotification,
+  useConnectionTreeStore,
+  useProjectV1Store,
+  useCurrentUserV1,
+  useSheetV1Store,
+  useInstanceV1Store,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
 } from "@/store";
-import type { Instance, Database, Connection, ConnectionAtom } from "@/types";
-import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
+import {
+  Connection,
+  ConnectionAtom,
+  ConnectionTreeMode,
+  CoreTabInfo,
+  DEFAULT_PROJECT_V1_NAME,
+  TabMode,
+  UNKNOWN_USER_NAME,
+} from "@/types";
+import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import {
   emptyConnection,
   idFromSlug,
-  mapConnectionAtom,
-  sheetSlug as makeSheetSlug,
-  connectionSlug as makeConnectionSlug,
-  isSheetReadable,
-  isSameConnection,
-  isTempTab,
+  sheetNameFromSlug,
+  sheetSlugV1,
+  connectionV1Slug as makeConnectionV1Slug,
+  isSheetReadableV1,
+  isDatabaseV1Accessible,
+  getDefaultTabNameFromConnection,
+  isSimilarTab,
+  hasWorkspacePermissionV1,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
-
-type LocalState = {
-  instanceList: Instance[];
-  databaseList: Database[];
-};
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import {
+  PolicyType,
+  PolicyResourceType,
+} from "@/types/proto/v1/org_policy_service";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { getInstanceAndDatabaseId } from "@/store/modules/v1/common";
+import { State } from "@/types/proto/v1/common";
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 
-const state = reactive<LocalState>({
-  instanceList: [],
-  databaseList: [],
-});
-
-const currentUser = useCurrentUser();
-const instanceStore = useInstanceStore();
-const databaseStore = useDatabaseStore();
+const currentUserV1 = useCurrentUserV1();
+const instanceStore = useInstanceV1Store();
+const databaseStore = useDatabaseV1Store();
+const policyV1Store = usePolicyV1Store();
 const sqlEditorStore = useSQLEditorStore();
+const connectionTreeStore = useConnectionTreeStore();
 const tabStore = useTabStore();
-const sheetStore = useSheetStore();
+const sheetV1Store = useSheetV1Store();
 
-const prepareAccessibleConnectionByProject = async () => {
+const prepareAccessControlPolicy = async () => {
+  connectionTreeStore.accessControlPolicyList =
+    await policyV1Store.fetchPolicies({
+      policyType: PolicyType.ACCESS_CONTROL,
+      resourceType: PolicyResourceType.DATABASE,
+    });
+};
+
+const prepareAccessibleDatabaseList = async () => {
   // It will also be called when user logout
-  if (currentUser.value.id === UNKNOWN_ID) {
+  if (currentUserV1.value.name === UNKNOWN_USER_NAME) {
     return;
   }
   instanceStore.fetchInstanceList();
@@ -61,33 +82,107 @@ const prepareAccessibleConnectionByProject = async () => {
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
   const databaseList = (
-    await databaseStore.fetchDatabaseList({
-      syncStatus: "OK",
+    await databaseStore.searchDatabaseList({
+      parent: "instances/-",
     })
-  ).filter((db) => db.project.id !== DEFAULT_PROJECT_ID);
-  state.instanceList = uniqBy(
-    databaseList.map((db) => db.instance),
-    (instance) => instance.id
+  ).filter(
+    (db) =>
+      db.syncState === State.ACTIVE &&
+      isDatabaseV1Accessible(
+        db,
+        connectionTreeStore.accessControlPolicyList,
+        currentUserV1.value
+      )
   );
-  state.databaseList = databaseList;
+  connectionTreeStore.tree.databaseList = databaseList;
 };
 
-const prepareSQLEditorContext = async () => {
-  let connectionTree: ConnectionAtom[] = [];
+const prepareConnectionTree = async () => {
+  if (connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE) {
+    if (
+      !hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-database",
+        currentUserV1.value.userRole
+      )
+    ) {
+      connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;
+      return;
+    }
+    const { databaseList } = connectionTreeStore.tree;
+    const instanceList = uniqBy(
+      databaseList.map((db) => db.instanceEntity),
+      (instance) => instance.uid
+    );
+    const connectionTree = instanceList.map((instance) => {
+      const node = connectionTreeStore.mapAtom(instance, "instance", "0");
+      return node;
+    });
 
-  const { instanceList, databaseList } = state;
-  connectionTree = instanceList.map(mapConnectionAtom("instance", 0));
+    for (const instance of instanceList) {
+      const instanceItem = connectionTree.find(
+        (item: ConnectionAtom) => item.id === instance.uid
+      )!;
 
-  for (const instance of instanceList) {
-    const instanceItem = connectionTree.find(
-      (item: ConnectionAtom) => item.id === instance.id
-    )!;
+      instanceItem.children = databaseList
+        .filter((db) => db.instanceEntity.uid === instance.uid)
+        .map((db) => {
+          const node = connectionTreeStore.mapAtom(
+            db,
+            "database",
+            instance.uid
+          );
+          node.disabled = !isDatabaseV1Accessible(
+            db,
+            connectionTreeStore.accessControlPolicyList,
+            currentUserV1.value
+          );
+          if (node.disabled) {
+            // If a database node is not accessible
+            // it's not expandable either.
+            node.isLeaf = true;
+          }
+          return node;
+        });
+    }
+    connectionTreeStore.tree.data = connectionTree;
+  } else {
+    const databaseList = connectionTreeStore.tree.databaseList.filter((db) => {
+      return db.project !== DEFAULT_PROJECT_V1_NAME;
+    });
+    const projectList = uniqBy(
+      databaseList.map((db) => db.projectEntity),
+      (project) => project.uid
+    );
 
-    instanceItem.children = databaseList
-      .filter((db) => db.instance.id === instance.id)
-      .map(mapConnectionAtom("database", instance.id));
+    const projectAtomList = projectList.map((project) => {
+      const node = connectionTreeStore.mapAtom(project, "project", "0");
+      return node;
+    });
 
-    sqlEditorStore.connectionTree.data = connectionTree;
+    projectAtomList.forEach((projectAtom) => {
+      projectAtom.children = databaseList
+        .filter((db) => db.projectEntity.uid === projectAtom.id)
+        .map((db) => {
+          const node = connectionTreeStore.mapAtom(
+            db,
+            "database",
+            projectAtom.id
+          );
+          node.disabled = !isDatabaseV1Accessible(
+            db,
+            connectionTreeStore.accessControlPolicyList,
+            currentUserV1.value
+          );
+          if (node.disabled) {
+            // If a database node is not accessible
+            // it's not expandable either.
+            node.isLeaf = true;
+          }
+          return node;
+        });
+    });
+
+    connectionTreeStore.tree.data = projectAtomList;
   }
 
   // Won't fetch tableList for every database here.
@@ -96,29 +191,27 @@ const prepareSQLEditorContext = async () => {
 
 const prepareSheet = async () => {
   const sheetSlug = (route.params.sheetSlug as string) || "";
-  const sheetId = idFromSlug(sheetSlug);
-  if (Number.isNaN(sheetId)) {
-    return false;
-  }
+
+  const sheetName = sheetNameFromSlug(sheetSlug);
   const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheetId === sheetId
+    (tab) => tab.sheetName == sheetName
   );
 
   sqlEditorStore.isFetchingSheet = true;
-  const sheet = await sheetStore.getOrFetchSheetById(sheetId);
+  const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);
   sqlEditorStore.isFetchingSheet = false;
 
-  if (sheet.id === UNKNOWN_ID) {
+  if (!sheet) {
     if (openingSheetTab) {
       // If a sheet is open in a tab but it returns 404 NOT_FOUND
       // that means the sheet has been deleted somewhere else.
       // We need to turn the sheet to an unsaved tab.
-      openingSheetTab.sheetId = undefined;
+      openingSheetTab.sheetName = undefined;
       openingSheetTab.isSaved = false;
     }
     return false;
   }
-  if (!isSheetReadable(sheet, currentUser.value)) {
+  if (!isSheetReadableV1(sheet)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -132,15 +225,30 @@ const prepareSheet = async () => {
   } else {
     // Open the sheet in a "temp" tab otherwise.
     tabStore.selectOrAddTempTab();
+
+    let insId = String(UNKNOWN_ID);
+    let dbId = String(UNKNOWN_ID);
+    if (sheet.database) {
+      const [instanceName, databaseId] = getInstanceAndDatabaseId(
+        sheet.database
+      );
+      const ins = await useInstanceV1Store().getOrFetchInstanceByName(
+        `instances/${instanceName}`
+      );
+      insId = ins.uid;
+      dbId = databaseId;
+    }
+
     tabStore.updateCurrentTab({
-      sheetId: sheet.id,
-      name: sheet.name,
-      statement: sheet.statement,
+      sheetName,
+      name: sheet.title,
+      statement: new TextDecoder().decode(sheet.content),
       isSaved: true,
       connection: {
         ...emptyConnection(),
-        instanceId: sheet.database?.instanceId || UNKNOWN_ID,
-        databaseId: sheet.databaseId || UNKNOWN_ID,
+        // TODO: legacy instance id.
+        instanceId: insId,
+        databaseId: dbId,
       },
     });
   }
@@ -151,48 +259,52 @@ const prepareSheet = async () => {
 const prepareConnectionSlug = async () => {
   const connectionSlug = (route.params.connectionSlug as string) || "";
   const [instanceSlug, databaseSlug = ""] = connectionSlug.split("_");
-  const instanceId = idFromSlug(instanceSlug);
-  const databaseId = idFromSlug(databaseSlug);
+  const instanceId = Number(idFromSlug(instanceSlug));
+  const databaseId = Number(idFromSlug(databaseSlug));
 
   if (Number.isNaN(instanceId) && Number.isNaN(databaseId)) {
     return false;
   }
 
-  const maybeOpenNewTab = (connection: Connection) => {
+  const connect = (connection: Connection) => {
     const tab = tabStore.currentTab;
-    if (tab.sheetId) {
+    if (tab.sheetName) {
       // Don't touch a saved sheet.
       tabStore.selectOrAddTempTab();
       return;
     }
-    if (isTempTab(tab)) {
-      // Override current tab if it's a temp tab.
+    const target: CoreTabInfo = {
+      connection,
+      mode: TabMode.ReadOnly,
+    };
+
+    if (isSimilarTab(target, tabStore.currentTab)) {
+      // Don't go further if the connection doesn't change.
       return;
     }
-    if (isSameConnection(tab.connection, connection)) {
-      // Stay on current tab if its connection and target connection are equal.
-      return;
-    }
-    // Select or add a temp tab otherwise.
-    tabStore.selectOrAddTempTab();
+    const name = getDefaultTabNameFromConnection(target.connection);
+    tabStore.selectOrAddSimilarTab(
+      target,
+      /* beside */ false,
+      /* defaultTabName */ name
+    );
+    tabStore.updateCurrentTab(target);
   };
 
   if (Number.isNaN(databaseId)) {
     // connected to instance
-    const connection = await sqlEditorStore.fetchConnectionByInstanceId(
-      instanceId
+    const connection = await connectionTreeStore.fetchConnectionByInstanceId(
+      String(instanceId)
     );
-    maybeOpenNewTab(connection);
-    tabStore.updateCurrentTab({ connection });
+    connect(connection);
   } else {
     // connected to db
     const connection =
-      await sqlEditorStore.fetchConnectionByInstanceIdAndDatabaseId(
-        instanceId,
-        databaseId
+      await connectionTreeStore.fetchConnectionByInstanceIdAndDatabaseId(
+        String(instanceId),
+        String(databaseId)
       );
-    maybeOpenNewTab(connection);
-    tabStore.updateCurrentTab({ connection });
+    connect(connection);
   }
   return true;
 };
@@ -227,44 +339,44 @@ const syncURLWithConnection = () => {
     [
       () => connection.value.instanceId,
       () => connection.value.databaseId,
-      () => tabStore.currentTab.sheetId,
+      () => tabStore.currentTab.sheetName,
     ],
-    ([instanceId, databaseId, sheetId]) => {
-      if (sheetId && sheetId !== UNKNOWN_ID) {
-        const sheet = sheetStore.sheetById.get(sheetId);
+    ([instanceId, databaseId, sheetName]) => {
+      if (sheetName) {
+        const sheet = sheetV1Store.getSheetByName(sheetName);
         if (sheet) {
           router.replace({
             name: "sql-editor.share",
             params: {
-              sheetSlug: makeSheetSlug(sheet),
+              sheetSlug: sheetSlugV1(sheet),
             },
           });
         } else {
           // A sheet is not found, fallback to an unsaved tab.
           tabStore.updateCurrentTab({
-            sheetId: undefined,
+            sheetName: undefined,
             isSaved: false,
           });
         }
         return;
       }
-      if (instanceId !== UNKNOWN_ID) {
-        const instance = instanceStore.getInstanceById(instanceId);
-        const database = databaseStore.getDatabaseById(databaseId); // might be <<Unknown database>> here
+      if (instanceId !== String(UNKNOWN_ID)) {
+        const instance = instanceStore.getInstanceByUID(instanceId);
+        const database = databaseStore.getDatabaseByUID(databaseId); // might be <<Unknown database>> here
         // Sometimes the instance and/or the database might be <<Unknown>> since
         // they might be deleted somewhere else during the life of the page.
         // So we need to sync the connection values for cleaning up to prevent
         // exceptions.
         tabStore.updateCurrentTab({
           connection: {
-            instanceId: instance.id,
-            databaseId: database.id,
+            instanceId: instance.uid,
+            databaseId: database.uid,
           },
         });
         router.replace({
           name: "sql-editor.detail",
           params: {
-            connectionSlug: makeConnectionSlug(instance, database),
+            connectionSlug: makeConnectionV1Slug(instance, database),
           },
         });
         return;
@@ -278,26 +390,40 @@ const syncURLWithConnection = () => {
 };
 
 onMounted(async () => {
-  if (sqlEditorStore.connectionTree.state === ConnectionTreeState.UNSET) {
-    sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADING;
-    await prepareAccessibleConnectionByProject();
-    await prepareSQLEditorContext();
-    sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADED;
+  if (connectionTreeStore.tree.state === ConnectionTreeState.UNSET) {
+    connectionTreeStore.tree.state = ConnectionTreeState.LOADING;
+    // Initialize project list state for iam policy.
+    await useProjectV1Store().fetchProjectList(true /* include archived */);
+    // Initialize environment list for composing.
+    await useEnvironmentV1Store().fetchEnvironments(
+      true /* include archived */
+    );
+    await prepareAccessControlPolicy();
+    await prepareAccessibleDatabaseList();
+    connectionTreeStore.tree.state = ConnectionTreeState.LOADED;
   }
 
-  watch(currentUser, (user) => {
-    if (user.id === UNKNOWN_ID) {
-      // Cleanup when user signed out
-      sqlEditorStore.connectionTree.data = [];
-      sqlEditorStore.connectionTree.state = ConnectionTreeState.UNSET;
-
-      tabStore.reset();
-    }
+  watch(() => connectionTreeStore.tree.mode, prepareConnectionTree, {
+    immediate: true,
   });
+
+  watch(
+    () => currentUserV1.value.name,
+    (name) => {
+      if (name === UNKNOWN_USER_NAME) {
+        // Cleanup when user signed out
+        connectionTreeStore.tree.data = [];
+        connectionTreeStore.tree.state = ConnectionTreeState.UNSET;
+
+        tabStore.reset();
+      }
+    }
+  );
 
   await setConnectionFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();
   await useDebugStore().fetchDebug();
+  await useSettingV1Store().fetchSettingList();
 
   syncURLWithConnection();
 });

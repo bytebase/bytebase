@@ -7,6 +7,7 @@ import type {
 } from "@joe-re/sql-parser";
 import { parseFromClause } from "@joe-re/sql-parser";
 import type { Column, SQLDialect, Table } from "@/plugins/sql-lsp/types";
+import { isDialectWithSchema } from "./common";
 
 export const getFromClauses = (sql: string) => {
   const fromTables: TableNode[] = [];
@@ -36,13 +37,14 @@ export const getFromClauses = (sql: string) => {
 
 export const getTableNameFromTableNode = (
   clause: TableNode,
-  dialect: SQLDialect = "mysql"
+  dialect: SQLDialect = "MYSQL"
 ): Pick<Table, "database" | "name"> => {
   const { table, db, catalog } = clause;
+  const withSchema = isDialectWithSchema(dialect);
   if (db && catalog) {
     // format: "x.y.z"
     // The parser recognizes x and store it to the `catalog` field.
-    if (dialect === "mysql") {
+    if (!withSchema) {
       // should be "{catalog}.{database}.{table}"
       // but we don't support mysql catalog by now, so just ignore it.
       return { name: table, database: db };
@@ -55,7 +57,7 @@ export const getTableNameFromTableNode = (
     }
   } else if (db) {
     // format: "x.y"
-    if (dialect === "mysql") {
+    if (!withSchema) {
       // should be "{database}.{table}"
       return { name: table, database: db };
     } else {

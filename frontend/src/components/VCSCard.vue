@@ -10,6 +10,9 @@
         <template v-if="vcs.type.startsWith('GITHUB')">
           <img class="h-6 w-auto" src="../assets/github-logo.svg" />
         </template>
+        <template v-if="vcs.type.startsWith('BITBUCKET')">
+          <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
+        </template>
         <h3 class="text-lg leading-6 font-medium text-main">
           {{ vcs.name }}
         </h3>
@@ -38,14 +41,6 @@
           </dt>
           <dd class="mt-1 flex text-sm text-main col-span-2">
             {{ vcs.applicationId }}
-          </dd>
-        </div>
-        <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">
-            {{ $t("common.created-at") }}
-          </dt>
-          <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ humanizeTs(vcs.createdTs) }}
           </dd>
         </div>
       </dl>
@@ -78,7 +73,7 @@ export default defineComponent({
 
     const editVCS = () => {
       router.push({
-        name: "setting.workspace.version-control.detail",
+        name: "setting.workspace.gitops.detail",
         params: {
           vcsSlug: vcsSlug(props.vcs),
         },

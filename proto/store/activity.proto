@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+// ActivityIssueCreatePayload is the payloads for creating issues.
+// These payload types are only used when marshalling to the json format for saving into the database.
+// So we annotate with json tag using camelCase naming which is consistent with normal
+// json naming convention. More importantly, frontend code can simply use JSON.parse to
+// convert to the expected struct there.
+message ActivityIssueCreatePayload {
+  // Used by inbox to display info without paying the join cost
+  string issue_name = 1;
+}
+
+// ActivityIssueCommentCreatePayload is the payloads for creating issue comments.
+message ActivityIssueCommentCreatePayload {
+  // TaskRollbackBy records an issue rollback activity.
+  // The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
+  message TaskRollbackBy {
+    int64 issue_id = 1;
+    int64 task_id = 2;
+    int64 rollback_by_issue_id = 3;
+    int64 rollback_by_task_id = 4;
+  }
+
+  message ExternalApprovalEvent {
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      TYPE_FEISHU = 1;
+    }
+    Type type = 1;
+
+    enum Action {
+      ACTION_UNSPECIFIED = 0;
+      ACTION_APPROVE = 1;
+      ACTION_REJECT = 2;
+    }
+    Action action = 2;
+    string stage_name = 3;
+  }
+
+  message ApprovalEvent {
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      PENDING = 1;
+      APPROVED = 2;
+    }
+    // The new status.
+    Status status = 1;
+  }
+
+  oneof event {
+    ExternalApprovalEvent external_approval_event = 1;
+    TaskRollbackBy task_rollback_by = 2;
+    ApprovalEvent approval_event = 3;
+  }
+  // Used by inbox to display info without paying the join cost
+  string issue_name = 4;
+}

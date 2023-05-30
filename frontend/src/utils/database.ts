@@ -1,12 +1,13 @@
-import { groupBy } from "lodash-es";
-import semverCompare from "semver/functions/compare";
-import { Database, DataSourceType, Environment, Principal } from "../types";
-import { hasWorkspacePermission } from "./role";
-import { isDev } from "./util";
+import { User } from "@/types/proto/v1/auth_service";
+import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
+import { keyBy } from "lodash-es";
+import type { Database, DataSourceType, Environment } from "../types";
+import { hasWorkspacePermissionV1 } from "./role";
+import { isDev, semverCompare } from "./util";
 
 export function allowDatabaseAccess(
   database: Database,
-  principal: Principal,
+  user: User,
   type: DataSourceType
 ): boolean {
   // "ADMIN" data source should only be used by the system, thus it shouldn't
@@ -24,9 +25,9 @@ export function allowDatabaseAccess(
   }
 
   if (
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-instance",
-      principal.role
+      user.userRole
     )
   ) {
     return true;
@@ -60,34 +61,100 @@ export function sortDatabaseList(
   });
 }
 
+// Sort the list to put prod items first.
+export function sortDatabaseListByEnvironmentV1(
+  list: Database[],
+  environmentList: EnvironmentV1[]
+): Database[] {
+  const environmentMap = keyBy(environmentList, (env) => env.uid);
+  return list.sort((a: Database, b: Database) => {
+    const aEnvOrder =
+      environmentMap[String(a.instance.environment.id)]?.order ?? -1;
+    const bEnvOrder =
+      environmentMap[String(b.instance.environment.id)]?.order ?? -1;
+
+    return bEnvOrder - aEnvOrder;
+  });
+}
+
 const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.7.0";
 
 export function allowGhostMigration(databaseList: Database[]): boolean {
-  const groupByEnvironment = groupBy(
-    databaseList,
-    (db) => db.instance.environment.id
-  );
-  // Multiple tasks in one stage is not supported by gh-ost now.
-  for (const environmentId in groupByEnvironment) {
-    const databaseListInStage = groupByEnvironment[environmentId];
-    if (databaseListInStage.length > 1) {
-      return false;
-    }
-  }
-
   return databaseList.every((db) => {
     return (
       db.instance.engine === "MYSQL" &&
-      semverCompare(
-        db.instance.engineVersion,
-        MIN_GHOST_SUPPORT_MYSQL_VERSION
-      ) >= 0
+      semverCompare(db.instance.engineVersion, MIN_GHOST_SUPPORT_MYSQL_VERSION)
     );
   });
+}
+
+type DatabaseFilterFields =
+  | "name"
+  | "project"
+  | "instance"
+  | "environment"
+  | "tenant";
+export function filterDatabaseByKeyword(
+  db: Database,
+  keyword: string,
+  columns: DatabaseFilterFields[] = ["name"]
+): boolean {
+  keyword = keyword.trim().toLowerCase();
+  if (!keyword) {
+    // Skip the filter
+    return true;
+  }
+
+  if (columns.includes("name") && db.name.toLowerCase().includes(keyword)) {
+    return true;
+  }
+
+  if (
+    columns.includes("project") &&
+    db.project.name.toLowerCase().includes(keyword)
+  ) {
+    return true;
+  }
+
+  if (
+    columns.includes("instance") &&
+    db.instance.name.toLowerCase().includes(keyword)
+  ) {
+    return true;
+  }
+
+  if (
+    columns.includes("environment") &&
+    db.instance.environment.name.toLowerCase().includes(keyword)
+  ) {
+    return true;
+  }
+
+  if (
+    columns.includes("tenant") &&
+    db.labels
+      .find((label) => label.key === "bb.tenant")
+      ?.value.toLowerCase()
+      .includes(keyword)
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 export function isPITRDatabase(db: Database): boolean {
   const { name } = db;
   // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
   return !!name.match(/^(.+?)_pitr_(\d+)(_del)?$/);
+}
+
+export function isArchivedDatabase(db: Database): boolean {
+  if (db.instance.rowStatus === "ARCHIVED") {
+    return true;
+  }
+  if (db.instance.environment.rowStatus === "ARCHIVED") {
+    return true;
+  }
+  return false;
 }

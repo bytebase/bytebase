@@ -91,7 +91,7 @@ const prepareRepositoryList = () => {
 };
 
 const refreshRepositoryList = () => {
-  if (props.config.vcs.type == "GITLAB_SELF_HOST") {
+  if (props.config.vcs.type == "GITLAB") {
     gitlabStore
       .fetchProjectList({
         vcs: props.config.vcs,
@@ -113,10 +113,12 @@ const repositoryList = computed(() => {
 });
 
 const attentionText = computed((): string => {
-  if (props.config.vcs.type == "GITLAB_SELF_HOST") {
+  if (props.config.vcs.type == "GITLAB") {
     return "repository.select-repository-attention-gitlab";
-  } else if (props.config.vcs.type == "GITHUB_COM") {
+  } else if (props.config.vcs.type == "GITHUB") {
     return "repository.select-repository-attention-github";
+  } else if (props.config.vcs.type == "BITBUCKET") {
+    return "repository.select-repository-attention-bitbucket";
   }
   return "";
 });

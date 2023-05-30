@@ -5,6 +5,10 @@ import {
   ResourceObject,
   ResponseWithData,
 } from "@/types";
+import { pushNotification } from "./notification";
+import { t } from "@/plugins/i18n";
+import { ClientError } from "nice-grpc-web";
+import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 type ConvertEntityFn<T> = (
   data: ResourceObject,
@@ -40,3 +44,23 @@ export function convertEntityList<T, K extends string>(
     return convert(obj, responseData.included ?? []);
   });
 }
+
+export const useGracefulRequest = async <T>(
+  fn: () => Promise<T>
+): Promise<T> => {
+  try {
+    const result = await fn();
+    return result;
+  } catch (err) {
+    const description = extractGrpcErrorMessage(err);
+    if (err instanceof ClientError) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.error"),
+        description,
+      });
+    }
+    throw err;
+  }
+};

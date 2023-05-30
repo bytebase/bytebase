@@ -1,95 +1,60 @@
 <template>
   <div class="flex flex-col">
     <div class="px-2 py-2 flex justify-between items-center">
-      <BBTableSearch
-        ref="searchField"
+      <SearchBox
+        :value="state.searchText"
         :placeholder="$t('project.dashboard.search-bar-placeholder')"
-        @change-text="(text: string) => changeSearchText(text)"
+        :autofocus="true"
+        style="width: 12rem"
+        @update:value="changeSearchText($event)"
       />
     </div>
-    <ProjectTable :project-list="filteredList(state.projectList)" />
+    <ProjectV1Table :project-list="filteredProjectList" class="border-x-0" />
   </div>
 </template>
 
-<script lang="ts">
-import { useCurrentUser, useUIStateStore, useProjectStore } from "@/store";
-import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
-import ProjectTable from "../components/ProjectTable.vue";
-import { Project, UNKNOWN_ID } from "../types";
+<script lang="ts" setup>
+import { computed, onMounted, reactive } from "vue";
+
+import {
+  useUIStateStore,
+  useProjectV1ListByCurrentUser,
+  useCurrentUserV1,
+} from "@/store";
+import { filterProjectV1ListByKeyword, isMemberOfProjectV1 } from "@/utils";
+import { DEFAULT_PROJECT_ID } from "@/types";
+import { SearchBox, ProjectV1Table } from "@/components/v2";
 
 interface LocalState {
-  projectList: Project[];
   searchText: string;
 }
 
-export default defineComponent({
-  name: "ProjectDashboard",
-  components: {
-    ProjectTable,
-  },
-  setup() {
-    const searchField = ref();
+const state = reactive<LocalState>({
+  searchText: "",
+});
+const currentUserV1 = useCurrentUserV1();
+const { projectList } = useProjectV1ListByCurrentUser();
 
-    const uiStateStore = useUIStateStore();
-    const currentUser = useCurrentUser();
-    const projectStore = useProjectStore();
+const changeSearchText = (searchText: string) => {
+  state.searchText = searchText;
+};
 
-    const state = reactive<LocalState>({
-      projectList: [],
-      searchText: "",
+const filteredProjectList = computed(() => {
+  const list = projectList.value.filter(
+    (project) =>
+      project.uid != String(DEFAULT_PROJECT_ID) &&
+      isMemberOfProjectV1(project.iamPolicy, currentUserV1.value)
+  );
+  return filterProjectV1ListByKeyword(list, state.searchText);
+});
+
+onMounted(() => {
+  const uiStateStore = useUIStateStore();
+  if (!uiStateStore.getIntroStateByKey("project.visit")) {
+    uiStateStore.saveIntroStateByKey({
+      key: "project.visit",
+      newState: true,
     });
-
-    onMounted(() => {
-      // Focus on the internal search field when mounted
-      searchField.value.$el.querySelector("#search").focus();
-
-      if (!uiStateStore.getIntroStateByKey("project.visit")) {
-        uiStateStore.saveIntroStateByKey({
-          key: "project.visit",
-          newState: true,
-        });
-      }
-    });
-
-    const prepareProjectList = () => {
-      // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
-        projectStore
-          .fetchProjectListByUser({
-            userId: currentUser.value.id,
-            rowStatusList: ["NORMAL"],
-          })
-          .then((projectList: Project[]) => {
-            state.projectList = projectList;
-          });
-      }
-    };
-
-    watchEffect(prepareProjectList);
-
-    const changeSearchText = (searchText: string) => {
-      state.searchText = searchText;
-    };
-
-    const filteredList = (list: Project[]) => {
-      if (!state.searchText) {
-        // Select "All"
-        return list;
-      }
-      return list.filter((issue) => {
-        return (
-          !state.searchText ||
-          issue.name.toLowerCase().includes(state.searchText.toLowerCase())
-        );
-      });
-    };
-
-    return {
-      searchField,
-      state,
-      filteredList,
-      changeSearchText,
-    };
-  },
+  }
 });
 </script>

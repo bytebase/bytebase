@@ -1,4 +1,5 @@
 import BBAlert from "./BBAlert.vue";
+import BBAlertDialog from "./BBAlertDialog.vue";
 import BBAttention from "./BBAttention.vue";
 import BBAvatar from "./BBAvatar.vue";
 import BBTooltipButton from "./BBTooltipButton.vue";
@@ -26,12 +27,16 @@ import {
   BBTableHeaderCell,
   BBTableSearch,
 } from "./BBTable";
+import { BBGrid } from "./BBGrid";
 import BBTabPanel from "./BBTabPanel.vue";
 import BBTextField from "./BBTextField.vue";
 import BBBetaBadge from "./BBBetaBadge.vue";
 
+export * from "./types";
+
 export {
   BBAlert,
+  BBAlertDialog,
   BBAttention,
   BBAvatar,
   BBTooltipButton,
@@ -58,6 +63,7 @@ export {
   BBTableCell,
   BBTableHeaderCell,
   BBTableSearch,
+  BBGrid,
   BBTextField,
   BBBetaBadge,
 };

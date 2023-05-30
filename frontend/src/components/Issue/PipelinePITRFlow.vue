@@ -1,10 +1,6 @@
 <template>
   <div class="divide-y">
-    <PipelineStageList>
-      <template #task-name-of-stage="{ stage }">
-        {{ taskNameOfStage(stage) }}
-      </template>
-    </PipelineStageList>
+    <PipelineStageList />
 
     <div
       v-if="taskList.length > 1"
@@ -12,28 +8,38 @@
     >
       <template v-for="(task, i) in taskList" :key="i">
         <div
-          class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center"
+          class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center overflow-x-hidden"
           :class="taskClass(task)"
+          :data-task-id="create ? '' : (task as Task).id"
           @click="onClickTask(task, i)"
         >
           <div class="flex-1">
             <div class="flex items-center pb-1">
-              <TaskStatusIcon
-                :create="create"
-                :active="isActiveTask(task)"
-                :status="task.status"
-                class="transform scale-75"
-              />
-              <heroicons-solid:arrow-narrow-right
-                v-if="isActiveTask(task)"
-                class="name w-5 h-5"
-              />
-              <div class="name">{{ databaseNameOfTask(task) }}</div>
+              <div class="flex flex-1 items-center gap-x-1">
+                <TaskStatusIcon
+                  :create="create"
+                  :active="isActiveTask(task)"
+                  :status="task.status"
+                  :task="task"
+                  class="transform scale-75"
+                />
+                <div class="name flex-1 space-x-1 overflow-x-hidden">
+                  <heroicons-solid:arrow-narrow-right
+                    v-if="isActiveTask(task)"
+                    class="w-5 h-5 inline-block"
+                  />
+                  <span>{{ databaseNameOfTask(task) }}</span>
+                </div>
+              </div>
+              <TaskExtraActionsButton :task="(task as Task)" />
             </div>
-            <div
-              class="flex items-center px-1 py-1 whitespace-pre-wrap break-all"
-            >
-              {{ taskNameOfTask(task) }}
+
+            <div class="flex items-center justify-between px-1 py-1">
+              <div
+                class="flex flex-1 items-center whitespace-pre-wrap break-all"
+              >
+                {{ taskNameOfTask(task) }}
+              </div>
             </div>
           </div>
 
@@ -60,38 +66,23 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { Pipeline, Stage, StageCreate, Task, TaskCreate } from "@/types";
 import {
   activeTask,
-  activeTaskInStage,
   extractDatabaseNameFromTask,
   taskSlug,
   bytesToString,
 } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
-import { useDatabaseStore } from "@/store";
 import PipelineStageList from "./PipelineStageList.vue";
+import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 import { useIssueLogic } from "./logic";
 
-const databaseStore = useDatabaseStore();
-
-const {
-  create,
-  issue,
-  project,
-  selectedStage,
-  selectedTask,
-  selectStageOrTask,
-} = useIssueLogic();
+const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
+  useIssueLogic();
 
 const pipeline = computed(() => issue.value.pipeline!);
-
-watchEffect(() => {
-  if (create.value) {
-    databaseStore.fetchDatabaseListByProjectId(project.value.id);
-  }
-});
 
 const taskList = computed(() => {
   return selectedStage.value.taskList;
@@ -111,20 +102,6 @@ const isActiveTask = (task: Task | TaskCreate): boolean => {
   }
   task = task as Task;
   return activeTask(pipeline.value as Pipeline).id === task.id;
-};
-
-const taskNameOfStage = (stage: Stage | StageCreate) => {
-  if (create.value) {
-    return stage.taskList[0].status;
-  }
-  const activeTask = activeTaskInStage(stage as Stage);
-  const { taskList } = stage as Stage;
-  for (let i = 0; i < stage.taskList.length; i++) {
-    if (taskList[i].id == activeTask.id) {
-      return `${activeTask.name} (${i + 1}/${stage.taskList.length})`;
-    }
-  }
-  return activeTask.name;
 };
 
 const taskNameOfTask = (task: Task | TaskCreate) => {
@@ -165,7 +142,7 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
   @apply border-info;
 }
 .task .name {
-  @apply ml-1 overflow-x-hidden whitespace-nowrap overflow-ellipsis;
+  @apply whitespace-pre-wrap break-all;
 }
 .task.active .name {
   @apply font-bold;

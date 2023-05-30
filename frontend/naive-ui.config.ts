@@ -29,22 +29,34 @@ export const themeOverrides = computed((): GlobalThemeOverrides => {
       warningColorHover: callVar("--color-warning-hover"),
       warningColorPressed: callVar("--color-warning"),
 
+      infoColor: callVar("--color-info"),
+      infoColorHover: callVar("--color-info-hover"),
+      infoColorPressed: callVar("--color-info"),
+
       errorColor: callVar("--color-error"),
       errorColorHover: callVar("--color-error-hover"),
       errorColorPressed: callVar("--color-error"),
     },
-    Button: {
-      colorInfo: callVar("--color-accent"),
-      colorHoverInfo: callVar("--color-accent-hover"),
-      colorPressedInfo: callVar("--color-accent-disabled"),
-      colorFocusInfo: callVar("--color-accent"),
-      colorDisabledInfo: callVar("--color-accent-disabled"),
-      borderInfo: callVar("--color-accent"),
-      borderHoverInfo: callVar("--color-accent-hover"),
-      borderFocusInfo: callVar("--color-accent"),
+  };
+});
+
+export const darkThemeOverrides = computed((): GlobalThemeOverrides => {
+  return {
+    common: {
+      primaryColor: callVar("--color-matrix-green"),
+      primaryColorHover: callVar("--color-matrix-green-hover"),
+      primaryColorPressed: callVar("--color-matrix-green"),
     },
-    Dialog: {
-      iconColorInfo: callVar("--color-accent"),
+    Button: {
+      colorInfo: callVar("--color-matrix-green"),
+      colorHoverInfo: callVar("--color-matrix-green-hover"),
+      colorFocusInfo: callVar("--color-matrix-green"),
+      borderInfo: callVar("--color-matrix-green"),
+      borderHoverInfo: callVar("--color-matrix-green-hover"),
+      borderFocusInfo: callVar("--color-matrix-green"),
+    },
+    Tabs: {
+      tabTextColorCard: callVar("--color-control-placeholder"),
     },
   };
 });

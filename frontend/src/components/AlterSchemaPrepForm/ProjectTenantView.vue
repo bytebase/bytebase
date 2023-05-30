@@ -2,8 +2,8 @@
   <!-- eslint-disable vue/no-mutating-props -->
 
   <div class="project-tenant-view">
-    <template v-if="!!project">
-      <template v-if="deployment?.id === UNKNOWN_ID">
+    <template v-if="project && ready">
+      <template v-if="deploymentConfig === undefined">
         <i18n-t
           tag="p"
           keypath="deployment-config.project-has-no-deployment-config"
@@ -11,7 +11,7 @@
           <template #go>
             <router-link
               :to="{
-                path: `/project/${projectSlug(project)}`,
+                path: `/project/${projectV1Slug(project)}`,
                 hash: '#deployment-config',
               }"
               active-class=""
@@ -25,7 +25,7 @@
         </i18n-t>
       </template>
       <template v-else>
-        <div v-if="databaseListGroupByName.length === 0" class="textinfolabel">
+        <div v-if="databaseList.length === 0" class="textinfolabel">
           <i18n-t keypath="project.overview.no-db-prompt" tag="p">
             <template #newDb>
               <span class="text-main">{{ $t("quick-action.new-db") }}</span>
@@ -38,76 +38,12 @@
           </i18n-t>
         </div>
         <template v-else>
-          <div class="flex justify-between items-center py-0.5">
-            <div class="flex-1">
-              <label class="text-base text-control">
-                <template v-if="databaseListGroupByName.length > 1">
-                  {{ $t("deployment-config.select-database-group") }}
-                </template>
-                <template v-else-if="state.selectedDatabaseName">
-                  {{ state.selectedDatabaseName }}
-                </template>
-              </label>
-            </div>
-            <YAxisRadioGroup
-              v-model:label="label"
-              :label-list="labelList"
-              class="text-sm"
-            />
-          </div>
-
-          <template v-if="databaseListGroupByName.length === 1">
-            <DeployDatabaseTable
-              class="mt-4"
-              :database-list="databaseListGroupByName[0].list"
-              :label="label"
-              :label-list="labelList"
-              :environment-list="environmentList"
-              :deployment="deployment!"
-            />
-          </template>
-          <template v-else>
-            <NCollapse
-              display-directive="if"
-              accordion
-              :expanded-names="state.selectedDatabaseName"
-              @update:expanded-names="
-                (names) => (state.selectedDatabaseName = names[0])
-              "
-            >
-              <NCollapseItem
-                v-for="{ name, list } in databaseListGroupByName"
-                :key="name"
-                :title="name"
-                :name="name"
-              >
-                <template #arrow>
-                  <!-- don't show the arrow -->
-                </template>
-                <template #header>
-                  <input
-                    type="radio"
-                    class="radio mr-2"
-                    :checked="name === state.selectedDatabaseName"
-                  />
-                  <span class="text-base">{{ name }}</span>
-                </template>
-                <template #header-extra>
-                  <span class="text-control-placeholder">
-                    {{ $t("deployment-config.n-databases", list.length) }}
-                  </span>
-                </template>
-
-                <DeployDatabaseTable
-                  :database-list="list"
-                  :label="label"
-                  :label-list="labelList"
-                  :environment-list="environmentList"
-                  :deployment="deployment!"
-                />
-              </NCollapseItem>
-            </NCollapse>
-          </template>
+          <DeployDatabaseTable
+            :database-list="databaseList"
+            :label="state.label"
+            :environment-list="environmentList"
+            :deployment="deploymentConfig"
+          />
         </template>
       </template>
     </template>
@@ -117,38 +53,28 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import { computed, watchEffect, watch, ref, h } from "vue";
-import { NCollapse, NCollapseItem } from "naive-ui";
-import { groupBy } from "lodash-es";
+import { computed, watchEffect, h } from "vue";
 import { Translation, useI18n } from "vue-i18n";
 import { RouterLink } from "vue-router";
-import type {
-  Database,
-  DatabaseId,
-  Environment,
-  LabelKeyType,
-  Project,
-} from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase, LabelKeyType } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
-import {
-  parseDatabaseNameByTemplate,
-  getPipelineFromDeploymentSchedule,
-  projectSlug,
-} from "@/utils";
-import { useDeploymentStore, useLabelList } from "@/store";
+import { getPipelineFromDeploymentScheduleV1, projectV1Slug } from "@/utils";
+import { useDeploymentConfigV1ByProject } from "@/store";
 import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { Project } from "@/types/proto/v1/project_service";
 
-export type State = {
-  selectedDatabaseName: string | undefined;
-  deployingTenantDatabaseList: DatabaseId[];
+export type ProjectTenantViewState = {
+  selectedDatabaseIdListForTenantMode: Set<string>;
+  deployingTenantDatabaseList: string[];
+  label: LabelKeyType;
 };
 
 const props = defineProps<{
-  databaseList: Database[];
+  databaseList: ComposedDatabase[];
   environmentList: Environment[];
   project?: Project;
-  state: State;
+  state: ProjectTenantViewState;
 }>();
 
 const emit = defineEmits<{
@@ -157,88 +83,26 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const deploymentStore = useDeploymentStore();
-
-const fetchData = () => {
-  if (props.project) {
-    deploymentStore.fetchDeploymentConfigByProjectId(props.project.id);
-  }
-};
-
-watchEffect(fetchData);
-
-const label = ref<LabelKeyType>("bb.environment");
-const labelList = useLabelList();
-
-const deployment = computed(() => {
-  if (props.project) {
-    return deploymentStore.getDeploymentConfigByProjectId(props.project.id);
-  } else {
-    return undefined;
-  }
-});
-
-const databaseListGroupByName = computed(
-  (): { name: string; list: Database[] }[] => {
-    if (!props.project) return [];
-    // All databases will be in the same group if dbNameTemplate is empty.
-    if (props.project.dbNameTemplate === "") {
-      return [{ name: "", list: props.databaseList }];
-    }
-    if (props.project.dbNameTemplate && labelList.value.length === 0) return [];
-
-    const dict = groupBy(props.databaseList, (db) => {
-      if (props.project!.dbNameTemplate) {
-        return parseDatabaseNameByTemplate(
-          db.name,
-          props.project!.dbNameTemplate,
-          labelList.value
-        );
-      }
-    });
-    return Object.keys(dict).map((name) => ({
-      name,
-      list: dict[name],
-    }));
-  }
-);
-
-watch(
-  databaseListGroupByName,
-  (groups) => {
-    // reset selection when databaseList changed
-    if (groups.length > 0) {
-      props.state.selectedDatabaseName = groups[0].name;
-    } else {
-      props.state.selectedDatabaseName = undefined;
-    }
-  },
-  { immediate: true }
+const { deploymentConfig, ready } = useDeploymentConfigV1ByProject(
+  computed(() => {
+    return props.project?.name ?? "projects/-1";
+  })
 );
 
 watchEffect(() => {
-  if (!deployment.value) return;
-  const name = props.state.selectedDatabaseName;
-  if (!name) {
-    props.state.deployingTenantDatabaseList = [];
-  } else {
-    // find the selected database list group by name
-    const databaseGroup = databaseListGroupByName.value.find(
-      (group) => group.name === name
-    );
-    const databaseList = databaseGroup?.list || [];
+  if (!deploymentConfig.value) return;
+  const { databaseList } = props;
 
-    // calculate the deployment matching to preview the pipeline
-    const stages = getPipelineFromDeploymentSchedule(
-      databaseList,
-      deployment.value.schedule
-    );
+  // calculate the deployment matching to preview the pipeline
+  const stages = getPipelineFromDeploymentScheduleV1(
+    databaseList,
+    deploymentConfig.value.schedule
+  );
 
-    // flatten all stages' database id list
-    // these databases are to be deployed
-    const databaseIdList = stages.flatMap((stage) => stage.map((db) => db.id));
-    props.state.deployingTenantDatabaseList = databaseIdList;
-  }
+  // flatten all stages' database id list
+  // these databases are to be deployed
+  const databaseIdList = stages.flatMap((stage) => stage.map((db) => db.uid));
+  props.state.deployingTenantDatabaseList = databaseIdList;
 });
 
 useOverrideSubtitle(() => {
@@ -255,8 +119,8 @@ useOverrideSubtitle(() => {
           RouterLink,
           {
             to: {
-              path: `/project/${projectSlug(props.project!)}`,
-              hash: "#deployment-config",
+              path: `/project/${projectV1Slug(props.project!)}`,
+              hash: "#databases",
             },
             activeClass: "",
             exactActiveClass: "",

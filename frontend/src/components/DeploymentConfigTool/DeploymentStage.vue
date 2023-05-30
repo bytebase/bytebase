@@ -27,26 +27,27 @@
       <h3 v-if="showHeader">
         <template v-if="allowEdit">
           <input
-            v-model="deployment.name"
+            v-model="deployment.title"
             type="text"
             :placeholder="$t('deployment-config.name-placeholder')"
             class="rounded-md border-control-border focus:ring-control focus:border-control disabled:bg-gray-50 h-8 py-0 text-sm"
           />
         </template>
         <template v-else>
-          {{ deployment.name }}
+          {{ deployment.title }}
         </template>
       </h3>
       <div class="space-y-2 overflow-hidden">
         <div
-          v-for="(selector, j) in deployment.spec.selector.matchExpressions"
+          v-for="(selector, j) in deployment.spec?.labelSelector
+            ?.matchExpressions"
           :key="j"
           class="flex content-start"
         >
           <SelectorItem
             :editable="allowEdit"
             :selector="selector"
-            :label-list="labelList"
+            :database-list="databaseList"
             @remove="removeSelector(selector)"
           />
         </div>
@@ -67,21 +68,22 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
-import {
-  AvailableLabel,
-  Database,
-  Deployment,
-  LabelSelectorRequirement,
-} from "../../types";
+import { PRESET_LABEL_KEYS, RESERVED_LABEL_KEYS } from "@/utils";
+import { computed, defineComponent, PropType } from "vue";
+import { ComposedDatabase } from "../../types";
 import SelectorItem from "./SelectorItem.vue";
+import {
+  LabelSelectorRequirement,
+  OperatorType,
+  ScheduleDeployment,
+} from "@/types/proto/v1/project_service";
 
 export default defineComponent({
   name: "DeploymentStage",
   components: { SelectorItem },
   props: {
     deployment: {
-      type: Object as PropType<Deployment>,
+      type: Object as PropType<ScheduleDeployment>,
       required: true,
     },
     index: {
@@ -97,11 +99,7 @@ export default defineComponent({
       default: false,
     },
     databaseList: {
-      type: Array as PropType<Database[]>,
-      default: () => [],
-    },
-    labelList: {
-      type: Array as PropType<AvailableLabel[]>,
+      type: Array as PropType<ComposedDatabase[]>,
       default: () => [],
     },
     showHeader: {
@@ -115,8 +113,13 @@ export default defineComponent({
   },
   emits: ["remove", "prev", "next"],
   setup(props) {
+    const keys = computed(() => {
+      return [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
+    });
+
     const removeSelector = (selector: LabelSelectorRequirement) => {
-      const array = props.deployment.spec.selector.matchExpressions;
+      const array =
+        props.deployment.spec?.labelSelector?.matchExpressions ?? [];
       const index = array.indexOf(selector);
       if (index >= 0) {
         array.splice(index, 1);
@@ -124,16 +127,13 @@ export default defineComponent({
     };
 
     const addSelector = () => {
-      const array = props.deployment.spec.selector.matchExpressions;
-      const label = props.labelList[0];
+      const array =
+        props.deployment.spec?.labelSelector?.matchExpressions ?? [];
       const rule: LabelSelectorRequirement = {
-        key: label?.key || "",
-        operator: "In",
+        key: keys.value[0] ?? "",
+        operator: OperatorType.OPERATOR_TYPE_IN,
         values: [],
       };
-      if (label && label.valueList.length > 0) {
-        rule.values.push(label.valueList[0]);
-      }
       array.push(rule);
     };
 

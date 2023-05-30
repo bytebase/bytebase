@@ -27,7 +27,7 @@
         </div>
       </template>
 
-      <span class="whitespace-nowrap">
+      <span class="whitespace-nowrap text-sm">
         {{ $t(featureDetail?.tooltip ?? "") }}
       </span>
     </NTooltip>

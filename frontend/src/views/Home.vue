@@ -1,33 +1,53 @@
 <template>
   <div class="flex flex-col">
-    <div class="px-5 py-2 flex justify-between items-center">
-      <!-- eslint-disable vue/attribute-hyphenation -->
+    <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
-        :selectedId="selectedEnvironment?.id"
-        @select-environment="selectEnvironment"
+        :include-all="true"
+        :environment="selectedEnvironment?.uid ?? String(UNKNOWN_ID)"
+        @update:environment="changeEnvironmentId"
       />
-      <BBTableSearch
-        ref="searchField"
+      <SearchBox
+        :value="state.searchText"
         :placeholder="$t('issue.search-issue-name')"
-        @change-text="(text: string) => changeSearchText(text)"
+        :autofocus="true"
+        @update:value="changeSearchText($event)"
       />
     </div>
 
-    <!-- show OPEN Assigned issues with pageSize=10 -->
-    <PagedIssueTable
-      session-key="home-assigned"
+    <WaitingForMyApprovalIssueTable
+      v-if="hasCustomApprovalFeature"
+      session-key="home-waiting-approval"
       :issue-find="{
         statusList: ['OPEN'],
-        assigneeId: currentUser.id,
       }"
-      :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
     >
       <template #table="{ issueList, loading }">
         <IssueTable
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :title="$t('common.assigned')"
+          :title="$t('issue.waiting-approval')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
+        />
+      </template>
+    </WaitingForMyApprovalIssueTable>
+
+    <!-- show OPEN Assigned issues with pageSize=10 -->
+    <PagedIssueTable
+      session-key="home-assigned"
+      :issue-find="{
+        statusList: ['OPEN'],
+        assigneeId: Number(currentUserUID),
+      }"
+      :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
+    >
+      <template #table="{ issueList, loading }">
+        <IssueTable
+          class="-mt-px"
+          :left-bordered="false"
+          :right-bordered="false"
+          :show-placeholder="!loading"
+          :title="$t('issue.waiting-rollout')"
           :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
@@ -38,7 +58,7 @@
       session-key="home-created"
       :issue-find="{
         statusList: ['OPEN'],
-        creatorId: currentUser.id,
+        creatorId: Number(currentUserUID),
       }"
       :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
     >
@@ -59,7 +79,7 @@
       session-key="home-subscribed"
       :issue-find="{
         statusList: ['OPEN'],
-        subscriberId: currentUser.id,
+        subscriberId: Number(currentUserUID),
       }"
       :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
     >
@@ -81,7 +101,7 @@
       session-key="home-closed"
       :issue-find="{
         statusList: ['DONE', 'CANCELED'],
-        principalId: currentUser.id,
+        principalId: Number(currentUserUID),
       }"
       :page-size="MAX_CLOSED_ISSUE"
       :hide-load-more="true"
@@ -103,47 +123,149 @@
       {{ $t("project.overview.view-all-closed") }}
     </router-link>
   </div>
+
+  <BBModal
+    v-if="state.showTrialStartModal && subscriptionStore.subscription"
+    :title="
+      $t('subscription.trial-start-modal.title', {
+        plan: $t(
+          `subscription.plan.${planTypeToString(
+            subscriptionStore.currentPlan
+          ).toLowerCase()}.title`
+        ),
+      })
+    "
+    @close="onTrialingModalClose"
+  >
+    <div class="min-w-0 md:min-w-400 max-w-2xl">
+      <div class="flex justify-center items-center">
+        <img :src="planImage" class="w-56 px-4" />
+        <div class="text-lg space-y-2">
+          <p>
+            <i18n-t keypath="subscription.trial-start-modal.content">
+              <template #plan>
+                <strong>
+                  {{
+                    $t(
+                      `subscription.plan.${planTypeToString(
+                        subscriptionStore.currentPlan
+                      ).toLowerCase()}.title`
+                    )
+                  }}
+                </strong>
+              </template>
+              <template #date>
+                <strong>{{ subscriptionStore.expireAt }}</strong>
+              </template>
+            </i18n-t>
+          </p>
+          <p>
+            <i18n-t keypath="subscription.trial-start-modal.subscription">
+              <template #page>
+                <router-link
+                  to="/setting/subscription"
+                  class="normal-link"
+                  exact-active-class=""
+                >
+                  {{ $t("subscription.trial-start-modal.subscription-page") }}
+                </router-link>
+              </template>
+            </i18n-t>
+          </p>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pb-4">
+        <button
+          type="button"
+          class="btn-primary"
+          @click.prevent="onTrialingModalClose"
+        >
+          {{ $t("subscription.trial-start-modal.button") }}
+        </button>
+      </div>
+    </div>
+  </BBModal>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, ref, computed } from "vue";
+import { reactive, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
-import { IssueTable } from "../components/Issue";
-import { activeEnvironment } from "../utils";
-import { Environment, Issue } from "../types";
-import { useCurrentUser, useEnvironmentStore } from "@/store";
-import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
+import {
+  activeEnvironment,
+  extractUserUID,
+  isDatabaseRelatedIssueType,
+} from "../utils";
+import { UNKNOWN_ID, Issue, planTypeToString } from "../types";
+import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
+import {
+  useEnvironmentV1Store,
+  useSubscriptionV1Store,
+  useOnboardingStateStore,
+  featureToRef,
+  useCurrentUserV1,
+} from "@/store";
+import {
+  IssueTable,
+  PagedIssueTable,
+  WaitingForMyApprovalIssueTable,
+} from "@/components/Issue/table";
 
 interface LocalState {
   searchText: string;
+  showTrialStartModal: boolean;
 }
 
 const OPEN_ISSUE_LIST_PAGE_SIZE = 10;
 const MAX_CLOSED_ISSUE = 5;
 
-const searchField = ref();
-
-const environmentStore = useEnvironmentStore();
+const environmentV1Store = useEnvironmentV1Store();
+const subscriptionStore = useSubscriptionV1Store();
+const onboardingStateStore = useOnboardingStateStore();
 const router = useRouter();
 const route = useRoute();
 
 const state = reactive<LocalState>({
   searchText: "",
+  showTrialStartModal: false,
 });
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
+const currentUserUID = computed(() => extractUserUID(currentUserV1.value.name));
+const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
+
+const onTrialingModalClose = () => {
+  state.showTrialStartModal = false;
+  onboardingStateStore.consume("show-trialing-modal");
+};
+
+const planImage = computed(() => {
+  return new URL(
+    `../assets/plan-${planTypeToString(
+      subscriptionStore.currentPlan
+    ).toLowerCase()}.png`,
+    import.meta.url
+  ).href;
+});
 
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
   return environment
-    ? environmentStore.getEnvironmentById(parseInt(environment as string, 10))
+    ? environmentV1Store.getEnvironmentByUID(environment as string)
     : undefined;
 });
 
 const keywordAndEnvironmentFilter = (issue: Issue) => {
-  if (selectedEnvironment.value) {
-    if (activeEnvironment(issue.pipeline).id !== selectedEnvironment.value.id) {
+  if (
+    selectedEnvironment.value &&
+    selectedEnvironment.value.uid !== String(UNKNOWN_ID)
+  ) {
+    if (!isDatabaseRelatedIssueType(issue.type)) {
+      return false;
+    }
+    if (
+      String(activeEnvironment(issue.pipeline).id) !==
+      selectedEnvironment.value.uid
+    ) {
       return false;
     }
   }
@@ -155,13 +277,14 @@ const keywordAndEnvironmentFilter = (issue: Issue) => {
   }
   return true;
 };
-const selectEnvironment = (environment: Environment) => {
-  if (environment) {
+
+const changeEnvironmentId = (environment: string | undefined) => {
+  if (environment && environment !== String(UNKNOWN_ID)) {
     router.replace({
       name: "workspace.home",
       query: {
         ...route.query,
-        environment: environment.id,
+        environment,
       },
     });
   } else {
@@ -178,9 +301,4 @@ const selectEnvironment = (environment: Environment) => {
 const changeSearchText = (searchText: string) => {
   state.searchText = searchText;
 };
-
-onMounted(() => {
-  // Focus on the internal search field when mounted
-  searchField.value.$el.querySelector("#search").focus();
-});
 </script>

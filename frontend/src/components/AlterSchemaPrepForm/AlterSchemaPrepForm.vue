@@ -1,95 +1,159 @@
 <template>
   <div class="space-y-4 max-w-min overflow-x-hidden">
     <div class="overflow-x-auto">
-      <div class="w-192">
+      <div v-if="ready" class="w-[calc(100vw-8rem)] lg:w-[56rem]">
         <template v-if="projectId">
           <template v-if="isTenantProject">
             <!-- tenant mode project -->
             <NTabs v-model:value="state.alterType">
-              <NTabPane
-                :tab="$t('alter-schema.alter-db-group')"
-                name="DB_GROUP"
-              >
-                <ProjectTenantView
-                  :state="state"
-                  :database-list="databaseList"
-                  :environment-list="environmentList"
-                  :project="state.project"
-                  @dismiss="cancel"
-                />
+              <NTabPane :tab="$t('alter-schema.alter-db-group')" name="TENANT">
+                <div
+                  class="overflow-y-auto"
+                  style="max-height: calc(100vh - 360px)"
+                >
+                  <ProjectTenantView
+                    :state="state"
+                    :database-list="schemaDatabaseList"
+                    :environment-list="environmentList"
+                    :project="state.project"
+                    @dismiss="cancel"
+                  />
+                  <SchemalessDatabaseTable
+                    v-if="isAlterSchema"
+                    mode="PROJECT"
+                    :database-list="schemalessDatabaseList"
+                  />
+                </div>
               </NTabPane>
               <NTabPane
                 :tab="$t('alter-schema.alter-multiple-db')"
                 name="MULTI_DB"
               >
-                <DatabaseTable
-                  mode="PROJECT_SHORT"
-                  :bordered="true"
-                  :custom-click="true"
-                  :database-list="databaseList"
-                  :show-selection-column="true"
-                  @select-database="
-                    (db: Database) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
-                  "
+                <div
+                  class="overflow-y-auto"
+                  style="max-height: calc(100vh - 400px)"
                 >
-                  <template #selection="{ database }">
-                    <input
-                      type="checkbox"
-                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                      :checked="isDatabaseSelected(database)"
-                      @input="(e: any) => toggleDatabaseSelection(database, e.target.checked)"
-                    />
-                  </template>
-                </DatabaseTable>
+                  <DatabaseV1Table
+                    mode="PROJECT_SHORT"
+                    table-class="border"
+                    :custom-click="true"
+                    :database-list="schemaDatabaseList"
+                    :show-selection-column="true"
+                    @select-database="
+                      (db) =>
+                        toggleDatabaseSelection(db, !isDatabaseSelected(db))
+                    "
+                  >
+                    <template
+                      #selection-all="{ databaseList: renderedDatabaseList }"
+                    >
+                      <input
+                        v-if="renderedDatabaseList.length > 0"
+                        type="checkbox"
+                        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                        v-bind="getAllSelectionState(renderedDatabaseList)"
+                        @input="
+                          toggleAllDatabasesSelection(
+                            renderedDatabaseList,
+                            ($event.target as HTMLInputElement).checked
+                          )
+                        "
+                      />
+                    </template>
+                    <template #selection="{ database }">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                        :checked="isDatabaseSelected(database)"
+                        @input="(e: any) => toggleDatabaseSelection(database, e.target.checked)"
+                      />
+                    </template>
+                  </DatabaseV1Table>
+                  <SchemalessDatabaseTable
+                    v-if="isAlterSchema"
+                    mode="PROJECT"
+                    :database-list="schemalessDatabaseList"
+                  />
+                </div>
               </NTabPane>
               <template #suffix>
                 <BBTableSearch
                   v-if="state.alterType === 'MULTI_DB'"
                   class="m-px"
-                  :placeholder="$t('database.search-database-name')"
+                  :placeholder="$t('database.search-database')"
                   @change-text="(text: string) => (state.searchText = text)"
+                />
+                <YAxisRadioGroup
+                  v-else
+                  v-model:label="state.label"
+                  class="text-sm m-px"
                 />
               </template>
             </NTabs>
           </template>
           <template v-else>
             <!-- standard mode project, single/multiple databases ui -->
-            <ProjectStandardView
-              :state="state"
-              :project="state.project"
-              :database-list="databaseList"
-              :environment-list="environmentList"
-              @select-database="selectDatabase"
+            <div
+              class="overflow-y-auto"
+              style="max-height: calc(100vh - 380px)"
             >
-              <template #header>
-                <div class="flex items-center justify-end my-2">
-                  <BBTableSearch
-                    class="m-px"
-                    :placeholder="$t('database.search-database-name')"
-                    @change-text="(text: string) => (state.searchText = text)"
-                  />
-                </div>
-              </template>
-            </ProjectStandardView>
+              <ProjectStandardView
+                :state="state"
+                :project="state.project"
+                :database-list="schemaDatabaseList"
+                :environment-list="environmentList"
+                @select-database="selectDatabase"
+              >
+                <template #header>
+                  <div class="flex items-center justify-end mx-2 mb-2">
+                    <BBTableSearch
+                      class="m-px"
+                      :placeholder="$t('database.search-database')"
+                      @change-text="(text: string) => (state.searchText = text)"
+                    />
+                  </div>
+                </template>
+              </ProjectStandardView>
+              <SchemalessDatabaseTable
+                v-if="isAlterSchema"
+                mode="PROJECT"
+                class="px-2"
+                :database-list="schemalessDatabaseList"
+              />
+            </div>
           </template>
         </template>
         <template v-else>
           <aside class="flex justify-end mb-4">
             <BBTableSearch
               class="m-px"
-              :placeholder="$t('database.search-database-name')"
+              :placeholder="$t('database.search-database')"
               @change-text="(text: string) => (state.searchText = text)"
             />
           </aside>
           <!-- a simple table -->
-          <DatabaseTable
-            mode="ALL_SHORT"
-            :bordered="true"
-            :custom-click="true"
-            :database-list="databaseList"
-            @select-database="selectDatabase"
-          />
+          <div class="overflow-y-auto" style="max-height: calc(100vh - 340px)">
+            <DatabaseV1Table
+              mode="ALL_SHORT"
+              table-class="border"
+              :custom-click="true"
+              :database-list="schemaDatabaseList"
+              @select-database="selectDatabase"
+            />
+
+            <SchemalessDatabaseTable
+              v-if="isAlterSchema"
+              mode="ALL"
+              :database-list="schemalessDatabaseList"
+            />
+          </div>
         </template>
+      </div>
+      <div
+        v-if="!ready"
+        class="w-[calc(100vw-8rem)] lg:w-[56rem] h-[20rem] flex items-center justify-center"
+      >
+        <BBSpin />
       </div>
     </div>
 
@@ -99,12 +163,12 @@
     >
       <div>
         <div
-          v-if="flattenSelectedDatabaseIdList.length > 0"
+          v-if="flattenSelectedDatabaseUidList.length > 0"
           class="textinfolabel"
         >
           {{
             $t("database.selected-n-databases", {
-              n: flattenSelectedDatabaseIdList.length,
+              n: flattenSelectedDatabaseUidList.length,
             })
           }}
         </div>
@@ -146,6 +210,13 @@
   />
 
   <GhostDialog ref="ghostDialog" />
+
+  <SchemaEditorModal
+    v-if="state.showSchemaEditorModal"
+    :database-id-list="schemaEditorContext.databaseIdList"
+    :alter-type="state.alterType"
+    @close="state.showSchemaEditorModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -155,46 +226,48 @@ import { useRouter } from "vue-router";
 import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
-import DatabaseTable from "../DatabaseTable.vue";
+
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import {
-  baseDirectoryWebUrl,
-  Database,
-  DatabaseId,
-  Project,
-  ProjectId,
-  Repository,
-  UNKNOWN_ID,
-} from "@/types";
-import { allowGhostMigration, sortDatabaseList } from "@/utils";
-import ProjectStandardView, {
-  State as ProjectStandardState,
-} from "./ProjectStandardView.vue";
-import ProjectTenantView, {
-  State as ProjectTenantState,
-} from "./ProjectTenantView.vue";
-import { State as CommonTenantState } from "./CommonTenantView.vue";
-import GhostDialog from "./GhostDialog.vue";
+  allowGhostMigrationV1,
+  allowUsingSchemaEditorV1,
+  instanceV1HasAlterSchema,
+  filterDatabaseV1ByKeyword,
+  sortDatabaseV1List,
+} from "@/utils";
 import {
   hasFeature,
-  useCurrentUser,
-  useDatabaseStore,
-  useEnvironmentList,
-  useProjectStore,
-  useRepositoryStore,
+  useCurrentUserV1,
+  useSearchDatabaseV1List,
+  useDatabaseV1Store,
+  useEnvironmentV1List,
+  useProjectV1Store,
 } from "@/store";
+import ProjectStandardView, {
+  ProjectStandardViewState,
+} from "./ProjectStandardView.vue";
+import ProjectTenantView, {
+  ProjectTenantViewState,
+} from "./ProjectTenantView.vue";
+import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
+import GhostDialog from "./GhostDialog.vue";
+import SchemaEditorModal from "./SchemaEditorModal.vue";
+import { DatabaseV1Table } from "../v2";
+import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import { State } from "@/types/proto/v1/common";
 
-type LocalState = ProjectStandardState &
-  ProjectTenantState &
-  CommonTenantState & {
+type LocalState = ProjectStandardViewState &
+  ProjectTenantViewState & {
     project?: Project;
-    showFeatureModal: boolean;
     searchText: string;
-    selectedDatabaseIdList: Set<number>;
+    showSchemaLessDatabaseList: boolean;
+    showSchemaEditorModal: boolean;
+    showFeatureModal: boolean;
   };
 
 const props = defineProps({
   projectId: {
-    type: Number as PropType<ProjectId>,
+    type: String,
     default: undefined,
   },
   type: {
@@ -209,11 +282,16 @@ const emit = defineEmits(["dismiss"]);
 
 const router = useRouter();
 
-const currentUser = useCurrentUser();
-const projectStore = useProjectStore();
-const repositoryStore = useRepositoryStore();
+const currentUserV1 = useCurrentUserV1();
+const projectV1Store = useProjectV1Store();
+const databaseV1Store = useDatabaseV1Store();
 
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
+const schemaEditorContext = ref<{
+  databaseIdList: string[];
+}>({
+  databaseIdList: [],
+});
 
 useEventListener(window, "keydown", (e) => {
   if (e.code === "Escape") {
@@ -223,29 +301,18 @@ useEventListener(window, "keydown", (e) => {
 
 const state = reactive<LocalState>({
   project: props.projectId
-    ? projectStore.getProjectById(props.projectId)
+    ? projectV1Store.getProjectByUID(props.projectId)
     : undefined,
-  alterType: "SINGLE_DB",
-  selectedDatabaseIdListForEnvironment: new Map(),
-  tenantProjectId: undefined,
-  selectedDatabaseName: undefined,
+  alterType: "MULTI_DB",
+  selectedDatabaseUidListForEnvironment: new Map(),
+  selectedDatabaseIdListForTenantMode: new Set<string>(),
   deployingTenantDatabaseList: [],
-  showFeatureModal: false,
+  label: "bb.environment",
   searchText: "",
-  selectedDatabaseIdList: new Set<number>(),
+  showSchemaLessDatabaseList: false,
+  showSchemaEditorModal: false,
+  showFeatureModal: false,
 });
-
-const isDatabaseSelected = (database: Database): boolean => {
-  return state.selectedDatabaseIdList.has(database.id);
-};
-
-const toggleDatabaseSelection = (database: Database, on: boolean) => {
-  if (on) {
-    state.selectedDatabaseIdList.add(database.id);
-  } else {
-    state.selectedDatabaseIdList.delete(database.id);
-  }
-};
 
 // Returns true if alter schema, false if change data.
 const isAlterSchema = computed((): boolean => {
@@ -253,38 +320,69 @@ const isAlterSchema = computed((): boolean => {
 });
 
 const isTenantProject = computed((): boolean => {
-  return state.project?.tenantMode === "TENANT";
+  return state.project?.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
 if (isTenantProject.value) {
   // For tenant mode projects, alter multiple db via DeploymentConfig
   // is the default suggested way.
-  state.alterType = "DB_GROUP";
+  state.alterType = "TENANT";
 }
 
-const environmentList = useEnvironmentList(["NORMAL"]);
+const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
-const databaseList = computed(() => {
-  const databaseStore = useDatabaseStore();
-  let list;
-  if (props.projectId) {
-    list = databaseStore.getDatabaseListByProjectId(props.projectId);
-  } else {
-    list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
-  }
-
-  const keyword = state.searchText.trim();
-  if (keyword) {
-    list = list.filter((db) => db.name.toLowerCase().includes(keyword));
-  }
-
-  return sortDatabaseList(cloneDeep(list), environmentList.value);
+const { ready } = useSearchDatabaseV1List({
+  parent: "instances/-",
 });
 
-const flattenSelectedDatabaseIdList = computed(() => {
-  const flattenDatabaseIdList: DatabaseId[] = [];
-  for (const databaseIdList of state.selectedDatabaseIdListForEnvironment.values()) {
-    flattenDatabaseIdList.push(...databaseIdList);
+const databaseList = computed(() => {
+  let list: ComposedDatabase[] = [];
+  if (props.projectId) {
+    const project = projectV1Store.getProjectByUID(props.projectId);
+    list = databaseV1Store.databaseListByProject(project.name);
+  } else {
+    list = databaseV1Store.databaseListByUser(currentUserV1.value);
+  }
+  list = list.filter((db) => (db.syncState = State.ACTIVE));
+
+  list = list.filter((db) => {
+    return filterDatabaseV1ByKeyword(db, state.searchText.trim(), [
+      "name",
+      "environment",
+      "instance",
+      "project",
+    ]);
+  });
+
+  return sortDatabaseV1List(list);
+});
+
+const schemaDatabaseList = computed(() => {
+  if (isAlterSchema.value) {
+    return databaseList.value.filter((db) =>
+      instanceV1HasAlterSchema(db.instanceEntity)
+    );
+  }
+
+  return databaseList.value;
+});
+
+const schemalessDatabaseList = computed(() => {
+  return databaseList.value.filter(
+    (db) => !instanceV1HasAlterSchema(db.instanceEntity)
+  );
+});
+
+const flattenSelectedDatabaseUidList = computed(() => {
+  const flattenDatabaseIdList: string[] = [];
+  if (isTenantProject.value && state.alterType === "MULTI_DB") {
+    for (const db of state.selectedDatabaseIdListForTenantMode) {
+      flattenDatabaseIdList.push(db);
+    }
+  } else {
+    for (const databaseIdList of state.selectedDatabaseUidListForEnvironment.values()) {
+      flattenDatabaseIdList.push(...databaseIdList);
+    }
   }
   return flattenDatabaseIdList;
 });
@@ -295,15 +393,19 @@ const showGenerateMultiDb = computed(() => {
 });
 
 const allowGenerateMultiDb = computed(() => {
-  return flattenSelectedDatabaseIdList.value.length > 0;
+  return flattenSelectedDatabaseUidList.value.length > 0;
 });
 
 // 'normal' -> normal migration
 // 'online' -> online migration
 // false -> user clicked cancel button
-const isUsingGhostMigration = async (databaseList: Database[]) => {
+const isUsingGhostMigration = async (databaseList: ComposedDatabase[]) => {
   // Gh-ost is not available for tenant mode yet.
-  if (databaseList.some((db) => db.project.tenantMode === "TENANT")) {
+  if (
+    databaseList.some(
+      (db) => db.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
+    )
+  ) {
     return "normal";
   }
 
@@ -313,7 +415,7 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
   }
 
   // check if all selected databases supports gh-ost
-  if (allowGhostMigration(databaseList)) {
+  if (allowGhostMigrationV1(databaseList)) {
     // open the dialog to ask the user
     const { result, mode } = await ghostDialog.value!.open();
     if (!result) {
@@ -328,11 +430,18 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 
 // Also works when single db selected.
 const generateMultiDb = async () => {
-  const selectedDatabaseIdList = [...flattenSelectedDatabaseIdList.value];
-
+  const selectedDatabaseIdList = [...flattenSelectedDatabaseUidList.value];
   const selectedDatabaseList = selectedDatabaseIdList.map(
-    (id) => databaseList.value.find((db) => db.id === id)!
+    (id) => schemaDatabaseList.value.find((db) => db.uid === id)!
   );
+
+  if (isAlterSchema.value && allowUsingSchemaEditorV1(selectedDatabaseList)) {
+    schemaEditorContext.value.databaseIdList = cloneDeep(
+      flattenSelectedDatabaseUidList.value
+    );
+    state.showSchemaEditorModal = true;
+    return;
+  }
 
   const mode = await isUsingGhostMigration(selectedDatabaseList);
   if (mode === false) {
@@ -342,7 +451,7 @@ const generateMultiDb = async () => {
   const query: Record<string, any> = {
     template: props.type,
     name: generateIssueName(
-      selectedDatabaseList.map((db) => db.name),
+      selectedDatabaseList.map((db) => db.databaseName),
       mode === "online"
     ),
     project: props.projectId,
@@ -363,7 +472,7 @@ const generateMultiDb = async () => {
 };
 
 const showGenerateTenant = computed(() => {
-  // True when a tenant project is selected and "DB_GROUP" is selected.
+  // True when a tenant project is selected and "TENANT" is selected.
   if (isTenantProject.value) {
     return true;
   }
@@ -372,22 +481,61 @@ const showGenerateTenant = computed(() => {
 
 const allowGenerateTenant = computed(() => {
   if (isTenantProject.value && state.alterType === "MULTI_DB") {
-    if (state.selectedDatabaseIdList.size === 0) {
+    if (state.selectedDatabaseIdListForTenantMode.size === 0) {
       return false;
     }
   }
 
-  // All databases will be in the same group if dbNameTemplate is empty.
-  if (isTenantProject.value && state.project?.dbNameTemplate === "")
-    return true;
-  if (!state.selectedDatabaseName) return false;
-
-  // not allowed when database list filtered by deployment config is empty
-  // which means no database will be deployed
-  if (state.deployingTenantDatabaseList.length === 0) return false;
+  if (isTenantProject.value) {
+    // not allowed when database list filtered by deployment config is empty
+    // which means no database will be deployed
+    return state.deployingTenantDatabaseList.length > 0;
+  }
 
   return true;
 });
+
+const getAllSelectionState = (
+  databaseList: ComposedDatabase[]
+): { checked: boolean; indeterminate: boolean } => {
+  const set = state.selectedDatabaseIdListForTenantMode;
+
+  const checked = databaseList.every((db) => set.has(db.uid));
+  const indeterminate = !checked && databaseList.some((db) => set.has(db.uid));
+
+  return {
+    checked,
+    indeterminate,
+  };
+};
+
+const toggleAllDatabasesSelection = (
+  databaseList: ComposedDatabase[],
+  on: boolean
+): void => {
+  const set = state.selectedDatabaseIdListForTenantMode;
+  if (on) {
+    databaseList.forEach((db) => {
+      set.add(db.uid);
+    });
+  } else {
+    databaseList.forEach((db) => {
+      set.delete(db.uid);
+    });
+  }
+};
+
+const isDatabaseSelected = (database: ComposedDatabase): boolean => {
+  return state.selectedDatabaseIdListForTenantMode.has(database.uid);
+};
+
+const toggleDatabaseSelection = (database: ComposedDatabase, on: boolean) => {
+  if (on) {
+    state.selectedDatabaseIdListForTenantMode.add(database.uid);
+  } else {
+    state.selectedDatabaseIdListForTenantMode.delete(database.uid);
+  }
+};
 
 const generateTenant = async () => {
   if (!hasFeature("bb.feature.multi-tenancy")) {
@@ -395,100 +543,102 @@ const generateTenant = async () => {
     return;
   }
 
-  emit("dismiss");
-
-  const projectId = props.projectId || state.tenantProjectId;
+  const projectId = props.projectId;
   if (!projectId) return;
 
-  const project = projectStore.getProjectById(projectId) as Project;
+  const project = projectV1Store.getProjectByUID(projectId);
 
-  if (project.id === UNKNOWN_ID) return;
+  if (project.uid === String(UNKNOWN_ID)) return;
 
-  if (project.workflowType === "UI") {
-    const query: Record<string, any> = {
-      template: props.type,
-      project: project.id,
-      mode: "tenant",
-    };
-    if (state.alterType === "DB_GROUP") {
-      query.name = generateIssueName([state.selectedDatabaseName!], false);
-      query.databaseName = state.selectedDatabaseName;
-    } else {
-      const databaseList: Database[] = [];
-      const databaseStore = useDatabaseStore();
-      for (const databaseId of state.selectedDatabaseIdList) {
-        databaseList.push(databaseStore.getDatabaseById(databaseId));
-      }
-      query.name = generateIssueName(
-        databaseList.map((database) => database.name),
-        false
-      );
-      query.databaseList = Array.from(state.selectedDatabaseIdList).join(",");
-    }
-
-    router.push({
-      name: "workspace.issue.detail",
-      params: {
-        issueSlug: "new",
-      },
-      query,
-    });
-  } else if (project.workflowType === "VCS") {
-    repositoryStore
-      .fetchRepositoryByProjectId(project.id)
-      .then((repository: Repository) => {
-        window.open(
-          baseDirectoryWebUrl(repository, {
-            DB_NAME: state.selectedDatabaseName!,
-            TYPE:
-              props.type === "bb.issue.database.schema.update" ? "ddl" : "dml",
-          }),
-          "_blank"
-        );
-      });
-  }
-};
-
-const selectDatabase = async (database: Database) => {
-  if (database.project.workflowType == "UI") {
-    const mode = await isUsingGhostMigration([database]);
-    if (mode === false) {
+  const query: Record<string, any> = {
+    template: props.type,
+    project: project.uid,
+    mode: "tenant",
+  };
+  if (state.alterType === "TENANT") {
+    const databaseList = databaseV1Store.databaseListByProject(project.name);
+    if (isAlterSchema.value && allowUsingSchemaEditorV1(databaseList)) {
+      schemaEditorContext.value.databaseIdList = databaseList
+        .filter((database) => database.syncState === State.ACTIVE)
+        .map((database) => database.uid);
+      state.showSchemaEditorModal = true;
       return;
     }
-    emit("dismiss");
-
-    const query: Record<string, any> = {
-      template: props.type,
-      name: generateIssueName([database.name], mode === "online"),
-      project: database.project.id,
-      databaseList: database.id,
-    };
-    if (mode === "online") {
-      query.ghost = "1";
+    // In tenant deploy pipeline, we use project name instead of database name
+    // if more than one databases are to be deployed.
+    const name =
+      databaseList.length > 1 ? project.title : databaseList[0].databaseName;
+    query.name = generateIssueName([name], false);
+    query.databaseName = "";
+  } else {
+    const databaseList: ComposedDatabase[] = [];
+    for (const databaseId of state.selectedDatabaseIdListForTenantMode) {
+      const database = databaseV1Store.getDatabaseByUID(databaseId);
+      if (database.syncState === State.ACTIVE) {
+        databaseList.push(database);
+      }
     }
-    router.push({
-      name: "workspace.issue.detail",
-      params: {
-        issueSlug: "new",
-      },
-      query,
-    });
-  } else if (database.project.workflowType == "VCS") {
-    repositoryStore
-      .fetchRepositoryByProjectId(database.project.id)
-      .then((repository: Repository) => {
-        window.open(
-          baseDirectoryWebUrl(repository, {
-            DB_NAME: database.name,
-            ENV_NAME: database.instance.environment.name,
-            TYPE:
-              props.type === "bb.issue.database.schema.update" ? "ddl" : "dml",
-          }),
-          "_blank"
-        );
-      });
-    emit("dismiss");
+    if (isAlterSchema.value && allowUsingSchemaEditorV1(databaseList)) {
+      schemaEditorContext.value.databaseIdList = Array.from(
+        state.selectedDatabaseIdListForTenantMode.values()
+      );
+      state.showSchemaEditorModal = true;
+      return;
+    }
+
+    query.name = generateIssueName(
+      databaseList.map((database) => database.databaseName),
+      false
+    );
+    query.databaseList = Array.from(
+      state.selectedDatabaseIdListForTenantMode
+    ).join(",");
   }
+
+  emit("dismiss");
+
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query,
+  });
+};
+
+const selectDatabase = async (database: ComposedDatabase) => {
+  if (
+    isAlterSchema.value &&
+    database.syncState === State.ACTIVE &&
+    allowUsingSchemaEditorV1([database])
+  ) {
+    schemaEditorContext.value.databaseIdList = [database.uid];
+    state.showSchemaEditorModal = true;
+    return;
+  }
+
+  const mode = await isUsingGhostMigration([database]);
+  if (mode === false) {
+    return;
+  }
+  emit("dismiss");
+
+  const query: Record<string, any> = {
+    template: props.type,
+    name: generateIssueName([database.databaseName], mode === "online"),
+    project: database.projectEntity.uid,
+    databaseList: database.uid,
+  };
+  if (mode === "online") {
+    query.ghost = "1";
+  }
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query,
+  });
 };
 
 const cancel = () => {

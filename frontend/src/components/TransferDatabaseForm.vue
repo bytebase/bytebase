@@ -1,34 +1,20 @@
 <template>
-  <TransferSingleDatabaseForm
-    v-if="isTenantProject"
-    :project="project"
-    :transfer-source="state.transferSource"
-    :database-list="databaseList"
-    @dismiss="$emit('dismiss')"
-    @submit="(database, labels) => transferDatabase([database], labels)"
-  >
-    <template #transfer-source-selector>
-      <TransferSourceSelector
-        :project="project"
-        :transfer-source="state.transferSource"
-        @change="state.transferSource = $event"
-        @search-text-change="state.searchText = $event"
-      />
-    </template>
-  </TransferSingleDatabaseForm>
-
   <TransferMultipleDatabaseForm
-    v-else
+    :target-project="project"
     :transfer-source="state.transferSource"
-    :database-list="databaseList"
+    :database-list="filteredDatabaseList"
     @dismiss="$emit('dismiss')"
     @submit="(databaseList) => transferDatabase(databaseList)"
   >
     <template #transfer-source-selector>
       <TransferSourceSelector
         :project="project"
+        :raw-database-list="rawDatabaseList"
         :transfer-source="state.transferSource"
+        :instance-filter="state.instanceFilter"
+        :search-text="state.searchText"
         @change="state.transferSource = $event"
+        @select-instance="state.instanceFilter = $event"
         @search-text-change="state.searchText = $event"
       />
     </template>
@@ -43,31 +29,39 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeMount, PropType, reactive, watch } from "vue";
+import { computed, onBeforeMount, reactive } from "vue";
 import { cloneDeep } from "lodash-es";
 import {
-  TransferSingleDatabaseForm,
   TransferMultipleDatabaseForm,
   TransferSource,
   TransferSourceSelector,
 } from "@/components/TransferDatabaseForm";
 import {
-  Database,
-  ProjectId,
   DEFAULT_PROJECT_ID,
-  DatabaseLabel,
+  ComposedInstance,
+  DEFAULT_PROJECT_V1_NAME,
+  UNKNOWN_INSTANCE_NAME,
+  ComposedDatabase,
 } from "../types";
-import { sortDatabaseList } from "../utils";
+import {
+  buildDatabaseNameRegExpByTemplate,
+  filterDatabaseV1ByKeyword,
+  PRESET_LABEL_KEY_PLACEHOLDERS,
+  sortDatabaseV1List,
+  useWorkspacePermissionV1,
+} from "../utils";
 import {
   pushNotification,
-  useCurrentUser,
-  useDatabaseStore,
-  useEnvironmentList,
-  useProjectStore,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useProjectV1ByUID,
+  useProjectV1Store,
 } from "@/store";
+import { toRef } from "vue";
 
 interface LocalState {
   transferSource: TransferSource;
+  instanceFilter: ComposedInstance | undefined;
   searchText: string;
   loading: boolean;
 }
@@ -75,7 +69,7 @@ interface LocalState {
 const props = defineProps({
   projectId: {
     required: true,
-    type: Number as PropType<ProjectId>,
+    type: String,
   },
 });
 
@@ -83,87 +77,127 @@ const emit = defineEmits<{
   (e: "dismiss"): void;
 }>();
 
-const databaseStore = useDatabaseStore();
-const projectStore = useProjectStore();
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
+const databaseStore = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
-  transferSource: props.projectId === DEFAULT_PROJECT_ID ? "OTHER" : "DEFAULT",
+  transferSource:
+    props.projectId === String(DEFAULT_PROJECT_ID) ? "OTHER" : "DEFAULT",
+  instanceFilter: undefined,
   searchText: "",
   loading: false,
 });
-
-const project = computed(() => projectStore.getProjectById(props.projectId));
-
-// Fetch project entity when initialize and props.projectId changes.
-watch(
-  () => props.projectId,
-  () => projectStore.fetchProjectById(props.projectId),
-  { immediate: true }
+const hasWorkspaceManageDatabasePermission = useWorkspacePermissionV1(
+  "bb.permission.workspace.manage-database"
 );
+const { project } = useProjectV1ByUID(toRef(props, "projectId"));
 
-const isTenantProject = computed(() => project.value.tenantMode === "TENANT");
-
-const prepareDatabaseListForDefaultProject = () => {
-  databaseStore.fetchDatabaseListByProjectId(DEFAULT_PROJECT_ID);
+const prepare = async () => {
+  await databaseStore.searchDatabaseList({
+    parent: "instances/-",
+  });
 };
 
-onBeforeMount(prepareDatabaseListForDefaultProject);
+onBeforeMount(prepare);
 
-const environmentList = useEnvironmentList(["NORMAL"]);
-
-const databaseList = computed(() => {
-  let list;
-  if (state.transferSource == "DEFAULT") {
-    list = cloneDeep(
-      databaseStore.getDatabaseListByProjectId(DEFAULT_PROJECT_ID)
-    );
+const rawDatabaseList = computed(() => {
+  if (state.transferSource === "DEFAULT") {
+    return databaseStore.databaseListByProject(DEFAULT_PROJECT_V1_NAME);
   } else {
-    list = cloneDeep(
-      databaseStore.getDatabaseListByPrincipalId(currentUser.value.id)
-    ).filter((item: Database) => item.project.id != props.projectId);
-  }
+    const rawList = hasWorkspaceManageDatabasePermission.value
+      ? databaseStore.databaseList
+      : databaseStore.databaseListByUser(currentUserV1.value);
 
-  const keyword = state.searchText.trim();
-  if (keyword) {
-    list = list.filter((db) => db.name.toLowerCase().includes(keyword));
+    return [...rawList].filter(
+      (item) =>
+        item.projectEntity.uid !== props.projectId &&
+        item.project !== DEFAULT_PROJECT_V1_NAME
+    );
   }
-
-  return sortDatabaseList(list, environmentList.value);
 });
 
-const transferDatabase = async (
-  databaseList: Database[],
-  labels?: DatabaseLabel[]
-) => {
-  const transferOneDatabase = (
-    database: Database,
-    labels?: DatabaseLabel[]
+const filteredDatabaseList = computed(() => {
+  let list = [...rawDatabaseList.value];
+  const keyword = state.searchText.trim();
+  list = list.filter((db) =>
+    filterDatabaseV1ByKeyword(db, keyword, [
+      "name",
+      "project",
+      "instance",
+      "environment",
+    ])
+  );
+
+  const instance = state.instanceFilter;
+  if (instance && instance.name !== UNKNOWN_INSTANCE_NAME) {
+    list = list.filter((db) => db.instance === instance.name);
+  }
+
+  return sortDatabaseV1List(list);
+});
+
+const transferDatabase = async (databaseList: ComposedDatabase[]) => {
+  const transferOneDatabase = async (
+    database: ComposedDatabase,
+    labels?: Record<string, string>
   ) => {
-    return databaseStore.transferProject({
-      databaseId: database.id,
-      projectId: props.projectId,
-      labels, // Will keep all labels if not specified here
+    const targetProject = useProjectV1Store().getProjectByUID(props.projectId);
+    const databasePatch = cloneDeep(database);
+    databasePatch.project = targetProject.name;
+    const updateMask = ["project"];
+    if (labels) {
+      databasePatch.labels = labels;
+      updateMask.push("labels");
+    }
+    const updated = await useDatabaseV1Store().updateDatabase({
+      database: databasePatch,
+      updateMask,
     });
+    return updated;
   };
 
   try {
     state.loading = true;
-    const requests = databaseList.map((db) => transferOneDatabase(db, labels));
+    const requests = databaseList.map((db) => {
+      const labels = parseLabelsIfNeeded(db);
+      transferOneDatabase(db, labels);
+    });
     await Promise.all(requests);
     const displayDatabaseName =
       databaseList.length > 1
         ? `${databaseList.length} databases`
-        : `'${databaseList[0].name}'`;
+        : `'${databaseList[0].databaseName}'`;
 
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: `Successfully transferred ${displayDatabaseName} to project '${project.value.name}'.`,
+      title: `Successfully transferred ${displayDatabaseName} to project '${project.value.title}'.`,
     });
     emit("dismiss");
   } finally {
     state.loading = false;
   }
+};
+
+const parseLabelsIfNeeded = (database: ComposedDatabase) => {
+  const { dbNameTemplate } = project.value;
+  if (!dbNameTemplate) return undefined;
+
+  const regex = buildDatabaseNameRegExpByTemplate(dbNameTemplate);
+  const match = database.name.match(regex);
+  if (!match) return undefined;
+
+  const labels: Record<string, string> = {
+    "bb.environment": database.instanceEntity.environment,
+  };
+
+  PRESET_LABEL_KEY_PLACEHOLDERS.forEach(([placeholder, key]) => {
+    const value = match.groups?.[placeholder];
+    if (value) {
+      labels[key] = value;
+    }
+  });
+
+  return labels;
 };
 </script>

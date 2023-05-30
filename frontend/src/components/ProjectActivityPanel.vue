@@ -4,58 +4,33 @@
       <p class="text-lg font-medium leading-7 text-main">
         {{ $t("common.activity") }}
       </p>
-      <ActivityTable :activity-list="state.activityList" />
+      <PagedActivityTableVue
+        :activity-find="{
+          typePrefix: ['bb.project.', 'bb.database.'],
+          container: project.uid,
+          order: 'DESC',
+        }"
+        session-key="project-activity-panel"
+        :page-size="10"
+      >
+        <template #table="{ activityList }">
+          <ActivityTable :activity-list="activityList" />
+        </template>
+      </PagedActivityTableVue>
     </div>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, onBeforeMount, PropType, reactive } from "vue";
-import { Activity, Project } from "../types";
+<script lang="ts" setup>
+import { PropType } from "vue";
 import ActivityTable from "../components/ActivityTable.vue";
-import { useActivityStore } from "@/store";
+import PagedActivityTableVue from "@/components/PagedActivityTable.vue";
+import { Project } from "@/types/proto/v1/project_service";
 
-interface LocalState {
-  activityList: Activity[];
-}
-
-export default defineComponent({
-  name: "ProjectActivityPanel",
-  components: { ActivityTable },
-  props: {
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-  },
-  setup(props) {
-    const state = reactive<LocalState>({
-      activityList: [],
-    });
-    const activityStore = useActivityStore();
-
-    const prepareActivityList = () => {
-      const requests = [
-        activityStore.fetchActivityListForDatabaseByProjectId({
-          projectId: props.project.id,
-        }),
-        activityStore.fetchActivityListForProject({
-          projectId: props.project.id,
-        }),
-      ];
-
-      Promise.all(requests).then((lists) => {
-        const flattenList = lists.flatMap((list) => list);
-        flattenList.sort((a, b) => -(a.createdTs - b.createdTs)); // by createdTs DESC
-        state.activityList = flattenList;
-      });
-    };
-
-    onBeforeMount(prepareActivityList);
-
-    return {
-      state,
-    };
+defineProps({
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
   },
 });
 </script>

@@ -2,7 +2,6 @@
 
 This guide describes some development conventions we adopt at Bytebase.
 
-
 ## Branch Management
 
 This section describes how to manage git branches.
@@ -52,8 +51,6 @@ git push --set-upstream origin feat/xxx
 
 The recommended branch naming convention is using `/` as a namespace separator, e.g., feat/xxx, chore/xxx, docs/xxx, which works nicely with 3rd party git tools such as GitLens.
 
-
-
 ## Commit Messages Guide
 
 This section describes how we add human and machine-readable commit messages.
@@ -62,9 +59,9 @@ Refer to [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.
 
 ### Benefits
 
-* Automatically generating CHANGELOGs and release notes.
-* Communicating the nature of changes to teammates, the public, and other stakeholders.
-* Making it easier for people to contribute to your projects, by allowing them to explore a more structured commit history.
+- Automatically generating CHANGELOGs and release notes.
+- Communicating the nature of changes to teammates, the public, and other stakeholders.
+- Making it easier for people to contribute to your projects, by allowing them to explore a more structured commit history.
 
 ### Summary
 
@@ -92,11 +89,12 @@ The header is a `mandatory` line that simply describes the purpose of the change
 
 It consists of three parts in itself:
 
-* `Type` - a short prefix that represents the kind of the change
-* `Scope` - optional information that represents the context of the change
-* `Subject` - represents a concise description of actual change
+- `Type` - a short prefix that represents the kind of the change
+- `Scope` - optional information that represents the context of the change
+- `Subject` - represents a concise description of actual change
 
-> 💡 Notice that there also has a colon and space(`:<space>`), which separated the type and description
+> **Note**
+> There also has a colon and space(`:<space>`), which separated the type and description
 
 #### Body
 
@@ -214,7 +212,7 @@ Checkout [more examples](https://www.conventionalcommits.org/en/v1.0.0/#examples
 
 ### Tools
 
-* [commitizen](https://github.com/commitizen/cz-cli) - The commitizen command line utility.
-* [cz-conventional-changelog](https://github.com/commitizen/cz-conventional-changelog) - A commitizen adapter for the angular preset of [conventional-changelog](https://github.com/conventional-changelog/conventional-changelog)
-* [husky](https://github.com/typicode/husky) - Git hooks made easy 🐶 woof!
-* [conventional-changelog-cli](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-cli) - Generate changelogs and release notes from a project's commit messages and metadata.
+- [commitizen](https://github.com/commitizen/cz-cli) - The commitizen command line utility.
+- [cz-conventional-changelog](https://github.com/commitizen/cz-conventional-changelog) - A commitizen adapter for the angular preset of [conventional-changelog](https://github.com/conventional-changelog/conventional-changelog)
+- [husky](https://github.com/typicode/husky) - Git hooks made easy 🐶 woof!
+- [conventional-changelog-cli](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-cli) - Generate changelogs and release notes from a project's commit messages and metadata.

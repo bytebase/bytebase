@@ -1,16 +1,36 @@
 import { computed, defineComponent } from "vue";
 import { cloneDeep } from "lodash-es";
 import { provideIssueLogic, useIssueLogic } from "./index";
-import { maybeFormatStatementOnSave, useCommonLogic } from "./common";
 import {
+  flattenTaskList,
+  maybeFormatStatementOnSave,
+  TaskTypeWithStatement,
+  useCommonLogic,
+} from "./common";
+import {
+  Issue,
   IssueCreate,
   Task,
   TaskCreate,
   TaskDatabaseSchemaUpdateGhostSyncPayload,
   TaskStatus,
-  UpdateSchemaGhostContext,
+  MigrationContext,
+  SheetId,
+  UNKNOWN_ID,
 } from "@/types";
-import { useDatabaseStore } from "@/store";
+import {
+  useDatabaseStore,
+  useSheetV1Store,
+  useSheetStatementByUid,
+  useTaskStore,
+} from "@/store";
+import { sheetIdOfTask } from "@/utils";
+import { getProjectPathByLegacyProject } from "@/store/modules/v1/common";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 
 export default defineComponent({
   name: "GhostModeProvider",
@@ -20,48 +40,195 @@ export default defineComponent({
       issue,
       selectedTask,
       createIssue,
+      isTenantMode,
       allowApplyTaskStatusTransition: baseAllowApplyTaskStatusTransition,
+      allowApplyTaskStateToOthers: baseAllowApplyTaskStateToOthers,
+      applyTaskStateToOthers: baseApplyTaskStateToOthers,
+      onStatusChanged,
     } = useIssueLogic();
     const databaseStore = useDatabaseStore();
+    const taskStore = useTaskStore();
+    const sheetV1Store = useSheetV1Store();
 
-    // In gh-ost mode, each stage can own its SQL statement
-    // But only for task.type === "bb.task.database.schema.update.ghost.sync"
     const selectedStatement = computed(() => {
-      const task = selectedTask.value;
-      if (task.type === "bb.task.database.schema.update.ghost.sync") {
+      if (isTenantMode.value) {
+        // In tenant mode, the entire issue shares only one SQL statement
         if (create.value) {
-          return (task as TaskCreate).statement;
+          const issueCreate = issue.value as IssueCreate;
+          const context = issueCreate.createContext as MigrationContext;
+          return (
+            useSheetStatementByUid(context.detailList[0].sheetId).value || ""
+          );
         } else {
-          const payload = (task as Task)
-            .payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
-          return payload.statement;
+          const issueEntity = issue.value as Issue;
+          const task = issueEntity.pipeline.stageList[0].taskList[0];
+          const payload =
+            task.payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
+          return useSheetStatementByUid(payload.sheetId).value || "";
         }
       } else {
-        return "";
+        // In standard pipeline, each ghost-sync task can hold its own
+        // statement
+        const task = selectedTask.value;
+        if (task.type === "bb.task.database.schema.update.ghost.sync") {
+          if (create.value) {
+            let statement = (task as TaskCreate).statement;
+            if ((task as TaskCreate).sheetId !== UNKNOWN_ID) {
+              statement =
+                useSheetStatementByUid((task as TaskCreate).sheetId).value ||
+                "";
+            }
+            return statement;
+          } else {
+            return (
+              useSheetStatementByUid(sheetIdOfTask(task as Task) || UNKNOWN_ID)
+                .value || ""
+            );
+          }
+        } else {
+          return "";
+        }
       }
     });
 
-    const doCreate = () => {
+    const updateStatement = async (newStatement: string) => {
+      if (isTenantMode.value) {
+        if (create.value) {
+          const task = selectedTask.value as TaskCreate;
+          // For tenant deploy mode, we apply the statement to all stages and all tasks
+          const allTaskList = flattenTaskList<TaskCreate>(issue.value);
+          allTaskList.forEach((taskItem) => {
+            if (TaskTypeWithStatement.includes(taskItem.type)) {
+              if (task.sheetId) {
+                taskItem.statement = "";
+                taskItem.sheetId = task.sheetId;
+              } else {
+                taskItem.statement = newStatement;
+              }
+            }
+          });
+
+          const issueCreate = issue.value as IssueCreate;
+          const context = issueCreate.createContext as MigrationContext;
+          // We also apply it back to the CreateContext
+          context.detailList.forEach((detail) => {
+            if (task.sheetId) {
+              detail.statement = "";
+              detail.sheetId = task.sheetId;
+            } else {
+              detail.statement = newStatement;
+            }
+          });
+        } else {
+          const sheetId = sheetIdOfTask(selectedTask.value as Task);
+          if (sheetId && sheetId !== UNKNOWN_ID) {
+            // Call patchAllTasksInIssue for tenant mode
+            const issueEntity = issue.value as Issue;
+            await taskStore.patchAllTasksInIssue({
+              issueId: issueEntity.id,
+              pipelineId: issueEntity.pipeline.id,
+              taskPatch: {
+                sheetId,
+              },
+            });
+            onStatusChanged(true);
+          }
+        }
+      } else {
+        if (create.value) {
+          const task = selectedTask.value as TaskCreate;
+          task.statement = newStatement;
+        }
+      }
+    };
+
+    const updateSheetId = (sheetId: SheetId) => {
+      if (isTenantMode.value) {
+        // For tenant deploy mode, we apply the sheetId to all stages and all tasks
+        const allTaskList = flattenTaskList<TaskCreate>(issue.value);
+        allTaskList.forEach((task) => {
+          task.statement = "";
+          task.sheetId = sheetId;
+        });
+
+        const issueCreate = issue.value as IssueCreate;
+        const context = issueCreate.createContext as MigrationContext;
+        context.detailList.forEach((detail) => {
+          detail.statement = "";
+          detail.sheetId = sheetId;
+        });
+      } else {
+        const task = selectedTask.value as TaskCreate;
+        task.statement = "";
+        task.sheetId = sheetId;
+      }
+    };
+
+    const doCreate = async () => {
       const issueCreate = cloneDeep(issue.value as IssueCreate);
 
-      // for gh-ost mode, copy user edited tasks back to issue.createContext
-      // only the first subtask (bb.task.database.schema.update.ghost.sync) has statement
-      const stageList = issueCreate.pipeline!.stageList;
-      const createContext =
-        issueCreate.createContext as UpdateSchemaGhostContext;
-      const detailList = createContext.detailList;
-      stageList.forEach((stage, i) => {
-        const detail = detailList[i];
-        const syncTask = stage.taskList.find(
+      if (isTenantMode.value) {
+        // for tenant pipeline
+        // createContext is up-to-date already
+        // so we just format the statement if needed
+        const context = issueCreate.createContext as MigrationContext;
+        for (const detail of context.detailList) {
+          const db = databaseStore.getDatabaseById(detail.databaseId!);
+          if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
+            const statement = maybeFormatStatementOnSave(detail.statement, db);
+            const sheet = await sheetV1Store.createSheet(
+              getProjectPathByLegacyProject(db.project),
+              {
+                title: issueCreate.name + " - " + db.name,
+                content: new TextEncoder().encode(statement),
+                visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+                source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+                type: Sheet_Type.TYPE_SQL,
+                payload: "{}",
+              }
+            );
+            detail.statement = "";
+            detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
+          }
+        }
+      } else {
+        // for standard pipeline, we copy user edited tasks back to
+        // issue.createContext
+        // For each ghost-sync task, we copy its edited statement back to the
+        // createContext.detailList by its databaseId accordingly.
+        const createContext = issueCreate.createContext as MigrationContext;
+        const syncTaskList = flattenTaskList<TaskCreate>(issueCreate).filter(
           (task) => task.type === "bb.task.database.schema.update.ghost.sync"
-        )!;
-        const db = databaseStore.getDatabaseById(syncTask.databaseId!);
-
-        detail.databaseId = syncTask.databaseId!;
-        detail.databaseName = syncTask.databaseName!;
-        detail.statement = maybeFormatStatementOnSave(syncTask.statement, db);
-        detail.earliestAllowedTs = syncTask.earliestAllowedTs;
-      });
+        );
+        const detailList = createContext.detailList;
+        for (const task of syncTaskList) {
+          const { databaseId } = task;
+          if (!databaseId) return;
+          const detail = detailList.find(
+            (detail) => detail.databaseId === databaseId
+          );
+          if (detail) {
+            const db = databaseStore.getDatabaseById(databaseId);
+            if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
+              const statement = maybeFormatStatementOnSave(task.statement, db);
+              const sheet = await sheetV1Store.createSheet(
+                getProjectPathByLegacyProject(db.project),
+                {
+                  title: issueCreate.name + " - " + db.name,
+                  content: new TextEncoder().encode(statement),
+                  visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+                  source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+                  type: Sheet_Type.TYPE_SQL,
+                  payload: "{}",
+                }
+              );
+              detail.statement = "";
+              detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
+            }
+            detail.earliestAllowedTs = task.earliestAllowedTs;
+          }
+        }
+      }
 
       createIssue(issueCreate);
     };
@@ -89,11 +256,26 @@ export default defineComponent({
       return baseAllowApplyTaskStatusTransition(task, to);
     };
 
+    const allowApplyTaskStateToOthers = computed(() => {
+      // We are never allowed to "apply task state to other stages" in tenant mode.
+      if (isTenantMode.value) return false;
+      return baseAllowApplyTaskStateToOthers.value;
+    });
+
+    const applyTaskStateToOthers = (task: TaskCreate) => {
+      if (!allowApplyTaskStateToOthers.value) return;
+      return baseApplyTaskStateToOthers(task);
+    };
+
     const logic = {
       ...useCommonLogic(),
       selectedStatement,
       doCreate,
       allowApplyTaskStatusTransition,
+      allowApplyTaskStateToOthers,
+      applyTaskStateToOthers,
+      updateStatement,
+      updateSheetId,
     };
     provideIssueLogic(logic);
     return logic;

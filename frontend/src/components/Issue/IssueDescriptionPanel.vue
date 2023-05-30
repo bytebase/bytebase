@@ -1,23 +1,20 @@
 <template>
   <!-- Description Bar -->
-  <div class="flex justify-between">
-    <div class="textlabel">{{ $t("common.description") }}</div>
-    <div v-if="!create" class="space-x-2">
+  <div class="flex justify-between items-center">
+    <div class="textlabel !leading-7">{{ descriptionTitle }}</div>
+    <div v-if="!create" class="space-x-2 mt-0.5">
       <button
         v-if="allowEditNameAndDescription && !state.editing"
         type="button"
         class="btn-icon"
         @click.prevent="beginEdit"
       >
-        <!-- Heroicon name: solid/pencil -->
-        <!-- Use h-5 to avoid flickering when show/hide icon -->
         <heroicons-solid:pencil class="h-5 w-5" />
       </button>
-      <!-- mt-0.5 is to prevent jiggling between switching edit/none-edit -->
       <button
         v-if="state.editing"
         type="button"
-        class="mt-0.5 px-3 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+        class="px-2 leading-6 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
         @click.prevent="cancelEdit"
       >
         {{ $t("common.cancel") }}
@@ -25,7 +22,7 @@
       <button
         v-if="state.editing"
         type="button"
-        class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+        class="px-2 border leading-6 border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
         :disabled="state.editDescription == issue.description"
         @click.prevent="saveEdit"
       >
@@ -33,46 +30,51 @@
       </button>
     </div>
   </div>
-  <!-- Description -->
-  <label for="description" class="sr-only">
-    {{ $t("issue.edit-description") }}
-  </label>
-  <!-- Use border-white focus:border-white to have the invisible border width
-      otherwise it will have 1px jiggling switching between focus/unfocus state -->
-  <textarea
-    ref="editDescriptionTextArea"
-    v-model="state.editDescription"
-    :rows="create ? 10 : 5"
-    class="mt-2 mx-[2px] w-full resize-none whitespace-pre-wrap border-white focus:border-white outline-none"
-    :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
-    :style="
-      state.editing
-        ? ''
-        : '-webkit-box-shadow: none; -moz-box-shadow: none; box-shadow: none'
-    "
-    :placeholder="$t('issue.add-some-description')"
-    :readonly="!state.editing"
-    @input="
-      (e) => {
-        sizeToFit(e.target as HTMLTextAreaElement);
-        // When creating the issue, we will emit the event on keystroke to update the in-memory state.
-        if (create) {
-          updateDescription(state.editDescription);
-        }
-      }
-    "
-    @focus="
-      (e) => {
-        sizeToFit(e.target as HTMLTextAreaElement);
-      }
-    "
-  ></textarea>
+  <div class="mt-2 w-full px-[2px]">
+    <textarea
+      ref="editDescriptionTextArea"
+      v-model="state.editDescription"
+      :rows="create ? 5 : 3"
+      class="w-full resize-none whitespace-pre-wrap border-white focus:border-white outline-none"
+      :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
+      :style="
+        state.editing
+          ? ''
+          : '-webkit-box-shadow: none; -moz-box-shadow: none; box-shadow: none'
+      "
+      :placeholder="$t('issue.add-some-description')"
+      :readonly="!state.editing"
+      @input="
+            (e) => {
+              sizeToFit(e.target as HTMLTextAreaElement);
+              // When creating the issue, we will emit the event on keystroke to update the in-memory state.
+              if (create) {
+                updateDescription(state.editDescription);
+              }
+            }
+          "
+      @focus="
+            (e) => {
+              sizeToFit(e.target as HTMLTextAreaElement);
+            }
+          "
+    ></textarea>
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onMounted, onUnmounted, ref, reactive, watch } from "vue";
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  reactive,
+  watch,
+  computed,
+} from "vue";
+import { useI18n } from "vue-i18n";
 import type { Issue } from "@/types";
-import { sizeToFit } from "@/utils";
+import { isGrantRequestIssueType, sizeToFit } from "@/utils";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 
 interface LocalState {
@@ -80,6 +82,7 @@ interface LocalState {
   editDescription: string;
 }
 
+const { t } = useI18n();
 const { issue, create } = useIssueLogic();
 const { allowEditNameAndDescription, updateDescription } = useExtraIssueLogic();
 
@@ -88,6 +91,16 @@ const editDescriptionTextArea = ref();
 const state = reactive<LocalState>({
   editing: false,
   editDescription: issue.value.description,
+});
+
+const isGrantRequestIssue = computed(() => {
+  return !!issue.value && isGrantRequestIssueType(issue.value.type);
+});
+
+const descriptionTitle = computed(() => {
+  return isGrantRequestIssue.value
+    ? t("common.reason")
+    : t("common.description");
 });
 
 const keyboardHandler = (e: KeyboardEvent) => {

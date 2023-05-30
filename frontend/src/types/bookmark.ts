@@ -1,14 +1,10 @@
-import { BookmarkId } from "./id";
-import { Principal } from "./principal";
+import { BookmarkId, PrincipalId } from "./id";
 
 export type Bookmark = {
   id: BookmarkId;
 
   // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
+  creatorID: PrincipalId;
 
   // Domain specific fields
   name: string;

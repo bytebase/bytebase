@@ -16,21 +16,17 @@
           <template #plan>
             <span class="font-bold text-accent">
               {{
-                $t(`subscription.plan.${planTypeToString(PlanType.TEAM)}.title`)
+                $t(
+                  `subscription.plan.${planTypeToString(
+                    PlanType.ENTERPRISE
+                  )}.title`
+                )
               }}
             </span>
           </template>
         </i18n-t>
       </p>
       <div class="mt-7 flex justify-end space-x-2">
-        <button
-          type="button"
-          class="btn-normal"
-          @click.prevent="$emit('cancel')"
-        >
-          {{ $t("common.dismiss") }}
-        </button>
-
         <button
           v-if="subscriptionStore.canTrial"
           type="button"
@@ -59,20 +55,21 @@
 <script lang="ts" setup>
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useSubscriptionStore, pushNotification } from "@/store";
-import { PlanType, planTypeToString } from "@/types";
+import { useSubscriptionV1Store, pushNotification } from "@/store";
+import { planTypeToString } from "@/types";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 
 const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
 const router = useRouter();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const learnMore = () => {
   router.push({ name: "setting.workspace.subscription" });
 };
 
 const trialSubscription = () => {
-  subscriptionStore.trialSubscription(PlanType.TEAM).then(() => {
+  subscriptionStore.trialSubscription(PlanType.ENTERPRISE).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

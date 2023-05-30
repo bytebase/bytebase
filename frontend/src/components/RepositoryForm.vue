@@ -9,6 +9,12 @@
         <template v-if="vcsType.startsWith('GITLAB')">
           <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
+        <template v-if="vcsType.startsWith('GITHUB')">
+          <img class="h-4 w-auto" src="../assets/github-logo.svg" />
+        </template>
+        <template v-if="vcsType.startsWith('BITBUCKET')">
+          <img class="h-4 w-auto" src="../assets/bitbucket-logo.svg" />
+        </template>
       </div>
       <input
         id="gitprovider"
@@ -57,9 +63,6 @@
         placeholder="e.g. main"
         :disabled="!allowEdit"
       />
-      <div class="mt-2 textinfolabel">
-        {{ $t("repository.branch-specify-tip") }}
-      </div>
     </div>
     <div>
       <div class="textlabel">{{ $t("repository.base-directory") }}</div>
@@ -76,10 +79,14 @@
       />
     </div>
     <!-- Project schemaChangeType selector -->
-    <div v-if="isDev">
+    <div>
       <div class="textlabel">
         {{ $t("project.settings.schema-change-type") }}
         <span class="text-red-600">*</span>
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/change-database/state-based-migration/overview?source=console"
+          class="ml-1"
+        />
       </div>
       <BBSelect
         id="schemamigrationtype"
@@ -94,29 +101,28 @@
         "
       >
         <template #menuItem="{ item }">
-          {{
-            $t(
-              `project.settings.select-schema-change-type-${item.toLowerCase()}`
-            )
-          }}
-          <BBBetaBadge v-if="item === 'SDL'" />
+          <div class="flex items-center gap-x-2">
+            {{
+              $t(
+                `project.settings.select-schema-change-type-${item.toLowerCase()}`
+              )
+            }}
+            <BBBetaBadge v-if="item === 'SDL'" class="!leading-3" />
+          </div>
         </template>
       </BBSelect>
     </div>
-    <div v-if="isProjectSchemaChangeTypeDDL">
+    <div>
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>
-        <a
-          href="https://bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console"
-          target="__blank"
-          class="font-normal normal-link"
-        >
-          {{ $t("common.config-guide") }}</a
-        >
       </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.file-path-template-description") }}
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#file-path-template"
+          class="ml-1"
+        />
       </div>
       <input
         id="filepathtemplate"
@@ -137,7 +143,7 @@
         {{ $t("common.optional-directory-wildcard") }}:
         {{ FILE_OPTIONAL_DIRECTORY_WILDCARD }}
       </div>
-      <div class="mt-2 textinfolabel">
+      <div v-if="isProjectSchemaChangeTypeDDL" class="mt-2 textinfolabel">
         • {{ $t("repository.file-path-example-schema-migration") }}:
         {{
           sampleFilePath(
@@ -159,28 +165,36 @@
       </div>
     </div>
     <div>
-      <div class="textlabel">
+      <div class="textlabel flex gap-x-1">
         {{ $t("repository.schema-path-template") }}
-        <a
-          href="https://bytebase.com/docs/vcs-integration/name-and-organize-schema-files#schema-path-template?source=console"
-          target="__blank"
-          class="font-normal normal-link"
-        >
-          {{ $t("common.config-guide") }}</a
-        >
+        <span v-if="isProjectSchemaChangeTypeSDL" class="text-red-600">*</span>
+        <FeatureBadge
+          feature="bb.feature.vcs-schema-write-back"
+          class="text-accent"
+        />
       </div>
-      <div class="mt-1 textinfolabel">
-        <template v-if="isDev && !isProjectSchemaChangeTypeDDL">
+      <div class="mt-1 textinfolabel space-x-1">
+        <span v-if="isProjectSchemaChangeTypeSDL">
           {{ $t("project.settings.schema-path-template-sdl-description") }}
-        </template>
+        </span>
         <template v-else>
-          {{ $t("repository.schema-writeback-description") }}
-          <span class="font-medium text-main">{{
-            $t("repository.schema-writeback-protected-branch")
-          }}</span>
+          <span>{{ $t("repository.schema-writeback-description") }}</span>
+          <span class="font-medium text-main">
+            {{ $t("repository.schema-writeback-protected-branch") }}
+          </span>
         </template>
+        <span v-if="!hasFeature('bb.feature.vcs-schema-write-back')">
+          {{
+            $t(getFeatureRequiredPlanString("bb.feature.vcs-schema-write-back"))
+          }}
+        </span>
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#schema-path-template"
+          class="ml-1"
+        />
       </div>
       <input
+        v-if="hasFeature('bb.feature.vcs-schema-write-back')"
         id="schemapathtemplate"
         v-model="repositoryConfig.schemaPathTemplate"
         name="schemapathtemplate"
@@ -188,14 +202,28 @@
         class="textfield mt-2 w-full"
         :disabled="!allowEdit"
       />
-      <div class="mt-2 textinfolabel">
-        <span class="text-red-600">*</span> {{ $t("repository.if-specified") }},
-        {{ $t("common.required-placeholder") }}:
-        {{ SCHEMA_REQUIRED_PLACEHOLDER }};
-        <template v-if="schemaOptionalTagPlaceholder.length > 0">
-          {{ $t("common.optional-placeholder") }}:
-          {{ schemaOptionalTagPlaceholder.join(", ") }}
-        </template>
+      <input
+        v-else-if="isProjectSchemaChangeTypeSDL"
+        id="schemapathtemplate"
+        v-model="repositoryConfig.schemaPathTemplate"
+        name="schemapathtemplate"
+        type="text"
+        class="textfield mt-2 w-full"
+        :disabled="!allowEdit"
+      />
+      <input
+        v-else-if="isProjectSchemaChangeTypeDDL"
+        type="text"
+        class="textfield mt-2 w-full"
+        :value="getRequiredPlanString('bb.feature.vcs-schema-write-back')"
+        :disabled="true"
+      />
+      <div v-if="schemaTagPlaceholder" class="mt-2 textinfolabel">
+        <span class="text-red-600">*</span>
+        <span v-if="isProjectSchemaChangeTypeDDL" class="ml-1">
+          {{ $t("repository.if-specified") }},
+        </span>
+        <span class="ml-1">{{ schemaTagPlaceholder }}</span>
       </div>
       <div
         v-if="repositoryConfig.schemaPathTemplate"
@@ -211,11 +239,18 @@
       </div>
     </div>
     <div>
-      <div class="textlabel">{{ $t("repository.sheet-path-template") }}</div>
+      <div class="textlabel flex gap-x-1">
+        {{ $t("repository.sheet-path-template")
+        }}<FeatureBadge
+          feature="bb.feature.vcs-sheet-sync"
+          class="text-accent"
+        />
+      </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.sheet-path-template-description") }}
       </div>
       <input
+        v-if="hasFeature('bb.feature.vcs-sheet-sync')"
         id="sheetpathtemplate"
         v-model="repositoryConfig.sheetPathTemplate"
         name="sheetpathtemplate"
@@ -223,16 +258,23 @@
         class="textfield mt-2 w-full"
         :disabled="!allowEdit"
       />
+      <input
+        v-else
+        type="text"
+        class="textfield mt-2 w-full"
+        :value="getRequiredPlanString('bb.feature.vcs-sheet-sync')"
+        :disabled="true"
+      />
       <div class="mt-2 textinfolabel capitalize">
         <span class="text-red-600">*</span>
         {{ $t("common.required-placeholder") }}: {{ "\{\{NAME\}\}" }};
         <template v-if="schemaOptionalTagPlaceholder.length > 0">
-          {{ $t("common.optional-placeholder") }}: {{ "\{\{ENV_NAME\}\}" }},
+          {{ $t("common.optional-placeholder") }}: {{ "\{\{ENV_ID\}\}" }},
           {{ "\{\{DB_NAME\}\}" }}
         </template>
       </div>
     </div>
-    <div>
+    <div v-if="canEnableSQLReview">
       <div class="textlabel flex gap-x-1">
         {{ $t("repository.sql-review-ci") }}
         <FeatureBadge feature="bb.feature.vcs-sql-review" class="text-accent" />
@@ -281,7 +323,8 @@ import {
   VCSType,
 } from "@/types";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
-import { hasFeature } from "@/store";
+import { hasFeature, useSubscriptionV1Store } from "@/store";
+import LearnMoreLink from "./LearnMoreLink.vue";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -296,7 +339,7 @@ interface LocalState {
 
 export default defineComponent({
   name: "RepositoryForm",
-  components: { BBBetaBadge },
+  components: { BBBetaBadge, LearnMoreLink },
   props: {
     allowEdit: {
       default: true,
@@ -339,11 +382,21 @@ export default defineComponent({
       showFeatureModal: false,
     });
 
+    const subscriptionStore = useSubscriptionV1Store();
+
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";
     });
     const isProjectSchemaChangeTypeDDL = computed(() => {
       return (props.schemaChangeType || "DDL") === "DDL";
+    });
+    const isProjectSchemaChangeTypeSDL = computed(() => {
+      return (props.schemaChangeType || "DDL") === "SDL";
+    });
+    const canEnableSQLReview = computed(() => {
+      return (
+        props.vcsType.startsWith("GITLAB") || props.vcsType.startsWith("GITHUB")
+      );
     });
     const enableSQLReviewTitle = computed(() => {
       return props.vcsType.startsWith("GITLAB")
@@ -374,7 +427,11 @@ export default defineComponent({
           sampleText: type,
         },
         {
-          placeholder: "{{ENV_NAME}}",
+          placeholder: "{{ENV_ID}}",
+          sampleText: "env1",
+        },
+        {
+          placeholder: "{{ENV_NAME}}", // for legacy support
           sampleText: "env1",
         },
         {
@@ -406,6 +463,14 @@ export default defineComponent({
           placeholder: "{{DB_NAME}}",
           sampleText: "db1",
         },
+        {
+          placeholder: "{{ENV_ID}}",
+          sampleText: "env1",
+        },
+        {
+          placeholder: "{{ENV_NAME}}", // for legacy support
+          sampleText: "env1",
+        },
       ];
       let result = `${baseDirectory}/${schemaPathTemplate}`;
       for (const item of placeholderList) {
@@ -417,17 +482,41 @@ export default defineComponent({
 
     const fileOptionalPlaceholder = computed(() => {
       const tags = [] as string[];
-      // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
-      if (!isTenantProject.value) tags.push("{{ENV_NAME}}");
+      // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
+      if (!isTenantProject.value) tags.push("{{ENV_ID}}");
       tags.push("{{DESCRIPTION}}");
+      return tags;
+    });
+
+    const schemaRequiredTagPlaceholder = computed(() => {
+      const tags = [] as string[];
+      // Only allows {{DB_NAME}} to be an optional placeholder for non-tenant mode projects
+      if (!isTenantProject.value) tags.push(SCHEMA_REQUIRED_PLACEHOLDER);
       return tags;
     });
 
     const schemaOptionalTagPlaceholder = computed(() => {
       const tags = [] as string[];
-      // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
-      if (!isTenantProject.value) tags.push("{{ENV_NAME}}");
+      // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
+      if (!isTenantProject.value) tags.push("{{ENV_ID}}");
       return tags;
+    });
+
+    const schemaTagPlaceholder = computed(() => {
+      const placeholders: string[] = [];
+      const required = schemaRequiredTagPlaceholder.value;
+      const optional = schemaOptionalTagPlaceholder.value;
+      if (required.length > 0) {
+        placeholders.push(
+          `${t("common.required-placeholder")}: ${required.join(", ")}`
+        );
+      }
+      if (optional.length > 0) {
+        placeholders.push(
+          `${t("common.optional-placeholder")}: ${optional.join(", ")}`
+        );
+      }
+      return placeholders.join("; ");
     });
 
     const onSQLReviewCIToggle = (on: boolean) => {
@@ -442,8 +531,15 @@ export default defineComponent({
       FILE_OPTIONAL_DIRECTORY_WILDCARD,
       fileOptionalPlaceholder,
       schemaOptionalTagPlaceholder,
+      schemaTagPlaceholder,
       state,
+      hasFeature,
+      getRequiredPlanString: subscriptionStore.getRquiredPlanString,
+      getFeatureRequiredPlanString:
+        subscriptionStore.getFeatureRequiredPlanString,
       isProjectSchemaChangeTypeDDL,
+      isProjectSchemaChangeTypeSDL,
+      canEnableSQLReview,
       enableSQLReviewTitle,
       sampleFilePath,
       sampleSchemaPath,

@@ -1,15 +1,14 @@
 import { useI18n } from "vue-i18n";
 import { PolicyId } from "./id";
-import { Principal } from "./principal";
-import { RowStatus } from "./common";
-import { Environment } from "./environment";
-import { PlanType } from "./plan";
+import { Environment } from "@/types/proto/v1/environment_service";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import sqlReviewSchema from "./sql-review-schema.yaml";
+import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 
 // The engine type for rule template
-export type SchemaRuleEngineType = "MYSQL" | "POSTGRES" | "TIDB";
+export type SchemaRuleEngineType = "MYSQL" | "POSTGRES" | "TIDB" | "ORACLE";
 
 // The category type for rule template
 export type CategoryType =
@@ -38,7 +37,7 @@ export const LEVEL_LIST = [
 
 // NumberPayload is the number type payload configuration options and default value.
 // Used by the frontend.
-interface NumberPayload {
+export interface NumberPayload {
   type: "NUMBER";
   default: number;
   value?: number;
@@ -46,7 +45,7 @@ interface NumberPayload {
 
 // StringPayload is the string type payload configuration options and default value.
 // Used by the frontend.
-interface StringPayload {
+export interface StringPayload {
   type: "STRING";
   default: string;
   value?: string;
@@ -54,7 +53,7 @@ interface StringPayload {
 
 // BooleanPayload is the boolean type payload configuration options and default value.
 // Used by the frontend.
-interface BooleanPayload {
+export interface BooleanPayload {
   type: "BOOLEAN";
   default: boolean;
   value?: boolean;
@@ -62,7 +61,7 @@ interface BooleanPayload {
 
 // StringArrayPayload is the string array type payload configuration options and default value.
 // Used by the frontend.
-interface StringArrayPayload {
+export interface StringArrayPayload {
   type: "STRING_ARRAY";
   default: string[];
   value?: string[];
@@ -70,7 +69,7 @@ interface StringArrayPayload {
 
 // TemplatePayload is the string template type payload configuration options and default value.
 // Used by the frontend.
-interface TemplatePayload {
+export interface TemplatePayload {
   type: "TEMPLATE";
   default: string;
   templateList: string[];
@@ -104,6 +103,9 @@ export type RuleType =
   | "naming.index.fk"
   | "naming.index.idx"
   | "naming.column.auto-increment"
+  | "naming.table.no-keyword"
+  | "naming.identifier.no-keyword"
+  | "naming.identifier.case"
   | "column.required"
   | "column.no-null"
   | "column.comment"
@@ -116,6 +118,7 @@ export type RuleType =
   | "column.disallow-set-charset"
   | "column.auto-increment-must-unsigned"
   | "column.maximum-character-length"
+  | "column.maximum-varchar-length"
   | "column.auto-increment-initial-value"
   | "column.current-time-count-limit"
   | "column.require-default"
@@ -131,20 +134,21 @@ export type RuleType =
   | "statement.insert.row-limit"
   | "statement.affected-row-limit"
   | "statement.dml-dry-run"
+  | "statement.disallow-add-column-with-default"
+  | "statement.add-check-not-valid"
+  | "statement.disallow-add-not-null"
   | "schema.backward-compatibility"
   | "database.drop-empty-database"
   | "system.charset.allowlist"
   | "system.collation.allowlist"
+  | "system.comment.length"
   | "index.no-duplicate-column"
   | "index.type-no-blob"
   | "index.key-number-limit"
   | "index.total-number-limit"
+  | "index.primary-key-type-allowlist"
+  | "index.create-concurrently"
   | "index.pk-type-limit";
-
-export const availableRulesForFreePlan: RuleType[] = [
-  "statement.where.require",
-  "column.no-null",
-];
 
 // The naming format rule payload.
 // Used by the backend.
@@ -172,6 +176,12 @@ interface NumberLimitPayload {
   number: number;
 }
 
+// The case rule payload.
+// Used by the backend.
+interface CasePayload {
+  upper: boolean;
+}
+
 // The SchemaPolicyRule stores the rule configuration by users.
 // Used by the backend
 export interface SchemaPolicyRule {
@@ -181,7 +191,9 @@ export interface SchemaPolicyRule {
     | NamingFormatPayload
     | StringArrayLimitPayload
     | CommentFormatPayload
-    | NumberLimitPayload;
+    | NumberLimitPayload
+    | CasePayload;
+  comment: string;
 }
 
 // The API for SQL review policy in backend.
@@ -189,11 +201,8 @@ export interface SQLReviewPolicy {
   id: PolicyId;
 
   // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-  rowStatus: RowStatus;
+  // enforce means if the policy is active
+  enforce: boolean;
 
   // Domain specific fields
   name: string;
@@ -208,6 +217,7 @@ export interface RuleTemplate {
   engineList: SchemaRuleEngineType[];
   componentList: RuleConfigComponent[];
   level: RuleLevel;
+  comment?: string;
 }
 
 // SQLReviewPolicyTemplate is the rule template set
@@ -225,7 +235,11 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
     },
     new Map<RuleType, RuleTemplate>()
   );
-  const templateList = [sqlReviewProdTemplate, sqlReviewDevTemplate] as {
+  const templateList = [
+    sqlReviewSampleTemplate,
+    sqlReviewDevTemplate,
+    sqlReviewProdTemplate,
+  ] as {
     id: string;
     ruleList: {
       type: RuleType;
@@ -269,6 +283,15 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
     };
   });
 })();
+
+export const findRuleTemplate = (type: RuleType) => {
+  for (let i = 0; i < TEMPLATE_LIST.length; i++) {
+    const template = TEMPLATE_LIST[i];
+    const rule = template.ruleList.find((rule) => rule.type === type);
+    if (rule) return rule;
+  }
+  return undefined;
+};
 
 export const ruleTemplateMap: Map<RuleType, RuleTemplate> =
   TEMPLATE_LIST.reduce((map, template) => {
@@ -323,7 +346,11 @@ export const convertPolicyRuleToRuleTemplate = (
     );
   }
 
-  const res = { ...ruleTemplate, level: policyRule.level };
+  const res = {
+    ...ruleTemplate,
+    level: policyRule.level,
+    comment: policyRule.comment,
+  };
 
   if (ruleTemplate.componentList.length === 0) {
     return res;
@@ -429,6 +456,19 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
+    case "naming.identifier.case":
+      if (!booleanComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+      return {
+        ...res,
+        componentList: [
+          {
+            ...booleanComponent,
+            payload: booleanComponent.payload,
+          },
+        ],
+      };
     case "column.required": {
       const requiredColumnComponent = ruleTemplate.componentList[0];
       // The columnList payload is deprecated.
@@ -452,6 +492,7 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     }
     case "column.type-disallow-list":
+    case "index.primary-key-type-allowlist":
     case "system.charset.allowlist":
     case "system.collation.allowlist": {
       const stringArrayComponent = ruleTemplate.componentList[0];
@@ -497,9 +538,11 @@ export const convertPolicyRuleToRuleTemplate = (
     case "statement.insert.row-limit":
     case "statement.affected-row-limit":
     case "column.maximum-character-length":
+    case "column.maximum-varchar-length":
     case "column.auto-increment-initial-value":
     case "index.key-number-limit":
     case "index.total-number-limit":
+    case "system.comment.length":
       if (!numberComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
       }
@@ -529,6 +572,7 @@ export const convertRuleTemplateToPolicyRule = (
   const base: SchemaPolicyRule = {
     type: rule.type,
     level: rule.level,
+    comment: rule.comment ?? "",
   };
   if (rule.componentList.length === 0) {
     return base;
@@ -596,8 +640,19 @@ export const convertRuleTemplateToPolicyRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
+    case "naming.identifier.case":
+      if (!booleanPayload) {
+        throw new Error(`Invalid rule ${rule.type}`);
+      }
+      return {
+        ...base,
+        payload: {
+          upper: booleanPayload.value ?? booleanPayload.default,
+        },
+      };
     case "column.required":
     case "column.type-disallow-list":
+    case "index.primary-key-type-allowlist":
     case "system.charset.allowlist":
     case "system.collation.allowlist": {
       const stringArrayPayload = rule.componentList[0]
@@ -624,9 +679,11 @@ export const convertRuleTemplateToPolicyRule = (
     case "statement.insert.row-limit":
     case "statement.affected-row-limit":
     case "column.maximum-character-length":
+    case "column.maximum-varchar-length":
     case "column.auto-increment-initial-value":
     case "index.key-number-limit":
     case "index.total-number-limit":
+    case "system.comment.length":
       if (!numberPayload) {
         throw new Error(`Invalid rule ${rule.type}`);
       }
@@ -664,8 +721,5 @@ export const ruleIsAvailableInSubscription = (
   ruleType: RuleType,
   subscriptionPlan: PlanType
 ): boolean => {
-  if (subscriptionPlan === PlanType.FREE) {
-    return availableRulesForFreePlan.indexOf(ruleType) >= 0;
-  }
   return true;
 };

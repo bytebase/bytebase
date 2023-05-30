@@ -10,7 +10,6 @@ import {
   Attributes,
   unknown,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
 import { useStageStore } from "./stage";
 
 function convert(
@@ -34,19 +33,8 @@ function convert(
   }
 
   const result: Pipeline = {
-    ...(pipeline.attributes as Omit<
-      Pipeline,
-      "id" | "stageList" | "creator" | "updater"
-    >),
+    ...(pipeline.attributes as Omit<Pipeline, "id" | "stageList">),
     id: parseInt(pipeline.id),
-    creator: getPrincipalFromIncludedList(
-      pipeline.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      pipeline.relationships!.updater.data,
-      includedList
-    ),
     stageList,
   };
 

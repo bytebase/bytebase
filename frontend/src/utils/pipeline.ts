@@ -7,6 +7,7 @@ import {
   Pipeline,
   PipelineCreate,
   Stage,
+  StageId,
   Task,
   TaskId,
   TaskStatus,
@@ -69,6 +70,10 @@ export function findTaskById(pipeline: Pipeline, taskId: TaskId): Task {
     }
   }
   return unknown("TASK") as Task;
+}
+
+export function findStageById(pipeline: Pipeline, stageId: StageId): Stage {
+  return pipeline.stageList.find((s) => s.id === stageId) ?? unknown("STAGE");
 }
 
 export function activeStage(pipeline: Pipeline): Stage {
@@ -141,7 +146,10 @@ export function activeTaskInStage(stage: Stage): Task {
   return empty("TASK") as Task;
 }
 
-export function activeEnvironment(pipeline: Pipeline): Environment {
+export function activeEnvironment(pipeline: Pipeline | undefined): Environment {
+  if (!pipeline) {
+    return empty("ENVIRONMENT");
+  }
   const stage: Stage = activeStage(pipeline);
   if (stage.id == EMPTY_ID) {
     return empty("ENVIRONMENT") as Environment;
@@ -159,7 +167,7 @@ export function activeDatabase(pipeline: Pipeline): Database | undefined {
 
 export type TaskStatusTransitionType =
   | "RUN"
-  | "APPROVE"
+  | "ROLLOUT"
   | "RETRY"
   | "CANCEL"
   | "SKIP"
@@ -186,11 +194,11 @@ export const TASK_STATUS_TRANSITION_LIST: Map<
     },
   ],
   [
-    "APPROVE",
+    "ROLLOUT",
     {
-      type: "APPROVE",
+      type: "ROLLOUT",
       to: "PENDING",
-      buttonName: "common.approve",
+      buttonName: "common.rollout",
       buttonType: "PRIMARY",
     },
   ],
@@ -229,7 +237,7 @@ export const APPLICABLE_TASK_TRANSITION_LIST: Map<
   TaskStatusTransitionType[]
 > = new Map([
   ["PENDING", ["CANCEL"]],
-  ["PENDING_APPROVAL", ["APPROVE"]],
+  ["PENDING_APPROVAL", ["ROLLOUT"]],
   ["RUNNING", ["CANCEL"]],
   ["DONE", []],
   ["FAILED", ["RETRY"]],

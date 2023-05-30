@@ -1,15 +1,8 @@
 <template>
   <div class="flex items-center justify-between h-16">
-    <div class="flex items-center">
-      <div class="flex-shrink-0 w-44">
-        <router-link to="/" class="select-none" active-class exact-active-class>
-          <img
-            class="h-12 w-auto"
-            src="../../assets/logo-full.svg"
-            alt="Bytebase"
-          />
-        </router-link>
-      </div>
+    <div class="flex items-center h-full">
+      <BytebaseLogo class="h-full overflow-y-hidden" />
+
       <div class="hidden sm:block">
         <div class="ml-4 flex items-baseline space-x-1">
           <router-link
@@ -24,12 +17,19 @@
             exact-active-class="anchor-link"
             >{{ $t("sheet.self") }}</router-link
           >
+          <router-link
+            v-if="showAuditLogItem"
+            to="/setting/audit-log?type=bb.sql-editor.query"
+            class="router-link"
+            exact-active-class="anchor-link"
+            >{{ $t("settings.sidebar.audit-log") }}</router-link
+          >
         </div>
       </div>
     </div>
     <div>
       <div class="flex items-center space-x-3">
-        <router-link to="/inbox" exact-active-class>
+        <router-link to="/inbox">
           <span
             v-if="inboxSummary.hasUnread"
             class="absolute rounded-full ml-4 -mt-1 h-2.5 w-2.5 bg-accent opacity-75"
@@ -37,7 +37,9 @@
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
         <div class="ml-2">
-          <ProfileDropdown />
+          <ProfileBrandingLogo>
+            <ProfileDropdown />
+          </ProfileBrandingLogo>
         </div>
         <div class="ml-2 -mr-2 flex sm:hidden">
           <!-- Mobile menu button -->
@@ -46,11 +48,6 @@
             @click.prevent="state.showMobileMenu = !state.showMobileMenu"
           >
             <span class="sr-only">Open main menu</span>
-            <!--
-              Heroicon name: menu
-
-              Menu open: "hidden", Menu closed: "block"
-            -->
             <heroicons-solid:dots-vertical class="w-6 h-6" />
           </button>
         </div>
@@ -63,33 +60,28 @@
 
       Open: "block", closed: "hidden"
   -->
-  <div v-if="state.showMobileMenu" class="block md:hidden">
-    <router-link to="/project" class="bar-link rounded-md block px-3 py-2">
-      {{ $t("common.projects") }}
+  <div v-if="state.showMobileMenu" class="block md:hidden space-y-1 pb-1">
+    <router-link
+      to="/sql-editor"
+      class="bar-link rounded-md block px-3 py-2"
+      exact-active-class="anchor-link"
+    >
+      {{ $t("sql-editor.self") }}
     </router-link>
-
-    <router-link to="/db" class="bar-link rounded-md block px-3 py-2">
-      {{ $t("common.databases") }}
+    <router-link
+      to="/sheets/my"
+      class="bar-link rounded-md block px-3 py-2"
+      exact-active-class="anchor-link"
+    >
+      {{ $t("sheet.self") }}
     </router-link>
-
     <router-link
-      v-if="showInstanceItem"
-      to="/instance"
+      v-if="showAuditLogItem"
+      to="/setting/audit-log?type=bb.sql-editor.query"
       class="bar-link rounded-md block px-3 py-2"
-      >{{ $t("common.instances") }}</router-link
     >
-
-    <router-link
-      to="/environment"
-      class="bar-link rounded-md block px-3 py-2"
-      >{{ $t("common.environments") }}</router-link
-    >
-
-    <router-link
-      to="/setting/member"
-      class="bar-link rounded-md block px-3 py-2"
-      >{{ $t("common.settings") }}</router-link
-    >
+      {{ $t("settings.sidebar.audit-log") }}
+    </router-link>
   </div>
 </template>
 
@@ -99,10 +91,14 @@ import { computed, reactive, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
+
+import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import ProfileBrandingLogo from "@/components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
-import { hasWorkspacePermission } from "@/utils";
-import { useCurrentUser, useInboxStore } from "@/store";
+import { useCurrentUser, useCurrentUserV1, useInboxStore } from "@/store";
+import { hasWorkspacePermissionV1 } from "@/utils";
+import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -110,10 +106,11 @@ interface LocalState {
 
 export default defineComponent({
   name: "EditorHeader",
-  components: { ProfileDropdown },
+  components: { BytebaseLogo, ProfileBrandingLogo, ProfileDropdown },
   setup() {
     const { t, availableLocales, locale } = useI18n();
     const inboxStore = useInboxStore();
+    const settingV1Store = useSettingV1Store();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -121,11 +118,16 @@ export default defineComponent({
     });
 
     const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
-    const showInstanceItem = computed((): boolean => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-instance",
-        currentUser.value.role
+    const logoUrl = computed((): string | undefined => {
+      return settingV1Store.brandingLogo;
+    });
+
+    const showAuditLogItem = computed((): boolean => {
+      return hasWorkspacePermissionV1(
+        "bb.permission.workspace.audit-log",
+        currentUserV1.value.userRole
       );
     });
 
@@ -143,46 +145,6 @@ export default defineComponent({
     });
 
     const kbarActions = computed(() => [
-      defineAction({
-        id: "bb.navigation.projects",
-        name: "Projects",
-        shortcut: ["g", "p"],
-        section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: "workspace.project" }),
-      }),
-      defineAction({
-        id: "bb.navigation.databases",
-        name: "Databases",
-        shortcut: ["g", "d"],
-        section: t("kbar.navigation"),
-        keywords: "navigation db",
-        perform: () => router.push({ name: "workspace.database" }),
-      }),
-      defineAction({
-        id: "bb.navigation.instances",
-        name: "Instances",
-        shortcut: ["g", "i"],
-        section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: "workspace.instance" }),
-      }),
-      defineAction({
-        id: "bb.navigation.environments",
-        name: "Environments",
-        shortcut: ["g", "e"],
-        section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: "workspace.environment" }),
-      }),
-      defineAction({
-        id: "bb.navigation.settings",
-        name: "Settings",
-        shortcut: ["g", "s"],
-        section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: "setting.workspace.member" }),
-      }),
       defineAction({
         id: "bb.navigation.inbox",
         name: "Inbox",
@@ -240,8 +202,9 @@ export default defineComponent({
 
     return {
       state,
-      showInstanceItem,
+      showAuditLogItem,
       inboxSummary,
+      logoUrl,
       goBack,
     };
   },

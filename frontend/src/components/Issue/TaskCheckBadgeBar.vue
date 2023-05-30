@@ -51,6 +51,7 @@ import { groupBy, maxBy } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../../types";
 import TaskSpinner from "./TaskSpinner.vue";
+import { HiddenCheckTypes } from "@/utils";
 
 interface LocalState {
   selectedTaskCheckType: TaskCheckType | undefined;
@@ -153,7 +154,10 @@ export default defineComponent({
 
     // For a particular check type, only returns the most recent one
     const filteredTaskCheckRunList = computed((): TaskCheckRun[] => {
-      const groupByType = groupBy(props.taskCheckRunList, (run) => run.type);
+      const groupByType = groupBy(
+        props.taskCheckRunList.filter((run) => !HiddenCheckTypes.has(run.type)),
+        (run) => run.type
+      );
       /*
         `groupByType` looks like: {
           "bb.task-check.database.statement.compatibility": [run1, run2, ...],
@@ -186,7 +190,7 @@ export default defineComponent({
     // Returns the most severe status
     const taskCheckStatus = (taskCheckRun: TaskCheckRun): TaskCheckStatus => {
       let value: TaskCheckStatus = "SUCCESS";
-      for (const result of taskCheckRun.result.resultList) {
+      for (const result of taskCheckRun.result.resultList ?? []) {
         if (result.status == "ERROR") {
           return "ERROR";
         }
@@ -231,9 +235,10 @@ const TaskCheckTypeOrderList: TaskCheckType[] = [
   "bb.task-check.database.statement.syntax",
   "bb.task-check.database.statement.type",
   "bb.task-check.database.connect",
-  "bb.task-check.instance.migration-schema",
   "bb.task-check.database.statement.advise",
   "bb.task-check.issue.lgtm",
+  "bb.task-check.database.statement.affected-rows.report",
+  "bb.task-check.database.statement.type.report",
 ];
 const TaskCheckTypeOrderDict = new Map<TaskCheckType, number>(
   TaskCheckTypeOrderList.map((type, index) => [type, index])
@@ -255,12 +260,13 @@ const TaskCheckTypeNameDict = new Map<TaskCheckType, string>([
   ["bb.task-check.database.statement.advise", "task.check-type.sql-review"],
   ["bb.task-check.database.statement.type", "task.check-type.statement-type"],
   ["bb.task-check.database.connect", "task.check-type.connection"],
-  [
-    "bb.task-check.instance.migration-schema",
-    "task.check-type.migration-schema",
-  ],
   ["bb.task-check.database.ghost.sync", "task.check-type.ghost-sync"],
   ["bb.task-check.issue.lgtm", "task.check-type.lgtm"],
   ["bb.task-check.pitr.mysql", "task.check-type.pitr"],
+  [
+    "bb.task-check.database.statement.affected-rows.report",
+    "task.check-type.affected-rows",
+  ],
+  ["bb.task-check.database.statement.type.report", "task.check-type.sql-type"],
 ]);
 </script>

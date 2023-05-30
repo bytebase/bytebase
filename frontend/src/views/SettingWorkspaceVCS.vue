@@ -1,29 +1,23 @@
 <template>
   <div class="space-y-4">
     <div class="textinfolabel">
-      {{ $t("version-control.setting.description") }}
-      <span class="text-accent">{{
-        $t("version-control.setting.description-highlight")
-      }}</span>
+      {{ $t("gitops.setting.description") }}
+      <a
+        class="text-accent hover:opacity-80"
+        href="https://www.bytebase.com/docs/administration/sso/overview?source=console"
+        >{{ $t("gitops.setting.description-highlight") }}</a
+      >
     </div>
-    <div class="flex items-center justify-end">
+    <div v-if="vcsList.length > 0" class="flex items-center justify-end">
       <button
         type="button"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         @click.prevent="addVCSProvider"
       >
-        {{ $t("version-control.setting.add-git-provider.self") }}
+        {{ $t("gitops.setting.add-git-provider.self") }}
       </button>
     </div>
     <div class="pt-4 border-t">
-      <FeatureAttention
-        v-if="!has3rdPartyLoginFeature && vcsList.length > 0"
-        custom-class="mb-5"
-        feature="bb.feature.3rd-party-auth"
-        :description="
-          $t('subscription.features.bb-feature-3rd-party-auth.desc')
-        "
-      />
       <div v-if="vcsList.length > 0" class="space-y-6">
         <template v-for="(vcs, index) in vcsList" :key="index">
           <VCSCard :vcs="vcs" />
@@ -41,7 +35,7 @@ import { reactive, computed, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "../components/VCSCard.vue";
 import VCSSetupWizard from "../components/VCSSetupWizard.vue";
-import { featureToRef, useVCSStore } from "@/store";
+import { useVCSStore } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -69,17 +63,14 @@ export default defineComponent({
 
     const addVCSProvider = () => {
       router.push({
-        name: "setting.workspace.version-control.create",
+        name: "setting.workspace.gitops.create",
       });
     };
-
-    const has3rdPartyLoginFeature = featureToRef("bb.feature.3rd-party-auth");
 
     return {
       state,
       vcsList,
       addVCSProvider,
-      has3rdPartyLoginFeature,
     };
   },
 });

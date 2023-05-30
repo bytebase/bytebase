@@ -15,6 +15,9 @@
         <template v-if="vcs.type.startsWith('GITHUB')">
           <img class="h-6 w-auto" src="../assets/github-logo.svg" />
         </template>
+        <template v-if="vcs.type.startsWith('BITBUCKET')">
+          <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
+        </template>
         <span>{{ vcs.name }}</span>
       </button>
     </template>
@@ -23,9 +26,9 @@
     <template v-if="canManageVCSProvider">
       <i18n-t keypath="repository.choose-git-provider-visit-workspace">
         <template #workspace>
-          <router-link class="normal-link" to="/setting/version-control"
+          <router-link class="normal-link" to="/setting/gitops"
             >{{ $t("common.workspace") }} -
-            {{ $t("common.version-control") }}</router-link
+            {{ $t("common.gitops") }}</router-link
           >
         </template>
       </i18n-t>
@@ -44,8 +47,8 @@ export default { name: "RepositoryVCSProviderPanel" };
 import { reactive, computed, watchEffect, onUnmounted, onMounted } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { OAuthWindowEventPayload, openWindowForOAuth, VCS } from "../types";
-import { hasWorkspacePermission } from "../utils";
-import { pushNotification, useCurrentUser, useVCSStore } from "@/store";
+import { hasWorkspacePermissionV1 } from "../utils";
+import { pushNotification, useCurrentUserV1, useVCSStore } from "@/store";
 
 interface LocalState {
   selectedVCS?: VCS;
@@ -60,7 +63,7 @@ const emit = defineEmits<{
 const vcsStore = useVCSStore();
 const state = reactive<LocalState>({});
 
-const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const prepareVCSList = () => {
   vcsStore.fetchVCSList();
@@ -94,9 +97,9 @@ const eventListener = (event: Event) => {
 };
 
 const canManageVCSProvider = computed(() => {
-  return hasWorkspacePermission(
+  return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-vcs-provider",
-    currentUser.value.role
+    currentUserV1.value.userRole
   );
 });
 
@@ -105,8 +108,10 @@ const selectVCS = (vcs: VCS) => {
   emit("set-vcs", vcs);
 
   let authorizeUrl = `${vcs.instanceUrl}/oauth/authorize`;
-  if (vcs.type == "GITHUB_COM") {
+  if (vcs.type == "GITHUB") {
     authorizeUrl = `https://github.com/login/oauth/authorize`;
+  } else if (vcs.type == "BITBUCKET") {
+    authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
   }
   openWindowForOAuth(
     authorizeUrl,

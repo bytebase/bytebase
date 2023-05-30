@@ -1,38 +1,52 @@
 <template>
   <div class="divide-y">
-    <PipelineStageList>
-      <template #task-name-of-stage="{ stage }">
-        {{ taskNameOfStage(stage) }}
-      </template>
-    </PipelineStageList>
+    <PipelineStageList />
 
-    <div class="task-list gap-2 p-2 md:grid md:grid-cols-2 lg:grid-cols-4">
+    <div class="relative">
       <div
-        v-for="(task, j) in taskList"
-        :key="j"
-        class="task px-2 py-1 cursor-pointer border rounded"
-        :class="taskClass(task)"
-        @click="onClickTask(task, j)"
+        ref="taskBar"
+        class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 max-h-48 overflow-y-auto"
+        :class="{
+          'more-bottom': taskBarScrollState.bottom,
+          'more-top': taskBarScrollState.top,
+        }"
       >
-        <div class="flex items-center pb-1">
-          <TaskStatusIcon
-            :create="create"
-            :active="isActiveTask(task)"
-            :status="task.status"
-            class="transform scale-75"
-          />
-          <heroicons-solid:arrow-narrow-right
-            v-if="isActiveTask(task)"
-            class="name w-5 h-5"
-          />
-          <div class="name">{{ j + 1 }} - {{ databaseForTask(task).name }}</div>
-        </div>
-        <div class="flex items-center px-1 py-1 whitespace-pre-wrap">
-          <InstanceEngineIcon :instance="databaseForTask(task).instance" />
-          <span
-            class="flex-1 ml-2 overflow-x-hidden whitespace-nowrap overflow-ellipsis"
-            >{{ instanceName(databaseForTask(task).instance) }}</span
-          >
+        <div
+          v-for="(task, j) in taskList"
+          :key="j"
+          class="task px-2 py-1 cursor-pointer border rounded"
+          :class="taskClass(task)"
+          :data-task-id="create ? '' : (task as Task).id"
+          @click="onClickTask(task, j)"
+        >
+          <div class="flex items-center justify-between pb-1">
+            <div class="flex flex-1 items-center gap-x-1">
+              <TaskStatusIcon
+                :create="create"
+                :active="isActiveTask(task)"
+                :status="task.status"
+                :task="task"
+                class="transform scale-75"
+              />
+              <div class="name flex-1 space-x-1 overflow-x-hidden">
+                <heroicons-solid:arrow-narrow-right
+                  v-if="isActiveTask(task)"
+                  class="w-5 h-5 inline-block"
+                />
+                <span>{{ j + 1 }} - {{ databaseForTask(task).name }}</span>
+              </div>
+            </div>
+            <TaskExtraActionsButton :task="(task as Task)" />
+          </div>
+          <div class="flex items-center justify-between px-1 py-1">
+            <div class="flex flex-1 items-center whitespace-pre-wrap">
+              <InstanceEngineIcon :instance="databaseForTask(task).instance" />
+              <span
+                class="flex-1 ml-2 overflow-x-hidden whitespace-nowrap overflow-ellipsis"
+                >{{ instanceName(databaseForTask(task).instance) }}</span
+              >
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -40,8 +54,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
-import {
+import { computed, ref } from "vue";
+import type {
   Pipeline,
   Stage,
   StageCreate,
@@ -49,29 +63,21 @@ import {
   TaskCreate,
   Database,
 } from "@/types";
-import { activeTask, activeTaskInStage, taskSlug } from "@/utils";
+import { activeTask, taskSlug } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
+import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 import { useDatabaseStore } from "@/store";
 import { useIssueLogic } from "./logic";
+import { useVerticalScrollState } from "@/composables/useScrollState";
 
-const {
-  create,
-  issue,
-  project,
-  selectedStage,
-  selectedTask,
-  selectStageOrTask,
-} = useIssueLogic();
+const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
+  useIssueLogic();
 
 const pipeline = computed(() => issue.value.pipeline!);
 
 const databaseStore = useDatabaseStore();
-
-watchEffect(() => {
-  if (create.value) {
-    databaseStore.fetchDatabaseListByProjectId(project.value.id);
-  }
-});
+const taskBar = ref<HTMLDivElement>();
+const taskBarScrollState = useVerticalScrollState(taskBar, 192);
 
 const taskList = computed(() => selectedStage.value.taskList);
 
@@ -102,20 +108,6 @@ const selectedStageIdOrIndex = computed(() => {
   );
 });
 
-const taskNameOfStage = (stage: Stage | StageCreate) => {
-  if (create.value) {
-    return stage.taskList[0].status;
-  }
-  const activeTask = activeTaskInStage(stage as Stage);
-  const { taskList } = stage as Stage;
-  for (let i = 0; i < stage.taskList.length; i++) {
-    if (taskList[i].id == activeTask.id) {
-      return `${activeTask.name} (${i + 1}/${stage.taskList.length})`;
-    }
-  }
-  return activeTask.name;
-};
-
 const taskClass = (task: Task | TaskCreate) => {
   const classes: string[] = [];
   if (isSelectedTask(task)) classes.push("selected");
@@ -140,7 +132,7 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
   @apply border-info;
 }
 .task .name {
-  @apply ml-1 overflow-x-hidden whitespace-nowrap overflow-ellipsis;
+  @apply whitespace-pre-wrap break-all;
 }
 .task.active .name {
   @apply font-bold;
@@ -161,5 +153,22 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
 }
 .task.status_failed .name {
   @apply text-red-500;
+}
+
+.task-list::before {
+  @apply absolute top-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  content: "";
+  box-shadow: none;
+}
+.task-list::after {
+  @apply absolute bottom-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  content: "";
+  box-shadow: none;
+}
+.task-list.more-top::before {
+  box-shadow: inset 0 0.5rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
+}
+.task-list.more-bottom::after {
+  box-shadow: inset 0 -0.5rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
 }
 </style>

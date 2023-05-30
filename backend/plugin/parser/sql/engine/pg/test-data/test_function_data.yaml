@@ -1,0 +1,4 @@
+- stmt: drop function func1(a int, b int, c int);
+  want: DROP FUNCTION "func1"(integer, integer, integer);
+- stmt: drop function if exists public.func1(a int), func2(OUT int);
+  want: DROP FUNCTION IF EXISTS "public"."func1"(integer), "func2"();

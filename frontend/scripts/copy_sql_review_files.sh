@@ -1,2 +1,2 @@
 #!/bin/sh
-cp ../plugin/advisor/config/* ./src/types/
+cp ../backend/plugin/advisor/config/* ./src/types/

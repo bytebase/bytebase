@@ -1,3 +1,5 @@
+import type { Ref } from "vue";
+import { type useDialog } from "naive-ui";
 import { IssueTemplate } from "@/plugins";
 import {
   Database,
@@ -6,7 +8,7 @@ import {
   IssuePatch,
   IssueStatus,
   Pipeline,
-  Project,
+  SheetId,
   Stage,
   StageCreate,
   Task,
@@ -15,7 +17,7 @@ import {
   TaskPatch,
   TaskStatus,
 } from "@/types";
-import { Ref } from "vue";
+import { Project } from "@/types/proto/v1/project_service";
 
 type IssueLogic = {
   // base params
@@ -51,15 +53,16 @@ type IssueLogic = {
   ) => any;
   createIssue: (issueCreate: IssueCreate) => any;
 
+  // state logic
+  initialTaskListStatementFromRoute: () => any;
+
   // edit logic
   allowEditStatement: Ref<boolean>;
   selectedStatement: Ref<string>;
-  updateStatement: (
-    newStatement: string,
-    postUpdated?: (updatedTask: Task) => void
-  ) => any;
-  allowApplyStatementToOtherTasks: Ref<boolean>;
-  applyStatementToOtherTasks: (statement: string) => any;
+  updateStatement: (newStatement: string) => any;
+  updateSheetId: (sheetId: SheetId) => void;
+  allowApplyTaskStateToOthers: Ref<boolean>;
+  applyTaskStateToOthers: (task: TaskCreate) => any;
   doCreate(): any;
 
   // events
@@ -73,6 +76,9 @@ type IssueLogic = {
   // status transition
   allowApplyIssueStatusTransition(issue: Issue, to: IssueStatus): boolean;
   allowApplyTaskStatusTransition(task: Task, to: TaskStatus): boolean;
+
+  // misc
+  dialog: ReturnType<typeof useDialog>;
 };
 
 export default IssueLogic;

@@ -215,7 +215,7 @@ Tenant mode projects should show databases in tenant view (TBD). Schema altering
 #### VCS
 Since we will still take the database name that's plugged to deployment configuration, the [file path template](https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template) will not change.
 ```
-{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql
+{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql
 ```
 
 #### Other Workflows

@@ -40,9 +40,9 @@
   </form>
 </template>
 
-<script lang="ts">
-import { computed, PropType, reactive, defineComponent } from "vue";
-import { Database } from "../types";
+<script lang="ts" setup>
+import { computed, PropType, reactive } from "vue";
+import { ComposedDatabase } from "../types";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -54,31 +54,29 @@ interface LocalState {
   backupName: string;
 }
 
-export default defineComponent({
-  name: "DatabaseBackupCreateForm",
-  props: {
-    database: {
-      required: true,
-      type: Object as PropType<Database>,
-    },
+const props = defineProps({
+  database: {
+    required: true,
+    type: Object as PropType<ComposedDatabase>,
   },
-  emits: ["create", "cancel"],
-  setup(props) {
-    const state = reactive<LocalState>({
-      // The default format is consistent with the default automatic backup name format used in the server.
-      backupName: `${slug(props.database.project.name)}-${slug(
-        props.database.instance.environment.name
-      )}-${dayjs.utc().local().format("YYYYMMDDTHHmmss")}`,
-    });
+});
 
-    const allowCreate = computed(() => {
-      return !isEmpty(state.backupName);
-    });
+defineEmits(["create", "cancel"]);
 
-    return {
-      state,
-      allowCreate,
-    };
-  },
+const buildBackupName = (database: ComposedDatabase) => {
+  // The default format is consistent with the default automatic backup name format used in the server.
+  return [
+    slug(props.database.projectEntity.title),
+    slug(props.database.instanceEntity.environmentEntity.title),
+    dayjs.utc().local().format("YYYYMMDDTHHmmss"),
+  ].join("-");
+};
+
+const state = reactive<LocalState>({
+  backupName: buildBackupName(props.database),
+});
+
+const allowCreate = computed(() => {
+  return !isEmpty(state.backupName);
 });
 </script>

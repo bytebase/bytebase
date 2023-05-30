@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+// Used internally for obfuscating the page token.
+message PageToken {
+  int32 limit = 1;
+  int32 offset = 2;
+}

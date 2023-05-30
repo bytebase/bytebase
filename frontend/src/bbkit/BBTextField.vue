@@ -4,7 +4,7 @@
     v-model="state.text"
     type="text"
     autocomplete="off"
-    class="text-main rounded-md"
+    class="text-main rounded-md placeholder:text-control-placeholder"
     :class="
       state.hasError
         ? 'border-error focus:ring-error focus:border-error'
@@ -17,6 +17,7 @@
     @focus="onFocus"
     @blur="onBlur"
     @input="onInput($event)"
+    @keypress.enter="onPressEnter"
   />
 </template>
 
@@ -33,19 +34,23 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     required?: boolean;
+    forceRequired?: boolean;
     value?: string;
     placeholder?: string;
     disabled?: boolean;
     bordered?: boolean;
     focusOnMount?: boolean;
+    endsOnEnter?: boolean;
   }>(),
   {
     required: false,
+    forceRequired: true,
     value: "",
     placeholder: "",
     disabled: false,
     bordered: true,
     focusOnMount: false,
+    endsOnEnter: false,
   }
 );
 
@@ -73,6 +78,11 @@ watch(
   () => props.value,
   (cur) => {
     state.text = cur;
+    if (props.required && isEmpty(state.text.trim())) {
+      state.hasError = true;
+    } else {
+      state.hasError = false;
+    }
   }
 );
 
@@ -84,8 +94,8 @@ const onBlur = () => {
   if (props.required && isEmpty(state.text.trim())) {
     state.hasError = true;
     nextTick(() => {
-      state.text = state.originalText;
-      if (inputField.value) {
+      if (props.forceRequired && inputField.value) {
+        state.text = state.originalText;
         // Since we set focus in the nextTick, inputField might already disappear due to outside state change.
         inputField.value.focus();
         nextTick(() => {
@@ -102,5 +112,12 @@ const onBlur = () => {
 const onInput = (e: Event) => {
   state.hasError = false;
   emit("input", e);
+};
+
+const onPressEnter = (e: Event) => {
+  if (props.endsOnEnter) {
+    const input = e.target as HTMLInputElement;
+    input?.blur();
+  }
 };
 </script>

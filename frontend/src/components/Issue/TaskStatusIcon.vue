@@ -3,7 +3,13 @@
     class="relative flex flex-shrink-0 items-center justify-center rounded-full select-none w-6 h-6 overflow-hidden"
     :class="classes"
   >
-    <template v-if="status === 'PENDING'">
+    <template v-if="taskCheckStatus === 'ERROR'">
+      <heroicons:exclamation-circle class="w-7 h-7 text-error" />
+    </template>
+    <template v-else-if="taskCheckStatus === 'WARN'">
+      <heroicons:exclamation-triangle class="w-7 h-7 text-warning" />
+    </template>
+    <template v-else-if="status === 'PENDING'">
       <span
         v-if="active"
         class="h-2 w-2 bg-info rounded-full"
@@ -32,7 +38,8 @@
       </div>
     </template>
     <template v-else-if="status === 'DONE'">
-      <heroicons-solid:check class="w-5 h-5" />
+      <SkipIcon v-if="isSkipped" class="w-5 h-5" />
+      <heroicons-solid:check v-else class="w-5 h-5" />
     </template>
     <template v-else-if="status === 'FAILED'">
       <span
@@ -51,15 +58,45 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { TaskStatus } from "../../types";
+
+import type {
+  Task,
+  TaskCheckStatus,
+  TaskCreate,
+  TaskStatus,
+} from "../../types";
+import { SkipIcon } from "../Icon";
+import { checkStatusOfTask, isTaskSkipped } from "@/utils";
 
 const props = defineProps<{
   create: boolean;
   active: boolean;
   status: TaskStatus;
+  task?: Task | TaskCreate;
+  ignoreTaskCheckStatus?: boolean;
 }>();
 
+const isSkipped = computed(() => {
+  return !props.create && props.task && isTaskSkipped(props.task as Task);
+});
+
+const taskCheckStatus = computed((): TaskCheckStatus | undefined => {
+  if (props.ignoreTaskCheckStatus) return undefined;
+  if (!props.create && props.task) {
+    const task = props.task as Task;
+    return checkStatusOfTask(task);
+  }
+  return undefined;
+});
+
 const classes = computed((): string => {
+  if (taskCheckStatus.value === "ERROR") {
+    return "bg-white text-error !w-7";
+  }
+  if (taskCheckStatus.value === "WARN") {
+    return "bg-white text-warning !w-7";
+  }
+
   switch (props.status) {
     case "PENDING":
       if (!props.create && props.active) {
@@ -74,6 +111,9 @@ const classes = computed((): string => {
     case "RUNNING":
       return "bg-white border-2 border-info text-info";
     case "DONE":
+      if (isSkipped.value) {
+        return "bg-gray-200 text-gray-500";
+      }
       return "bg-success text-white";
     case "FAILED":
       return "bg-error text-white";

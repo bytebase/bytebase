@@ -1,115 +1,110 @@
 <template>
   <div
-    class="pt-1 overflow-hidden grid grid-cols-4 gap-x-2 gap-y-4 md:inline-flex md:gap-x-0 items-center"
+    class="pt-1 overflow-hidden grid grid-cols-5 gap-x-2 gap-y-4 md:inline-flex items-stretch"
   >
     <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
         v-if="quickAction === 'quickaction.bb.instance.create'"
-        class="flex flex-col items-center w-28 py-1"
+        class="flex flex-col items-center w-24"
         data-label="bb-quick-action-add-instance"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createInstance">
-          <heroicons-outline:plus-sm class="w-6 h-6" />
+          <heroicons-outline:plus-sm class="w-5 h-5" />
         </button>
-        <h3 class="mt-1 text-base font-normal text-main tracking-tight">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("quick-action.add-instance") }}
         </h3>
       </div>
 
       <div
         v-if="quickAction === 'quickaction.bb.user.manage'"
-        class="flex flex-col items-center w-28 py-1"
+        class="flex flex-col items-center w-24"
       >
         <router-link to="/setting/member" class="btn-icon-primary p-3">
-          <heroicons-outline:users class="w-6 h-6" />
+          <heroicons-outline:users class="w-5 h-5" />
         </router-link>
         <h3
-          class="mt-1 text-center text-base font-normal text-main tracking-tight"
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
         >
           {{ $t("quick-action.manage-user") }}
         </h3>
       </div>
 
-      <div
-        v-if="quickAction === 'quickaction.bb.database.create'"
-        class="flex flex-col items-center w-28 py-1"
-        data-label="bb-quick-action-new-db"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="createDatabase">
-          <heroicons-outline:database class="w-6 h-6" />
-        </button>
-        <h3
-          class="mt-1 text-base text-center font-normal text-main tracking-tight"
+      <template v-if="shouldShowAlterDatabaseEntries">
+        <div
+          v-if="quickAction === 'quickaction.bb.database.create'"
+          class="flex flex-col items-center w-24"
+          data-label="bb-quick-action-new-db"
         >
-          {{ $t("quick-action.new-db") }}
-        </h3>
-      </div>
+          <button class="btn-icon-primary p-3" @click.prevent="createDatabase">
+            <heroicons-outline:database class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("quick-action.new-db") }}
+          </h3>
+        </div>
+
+        <div
+          v-if="quickAction === 'quickaction.bb.database.request'"
+          class="flex flex-col items-center w-24"
+        >
+          <button class="btn-icon-primary p-3" @click.prevent="requestDatabase">
+            <heroicons-outline:database class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("quick-action.request-db") }}
+          </h3>
+        </div>
+
+        <div
+          v-if="quickAction === 'quickaction.bb.database.schema.update'"
+          class="flex flex-col items-center w-24"
+        >
+          <button
+            class="btn-icon-primary p-3"
+            data-label="bb-alter-schema-button"
+            @click.prevent="alterSchema"
+          >
+            <heroicons-outline:pencil-alt class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("database.alter-schema") }}
+          </h3>
+        </div>
+
+        <div
+          v-if="quickAction === 'quickaction.bb.database.data.update'"
+          class="flex flex-col items-center w-24"
+        >
+          <button class="btn-icon-primary p-3" @click.prevent="changeData">
+            <heroicons-outline:pencil class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("database.change-data") }}
+          </h3>
+        </div>
+      </template>
 
       <div
-        v-if="quickAction === 'quickaction.bb.database.request'"
-        class="flex flex-col items-center w-28 py-1"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="requestDatabase">
-          <heroicons-outline:database class="w-6 h-6" />
-        </button>
-        <h3
-          class="mt-1 text-base text-center font-normal text-main tracking-tight"
-        >
-          {{ $t("quick-action.request-db") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.database.schema.update'"
-        class="flex flex-col items-center w-28 py-1"
-      >
-        <button
-          class="btn-icon-primary p-3"
-          data-label="bb-alter-schema-button"
-          @click.prevent="alterSchema"
-        >
-          <heroicons-outline:pencil-alt class="w-6 h-6" />
-        </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">
-          {{ $t("database.alter-schema") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.database.data.update'"
-        class="flex flex-col items-center w-28 py-1"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="changeData">
-          <heroicons-outline:pencil class="w-6 h-6" />
-        </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">
-          {{ $t("database.change-data") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.database.schema.sync'"
-        class="flex flex-col items-center w-28 py-1"
-      >
-        <button
-          class="btn-icon-primary p-3 relative"
-          @click.prevent="syncDatabaseSchema"
-        >
-          <heroicons-outline:refresh class="w-6 h-6" />
-          <BBBetaBadge :corner="true" class="top-1" />
-        </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">
-          {{ $t("quick-action.sync-schema") }}
-        </h3>
-      </div>
-      <div
-        v-if="isDev && quickAction === 'quickaction.bb.database.troubleshoot'"
-        class="flex flex-col items-center w-28 py-1"
+        v-if="isDev() && quickAction === 'quickaction.bb.database.troubleshoot'"
+        class="flex flex-col items-center w-24"
       >
         <router-link to="/issue/new" class="btn-icon-primary p-3">
-          <heroicons-outline:hand class="w-6 h-6" />
+          <heroicons-outline:hand class="w-5 h-5" />
         </router-link>
-        <h3 class="mt-1 text-center text-base font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("quick-action.troubleshoot") }}
         </h3>
       </div>
@@ -119,52 +114,113 @@
         class="flex flex-col items-center w-36"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createEnvironment">
-          <heroicons-outline:plus-sm class="w-6 h-6" />
+          <heroicons-outline:plus-sm class="w-5 h-5" />
         </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("environment.create") }}
         </h3>
       </div>
 
       <div
         v-if="quickAction === 'quickaction.bb.environment.reorder'"
-        class="flex flex-col items-center w-28 py-1"
+        class="flex flex-col items-center w-24"
       >
         <button
           class="btn-icon-primary p-3"
           @click.prevent="reorderEnvironment"
         >
-          <heroicons-outline:selector class="transform rotate-90 w-6 h-6" />
+          <heroicons-outline:selector class="transform rotate-90 w-5 h-5" />
         </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("common.reorder") }}
         </h3>
       </div>
 
       <div
         v-if="quickAction === 'quickaction.bb.project.create'"
-        class="flex flex-col items-center w-28 py-1"
+        class="flex flex-col items-center w-24"
         data-label="bb-quick-action-new-project"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createProject">
-          <heroicons-outline:template class="w-6 h-6" />
+          <heroicons-outline:template class="w-5 h-5" />
         </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("quick-action.new-project") }}
         </h3>
       </div>
 
       <div
         v-if="quickAction === 'quickaction.bb.project.database.transfer'"
-        class="flex flex-col items-center w-28 py-1"
+        class="flex flex-col items-center w-24"
       >
         <button class="btn-icon-primary p-3" @click.prevent="transferDatabase">
-          <heroicons-outline:chevron-double-down class="w-6 h-6" />
+          <heroicons-outline:chevron-double-down class="w-5 h-5" />
         </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
           {{ $t("quick-action.transfer-in-db") }}
         </h3>
       </div>
+
+      <div
+        v-if="quickAction === 'quickaction.bb.project.database.transfer'"
+        class="flex flex-col items-center w-24"
+      >
+        <button
+          class="btn-icon-primary p-3"
+          @click.prevent="transferOutDatabase"
+        >
+          <heroicons-outline:chevron-double-up class="w-5 h-5" />
+        </button>
+        <h3
+          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+        >
+          {{ $t("quick-action.transfer-out-db") }}
+        </h3>
+      </div>
+
+      <template v-if="hasCustomRoleFeature">
+        <div
+          v-if="quickAction === 'quickaction.bb.issue.grant.request.querier'"
+          class="flex flex-col items-center w-24"
+        >
+          <button
+            class="btn-icon-primary p-3"
+            @click.prevent="createRequestQueryIssue"
+          >
+            <heroicons-outline:document-search class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("quick-action.request-query") }}
+          </h3>
+        </div>
+
+        <div
+          v-if="quickAction === 'quickaction.bb.issue.grant.request.exporter'"
+          class="flex flex-col items-center w-24"
+        >
+          <button
+            class="btn-icon-primary p-3"
+            @click.prevent="createExportDataIssue"
+          >
+            <heroicons-outline:document-download class="w-5 h-5" />
+          </button>
+          <h3
+            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
+          >
+            {{ $t("quick-action.export-data") }}
+          </h3>
+        </div>
+      </template>
     </template>
   </div>
   <BBModal
@@ -181,7 +237,7 @@
     <template
       v-else-if="state.quickActionType == 'quickaction.bb.instance.create'"
     >
-      <CreateInstanceForm @dismiss="state.showModal = false" />
+      <InstanceForm :modal="true" @dismiss="state.showModal = false" />
     </template>
     <template
       v-else-if="
@@ -228,9 +284,12 @@
       />
     </template>
     <template
-      v-else-if="state.quickActionType == 'quickaction.bb.database.schema.sync'"
+      v-else-if="
+        state.quickActionType == 'quickaction.bb.project.database.transfer-out'
+      "
     >
-      <SyncDatabaseSchemaPrepForm
+      <TransferOutDatabaseForm
+        v-if="projectId"
         :project-id="projectId"
         @dismiss="state.showModal = false"
       />
@@ -249,21 +308,23 @@ import { kebabCase } from "lodash-es";
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { ProjectId, QuickActionType } from "../types";
-import { idFromSlug } from "../utils";
+import { QuickActionType } from "../types";
+import { idFromSlug, isDev } from "../utils";
 import {
   useCommandStore,
-  useInstanceStore,
-  useSubscriptionStore,
+  useCurrentUserIamPolicy,
+  useInstanceV1Store,
+  useProjectV1ListByCurrentUser,
+  useRouterStore,
+  useSubscriptionV1Store,
 } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
-import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
-import CreateInstanceForm from "../components/CreateInstanceForm.vue";
+import InstanceForm from "../components/InstanceForm/";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
-import SyncDatabaseSchemaPrepForm from "./SyncDatabaseSchemaPrepForm.vue";
+import TransferOutDatabaseForm from "../components/TransferOutDatabaseForm";
 
 interface LocalState {
   showModal: boolean;
@@ -284,8 +345,13 @@ const props = defineProps({
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
+const routerStore = useRouterStore();
 const commandStore = useCommandStore();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
+
+const hasCustomRoleFeature = computed(() => {
+  return subscriptionStore.hasFeature("bb.feature.custom-role");
+});
 
 const state = reactive<LocalState>({
   showModal: false,
@@ -296,12 +362,23 @@ const state = reactive<LocalState>({
   quickActionType: "quickaction.bb.instance.create",
 });
 
-const projectId = computed((): ProjectId | undefined => {
+const projectId = computed((): string | undefined => {
   if (router.currentRoute.value.name == "workspace.project.detail") {
     const parts = router.currentRoute.value.path.split("/");
-    return idFromSlug(parts[parts.length - 1]);
+    return String(idFromSlug(parts[parts.length - 1]));
   }
   return undefined;
+});
+
+// Only show alter schema and change data if the user has permission to alter schema of at least one project.
+const shouldShowAlterDatabaseEntries = computed(() => {
+  const { projectList } = useProjectV1ListByCurrentUser();
+  const currentUserIamPolicy = useCurrentUserIamPolicy();
+  return projectList.value
+    .map((project) => {
+      return currentUserIamPolicy.allowToChangeDatabaseOfProject(project.name);
+    })
+    .includes(true);
 });
 
 watch(route, () => {
@@ -322,10 +399,16 @@ const transferDatabase = () => {
   state.showModal = true;
 };
 
+const transferOutDatabase = () => {
+  state.modalTitle = t("quick-action.transfer-out-db-title");
+  state.modalSubtitle = "";
+  state.quickActionType = "quickaction.bb.project.database.transfer-out";
+  state.showModal = true;
+};
+
 const createInstance = () => {
-  const { subscription } = subscriptionStore;
-  const instanceList = useInstanceStore().getInstanceList();
-  if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
+  const instanceList = useInstanceV1Store().instanceList;
+  if (subscriptionStore.instanceCount <= instanceList.length) {
     state.featureName = "bb.feature.instance-count";
     state.showFeatureModal = true;
     return;
@@ -338,20 +421,12 @@ const createInstance = () => {
 
 const alterSchema = () => {
   state.modalTitle = t("database.alter-schema");
-  state.modalSubtitle = t("quick-action.choose-db");
   state.quickActionType = "quickaction.bb.database.schema.update";
-  state.showModal = true;
-};
-
-const syncDatabaseSchema = () => {
-  state.modalTitle = t("database.sync-schema.title");
-  state.quickActionType = "quickaction.bb.database.schema.sync";
   state.showModal = true;
 };
 
 const changeData = () => {
   state.modalTitle = t("database.change-data");
-  state.modalSubtitle = t("quick-action.choose-db");
   state.quickActionType = "quickaction.bb.database.data.update";
   state.showModal = true;
 };
@@ -372,6 +447,48 @@ const requestDatabase = () => {
 
 const createEnvironment = () => {
   commandStore.dispatchCommand("bb.environment.create");
+};
+
+const createRequestQueryIssue = () => {
+  const routeInfo = {
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query: {
+      template: "bb.issue.grant.request",
+      role: "QUERIER",
+      name: "New grant querier request",
+    },
+  };
+  const routeSlug = routerStore.routeSlug(route);
+  const projectSlug = routeSlug.projectSlug;
+  if (projectSlug) {
+    const id = idFromSlug(projectSlug);
+    (routeInfo.query as any).project = id;
+  }
+  router.push(routeInfo);
+};
+
+const createExportDataIssue = () => {
+  const routeInfo = {
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query: {
+      template: "bb.issue.grant.request",
+      role: "EXPORTER",
+      name: "New grant exporter request",
+    },
+  };
+  const routeSlug = routerStore.routeSlug(route);
+  const projectSlug = routeSlug.projectSlug;
+  if (projectSlug) {
+    const id = idFromSlug(projectSlug);
+    (routeInfo.query as any).project = id;
+  }
+  router.push(routeInfo);
 };
 
 const reorderEnvironment = () => {
@@ -402,10 +519,6 @@ const QuickActionMap: Record<string, Partial<Action>> = {
   "quickaction.bb.database.troubleshoot": {
     name: t("quick-action.troubleshoot"),
     perform: () => router.push({ path: "/issue/new" }),
-  },
-  "quickaction.bb.database.schema.sync": {
-    name: t("quick-action.sync-schema"),
-    perform: () => syncDatabaseSchema(),
   },
   "quickaction.bb.environment.create": {
     name: t("quick-action.add-environment"),

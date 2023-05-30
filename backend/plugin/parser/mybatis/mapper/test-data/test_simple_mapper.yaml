@@ -1,0 +1,45 @@
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <select id="selectUsers" parameterType="int" resultType="hashmap">
+            select * from users where id = #{id}
+        </select>
+    </mapper>
+  sql: |
+    select * from users where id = ?;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <select id="selectUsers" parameterType="int" resultType="hashmap">
+            select * from users where id = ${id}
+        </select>
+    </mapper>
+  sql: |
+    select * from users where id = ?;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <select id="selectUsers" parameterType="int" resultType="hashmap">
+            select * from users where id = #{id}
+        </select>
+        <insert id="insertUsers" parameterType="com.bytebase.test.Users">
+            insert into users (id, name) values (${id}, #{name})
+        </insert>
+        <update id="updateUsers" parameterType="com.bytebase.test.Users">
+            update users set name = #{name} where id = ${id}
+        </update>
+        <delete id="deleteUsers" parameterType="int">
+            delete from users where id = ${id}
+        </delete>
+    </mapper>
+  sql: |
+    select * from users where id = ?;
+    insert into users (id, name) values (?, ?);
+    update users set name = ? where id = ?;
+    delete from users where id = ?;
+- xml: |-
+    <mapper namespace="com.bytebase.test">
+        <!--Query users by id-->
+        <select id="selectUsers" parameterType="int" resultType="hashmap">
+            select * from users where id = #{id}
+        </select>
+    </mapper>
+  sql: |
+    select * from users where id = ?;

@@ -1,11 +1,21 @@
 import { useI18n } from "vue-i18n";
 import planData from "./plan.yaml";
+import {
+  PlanType,
+  planTypeFromJSON,
+} from "@/types/proto/v1/subscription_service";
 
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
+  // General
+  | "bb.feature.custom-role"
   // Admin & Security
-  | "bb.feature.3rd-party-auth"
+  | "bb.feature.sso"
+  | "bb.feature.2fa"
   | "bb.feature.rbac"
+  | "bb.feature.disallow-signup"
+  | "bb.feature.watermark"
+  | "bb.feature.audit-log"
   // Branding
   | "bb.feature.branding"
   // Change Workflow
@@ -18,21 +28,28 @@ export type FeatureType =
   | "bb.feature.schema-drift"
   | "bb.feature.sql-review"
   | "bb.feature.task-schedule-time"
+  | "bb.feature.encrypted-secrets"
+  // VCS Integration
+  | "bb.feature.vcs-schema-write-back"
+  | "bb.feature.vcs-sheet-sync"
   | "bb.feature.vcs-sql-review"
   // Database management
   | "bb.feature.pitr"
   | "bb.feature.read-replica-connection"
+  | "bb.feature.instance-ssh-connection"
   | "bb.feature.sync-schema-all-versions"
+  | "bb.feature.index-advisor"
   // Policy Control
   | "bb.feature.approval-policy"
   | "bb.feature.backup-policy"
-  | "bb.feature.environment-tier-policy";
-
-export enum PlanType {
-  FREE = 0,
-  TEAM = 1,
-  ENTERPRISE = 2,
-}
+  | "bb.feature.environment-tier-policy"
+  | "bb.feature.sensitive-data"
+  | "bb.feature.access-control"
+  | "bb.feature.custom-approval"
+  // Collaboration
+  | "bb.feature.shared-sql-script"
+  // Plugins
+  | "bb.feature.plugin.openai";
 
 export const planTypeToString = (planType: PlanType): string => {
   switch (planType) {
@@ -42,6 +59,8 @@ export const planTypeToString = (planType: PlanType): string => {
       return "team";
     case PlanType.ENTERPRISE:
       return "enterprise";
+    default:
+      return "";
   }
 };
 
@@ -59,55 +78,22 @@ export interface Plan {
   // Plan meta data
   type: PlanType;
   trialDays: number;
-  unitPrice: number;
   trialPrice: number;
-  freeInstanceCount: number;
+  unitPrice: number;
+  pricePerSeatPerMonth: number;
   pricePerInstancePerMonth: number;
   // Plan desc and feature
   title: string;
   featureList: PlanFeature[];
 }
 
-// A map from a particular feature to the respective enablement of a particular plan.
-// The key is the feature type and the value is the [FREE, TEAM, ENTERPRISE] triplet.
-// Make sure this is consistent with the matrix in plan.go
-//
-// TODO: fetch the matrix from the backend instead of duplicating it here or use a JSON/YAML file
-// so that it can be shared between frontend/backend.
-export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
-  // Admin & Security
-  ["bb.feature.3rd-party-auth", [false, true, true]],
-  ["bb.feature.rbac", [false, true, true]],
-  // Branding
-  ["bb.feature.branding", [false, false, true]],
-  // Change Workflow
-  ["bb.feature.data-source", [false, false, false]],
-  ["bb.feature.dba-workflow", [false, false, true]],
-  ["bb.feature.lgtm", [false, false, true]],
-  ["bb.feature.im.approval", [false, false, true]],
-  ["bb.feature.multi-tenancy", [false, false, true]],
-  ["bb.feature.online-migration", [false, true, true]],
-  ["bb.feature.schema-drift", [false, true, true]],
-  ["bb.feature.sql-review", [false, true, true]],
-  ["bb.feature.task-schedule-time", [false, true, true]],
-  ["bb.feature.vcs-sql-review", [false, false, true]],
-  // Database management
-  ["bb.feature.pitr", [false, true, true]],
-  ["bb.feature.read-replica-connection", [false, false, true]],
-  // This feature type is specifically means that all schema versions can be selected.
-  // Sync schema is free to all plans. But in non-enterprise plan, we only show the
-  // latest schema version and it's not selectable.
-  ["bb.feature.sync-schema-all-versions", [false, false, true]],
-  // Policy Control
-  ["bb.feature.approval-policy", [false, true, true]],
-  ["bb.feature.backup-policy", [false, true, true]],
-  ["bb.feature.environment-tier-policy", [false, false, true]],
-]);
-
 export const FEATURE_SECTIONS: { type: string; featureList: string[] }[] =
   planData.categoryList;
 
-export const PLANS: Plan[] = planData.planList;
+export const PLANS: Plan[] = planData.planList.map((raw: Plan) => ({
+  ...raw,
+  type: planTypeFromJSON(raw.type + 1),
+}));
 
 export const getFeatureLocalization = (feature: PlanFeature): PlanFeature => {
   const { t } = useI18n();

@@ -1,0 +1,73 @@
+<table id="slow-query-table" style="margin:auto;">
+    <tr>
+        <th>DB</th>
+        <th>Slow Query</th>
+    </tr>
+    <!-- TODO(junyi) For loop this tr block to generate all slow query entry in table element.-->
+    <tr>
+        <td>Employee</td>
+        <td><span class="sql-text"> -- create a dummy table with 10 rows
+CREATE TABLE dummy_table (id INT NOT NULL PRIMARY KEY);
+INSERT INTO dummy_table VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10);
+-- create the table if it doesn't exist
+CREATE TABLE my_table (
+id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+name VARCHAR(50),
+age INT,
+salary INT
+);
+
+-- insert 1,000,000 rows into the table
+INSERT INTO my_table (name, age, salary)
+SELECT CONCAT('Name', t1.id), FLOOR(RAND() * 47) + 18, FLOOR(RAND() * 40000) + 10000
+FROM dummy_table t1, dummy_table t2, dummy_table t3, dummy_table t4, dummy_table t5, dummy_table t6, dummy_table t7, dummy_table t8;
+
+-- run a complex query that takes more than 10 seconds to execute
+SELECT t1.name, AVG(t1.salary)
+FROM my_table t1
+JOIN my_table t2 ON t1.id = t2.id
+WHERE t1.age > 30
+GROUP BY t1.name
+HAVING COUNT(*) > 1000;
+</span></td>
+    </tr>
+    <tr>
+        <td>Employee</td>
+        <td><span class="sql-text"> -- create a dummy table with 10 rows
+CREATE TABLE dummy_table (id INT NOT NULL PRIMARY KEY);
+INSERT INTO dummy_table VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10);
+-- create the table if it doesn't exist
+CREATE TABLE my_table (
+id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+name VARCHAR(50),
+age INT,
+salary INT
+);
+
+-- insert 1,000,000 rows into the table
+INSERT INTO my_table (name, age, salary)
+SELECT CONCAT('Name', t1.id), FLOOR(RAND() * 47) + 18, FLOOR(RAND() * 40000) + 10000
+FROM dummy_table t1, dummy_table t2, dummy_table t3, dummy_table t4, dummy_table t5, dummy_table t6, dummy_table t7, dummy_table t8;
+
+-- run a complex query that takes more than 10 seconds to execute
+SELECT t1.name, AVG(t1.salary)
+FROM my_table t1
+JOIN my_table t2 ON t1.id = t2.id
+WHERE t1.age > 30
+GROUP BY t1.name
+HAVING COUNT(*) > 1000;
+</span></td>
+    </tr>
+    <tr>
+        <td>Salary</td>
+        <td><span class="sql-text">
+-- run a complex query that takes more than 10 seconds to execute
+SELECT t1.name, AVG(t1.salary)
+FROM my_table t1
+JOIN my_table t2 ON t1.id = t2.id
+WHERE t1.age > 30
+GROUP BY t1.name
+HAVING COUNT(*) > 1000;
+</span></td>
+    </tr>
+</table>

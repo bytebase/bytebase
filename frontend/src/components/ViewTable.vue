@@ -9,7 +9,7 @@
   >
     <template #body="{ rowData: view }">
       <BBTableCell :left-padding="4" class="w-16">
-        {{ view.name }}
+        {{ getViewName(view.name) }}
       </BBTableCell>
       <BBTableCell class="w-64">
         {{ view.definition }}
@@ -17,47 +17,56 @@
       <BBTableCell class="w-8">
         {{ view.comment }}
       </BBTableCell>
-      <BBTableCell class="w-8">
-        {{ humanizeTs(view.createdTs) }}
-      </BBTableCell>
     </template>
   </BBTable>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { View } from "@/types";
+import { ViewMetadata } from "@/types/proto/store/database";
+import { ComposedDatabase } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 
-export default {
-  name: "ViewTable",
-  components: {},
-  props: {
-    viewList: {
-      required: true,
-      type: Object as PropType<View[]>,
-    },
+const props = defineProps({
+  database: {
+    required: true,
+    type: Object as PropType<ComposedDatabase>,
   },
-  setup() {
-    const { t } = useI18n();
-    const columnList = computed(() => [
-      {
-        title: t("common.name"),
-      },
-      {
-        title: t("common.definition"),
-      },
-      {
-        title: t("database.comment"),
-      },
-      {
-        title: t("common.created-at"),
-      },
-    ]);
+  schemaName: {
+    type: String,
+    default: "",
+  },
+  viewList: {
+    required: true,
+    type: Object as PropType<ViewMetadata[]>,
+  },
+});
 
-    return {
-      columnList,
-    };
+const { t } = useI18n();
+
+const engine = computed(() => props.database.instanceEntity.engine);
+
+const hasSchemaProperty = computed(() => {
+  return engine.value === Engine.POSTGRES || engine.value === Engine.SNOWFLAKE;
+});
+
+const columnList = computed(() => [
+  {
+    title: t("common.name"),
   },
+  {
+    title: t("common.definition"),
+  },
+  {
+    title: t("database.comment"),
+  },
+]);
+
+const getViewName = (viewName: string) => {
+  if (hasSchemaProperty.value) {
+    return `"${props.schemaName}"."${viewName}"`;
+  }
+  return viewName;
 };
 </script>

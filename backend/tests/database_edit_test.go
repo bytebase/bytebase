@@ -1,0 +1,119 @@
+package tests
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"strconv"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/resources/mysql"
+	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+)
+
+func TestDatabaseEdit(t *testing.T) {
+	const (
+		databaseName = "db_for_testing"
+	)
+
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	dataDir := t.TempDir()
+	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	// Create a MySQL instance.
+	mysqlPort := getTestPort()
+	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
+	defer stopInstance()
+
+	mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", mysqlPort))
+	a.NoError(err)
+	defer mysqlDB.Close()
+
+	_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+	a.NoError(err)
+
+	_, err = mysqlDB.Exec("DROP USER IF EXISTS bytebase")
+	a.NoError(err)
+	_, err = mysqlDB.Exec("CREATE USER 'bytebase' IDENTIFIED WITH mysql_native_password BY 'bytebase'")
+	a.NoError(err)
+
+	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
+	a.NoError(err)
+
+	// Create a project.
+	project, err := ctl.createProject(ctx)
+	a.NoError(err)
+	projectUID, err := strconv.Atoi(project.Uid)
+	a.NoError(err)
+
+	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	a.NoError(err)
+
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance", 10),
+		Instance: &v1pb.Instance{
+			Title:       "mysqlSchemaEditorInstance",
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: prodEnvironment.Name,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
+		},
+	})
+	a.NoError(err)
+	instanceUID, err := strconv.Atoi(instance.Uid)
+	a.NoError(err)
+
+	databases, err := ctl.getDatabases(api.DatabaseFind{
+		ProjectID: &projectUID,
+	})
+	a.NoError(err)
+	a.Nil(databases)
+	databases, err = ctl.getDatabases(api.DatabaseFind{
+		InstanceID: &instanceUID,
+	})
+	a.NoError(err)
+	a.Nil(databases)
+
+	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil)
+	a.NoError(err)
+
+	databases, err = ctl.getDatabases(api.DatabaseFind{
+		ProjectID: &projectUID,
+	})
+	a.NoError(err)
+	a.Equal(1, len(databases))
+
+	database := databases[0]
+	a.Equal(instanceUID, database.Instance.ID)
+
+	databaseEdit := api.DatabaseEdit{
+		DatabaseID: database.ID,
+		CreateTableList: []*api.CreateTableContext{
+			{
+				Name: "student",
+				AddColumnList: []*api.AddColumnContext{
+					{
+						Name:    "id",
+						Type:    "VARCHAR(255)",
+						Comment: "student id",
+					},
+				},
+			},
+		},
+	}
+
+	databaseEditResult, err := ctl.postDatabaseEdit(databaseEdit)
+	a.NoError(err)
+	a.Equal(databaseEditResult.Statement, "CREATE TABLE `student` (\n  `id` VARCHAR(255) COMMENT 'student id' NOT NULL\n);\n")
+}

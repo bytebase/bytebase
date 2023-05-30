@@ -1,0 +1,28 @@
+- oldSchema: |
+    CREATE TABLE public.t (a INTEGER);
+  newSchema: |
+    CREATE TABLE public.t (a INTEGER);
+    ALTER TABLE ONLY public.t ALTER COLUMN a SET DEFAULT nextval('public.t_a_seq'::regclass);
+  diff: |+
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "a" SET DEFAULT nextval('public.t_a_seq'::regclass);
+
+- oldSchema: |
+    CREATE TABLE public.t (a INTEGER);
+    ALTER TABLE ONLY public.t ALTER COLUMN a SET DEFAULT nextval('public.t_a_seq'::regclass);
+  newSchema: |
+    CREATE TABLE public.t (a INTEGER);
+    ALTER TABLE ONLY public.t ALTER COLUMN a SET DEFAULT nextval('public.t_a_seq_2'::regclass);
+  diff: |+
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "a" SET DEFAULT nextval('public.t_a_seq_2'::regclass);
+
+- oldSchema: |
+    CREATE TABLE public.t (a INTEGER);
+    ALTER TABLE ONLY public.t ALTER COLUMN a SET DEFAULT nextval('public.t_a_seq'::regclass);
+  newSchema: |
+    CREATE TABLE public.t (a INTEGER);
+  diff: |+
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "a" DROP DEFAULT;
+

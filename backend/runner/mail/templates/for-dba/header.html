@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<meta content="text/html; charset=UTF-8" />
+<html lang="en">
+    <head>
+        <style type="text/css">
+            .mail-heading {
+                font-size: 40px;
+                line-height: 1.3;
+                font-weight: 700;
+                text-align: center;
+                letter-spacing:-1px;
+            }
+            .mail-text {
+                font-size: 16px;
+                line-height: 20px;
+                margin-top: 16px;
+                margin-left:0;
+                margin-right:0;
+                word-wrap: normal;
+            }
+            .env-title {
+                font-size: 32px;
+                line-height: 20px;
+                word-wrap: normal;
+            }
+            .instance-title {
+                font-size: 24px;
+                line-height: 20px;
+                word-wrap: normal;
+            }
+            .hint-text {
+                font-size: 20px;
+                line-height: 20px;
+                word-wrap: normal;
+            }
+            .text-center {
+                text-align: center;
+            }
+
+            .sql-text {
+                font-size: 16px;
+                line-height: 20px;
+                word-wrap: normal;
+                font-family: monospace;
+            }
+
+            #slow-query-table td, #slow-query-table th {
+                white-space: pre-wrap;
+                border: 1px solid #ddd;
+                padding: 8px;
+            }
+
+            #slow-query-table tr:nth-child(even){background-color: #f2f2f2;}
+
+            #slow-query-table tr:hover {background-color: #ddd;}
+
+            #slow-query-table th {
+                padding-top: 12px;
+                padding-bottom: 12px;
+                text-align: left;
+                background-color: #4f46e5;
+                color: white;
+            }
+        </style>
+    </head>
+    <body style="background-color: #ffffff;font-family:-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Roboto,Oxygen-Sans,Ubuntu,Cantarell,&quot;Helvetica Neue&quot;,monospace,sans-serif">
+        <h1 data-id="mail-heading" class="mail-heading">Database slow query weekly report {{BEGIN_DATE}} ~ {{END_DATE}}</h1>
+        <p data-id="mail-first-graph" class="mail-text" style="text-align: center;">
+            Below is the slow query for {{BEGIN_DATE}} ~ {{END_DATE}}, each database lists at most 5 slow queries.
+            You can visit&nbsp;<a href="{{VISIT_URL}}"><span class="mail-text">{{VISIT_URL}}</span></a>&nbsp;to enable/disable slow query collection.
+            <br>
+        </p>

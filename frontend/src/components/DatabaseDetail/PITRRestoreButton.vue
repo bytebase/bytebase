@@ -70,7 +70,7 @@
       </template>
 
       <template v-else>
-        <div class="w-[16.5rem] space-y-4">
+        <div class="w-72 space-y-4">
           <div class="space-y-2">
             <label class="textlabel w-full flex items-baseline">
               <span>{{ $t("database.pitr.point-in-time") }}</span>
@@ -181,18 +181,20 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, ref } from "vue";
+import { computed, PropType, reactive, ref, toRef } from "vue";
 import { useRouter } from "vue-router";
 import { NDatePicker } from "naive-ui";
 import dayjs from "dayjs";
 import { useI18n } from "vue-i18n";
-import { CreateDatabaseContext, Database } from "@/types";
+import { CreateDatabaseContext, ComposedDatabase } from "@/types";
 import { usePITRLogic } from "@/plugins";
 import { issueSlug } from "@/utils";
 import { featureToRef } from "@/store";
 import CreatePITRDatabaseForm from "./CreatePITRDatabaseForm.vue";
 import { CreatePITRDatabaseContext } from "./utils";
-import type { ButtonAction } from "@/bbkit/BBContextMenuButton.vue";
+import BBContextMenuButton, {
+  type ButtonAction,
+} from "@/bbkit/BBContextMenuButton.vue";
 
 type PITRTarget = "IN-PLACE" | "NEW";
 
@@ -217,7 +219,7 @@ const props = defineProps({
     require: true,
   },
   database: {
-    type: Object as PropType<Database>,
+    type: Object as PropType<ComposedDatabase>,
     required: true,
   },
 });
@@ -243,7 +245,7 @@ const hasPITRFeature = featureToRef("bb.feature.pitr");
 const timezone = computed(() => "UTC" + dayjs().format("ZZ"));
 
 const { pitrAvailable, doneBackupList, lastMigrationHistory, createPITRIssue } =
-  usePITRLogic(computed(() => props.database));
+  usePITRLogic(toRef(props, "database"));
 
 const pitrButtonDisabled = computed((): boolean => {
   return !props.allowAdmin || !pitrAvailable.value.result;
@@ -360,18 +362,24 @@ const onConfirm = async () => {
     const { target, createContext: context } = state;
     if (target === "NEW" && context) {
       createDatabaseContext = {
-        projectId: context.projectId,
-        environmentId: context.environmentId,
-        instanceId: context.instanceId,
+        projectId: Number(context.projectId),
+        environmentId: Number(context.environmentId),
+        instanceId: Number(context.instanceId),
         databaseName: context.databaseName,
+        tableName: "",
         characterSet: context.characterSet,
         collation: context.collation,
         owner: "",
         cluster: "",
       } as CreateDatabaseContext;
       // Do not submit non-selected optional labels
-      const labelList = context.labelList.filter((label) => !!label.value);
-      createDatabaseContext.labels = JSON.stringify(labelList);
+      const labels = Object.keys(context.labels)
+        .map((key) => {
+          const value = context.labels[key];
+          return { key, value };
+        })
+        .filter((kv) => !!kv.value);
+      createDatabaseContext.labels = JSON.stringify(labels);
     }
 
     const issueNameParts: string[] = [

@@ -9,256 +9,91 @@
       <div class="pt-6">
         <!-- Activity feed-->
         <ul>
-          <li v-for="(item, index) in activityList" :key="item.activity.id">
-            <div :id="`#activity${item.activity.id}`" class="relative pb-4">
-              <span
-                v-if="index != activityList.length - 1"
-                class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
-                aria-hidden="true"
-              ></span>
-              <div class="relative flex items-start">
-                <template v-if="actionIcon(item.activity) == 'system'">
-                  <div class="relative">
-                    <div class="relative pl-0.5">
-                      <div
-                        class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
-                      >
-                        <img
-                          class="mt-1"
-                          src="../../assets/logo-icon.svg"
-                          alt="Bytebase"
-                        />
-                      </div>
-                    </div>
-                  </div>
+          <ActivityItem
+            v-for="(item, index) in activityList"
+            :key="item.activity.id"
+            :activity-list="activityList"
+            :issue="issue"
+            :index="index"
+            :activity="item.activity"
+            :similar="item.similar"
+          >
+            <template v-if="allowEditActivity(item.activity)" #subject-suffix>
+              <div class="space-x-2 flex items-center text-control-light">
+                <template
+                  v-if="
+                    state.editCommentMode &&
+                    state.activeActivity?.id === item.activity.id
+                  "
+                >
+                  <button
+                    type="button"
+                    class="rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+                    @click.prevent="cancelEditComment"
+                  >
+                    {{ $t("common.cancel") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+                    :disabled="!allowUpdateComment"
+                    @click.prevent="doUpdateComment"
+                  >
+                    {{ $t("common.save") }}
+                  </button>
                 </template>
-                <template v-else-if="actionIcon(item.activity) == 'avatar'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
-                    >
-                      <PrincipalAvatar
-                        :principal="item.activity.creator"
-                        :size="'SMALL'"
-                      />
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="actionIcon(item.activity) == 'create'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
-                    >
-                      <heroicons-solid:plus-sm class="w-5 h-5 text-control" />
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="actionIcon(item.activity) == 'update'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
-                    >
-                      <heroicons-solid:pencil class="w-4 h-4 text-control" />
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="actionIcon(item.activity) == 'run'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
-                    >
-                      <heroicons-outline:play class="w-6 h-6 text-control" />
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="actionIcon(item.activity) == 'approve'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
-                    >
-                      <heroicons-outline:thumb-up
-                        class="w-5 h-5 text-control"
-                      />
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="actionIcon(item.activity) == 'cancel'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
-                    >
-                      <heroicons-outline:minus class="w-5 h-5 text-control" />
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="actionIcon(item.activity) == 'fail'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
-                    >
-                      <heroicons-outline:exclamation-circle
-                        class="w-6 h-6 text-error"
-                      />
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="actionIcon(item.activity) == 'complete'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
-                    >
-                      <heroicons-outline:check-circle
-                        class="w-6 h-6 text-success"
-                      />
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="actionIcon(item.activity) == 'commit'">
-                  <div class="relative pl-0.5">
-                    <div
-                      class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
-                    >
-                      <heroicons-outline:code class="w-5 h-5 text-control" />
-                    </div>
-                  </div>
-                </template>
-                <div class="ml-3 min-w-0 flex-1">
-                  <div class="min-w-0 flex-1 pt-1 flex justify-between">
-                    <div class="text-sm text-control-light">
-                      {{ actionSubjectPrefix(item.activity) }}
-                      <router-link
-                        :to="actionSubject(item.activity).link"
-                        class="font-medium text-main whitespace-nowrap hover:underline"
-                        exact-active-class=""
-                        >{{ actionSubject(item.activity).name }}</router-link
-                      >
-                      <a
-                        :href="'#activity' + item.activity.id"
-                        class="ml-1 anchor-link whitespace-normal"
-                      >
-                        <ActivityActionSentence
-                          :issue="issue"
-                          :activity="item.activity"
-                        />
-
-                        {{ humanizeTs(item.activity.createdTs) }}
-                        <template
-                          v-if="
-                            item.activity.createdTs !=
-                              item.activity.updatedTs &&
-                            item.activity.type == 'bb.issue.comment.create'
-                          "
-                        >
-                          ({{ $t("common.edited") }}
-                          {{ humanizeTs(item.activity.updatedTs) }})
-                        </template>
-                      </a>
-                      <span
-                        v-if="item.similar.length > 0"
-                        class="text-sm font-normal text-gray-400 ml-1"
-                      >
-                        {{
-                          $t("activity.n-similar-activities", {
-                            count: item.similar.length + 1,
-                          })
-                        }}
-                      </span>
-                    </div>
-                    <div
-                      v-if="allowEditActivity(item.activity)"
-                      class="space-x-2 flex items-center text-control-light"
-                    >
-                      <template
-                        v-if="
-                          state.editCommentMode &&
-                          state.activeActivity?.id === item.activity.id
-                        "
-                      >
-                        <button
-                          type="button"
-                          class="rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-                          @click.prevent="cancelEditComment"
-                        >
-                          {{ $t("common.cancel") }}
-                        </button>
-                        <button
-                          type="button"
-                          class="border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed px-2 text-xs leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-                          :disabled="!allowUpdateComment"
-                          @click.prevent="doUpdateComment"
-                        >
-                          {{ $t("common.save") }}
-                        </button>
-                      </template>
-                      <!-- mr-2 is to vertical align with the text description edit button-->
-                      <div v-else class="mr-2 flex items-center space-x-2">
-                        <!-- Edit Comment Button-->
-                        <button
-                          class="btn-icon"
-                          @click.prevent="onUpdateComment(item.activity)"
-                        >
-                          <heroicons-outline:pencil class="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="mt-2 text-sm text-control whitespace-pre-wrap">
-                    <template
-                      v-if="
-                        state.editCommentMode &&
-                        state.activeActivity?.id === item.activity.id
-                      "
-                    >
-                      <label for="comment" class="sr-only">
-                        {{ $t("issue.edit-comment") }}
-                      </label>
-                      <textarea
-                        ref="editCommentTextArea"
-                        v-model="editComment"
-                        rows="3"
-                        class="textarea block w-full resize-none"
-                        :placeholder="$t('issue.leave-a-comment')"
-                        @input="
-                          (e: any) => {
-                            sizeToFit(e.target);
-                          }
-                        "
-                        @focus="
-                          (e: any) => {
-                            sizeToFit(e.target);
-                          }
-                        "
-                      ></textarea>
-                    </template>
-                    <template v-else>
-                      {{ item.activity.comment }}
-                    </template>
-                    <template
-                      v-if="
-                        item.activity.type == 'bb.pipeline.task.file.commit'
-                      "
-                    >
-                      <a
-                        :href="fileCommitActivityUrl(item.activity)"
-                        target="__blank"
-                        class="normal-link flex flex-row items-center"
-                      >
-                        {{ $t("issue.view-commit") }}
-                        <heroicons-outline:external-link class="w-4 h-4" />
-                      </a>
-                    </template>
-                  </div>
+                <!-- mr-2 is to vertical align with the text description edit button-->
+                <div v-else class="mr-2 flex items-center space-x-2">
+                  <!-- Edit Comment Button-->
+                  <button
+                    class="btn-icon"
+                    @click.prevent="onUpdateComment(item.activity)"
+                  >
+                    <heroicons-outline:pencil class="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-            </div>
-          </li>
+            </template>
+
+            <template #comment>
+              <div
+                v-if="
+                  state.editCommentMode &&
+                  state.activeActivity?.id === item.activity.id
+                "
+                class="mt-2 text-sm text-control whitespace-pre-wrap"
+              >
+                <label for="comment" class="sr-only">
+                  {{ $t("issue.edit-comment") }}
+                </label>
+                <textarea
+                  ref="editCommentTextArea"
+                  v-model="editComment"
+                  rows="3"
+                  class="textarea block w-full resize-none"
+                  :placeholder="$t('issue.leave-a-comment')"
+                  @input="
+                  (e: any) => {
+                    sizeToFit(e.target);
+                  }
+                "
+                  @focus="
+                  (e: any) => {
+                    sizeToFit(e.target);
+                  }
+                "
+                />
+              </div>
+              <ActivityComment v-else :activity="item.activity" />
+            </template>
+          </ActivityItem>
         </ul>
 
         <div v-if="!state.editCommentMode">
           <div class="flex">
             <div class="flex-shrink-0">
               <div class="relative">
-                <PrincipalAvatar :principal="currentUser" />
+                <UserAvatar :user="currentUserV1" />
                 <span
                   class="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px"
                 >
@@ -286,18 +121,6 @@
                 "
               ></textarea>
               <div class="mt-4 flex items-center justify-between space-x-4">
-                <div>
-                  <button
-                    type="button"
-                    class="group btn-normal !text-accent hover:!bg-gray-50"
-                    @click="lgtm"
-                  >
-                    <heroicons-outline:thumb-up
-                      class="w-5 h-5 group-hover:thumb-up"
-                    />
-                    <span class="ml-1">LGTM</span>
-                  </button>
-                </div>
                 <div>
                   <button
                     type="button"
@@ -329,71 +152,44 @@ import {
   onMounted,
 } from "vue";
 import { useRoute } from "vue-router";
-import PrincipalAvatar from "../PrincipalAvatar.vue";
+import UserAvatar from "../User/UserAvatar.vue";
 import type {
   Issue,
   Activity,
   ActivityIssueFieldUpdatePayload,
-  ActivityTaskStatusUpdatePayload,
   ActivityCreate,
   IssueSubscriber,
-  ActivityTaskFileCommitPayload,
-  Task,
+  ActivityIssueCommentCreatePayload,
 } from "@/types";
-import { UNKNOWN_ID, EMPTY_ID, SYSTEM_BOT_ID } from "@/types";
-import { findTaskById, issueSlug, sizeToFit, taskSlug } from "@/utils";
+import { extractUserUID, sizeToFit } from "@/utils";
 import { IssueBuiltinFieldId } from "@/plugins";
-import { useI18n } from "vue-i18n";
 import {
-  useCurrentUser,
-  useUIStateStore,
   useIssueSubscriberStore,
   useActivityStore,
+  useCurrentUserV1,
+  useCurrentUser,
 } from "@/store";
 import { useEventListener } from "@vueuse/core";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
-import ActivityActionSentence from "./activity/ActionSentence.vue";
-import { isSimilarActivity } from "./activity/utils";
+import {
+  ActivityItem,
+  DistinctActivity,
+  Comment as ActivityComment,
+  isSimilarActivity,
+} from "./activity";
 
 interface LocalState {
   editCommentMode: boolean;
   activeActivity?: Activity;
 }
 
-interface ActionSubject {
-  name: string;
-  link: string;
-}
-
-type ActionIconType =
-  | "avatar"
-  | "system"
-  | "create"
-  | "update"
-  | "run"
-  | "approve"
-  | "cancel"
-  | "fail"
-  | "complete"
-  | "commit";
-
-type DistinctActivity = {
-  activity: Activity;
-  similar: Activity[];
-};
-
-const emit = defineEmits<{
-  (event: "run-checks", task: Task): void;
-}>();
-
-const { t } = useI18n();
 const activityStore = useActivityStore();
 const route = useRoute();
 
 const newComment = ref("");
 const newCommentTextArea = ref();
 const editComment = ref("");
-const editCommentTextArea = ref();
+const editCommentTextArea = ref<HTMLTextAreaElement[]>();
 
 const logic = useIssueLogic();
 const issue = logic.issue as Ref<Issue>;
@@ -406,7 +202,7 @@ const state = reactive<LocalState>({
 const keyboardHandler = (e: KeyboardEvent) => {
   if (
     state.editCommentMode &&
-    editCommentTextArea.value === document.activeElement
+    editCommentTextArea.value?.[0] === document.activeElement
   ) {
     if (e.code == "Escape") {
       cancelEditComment();
@@ -425,6 +221,7 @@ const keyboardHandler = (e: KeyboardEvent) => {
 useEventListener("keydown", keyboardHandler);
 
 const currentUser = useCurrentUser();
+const currentUserV1 = useCurrentUserV1();
 
 const prepareActivityList = () => {
   activityStore.fetchActivityListForIssue(issue.value);
@@ -482,11 +279,6 @@ const doCreateComment = (comment: string, clear = true) => {
     comment,
   };
   activityStore.createActivity(createActivity).then(() => {
-    useUIStateStore().saveIntroStateByKey({
-      key: "comment.create",
-      newState: true,
-    });
-
     if (clear) {
       newComment.value = "";
       nextTick(() => sizeToFit(newCommentTextArea.value));
@@ -504,38 +296,23 @@ const doCreateComment = (comment: string, clear = true) => {
     if (!isSubscribed) {
       addSubscriberId(currentUser.value.id);
     }
-
-    if (comment === "LGTM") {
-      emit("run-checks", logic.selectedTask.value as Task);
-    }
-  });
-};
-
-const lgtm = (e: Event) => {
-  doCreateComment("LGTM", false);
-
-  // import the effect lib asynchronously
-  import("canvas-confetti").then(({ default: confetti }) => {
-    const button = e.target as HTMLElement;
-    const { left, top, width, height } = button.getBoundingClientRect();
-    const { innerWidth: winWidth, innerHeight: winHeight } = window;
-    // Create a confetti effect from the position of the LGTM button
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: {
-        x: (left + width / 2) / winWidth,
-        y: (top + height / 2) / winHeight,
-      },
-    });
   });
 };
 
 const allowEditActivity = (activity: Activity) => {
-  return (
-    activity.type === "bb.issue.comment.create" &&
-    currentUser.value.id === activity.creator.id
-  );
+  if (activity.type !== "bb.issue.comment.create") {
+    return false;
+  }
+  if (
+    extractUserUID(currentUserV1.value.name) !== String(activity.creator.id)
+  ) {
+    return false;
+  }
+  const payload = activity.payload as ActivityIssueCommentCreatePayload;
+  if (payload && payload.externalApprovalEvent) {
+    return false;
+  }
+  return true;
 };
 
 const onUpdateComment = (activity: Activity) => {
@@ -543,7 +320,7 @@ const onUpdateComment = (activity: Activity) => {
   state.activeActivity = activity;
   state.editCommentMode = true;
   nextTick(() => {
-    editCommentTextArea.value?.focus();
+    editCommentTextArea.value?.[0]?.focus();
   });
 };
 
@@ -561,91 +338,6 @@ const doUpdateComment = () => {
 const allowUpdateComment = computed(() => {
   return editComment.value != state.activeActivity!.comment;
 });
-
-const actionIcon = (activity: Activity): ActionIconType => {
-  if (activity.type == "bb.issue.create") {
-    return "create";
-  } else if (activity.type == "bb.issue.field.update") {
-    return "update";
-  } else if (activity.type == "bb.pipeline.task.status.update") {
-    const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-    switch (payload.newStatus) {
-      case "PENDING": {
-        if (payload.oldStatus == "RUNNING") {
-          return "cancel";
-        } else if (payload.oldStatus == "PENDING_APPROVAL") {
-          return "approve";
-        }
-        break;
-      }
-      case "CANCELED": {
-        return "cancel";
-      }
-      case "RUNNING": {
-        return "run";
-      }
-      case "DONE": {
-        return "complete";
-      }
-      case "FAILED": {
-        return "fail";
-      }
-      case "PENDING_APPROVAL": {
-        return "avatar"; // stale approval dismissed.
-      }
-    }
-  } else if (activity.type == "bb.pipeline.task.file.commit") {
-    return "commit";
-  } else if (activity.type == "bb.pipeline.task.statement.update") {
-    return "update";
-  } else if (
-    activity.type == "bb.pipeline.task.general.earliest-allowed-time.update"
-  ) {
-    return "update";
-  }
-
-  return activity.creator.id == SYSTEM_BOT_ID ? "system" : "avatar";
-};
-
-const actionSubjectPrefix = (activity: Activity): string => {
-  if (activity.creator.id == SYSTEM_BOT_ID) {
-    if (activity.type == "bb.pipeline.task.status.update") {
-      return `${t("activity.subject-prefix.task")} `;
-    }
-  }
-  return "";
-};
-
-const actionSubject = (activity: Activity): ActionSubject => {
-  if (activity.creator.id == SYSTEM_BOT_ID) {
-    if (activity.type == "bb.pipeline.task.status.update") {
-      if (issue.value.pipeline.id != EMPTY_ID) {
-        const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-        const task = findTaskById(issue.value.pipeline, payload.taskId);
-        let link = "";
-        if (task.id != UNKNOWN_ID) {
-          link = `/issue/${issueSlug(
-            issue.value.name,
-            issue.value.id
-          )}?task=${taskSlug(task.name, task.id)}`;
-        }
-        return {
-          name: `${task.name} (${task.stage.name})`,
-          link,
-        };
-      }
-    }
-  }
-  return {
-    name: activity.creator.name,
-    link: `/u/${activity.creator.id}`,
-  };
-};
-
-const fileCommitActivityUrl = (activity: Activity) => {
-  const payload = activity.payload as ActivityTaskFileCommitPayload;
-  return `${payload.vcsInstanceUrl}/${payload.repositoryFullPath}/-/commit/${payload.commitId}`;
-};
 
 onMounted(() => {
   watch(

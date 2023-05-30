@@ -9,13 +9,13 @@ tmp_dir = ".air"
   --tags "" \
   -gcflags=all=\"-N -l\" \
   -ldflags " \
-  -X 'github.com/bytebase/bytebase/bin/server/cmd.version=development' \
-  -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=$(go version)' \
-  -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=$(git rev-parse HEAD)' \
-  -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=$(date -u +"%Y-%m-%dT%H:%M:%SZ")' \
-  -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=$(id -u -n)' \
+  -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=development' \
+  -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=$(go version)' \
+  -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)' \
+  -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=$(date -u +"%Y-%m-%dT%H:%M:%SZ")' \
+  -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=$(id -u -n)' \
   " \
-  -o ./.air/bytebase ./bin/server/main.go"""
+  -o ./.air/bytebase ./backend/bin/server/main.go"""
   delay = 1000
   exclude_dir = [".air", "vendor", "frontend", "docs"]
   exclude_file = []

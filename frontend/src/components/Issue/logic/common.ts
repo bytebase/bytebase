@@ -1,10 +1,13 @@
 import { computed } from "vue";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isNaN, isNumber } from "lodash-es";
+import { useRoute } from "vue-router";
+import { v4 as uuidv4 } from "uuid";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import {
-  useCurrentUser,
+  useCurrentUserV1,
   useDatabaseStore,
   useIssueStore,
+  useSheetV1Store,
   useTaskStore,
   useUIStateStore,
 } from "@/store";
@@ -14,32 +17,49 @@ import {
   IssueCreate,
   IssuePatch,
   IssueType,
-  SQLDialect,
   Task,
   TaskCreate,
-  TaskDatabaseCreatePayload,
-  TaskDatabaseDataUpdatePayload,
-  TaskDatabaseSchemaUpdatePayload,
-  TaskDatabaseSchemaUpdateSDLPayload,
-  TaskGeneralPayload,
   TaskId,
   TaskPatch,
   TaskType,
   MigrationDetail,
   MigrationType,
-  TaskDatabaseSchemaBaselinePayload,
+  SheetId,
+  MigrationContext,
+  dialectOfEngine,
+  languageOfEngine,
+  UNKNOWN_ID,
 } from "@/types";
-import { useIssueLogic } from "./index";
-import { taskCheckRunSummary } from "./utils";
-import { isDev } from "@/utils";
+import { IssueLogic, useIssueLogic } from "./index";
+import {
+  defer,
+  extractUserUID,
+  getBacktracePayloadWithIssue,
+  isDev,
+  isTaskTriggeredByVCS,
+  taskCheckRunSummary,
+} from "@/utils";
+import { maybeApplyRollbackParams } from "@/plugins/issue/logic/initialize/standard";
+import { t } from "@/plugins/i18n";
+import {
+  getSheetPathByLegacyProject,
+  getProjectPathByLegacyProject,
+} from "@/store/modules/v1/common";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 
 export const useCommonLogic = () => {
-  const { create, issue, selectedTask, createIssue, onStatusChanged } =
+  const { create, issue, selectedTask, createIssue, onStatusChanged, dialog } =
     useIssueLogic();
-  const currentUser = useCurrentUser();
+  const route = useRoute();
+  const currentUserV1 = useCurrentUserV1();
   const databaseStore = useDatabaseStore();
   const issueStore = useIssueStore();
   const taskStore = useTaskStore();
+  const sheetV1Store = useSheetV1Store();
 
   const patchIssue = (
     issuePatch: IssuePatch,
@@ -65,10 +85,10 @@ export const useCommonLogic = () => {
     taskPatch: TaskPatch,
     postUpdated?: (updatedTask: Task) => void
   ) => {
-    taskStore
+    return taskStore
       .patchTask({
         issueId: (issue.value as Issue).id,
-        pipelineId: (issue.value as Issue).pipeline.id,
+        pipelineId: (issue.value as Issue).pipeline!.id,
         taskId,
         taskPatch,
       })
@@ -80,6 +100,52 @@ export const useCommonLogic = () => {
           postUpdated(updatedTask);
         }
       });
+  };
+
+  const initialTaskListStatementFromRoute = () => {
+    if (!create.value) {
+      return;
+    }
+
+    const taskList = flattenTaskList<TaskCreate>(issue.value).filter((task) =>
+      TaskTypeWithStatement.includes(task.type)
+    );
+    // route.query.databaseList is comma-splitted databaseId list
+    // e.g. databaseList=7002,7006,7014
+    const idListString = (route.query.databaseList as string) || "";
+    const databaseIdList = idListString.split(",");
+    if (databaseIdList.length === 0) {
+      return;
+    }
+
+    // route.query.sheetId is an id of sheet. Mainly using in creating rollback issue.
+    const sheetId = Number(route.query.sheetId);
+    // route.query.sqlList is JSON string of a string array.
+    const sqlListString = (route.query.sqlList as string) || "";
+    if (isNumber(sheetId) && !isNaN(sheetId)) {
+      for (const databaseId of databaseIdList) {
+        const task = taskList.find(
+          (task) => task.databaseId === Number(databaseId)
+        );
+        if (task) {
+          task.sheetId = sheetId;
+        }
+      }
+    } else if (sqlListString) {
+      const statementList = JSON.parse(sqlListString) as string[];
+      for (
+        let i = 0;
+        i < Math.min(databaseIdList.length, statementList.length);
+        i++
+      ) {
+        const task = taskList.find(
+          (task) => task.databaseId === Number(databaseIdList[i])
+        );
+        if (task) {
+          task.statement = statementList[i];
+        }
+      }
+    }
   };
 
   const allowEditStatement = computed(() => {
@@ -110,94 +176,127 @@ export const useCommonLogic = () => {
     // if not creating, we are allowed to edit sql statement only when:
     // 1. issue.status is OPEN
     // 2. AND currentUser is the creator
-    // 3. AND workflowType is UI
     if (issueEntity.status !== "OPEN") {
       return false;
     }
-    if (issueEntity.creator.id !== currentUser.value.id) {
-      return false;
-    }
-    if (issueEntity.project.workflowType !== "UI") {
+    if (
+      String(issueEntity.creator.id) !==
+      extractUserUID(currentUserV1.value.name)
+    ) {
+      if (isTaskTriggeredByVCS(selectedTask.value as Task)) {
+        // If an issue is triggered by VCS, its creator will be 1 (SYSTEM_BOT_ID)
+        // We should "Allow" current user to edit the statement (via VCS).
+        return true;
+      }
       return false;
     }
 
     return isTaskEditable(selectedTask.value as Task);
   });
 
-  const selectedStatement = computed((): string => {
-    const task = selectedTask.value;
-    if (create.value) {
-      return (task as TaskCreate).statement;
-    }
-
-    // Extract statement from different types of payloads
-    return statementOfTask(task as Task) || "";
-  });
-
-  const updateStatement = (
-    newStatement: string,
-    postUpdated?: (updatedTask: Task) => void
-  ) => {
+  const updateStatement = async (newStatement: string) => {
     if (create.value) {
       const task = selectedTask.value as TaskCreate;
       task.statement = newStatement;
     } else {
-      // otherwise, patch the task
+      // Ask whether to apply the change to all pending tasks if possible.
       const task = selectedTask.value as Task;
-      patchTask(
-        task.id,
-        {
-          statement: maybeFormatStatementOnSave(newStatement, task.database),
-          updatedTs: task.updatedTs,
-        },
-        postUpdated
+      const issueEntity = issue.value as Issue;
+      const patchingTaskList = await getPatchingTaskList(
+        issueEntity,
+        task,
+        dialog
       );
+      if (patchingTaskList.length === 0) return;
+
+      // Create a new sheet instead of reusing the old one.
+      const sheet = await sheetV1Store.createSheet(
+        getProjectPathByLegacyProject(issueEntity.project),
+        {
+          title: uuidv4(),
+          content: new TextEncoder().encode(newStatement),
+          visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+          source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+          type: Sheet_Type.TYPE_SQL,
+          payload: JSON.stringify(
+            getBacktracePayloadWithIssue(issue.value as Issue)
+          ),
+        }
+      );
+
+      const patchRequestList = patchingTaskList.map((task) => {
+        patchTask(task.id, { sheetId: sheetV1Store.getSheetUid(sheet.name) });
+      });
+      await Promise.allSettled(patchRequestList);
     }
   };
 
-  const applyStatementToOtherTasks = (statement: string) => {
-    const taskList = flattenTaskList<TaskCreate>(issue.value);
-
-    for (const task of taskList) {
-      if (TaskTypeWithStatement.includes(task.type)) {
-        task.statement = statement;
-      }
+  const updateSheetId = async (sheetId: SheetId) => {
+    if (create.value) {
+      const task = selectedTask.value as TaskCreate;
+      task.statement = "";
+      task.sheetId = sheetId;
+    } else {
+      const task = selectedTask.value as Task;
+      await patchTask(task.id, { sheetId });
     }
   };
 
-  const allowApplyStatementToOtherTasks = computed(() => {
-    if (!create.value) {
-      return false;
-    }
-    const taskList = flattenTaskList<TaskCreate>(issue.value);
-    // Allowed when more than one tasks need SQL statement.
-    const count = taskList.filter((task) =>
-      TaskTypeWithStatement.includes(task.type)
-    ).length;
-
-    return count > 1;
-  });
-
-  const doCreate = () => {
+  const doCreate = async () => {
     const issueCreate = cloneDeep(issue.value as IssueCreate);
     // for standard issue pipeline (1 * 1 or M * 1)
     // copy user edited tasks back to issue.createContext
-    const taskList = flattenTaskList<TaskCreate>(issueCreate);
-    const detailList: MigrationDetail[] = taskList.map((task) => {
-      const db = databaseStore.getDatabaseById(task.databaseId!);
-      return {
-        migrationType: getMigrationTypeFromTask(task),
-        databaseId: task.databaseId!,
-        databaseName: "", // Only `databaseId` is needed in standard pipeline.
-        statement: maybeFormatStatementOnSave(task.statement, db),
-        earliestAllowedTs: task.earliestAllowedTs,
+    const taskCreateList = flattenTaskList<TaskCreate>(issueCreate);
+    const detailList: MigrationDetail[] = [];
+    for (const taskCreate of taskCreateList) {
+      const db = databaseStore.getDatabaseById(taskCreate.databaseId!);
+      const statement = maybeFormatStatementOnSave(taskCreate.statement, db);
+      const migrationDetail: MigrationDetail = {
+        migrationType: getMigrationTypeFromTask(taskCreate),
+        databaseId: taskCreate.databaseId,
+        statement: statement,
+        sheetId: taskCreate.sheetId,
+        earliestAllowedTs: taskCreate.earliestAllowedTs,
+        rollbackEnabled: taskCreate.rollbackEnabled,
       };
-    });
+      // Create a new sheet to save statement.
+      if (!taskCreate.sheetId || taskCreate.sheetId === UNKNOWN_ID) {
+        const sheet = await sheetV1Store.createSheet(
+          getProjectPathByLegacyProject(db.project),
+          {
+            title: issueCreate.name + " - " + db.name,
+            content: new TextEncoder().encode(statement),
+            visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+            source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+            type: Sheet_Type.TYPE_SQL,
+            payload: "{}",
+          }
+        );
+        migrationDetail.sheetId = sheetV1Store.getSheetUid(sheet.name);
+      } else if (taskCreate.sheetId !== UNKNOWN_ID) {
+        const sheetName = getSheetPathByLegacyProject(
+          db.project,
+          taskCreate.sheetId
+        );
+        const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);
+        if (
+          new TextDecoder().decode(sheet?.content).length === sheet?.contentSize
+        ) {
+          await sheetV1Store.patchSheet({
+            name: sheetName,
+            content: new TextEncoder().encode(statement),
+          });
+        }
+      }
+      migrationDetail.statement = "";
+      detailList.push(migrationDetail);
+    }
 
-    issueCreate.createContext = {
-      detailList: detailList,
+    const createContext: MigrationContext = {
+      detailList,
     };
-
+    maybeApplyRollbackParams(createContext, route);
+    issueCreate.createContext = createContext;
     createIssue(issueCreate);
   };
 
@@ -205,10 +304,9 @@ export const useCommonLogic = () => {
     patchIssue,
     patchTask,
     allowEditStatement,
-    selectedStatement,
+    initialTaskListStatementFromRoute,
     updateStatement,
-    allowApplyStatementToOtherTasks,
-    applyStatementToOtherTasks,
+    updateSheetId,
     doCreate,
   };
 };
@@ -228,11 +326,11 @@ const getMigrationTypeFromTask = (task: Task | TaskCreate) => {
 export const TaskTypeWithStatement: TaskType[] = [
   "bb.task.general",
   "bb.task.database.create",
+  "bb.task.database.data.update",
   "bb.task.database.schema.baseline",
   "bb.task.database.schema.update",
   "bb.task.database.schema.update-sdl",
   "bb.task.database.schema.update.ghost.sync",
-  "bb.task.database.data.update",
 ];
 
 export const IssueTypeWithStatement: IssueType[] = [
@@ -261,11 +359,11 @@ export const maybeFormatStatementOnSave = (
     return statement;
   }
 
-  // Default to use mysql dialect but use postgresql dialect if needed
-  let dialect: SQLDialect = "mysql";
-  if (database && database.instance.engine === "POSTGRES") {
-    dialect = "postgresql";
+  const language = languageOfEngine(database?.instance.engine);
+  if (language !== "sql") {
+    return statement;
   }
+  const dialect = dialectOfEngine(database?.instance.engine);
 
   const result = formatSQL(statement, dialect);
   if (!result.error) {
@@ -280,42 +378,6 @@ export const maybeFormatStatementOnSave = (
 export const errorAssertion = () => {
   if (isDev()) {
     throw new Error("should never reach here");
-  }
-};
-
-const statementOfTask = (task: Task) => {
-  switch (task.type) {
-    case "bb.task.general":
-      return ((task as Task).payload as TaskGeneralPayload).statement || "";
-    case "bb.task.database.create":
-      return (
-        ((task as Task).payload as TaskDatabaseCreatePayload).statement || ""
-      );
-    case "bb.task.database.schema.baseline":
-      return (
-        ((task as Task).payload as TaskDatabaseSchemaBaselinePayload)
-          .statement || ""
-      );
-    case "bb.task.database.schema.update":
-      return (
-        ((task as Task).payload as TaskDatabaseSchemaUpdatePayload).statement ||
-        ""
-      );
-    case "bb.task.database.schema.update-sdl":
-      return (
-        ((task as Task).payload as TaskDatabaseSchemaUpdateSDLPayload)
-          .statement || ""
-      );
-    case "bb.task.database.data.update":
-      return (
-        ((task as Task).payload as TaskDatabaseDataUpdatePayload).statement ||
-        ""
-      );
-    case "bb.task.database.restore":
-      return "";
-    case "bb.task.database.schema.update.ghost.sync":
-    case "bb.task.database.schema.update.ghost.cutover":
-      return ""; // should never reach here
   }
 };
 
@@ -337,4 +399,39 @@ export const isTaskEditable = (task: Task): boolean => {
   }
 
   return false;
+};
+
+export const getPatchingTaskList = async (
+  issue: Issue,
+  task: Task,
+  dialog: IssueLogic["dialog"]
+) => {
+  const patchableTaskList = flattenTaskList<Task>(issue).filter(
+    (task) => TaskTypeWithStatement.includes(task.type) && isTaskEditable(task)
+  );
+  const d = defer<Task[]>();
+  if (patchableTaskList.length > 1) {
+    dialog.info({
+      title: t("task.apply-change-to-all-pending-tasks.title"),
+      style: "width: auto",
+      negativeText: t("task.apply-change-to-all-pending-tasks.current-only"),
+      positiveText: t("task.apply-change-to-all-pending-tasks.self"),
+      onPositiveClick: () => {
+        d.resolve(patchableTaskList);
+      },
+      onNegativeClick: () => {
+        d.resolve([task]);
+      },
+      autoFocus: false,
+      maskClosable: false,
+      closeOnEsc: false,
+      onClose: () => {
+        d.resolve([]);
+      },
+    });
+  } else {
+    d.resolve([task]);
+  }
+
+  return d.promise;
 };

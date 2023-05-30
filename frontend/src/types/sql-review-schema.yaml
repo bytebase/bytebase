@@ -20,6 +20,7 @@ ruleList:
       - MYSQL
       - TIDB
       - POSTGRES
+      - ORACLE
     componentList: []
   - type: table.no-foreign-key
     category: TABLE
@@ -27,12 +28,14 @@ ruleList:
       - MYSQL
       - TIDB
       - POSTGRES
+      - ORACLE
     componentList: []
   - type: table.drop-naming-convention
     category: TABLE
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList:
       - key: format
         payload:
@@ -57,6 +60,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.select.no-select-all
     category: STATEMENT
@@ -64,6 +68,7 @@ ruleList:
       - MYSQL
       - TIDB
       - POSTGRES
+      - ORACLE
     componentList: []
   - type: statement.where.require
     category: STATEMENT
@@ -71,6 +76,7 @@ ruleList:
       - MYSQL
       - TIDB
       - POSTGRES
+      - ORACLE
     componentList: []
   - type: statement.where.no-leading-wildcard-like
     category: STATEMENT
@@ -78,12 +84,14 @@ ruleList:
       - MYSQL
       - TIDB
       - POSTGRES
+      - ORACLE
     componentList: []
   - type: statement.disallow-commit
     category: STATEMENT
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.disallow-limit
     category: STATEMENT
@@ -102,6 +110,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.insert.row-limit
     category: STATEMENT
@@ -118,17 +127,21 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
+      - ORACLE
     componentList: []
   - type: statement.insert.disallow-order-by-rand
     category: STATEMENT
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.affected-row-limit
     category: STATEMENT
     engineList:
       - MYSQL
+      - POSTGRES
     componentList:
       - key: number
         payload:
@@ -138,6 +151,22 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
+      - POSTGRES
+    componentList: []
+  - type: statement.disallow-add-column-with-default
+    category: STATEMENT
+    engineList:
+      - POSTGRES
+    componentList: []
+  - type: statement.add-check-not-valid
+    category: STATEMENT
+    engineList:
+      - POSTGRES
+    componentList: []
+  - type: statement.disallow-add-not-null
+    category: STATEMENT
+    engineList:
+      - POSTGRES
     componentList: []
   - type: naming.table
     category: NAMING
@@ -145,6 +174,7 @@ ruleList:
       - MYSQL
       - TIDB
       - POSTGRES
+      - ORACLE
     componentList:
       - key: format
         payload:
@@ -255,12 +285,32 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
+  - type: naming.table.no-keyword
+    category: NAMING
+    engineList:
+      - ORACLE
+    componentList: []
+  - type: naming.identifier.no-keyword
+    category: NAMING
+    engineList:
+      - ORACLE
+    componentList: []
+  - type: naming.identifier.case
+    category: NAMING
+    engineList:
+      - ORACLE
+    componentList:
+      - key: upper
+        payload:
+          type: BOOLEAN
+          default: true
   - type: column.required
     category: COLUMN
     engineList:
       - MYSQL
       - TIDB
       - POSTGRES
+      - ORACLE
     componentList:
       - key: list
         payload:
@@ -277,18 +327,21 @@ ruleList:
       - MYSQL
       - TIDB
       - POSTGRES
+      - ORACLE
     componentList: []
   - type: column.disallow-change-type
     category: COLUMN
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: column.set-default-for-not-null
     category: COLUMN
     engineList:
       - MYSQL
       - TIDB
+      - ORACLE
     componentList: []
   - type: column.disallow-change
     category: COLUMN
@@ -327,6 +380,8 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
+      - ORACLE
     componentList:
       - key: list
         payload:
@@ -343,11 +398,22 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
+      - ORACLE
     componentList:
       - key: number
         payload:
           type: NUMBER
           default: 20
+  - type: column.maximum-varchar-length
+    category: COLUMN
+    engineList:
+      - ORACLE
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 2560
   - type: column.auto-increment-initial-value
     category: COLUMN
     engineList:
@@ -375,6 +441,8 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
+      - ORACLE
     componentList: []
   - type: schema.backward-compatibility
     category: SCHEMA
@@ -394,12 +462,15 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: index.key-number-limit
     category: INDEX
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
+      - ORACLE
     componentList:
       - key: number
         payload:
@@ -422,11 +493,28 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList:
       - key: number
         payload:
           type: NUMBER
           default: 5
+  - type: index.primary-key-type-allowlist
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
+    componentList:
+      - key: list
+        payload:
+          type: STRING_ARRAY
+          default: []
+  - type: index.create-concurrently
+    category: INDEX
+    engineList:
+      - POSTGRES
+    componentList: []
   - type: system.charset.allowlist
     category: SYSTEM
     engineList:
@@ -443,8 +531,18 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList:
       - key: list
         payload:
           type: STRING_ARRAY
           default: []
+  - type: system.comment.length
+    category: SYSTEM
+    engineList:
+      - POSTGRES
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 64

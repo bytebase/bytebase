@@ -1,6 +1,12 @@
 import { computed, defineComponent } from "vue";
-import { cloneDeep } from "lodash-es";
-import { useDatabaseStore, useTaskStore } from "@/store";
+import { cloneDeep, head } from "lodash-es";
+import {
+  useDatabaseStore,
+  useSheetV1Store,
+  useProjectV1Store,
+  useTaskStore,
+  useSheetStatementByUid,
+} from "@/store";
 import {
   Issue,
   IssueCreate,
@@ -8,6 +14,8 @@ import {
   TaskCreate,
   TaskDatabaseSchemaUpdatePayload,
   MigrationContext,
+  SheetId,
+  UNKNOWN_ID,
 } from "@/types";
 import {
   errorAssertion,
@@ -17,12 +25,22 @@ import {
   useCommonLogic,
 } from "./common";
 import { provideIssueLogic, useIssueLogic } from "./index";
+import { getBacktracePayloadWithIssue, sheetIdOfTask } from "@/utils";
+import { getProjectPathByLegacyProject } from "@/store/modules/v1/common";
+import {
+  Sheet_Visibility,
+  Sheet_Source,
+  Sheet_Type,
+} from "@/types/proto/v1/sheet_service";
 
 export default defineComponent({
   name: "TenantModeProvider",
   setup() {
-    const { create, issue, createIssue, onStatusChanged } = useIssueLogic();
+    const { create, issue, selectedTask, createIssue, onStatusChanged } =
+      useIssueLogic();
     const databaseStore = useDatabaseStore();
+    const sheetV1Store = useSheetV1Store();
+    const projectV1Store = useProjectV1Store();
     const taskStore = useTaskStore();
 
     const allowEditStatement = computed(() => {
@@ -43,14 +61,16 @@ export default defineComponent({
         const issueEntity = issue.value as Issue;
         const task = issueEntity.pipeline.stageList[0].taskList[0];
         const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
-        return payload.statement;
+        const selectedTaskSheetId = sheetIdOfTask(selectedTask.value as Task);
+        return (
+          useSheetStatementByUid(
+            selectedTaskSheetId || payload.sheetId || UNKNOWN_ID
+          ).value || ""
+        );
       }
     });
 
-    const updateStatement = (
-      newStatement: string,
-      postUpdated?: (updatedTask: Task) => void
-    ) => {
+    const updateStatement = async (newStatement: string) => {
       if (create.value) {
         // For tenant deploy mode, we apply the statement to all stages and all tasks
         const allTaskList = flattenTaskList<TaskCreate>(issue.value);
@@ -66,37 +86,92 @@ export default defineComponent({
         );
       } else {
         const issueEntity = issue.value as Issue;
+        const sheet = await sheetV1Store.createSheet(
+          getProjectPathByLegacyProject(issueEntity.project),
+          {
+            title: `Sheet for issue #${issueEntity.id}`,
+            content: new TextEncoder().encode(newStatement),
+            visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+            source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+            type: Sheet_Type.TYPE_SQL,
+            payload: JSON.stringify(
+              getBacktracePayloadWithIssue(issue.value as Issue)
+            ),
+          }
+        );
+        updateSheetId(sheetV1Store.getSheetUid(sheet.name));
+      }
+    };
+
+    const updateSheetId = (sheetId: SheetId) => {
+      if (create.value) {
+        // For tenant deploy mode, we apply the sheetId to all stages and all tasks.
+        const allTaskList = flattenTaskList<TaskCreate>(issue.value);
+        allTaskList.forEach((task) => {
+          task.statement = "";
+          task.sheetId = sheetId;
+        });
+
+        const issueCreate = issue.value as IssueCreate;
+        const context = issueCreate.createContext as MigrationContext;
+        // We also apply it back to the CreateContext
+        context.detailList.forEach((detail) => {
+          detail.statement = "";
+          detail.sheetId = sheetId;
+        });
+      } else {
+        // Call patchAllTasksInIssue for tenant mode.
+        const issueEntity = issue.value as Issue;
         taskStore
           .patchAllTasksInIssue({
             issueId: issueEntity.id,
             pipelineId: issueEntity.pipeline.id,
             taskPatch: {
-              statement: newStatement,
+              sheetId,
             },
           })
           .then(() => {
             onStatusChanged(true);
-            if (postUpdated) {
-              postUpdated(issueEntity.pipeline.stageList[0].taskList[0]);
-            }
           });
       }
     };
 
-    // We are never allowed to "apply statement to other stages" in tenant mode.
-    const allowApplyStatementToOtherTasksOtherTasks = computed(() => false);
+    // We are never allowed to "apply task state to other stages" in tenant mode.
+    const allowApplyTaskStateToOthers = computed(() => false);
 
-    const doCreate = () => {
+    const doCreate = async () => {
       const issueCreate = cloneDeep(issue.value as IssueCreate);
 
       // for multi-tenancy issue pipeline (M * N)
       // createContext is up-to-date already
       // so we just format the statement if needed
       const context = issueCreate.createContext as MigrationContext;
-      context.detailList.forEach((detail) => {
-        const db = databaseStore.getDatabaseById(detail.databaseId!);
-        detail.statement = maybeFormatStatementOnSave(detail.statement, db);
-      });
+      const detail = head(context.detailList);
+      if (!detail) {
+        // throw error
+        return;
+      }
+      const db = databaseStore.getDatabaseById(detail.databaseId!);
+      if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
+        const statement = maybeFormatStatementOnSave(detail.statement, db);
+        const project = await projectV1Store.getOrFetchProjectByUID(
+          `${issueCreate.projectId}`
+        );
+        const sheet = await sheetV1Store.createSheet(project.name, {
+          title: issueCreate.name + " - " + db.name,
+          content: new TextEncoder().encode(statement),
+          visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+          source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+          type: Sheet_Type.TYPE_SQL,
+          payload: "{}",
+        });
+        detail.statement = "";
+        detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
+      }
+      for (const detailItem of context.detailList) {
+        detailItem.statement = "";
+        detailItem.sheetId = detail.sheetId;
+      }
 
       createIssue(issueCreate);
     };
@@ -106,8 +181,9 @@ export default defineComponent({
       allowEditStatement,
       selectedStatement,
       updateStatement,
-      allowApplyStatementToOtherTasksOtherTasks,
-      applyStatementToOtherTasksOtherTasks: errorAssertion,
+      updateSheetId,
+      allowApplyTaskStateToOthers,
+      applyTaskStateToOthers: errorAssertion,
       doCreate,
     };
     provideIssueLogic(logic);

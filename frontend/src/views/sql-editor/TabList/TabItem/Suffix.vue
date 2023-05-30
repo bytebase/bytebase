@@ -1,6 +1,9 @@
 <template>
   <div
     class="suffix"
+    :class="{
+      admin: tab.mode === TabMode.Admin,
+    }"
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
   >
@@ -18,6 +21,7 @@
 import { computed, PropType, reactive } from "vue";
 
 import type { TabInfo } from "@/types";
+import { TabMode } from "@/types";
 import { useTabStore } from "@/store";
 
 type LocalState = {
@@ -56,7 +60,7 @@ const icon = computed((): IconType | undefined => {
       return "close";
     }
   }
-  if (!props.tab.isSaved) {
+  if (props.tab.mode === TabMode.ReadOnly && !props.tab.isSaved) {
     return "unsaved";
   }
   return undefined;
@@ -69,6 +73,9 @@ const icon = computed((): IconType | undefined => {
 }
 .icon {
   @apply block w-5 h-5 p-0.5 text-gray-300 hover:text-gray-500 hover:bg-gray-200 rounded;
+}
+.suffix.admin .icon {
+  @apply text-gray-400 hover:text-gray-300 hover:bg-gray-400/30;
 }
 .dummy {
   @apply invisible;

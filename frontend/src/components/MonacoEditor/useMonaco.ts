@@ -2,28 +2,28 @@ import type { editor as Editor } from "monaco-editor";
 import { SQLDialect } from "@/types";
 import sqlFormatter from "./sqlFormatter";
 import { ExtractPromiseType } from "@/utils";
+import { getBBTheme } from "./themes/bb";
+import { getBBDarkTheme } from "./themes/bb-dark";
 
 export const useMonaco = async () => {
-  const [monaco, { default: EditorWorker }] = await Promise.all([
-    import("monaco-editor"),
-    import("monaco-editor/esm/vs/editor/editor.worker?worker"),
-  ]);
+  const [monaco, { default: EditorWorker }, { default: TSWorker }] =
+    await Promise.all([
+      import("monaco-editor"),
+      import("monaco-editor/esm/vs/editor/editor.worker?worker"),
+      import("monaco-editor/esm/vs/language/typescript/ts.worker?worker"),
+    ]);
 
-  monaco.editor.defineTheme("bb-sql-editor-theme", {
-    base: "vs",
-    inherit: true,
-    rules: [],
-    colors: {
-      "editorCursor.foreground": "#504de2",
-      "editorLineNumber.foreground": "#aaaaaa",
-      "editorLineNumber.activeForeground": "#111111",
-    },
-  });
-  monaco.editor.setTheme("bb-sql-editor-theme");
+  const bbTheme = getBBTheme();
+  const bbDarkTheme = getBBDarkTheme();
+  monaco.editor.defineTheme("bb", bbTheme);
+  monaco.editor.defineTheme("bb-dark", bbDarkTheme);
 
   self.MonacoEnvironment = {
     getWorker: (workerId, label) => {
       console.debug("MonacoEnvironment.getWorker", workerId, label);
+      if (label === "javascript") {
+        return new TSWorker();
+      }
       return new EditorWorker();
     },
   };
@@ -61,8 +61,6 @@ export const useMonaco = async () => {
         forceMoveMarkers: true,
       },
     ]);
-    // reset the selection
-    editorInstance.setSelection(new monaco.Range(0, 0, 0, 0));
   };
 
   const formatContent = (

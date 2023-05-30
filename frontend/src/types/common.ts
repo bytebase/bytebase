@@ -2,6 +2,7 @@ import { Activity } from "./activity";
 import { Anomaly } from "./anomaly";
 import { BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
+import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
 import { Environment } from "./environment";
@@ -9,26 +10,20 @@ import { CommandId, CommandRegisterId, PrincipalId } from "./id";
 import { Inbox } from "./inbox";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
-import { Member } from "./member";
 import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
-import {
-  Project,
-  ProjectMember,
-  EmptyProjectRoleProviderPayload,
-  getDefaultLGTMCheckSetting,
-} from "./project";
-import { ProjectWebhook } from "./projectWebhook";
+import { Project, ProjectMember } from "./project";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
-import { DeploymentConfig } from "./deployment";
-import { Policy, DefaultApprovalPolicy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
-import { Table } from "./table";
+import { AuditLog, AuditActivityType, AuditActivityLevel } from "./auditLog";
+import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
+// System bot email
+export const SYSTEM_BOT_EMAIL = "support@bytebase.com";
 
 // The project to hold those databases synced from the instance but haven't been assigned an application
 // project yet. We can't use UNKNOWN_ID because of referential integrity.
@@ -72,6 +67,7 @@ export type RouterSlug = {
   connectionSlug?: string;
   sheetSlug?: string;
   sqlReviewPolicySlug?: string;
+  ssoName?: string;
 };
 
 // Quick Action Type
@@ -86,7 +82,8 @@ export type EnvironmentQuickActionType =
   | "quickaction.bb.environment.reorder";
 export type ProjectQuickActionType =
   | "quickaction.bb.project.create"
-  | "quickaction.bb.project.database.transfer";
+  | "quickaction.bb.project.database.transfer"
+  | "quickaction.bb.project.database.transfer-out";
 export type InstanceQuickActionType = "quickaction.bb.instance.create";
 export type UserQuickActionType = "quickaction.bb.user.manage";
 export type DatabaseQuickActionType =
@@ -96,28 +93,22 @@ export type DatabaseQuickActionType =
   | "quickaction.bb.database.data.update"
   | "quickaction.bb.database.troubleshoot"
   | "quickaction.bb.database.schema.sync";
+export type IssueQuickActionType =
+  | "quickaction.bb.issue.grant.request.querier"
+  | "quickaction.bb.issue.grant.request.exporter";
 
 export type QuickActionType =
   | EnvironmentQuickActionType
   | ProjectQuickActionType
   | InstanceQuickActionType
   | UserQuickActionType
-  | DatabaseQuickActionType;
-
-// unknown represents an anomaly.
-// Returns as function to avoid caller accidentally mutate it.
-// UNKNOWN_ID means an anomaly, it expects a resource which is missing (e.g. Keyed lookup missing).
-export const UNKNOWN_ID = -1;
-// EMPTY_ID means an expected behavior, it expects no resource (e.g. contains an empty value, using this technic enables
-// us to declare variable as required, which leads to cleaner code)
-export const EMPTY_ID = 0;
+  | DatabaseQuickActionType
+  | IssueQuickActionType;
 
 export type ResourceType =
   | "PRINCIPAL"
-  | "MEMBER"
   | "ENVIRONMENT"
   | "PROJECT"
-  | "PROJECT_HOOK"
   | "PROJECT_MEMBER"
   | "INSTANCE"
   | "DATABASE"
@@ -138,14 +129,12 @@ export type ResourceType =
   | "DEPLOYMENT_CONFIG"
   | "SHEET"
   | "SQL_REVIEW"
-  | "TABLE";
+  | "AUDIT_LOG";
 
 interface ResourceMaker {
   (type: "PRINCIPAL"): Principal;
-  (type: "MEMBER"): Member;
   (type: "ENVIRONMENT"): Environment;
   (type: "PROJECT"): Project;
-  (type: "PROJECT_HOOK"): ProjectWebhook;
   (type: "PROJECT_MEMBER"): ProjectMember;
   (type: "INSTANCE"): Instance;
   (type: "DATABASE"): Database;
@@ -153,7 +142,6 @@ interface ResourceMaker {
   (type: "BACKUP_SETTING"): BackupSetting;
   (type: "ISSUE"): Issue;
   (type: "PIPELINE"): Pipeline;
-  (type: "POLICY"): Policy;
   (type: "STAGE"): Stage;
   (type: "TASK_PROGRESS"): TaskProgress;
   (type: "TASK"): Task;
@@ -163,44 +151,24 @@ interface ResourceMaker {
   (type: "VCS"): VCS;
   (type: "REPOSITORY"): Repository;
   (type: "ANOMALY"): Anomaly;
-  (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
   (type: "SHEET"): Sheet;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
-  (type: "TABLE"): Table;
+  (type: "AUDIT_LOG"): AuditLog;
 }
 
 const makeUnknown = (type: ResourceType) => {
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
-    creatorId: UNKNOWN_ID,
-    createdTs: 0,
-    updaterId: UNKNOWN_ID,
-    updatedTs: 0,
     type: "END_USER",
     name: "<<Unknown principal>>",
     email: "",
     role: "DEVELOPER",
   } as Principal;
 
-  const UNKNOWN_MEMBER: Member = {
-    id: UNKNOWN_ID,
-    rowStatus: "NORMAL",
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
-    status: "ACTIVE",
-    role: "DEVELOPER",
-    principal: UNKNOWN_PRINCIPAL,
-  };
-
   const UNKNOWN_ENVIRONMENT: Environment = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
+    resourceId: "",
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
@@ -209,62 +177,37 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_PROJECT: Project = {
     id: UNKNOWN_ID,
+    resourceId: "",
     rowStatus: "NORMAL",
     name: "<<Unknown project>>",
     key: "UNK",
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     memberList: [],
     workflowType: "UI",
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
     dbNameTemplate: "",
-    roleProvider: "BYTEBASE",
     schemaChangeType: "DDL",
-    lgtmCheckSetting: getDefaultLGTMCheckSetting(),
-  };
-
-  const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
-    id: UNKNOWN_ID,
-    projectId: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
-    type: "",
-    name: "",
-    url: "",
-    activityList: [],
   };
 
   const UNKNOWN_PROJECT_MEMBER: ProjectMember = {
-    id: UNKNOWN_ID,
+    id: `projects/${UNKNOWN_ID}/roles/${UNKNOWN_ID}/principals/${UNKNOWN_ID}`,
     project: UNKNOWN_PROJECT,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     role: "DEVELOPER",
     principal: UNKNOWN_PRINCIPAL,
-    roleProvider: "BYTEBASE",
-    payload: EmptyProjectRoleProviderPayload,
   };
 
   const UNKNOWN_INSTANCE: Instance = {
     id: UNKNOWN_ID,
+    resourceId: "",
     rowStatus: "NORMAL",
     environment: UNKNOWN_ENVIRONMENT,
     dataSourceList: [],
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     name: "<<Unknown instance>>",
     engine: "MYSQL",
     engineVersion: "",
-    host: "",
+    externalLink: "",
+    srv: false,
+    authenticationDatabase: "",
   };
 
   const UNKNOWN_DATABASE: Database = {
@@ -275,10 +218,6 @@ const makeUnknown = (type: ResourceType) => {
     project: UNKNOWN_PROJECT,
     labels: [],
     dataSourceList: [],
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     name: "<<Unknown database>>",
     characterSet: "",
     collation: "",
@@ -291,21 +230,34 @@ const makeUnknown = (type: ResourceType) => {
     id: UNKNOWN_ID,
     instanceId: UNKNOWN_ID,
     databaseId: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     name: "<<Unknown data source>>",
     type: "RO",
+    username: "",
+    password: "",
+    sslCa: "",
+    sslCert: "",
+    sslKey: "",
+    host: "",
+    port: "",
+    database: "",
+    options: {
+      srv: false,
+      authenticationDatabase: "",
+      sid: "",
+      serviceName: "",
+      sshHost: "",
+      sshPort: "",
+      sshUser: "",
+      sshPassword: "",
+      sshPrivateKey: "",
+    },
+    // UI-only fields
+    updateSsl: false,
   };
 
   const UNKNOWN_BACKUP_SETTING: BackupSetting = {
     id: UNKNOWN_ID,
     databaseId: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     enabled: false,
     hour: 0,
     dayOfWeek: 0,
@@ -315,28 +267,8 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_PIPELINE: Pipeline = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     name: "<<Unknown pipeline>>",
-    status: "DONE",
     stageList: [],
-  };
-
-  const UNKNOWN_POLICY: Policy = {
-    id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
-    rowStatus: "NORMAL",
-    environment: UNKNOWN_ENVIRONMENT,
-    type: "bb.policy.pipeline-approval",
-    payload: {
-      value: DefaultApprovalPolicy,
-      assigneeGroupList: [],
-    },
   };
 
   const UNKNOWN_ISSUE: Issue = {
@@ -352,6 +284,7 @@ const makeUnknown = (type: ResourceType) => {
     type: "bb.issue.general",
     description: "",
     assignee: UNKNOWN_PRINCIPAL,
+    assigneeNeedAttention: false,
     subscriberList: [],
     payload: {},
   };
@@ -359,10 +292,6 @@ const makeUnknown = (type: ResourceType) => {
   const UNKNOWN_STAGE: Stage = {
     id: UNKNOWN_ID,
     pipeline: UNKNOWN_PIPELINE,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     name: "<<Unknown stage>>",
     environment: UNKNOWN_ENVIRONMENT,
     taskList: [],
@@ -416,22 +345,16 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_BOOKMARK: Bookmark = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
+    creatorID: UNKNOWN_ID,
     name: "",
     link: "",
   };
 
   const UNKNOWN_VCS: VCS = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     name: "",
-    type: "GITLAB_SELF_HOST",
+    type: "GITLAB",
+    uiType: "GITLAB_SELF_HOST",
     instanceUrl: "",
     apiUrl: "",
     applicationId: "",
@@ -440,10 +363,6 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_REPOSITORY: Repository = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     vcs: UNKNOWN_VCS,
     project: UNKNOWN_PROJECT,
     name: "",
@@ -454,6 +373,8 @@ const makeUnknown = (type: ResourceType) => {
     filePathTemplate: "",
     schemaPathTemplate: "",
     sheetPathTemplate: "",
+    enableSQLReviewCI: false,
+    sqlReviewCIPullRequestURL: "",
     externalId: UNKNOWN_ID.toString(),
   };
 
@@ -471,20 +392,8 @@ const makeUnknown = (type: ResourceType) => {
     severity: "MEDIUM",
     payload: {
       environmentId: UNKNOWN_ID,
-      expectedSchedule: "DAILY",
-      actualSchedule: "UNSET",
-    },
-  };
-
-  const UNKNOWN_DEPLOYMENT_CONFIG: DeploymentConfig = {
-    id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
-    project: UNKNOWN_PROJECT,
-    schedule: {
-      deployments: [],
+      expectedSchedule: BackupPlanSchedule.DAILY,
+      actualSchedule: BackupPlanSchedule.UNSET,
     },
   };
 
@@ -507,52 +416,17 @@ const makeUnknown = (type: ResourceType) => {
     type: "SQL",
     starred: false,
     pinned: false,
-  };
-
-  const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
-    id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
-    rowStatus: "NORMAL",
-    environment: UNKNOWN_ENVIRONMENT,
-    name: "",
-    ruleList: [],
-  };
-
-  const UNKNOWN_TABLE: Table = {
-    id: UNKNOWN_ID,
-    database: UNKNOWN_DATABASE,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
-    name: "<<Unknown table>>",
-    type: "BASE TABLE",
-    engine: "InnoDB",
-    collation: "",
-    rowCount: 0,
-    dataSize: 0,
-    indexList: [],
-    indexSize: 0,
-    dataFree: 0,
-    createOptions: "",
-    comment: "",
-    columnList: [],
+    payload: {},
+    size: 0,
   };
 
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
-    case "MEMBER":
-      return UNKNOWN_MEMBER;
     case "ENVIRONMENT":
       return UNKNOWN_ENVIRONMENT;
     case "PROJECT":
       return UNKNOWN_PROJECT;
-    case "PROJECT_HOOK":
-      return UNKNOWN_PROJECT_HOOK;
     case "PROJECT_MEMBER":
       return UNKNOWN_PROJECT_MEMBER;
     case "INSTANCE":
@@ -567,8 +441,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_ISSUE;
     case "PIPELINE":
       return UNKNOWN_PIPELINE;
-    case "POLICY":
-      return UNKNOWN_POLICY;
     case "STAGE":
       return UNKNOWN_STAGE;
     case "TASK_PROGRESS":
@@ -587,14 +459,8 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_REPOSITORY;
     case "ANOMALY":
       return UNKNOWN_ANOMALY;
-    case "DEPLOYMENT_CONFIG":
-      return UNKNOWN_DEPLOYMENT_CONFIG;
     case "SHEET":
       return UNKNOWN_SHEET;
-    case "SQL_REVIEW":
-      return UNKNOWN_SQL_REVIEW_POLICY;
-    case "TABLE":
-      return UNKNOWN_TABLE;
   }
 };
 export const unknown = makeUnknown as ResourceMaker;
@@ -603,32 +469,15 @@ const makeEmpty = (type: ResourceType) => {
   // Have to omit creator and updater to avoid recursion.
   const EMPTY_PRINCIPAL: Principal = {
     id: EMPTY_ID,
-    createdTs: 0,
-    updatedTs: 0,
     type: "END_USER",
     name: "",
     email: "",
     role: "DEVELOPER",
   } as Principal;
 
-  const EMPTY_MEMBER: Member = {
-    id: EMPTY_ID,
-    rowStatus: "NORMAL",
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
-    status: "ACTIVE",
-    role: "DEVELOPER",
-    principal: EMPTY_PRINCIPAL,
-  };
-
   const EMPTY_ENVIRONMENT: Environment = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
+    resourceId: "",
     rowStatus: "NORMAL",
     name: "",
     order: 0,
@@ -637,62 +486,37 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_PROJECT: Project = {
     id: EMPTY_ID,
+    resourceId: "",
     rowStatus: "NORMAL",
     name: "",
     key: "",
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     memberList: [],
     workflowType: "UI",
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
     dbNameTemplate: "",
-    roleProvider: "BYTEBASE",
     schemaChangeType: "DDL",
-    lgtmCheckSetting: getDefaultLGTMCheckSetting(),
-  };
-
-  const EMPTY_PROJECT_HOOK: ProjectWebhook = {
-    id: EMPTY_ID,
-    projectId: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
-    type: "",
-    name: "",
-    url: "",
-    activityList: [],
   };
 
   const EMPTY_PROJECT_MEMBER: ProjectMember = {
-    id: EMPTY_ID,
+    id: `projects/${EMPTY_ID}/roles/${EMPTY_ID}/principals/${EMPTY_ID}`,
     project: EMPTY_PROJECT,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     role: "DEVELOPER",
     principal: EMPTY_PRINCIPAL,
-    roleProvider: "BYTEBASE",
-    payload: EmptyProjectRoleProviderPayload,
   };
 
   const EMPTY_INSTANCE: Instance = {
     id: EMPTY_ID,
+    resourceId: "",
     rowStatus: "NORMAL",
     environment: EMPTY_ENVIRONMENT,
     dataSourceList: [],
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     name: "",
     engine: "MYSQL",
     engineVersion: "",
-    host: "",
+    externalLink: "",
+    srv: false,
+    authenticationDatabase: "",
   };
 
   const EMPTY_DATABASE: Database = {
@@ -703,10 +527,6 @@ const makeEmpty = (type: ResourceType) => {
     project: EMPTY_PROJECT,
     dataSourceList: [],
     labels: [],
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     name: "",
     characterSet: "",
     collation: "",
@@ -719,21 +539,34 @@ const makeEmpty = (type: ResourceType) => {
     id: EMPTY_ID,
     instanceId: UNKNOWN_ID,
     databaseId: UNKNOWN_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     name: "",
     type: "RO",
+    username: "",
+    password: "",
+    sslCa: "",
+    sslCert: "",
+    sslKey: "",
+    host: "",
+    port: "",
+    database: "",
+    options: {
+      srv: false,
+      authenticationDatabase: "",
+      sid: "",
+      serviceName: "",
+      sshHost: "",
+      sshPort: "",
+      sshUser: "",
+      sshPassword: "",
+      sshPrivateKey: "",
+    },
+    // UI-only fields
+    updateSsl: false,
   };
 
   const EMPTY_BACKUP_SETTING: BackupSetting = {
     id: EMPTY_ID,
     databaseId: UNKNOWN_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     enabled: false,
     hour: 0,
     dayOfWeek: 0,
@@ -743,28 +576,8 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_PIPELINE: Pipeline = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     name: "",
-    status: "DONE",
     stageList: [],
-  };
-
-  const EMPTY_POLICY: Policy = {
-    id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
-    rowStatus: "NORMAL",
-    environment: EMPTY_ENVIRONMENT,
-    type: "bb.policy.pipeline-approval",
-    payload: {
-      value: DefaultApprovalPolicy,
-      assigneeGroupList: [],
-    },
   };
 
   const EMPTY_ISSUE: Issue = {
@@ -780,6 +593,7 @@ const makeEmpty = (type: ResourceType) => {
     type: "bb.issue.general",
     description: "",
     assignee: EMPTY_PRINCIPAL,
+    assigneeNeedAttention: false,
     subscriberList: [],
     payload: {},
   };
@@ -787,10 +601,6 @@ const makeEmpty = (type: ResourceType) => {
   const EMPTY_STAGE: Stage = {
     id: EMPTY_ID,
     pipeline: EMPTY_PIPELINE,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     name: "",
     environment: EMPTY_ENVIRONMENT,
     taskList: [],
@@ -844,22 +654,16 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_BOOKMARK: Bookmark = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
+    creatorID: EMPTY_ID,
     name: "",
     link: "",
   };
 
   const EMPTY_VCS: VCS = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     name: "",
-    type: "GITLAB_SELF_HOST",
+    type: "GITLAB",
+    uiType: "GITLAB_SELF_HOST",
     instanceUrl: "",
     apiUrl: "",
     applicationId: "",
@@ -868,10 +672,6 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_REPOSITORY: Repository = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     vcs: EMPTY_VCS,
     project: EMPTY_PROJECT,
     name: "",
@@ -882,6 +682,8 @@ const makeEmpty = (type: ResourceType) => {
     filePathTemplate: "",
     schemaPathTemplate: "",
     sheetPathTemplate: "",
+    enableSQLReviewCI: false,
+    sqlReviewCIPullRequestURL: "",
     externalId: EMPTY_ID.toString(),
   };
 
@@ -899,20 +701,8 @@ const makeEmpty = (type: ResourceType) => {
     severity: "MEDIUM",
     payload: {
       environmentId: EMPTY_ID,
-      expectedSchedule: "DAILY",
-      actualSchedule: "UNSET",
-    },
-  };
-
-  const EMPTY_DEPLOYMENT_CONFIG: DeploymentConfig = {
-    id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
-    project: EMPTY_PROJECT,
-    schedule: {
-      deployments: [],
+      expectedSchedule: BackupPlanSchedule.DAILY,
+      actualSchedule: BackupPlanSchedule.UNSET,
     },
   };
 
@@ -935,52 +725,26 @@ const makeEmpty = (type: ResourceType) => {
     type: "SQL",
     starred: false,
     pinned: false,
+    payload: {},
+    size: 0,
   };
 
-  const EMPTY_SQL_REVIEW_POLICY: SQLReviewPolicy = {
-    id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
+  const EMPTY_AUDIT_LOG: AuditLog = {
     createdTs: 0,
-    updatedTs: 0,
-    rowStatus: "NORMAL",
-    environment: EMPTY_ENVIRONMENT,
-    name: "",
-    ruleList: [],
-  };
-
-  const EMPTY_TABLE: Table = {
-    id: EMPTY_ID,
-    database: EMPTY_DATABASE,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
-    name: "",
-    type: "BASE TABLE",
-    engine: "InnoDB",
-    collation: "",
-    rowCount: 0,
-    dataSize: 0,
-    indexList: [],
-    indexSize: 0,
-    dataFree: 0,
-    createOptions: "",
+    creator: EMPTY_PRINCIPAL.email,
+    type: AuditActivityType.WorkspaceMemberCreate,
+    level: AuditActivityLevel.INFO,
     comment: "",
-    columnList: [],
+    payload: "",
   };
 
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
-    case "MEMBER":
-      return EMPTY_MEMBER;
     case "ENVIRONMENT":
       return EMPTY_ENVIRONMENT;
     case "PROJECT":
       return EMPTY_PROJECT;
-    case "PROJECT_HOOK":
-      return EMPTY_PROJECT_HOOK;
     case "PROJECT_MEMBER":
       return EMPTY_PROJECT_MEMBER;
     case "INSTANCE":
@@ -995,8 +759,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_ISSUE;
     case "PIPELINE":
       return EMPTY_PIPELINE;
-    case "POLICY":
-      return EMPTY_POLICY;
     case "STAGE":
       return EMPTY_STAGE;
     case "TASK_PROGRESS":
@@ -1015,14 +777,10 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_REPOSITORY;
     case "ANOMALY":
       return EMPTY_ANOMALY;
-    case "DEPLOYMENT_CONFIG":
-      return EMPTY_DEPLOYMENT_CONFIG;
     case "SHEET":
       return EMPTY_SHEET;
-    case "SQL_REVIEW":
-      return EMPTY_SQL_REVIEW_POLICY;
-    case "TABLE":
-      return EMPTY_TABLE;
+    case "AUDIT_LOG":
+      return EMPTY_AUDIT_LOG;
   }
 };
 export const empty = makeEmpty as ResourceMaker;

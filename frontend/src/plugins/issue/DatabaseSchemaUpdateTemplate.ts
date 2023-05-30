@@ -1,10 +1,7 @@
-import {
-  IssueCreate,
-  PipelineApprovalPolicyPayload,
-  StageCreate,
-  UNKNOWN_ID,
-} from "../../types";
+import { IssueCreate, StageCreate, UNKNOWN_ID } from "../../types";
 import { IssueTemplate, TemplateContext } from "../types";
+import { defaultApprovalStrategy } from "@/store/modules/v1/policy";
+import { ApprovalStrategy } from "@/types/proto/v1/org_policy_service";
 
 const template: IssueTemplate = {
   type: "bb.issue.database.schema.update",
@@ -21,16 +18,16 @@ const template: IssueTemplate = {
           {
             name: `Update ${ctx.databaseList[i].name} schema`,
             status:
-              (
-                ctx.approvalPolicyList[i]
-                  .payload as PipelineApprovalPolicyPayload
-              ).value == "MANUAL_APPROVAL_ALWAYS"
+              (ctx.approvalPolicyList[i].deploymentApprovalPolicy
+                ?.defaultStrategy ?? defaultApprovalStrategy) ==
+              ApprovalStrategy.MANUAL
                 ? "PENDING_APPROVAL"
                 : "PENDING",
             type: "bb.task.database.schema.update",
             instanceId: ctx.databaseList[i].instance.id,
             databaseId: ctx.databaseList[i].id,
             statement: ctx.statementList ? ctx.statementList[i] : "",
+            sheetId: UNKNOWN_ID,
             earliestAllowedTs: 0,
           },
         ],

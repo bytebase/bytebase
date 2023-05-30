@@ -1,0 +1,554 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "generated-go/v1";
+
+service RolloutService {
+  rpc GetPlan(GetPlanRequest) returns (Plan) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/plans/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListPlans(ListPlansRequest) returns (ListPlansResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/plans"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc CreatePlan(CreatePlanRequest) returns (Plan) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/plans"
+      body: "plan"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdatePlan(UpdatePlanRequest) returns (Plan) {
+    option (google.api.http) = {
+      patch: "/v1/{plan.name=projects/*/plans/*}"
+      body: "plan"
+    };
+    option (google.api.method_signature) = "plan,update_mask";
+  }
+
+  rpc GetRollout(GetRolloutRequest) returns (Rollout) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListRolloutTaskRuns(ListPlansRequest) returns (ListPlansResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/rollouts"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc ListPlanCheckRuns(ListPlanCheckRunsRequest) returns (ListPlanCheckRunsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*}/planCheckRuns"};
+    option (google.api.method_signature) = "parent";
+  }
+}
+
+message GetPlanRequest {
+  // The name of the plan to retrieve.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListPlansRequest {
+  // The parent, which owns this collection of plans.
+  // Format: projects/{project}
+  // Use "projects/-" to list all plans from all projects.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of plans to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 plans will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListPlans` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListPlans` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListPlansResponse {
+  // The plans from the specified request.
+  repeated Plan plans = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreatePlanRequest {
+  // The parent project where this plan will be created.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The plan to create.
+  Plan plan = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdatePlanRequest {
+  // The plan to update.
+  //
+  // The plan's `name` field is used to identify the plan to update.
+  // Format: projects/{project}/plans/{plan}
+  Plan plan = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Plan {
+  // The name of the plan.
+  // `plan` is a system generated ID.
+  // Format: projects/{project}/plans/{plan}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The resource name of the review associated with this plan.
+  // Format: projects/{project}/reviews/{review}
+  string review = 3;
+
+  string title = 4;
+  string description = 5;
+
+  repeated Step steps = 6;
+
+  // FIXME(d/xz): support spec with deployment config
+  message Step {
+    repeated Spec specs = 1;
+  }
+
+  message Spec {
+    // earliest_allowed_time the earliest execution time of the change.
+    google.protobuf.Timestamp earliest_allowed_time = 4;
+    // A UUID4 string that uniquely identifies the Spec.
+    string id = 5;
+
+    oneof config {
+      CreateDatabaseConfig create_database_config = 1;
+      ChangeDatabaseConfig change_database_config = 2;
+      RestoreDatabaseConfig restore_database_config = 3;
+    }
+  }
+
+  message CreateDatabaseConfig {
+    // The resource name of the instance on which the database is created.
+    // Format: instances/{instance}
+    string target = 1;
+    // The name of the database to create.
+    string database = 2;
+    // table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
+    // For example, in MongoDB, it only creates the database when we first store data in that database.
+    string table = 3;
+    // character_set is the character set of the database.
+    string character_set = 4;
+    // collation is the collation of the database.
+    string collation = 5;
+    // cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>".
+    string cluster = 6;
+    // owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
+    string owner = 7;
+    // backup is the resource name of the backup.
+    // Format: instances/{instance}/databases/{database}/backups/{backup-name}
+    string backup = 8;
+    // labels of the database.
+    map<string, string> labels = 9;
+  }
+
+  message ChangeDatabaseConfig {
+    // The resource name of the target.
+    // Format: instances/{instance-id}/databases/{database-name}.
+    // Format: projects/{project}/deploymentConfig.
+    string target = 1;
+    // The resource name of the sheet.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 2;
+    // Type is the database change type.
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      // Used for establishing schema baseline, this is used when
+      // 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
+      // 2. Had schema drift and need to re-establish the baseline.
+      BASELINE = 1;
+      // Used for DDL changes including CREATE DATABASE.
+      MIGRATE = 2;
+      // Used for schema changes via state-based schema migration including CREATE DATABASE.
+      MIGRATE_SDL = 3;
+      // Used for DDL changes using gh-ost.
+      MIGRATE_GHOST = 4;
+      // Used when restoring from a backup (the restored database branched from the original backup).
+      BRANCH = 5;
+      // Used for DML change.
+      DATA = 6;
+    }
+    Type type = 3;
+    // schema_version is parsed from VCS file name.
+    // It is automatically generated in the UI workflow.
+    string schema_version = 4;
+
+    // If RollbackEnabled, build the RollbackSheetID of the task.
+    bool rollback_enabled = 5;
+
+    message RollbackDetail {
+      // rollback_from_task is the task from which the rollback SQL statement is generated for this task.
+      // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+      string rollback_from_task = 1;
+      // rollback_from_review is the review containing the original task from which the rollback SQL statement is generated for this task.
+      // Format: projects/{project}/reviews/{review}
+      string rollback_from_review = 2;
+    }
+    optional RollbackDetail rollback_detail = 6;
+  }
+
+  message RestoreDatabaseConfig {
+    // The resource name of the target to restore.
+    // Format: instances/{instance}/databases/{database}
+    string target = 1;
+    // create_database_config is present if the user wants to restore to a new database.
+    optional CreateDatabaseConfig create_database_config = 2;
+    // source determines how to restore the database.
+    // 1. from a backup
+    // 2. from a point in time
+    oneof source {
+      // Restore from a backup.
+      // Format: instances/{instance}/databases/{database}/backups/{backup-name}
+
+      string backup = 3;
+      // After the PITR operations, the database will be recovered to the state at this time.
+      google.protobuf.Timestamp point_in_time = 4;
+    }
+  }
+}
+
+message ListPlanCheckRunsRequest {
+  // The parent, which owns this collection of plan check runs.
+  // Format: projects/{project}/plans/{plan}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of plan check runs to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 plans will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListPlanCheckRuns` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListPlanCheckRuns` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListPlanCheckRunsResponse {
+  // The plan check runs from the specified request.
+  repeated PlanCheckRun plan_check_runs = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message PlanCheckRun {
+  // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    DATABASE_STATEMENT_FAKE_ADVISE = 1;
+    DATABASE_STATEMENT_SYNTAX = 2;
+    DATABASE_STATEMENT_COMPATIBILITY = 3;
+    DATABASE_STATEMENT_ADVISE = 4;
+    DATABASE_STATEMENT_TYPE = 5;
+    DATABASE_STATEMENT_TYPE_REPORT = 6;
+    DATABASE_STATEMENT_AFFECTED_ROWS_REPORT = 7;
+    DATABASE_CONNECT = 8;
+    DATABASE_GHOST_SYNC = 9;
+    DATABASE_PITR_MYSQL = 10;
+  }
+  Type type = 3;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    RUNNING = 1;
+    DONE = 2;
+    FAILED = 3;
+    CANCELED = 4;
+  }
+  Status status = 4;
+
+  // Format: instances/{instance}/databases/{database}
+  string target = 5;
+  // Format: projects/{project}/sheets/{sheet}
+  string sheet = 6;
+
+  string detail = 7;
+  repeated Result results = 8;
+
+  message Result {
+    enum Namespace {
+      NAMESPACE_UNSPECIFIED = 0;
+      BYTEBASE = 1;
+      ADVISOR = 2;
+    }
+    Namespace namespace = 1;
+    int64 code = 2;
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      ERROR = 1;
+      WARNING = 2;
+      SUCCESS = 3;
+    }
+    Status status = 3;
+    string title = 4;
+    string content = 5;
+    int64 line = 6;
+    string detail = 7;
+  }
+}
+
+message GetRolloutRequest {
+  // The name of the rollout to retrieve.
+  // Format: projects/{project}/rollouts/{rollout}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Rollout {
+  // The resource name of the rollout.
+  // Format: projects/{project}/rollouts/{rollout}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The plan that this rollout is based on.
+  // Format: projects/{project}/plans/{plan}
+  string plan = 3;
+
+  string title = 4;
+
+  // stages and thus tasks of the rollout.
+  repeated Stage stages = 5;
+}
+
+message Stage {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+  string name = 1;
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Format: environments/{environment}
+  string environment = 3;
+
+  string title = 4;
+  repeated Task tasks = 5;
+}
+
+message Task {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  string name = 1;
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string title = 3;
+
+  // A UUID4 string that uniquely identifies the Spec.
+  // Could be empty if the rollout of the task does not have an associating plan.
+  string spec_id = 12;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING_APPROVAL = 1;
+    PENDING = 2;
+    RUNNING = 3;
+    DONE = 4;
+    FAILED = 5;
+    CANCELED = 6;
+    SKIPPED = 7;
+  }
+  // Status is the status of the task.
+  // TODO(p0ny): migrate old task status and use this field as a summary of the task runs.
+  Status status = 13;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    GENERAL = 1;
+    // use payload DatabaseCreate
+    DATABASE_CREATE = 2;
+    // use payload DatabaseSchemaBaseline
+    DATABASE_SCHEMA_BASELINE = 3;
+    // use payload DatabaseSchemaUpdate
+    DATABASE_SCHEMA_UPDATE = 4;
+    // use payload DatabaseSchemaUpdate
+    DATABASE_SCHEMA_UPDATE_SDL = 5;
+    // use payload DatabaseSchemaUpdate
+    DATABASE_SCHEMA_UPDATE_GHOST_SYNC = 6;
+    // use payload nil
+    DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER = 7;
+    // use payload DatabaseDataUpdate
+    DATABASE_DATA_UPDATE = 8;
+    // use payload DatabaseBackup
+    DATABASE_BACKUP = 9;
+    // use payload DatabaseRestoreRestore
+    DATABASE_RESTORE_RESTORE = 10;
+    // use payload nil
+    DATABASE_RESTORE_CUTOVER = 11;
+  }
+  Type type = 4;
+
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  repeated string blocked_by_tasks = 5;
+
+  // Format: instances/{instance}/databases/{database}
+  string target = 6;
+
+  message DatabaseCreate {
+    // The project owning the database.
+    // Format: projects/{project}
+    string project = 1;
+    // database name
+    string database = 2;
+    // table name
+    string table = 3;
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 4;
+    string character_set = 5;
+    string collation = 6;
+    map<string, string> labels = 7;
+  }
+
+  message DatabaseSchemaBaseline {
+    string schema_version = 1;
+  }
+
+  message DatabaseSchemaUpdate {
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 1;
+    string schema_version = 2;
+  }
+
+  message DatabaseDataUpdate {
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 1;
+    string schema_version = 2;
+
+    // MySQL rollback SQL related.
+
+    // Build the rollback SQL if rollback_enabled.
+    bool rollback_enabled = 3;
+    enum RollbackSqlStatus {
+      ROLLBACK_SQL_STATUS_UNSPECIFIED = 0;
+      PENDING = 1;
+      DONE = 2;
+      FAILED = 3;
+    }
+    // The status of the rollback SQL generation.
+    RollbackSqlStatus rollback_sql_status = 4;
+    // transaction_id is the ID of the transaction executing the migration.
+    // It is only use for Oracle to find Rollback SQL statement now.
+    string transaction_id = 5;
+    // thread_id is the ID of the connection executing the migration.
+    // We use it to filter the binlog events of the migration transaction.
+    string thread_id = 6;
+    // change_history is the resource name of the change history.
+    // We use it to get the schema when the transaction ran.
+    // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+    string change_history = 7;
+    string binlog_file_start = 8;
+    string binlog_file_end = 9;
+    int64 binlog_position_start = 10;
+    int64 binlog_position_end = 11;
+    string rollback_error = 12;
+    // rollback_sheet is the resource name of
+    // the sheet that stores the generated rollback SQL statement.
+    // Format: projects/{project}/sheets/{sheet}
+    string rollback_sheet = 13;
+    // rollback_from_review is the resource name of the review that
+    // the rollback SQL statement is generated from.
+    // Format: projects/{project}/reviews/{review}
+    string rollback_from_review = 14;
+    // rollback_from_task is the resource name of the task that
+    // the rollback SQL statement is generated from.
+    // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+    string rollback_from_task = 15;
+  }
+
+  message DatabaseBackup {
+    // The resource name of the backup.
+    // Format: instances/{instance}/databases/{database}/backups/{backup-name}
+    string backup = 1;
+  }
+
+  message DatabaseRestoreRestore {
+    // Target is only used when doing restore to a new database now.
+    // It is empty for the case of in-place restore.
+    // Target {instance} must be within the same environment as the instance of the original database.
+    // {database} is the target database name.
+    // Format: instances/{instance}/databases/database
+    string target = 1;
+
+    oneof source {
+      // Only used when doing restore full backup only.
+      // Format: instances/{instance}/databases/{database}/backups/{backup-name}
+      string backup = 2;
+      // After the PITR operations, the database will be recovered to the state at this time.
+      google.protobuf.Timestamp point_in_time = 3;
+    }
+  }
+
+  oneof payload {
+    DatabaseCreate database_create = 7;
+    DatabaseSchemaBaseline database_schema_baseline = 8;
+    DatabaseSchemaUpdate database_schema_update = 9;
+    DatabaseDataUpdate database_data_update = 10;
+    DatabaseBackup database_backup = 14;
+    DatabaseRestoreRestore database_restore_restore = 11;
+  }
+}
+
+message TaskRun {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskrun}
+  string name = 1;
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Format: user:hello@world.com
+  string creator = 3;
+  // Format: user:hello@world.com
+  string updater = 4;
+  google.protobuf.Timestamp create_time = 5;
+  google.protobuf.Timestamp update_time = 6;
+
+  string title = 7;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    RUNNING = 2;
+    DONE = 3;
+    FAILED = 4;
+    CANCELED = 5;
+    SKIPPED = 6;
+  }
+  Status status = 8;
+
+  // Below are the results of a task run.
+  string detail = 9;
+  // The resource name of the change history
+  // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+  string change_history = 10;
+  string schema_version = 11;
+}

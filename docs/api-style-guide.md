@@ -20,7 +20,7 @@ Bytebase uses auto-incremental ID as the primary key for all resources. To addre
 
 Use `/foo/bar-baz` instead of `/foo/barBaz` or `/foo/barbaz`
 
-_Rationale_: To be consistent with [the URL naming from the frontend guide](https://github.com/bytebase/bytebase/blob/main/docs/fe-style-guide.md#use-lower-case-kebab-case-for-phrases). Note, we once used `/foo/barbaz` style and it has its own merits. But because it's a better option to use keba-case in the frontend URL, and to avoid brain split, we make backend API to conform the same style as well.
+_Rationale_: To be consistent with [the URL naming from the frontend guide](https://github.com/bytebase/bytebase/blob/main/docs/fe-style-guide.md#use-lower-case-kebab-case-for-phrases). Note, we once used `/foo/barbaz` style and it has its own merits. But because it's a better option to use kebab-case in the frontend URL, and to avoid brain split, we make backend API to conform the same style as well.
 
 ## Use singular form even for collection resource
 

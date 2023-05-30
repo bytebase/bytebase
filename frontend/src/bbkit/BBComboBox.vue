@@ -5,7 +5,7 @@
         ref="button"
         class="btn-select relative pl-3 pr-10"
         :class="[
-          disabled && 'bg-control-bg opacity-50 !cursor-not-allowed',
+          disabled && '!bg-control-bg opacity-50 !cursor-not-allowed',
           state.open && 'ring-1 ring-control border-control',
         ]"
         v-bind="$attrs"
@@ -119,7 +119,7 @@ const props = withDefaults(
     value: undefined,
     placeholder: "",
     disabled: false,
-    filter: async (options) => options,
+    filter: async (options: ItemType[]) => options,
   }
 );
 

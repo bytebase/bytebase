@@ -1,4 +1,5 @@
 <template>
+  <BannerUpgradeSubscription />
   <template v-if="shouldShowDemoBanner">
     <BannerDemo />
   </template>
@@ -9,10 +10,10 @@
     <BannerSubscription />
   </template>
   <template v-if="shouldShowReadonlyBanner">
-    <div
-      class="px-3 py-1 w-full text-lg font-medium bg-yellow-500 text-white flex justify-center items-center"
-    >
-      {{ $t("banner.readonly") }}
+    <div class="bg-info">
+      <div class="text-center py-1 px-3 font-medium text-white truncate">
+        {{ $t("banner.readonly") }}
+      </div>
     </div>
   </template>
   <template v-if="shouldShowExternalUrlBanner">
@@ -24,21 +25,22 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import {
-  useActuatorStore,
-  useCurrentUser,
+  useActuatorV1Store,
+  useCurrentUserV1,
   useDebugStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
 } from "@/store/modules";
-import { hasWorkspacePermission, isDev } from "@/utils";
+import { hasWorkspacePermissionV1, isDev } from "@/utils";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerDebug from "@/views/BannerDebug.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
+import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
 
-const actuatorStore = useActuatorStore();
-const currentUser = useCurrentUser();
+const actuatorStore = useActuatorV1Store();
+const currentUserV1 = useCurrentUserV1();
 const debugStore = useDebugStore();
-const subscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const { isDemo, isReadonly, needConfigureExternalUrl } =
   storeToRefs(actuatorStore);
@@ -46,13 +48,8 @@ const { isDebug } = storeToRefs(debugStore);
 const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
 
 const shouldShowDemoBanner = computed(() => {
-  // demoName is the seeding data folder name, so the `dev`/`prod` isn't a valid feature demo name
-  const demoName = actuatorStore.serverInfo?.demoName;
-  const invalidFeatureDemoNameList = ["dev", "prod"];
-  const isFeatureDemo =
-    demoName && !invalidFeatureDemoNameList.includes(demoName);
-
-  return isDemo.value && !isFeatureDemo;
+  // Only show demo banner if it's the default demo (as opposed to the feature demo).
+  return actuatorStore.serverInfo?.demoName == "default";
 });
 
 // For now, debug mode is a global setting and will affect all users.
@@ -61,9 +58,9 @@ const shouldShowDemoBanner = computed(() => {
 const shouldShowDebugBanner = computed(() => {
   return (
     isDebug.value &&
-    hasWorkspacePermission(
+    hasWorkspacePermissionV1(
       "bb.permission.workspace.debug",
-      currentUser.value.role
+      currentUserV1.value.userRole
     )
   );
 });
@@ -77,6 +74,6 @@ const shouldShowReadonlyBanner = computed(() => {
 });
 
 const shouldShowExternalUrlBanner = computed(() => {
-  return !isDev && needConfigureExternalUrl.value;
+  return !isDev() && needConfigureExternalUrl.value;
 });
 </script>

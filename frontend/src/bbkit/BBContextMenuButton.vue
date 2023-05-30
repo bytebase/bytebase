@@ -1,7 +1,7 @@
 <template>
   <button
-    class="select-none inline-flex items-center border rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-medium overflow-hidden focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-    :data-button-type="state.currentAction.type"
+    class="select-none h-[38px] inline-flex items-center border rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-medium overflow-hidden focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+    :data-button-type="state.currentAction.type ?? 'NORMAL'"
     :class="actionButtonClass.wrapper"
     :disabled="disabled"
   >
@@ -95,6 +95,10 @@ const props = defineProps({
     type: Array as PropType<ButtonAction[]>,
     required: true,
   },
+  defaultActionKey: {
+    type: String,
+    default: "",
+  },
   disabled: {
     type: Boolean,
     default: false,
@@ -112,7 +116,7 @@ const getStorage = () => {
   if (!preferenceKey) return undefined;
   // e.g key = "bb.button-with-context-menu.task-status-transition"
   const key = `${STORE_PREFIX}.${preferenceKey}`;
-  return useLocalStorage(key, "", {
+  return useLocalStorage(key, props.defaultActionKey, {
     listenToStorageChanges: false,
   });
 };
@@ -129,6 +133,14 @@ const getDefaultAction = (): ButtonAction => {
     );
     if (storedDefaultAction) {
       return storedDefaultAction;
+    }
+  }
+  if (props.defaultActionKey) {
+    const defaultAction = props.actionList.find(
+      (action) => action.key === props.defaultActionKey
+    );
+    if (defaultAction) {
+      return defaultAction;
     }
   }
 

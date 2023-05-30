@@ -1,60 +1,71 @@
 import { computed, Ref } from "vue";
-import { useCurrentUser } from "@/store";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
   Issue,
-  SYSTEM_BOT_ID,
   IssueStatusTransitionType,
-  ASSIGNEE_APPLICABLE_ACTION_LIST,
-  CREATOR_APPLICABLE_ACTION_LIST,
   ISSUE_STATUS_TRANSITION_LIST,
   IssueStatusTransition,
+  APPLICABLE_ISSUE_ACTION_LIST,
 } from "@/types";
 import {
   activeStage,
+  activeTask,
   allTaskList,
   applicableTaskTransition,
-  hasWorkspacePermission,
-  isOwnerOfProject,
   StageStatusTransition,
   TaskStatusTransition,
   TASK_STATUS_TRANSITION_LIST,
+  isDatabaseRelatedIssueType,
+  extractUserUID,
+  hasWorkspacePermissionV1,
+  isOwnerOfProjectV1,
 } from "@/utils";
-import { useAllowProjectOwnerToApprove, useIssueLogic } from ".";
+import {
+  allowUserToBeAssignee,
+  useCurrentRollOutPolicyForActiveEnvironment,
+} from "./";
+import { useIssueLogic } from ".";
+import { User } from "@/types/proto/v1/auth_service";
+import { Review } from "@/types/proto/v1/review_service";
+import { extractIssueReviewContext } from "@/plugins/issue/logic";
 
 export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
-  const {
-    create,
-    activeTaskOfPipeline,
-    allowApplyIssueStatusTransition,
-    allowApplyTaskStatusTransition,
-  } = useIssueLogic();
+  const { create, activeTaskOfPipeline, allowApplyTaskStatusTransition } =
+    useIssueLogic();
 
-  const currentUser = useCurrentUser();
-
-  const allowProjectOwnerAsAssignee = useAllowProjectOwnerToApprove();
+  const currentUserV1 = useCurrentUserV1();
+  const rollOutPolicy = useCurrentRollOutPolicyForActiveEnvironment();
 
   const isAllowedToApplyTaskTransition = computed(() => {
     if (create.value) {
       return false;
     }
+    if (!isDatabaseRelatedIssueType(issue.value.type)) {
+      return false;
+    }
 
-    // Applying task transition is decoupled with the issue's Assignee.
-    // But relative to the task's environment's approval policy.
+    const project = useProjectV1Store().getProjectByUID(
+      String(issue.value.project.id)
+    );
+
     if (
-      hasWorkspacePermission(
-        "bb.permission.workspace.manage-issue",
-        currentUser.value.role
+      allowUserToBeAssignee(
+        currentUserV1.value,
+        project,
+        project.iamPolicy,
+        rollOutPolicy.value.policy,
+        rollOutPolicy.value.assigneeGroup
       )
     ) {
       return true;
     }
-    if (
-      allowProjectOwnerAsAssignee.value &&
-      isOwnerOfProject(currentUser.value, (issue.value as Issue).project)
-    ) {
-      return true;
-    }
-    return false;
+
+    // Otherwise, only the assignee can apply task status transitions
+    // including roll out, cancel, retry, etc.
+    return (
+      String(issue.value.assignee.id) ===
+      extractUserUID(currentUserV1.value.name)
+    );
   });
 
   const getApplicableIssueStatusTransitionList = (
@@ -63,58 +74,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     if (create.value) {
       return [];
     }
-
-    const currentTask = activeTaskOfPipeline(issue.pipeline);
-
-    const issueEntity = issue as Issue;
-    const list: IssueStatusTransitionType[] = [];
-    // Allow assignee, or assignee is the system bot and current user can manage issue
-    if (
-      currentUser.value.id === issueEntity.assignee?.id ||
-      (issueEntity.assignee?.id == SYSTEM_BOT_ID &&
-        hasWorkspacePermission(
-          "bb.permission.workspace.manage-issue",
-          currentUser.value.role
-        ))
-    ) {
-      list.push(...ASSIGNEE_APPLICABLE_ACTION_LIST.get(issueEntity.status)!);
-    }
-    if (currentUser.value.id === issueEntity.creator.id) {
-      CREATOR_APPLICABLE_ACTION_LIST.get(issueEntity.status)!.forEach(
-        (item) => {
-          if (list.indexOf(item) == -1) {
-            list.push(item);
-          }
-        }
-      );
-    }
-
-    return list
-      .map(
-        (type: IssueStatusTransitionType) =>
-          ISSUE_STATUS_TRANSITION_LIST.get(type)!
-      )
-      .filter((transition) => {
-        const pipeline = issueEntity.pipeline;
-        // Disallow any issue status transition if the active task is in RUNNING state.
-        if (currentTask.status == "RUNNING") {
-          return false;
-        }
-
-        const taskList = allTaskList(pipeline);
-        // Don't display the Resolve action if the last task is NOT in DONE status.
-        if (
-          transition.type == "RESOLVE" &&
-          taskList.length > 0 &&
-          (currentTask.id != taskList[taskList.length - 1].id ||
-            currentTask.status != "DONE")
-        ) {
-          return false;
-        }
-
-        return allowApplyIssueStatusTransition(issue, transition.to);
-      })
-      .reverse();
+    return calcApplicableIssueStatusTransitionList(issue);
   };
 
   const getApplicableStageStatusTransitionList = (issue: Issue) => {
@@ -128,14 +88,14 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
       case "OPEN": {
         if (isAllowedToApplyTaskTransition.value) {
           // Only "Approve" can be applied to current stage by now.
-          const APPROVE = TASK_STATUS_TRANSITION_LIST.get("APPROVE")!;
+          const ROLLOUT = TASK_STATUS_TRANSITION_LIST.get("ROLLOUT")!;
           const currentStage = activeStage(issue.pipeline);
 
           const pendingApprovalTaskList = currentStage.taskList.filter(
             (task) => {
               return (
                 task.status === "PENDING_APPROVAL" &&
-                allowApplyTaskStatusTransition(task, APPROVE.to)
+                allowApplyTaskStatusTransition(task, ROLLOUT.to)
               );
             }
           );
@@ -143,7 +103,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
           // Allowing "Approve" a stage when it has TWO OR MORE tasks
           // are "PENDING_APPROVAL" (including the "activeTask" itself)
           if (pendingApprovalTaskList.length >= 2) {
-            return [APPROVE];
+            return [ROLLOUT];
           }
         }
 
@@ -199,6 +159,62 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
   };
 };
 
+export const calcApplicableIssueStatusTransitionList = (
+  issue: Issue
+): IssueStatusTransition[] => {
+  const issueEntity = issue as Issue;
+  const transitionTypeList: IssueStatusTransitionType[] = [];
+  const currentUserV1 = useCurrentUserV1();
+
+  console.log(issue.type, issue.name);
+
+  if (allowUserToApplyIssueStatusTransition(issueEntity, currentUserV1.value)) {
+    const actions = APPLICABLE_ISSUE_ACTION_LIST.get(issueEntity.status);
+    if (actions) {
+      transitionTypeList.push(...actions);
+    }
+  }
+
+  const applicableTransitionList: IssueStatusTransition[] = [];
+  transitionTypeList.forEach((type) => {
+    const transition = ISSUE_STATUS_TRANSITION_LIST.get(type);
+    if (!transition) return;
+
+    if (type === "RESOLVE") {
+      // If an issue is not "Approved" in review stage
+      // it cannot be Resolved.
+      if (!isIssueReviewDone(issue)) {
+        return;
+      }
+    }
+
+    if (isDatabaseRelatedIssueType(issue.type)) {
+      const currentTask = activeTask(issue.pipeline);
+      const flattenTaskList = allTaskList(issue.pipeline);
+      if (flattenTaskList.some((task) => task.status === "RUNNING")) {
+        // Disallow any issue status transition if some of the tasks are in RUNNING state.
+        return;
+      }
+      if (type === "RESOLVE") {
+        if (transition.type === "RESOLVE" && flattenTaskList.length > 0) {
+          const lastTask = flattenTaskList[flattenTaskList.length - 1];
+          // Don't display the RESOLVE action if the pipeline doesn't reach the
+          // last task
+          if (lastTask.id !== currentTask.id) {
+            return;
+          }
+          // Don't display the RESOLVE action if the last task is not DONE.
+          if (currentTask.status !== "DONE") {
+            return;
+          }
+        }
+      }
+    }
+    applicableTransitionList.push(transition);
+  });
+  return applicableTransitionList;
+};
+
 export function isApplicableTransition<
   T extends IssueStatusTransition | TaskStatusTransition | StageStatusTransition
 >(target: T, list: T[]): boolean {
@@ -207,4 +223,53 @@ export function isApplicableTransition<
       return applicable.to === target.to && applicable.type === target.type;
     }) >= 0
   );
+}
+
+const allowUserToApplyIssueStatusTransition = (issue: Issue, user: User) => {
+  // Workspace level high-privileged user (DBA/OWNER) are always allowed.
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      user.userRole
+    )
+  ) {
+    return true;
+  }
+
+  // Project owners are also allowed
+  const projectV1 = useProjectV1Store().getProjectByUID(
+    String(issue.project.id)
+  );
+  if (isOwnerOfProjectV1(projectV1.iamPolicy, user)) {
+    return true;
+  }
+
+  // The creator and the assignee can apply issue status transition
+
+  const currentUserUID = extractUserUID(user.name);
+
+  if (currentUserUID === String(issue.creator?.id)) {
+    return true;
+  }
+  if (currentUserUID === String(issue.assignee?.id)) {
+    return true;
+  }
+
+  return false;
+};
+
+function isIssueReviewDone(issue: Issue) {
+  const review = computed(() => {
+    try {
+      return Review.fromJSON(issue.payload.approval);
+    } catch {
+      return Review.fromJSON({});
+    }
+  });
+  const context = extractIssueReviewContext(
+    computed(() => issue),
+    review
+  );
+  console.log("is issue review done", issue.id, issue.name, context.done.value);
+  return context.done.value;
 }

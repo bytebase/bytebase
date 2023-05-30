@@ -2,24 +2,34 @@
   <div class="mt-4 space-y-4">
     <div class="flex justify-end">
       <div
-        v-if="vcs.type == 'GITLAB_SELF_HOST'"
+        v-if="vcs.uiType == 'GITLAB_SELF_HOST'"
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">
-          {{
-            $t(
-              "version-control.setting.add-git-provider.gitlab-self-host-ce-ee"
-            )
-          }}
+          {{ $t("gitops.setting.add-git-provider.gitlab-self-host-ce-ee") }}
         </div>
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
       <div
-        v-if="vcs.type == 'GITHUB_COM'"
+        v-else-if="vcs.uiType == 'GITLAB_COM'"
+        class="flex flex-row items-center space-x-2"
+      >
+        <div class="textlabel whitespace-nowrap">GitLab.com</div>
+        <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
+      </div>
+      <div
+        v-else-if="vcs.uiType == 'GITHUB_COM'"
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">GitHub.com</div>
         <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+      </div>
+      <div
+        v-else-if="vcs.uiType == 'BITBUCKET_ORG'"
+        class="flex flex-row items-center space-x-2"
+      >
+        <div class="textlabel whitespace-nowrap">Bitbucket.org</div>
+        <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
       </div>
     </div>
 
@@ -39,15 +49,11 @@
 
     <div>
       <label for="name" class="textlabel">
-        {{
-          $t("version-control.setting.add-git-provider.basic-info.display-name")
-        }}
+        {{ $t("gitops.setting.add-git-provider.basic-info.display-name") }}
       </label>
       <p class="mt-1 textinfolabel">
         {{
-          $t(
-            "version-control.setting.add-git-provider.basic-info.display-name-label"
-          )
+          $t("gitops.setting.add-git-provider.basic-info.display-name-label")
         }}
       </p>
       <input
@@ -64,22 +70,26 @@
         {{ $t("common.application") }} ID
       </label>
       <p class="mt-1 textinfolabel">
-        <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
+        <template v-if="vcs.uiType == 'GITLAB_SELF_HOST'">
           {{
             $t(
-              "version-control.setting.git-provider.gitlab-application-id-label"
+              "gitops.setting.git-provider.gitlab-self-host-application-id-label"
             )
           }}
           <a :href="adminApplicationUrl" target="_blank" class="normal-link">{{
-            $t("version-control.setting.git-provider.view-in-gitlab")
+            $t("gitops.setting.git-provider.view-in-gitlab")
           }}</a>
         </template>
-        <template v-if="vcs.type == 'GITHUB_COM'">
+        <template v-else-if="vcs.uiType == 'GITLAB_COM'">
           {{
-            $t(
-              "version-control.setting.git-provider.github-application-id-label"
-            )
+            $t("gitops.setting.git-provider.gitlab-com-application-id-label")
           }}
+          <a :href="adminApplicationUrl" target="_blank" class="normal-link">{{
+            $t("gitops.setting.git-provider.view-in-gitlab")
+          }}</a>
+        </template>
+        <template v-else-if="vcs.uiType == 'GITHUB_COM'">
+          {{ $t("gitops.setting.git-provider.github-application-id-label") }}
         </template>
       </p>
       <input
@@ -94,11 +104,14 @@
     <div>
       <label for="secret" class="textlabel"> Secret </label>
       <p class="mt-1 textinfolabel">
-        <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          {{ $t("version-control.setting.git-provider.secret-label-gitlab") }}
+        <template v-if="vcs.uiType == 'GITLAB_SELF_HOST'">
+          {{ $t("gitops.setting.git-provider.gitlab-self-host-secret-label") }}
         </template>
-        <template v-if="vcs.type == 'GITHUB_COM'">
-          {{ $t("version-control.setting.git-provider.secret-label-github") }}
+        <template v-else-if="vcs.uiType == 'GITLAB_COM'">
+          {{ $t("gitops.setting.git-provider.gitlab-com-secret-label") }}
+        </template>
+        <template v-else-if="vcs.uiType == 'GITHUB_COM'">
+          {{ $t("gitops.setting.git-provider.secret-label-github") }}
         </template>
       </p>
       <input
@@ -115,16 +128,20 @@
       <template v-if="repositoryList.length == 0">
         <BBButtonConfirm
           :style="'DELETE'"
-          :button-text="'Delete this Git provider'"
-          :ok-text="'Delete'"
-          :confirm-title="`Delete Git provider '${vcs.name}'?`"
+          :button-text="$t('gitops.setting.git-provider.delete')"
+          :ok-text="$t('common.delete')"
+          :confirm-title="
+            $t('gitops.setting.git-provider.delete-confirm', {
+              name: vcs.name,
+            })
+          "
           :require-confirm="true"
           @confirm="deleteVCS"
         />
       </template>
       <template v-else>
         <div class="mt-1 textinfolabel">
-          {{ $t("version-control.setting.git-provider.delete") }}
+          {{ $t("gitops.setting.git-provider.delete-forbidden") }}
         </div>
       </template>
       <div>
@@ -227,8 +244,9 @@ export default defineComponent({
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (
-          vcs.value.type == "GITLAB_SELF_HOST" ||
-          vcs.value.type == "GITHUB_COM"
+          vcs.value.type == "GITLAB" ||
+          vcs.value.type == "GITHUB" ||
+          vcs.value.type == "BITBUCKET"
         ) {
           useOAuthStore()
             .exchangeVCSTokenWithID({
@@ -256,8 +274,10 @@ export default defineComponent({
     watchEffect(prepareRepositoryList);
 
     const adminApplicationUrl = computed(() => {
-      if (vcs.value.type == "GITLAB_SELF_HOST") {
+      if (vcs.value.uiType == "GITLAB_SELF_HOST") {
         return `${vcs.value.instanceUrl}/admin/applications`;
+      } else if (vcs.value.uiType == "GITLAB_COM") {
+        return "https://gitlab.com/-/profile/applications";
       }
       return "";
     });
@@ -280,8 +300,10 @@ export default defineComponent({
         !isEmpty(state.secret)
       ) {
         let authorizeUrl = `${vcs.value.instanceUrl}/oauth/authorize`;
-        if (vcs.value.type == "GITHUB_COM") {
+        if (vcs.value.type == "GITHUB") {
           authorizeUrl = `https://github.com/login/oauth/authorize`;
+        } else if (vcs.value.type == "BITBUCKET") {
+          authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
         }
         const newWindow = openWindowForOAuth(
           authorizeUrl,
@@ -319,12 +341,15 @@ export default defineComponent({
               // So the only possibility to reach here is we have a matching application ID, while
               // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
               let description = "";
-              if (vcs.value.type == "GITLAB_SELF_HOST") {
+              if (vcs.value.type == "GITLAB") {
                 description =
                   "Please make sure Secret matches the one from your GitLab instance Application.";
-              } else if (vcs.value.type == "GITHUB_COM") {
+              } else if (vcs.value.type == "GITHUB") {
                 description =
                   "Please make sure Client secret matches the one from your GitHub.com Application.";
+              } else if (vcs.value.type == "BITBUCKET") {
+                description =
+                  "Please make sure Secret matches the one from your Bitbucket.org consumer.";
               }
               pushNotification({
                 module: "bytebase",
@@ -356,7 +381,7 @@ export default defineComponent({
 
     const cancel = () => {
       router.push({
-        name: "setting.workspace.version-control",
+        name: "setting.workspace.gitops",
       });
     };
 
@@ -369,7 +394,7 @@ export default defineComponent({
           title: `Successfully deleted '${name}'`,
         });
         router.push({
-          name: "setting.workspace.version-control",
+          name: "setting.workspace.gitops",
         });
       });
     };

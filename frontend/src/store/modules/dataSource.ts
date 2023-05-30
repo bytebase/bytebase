@@ -12,7 +12,6 @@ import {
   EMPTY_ID,
   empty,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   dataSource: ResourceObject,
@@ -24,19 +23,11 @@ function convert(
   return {
     ...(dataSource.attributes as Omit<
       DataSource,
-      "id" | "instanceId" | "databaseId" | "creator" | "updater"
+      "id" | "instanceId" | "databaseId"
     >),
     id: parseInt(dataSource.id),
     databaseId: parseInt(databaseId),
     instanceId: parseInt(instanceId),
-    creator: getPrincipalFromIncludedList(
-      dataSource.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      dataSource.relationships!.updater.data,
-      includedList
-    ),
   };
 }
 

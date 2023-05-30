@@ -7,17 +7,33 @@ import {
   IssueId,
   MigrationHistoryId,
   Project,
-  ProjectWebhook,
   VCS,
   SQLReviewPolicy,
-  Sheet,
   UNKNOWN_ID,
 } from "../types";
 import { IdType } from "../types/id";
+import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
+import {
+  getProjectAndSheetId,
+  projectNamePrefix,
+  sheetNamePrefix,
+} from "@/store/modules/v1/common";
 
 export function idFromSlug(slug: string): IdType {
   const parts = slug.split("-");
   return parseInt(parts[parts.length - 1]);
+}
+
+export function sheetNameFromSlug(slug: string): string {
+  const parts = slug.split("-");
+  return `${projectNamePrefix}${parts
+    .slice(0, -1)
+    .join("-")}/${sheetNamePrefix}${parts[parts.length - 1]}`;
+}
+
+export function migrationHistoryIdFromSlug(slug: string): MigrationHistoryId {
+  const parts = slug.split("-");
+  return parts[parts.length - 1];
 }
 
 export function indexFromSlug(slug: string): number {
@@ -38,10 +54,6 @@ export function projectSlug(project: Project): string {
   return [slug(project.name), project.id].join("-");
 }
 
-export function projectWebhookSlug(projectWebhook: ProjectWebhook): string {
-  return [slug(projectWebhook.name), projectWebhook.id].join("-");
-}
-
 export function instanceSlug(instance: Instance): string {
   return [
     slug(instance.environment.name),
@@ -54,7 +66,7 @@ export function stageSlug(stageName: string, stageIndex: number): string {
   return [slug(stageName), stageIndex + 1].join("-");
 }
 
-export function taskSlug(name: string, id: number): string {
+export function taskSlug(name: string, id: IdType): string {
   return [slug(name), id].join("-");
 }
 
@@ -82,7 +94,7 @@ export function vcsSlug(vcs: VCS): string {
 }
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
-  return [slug(reviewPolicy.name), reviewPolicy.environment.id].join("-");
+  return [slug(reviewPolicy.name), reviewPolicy.environment.uid].join("-");
 }
 
 export function connectionSlug(
@@ -96,6 +108,7 @@ export function connectionSlug(
   return parts.join("_");
 }
 
-export function sheetSlug(sheet: Sheet): string {
-  return [slug(sheet.name), sheet.id].join("-");
+export function sheetSlugV1(sheet: SheetV1): string {
+  const [projectName, uid] = getProjectAndSheetId(sheet.name);
+  return [projectName, uid].join("-");
 }

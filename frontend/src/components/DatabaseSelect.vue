@@ -1,20 +1,20 @@
 <template>
   <BBSelect
-    :selected-item="state.selectedDatabase"
+    :selected-item="selectedDatabase"
     :item-list="databaseList"
     :disabled="disabled"
     :placeholder="$t('database.select')"
     :show-prefix-item="true"
-    @select-item="(database: Database) => $emit('select-database-id', database.id)"
+    @select-item="(database: ComposedDatabase) => $emit('select-database-id', database.uid)"
   >
-    <template #menuItem="{ item: database }">
+    <template #menuItem="{ item: database }: { item: ComposedDatabase }">
       <slot
         v-if="customizeItem"
         name="customizeItem"
         :database="database"
       ></slot>
       <div v-else class="flex items-center">
-        <span>{{ database.name }}</span>
+        <span>{{ database.databaseName }}</span>
       </div>
     </template>
   </BBSelect>
@@ -22,7 +22,12 @@
 
 <script lang="ts">
 import { isNullOrUndefined } from "@/plugins/demo/utils";
-import { useCurrentUser, useDatabaseStore } from "@/store";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useInstanceV1Store,
+} from "@/store";
 import {
   computed,
   reactive,
@@ -33,17 +38,13 @@ import {
 } from "vue";
 import {
   UNKNOWN_ID,
-  Database,
-  ProjectId,
-  InstanceId,
-  EnvironmentId,
-  EngineType,
-  DatabaseSyncStatus,
+  ComposedDatabase,
+  DEFAULT_PROJECT_V1_NAME,
 } from "../types";
+import { Engine, State } from "@/types/proto/v1/common";
 
 interface LocalState {
-  selectedId?: number;
-  selectedDatabase?: Database;
+  selectedId?: string;
 }
 
 export default defineComponent({
@@ -51,34 +52,34 @@ export default defineComponent({
   props: {
     selectedId: {
       required: true,
-      type: Number,
+      type: String,
     },
     mode: {
       required: true,
-      type: String as PropType<"INSTANCE" | "ENVIRONMENT" | "USER">,
+      type: String as PropType<"ALL" | "INSTANCE" | "ENVIRONMENT" | "USER">,
     },
     environmentId: {
-      type: Number as PropType<EnvironmentId>,
-      default: UNKNOWN_ID,
+      type: String,
+      default: String(UNKNOWN_ID),
     },
     instanceId: {
-      type: Number as PropType<InstanceId>,
-      default: UNKNOWN_ID,
+      type: String,
+      default: String(UNKNOWN_ID),
     },
     projectId: {
-      type: Number as PropType<ProjectId>,
-      default: UNKNOWN_ID,
+      type: String,
+      default: String(UNKNOWN_ID),
     },
     engineTypeList: {
-      type: Array as PropType<EngineType[]>,
+      type: Array as PropType<Engine[]>,
       default: undefined,
     },
     engineType: {
-      type: String as PropType<EngineType>,
+      type: Number as PropType<Engine>,
       default: undefined,
     },
-    syncStatus: {
-      type: String as PropType<DatabaseSyncStatus>,
+    syncState: {
+      type: Number as PropType<State>,
       default: undefined,
     },
     disabled: {
@@ -92,20 +93,40 @@ export default defineComponent({
   },
   emits: ["select-database-id"],
   setup(props, { emit }) {
-    const databaseStore = useDatabaseStore();
+    const databaseStore = useDatabaseV1Store();
     const state = reactive<LocalState>({
       selectedId: props.selectedId,
     });
 
-    const currentUser = useCurrentUser();
+    const currentUserV1 = useCurrentUserV1();
 
-    const prepareDatabaseList = () => {
+    const prepareDatabaseList = async () => {
       // TODO(tianzhou): Instead of fetching each time, we maybe able to let the outside context
       // to provide the database list and we just do a get here.
-      if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
-        databaseStore.fetchDatabaseListByEnvironmentId(props.environmentId);
-      } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
-        databaseStore.fetchDatabaseListByInstanceId(props.instanceId);
+      if (props.mode === "ALL") {
+        databaseStore.fetchDatabaseList({
+          parent: "instances/-",
+        });
+      } else if (
+        props.mode == "ENVIRONMENT" &&
+        props.environmentId !== String(UNKNOWN_ID)
+      ) {
+        // TODO: we do not support filtering database list by environment in v1
+        // API so we need to fetch them all
+        // databaseStore.fetchDatabaseListByEnvironmentId(props.environmentId);
+        databaseStore.fetchDatabaseList({
+          parent: "instances/-",
+        });
+      } else if (
+        props.mode == "INSTANCE" &&
+        props.instanceId !== String(UNKNOWN_ID)
+      ) {
+        const instance = await useInstanceV1Store().getOrFetchInstanceByUID(
+          props.instanceId
+        );
+        databaseStore.fetchDatabaseList({
+          parent: instance.name,
+        });
       } else if (props.mode == "USER") {
         // We assume the database list for the current user should have already been fetched, so we won't do a fetch here.
       }
@@ -114,59 +135,79 @@ export default defineComponent({
     watchEffect(prepareDatabaseList);
 
     const databaseList = computed(() => {
-      let list: Database[] = [];
-      if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
-        list = databaseStore.getDatabaseListByEnvironmentId(
+      let list: ComposedDatabase[] = [];
+      if (props.mode === "ALL") {
+        list = [...databaseStore.databaseList];
+      } else if (
+        props.mode === "ENVIRONMENT" &&
+        props.environmentId !== String(UNKNOWN_ID)
+      ) {
+        const environment = useEnvironmentV1Store().getEnvironmentByUID(
           props.environmentId
         );
-      } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
-        list = databaseStore.getDatabaseListByInstanceId(props.instanceId);
+        list = databaseStore.databaseListByEnvironment(environment.name);
+      } else if (
+        props.mode === "INSTANCE" &&
+        props.instanceId !== String(UNKNOWN_ID)
+      ) {
+        const instance = useInstanceV1Store().getInstanceByUID(
+          props.instanceId
+        );
+        list = databaseStore.databaseListByInstance(instance.name);
       } else if (props.mode == "USER") {
-        list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
-        if (
-          props.environmentId != UNKNOWN_ID ||
-          props.projectId != UNKNOWN_ID
-        ) {
-          list = list.filter((database: Database) => {
-            return (
-              (props.environmentId == UNKNOWN_ID ||
-                database.instance.environment.id == props.environmentId) &&
-              (props.projectId == UNKNOWN_ID ||
-                database.project.id == props.projectId)
-            );
-          });
-        }
+        list = databaseStore.databaseListByUser(currentUserV1.value);
       }
 
       if (!isNullOrUndefined(props.engineTypeList)) {
-        list = list.filter((database: Database) => {
-          return props.engineTypeList?.includes(database.instance.engine);
+        list = list.filter((database) => {
+          return props.engineTypeList?.includes(database.instanceEntity.engine);
         });
       }
 
-      if (!isNullOrUndefined(props.syncStatus)) {
-        list = list.filter((database: Database) => {
-          return database.syncStatus === props.syncStatus;
+      if (!isNullOrUndefined(props.syncState)) {
+        list = list.filter((database) => {
+          return database.syncState === props.syncState;
         });
       }
+
+      if (props.environmentId !== String(UNKNOWN_ID)) {
+        list = list.filter(
+          (db) =>
+            db.instanceEntity.environmentEntity.uid === props.environmentId
+        );
+      }
+      if (props.instanceId !== String(UNKNOWN_ID)) {
+        list = list.filter((db) => db.instanceEntity.uid === props.instanceId);
+      }
+      if (props.projectId !== String(UNKNOWN_ID)) {
+        list = list.filter((db) => db.projectEntity.uid === props.projectId);
+      }
+
+      list = list.filter((database) => {
+        return database.project !== DEFAULT_PROJECT_V1_NAME;
+      });
 
       return list;
     });
 
+    const selectedDatabase = computed(() => {
+      return databaseList.value.find(
+        (database) => database.uid == state.selectedId
+      );
+    });
+
     const invalidateSelectionIfNeeded = () => {
       if (
-        state.selectedId != UNKNOWN_ID &&
-        !databaseList.value.find(
-          (database: Database) => database.id == state.selectedId
-        )
+        state.selectedId !== String(UNKNOWN_ID) &&
+        !databaseList.value.find((database) => database.uid == state.selectedId)
       ) {
-        state.selectedId = UNKNOWN_ID;
+        state.selectedId = String(UNKNOWN_ID);
         emit("select-database-id", state.selectedId);
       }
     };
 
     const onSelectChange = (e: Event) => {
-      const id = parseInt((e.target as HTMLSelectElement).value, 10);
+      const id = (e.target as HTMLSelectElement).value;
       state.selectedId = id;
       emit("select-database-id", id);
     };
@@ -186,9 +227,6 @@ export default defineComponent({
       (selectedId) => {
         invalidateSelectionIfNeeded();
         state.selectedId = selectedId;
-        state.selectedDatabase = databaseList.value.find(
-          (database) => database.id === selectedId
-        );
       }
     );
 
@@ -196,6 +234,7 @@ export default defineComponent({
       UNKNOWN_ID,
       state,
       databaseList,
+      selectedDatabase,
       onSelectChange,
     };
   },

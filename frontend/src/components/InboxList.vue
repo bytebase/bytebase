@@ -22,6 +22,7 @@
                 <router-link
                   :to="`/u/${inbox.activity.creator.id}`"
                   class="mr-1 font-medium text-main hover:underline"
+                  @click.stop
                   >{{ inbox.activity.creator.name }}</router-link
                 >
               </template>

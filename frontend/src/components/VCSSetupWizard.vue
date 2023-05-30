@@ -5,7 +5,7 @@
     :description="attentionText"
   />
   <BBStepTab
-    class="mt-4"
+    class="mt-4 mb-8"
     :step-item-list="stepList"
     :allow-next="allowNext"
     :finish-title="$t('common.confirm-and-add')"
@@ -75,15 +75,16 @@ export default defineComponent({
     const vcsStore = useVCSStore();
 
     const stepList: BBStepTabItem[] = [
-      { title: t("version-control.setting.add-git-provider.basic-info.self") },
-      { title: t("version-control.setting.add-git-provider.oauth-info.self") },
+      { title: t("gitops.setting.add-git-provider.basic-info.self") },
+      { title: t("gitops.setting.add-git-provider.oauth-info.self") },
       { title: t("common.confirm") },
     ];
 
     const state = reactive<LocalState>({
       config: {
-        type: "GITLAB_SELF_HOST",
-        name: t("version-control.setting.add-git-provider.gitlab-self-host"),
+        type: "GITLAB",
+        uiType: "GITLAB_SELF_HOST",
+        name: t("gitops.setting.add-git-provider.gitlab-self-host"),
         instanceUrl: "",
         applicationId: "",
         secret: "",
@@ -103,8 +104,9 @@ export default defineComponent({
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (
-          state.config.type == "GITLAB_SELF_HOST" ||
-          state.config.type == "GITHUB_COM"
+          state.config.type == "GITLAB" ||
+          state.config.type == "GITHUB" ||
+          state.config.type == "BITBUCKET"
         ) {
           useOAuthStore()
             .exchangeVCSToken({
@@ -145,14 +147,21 @@ export default defineComponent({
     });
 
     const attentionText = computed((): string => {
-      if (state.config.type == "GITLAB_SELF_HOST") {
+      if (state.config.type == "GITLAB") {
+        if (state.config.uiType == "GITLAB_SELF_HOST") {
+          return t(
+            "gitops.setting.add-git-provider.gitlab-self-host-admin-requirement"
+          );
+        }
         return t(
-          "version-control.setting.add-git-provider.gitlab-self-host-admin-requirement"
+          "gitops.setting.add-git-provider.gitlab-com-admin-requirement"
         );
-      } else if (state.config.type == "GITHUB_COM") {
+      } else if (state.config.type == "GITHUB") {
         return t(
-          "version-control.setting.add-git-provider.github-com-admin-requirement"
+          "gitops.setting.add-git-provider.github-com-admin-requirement"
         );
+      } else if (state.config.type == "BITBUCKET") {
+        return t("gitops.setting.add-git-provider.bitbucket-admin-requirement");
       }
       return "";
     });
@@ -172,8 +181,10 @@ export default defineComponent({
       // 2. If step 1 succeeds, we will get a code, we use this code together with the secret to exchange for the access token. (see eventListener)
       if (state.currentStep == OAUTH_INFO_STEP && newStep > oldStep) {
         let authorizeUrl = `${state.config.instanceUrl}/oauth/authorize`;
-        if (state.config.type == "GITHUB_COM") {
+        if (state.config.type == "GITHUB") {
           authorizeUrl = `https://github.com/login/oauth/authorize`;
+        } else if (state.config.type == "BITBUCKET") {
+          authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
         }
         const newWindow = openWindowForOAuth(
           authorizeUrl,
@@ -189,18 +200,16 @@ export default defineComponent({
               pushNotification({
                 module: "bytebase",
                 style: "SUCCESS",
-                title: t(
-                  "version-control.setting.add-git-provider.oauth-info-correct"
-                ),
+                title: t("gitops.setting.add-git-provider.oauth-info-correct"),
               });
             } else {
               let description = "";
-              if (state.config.type == "GITLAB_SELF_HOST") {
+              if (state.config.type == "GITLAB") {
                 // If application id mismatches, the OAuth workflow will stop early.
                 // So the only possibility to reach here is we have a matching application id, while
                 // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
                 description = t(
-                  "version-control.setting.add-git-provider.check-oauth-info-match"
+                  "gitops.setting.add-git-provider.check-oauth-info-match"
                 );
               }
               pushNotification({
@@ -225,12 +234,12 @@ export default defineComponent({
       vcsStore.createVCS(vcsCreate).then((vcs: VCS) => {
         allowChangeCallback();
         router.push({
-          name: "setting.workspace.version-control",
+          name: "setting.workspace.gitops",
         });
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
-          title: t("version-control.setting.add-git-provider.add-success", {
+          title: t("gitops.setting.add-git-provider.add-success", {
             vcs: vcs.name,
           }),
         });
@@ -239,7 +248,7 @@ export default defineComponent({
 
     const cancelSetup = () => {
       router.push({
-        name: "setting.workspace.version-control",
+        name: "setting.workspace.gitops",
       });
     };
 

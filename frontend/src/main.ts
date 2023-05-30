@@ -1,19 +1,24 @@
 import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
 import { createApp } from "vue";
+import Long from "long";
+import protobufjs from "protobufjs";
+protobufjs.util.Long = Long;
+protobufjs.configure();
 
 import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";
 import mountDemoApp from "./plugins/demo";
+import { isSilent } from "./plugins/silent-request";
 import { router } from "./router";
 import {
   pinia,
   pushNotification,
-  useActuatorStore,
+  useActuatorV1Store,
   useAuthStore,
-  useSubscriptionStore,
+  useSubscriptionV1Store,
 } from "./store";
 import {
   databaseSlug,
@@ -21,6 +26,8 @@ import {
   environmentName,
   environmentSlug,
   humanizeTs,
+  humanizeDuration,
+  humanizeDate,
   instanceName,
   instanceSlug,
   connectionSlug,
@@ -74,7 +81,11 @@ axios.interceptors.response.use(
       // in such case, we shouldn't logout.
       if (error.response.status == 401) {
         const origin = location.origin;
-        if (error.response.request.responseURL.startsWith(origin)) {
+        const pathname = location.pathname;
+        if (
+          pathname !== "/auth/mfa" &&
+          error.response.request.responseURL.startsWith(origin)
+        ) {
           // If the request URL starts with the browser's location origin
           // e.g. http://localhost:3000/
           // we know this is a request to Bytebase API endpoint (not an external service).
@@ -88,7 +99,19 @@ axios.interceptors.response.use(
         }
       }
 
-      if (error.response.data.message) {
+      // in such case, we shouldn't logout.
+      if (error.response.status == 403) {
+        const origin = location.origin;
+        if (error.response.request.responseURL.startsWith(origin)) {
+          // If the request URL starts with the browser's location origin
+          // e.g. http://localhost:3000/
+          // we know this is a request to Bytebase API endpoint (not an external service).
+          // Means that the API request is denied by authorization reasons.
+          router.push({ name: "error.403" });
+        }
+      }
+
+      if (error.response.data.message && !isSilent()) {
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
@@ -99,7 +122,7 @@ axios.interceptors.response.use(
             : undefined,
         });
       }
-    } else if (error.code == "ECONNABORTED") {
+    } else if (error.code == "ECONNABORTED" && !isSilent()) {
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -116,6 +139,8 @@ app.config.globalProperties.window = window;
 app.config.globalProperties.console = console;
 app.config.globalProperties.dayjs = dayjs;
 app.config.globalProperties.humanizeTs = humanizeTs;
+app.config.globalProperties.humanizeDuration = humanizeDuration;
+app.config.globalProperties.humanizeDate = humanizeDate;
 app.config.globalProperties.isDev = isDev();
 app.config.globalProperties.isRelease = isRelease();
 app.config.globalProperties.sizeToFit = sizeToFit;
@@ -142,25 +167,34 @@ app
 // Even using the <suspense>, it's still too late, thus we do the fetch here.
 // We use finally because we always want to mount the app regardless of the error.
 const initActuator = () => {
-  const actuatorStore = useActuatorStore();
+  const actuatorStore = useActuatorV1Store();
   return actuatorStore.fetchServerInfo();
 };
 const initSubscription = () => {
-  const subscriptionStore = useSubscriptionStore();
+  const subscriptionStore = useSubscriptionV1Store();
   return subscriptionStore.fetchSubscription();
+};
+const initFeatureMatrix = () => {
+  const subscriptionStore = useSubscriptionV1Store();
+  return subscriptionStore.fetchFeatureMatrix();
 };
 const restoreUser = () => {
   const authStore = useAuthStore();
   return authStore.restoreUser();
 };
-Promise.all([initActuator(), initSubscription(), restoreUser()]).finally(() => {
+Promise.all([
+  initActuator(),
+  initFeatureMatrix(),
+  initSubscription(),
+  restoreUser(),
+]).finally(() => {
   // Install router after the necessary data fetching is complete.
   app.use(router).use(highlight).use(i18n).use(NaiveUI);
   app.mount("#app");
 
   // Try to mount demo vue app instance
-  const serverInfo = useActuatorStore().serverInfo;
-  if ((serverInfo && serverInfo.demo && serverInfo.demoName) || isDev()) {
+  const serverInfo = useActuatorV1Store().serverInfo;
+  if ((serverInfo && serverInfo.demoName) || isDev()) {
     mountDemoApp();
   }
 });

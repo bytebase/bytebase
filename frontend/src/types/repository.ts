@@ -1,17 +1,10 @@
 import isEmpty from "lodash-es/isEmpty";
 import { RepositoryId, VCSId } from "./id";
-import { Principal } from "./principal";
 import { Project } from "./project";
 import { VCS } from "./vcs";
 
 export type Repository = {
   id: RepositoryId;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   // Related fields
   vcs: VCS;
@@ -91,7 +84,7 @@ type WebUrlReplaceParams = {
   DB_NAME?: string;
   VERSION?: string;
   TYPE?: "ddl" | "dml";
-  ENV_NAME?: string;
+  ENV_ID?: string;
 };
 
 export function baseDirectoryWebUrl(
@@ -103,13 +96,18 @@ export function baseDirectoryWebUrl(
     return repository.webUrl;
   }
   let url = "";
-  if (repository.vcs.type == "GITLAB_SELF_HOST") {
+  if (repository.vcs.type == "GITLAB") {
     url = `${repository.webUrl}/-/tree/${repository.branchFilter}`;
     if (!isEmpty(repository.baseDirectory)) {
       url += `/${repository.baseDirectory}`;
     }
-  } else if (repository.vcs.type == "GITHUB_COM") {
+  } else if (repository.vcs.type == "GITHUB") {
     url = `${repository.webUrl}/tree/${repository.branchFilter}`;
+    if (!isEmpty(repository.baseDirectory)) {
+      url += `/${repository.baseDirectory}`;
+    }
+  } else if (repository.vcs.type == "BITBUCKET") {
+    url = `${repository.webUrl}/src/${repository.branchFilter}`;
     if (!isEmpty(repository.baseDirectory)) {
       url += `/${repository.baseDirectory}`;
     }
@@ -122,18 +120,18 @@ export function baseDirectoryWebUrl(
     // Once we meet a "dynamic" segment which has a pattern that cannot be replaced
     // we won't push it, either the segments behind it.
     // E.g., the filePathTemplate is
-    // configure/{{ENV_NAME}}/20220707-wechat/{{TYPE}}/**/**/**/{{DB_NAME}}##{{VERSION}}##{{DESCRIPTION}}.sql
+    // configure/{{ENV_ID}}/20220707-wechat/{{TYPE}}/**/**/**/{{DB_NAME}}##{{VERSION}}##{{DESCRIPTION}}.sql
     /**
       The segments are
         - configure
-        - {{ENV_NAME}}
+        - {{ENV_ID}}
         - 20220707-wechat
         - {{TYPE}}
         - **
         - **
         - **
       When
-        - ENV_NAME=dev
+        - ENV_ID=dev
         - TYPE=migrate
       we are confident enough that the path will be started with
       "/configure/dev/20220707-wechat/migrate"

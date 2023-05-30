@@ -5,6 +5,7 @@ import { I18NText } from "./types";
 export const nextI18NText = {
   "en-US": "Next",
   "zh-CN": "下一步",
+  "es-ES": "Siguiente",
 };
 
 export const getStringFromI18NText = (text: string | I18NText) => {
