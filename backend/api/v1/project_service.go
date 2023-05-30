@@ -3,10 +3,12 @@ package v1
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/google/cel-go/cel"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -677,7 +679,7 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPIDatabaseGroup(databaseGroup, projectResourceID), nil
+	return convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID), nil
 }
 
 // UpdateDatabaseGroup updates a database group.
@@ -731,7 +733,7 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPIDatabaseGroup(databaseGroup, projectResourceID), nil
+	return convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID), nil
 }
 
 // DeleteDatabaseGroup deletes a database group.
@@ -796,7 +798,7 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 	}
 	var apiDatabaseGroups []*v1pb.DatabaseGroup
 	for _, databaseGroup := range databaseGroups {
-		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroup(databaseGroup, projectResourceID))
+		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID))
 	}
 	return &v1pb.ListDatabaseGroupsResponse{
 		DatabaseGroups: apiDatabaseGroups,
@@ -831,7 +833,10 @@ func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.Get
 	if databaseGroup == nil {
 		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 	}
-	return convertStoreToAPIDatabaseGroup(databaseGroup, projectResourceID), nil
+	if request.View == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC || request.View == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED {
+		return convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID), nil
+	}
+	return s.convertStoreToAPIDatabaseGroupFull(ctx, databaseGroup, projectResourceID)
 }
 
 // CreateSchemaGroup creates a database group.
@@ -1081,7 +1086,66 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 	return convertStoreToAPISchemaGroup(schemaGroup, projectResourceID, databaseGroupResourceID), nil
 }
 
-func convertStoreToAPIDatabaseGroup(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
+func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.DatabaseGroup, error) {
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+		ProjectID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	e, err := cel.NewEnv(
+		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(databaseGroup.Expression.Expression)
+	if issues != nil && issues.Err() != nil {
+		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	var matches []*v1pb.DatabaseGroup_Database
+	var unmatches []*v1pb.DatabaseGroup_Database
+
+	for _, database := range databases {
+		res, _, err := prog.ContextEval(ctx, map[string]any{
+			"resource": map[string]any{
+				"database_name":    database.DatabaseName,
+				"environment_name": fmt.Sprintf("%s%s", environmentNamePrefix, database.EnvironmentID),
+			},
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+
+		val, err := res.ConvertToNative(reflect.TypeOf(false))
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "expect bool result")
+		}
+		if boolVal, ok := val.(bool); ok && boolVal {
+			matches = append(matches, &v1pb.DatabaseGroup_Database{
+				Name: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+			})
+		} else {
+			unmatches = append(unmatches, &v1pb.DatabaseGroup_Database{
+				Name: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+			})
+		}
+	}
+	return &v1pb.DatabaseGroup{
+		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
+		DatabasePlaceholder: databaseGroup.Placeholder,
+		DatabaseExpr:        databaseGroup.Expression,
+		MatchedDatabases:    matches,
+		UnmatchedDatabases:  unmatches,
+	}, nil
+}
+
+func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
 	return &v1pb.DatabaseGroup{
 		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
