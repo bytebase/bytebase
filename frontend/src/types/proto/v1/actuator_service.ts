@@ -46,7 +46,7 @@ export interface ListDebugLogResponse {
 }
 
 export interface DebugLog {
-  recordTs?: Date;
+  recordTime?: Date;
   requestPath: string;
   role: string;
   error: string;
@@ -358,13 +358,13 @@ export const ListDebugLogResponse = {
 };
 
 function createBaseDebugLog(): DebugLog {
-  return { recordTs: undefined, requestPath: "", role: "", error: "", stackTrace: "" };
+  return { recordTime: undefined, requestPath: "", role: "", error: "", stackTrace: "" };
 }
 
 export const DebugLog = {
   encode(message: DebugLog, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.recordTs !== undefined) {
-      Timestamp.encode(toTimestamp(message.recordTs), writer.uint32(10).fork()).ldelim();
+    if (message.recordTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.recordTime), writer.uint32(10).fork()).ldelim();
     }
     if (message.requestPath !== "") {
       writer.uint32(18).string(message.requestPath);
@@ -393,7 +393,7 @@ export const DebugLog = {
             break;
           }
 
-          message.recordTs = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.recordTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
@@ -434,7 +434,7 @@ export const DebugLog = {
 
   fromJSON(object: any): DebugLog {
     return {
-      recordTs: isSet(object.recordTs) ? fromJsonTimestamp(object.recordTs) : undefined,
+      recordTime: isSet(object.recordTime) ? fromJsonTimestamp(object.recordTime) : undefined,
       requestPath: isSet(object.requestPath) ? String(object.requestPath) : "",
       role: isSet(object.role) ? String(object.role) : "",
       error: isSet(object.error) ? String(object.error) : "",
@@ -444,7 +444,7 @@ export const DebugLog = {
 
   toJSON(message: DebugLog): unknown {
     const obj: any = {};
-    message.recordTs !== undefined && (obj.recordTs = message.recordTs.toISOString());
+    message.recordTime !== undefined && (obj.recordTime = message.recordTime.toISOString());
     message.requestPath !== undefined && (obj.requestPath = message.requestPath);
     message.role !== undefined && (obj.role = message.role);
     message.error !== undefined && (obj.error = message.error);
@@ -458,7 +458,7 @@ export const DebugLog = {
 
   fromPartial(object: DeepPartial<DebugLog>): DebugLog {
     const message = createBaseDebugLog();
-    message.recordTs = object.recordTs ?? undefined;
+    message.recordTime = object.recordTime ?? undefined;
     message.requestPath = object.requestPath ?? "";
     message.role = object.role ?? "";
     message.error = object.error ?? "";

@@ -9,7 +9,7 @@
     <template #body="{ rowData: debugLog }">
       <BBTableCell :left-padding="4" class="table-cell w-56">
         <div>
-          {{ dayjs(debugLog.recordTs).format("YYYY-MM-DD HH:mm:ss Z") }}
+          {{ dayjs(debugLog.recordTime).format("YYYY-MM-DD HH:mm:ss Z") }}
         </div>
       </BBTableCell>
       <BBTableCell class="table-cell w-28">
