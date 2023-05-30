@@ -32,6 +32,13 @@ type FindPlanMessage struct {
 	UID *int64
 }
 
+// UpdatePlanMessage is the message to update a plan.
+type UpdatePlanMessage struct {
+	UID       int64
+	UpdaterID int
+	Config    *storepb.PlanConfig
+}
+
 // CreatePlan creates a new plan.
 func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID int) (*PlanMessage, error) {
 	query := `
@@ -173,4 +180,39 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	}
 
 	return plans, nil
+}
+
+// UpdatePlan updates an existing plan.
+func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error {
+	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
+	if v := patch.Config; v != nil {
+		config, err := protojson.Marshal(v)
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal plan config")
+		}
+		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, config)
+	}
+
+	args = append(args, patch.UID)
+	query := fmt.Sprintf(`
+		UPDATE plan
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+	`, len(args))
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return errors.Wrapf(err, "failed to update plan")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	return nil
 }
