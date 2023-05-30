@@ -328,7 +328,7 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	case api.TaskDatabaseCreate:
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
 	case api.TaskDatabaseSchemaBaseline:
-		return convertToTaskFromSchemaBaseline(project, task)
+		return convertToTaskFromSchemaBaseline(ctx, s, project, task)
 	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
 	case api.TaskDatabaseSchemaUpdateGhostCutover:
@@ -357,6 +357,12 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
 	}
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID: &task.InstanceID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %d", task.InstanceID)
+	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
@@ -364,7 +370,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		BlockedByTasks: nil,
-		Target:         "",
+		Target:         fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
 				Project:      "",
@@ -380,10 +386,20 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	return v1pbTask, nil
 }
 
-func convertToTaskFromSchemaBaseline(project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+	if task.DatabaseID == nil {
+		return nil, errors.Errorf("database id is nil")
+	}
 	payload := &api.TaskDatabaseSchemaBaselinePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
+	}
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database")
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
@@ -392,7 +408,7 @@ func convertToTaskFromSchemaBaseline(project *store.ProjectMessage, task *store.
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		BlockedByTasks: nil,
-		Target:         "",
+		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
 			DatabaseSchemaBaseline: &v1pb.Task_DatabaseSchemaBaseline{
 				SchemaVersion: payload.SchemaVersion,
@@ -403,6 +419,9 @@ func convertToTaskFromSchemaBaseline(project *store.ProjectMessage, task *store.
 }
 
 func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+	if task.DatabaseID == nil {
+		return nil, errors.Errorf("database id is nil")
+	}
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
@@ -421,6 +440,13 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if sheetProject == nil {
 		return nil, errors.Errorf("sheet project not found")
 	}
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database")
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found")
+	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
@@ -428,7 +454,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		BlockedByTasks: nil,
-		Target:         "",
+		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
 				Sheet:         fmt.Sprintf("%s%s/%s%d", projectNamePrefix, sheetProject.ResourceID, sheetIDPrefix, sheet.UID),
@@ -469,6 +495,9 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 }
 
 func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+	if task.DatabaseID == nil {
+		return nil, errors.Errorf("database id is nil")
+	}
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
@@ -485,7 +514,13 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		}
 		rollbackSheetName = sheetName
 	}
-
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database")
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found")
+	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", projectNamePrefix, project.ResourceID, rolloutPrefix, task.PipelineID, stagePrefix, task.StageID, taskPrefix, task.ID),
 		Uid:            fmt.Sprintf("%d", task.ID),
@@ -493,7 +528,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
 		BlockedByTasks: nil,
-		Target:         "",
+		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseDataUpdate_{
 			DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
 				Sheet:               sheetName,
