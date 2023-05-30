@@ -39,23 +39,23 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
+import { head } from "lodash-es";
+import { unparse } from "papaparse";
+import dayjs from "dayjs";
+
 import { useExtraIssueLogic, useIssueLogic } from "../logic";
 import {
-  DatabaseId,
   GrantRequestPayload,
   Issue,
   PresetRoleType,
   UNKNOWN_ID,
 } from "@/types";
-import { pushNotification, useDatabaseStore, useSQLStore } from "@/store";
-import { head } from "lodash-es";
-import { unparse } from "papaparse";
-import dayjs from "dayjs";
+import { pushNotification, useDatabaseV1Store, useSQLStore } from "@/store";
 import { BBSpin } from "@/bbkit";
 import { convertFromCEL } from "@/utils/issue/cel";
 
 interface LocalState {
-  databaseId: DatabaseId;
+  databaseId: string;
   statement: string;
   maxRowCount: number;
   exportFormat: "CSV" | "JSON";
@@ -65,9 +65,9 @@ interface LocalState {
 
 const { changeIssueStatus } = useExtraIssueLogic();
 const { issue } = useIssueLogic();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
-  databaseId: UNKNOWN_ID,
+  databaseId: String(UNKNOWN_ID),
   statement: "",
   maxRowCount: 1000,
   exportFormat: "CSV",
@@ -76,13 +76,13 @@ const state = reactive<LocalState>({
 });
 
 const exportContext = computed(() => {
-  const database = databaseStore.getDatabaseById(state.databaseId);
-  if (database.id === UNKNOWN_ID) {
+  const database = databaseStore.getDatabaseByUID(state.databaseId);
+  if (database.uid === String(UNKNOWN_ID)) {
     throw "Database not found";
   }
   return {
-    instanceId: database.instanceId,
-    databaseName: database.name,
+    instanceId: Number(database.instanceEntity.uid),
+    databaseName: database.databaseName,
     statement: state.statement,
     limit: state.maxRowCount,
     exportFormat: state.exportFormat,
