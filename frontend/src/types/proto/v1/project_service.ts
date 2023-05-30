@@ -956,6 +956,8 @@ export interface GetDatabaseGroupRequest {
    * Format: projects/{project}/databaseGroups/{databaseGroup}
    */
   name: string;
+  /** The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. */
+  view: DatabaseGroupView;
 }
 
 export interface CreateDatabaseGroupRequest {
@@ -3848,13 +3850,16 @@ export const ListDatabaseGroupsResponse = {
 };
 
 function createBaseGetDatabaseGroupRequest(): GetDatabaseGroupRequest {
-  return { name: "" };
+  return { name: "", view: 0 };
 }
 
 export const GetDatabaseGroupRequest = {
   encode(message: GetDatabaseGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.view !== 0) {
+      writer.uint32(16).int32(message.view);
     }
     return writer;
   },
@@ -3873,6 +3878,13 @@ export const GetDatabaseGroupRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.view = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3883,12 +3895,16 @@ export const GetDatabaseGroupRequest = {
   },
 
   fromJSON(object: any): GetDatabaseGroupRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      view: isSet(object.view) ? databaseGroupViewFromJSON(object.view) : 0,
+    };
   },
 
   toJSON(message: GetDatabaseGroupRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.view !== undefined && (obj.view = databaseGroupViewToJSON(message.view));
     return obj;
   },
 
@@ -3899,6 +3915,7 @@ export const GetDatabaseGroupRequest = {
   fromPartial(object: DeepPartial<GetDatabaseGroupRequest>): GetDatabaseGroupRequest {
     const message = createBaseGetDatabaseGroupRequest();
     message.name = object.name ?? "";
+    message.view = object.view ?? 0;
     return message;
   },
 };
