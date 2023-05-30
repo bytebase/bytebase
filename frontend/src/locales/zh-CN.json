@@ -648,6 +648,7 @@
     "n-similar-activities": "({count} 个相似的活动)"
   },
   "issue": {
+    "my-issues": "我的工单",
     "waiting-approval": "等待批准",
     "waiting-rollout": "等待发布",
     "opened-by-at": "{id} 由 {creator} 开启于 {time}",

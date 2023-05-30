@@ -28,7 +28,7 @@
           data-label="bb-dashboard-sidebar-home-button"
         >
           <heroicons-outline:home class="w-5 h-5 mr-2" />
-          {{ $t("common.home") }}
+          {{ $t("issue.my-issues") }}
         </div>
       </router-link>
       <a
