@@ -28,8 +28,8 @@ import {
   hasWorkspacePermissionV1,
   idFromSlug,
   sheetNameFromSlug,
-  migrationHistoryIdFromSlug,
   roleListInProjectV1,
+  extractChangeHistoryUID,
 } from "../utils";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -61,6 +61,7 @@ import {
   useCurrentUserV1,
   useInstanceV1Store,
   useDatabaseV1Store,
+  useChangeHistoryStore,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -989,26 +990,29 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import("../views/TableDetail.vue"),
                 props: true,
               },
-              {
-                path: "history/:migrationHistorySlug",
-                name: "workspace.database.history.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.migrationHistorySlug as string;
-                    const migrationHistory =
-                      useLegacyInstanceStore().getMigrationHistoryById(
-                        migrationHistoryIdFromSlug(slug)
-                      );
-                    return migrationHistory?.version ?? "";
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/MigrationHistoryDetail.vue"),
-                props: (to) => ({
-                  key: to.fullPath, // force refresh the component when slug changed
-                }),
-              },
             ],
+          },
+          {
+            path: "instances/:instance/databases/:database/changeHistories/:changeHistorySlug",
+            name: "workspace.database.history.detail",
+            meta: {
+              title: (route) => {
+                const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
+                const uid = extractChangeHistoryUID(
+                  route.params.changeHistorySlug as string
+                );
+                const name = `${parent}/changeHistories/${uid}`;
+                const history =
+                  useChangeHistoryStore().getChangeHistoryByName(name);
+
+                return history?.version ?? "";
+              },
+            },
+            components: {
+              content: () => import("../views/ChangeHistoryDetail.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true, leftSidebar: true },
           },
           {
             path: "instance/:instanceSlug",
@@ -1436,6 +1440,28 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
+  if (to.name === "workspace.database.history.detail") {
+    const parent = `instances/${to.params.instance}/databases/${to.params.database}`;
+    const uid = extractChangeHistoryUID(to.params.changeHistorySlug as string);
+    Promise.all([
+      useDatabaseV1Store().getOrFetchDatabaseByName(parent),
+      useChangeHistoryStore().fetchChangeHistory({
+        name: `${parent}/changeHistories/${uid}`,
+      }),
+    ])
+      .then(() => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
+    return;
+  }
+
   const routerSlug = routerStore.routeSlug(to);
   const principalId = routerSlug.principalId;
   const environmentSlug = routerSlug.environmentSlug;
@@ -1445,7 +1471,6 @@ router.beforeEach((to, from, next) => {
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
   const dataSourceSlug = routerSlug.dataSourceSlug;
-  const migrationHistorySlug = routerSlug.migrationHistorySlug;
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
@@ -1544,30 +1569,13 @@ router.beforeEach((to, from, next) => {
         dbSchemaStore
           .getOrFetchDatabaseMetadataById(database.id, true)
           .then(() => {
-            if (!dataSourceSlug && !migrationHistorySlug) {
+            if (!dataSourceSlug) {
               next();
             } else if (dataSourceSlug) {
               useDataSourceStore()
                 .fetchDataSourceById({
                   dataSourceId: idFromSlug(dataSourceSlug),
                   databaseId: database.id,
-                })
-                .then(() => {
-                  next();
-                })
-                .catch((error) => {
-                  next({
-                    name: "error.404",
-                    replace: false,
-                  });
-                  throw error;
-                });
-            } else if (migrationHistorySlug) {
-              instanceStore
-                .fetchMigrationHistoryById({
-                  instanceId: database.instance.id,
-                  migrationHistoryId:
-                    migrationHistoryIdFromSlug(migrationHistorySlug),
                 })
                 .then(() => {
                   next();
@@ -1593,13 +1601,9 @@ router.beforeEach((to, from, next) => {
   }
 
   if (instanceSlug) {
-    instanceStore
-      .fetchInstanceById(idFromSlug(instanceSlug))
-      .then(() =>
-        useInstanceV1Store().getOrFetchInstanceByUID(
-          String(idFromSlug(instanceSlug))
-        )
-      )
+    instanceStore;
+    useInstanceV1Store()
+      .getOrFetchInstanceByUID(String(idFromSlug(instanceSlug)))
       .then(() => {
         next();
       })

@@ -15,7 +15,6 @@ import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
-import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
 import { AuditLog, AuditActivityType, AuditActivityLevel } from "./auditLog";
 import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
@@ -62,7 +61,6 @@ export type RouterSlug = {
   databaseSlug?: string;
   tableName?: string;
   dataSourceSlug?: string;
-  migrationHistorySlug?: string;
   vcsSlug?: string;
   connectionSlug?: string;
   sheetSlug?: string;
@@ -156,7 +154,6 @@ interface ResourceMaker {
   (type: "VCS"): VCS;
   (type: "REPOSITORY"): Repository;
   (type: "ANOMALY"): Anomaly;
-  (type: "SHEET"): Sheet;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
   (type: "AUDIT_LOG"): AuditLog;
 }
@@ -402,29 +399,6 @@ const makeUnknown = (type: ResourceType) => {
     },
   };
 
-  const UNKNOWN_SHEET: Sheet = {
-    id: UNKNOWN_ID,
-    rowStatus: "NORMAL",
-    creator: UNKNOWN_PRINCIPAL,
-    creatorId: UNKNOWN_ID,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
-    projectId: UNKNOWN_ID,
-    project: UNKNOWN_PROJECT,
-    databaseId: UNKNOWN_ID,
-    database: UNKNOWN_DATABASE,
-    name: "<<Unknown sheet>>",
-    statement: "",
-    visibility: "PRIVATE",
-    source: "BYTEBASE",
-    type: "SQL",
-    starred: false,
-    pinned: false,
-    payload: {},
-    size: 0,
-  };
-
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -464,8 +438,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_REPOSITORY;
     case "ANOMALY":
       return UNKNOWN_ANOMALY;
-    case "SHEET":
-      return UNKNOWN_SHEET;
   }
 };
 export const unknown = makeUnknown as ResourceMaker;
@@ -711,29 +683,6 @@ const makeEmpty = (type: ResourceType) => {
     },
   };
 
-  const EMPTY_SHEET: Sheet = {
-    id: EMPTY_ID,
-    rowStatus: "NORMAL",
-    creator: EMPTY_PRINCIPAL,
-    creatorId: EMPTY_ID,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
-    projectId: EMPTY_ID,
-    project: EMPTY_PROJECT,
-    databaseId: EMPTY_ID,
-    database: EMPTY_DATABASE,
-    name: "<<Empty sheet>>",
-    statement: "",
-    visibility: "PRIVATE",
-    source: "BYTEBASE",
-    type: "SQL",
-    starred: false,
-    pinned: false,
-    payload: {},
-    size: 0,
-  };
-
   const EMPTY_AUDIT_LOG: AuditLog = {
     createdTs: 0,
     creator: EMPTY_PRINCIPAL.email,
@@ -782,8 +731,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_REPOSITORY;
     case "ANOMALY":
       return EMPTY_ANOMALY;
-    case "SHEET":
-      return EMPTY_SHEET;
     case "AUDIT_LOG":
       return EMPTY_AUDIT_LOG;
   }

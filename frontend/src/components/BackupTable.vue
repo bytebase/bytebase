@@ -162,8 +162,18 @@ import {
   PITRContext,
   SYSTEM_BOT_ID,
 } from "../types";
-import { databaseV1Slug, issueSlug, migrationHistorySlug } from "../utils";
-import { featureToRef, useLegacyInstanceStore, useIssueStore } from "@/store";
+import {
+  changeHistorySlug,
+  extractDatabaseResourceName,
+  extractInstanceResourceName,
+  issueSlug,
+} from "../utils";
+import {
+  featureToRef,
+  useLegacyInstanceStore,
+  useIssueStore,
+  pushNotification,
+} from "@/store";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
   default as RestoreTargetForm,
@@ -315,11 +325,9 @@ const gotoMigrationHistory = (backup: Backup) => {
         .push({
           name: "workspace.database.history.detail",
           params: {
-            databaseSlug: databaseV1Slug(props.database),
-            migrationHistorySlug: migrationHistorySlug(
-              history.id,
-              history.version
-            ),
+            instance: extractInstanceResourceName(props.database.instance),
+            database: extractDatabaseResourceName(props.database.name).database,
+            changeHistorySlug: changeHistorySlug(history.id, history.version),
           },
           hash: "#schema",
         })
@@ -327,7 +335,12 @@ const gotoMigrationHistory = (backup: Backup) => {
           state.loadingMigrationHistory = false;
         });
     })
-    .catch(() => {
+    .catch((error) => {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: error.message,
+      });
       state.loadingMigrationHistory = false;
     });
 };

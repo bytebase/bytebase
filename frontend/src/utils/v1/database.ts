@@ -29,7 +29,7 @@ export const extractDatabaseResourceName = (
   database: string;
 } => {
   const pattern =
-    /^(?<instance>instances\/[^/]+)\/databases\/(?<database>[^/]+)$/;
+    /(?:^|\/)(?<instance>instances\/[^/]+)\/databases\/(?<database>[^/]+)(?:$|\/)/;
   const matches = resource.match(pattern);
   if (matches) {
     const { instance = UNKNOWN_INSTANCE_NAME, database = "" } =

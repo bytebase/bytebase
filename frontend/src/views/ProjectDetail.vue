@@ -16,7 +16,7 @@
     <ProjectDatabaseGroupPanel :project="projectV1" />
   </template>
   <template v-if="hash === 'change-history'">
-    <ProjectMigrationHistoryPanel
+    <ProjectChangeHistoryPanel
       id="change-history"
       :database-list="databaseV1List"
     />
@@ -64,7 +64,7 @@ import { useRoute } from "vue-router";
 import { DEFAULT_PROJECT_ID } from "@/types";
 import { idFromSlug, sortDatabaseV1List } from "../utils";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
-import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
+import ProjectChangeHistoryPanel from "../components/ProjectChangeHistoryPanel.vue";
 import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
 import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
 import ProjectDatabasesPanel from "../components/ProjectDatabasesPanel.vue";

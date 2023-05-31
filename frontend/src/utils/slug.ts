@@ -5,7 +5,6 @@ import {
   Environment,
   Instance,
   IssueId,
-  MigrationHistoryId,
   Project,
   VCS,
   SQLReviewPolicy,
@@ -29,11 +28,6 @@ export function sheetNameFromSlug(slug: string): string {
   return `${projectNamePrefix}${parts
     .slice(0, -1)
     .join("-")}/${sheetNamePrefix}${parts[parts.length - 1]}`;
-}
-
-export function migrationHistoryIdFromSlug(slug: string): MigrationHistoryId {
-  const parts = slug.split("-");
-  return parts[parts.length - 1];
 }
 
 export function indexFromSlug(slug: string): number {
@@ -76,13 +70,6 @@ export function databaseSlug(database: Database): string {
 
 export function dataSourceSlug(dataSource: DataSource): string {
   return [slug(dataSource.name), dataSource.id].join("-");
-}
-
-export function migrationHistorySlug(
-  migrationHistoryId: MigrationHistoryId,
-  version: string
-): string {
-  return [slug(version), migrationHistoryId].join("-");
 }
 
 export function fullDatabasePath(database: Database): string {
