@@ -167,6 +167,7 @@ type controller struct {
 	settingServiceClient     v1pb.SettingServiceClient
 	environmentServiceClient v1pb.EnvironmentServiceClient
 	instanceServiceClient    v1pb.InstanceServiceClient
+	databaseServiceClient    v1pb.DatabaseServiceClient
 	sheetServiceClient       v1pb.SheetServiceClient
 
 	cookie             string
@@ -435,6 +436,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
 	ctl.environmentServiceClient = v1pb.NewEnvironmentServiceClient(ctl.grpcConn)
 	ctl.instanceServiceClient = v1pb.NewInstanceServiceClient(ctl.grpcConn)
+	ctl.databaseServiceClient = v1pb.NewDatabaseServiceClient(ctl.grpcConn)
 	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
@@ -513,7 +515,7 @@ func waitForFeishuStart(f *fake.Feishu, errChan <-chan error) error {
 func (ctl *controller) waitForHealthz() error {
 	begin := time.Now()
 	ticker := time.NewTicker(1 * time.Second)
-	timer := time.NewTimer(5 * time.Second)
+	timer := time.NewTimer(20 * time.Second)
 	defer ticker.Stop()
 	defer timer.Stop()
 	for {
