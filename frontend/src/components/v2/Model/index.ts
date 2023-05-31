@@ -8,6 +8,7 @@ import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 import ProjectName from "./ProjectName.vue";
 import ProjectV1Name from "./ProjectV1Name.vue";
 import ProjectV1Table from "./ProjectV1Table.vue";
+import DatabaseView from "./DatabaseView.vue";
 
 export * from "./Instance";
 export {
@@ -21,4 +22,5 @@ export {
   ProjectName,
   ProjectV1Name,
   ProjectV1Table,
+  DatabaseView,
 };

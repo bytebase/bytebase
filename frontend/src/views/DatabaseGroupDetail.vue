@@ -76,6 +76,7 @@
             :project="project"
             :environment-id="state.environment?.name || ''"
             :expr="state.expr!"
+            :database-group="databaseGroup"
           />
         </div>
       </div>
@@ -183,7 +184,7 @@ const project = computed(() => {
 });
 
 onMounted(async () => {
-  await dbGroupStore.getOrFetchDBGroupById(databaseGroupResourceName.value);
+  await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value);
 });
 
 const handleEditDatabaseGroup = () => {
