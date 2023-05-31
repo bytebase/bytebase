@@ -102,8 +102,6 @@ const updateMatchingState = useDebounceFn(async () => {
   const tempMatchedTableList: SchemaGroup_Table[] = [];
   const tempUnmatchedTableList: SchemaGroup_Table[] = [];
 
-  console.log("isCreating.value", isCreating.value, props.schemaGroup);
-
   if (isCreating.value) {
     const celString = convertToCELString(props.expr);
     const validateOnlyResourceId = "creating-schema-group";
