@@ -1027,8 +1027,9 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return useLegacyInstanceStore().getInstanceById(idFromSlug(slug))
-                      .name;
+                    return useInstanceV1Store().getInstanceByUID(
+                      String(idFromSlug(slug))
+                    ).title;
                   },
                 },
                 component: () => import("../views/InstanceDetail.vue"),
@@ -1662,13 +1663,16 @@ router.beforeEach((to, from, next) => {
     if (Number.isNaN(databaseId)) {
       // Connected to instance
       useConnectionTreeStore()
-        .fetchConnectionByInstanceId(instanceId)
+        .fetchConnectionByInstanceId(String(instanceId))
         .then(() => next())
         .catch(() => next());
     } else {
       // Connected to db
       useConnectionTreeStore()
-        .fetchConnectionByInstanceIdAndDatabaseId(instanceId, databaseId)
+        .fetchConnectionByInstanceIdAndDatabaseId(
+          String(instanceId),
+          String(databaseId)
+        )
         .then(() => next())
         .catch(() => next());
     }
