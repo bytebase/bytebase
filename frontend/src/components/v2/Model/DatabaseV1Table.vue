@@ -19,160 +19,55 @@
             :class="[column.class]"
           >
             <template v-if="showSelectionColumn && index === 0">
-              <slot name="selection-all" :database-list="mixedDatabaseList" />
+              <slot name="selection-all" :database-list="mixedDataList" />
             </template>
             <template v-else>{{ column.title }}</template>
           </div>
         </div>
       </template>
 
-      <template #item="{ item: database }: { item: ComposedDatabase }">
-        <div v-if="showSelectionColumn" class="bb-grid-cell !px-2">
-          <slot name="selection" :database="database" />
-        </div>
-        <div class="bb-grid-cell">
-          <div class="flex items-center space-x-2">
-            <SQLEditorButtonV1
-              :database="database"
-              :disabled="!allowQuery(database)"
-              :tooltip="true"
-              @failed="handleGotoSQLEditorFailed"
-            />
-            <DatabaseV1Name :database="database" :link="false" tag="span" />
-            <BBBadge
-              v-if="isPITRDatabaseV1(database)"
-              text="PITR"
-              :can-remove="false"
-              class="text-xs"
-            />
-            <NTooltip
-              v-if="!showMiscColumn && database.syncState !== State.ACTIVE"
-              placement="right"
-            >
-              <template #trigger>
-                <heroicons-outline:exclamation-circle
-                  class="w-5 h-5 text-error"
-                />
-              </template>
-
-              <div class="whitespace-nowrap">
-                {{
-                  $t("database.last-sync-status-long", [
-                    "NOT_FOUND",
-                    humanizeDate(database.successfulSyncTime),
-                  ])
-                }}
-              </div>
-            </NTooltip>
-          </div>
-        </div>
-        <div v-if="showSchemaVersionColumn" class="hidden lg:bb-grid-cell">
-          {{ database.schemaVersion }}
-        </div>
-        <div v-if="showProjectColumn" class="bb-grid-cell">
-          <div class="flex flex-row space-x-2 items-center">
-            <ProjectV1Name
-              :project="database.projectEntity"
-              :link="false"
-              tag="div"
-            />
-            <div
-              v-if="
-                showTenantIcon &&
-                database.projectEntity.tenantMode ===
-                  TenantMode.TENANT_MODE_ENABLED
-              "
-              class="tooltip-wrapper"
-            >
-              <span class="tooltip whitespace-nowrap">
-                {{ $t("project.mode.tenant") }}
-              </span>
-              <TenantIcon class="w-4 h-4 text-control" />
-            </div>
-            <div class="tooltip-wrapper">
-              <svg
-                v-if="database.projectEntity.workflow === Workflow.UI"
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              ></svg>
-              <template
-                v-else-if="database.projectEntity.workflow === Workflow.VCS"
-              >
-                <span v-if="mode === 'ALL_SHORT'" class="tooltip w-40">
-                  {{ $t("alter-schema.vcs-info") }}
-                </span>
-                <span v-else class="tooltip whitespace-nowrap">
-                  {{ $t("database.gitops-enabled") }}
-                </span>
-
-                <heroicons-outline:collection
-                  class="w-4 h-4 text-control hover:text-control-hover"
-                />
-              </template>
+      <template
+        #item="{
+          item: database,
+        }: {
+          item: ComposedDatabase | ComposedDatabaseGroup,
+        }"
+      >
+        <template v-if="isDatabase(database)">
+          <DatabaseTableRow
+            :database="database as ComposedDatabase"
+            :mode="mode"
+            :show-selection-column="showSelectionColumn"
+            :show-misc-column="showMiscColumn"
+            :show-schema-version-column="showSchemaVersionColumn"
+            :show-project-column="showProjectColumn"
+            :show-environment-column="showEnvironmentColumn"
+            :show-tenant-icon="showTenantIcon"
+            :show-instance-column="showInstanceColumn"
+            :allow-query="allowQuery(database as ComposedDatabase)"
+            @goto-sql-editor-failed="
+              handleGotoSQLEditorFailed(database as ComposedDatabase)
+            "
+          />
+        </template>
+        <template v-else>
+          <div class="bb-grid-cell">
+            <div class="flex items-center space-x-2">
+              <SQLEditorButtonV1 :disabled="true" :tooltip="true" />
+              <span>{{ getDatabaseGroup(database).databaseGroupName }}</span>
+              <BBBadge text="GROUP" :can-remove="false" class="text-xs" />
             </div>
           </div>
-        </div>
-        <div v-if="showEnvironmentColumn" class="bb-grid-cell">
-          <EnvironmentV1Name
-            :environment="database.instanceEntity.environmentEntity"
-            :link="false"
-            tag="div"
-          />
-        </div>
-        <div v-if="showInstanceColumn" class="bb-grid-cell">
-          <InstanceV1Name
-            :instance="database.instanceEntity"
-            :link="false"
-            tag="div"
-          />
-        </div>
-        <div v-if="showMiscColumn" class="bb-grid-cell">
-          <div class="w-full flex justify-center">
-            <NTooltip placement="left">
-              <template #trigger>
-                <div
-                  class="flex items-center justify-center rounded-full select-none w-5 h-5 overflow-hidden text-white font-medium text-base"
-                  :class="
-                    database.syncState === State.ACTIVE
-                      ? 'bg-success'
-                      : 'bg-error'
-                  "
-                >
-                  <template v-if="database.syncState === State.ACTIVE">
-                    <heroicons-solid:check class="w-4 h-4" />
-                  </template>
-                  <template v-else>
-                    <span
-                      class="h-2 w-2 flex items-center justify-center"
-                      aria-hidden="true"
-                      >!</span
-                    >
-                  </template>
-                </div>
-              </template>
-
-              <span>
-                <template v-if="database.syncState === State.ACTIVE">
-                  {{
-                    $t("database.synced-at", {
-                      time: humanizeDate(database.successfulSyncTime),
-                    })
-                  }}
-                </template>
-                <template v-else>
-                  {{
-                    $t("database.not-found-last-successful-sync-was", {
-                      time: humanizeDate(database.successfulSyncTime),
-                    })
-                  }}
-                </template>
-              </span>
-            </NTooltip>
+          <div class="bb-grid-cell">-</div>
+          <div class="bb-grid-cell">
+            {{ getDatabaseGroup(database).project.title }}
           </div>
-        </div>
+          <div class="bb-grid-cell">
+            {{ getDatabaseGroup(database).environment.title }}
+          </div>
+          <div class="bb-grid-cell">-</div>
+          <div class="bb-grid-cell justify-center">-</div>
+        </template>
       </template>
 
       <template #footer>
@@ -240,7 +135,7 @@ import {
   watchEffect,
 } from "vue";
 import { useRouter } from "vue-router";
-import { NTooltip, NPagination } from "naive-ui";
+import { NPagination } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import cloneDeep from "lodash-es/cloneDeep";
 import {
@@ -256,11 +151,9 @@ import {
   isPITRDatabaseV1,
   VueClass,
 } from "@/utils";
-import { ComposedDatabase } from "@/types";
+import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import { BBGridColumn } from "@/bbkit/types";
-import TenantIcon from "@/components/TenantIcon.vue";
 import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
-import { DatabaseV1Name, InstanceV1Name, EnvironmentV1Name } from ".";
 import { useCurrentUserV1 } from "@/store";
 import { getScrollParent } from "@/plugins/demo/utils";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
@@ -269,8 +162,9 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { State } from "@/types/proto/v1/common";
-import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
+import { has, sortBy } from "lodash-es";
+import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
+import DatabaseTableRow from "./DatabaseTableRow.vue";
 
 type Mode =
   | "ALL"
@@ -323,6 +217,11 @@ const props = defineProps({
     required: true,
     type: Object as PropType<ComposedDatabase[]>,
   },
+  databaseGroupList: {
+    required: false,
+    type: Object as PropType<ComposedDatabaseGroup[]>,
+    default: undefined,
+  },
   pageSize: {
     type: Number,
     default: 20,
@@ -362,13 +261,36 @@ const hasReservedDatabases = computed(
   () => reservedDatabaseList.value.length > 0
 );
 
-const mixedDatabaseList = computed(() => {
-  const databaseList = [...regularDatabaseList.value];
+const mixedDataList = computed(() => {
+  const dataList: (ComposedDatabase | ComposedDatabaseGroup)[] = [
+    ...regularDatabaseList.value,
+  ];
   if (state.showReservedDatabaseList) {
-    databaseList.push(...reservedDatabaseList.value);
+    dataList.push(...reservedDatabaseList.value);
   }
-  return databaseList;
+  if (props.databaseGroupList) {
+    dataList.push(...props.databaseGroupList);
+  }
+  return sortBy(dataList, (d) => {
+    if (isDatabase(d)) {
+      return (d as ComposedDatabase).instanceEntity.environmentEntity.name;
+    } else {
+      return (d as ComposedDatabaseGroup).environment.name;
+    }
+  });
 });
+
+const isDatabase = (
+  data: ComposedDatabase | ComposedDatabaseGroup
+): boolean => {
+  return has(data, "uid");
+};
+
+const getDatabaseGroup = (
+  data: ComposedDatabase | ComposedDatabaseGroup
+): ComposedDatabaseGroup => {
+  return data as ComposedDatabaseGroup;
+};
 
 const policyList = ref<Policy[]>([]);
 
@@ -464,12 +386,14 @@ const columnList = computed(() => {
   return list as BBGridColumn[];
 });
 
-const table = useVueTable<ComposedDatabase>({
+const table = useVueTable<ComposedDatabase | ComposedDatabaseGroup>({
   get data() {
-    return mixedDatabaseList.value;
+    return mixedDataList.value;
   },
   get columns() {
-    return columnList.value.map<ColumnDef<ComposedDatabase>>((col, index) => ({
+    return columnList.value.map<
+      ColumnDef<ComposedDatabase | ComposedDatabaseGroup>
+    >((col, index) => ({
       header: col.title!,
     }));
   },
@@ -482,7 +406,7 @@ const pagedDataSource = computed(() => {
 });
 
 const showPagination = computed(() => {
-  return mixedDatabaseList.value.length > props.pageSize;
+  return mixedDataList.value.length > props.pageSize;
 });
 
 const handleChangePage = (page: number) => {
@@ -551,7 +475,7 @@ const handleIncorrectProjectModalCancel = () => {
 };
 
 const clickDatabase = (
-  database: ComposedDatabase,
+  database: ComposedDatabase | ComposedDatabaseGroup,
   section: number,
   row: number,
   e: MouseEvent
@@ -561,11 +485,19 @@ const clickDatabase = (
   if (props.customClick) {
     emit("select-database", database);
   } else {
-    const url = `/db/${databaseV1Slug(database)}`;
-    if (e.ctrlKey || e.metaKey) {
-      window.open(url, "_blank");
+    if (isDatabase(database)) {
+      const url = `/db/${databaseV1Slug(database as ComposedDatabase)}`;
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        router.push(url);
+      }
     } else {
-      router.push(url);
+      const [projectName, databaseGroupName] =
+        getProjectNameAndDatabaseGroupName(database.name);
+      router.push(
+        `/projects/${projectName}/database-groups/${databaseGroupName}`
+      );
     }
   }
 };
