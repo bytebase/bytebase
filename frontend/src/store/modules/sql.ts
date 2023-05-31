@@ -75,7 +75,6 @@ export const useSQLStore = defineStore("sql", {
       if (!resultSet.error) {
         // Refresh the corresponding list.
         useDatabaseStore().fetchDatabaseListByInstanceId(instanceId);
-        useInstanceStore().fetchInstanceUserListById(instanceId);
       }
 
       return resultSet;

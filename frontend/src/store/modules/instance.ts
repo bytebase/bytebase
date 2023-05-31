@@ -11,7 +11,6 @@ import {
   InstanceId,
   InstancePatch,
   InstanceState,
-  InstanceUserId,
   INSTANCE_OPERATION_TIMEOUT,
   MaybeRef,
   MigrationHistory,
@@ -83,13 +82,6 @@ function convert(
     ...(instancePartial as Omit<Instance, "environment" | "dataSourceList">),
     environment,
     dataSourceList,
-  };
-}
-
-function convertInstanceUser(instanceUser: ResourceObject): InstanceUser {
-  return {
-    ...(instanceUser.attributes as Omit<InstanceUser, "id">),
-    id: instanceUser.id,
   };
 }
 
@@ -318,24 +310,6 @@ export const useInstanceStore = defineStore("instance", {
     async deleteInstanceById(instanceId: InstanceId) {
       await axios.delete(`/api/instance/${instanceId}`);
       this.instanceById.delete(instanceId);
-    },
-    async fetchInstanceUser(instanceId: InstanceId, userId: InstanceUserId) {
-      const data = (
-        await axios.get(`/api/instance/${instanceId}/user/${userId}`)
-      ).data;
-      return convertInstanceUser(data.data);
-    },
-    async fetchInstanceUserListById(instanceId: InstanceId) {
-      const data = (await axios.get(`/api/instance/${instanceId}/user`)).data;
-      const instanceUserList = data.data.map((instanceUser: ResourceObject) => {
-        return convertInstanceUser(instanceUser);
-      });
-
-      this.setInstanceUserListById({
-        instanceId,
-        instanceUserList,
-      });
-      return instanceUserList;
     },
     async fetchMigrationHistoryById({
       instanceId,
