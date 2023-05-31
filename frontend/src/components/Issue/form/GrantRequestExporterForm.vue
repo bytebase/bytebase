@@ -29,7 +29,7 @@
         />
         <DatabaseSelect
           class="!w-128"
-          :selected-id="state.databaseId"
+          :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
           :mode="'ALL'"
           :environment-id="state.environmentId"
           :project-id="state.projectId"
@@ -39,9 +39,11 @@
         >
           <template #customizeItem="{ database }">
             <div class="flex items-center">
-              <InstanceEngineIcon :instance="database.instance" />
-              <span class="mx-2">{{ database.name }}</span>
-              <span class="text-gray-400">({{ database.instance.name }})</span>
+              <InstanceV1EngineIcon :instance="database.instanceEntity" />
+              <span class="mx-2">{{ database.databaseName }}</span>
+              <span class="text-gray-400">
+                ({{ instanceV1Name(database.instanceEntity) }})
+              </span>
             </div>
           </template>
         </DatabaseSelect>
@@ -50,11 +52,12 @@
         v-else-if="selectedDatabase"
         class="flex flex-row justify-start items-center"
       >
-        <InstanceEngineIcon
+        <InstanceV1EngineIcon
+          :instance="selectedDatabase.instanceEntity"
+          :link="false"
           class="mr-1"
-          :instance="selectedDatabase.instance"
         />
-        {{ selectedDatabase.name }}
+        {{ selectedDatabase.databaseName }}
       </div>
     </div>
     <div class="w-full flex flex-row justify-start items-center">
@@ -114,7 +117,6 @@ import { head } from "lodash-es";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useIssueLogic } from "../logic";
 import {
-  DatabaseId,
   GrantRequestContext,
   GrantRequestPayload,
   Issue,
@@ -122,24 +124,23 @@ import {
   PresetRoleType,
   SQLDialect,
   UNKNOWN_ID,
-  dialectOfEngine,
+  dialectOfEngineV1,
 } from "@/types";
-import { memberListInProjectV1 } from "@/utils";
-import {
-  convertUserToPrincipal,
-  useDatabaseStore,
-  useProjectV1Store,
-} from "@/store";
+import { extractUserUID, instanceV1Name, memberListInProjectV1 } from "@/utils";
+import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import { convertFromCEL } from "@/utils/issue/cel";
+import { InstanceV1EngineIcon } from "@/components/v2";
+import DatabaseSelect from "@/components/DatabaseSelect.vue";
+import { Engine } from "@/types/proto/v1/common";
 
 interface LocalState {
   // For creating
   projectId?: string;
   environmentId?: string;
-  databaseId?: DatabaseId;
+  databaseId?: string;
   selectedDatabaseResourceList: DatabaseResource[];
   maxRowCount: number;
   exportFormat: "CSV" | "JSON";
@@ -147,7 +148,7 @@ interface LocalState {
 }
 
 const { create, issue } = useIssueLogic();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   selectedDatabaseResourceList: [],
   maxRowCount: 1000,
@@ -160,15 +161,15 @@ const projectId = computed(() => {
 });
 
 const selectedDatabase = computed(() => {
-  if (!state.databaseId || state.databaseId === UNKNOWN_ID) {
+  if (!state.databaseId || state.databaseId === String(UNKNOWN_ID)) {
     return undefined;
   }
-  return databaseStore.getDatabaseById(state.databaseId as DatabaseId);
+  return databaseStore.getDatabaseByUID(state.databaseId);
 });
 
 const dialect = computed((): SQLDialect => {
   const db = selectedDatabase.value;
-  return dialectOfEngine(db?.instance.engine || "MYSQL");
+  return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
 });
 
 onMounted(() => {
@@ -196,34 +197,34 @@ const handleProjectSelect = async (projectId: string) => {
   );
   const projectOwner = head(ownerList);
   if (projectOwner) {
-    const ownerPrincipal = convertUserToPrincipal(projectOwner.user);
-    issueCreate.assigneeId = ownerPrincipal.id;
+    const userUID = extractUserUID(projectOwner.user.name);
+    issueCreate.assigneeId = Number(userUID);
   }
 };
 
 const handleEnvironmentSelect = (environmentId: string) => {
   state.environmentId = environmentId;
-  const database = databaseStore.getDatabaseById(
-    state.databaseId || UNKNOWN_ID
+  const database = databaseStore.getDatabaseByUID(
+    state.databaseId || String(UNKNOWN_ID)
   );
   // Unselect database if it doesn't belong to the newly selected environment.
   if (
     database &&
-    String(database.id) !== String(UNKNOWN_ID) &&
-    String(database.instance.environment.id) !== state.environmentId
+    database.uid !== String(UNKNOWN_ID) &&
+    database.instanceEntity.environmentEntity.uid !== state.environmentId
   ) {
     state.databaseId = undefined;
   }
 };
 
-const handleDatabaseSelect = (databaseId: DatabaseId) => {
+const handleDatabaseSelect = (databaseId: string) => {
   state.databaseId = databaseId;
-  const database = databaseStore.getDatabaseById(
-    state.databaseId || UNKNOWN_ID
+  const database = databaseStore.getDatabaseByUID(
+    state.databaseId || String(UNKNOWN_ID)
   );
-  if (database && String(database.id) !== String(UNKNOWN_ID)) {
-    state.environmentId = String(database.instance.environment.id);
-    handleProjectSelect(String(database.projectId));
+  if (database && database.uid !== String(UNKNOWN_ID)) {
+    state.environmentId = database.instanceEntity.environmentEntity.uid;
+    handleProjectSelect(database.projectEntity.uid);
   }
 };
 
@@ -246,7 +247,7 @@ watch(
       if (state.databaseId) {
         context.databaseResources = [
           {
-            databaseId: state.databaseId,
+            databaseId: Number(state.databaseId),
           },
         ];
       } else {
@@ -281,7 +282,7 @@ watch(
       ) {
         const resource = head(conditionExpression.databaseResources);
         if (resource) {
-          state.databaseId = resource.databaseId;
+          state.databaseId = String(resource.databaseId);
         }
       }
       if (conditionExpression.statement !== undefined) {

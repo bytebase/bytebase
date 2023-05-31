@@ -466,10 +466,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Middleware
 	//
-	// Error recorder middleware.
-	e.HTTPErrorHandler = func(err error, c echo.Context) {
-		errorRecorderMiddleware(err, s, c, e)
-	}
 	// API logger middleware.
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
@@ -507,7 +503,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return aclMiddleware(s, internalAPIPrefix, ce, next, profile.Readonly)
 	})
-	s.registerDebugRoutes(apiGroup)
 	s.registerOAuthRoutes(apiGroup)
 	s.registerProjectRoutes(apiGroup)
 	s.registerEnvironmentRoutes(apiGroup)
@@ -533,6 +528,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, s.licenseService, profile.Mode)
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
+	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing)
 	onPanic := func(p any) error {
 		stack := make([]byte, maxStacksize)
 		stack = stack[:runtime.Stack(stack, true)]
@@ -542,7 +538,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	s.grpcServer = grpc.NewServer(
-		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor, recoveryUnaryInterceptor),
+		grpc.ChainUnaryInterceptor(debugProvider.DebugInterceptor, authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor, recoveryUnaryInterceptor),
 	)
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.licenseService, s.MetricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
@@ -559,7 +555,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			}
 			return nil
 		}))
-	v1pb.RegisterActuatorServiceServer(s.grpcServer, v1.NewActuatorService(s.store, &s.profile))
+	v1pb.RegisterActuatorServiceServer(s.grpcServer, v1.NewActuatorService(s.store, &s.profile, &s.errorRecordRing))
 	v1pb.RegisterSubscriptionServiceServer(s.grpcServer, v1.NewSubscriptionService(
 		s.store,
 		&s.profile,

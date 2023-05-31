@@ -140,6 +140,10 @@ export default defineComponent({
       const sqlReviewPolicySlug = routeSlug.sqlReviewPolicySlug;
       const ssoName = routeSlug.ssoName;
 
+      const projectName = routeSlug.projectName;
+      const databaseGroupName = routeSlug.databaseGroupName;
+      const schemaGroupName = routeSlug.schemaGroupName;
+
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
         list.push({
@@ -203,6 +207,21 @@ export default defineComponent({
             name: t("settings.sidebar.sso"),
             path: "/setting/sso",
           });
+        }
+      } else if (schemaGroupName) {
+        if (projectName && databaseGroupName) {
+          list.push(
+            {
+              name: "Databases",
+            },
+            {
+              name: databaseGroupName,
+              path: `/projects/${projectName}/database-groups/${databaseGroupName}`,
+            },
+            {
+              name: `Tables - ${schemaGroupName}`,
+            }
+          );
         }
       }
 

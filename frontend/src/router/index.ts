@@ -44,7 +44,7 @@ import {
   useLegacyProjectStore,
   useSheetV1Store,
   useAuthStore,
-  useActuatorStore,
+  useActuatorV1Store,
   useDatabaseStore,
   useInstanceStore,
   useRouterStore,
@@ -1049,6 +1049,30 @@ const routes: Array<RouteRecordRaw> = [
             },
             props: { content: true },
           },
+          // Resource name related routes.
+          {
+            path: "projects/:projectName",
+            children: [
+              {
+                path: "database-groups/:databaseGroupName",
+                name: "workspace.database-group.detail",
+                components: {
+                  content: () => import("../views/DatabaseGroupDetail.vue"),
+                  leftSidebar: DashboardSidebar,
+                },
+                props: true,
+              },
+              {
+                path: "database-groups/:databaseGroupName/schema-groups/:schemaGroupName",
+                name: "workspace.database-group.schema-group.detail",
+                components: {
+                  content: () => import("../views/SchemaGroupDetail.vue"),
+                  leftSidebar: DashboardSidebar,
+                },
+                props: true,
+              },
+            ],
+          },
         ],
       },
     ],
@@ -1230,7 +1254,7 @@ router.beforeEach((to, from, next) => {
   }
 
   const currentUserV1 = useCurrentUserV1();
-  const serverInfo = useActuatorStore().serverInfo;
+  const serverInfo = useActuatorV1Store().serverInfo;
 
   // If 2FA is required, redirect to MFA setup page if the user has not enabled 2FA.
   if (hasFeature("bb.feature.2fa") && serverInfo?.require2fa) {
@@ -1394,6 +1418,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
+    to.name?.toString().startsWith("workspace.database-group") ||
     to.name?.toString().startsWith("sheets") ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.gitops.detail" &&

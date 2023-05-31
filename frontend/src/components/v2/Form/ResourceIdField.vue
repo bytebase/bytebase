@@ -79,7 +79,13 @@ interface LocalState {
   validatedMessages: ValidatedMessage[];
 }
 
-type ResourceType = "environment" | "instance" | "project" | "idp" | "role";
+type ResourceType =
+  | "environment"
+  | "instance"
+  | "project"
+  | "idp"
+  | "role"
+  | "database-group";
 
 const props = withDefaults(
   defineProps<{

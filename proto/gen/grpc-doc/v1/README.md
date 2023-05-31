@@ -5,8 +5,12 @@
 
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
+    - [DebugLog](#bytebase-v1-DebugLog)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
+    - [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest)
+    - [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse)
+    - [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
@@ -263,6 +267,7 @@
     - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
     - [CreateSchemaGroupRequest](#bytebase-v1-CreateSchemaGroupRequest)
     - [DatabaseGroup](#bytebase-v1-DatabaseGroup)
+    - [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database)
     - [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest)
     - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
     - [DeleteSchemaGroupRequest](#bytebase-v1-DeleteSchemaGroupRequest)
@@ -288,6 +293,7 @@
     - [Schedule](#bytebase-v1-Schedule)
     - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
     - [SchemaGroup](#bytebase-v1-SchemaGroup)
+    - [SchemaGroup.Table](#bytebase-v1-SchemaGroup-Table)
     - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
@@ -303,8 +309,10 @@
     - [Webhook](#bytebase-v1-Webhook)
   
     - [Activity.Type](#bytebase-v1-Activity-Type)
+    - [DatabaseGroupView](#bytebase-v1-DatabaseGroupView)
     - [OperatorType](#bytebase-v1-OperatorType)
     - [SchemaChange](#bytebase-v1-SchemaChange)
+    - [SchemaGroupView](#bytebase-v1-SchemaGroupView)
     - [SchemaVersion](#bytebase-v1-SchemaVersion)
     - [TenantMode](#bytebase-v1-TenantMode)
     - [Visibility](#bytebase-v1-Visibility)
@@ -467,6 +475,7 @@
     - [QueryResponse](#bytebase-v1-QueryResponse)
     - [QueryResult](#bytebase-v1-QueryResult)
     - [QueryRow](#bytebase-v1-QueryRow)
+    - [RowValue](#bytebase-v1-RowValue)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
   
@@ -506,6 +515,26 @@ Actuator concept is similar to the Spring Boot Actuator.
 | require_2fa | [bool](#bool) |  | require_2fa is the flag to require 2FA for all users. |
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
 | gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
+| debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
+
+
+
+
+
+
+<a name="bytebase-v1-DebugLog"></a>
+
+### DebugLog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| record_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| request_path | [string](#string) |  |  |
+| role | [string](#string) |  |  |
+| error | [string](#string) |  |  |
+| stack_trace | [string](#string) |  |  |
 
 
 
@@ -531,6 +560,56 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
+
+<a name="bytebase-v1-ListDebugLogRequest"></a>
+
+### ListDebugLogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 50 logs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListDebugLog` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDebugLog` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListDebugLogResponse"></a>
+
+### ListDebugLogResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| logs | [DebugLog](#bytebase-v1-DebugLog) | repeated | The logs from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateActuatorInfoRequest"></a>
+
+### UpdateActuatorInfoRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| actuator | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  | The actuator to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
  
 
  
@@ -546,7 +625,9 @@ Actuator concept is similar to the Spring Boot Actuator.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
+| UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| ListDebugLog | [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest) | [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse) |  |
 
  
 
@@ -4175,6 +4256,7 @@ TODO(zp): move to activity later.
 | database_group_id | [string](#string) |  | The ID to use for the database group, which will become the final component of the database group&#39;s resource name.
 
 This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | If set, validate the create request and preview the full database group response, but do not actually create it. |
 
 
 
@@ -4212,6 +4294,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | schema_group_id | [string](#string) |  | The ID to use for the schema group, which will become the final component of the schema group&#39;s resource name.
 
 This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | If set, validate the create request and preview the full schema group response, but do not actually create it. |
 
 
 
@@ -4229,6 +4312,23 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | name | [string](#string) |  | The name of the database group. Format: projects/{project}/databaseGroups/{databaseGroup} |
 | database_placeholder | [string](#string) |  | The short name used in actual databases specified by users. For example, the placeholder for db1_2010, db1_2021, db1_2023 will be &#34;db1&#34;. |
 | database_expr | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this database group. |
+| matched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
+| unmatched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseGroup-Database"></a>
+
+### DatabaseGroup.Database
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The resource name of the database. Format: instances/{instance}/databases/{database} |
 
 
 
@@ -4322,6 +4422,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database group to retrieve. Format: projects/{project}/databaseGroups/{databaseGroup} |
+| view | [DatabaseGroupView](#bytebase-v1-DatabaseGroupView) |  | The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. |
 
 
 
@@ -4397,6 +4498,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database group to retrieve. Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup} |
+| view | [SchemaGroupView](#bytebase-v1-SchemaGroupView) |  | The view to return. Defaults to SCHEMA_GROUP_VIEW_BASIC. |
 
 
 
@@ -4458,7 +4560,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} |
+| parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} Using &#34;projects/-&#34; will list database groups across all projects. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListDatabaseGroups` call. Provide this to retrieve the subsequent page.
 
@@ -4638,6 +4740,27 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | name | [string](#string) |  | The name of the schema group. Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGroup} |
 | table_expr | [google.type.Expr](#google-type-Expr) |  | The table condition that is associated with this schema group. The table_placeholder in the sheet script will be rendered to the actual table name. |
 | table_placeholder | [string](#string) |  | The table placeholder used for rendering. For example, if set to &#34;tbl&#34;, all the table name &#34;tbl&#34; in the SQL script will be rendered to the actual table name. |
+| matched_tables | [SchemaGroup.Table](#bytebase-v1-SchemaGroup-Table) | repeated | The list of databases that match the database group condition. |
+| unmatched_tables | [SchemaGroup.Table](#bytebase-v1-SchemaGroup-Table) | repeated | The list of databases that match the database group condition. |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaGroup-Table"></a>
+
+### SchemaGroup.Table
+In the future, we can introduce schema_expr if users use schema (Postgres schema) for groups.
+Its keyword will be {{SCHEMA}}.
+All the expressions will be used to filter the schema objects in DatabaseSchema.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The resource name of the database. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
 
 
 
@@ -4900,6 +5023,19 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="bytebase-v1-DatabaseGroupView"></a>
+
+### DatabaseGroupView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATABASE_GROUP_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| DATABASE_GROUP_VIEW_BASIC | 1 | Include basic information about the database group, but exclude the list of matched databases and unmatched databases. |
+| DATABASE_GROUP_VIEW_FULL | 2 | Include everything. |
+
+
+
 <a name="bytebase-v1-OperatorType"></a>
 
 ### OperatorType
@@ -4923,6 +5059,19 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | SCHEMA_CHANGE_UNSPECIFIED | 0 |  |
 | DDL | 1 |  |
 | SDL | 2 |  |
+
+
+
+<a name="bytebase-v1-SchemaGroupView"></a>
+
+### SchemaGroupView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SCHEMA_GROUP_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| SCHEMA_GROUP_VIEW_BASIC | 1 | Include basic information about the schema group, but exclude the list of matched tables and unmatched tables. |
+| SCHEMA_GROUP_VIEW_FULL | 2 | Include everything. |
 
 
 
@@ -6031,11 +6180,12 @@ FIXME(d/xz): support spec with deployment config
 | status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. TODO(p0ny): migrate old task status and use this field as a summary of the task runs. |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
 | blocked_by_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
-| target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| database_case | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
+| target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
+| database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
 | database_schema_baseline | [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline) |  |  |
 | database_schema_update | [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate) |  |  |
 | database_data_update | [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate) |  |  |
+| database_backup | [Task.DatabaseBackup](#bytebase-v1-Task-DatabaseBackup) |  |  |
 | database_restore_restore | [Task.DatabaseRestoreRestore](#bytebase-v1-Task-DatabaseRestoreRestore) |  |  |
 
 
@@ -6071,7 +6221,7 @@ FIXME(d/xz): support spec with deployment config
 | table | [string](#string) |  | table name |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | character_set | [string](#string) |  |  |
-| collection | [string](#string) |  |  |
+| collation | [string](#string) |  |  |
 | labels | [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry) | repeated |  |
 
 
@@ -6107,13 +6257,6 @@ FIXME(d/xz): support spec with deployment config
 | schema_version | [string](#string) |  |  |
 | rollback_enabled | [bool](#bool) |  | Build the rollback SQL if rollback_enabled. |
 | rollback_sql_status | [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus) |  | The status of the rollback SQL generation. |
-| transaction_id | [string](#string) |  | transaction_id is the ID of the transaction executing the migration. It is only use for Oracle to find Rollback SQL statement now. |
-| thread_id | [string](#string) |  | thread_id is the ID of the connection executing the migration. We use it to filter the binlog events of the migration transaction. |
-| change_history | [string](#string) |  | change_history is the resource name of the change history. We use it to get the schema when the transaction ran. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
-| binlog_file_start | [string](#string) |  |  |
-| binlog_file_end | [string](#string) |  |  |
-| binlog_position_start | [int64](#int64) |  |  |
-| binlog_position_end | [int64](#int64) |  |  |
 | rollback_error | [string](#string) |  |  |
 | rollback_sheet | [string](#string) |  | rollback_sheet is the resource name of the sheet that stores the generated rollback SQL statement. Format: projects/{project}/sheets/{sheet} |
 | rollback_from_review | [string](#string) |  | rollback_from_review is the resource name of the review that the rollback SQL statement is generated from. Format: projects/{project}/reviews/{review} |
@@ -6325,6 +6468,7 @@ Type is the database change type.
 | DONE | 4 |  |
 | FAILED | 5 |  |
 | CANCELED | 6 |  |
+| SKIPPED | 7 |  |
 
 
 
@@ -7275,7 +7419,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | column_names | [string](#string) | repeated | Column names of the query result. |
-| column_type_names | [string](#string) | repeated | Column types of the query result. |
+| column_type_names | [string](#string) | repeated | Column types of the query result. The types come from the Golang SQL driver. |
 | rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
 | masked | [bool](#bool) | repeated | Columns are masked or not. |
 | error | [string](#string) |  | The error message if the query failed. |
@@ -7293,7 +7437,32 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| values | [string](#string) | repeated | Row values of the query result. |
+| values | [RowValue](#bytebase-v1-RowValue) | repeated | Row values of the query result. |
+
+
+
+
+
+
+<a name="bytebase-v1-RowValue"></a>
+
+### RowValue
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| null_value | [google.protobuf.NullValue](#google-protobuf-NullValue) |  |  |
+| bool_value | [bool](#bool) |  |  |
+| bytes_value | [bytes](#bytes) |  |  |
+| double_value | [double](#double) |  |  |
+| float_value | [float](#float) |  |  |
+| int32_value | [int32](#int32) |  |  |
+| int64_value | [int64](#int64) |  |  |
+| string_value | [string](#string) |  |  |
+| uint32_value | [uint32](#uint32) |  |  |
+| uint64_value | [uint64](#uint64) |  |  |
+| value_value | [google.protobuf.Value](#google-protobuf-Value) |  | value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. |
 
 
 

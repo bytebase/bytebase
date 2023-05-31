@@ -631,16 +631,16 @@ import {
   unknownEnvironment,
 } from "@/types";
 import {
-  hasFeature,
   pushNotification,
   useCurrentUserV1,
   useSettingV1Store,
-  useActuatorStore,
+  useActuatorV1Store,
   useEnvironmentV1Store,
   useInstanceStore,
   useInstanceV1Store,
   useDatabaseStore,
   useGracefulRequest,
+  featureToRef,
 } from "@/store";
 import { getErrorCode, extractGrpcErrorMessage } from "@/utils/grpcweb";
 import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
@@ -702,7 +702,7 @@ const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
 const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 
 const state = reactive<LocalState>({
   currentDataSourceType: DataSourceType.ADMIN,
@@ -712,6 +712,10 @@ const state = reactive<LocalState>({
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",
 });
+
+const hasReadonlyReplicaFeature = featureToRef(
+  "bb.feature.read-replica-connection"
+);
 
 const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
   return {
@@ -1053,7 +1057,7 @@ const handleMongodbConnectionStringSchemaChange = (event: Event) => {
 
 const handleCurrentDataSourceHostInput = (event: Event) => {
   if (currentDataSource.value.type === DataSourceType.READ_ONLY) {
-    if (!hasFeature("bb.feature.read-replica-connection")) {
+    if (!hasReadonlyReplicaFeature.value) {
       if (currentDataSource.value.host || currentDataSource.value.port) {
         currentDataSource.value.host = adminDataSource.value.host;
         currentDataSource.value.port = adminDataSource.value.port;
@@ -1068,7 +1072,7 @@ const handleCurrentDataSourceHostInput = (event: Event) => {
 
 const handleCurrentDataSourcePortInput = (event: Event) => {
   if (currentDataSource.value.type === DataSourceType.READ_ONLY) {
-    if (!hasFeature("bb.feature.read-replica-connection")) {
+    if (!hasReadonlyReplicaFeature.value) {
       if (currentDataSource.value.host || currentDataSource.value.port) {
         currentDataSource.value.host = adminDataSource.value.host;
         currentDataSource.value.port = adminDataSource.value.port;
@@ -1277,6 +1281,11 @@ const doUpdate = async () => {
     return;
   }
 
+  if (!checkRODataSourceFeature(instance)) {
+    state.showFeatureModal = true;
+    return;
+  }
+
   // When clicking **Update** we may have more than one thing to do (if needed)
   // 1. Patch the instance itself.
   // 2. Update the admin datasource.
@@ -1431,7 +1440,7 @@ const testConnection = async (
       try {
         await instanceServiceClient.addDataSource({
           instance: instance.name,
-          dataSources: ds,
+          dataSource: ds,
           validateOnly: true,
         });
         return ok();
@@ -1452,7 +1461,7 @@ const testConnection = async (
         );
         await instanceServiceClient.updateDataSource({
           instance: instance.name,
-          dataSources: ds,
+          dataSource: ds,
           updateMask,
           validateOnly: true,
         });
@@ -1552,5 +1561,42 @@ const extractDataSourceFromEdit = (
   }
 
   return ds;
+};
+
+const checkRODataSourceFeature = (instance: Instance) => {
+  // Early pass if the feature is available.
+  if (hasReadonlyReplicaFeature.value) {
+    return true;
+  }
+
+  // Not editing/creating
+  if (!readonlyDataSource.value) {
+    return true;
+  }
+
+  if (readonlyDataSource.value.pendingCreate) {
+    // pre-flight feature guard check for creating RO datasource
+    return false;
+  } else {
+    // pre-flight feature guard check for updating RO datasource
+    const editing = extractDataSourceFromEdit(
+      instance,
+      readonlyDataSource.value
+    );
+    const original = instance.dataSources.find(
+      (ds) => ds.type === DataSourceType.READ_ONLY
+    );
+    if (original) {
+      const updateMask = calcDataSourceUpdateMask(
+        editing,
+        original,
+        readonlyDataSource.value
+      );
+      if (updateMask.length > 0) {
+        return false;
+      }
+    }
+  }
+  return true;
 };
 </script>

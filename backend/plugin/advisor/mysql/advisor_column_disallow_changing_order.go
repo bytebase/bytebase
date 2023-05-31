@@ -20,6 +20,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
 }
 
 // ColumnDisallowChangingOrderAdvisor is the advisor checking for disallow changing column order.

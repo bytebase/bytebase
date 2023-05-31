@@ -91,7 +91,7 @@
           class="menu-item"
           role="menuitem"
           @click.prevent="resetQuickstart"
-          >{{ $t("common.quickstart") }}</a
+          >{{ $t("quick-start.self") }}</a
         >
         <a
           href="https://bytebase.com/docs?source=console"
@@ -126,17 +126,15 @@ import { hasWorkspacePermissionV1, roleNameV1 } from "@/utils";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
-  useActuatorStore,
+  useActuatorV1Store,
   useAuthStore,
   useCurrentUserV1,
-  useDebugStore,
   useUIStateStore,
 } from "@/store";
 import UserAvatar from "./User/UserAvatar.vue";
 
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 const authStore = useAuthStore();
-const debugStore = useDebugStore();
 const uiStateStore = useUIStateStore();
 const router = useRouter();
 const { setLocale, locale } = useLanguage();
@@ -187,11 +185,11 @@ const resetQuickstart = () => {
   });
 };
 
-const { isDebug } = storeToRefs(debugStore);
+const { isDebug } = storeToRefs(actuatorStore);
 
 const switchDebug = () => {
-  debugStore.patchDebug({
-    isDebug: !isDebug.value,
+  actuatorStore.patchDebug({
+    debug: !isDebug.value,
   });
 };
 

@@ -54,7 +54,6 @@
     "bookmarks": "Marcadores",
     "quick-action": "Acción rápida",
     "archive": "Archivo",
-    "quickstart": "Inicio rápido",
     "logout": "Cerrar sesión",
     "close": "Cerrar",
     "latest": "Último",
@@ -645,6 +644,7 @@
     "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)"
   },
   "issue": {
+    "my-issues": "Mis Incidencias",
     "waiting-approval": "Esperando Aprobación",
     "waiting-rollout": "Esperando Implementación",
     "opened-by-at": "abierta por {creator} a las {time}",
@@ -691,6 +691,7 @@
       "progress": "Progreso",
       "updated": "Actualizado",
       "approver": "Aprobador",
+      "creator": "Creador",
       "assignee": "Asignado"
     },
     "stage-select": {
@@ -951,6 +952,8 @@
     "production-environment": "Entorno de producción"
   },
   "quick-start": {
+    "self": "Inicio rápido",
+    "guide": "haga clic en el paso para probarlo",
     "view-an-issue": "Ver una incidencia",
     "visit-project": "@:common.visit @:common.projects",
     "visit-instance": "@:common.visit @:common.instances",
@@ -2004,7 +2007,8 @@
       "confirm-to-duplicate-sheet": "¿Confirmar para duplicar esta hoja?"
     },
     "linked-issue": "Incidencia vinculada",
-    "from-sheet-warning": "La hoja proviene de la incidencia {issue}. Es de solo lectura y solo se muestra una parte de ella."
+    "from-issue-warning": "La hoja proviene de la incidencia {issue} en modo de solo lectura. {oversize}",
+    "content-oversize-warning": "Mostrar solo parte de la hoja debido al tamaño excesivo."
   },
   "engine": {
     "mysql": "MySQL",

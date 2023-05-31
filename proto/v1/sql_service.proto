@@ -4,6 +4,7 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/struct.proto";
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
@@ -53,6 +54,7 @@ message QueryResult {
   repeated string column_names = 1;
 
   // Column types of the query result.
+  // The types come from the Golang SQL driver.
   repeated string column_type_names = 2;
 
   // Rows of the query result.
@@ -67,7 +69,24 @@ message QueryResult {
 
 message QueryRow {
   // Row values of the query result.
-  repeated string values = 1;
+  repeated RowValue values = 1;
+}
+
+message RowValue {
+  oneof kind {
+    google.protobuf.NullValue null_value = 1;
+    bool bool_value = 2;
+    bytes bytes_value = 3;
+    double double_value = 4;
+    float float_value = 5;
+    int32 int32_value = 6;
+    int64 int64_value = 7;
+    string string_value = 8;
+    uint32 uint32_value = 9;
+    uint64 uint64_value = 10;
+    // value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
+    google.protobuf.Value value_value = 11;
+  }
 }
 
 message Advice {

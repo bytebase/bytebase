@@ -109,7 +109,7 @@ import {
   featureToRef,
   pushNotification,
   useCurrentUserV1,
-  useActuatorStore,
+  useActuatorV1Store,
   useUserStore,
 } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
@@ -127,7 +127,7 @@ const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 
 const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");

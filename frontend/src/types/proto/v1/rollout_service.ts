@@ -601,12 +601,16 @@ export interface Task {
   type: Task_Type;
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
   blockedByTasks: string[];
-  /** Format: instances/{instance}/databases/{database} */
+  /**
+   * Format: instances/{instance} if the task is DatabaseCreate.
+   * Format: instances/{instance}/databases/{database}
+   */
   target: string;
-  databaseCase?: Task_DatabaseCreate | undefined;
+  databaseCreate?: Task_DatabaseCreate | undefined;
   databaseSchemaBaseline?: Task_DatabaseSchemaBaseline | undefined;
   databaseSchemaUpdate?: Task_DatabaseSchemaUpdate | undefined;
   databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
+  databaseBackup?: Task_DatabaseBackup | undefined;
   databaseRestoreRestore?: Task_DatabaseRestoreRestore | undefined;
 }
 
@@ -618,6 +622,7 @@ export enum Task_Status {
   DONE = 4,
   FAILED = 5,
   CANCELED = 6,
+  SKIPPED = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -644,6 +649,9 @@ export function task_StatusFromJSON(object: any): Task_Status {
     case 6:
     case "CANCELED":
       return Task_Status.CANCELED;
+    case 7:
+    case "SKIPPED":
+      return Task_Status.SKIPPED;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -667,6 +675,8 @@ export function task_StatusToJSON(object: Task_Status): string {
       return "FAILED";
     case Task_Status.CANCELED:
       return "CANCELED";
+    case Task_Status.SKIPPED:
+      return "SKIPPED";
     case Task_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -789,7 +799,7 @@ export interface Task_DatabaseCreate {
   /** Format: projects/{project}/sheets/{sheet} */
   sheet: string;
   characterSet: string;
-  collection: string;
+  collation: string;
   labels: { [key: string]: string };
 }
 
@@ -816,26 +826,6 @@ export interface Task_DatabaseDataUpdate {
   rollbackEnabled: boolean;
   /** The status of the rollback SQL generation. */
   rollbackSqlStatus: Task_DatabaseDataUpdate_RollbackSqlStatus;
-  /**
-   * transaction_id is the ID of the transaction executing the migration.
-   * It is only use for Oracle to find Rollback SQL statement now.
-   */
-  transactionId: string;
-  /**
-   * thread_id is the ID of the connection executing the migration.
-   * We use it to filter the binlog events of the migration transaction.
-   */
-  threadId: string;
-  /**
-   * change_history is the resource name of the change history.
-   * We use it to get the schema when the transaction ran.
-   * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-   */
-  changeHistory: string;
-  binlogFileStart: string;
-  binlogFileEnd: string;
-  binlogPositionStart: number;
-  binlogPositionEnd: number;
   rollbackError: string;
   /**
    * rollback_sheet is the resource name of
@@ -3006,10 +2996,11 @@ function createBaseTask(): Task {
     type: 0,
     blockedByTasks: [],
     target: "",
-    databaseCase: undefined,
+    databaseCreate: undefined,
     databaseSchemaBaseline: undefined,
     databaseSchemaUpdate: undefined,
     databaseDataUpdate: undefined,
+    databaseBackup: undefined,
     databaseRestoreRestore: undefined,
   };
 }
@@ -3040,8 +3031,8 @@ export const Task = {
     if (message.target !== "") {
       writer.uint32(50).string(message.target);
     }
-    if (message.databaseCase !== undefined) {
-      Task_DatabaseCreate.encode(message.databaseCase, writer.uint32(58).fork()).ldelim();
+    if (message.databaseCreate !== undefined) {
+      Task_DatabaseCreate.encode(message.databaseCreate, writer.uint32(58).fork()).ldelim();
     }
     if (message.databaseSchemaBaseline !== undefined) {
       Task_DatabaseSchemaBaseline.encode(message.databaseSchemaBaseline, writer.uint32(66).fork()).ldelim();
@@ -3051,6 +3042,9 @@ export const Task = {
     }
     if (message.databaseDataUpdate !== undefined) {
       Task_DatabaseDataUpdate.encode(message.databaseDataUpdate, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.databaseBackup !== undefined) {
+      Task_DatabaseBackup.encode(message.databaseBackup, writer.uint32(114).fork()).ldelim();
     }
     if (message.databaseRestoreRestore !== undefined) {
       Task_DatabaseRestoreRestore.encode(message.databaseRestoreRestore, writer.uint32(90).fork()).ldelim();
@@ -3126,7 +3120,7 @@ export const Task = {
             break;
           }
 
-          message.databaseCase = Task_DatabaseCreate.decode(reader, reader.uint32());
+          message.databaseCreate = Task_DatabaseCreate.decode(reader, reader.uint32());
           continue;
         case 8:
           if (tag !== 66) {
@@ -3148,6 +3142,13 @@ export const Task = {
           }
 
           message.databaseDataUpdate = Task_DatabaseDataUpdate.decode(reader, reader.uint32());
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.databaseBackup = Task_DatabaseBackup.decode(reader, reader.uint32());
           continue;
         case 11:
           if (tag !== 90) {
@@ -3175,7 +3176,7 @@ export const Task = {
       type: isSet(object.type) ? task_TypeFromJSON(object.type) : 0,
       blockedByTasks: Array.isArray(object?.blockedByTasks) ? object.blockedByTasks.map((e: any) => String(e)) : [],
       target: isSet(object.target) ? String(object.target) : "",
-      databaseCase: isSet(object.databaseCase) ? Task_DatabaseCreate.fromJSON(object.databaseCase) : undefined,
+      databaseCreate: isSet(object.databaseCreate) ? Task_DatabaseCreate.fromJSON(object.databaseCreate) : undefined,
       databaseSchemaBaseline: isSet(object.databaseSchemaBaseline)
         ? Task_DatabaseSchemaBaseline.fromJSON(object.databaseSchemaBaseline)
         : undefined,
@@ -3185,6 +3186,7 @@ export const Task = {
       databaseDataUpdate: isSet(object.databaseDataUpdate)
         ? Task_DatabaseDataUpdate.fromJSON(object.databaseDataUpdate)
         : undefined,
+      databaseBackup: isSet(object.databaseBackup) ? Task_DatabaseBackup.fromJSON(object.databaseBackup) : undefined,
       databaseRestoreRestore: isSet(object.databaseRestoreRestore)
         ? Task_DatabaseRestoreRestore.fromJSON(object.databaseRestoreRestore)
         : undefined,
@@ -3205,8 +3207,8 @@ export const Task = {
       obj.blockedByTasks = [];
     }
     message.target !== undefined && (obj.target = message.target);
-    message.databaseCase !== undefined &&
-      (obj.databaseCase = message.databaseCase ? Task_DatabaseCreate.toJSON(message.databaseCase) : undefined);
+    message.databaseCreate !== undefined &&
+      (obj.databaseCreate = message.databaseCreate ? Task_DatabaseCreate.toJSON(message.databaseCreate) : undefined);
     message.databaseSchemaBaseline !== undefined && (obj.databaseSchemaBaseline = message.databaseSchemaBaseline
       ? Task_DatabaseSchemaBaseline.toJSON(message.databaseSchemaBaseline)
       : undefined);
@@ -3216,6 +3218,8 @@ export const Task = {
     message.databaseDataUpdate !== undefined && (obj.databaseDataUpdate = message.databaseDataUpdate
       ? Task_DatabaseDataUpdate.toJSON(message.databaseDataUpdate)
       : undefined);
+    message.databaseBackup !== undefined &&
+      (obj.databaseBackup = message.databaseBackup ? Task_DatabaseBackup.toJSON(message.databaseBackup) : undefined);
     message.databaseRestoreRestore !== undefined && (obj.databaseRestoreRestore = message.databaseRestoreRestore
       ? Task_DatabaseRestoreRestore.toJSON(message.databaseRestoreRestore)
       : undefined);
@@ -3236,8 +3240,8 @@ export const Task = {
     message.type = object.type ?? 0;
     message.blockedByTasks = object.blockedByTasks?.map((e) => e) || [];
     message.target = object.target ?? "";
-    message.databaseCase = (object.databaseCase !== undefined && object.databaseCase !== null)
-      ? Task_DatabaseCreate.fromPartial(object.databaseCase)
+    message.databaseCreate = (object.databaseCreate !== undefined && object.databaseCreate !== null)
+      ? Task_DatabaseCreate.fromPartial(object.databaseCreate)
       : undefined;
     message.databaseSchemaBaseline =
       (object.databaseSchemaBaseline !== undefined && object.databaseSchemaBaseline !== null)
@@ -3249,6 +3253,9 @@ export const Task = {
     message.databaseDataUpdate = (object.databaseDataUpdate !== undefined && object.databaseDataUpdate !== null)
       ? Task_DatabaseDataUpdate.fromPartial(object.databaseDataUpdate)
       : undefined;
+    message.databaseBackup = (object.databaseBackup !== undefined && object.databaseBackup !== null)
+      ? Task_DatabaseBackup.fromPartial(object.databaseBackup)
+      : undefined;
     message.databaseRestoreRestore =
       (object.databaseRestoreRestore !== undefined && object.databaseRestoreRestore !== null)
         ? Task_DatabaseRestoreRestore.fromPartial(object.databaseRestoreRestore)
@@ -3258,7 +3265,7 @@ export const Task = {
 };
 
 function createBaseTask_DatabaseCreate(): Task_DatabaseCreate {
-  return { project: "", database: "", table: "", sheet: "", characterSet: "", collection: "", labels: {} };
+  return { project: "", database: "", table: "", sheet: "", characterSet: "", collation: "", labels: {} };
 }
 
 export const Task_DatabaseCreate = {
@@ -3278,8 +3285,8 @@ export const Task_DatabaseCreate = {
     if (message.characterSet !== "") {
       writer.uint32(42).string(message.characterSet);
     }
-    if (message.collection !== "") {
-      writer.uint32(50).string(message.collection);
+    if (message.collation !== "") {
+      writer.uint32(50).string(message.collation);
     }
     Object.entries(message.labels).forEach(([key, value]) => {
       Task_DatabaseCreate_LabelsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).ldelim();
@@ -3334,7 +3341,7 @@ export const Task_DatabaseCreate = {
             break;
           }
 
-          message.collection = reader.string();
+          message.collation = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
@@ -3362,7 +3369,7 @@ export const Task_DatabaseCreate = {
       table: isSet(object.table) ? String(object.table) : "",
       sheet: isSet(object.sheet) ? String(object.sheet) : "",
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
-      collection: isSet(object.collection) ? String(object.collection) : "",
+      collation: isSet(object.collation) ? String(object.collation) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -3379,7 +3386,7 @@ export const Task_DatabaseCreate = {
     message.table !== undefined && (obj.table = message.table);
     message.sheet !== undefined && (obj.sheet = message.sheet);
     message.characterSet !== undefined && (obj.characterSet = message.characterSet);
-    message.collection !== undefined && (obj.collection = message.collection);
+    message.collation !== undefined && (obj.collation = message.collation);
     obj.labels = {};
     if (message.labels) {
       Object.entries(message.labels).forEach(([k, v]) => {
@@ -3400,7 +3407,7 @@ export const Task_DatabaseCreate = {
     message.table = object.table ?? "";
     message.sheet = object.sheet ?? "";
     message.characterSet = object.characterSet ?? "";
-    message.collection = object.collection ?? "";
+    message.collation = object.collation ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = String(value);
@@ -3612,13 +3619,6 @@ function createBaseTask_DatabaseDataUpdate(): Task_DatabaseDataUpdate {
     schemaVersion: "",
     rollbackEnabled: false,
     rollbackSqlStatus: 0,
-    transactionId: "",
-    threadId: "",
-    changeHistory: "",
-    binlogFileStart: "",
-    binlogFileEnd: "",
-    binlogPositionStart: 0,
-    binlogPositionEnd: 0,
     rollbackError: "",
     rollbackSheet: "",
     rollbackFromReview: "",
@@ -3640,38 +3640,17 @@ export const Task_DatabaseDataUpdate = {
     if (message.rollbackSqlStatus !== 0) {
       writer.uint32(32).int32(message.rollbackSqlStatus);
     }
-    if (message.transactionId !== "") {
-      writer.uint32(42).string(message.transactionId);
-    }
-    if (message.threadId !== "") {
-      writer.uint32(50).string(message.threadId);
-    }
-    if (message.changeHistory !== "") {
-      writer.uint32(58).string(message.changeHistory);
-    }
-    if (message.binlogFileStart !== "") {
-      writer.uint32(66).string(message.binlogFileStart);
-    }
-    if (message.binlogFileEnd !== "") {
-      writer.uint32(74).string(message.binlogFileEnd);
-    }
-    if (message.binlogPositionStart !== 0) {
-      writer.uint32(80).int64(message.binlogPositionStart);
-    }
-    if (message.binlogPositionEnd !== 0) {
-      writer.uint32(88).int64(message.binlogPositionEnd);
-    }
     if (message.rollbackError !== "") {
-      writer.uint32(98).string(message.rollbackError);
+      writer.uint32(42).string(message.rollbackError);
     }
     if (message.rollbackSheet !== "") {
-      writer.uint32(106).string(message.rollbackSheet);
+      writer.uint32(50).string(message.rollbackSheet);
     }
     if (message.rollbackFromReview !== "") {
-      writer.uint32(114).string(message.rollbackFromReview);
+      writer.uint32(58).string(message.rollbackFromReview);
     }
     if (message.rollbackFromTask !== "") {
-      writer.uint32(122).string(message.rollbackFromTask);
+      writer.uint32(66).string(message.rollbackFromTask);
     }
     return writer;
   },
@@ -3716,73 +3695,24 @@ export const Task_DatabaseDataUpdate = {
             break;
           }
 
-          message.transactionId = reader.string();
+          message.rollbackError = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.threadId = reader.string();
+          message.rollbackSheet = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.changeHistory = reader.string();
+          message.rollbackFromReview = reader.string();
           continue;
         case 8:
           if (tag !== 66) {
-            break;
-          }
-
-          message.binlogFileStart = reader.string();
-          continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.binlogFileEnd = reader.string();
-          continue;
-        case 10:
-          if (tag !== 80) {
-            break;
-          }
-
-          message.binlogPositionStart = longToNumber(reader.int64() as Long);
-          continue;
-        case 11:
-          if (tag !== 88) {
-            break;
-          }
-
-          message.binlogPositionEnd = longToNumber(reader.int64() as Long);
-          continue;
-        case 12:
-          if (tag !== 98) {
-            break;
-          }
-
-          message.rollbackError = reader.string();
-          continue;
-        case 13:
-          if (tag !== 106) {
-            break;
-          }
-
-          message.rollbackSheet = reader.string();
-          continue;
-        case 14:
-          if (tag !== 114) {
-            break;
-          }
-
-          message.rollbackFromReview = reader.string();
-          continue;
-        case 15:
-          if (tag !== 122) {
             break;
           }
 
@@ -3805,13 +3735,6 @@ export const Task_DatabaseDataUpdate = {
       rollbackSqlStatus: isSet(object.rollbackSqlStatus)
         ? task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(object.rollbackSqlStatus)
         : 0,
-      transactionId: isSet(object.transactionId) ? String(object.transactionId) : "",
-      threadId: isSet(object.threadId) ? String(object.threadId) : "",
-      changeHistory: isSet(object.changeHistory) ? String(object.changeHistory) : "",
-      binlogFileStart: isSet(object.binlogFileStart) ? String(object.binlogFileStart) : "",
-      binlogFileEnd: isSet(object.binlogFileEnd) ? String(object.binlogFileEnd) : "",
-      binlogPositionStart: isSet(object.binlogPositionStart) ? Number(object.binlogPositionStart) : 0,
-      binlogPositionEnd: isSet(object.binlogPositionEnd) ? Number(object.binlogPositionEnd) : 0,
       rollbackError: isSet(object.rollbackError) ? String(object.rollbackError) : "",
       rollbackSheet: isSet(object.rollbackSheet) ? String(object.rollbackSheet) : "",
       rollbackFromReview: isSet(object.rollbackFromReview) ? String(object.rollbackFromReview) : "",
@@ -3826,13 +3749,6 @@ export const Task_DatabaseDataUpdate = {
     message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
     message.rollbackSqlStatus !== undefined &&
       (obj.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusToJSON(message.rollbackSqlStatus));
-    message.transactionId !== undefined && (obj.transactionId = message.transactionId);
-    message.threadId !== undefined && (obj.threadId = message.threadId);
-    message.changeHistory !== undefined && (obj.changeHistory = message.changeHistory);
-    message.binlogFileStart !== undefined && (obj.binlogFileStart = message.binlogFileStart);
-    message.binlogFileEnd !== undefined && (obj.binlogFileEnd = message.binlogFileEnd);
-    message.binlogPositionStart !== undefined && (obj.binlogPositionStart = Math.round(message.binlogPositionStart));
-    message.binlogPositionEnd !== undefined && (obj.binlogPositionEnd = Math.round(message.binlogPositionEnd));
     message.rollbackError !== undefined && (obj.rollbackError = message.rollbackError);
     message.rollbackSheet !== undefined && (obj.rollbackSheet = message.rollbackSheet);
     message.rollbackFromReview !== undefined && (obj.rollbackFromReview = message.rollbackFromReview);
@@ -3850,13 +3766,6 @@ export const Task_DatabaseDataUpdate = {
     message.schemaVersion = object.schemaVersion ?? "";
     message.rollbackEnabled = object.rollbackEnabled ?? false;
     message.rollbackSqlStatus = object.rollbackSqlStatus ?? 0;
-    message.transactionId = object.transactionId ?? "";
-    message.threadId = object.threadId ?? "";
-    message.changeHistory = object.changeHistory ?? "";
-    message.binlogFileStart = object.binlogFileStart ?? "";
-    message.binlogFileEnd = object.binlogFileEnd ?? "";
-    message.binlogPositionStart = object.binlogPositionStart ?? 0;
-    message.binlogPositionEnd = object.binlogPositionEnd ?? 0;
     message.rollbackError = object.rollbackError ?? "";
     message.rollbackSheet = object.rollbackSheet ?? "";
     message.rollbackFromReview = object.rollbackFromReview ?? "";

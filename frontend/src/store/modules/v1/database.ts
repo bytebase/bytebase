@@ -75,6 +75,31 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseListByInstance = (instance: string) => {
     return databaseList.value.filter((db) => db.instance === instance);
   };
+  const databaseListByEnvironment = (environment: string) => {
+    return databaseList.value.filter(
+      (db) => db.instanceEntity.environment === environment
+    );
+  };
+  const getDatabaseByName = (name: string) => {
+    return databaseMapByName.get(name) ?? unknownDatabase();
+  };
+  const fetchDatabaseByName = async (name: string) => {
+    const database = await databaseServiceClient.getDatabase({
+      name,
+    });
+
+    const [composed] = await upsertDatabaseMap([database]);
+
+    return composed;
+  };
+  const getOrFetchDatabaseByName = async (name: string) => {
+    const existed = databaseMapByName.get(name);
+    if (existed) {
+      return existed;
+    }
+    await fetchDatabaseByName(name);
+    return getDatabaseByName(name);
+  };
   const getDatabaseByUID = (uid: string) => {
     if (uid === String(EMPTY_ID)) return emptyDatabase();
     if (uid === String(UNKNOWN_ID)) return unknownDatabase();
@@ -106,6 +131,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
     return composed;
   };
+  const fetchDatabaseSchema = async (name: string) => {
+    const schema = await databaseServiceClient.getDatabaseSchema({
+      name,
+    });
+    return schema;
+  };
 
   return {
     databaseList,
@@ -114,10 +145,15 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     databaseListByUser,
     databaseListByProject,
     databaseListByInstance,
+    databaseListByEnvironment,
+    getDatabaseByName,
+    fetchDatabaseByName,
+    getOrFetchDatabaseByName,
     fetchDatabaseByUID,
     getDatabaseByUID,
     getOrFetchDatabaseByUID,
     updateDatabase,
+    fetchDatabaseSchema,
   };
 });
 
@@ -140,6 +176,29 @@ export const useSearchDatabaseV1List = (
   );
 
   return { databaseList, ready };
+};
+
+export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
+  const store = useDatabaseV1Store();
+  const ready = ref(true);
+  watch(
+    () => unref(name),
+    (name) => {
+      if (store.getDatabaseByName(name).uid === String(UNKNOWN_ID)) {
+        ready.value = false;
+        store.fetchDatabaseByName(name).then(() => {
+          ready.value = true;
+        });
+      }
+    },
+    { immediate: true }
+  );
+  const database = computed(() => store.getDatabaseByName(unref(name)));
+
+  return {
+    database,
+    ready,
+  };
 };
 
 export const useDatabaseV1ByUID = (uid: MaybeRef<string>) => {

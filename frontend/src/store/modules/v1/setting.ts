@@ -7,7 +7,7 @@ import {
 } from "@/types/proto/v1/setting_service";
 import { settingNamePrefix } from "@/store/modules/v1/common";
 import { SettingName } from "@/types/setting";
-import { useActuatorStore } from "../actuator";
+import { useActuatorV1Store } from "./actuator";
 
 interface SettingState {
   settingMapByName: Map<string, Setting>;
@@ -65,16 +65,14 @@ export const useSettingV1Store = defineStore("setting_v1", {
       this.settingMapByName.set(resp.name, resp);
       return resp;
     },
-    async updateWorkspaceProfile(payload: object): Promise<void> {
+    async updateWorkspaceProfile(
+      payload: Partial<WorkspaceProfileSetting>
+    ): Promise<void> {
       if (!this.workspaceProfileSetting) {
         return;
       }
       const profileSetting: WorkspaceProfileSetting = {
-        disallowSignup: this.workspaceProfileSetting.disallowSignup,
-        externalUrl: this.workspaceProfileSetting.externalUrl,
-        require2fa: this.workspaceProfileSetting.require2fa,
-        outboundIpList: this.workspaceProfileSetting.outboundIpList,
-        gitopsWebhookUrl: this.workspaceProfileSetting.gitopsWebhookUrl,
+        ...this.workspaceProfileSetting,
         ...payload,
       };
       await this.upsertSetting({
@@ -83,8 +81,8 @@ export const useSettingV1Store = defineStore("setting_v1", {
           workspaceProfileSettingValue: profileSetting,
         },
       });
-      // Fetch the latest server info.
-      await useActuatorStore().fetchServerInfo();
+      // Fetch the latest server info to refresh the disallow signup flag.
+      await useActuatorV1Store().fetchServerInfo();
     },
   },
 });

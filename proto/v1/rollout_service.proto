@@ -377,6 +377,7 @@ message Task {
     DONE = 4;
     FAILED = 5;
     CANCELED = 6;
+    SKIPPED = 7;
   }
   // Status is the status of the task.
   // TODO(p0ny): migrate old task status and use this field as a summary of the task runs.
@@ -411,6 +412,7 @@ message Task {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string blocked_by_tasks = 5;
 
+  // Format: instances/{instance} if the task is DatabaseCreate.
   // Format: instances/{instance}/databases/{database}
   string target = 6;
 
@@ -425,7 +427,7 @@ message Task {
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 4;
     string character_set = 5;
-    string collection = 6;
+    string collation = 6;
     map<string, string> labels = 7;
   }
 
@@ -444,8 +446,6 @@ message Task {
     string sheet = 1;
     string schema_version = 2;
 
-    // MySQL rollback SQL related.
-
     // Build the rollback SQL if rollback_enabled.
     bool rollback_enabled = 3;
     enum RollbackSqlStatus {
@@ -456,33 +456,19 @@ message Task {
     }
     // The status of the rollback SQL generation.
     RollbackSqlStatus rollback_sql_status = 4;
-    // transaction_id is the ID of the transaction executing the migration.
-    // It is only use for Oracle to find Rollback SQL statement now.
-    string transaction_id = 5;
-    // thread_id is the ID of the connection executing the migration.
-    // We use it to filter the binlog events of the migration transaction.
-    string thread_id = 6;
-    // change_history is the resource name of the change history.
-    // We use it to get the schema when the transaction ran.
-    // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-    string change_history = 7;
-    string binlog_file_start = 8;
-    string binlog_file_end = 9;
-    int64 binlog_position_start = 10;
-    int64 binlog_position_end = 11;
-    string rollback_error = 12;
+    string rollback_error = 5;
     // rollback_sheet is the resource name of
     // the sheet that stores the generated rollback SQL statement.
     // Format: projects/{project}/sheets/{sheet}
-    string rollback_sheet = 13;
+    string rollback_sheet = 6;
     // rollback_from_review is the resource name of the review that
     // the rollback SQL statement is generated from.
     // Format: projects/{project}/reviews/{review}
-    string rollback_from_review = 14;
+    string rollback_from_review = 7;
     // rollback_from_task is the resource name of the task that
     // the rollback SQL statement is generated from.
     // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-    string rollback_from_task = 15;
+    string rollback_from_task = 8;
   }
 
   message DatabaseBackup {
@@ -509,10 +495,11 @@ message Task {
   }
 
   oneof payload {
-    DatabaseCreate database_case = 7;
+    DatabaseCreate database_create = 7;
     DatabaseSchemaBaseline database_schema_baseline = 8;
     DatabaseSchemaUpdate database_schema_update = 9;
     DatabaseDataUpdate database_data_update = 10;
+    DatabaseBackup database_backup = 14;
     DatabaseRestoreRestore database_restore_restore = 11;
   }
 }

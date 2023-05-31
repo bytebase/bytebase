@@ -15,7 +15,7 @@ import (
 type DatabaseGroupMessage struct {
 	// Output only fields.
 	//
-	ID        int64
+	UID       int64
 	CreatedTs int64
 	UpdatedTs int64
 	CreatorID int
@@ -23,16 +23,16 @@ type DatabaseGroupMessage struct {
 
 	// Normal fields.
 	//
-	ProjectResourceID string
-	ResourceID        string
-	Placeholder       string
-	Expression        *expr.Expr
+	ProjectUID  int
+	ResourceID  string
+	Placeholder string
+	Expression  *expr.Expr
 }
 
 // FindDatabaseGroupMessage is the message for finding database group.
 type FindDatabaseGroupMessage struct {
-	ProjectResourceID *string
-	ResourceID        *string
+	ProjectUID *int
+	ResourceID *string
 }
 
 // UpdateDatabaseGroupMessage is the message for updating database group.
@@ -42,16 +42,16 @@ type UpdateDatabaseGroupMessage struct {
 }
 
 // DeleteDatabaseGroup deletes a database group.
-func (s *Store) DeleteDatabaseGroup(ctx context.Context, resourceID string) error {
+func (s *Store) DeleteDatabaseGroup(ctx context.Context, databaseGroupUID int64) error {
 	query := `
-	DELETE FROM db_group WHERE resource_id = $1;
+	DELETE FROM db_group WHERE id = $1;
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, query, resourceID); err != nil {
+	if _, err := tx.ExecContext(ctx, query, databaseGroupUID); err != nil {
 		return errors.Wrapf(err, "failed to exec")
 	}
 	if err := tx.Commit(); err != nil {
@@ -107,9 +107,9 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 }
 
 func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
-	where, args := []string{}, []any{}
-	if v := find.ProjectResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("project_resource_id = $%d", len(args)+1)), append(args, *v)
+	where, args := []string{"TRUE"}, []any{}
+	if v := find.ProjectUID; v != nil {
+		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
@@ -121,14 +121,13 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 		updated_ts,
 		creator_id,
 		updater_id,
-		project_resource_id,
+		project_id,
 		resource_id,
 		placeholder,
 		expression
-	FROM db_group %s ORDER BY id DESC;`, strings.Join(where, " AND "))
+	FROM db_group WHERE %s ORDER BY id DESC;`, strings.Join(where, " AND "))
 
 	var databaseGroups []*DatabaseGroupMessage
-
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
@@ -138,12 +137,12 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 		var databaseGroup DatabaseGroupMessage
 		var stringExpr string
 		if err := rows.Scan(
-			&databaseGroup.ID,
+			&databaseGroup.UID,
 			&databaseGroup.CreatedTs,
 			&databaseGroup.UpdatedTs,
 			&databaseGroup.CreatorID,
 			&databaseGroup.UpdaterID,
-			&databaseGroup.ProjectResourceID,
+			&databaseGroup.ProjectUID,
 			&databaseGroup.ResourceID,
 			&databaseGroup.Placeholder,
 			&stringExpr,
@@ -160,14 +159,11 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
 	return databaseGroups, nil
 }
 
 // UpdateDatabaseGroup updates a database group.
-func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int, databaseGroupResourceID string, patch *UpdateDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
+func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int, databaseGroupUID int64, patch *UpdateDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
 	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterPrincipalID)}
 	if v := patch.Placeholder; v != nil {
 		set, args = append(set, fmt.Sprintf("placeholder = $%d", len(args)+1)), append(args, *v)
@@ -179,12 +175,12 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 		}
 		set, args = append(set, fmt.Sprintf("expression = $%d", len(args)+1)), append(args, jsonExpr)
 	}
-	args = append(args, databaseGroupResourceID)
+	args = append(args, databaseGroupUID)
 	query := fmt.Sprintf(`
 		UPDATE db_group SET 
 			%s 
-		WHERE resource_id = $%d
-		RETURNING id, created_ts, updated_ts, creator_id, updater_id, project_resource_id, resource_id, placeholder, expression;
+		WHERE id = $%d
+		RETURNING id, created_ts, updated_ts, creator_id, updater_id, project_id, resource_id, placeholder, expression;
 	`, strings.Join(set, ", "), len(args))
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -199,12 +195,12 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 		query,
 		args...,
 	).Scan(
-		&updatedDatabaseGroup.ID,
+		&updatedDatabaseGroup.UID,
 		&updatedDatabaseGroup.CreatedTs,
 		&updatedDatabaseGroup.UpdatedTs,
 		&updatedDatabaseGroup.CreatorID,
 		&updatedDatabaseGroup.UpdaterID,
-		&updatedDatabaseGroup.ProjectResourceID,
+		&updatedDatabaseGroup.ProjectUID,
 		&updatedDatabaseGroup.ResourceID,
 		&updatedDatabaseGroup.Placeholder,
 		&stringExpr,
@@ -228,12 +224,12 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 	INSERT INTO db_group (
 		creator_id,
 		updater_id,
-		project_resource_id,
+		project_id,
 		resource_id,
 		placeholder,
 		expression
 	) VALUES ($1, $2, $3, $4, $5, $6)
-	RETURNING id, created_ts, updated_ts, creator_id, updater_id, project_resource_id, resource_id, placeholder, expression;
+	RETURNING id, created_ts, updated_ts, creator_id, updater_id, project_id, resource_id, placeholder, expression;
 	`
 	jsonExpr, err := protojson.Marshal(databaseGroup.Expression)
 	if err != nil {
@@ -253,17 +249,17 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 		query,
 		creatorPrincipalID,
 		creatorPrincipalID,
-		databaseGroup.ProjectResourceID,
+		databaseGroup.ProjectUID,
 		databaseGroup.ResourceID,
 		databaseGroup.Placeholder,
 		jsonExpr,
 	).Scan(
-		&insertedDatabaseGroup.ID,
+		&insertedDatabaseGroup.UID,
 		&insertedDatabaseGroup.CreatedTs,
 		&insertedDatabaseGroup.UpdatedTs,
 		&insertedDatabaseGroup.CreatorID,
 		&insertedDatabaseGroup.UpdaterID,
-		&insertedDatabaseGroup.ProjectResourceID,
+		&insertedDatabaseGroup.ProjectUID,
 		&insertedDatabaseGroup.ResourceID,
 		&insertedDatabaseGroup.Placeholder,
 		&stringExpr,
@@ -285,7 +281,7 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 type SchemaGroupMessage struct {
 	// Output only fields.
 	//
-	ID        int64
+	UID       int64
 	CreatedTs int64
 	UpdatedTs int64
 	CreatorID int
@@ -293,16 +289,16 @@ type SchemaGroupMessage struct {
 
 	// Normal fields.
 	//
-	DatabaseGroupResourceID string
-	ResourceID              string
-	Placeholder             string
-	Expression              *expr.Expr
+	DatabaseGroupUID int64
+	ResourceID       string
+	Placeholder      string
+	Expression       *expr.Expr
 }
 
 // FindSchemaGroupMessage is the message for finding schema group.
 type FindSchemaGroupMessage struct {
-	DatabaseGroupResourceID *string
-	ResourceID              *string
+	DatabaseGroupUID *int64
+	ResourceID       *string
 }
 
 // UpdateSchemaGroupMessage is the message for updating schema group.
@@ -312,16 +308,16 @@ type UpdateSchemaGroupMessage struct {
 }
 
 // DeleteSchemaGroup deletes a schema group.
-func (s *Store) DeleteSchemaGroup(ctx context.Context, resourceID string) error {
+func (s *Store) DeleteSchemaGroup(ctx context.Context, schemaGroupUID int64) error {
 	query := `
-	DELETE FROM schema_group WHERE resource_id = $1;
+	DELETE FROM schema_group WHERE id = $1;
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, query, resourceID); err != nil {
+	if _, err := tx.ExecContext(ctx, query, schemaGroupUID); err != nil {
 		return errors.Wrapf(err, "failed to exec")
 	}
 	if err := tx.Commit(); err != nil {
@@ -377,9 +373,9 @@ func (s *Store) GetSchemaGroup(ctx context.Context, find *FindSchemaGroupMessage
 }
 
 func (*Store) listSchemaGroupsImpl(ctx context.Context, tx *Tx, find *FindSchemaGroupMessage) ([]*SchemaGroupMessage, error) {
-	where, args := []string{}, []any{}
-	if v := find.DatabaseGroupResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("db_group_resource_id = $%d", len(args)+1)), append(args, *v)
+	where, args := []string{"TRUE"}, []any{}
+	if v := find.DatabaseGroupUID; v != nil {
+		where, args = append(where, fmt.Sprintf("db_group_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
@@ -391,11 +387,11 @@ func (*Store) listSchemaGroupsImpl(ctx context.Context, tx *Tx, find *FindSchema
 		updated_ts,
 		creator_id,
 		updater_id,
-		db_group_resource_id,
+		db_group_id,
 		resource_id,
 		placeholder,
 		expression
-	FROM schema_group %s ORDER BY id DESC;`, strings.Join(where, " AND "))
+	FROM schema_group WHERE %s ORDER BY id DESC;`, strings.Join(where, " AND "))
 
 	var schemaGroups []*SchemaGroupMessage
 
@@ -409,12 +405,12 @@ func (*Store) listSchemaGroupsImpl(ctx context.Context, tx *Tx, find *FindSchema
 		var schemaGroup SchemaGroupMessage
 		var stringExpr string
 		if err := rows.Scan(
-			&schemaGroup.ID,
+			&schemaGroup.UID,
 			&schemaGroup.CreatedTs,
 			&schemaGroup.UpdatedTs,
 			&schemaGroup.CreatorID,
 			&schemaGroup.UpdaterID,
-			&schemaGroup.DatabaseGroupResourceID,
+			&schemaGroup.DatabaseGroupUID,
 			&schemaGroup.ResourceID,
 			&schemaGroup.Placeholder,
 			&stringExpr,
@@ -435,7 +431,7 @@ func (*Store) listSchemaGroupsImpl(ctx context.Context, tx *Tx, find *FindSchema
 }
 
 // UpdateSchemaGroup updates a schema group.
-func (s *Store) UpdateSchemaGroup(ctx context.Context, updaterPrincipalID int, schemaGroupResourceID string, patch *UpdateSchemaGroupMessage) (*SchemaGroupMessage, error) {
+func (s *Store) UpdateSchemaGroup(ctx context.Context, updaterPrincipalID int, schemaGroupUID int64, patch *UpdateSchemaGroupMessage) (*SchemaGroupMessage, error) {
 	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterPrincipalID)}
 	if v := patch.Placeholder; v != nil {
 		set, args = append(set, fmt.Sprintf("placeholder = $%d", len(args)+1)), append(args, *v)
@@ -447,12 +443,12 @@ func (s *Store) UpdateSchemaGroup(ctx context.Context, updaterPrincipalID int, s
 		}
 		set, args = append(set, fmt.Sprintf("expression = $%d", len(args)+1)), append(args, jsonExpr)
 	}
-	args = append(args, schemaGroupResourceID)
+	args = append(args, schemaGroupUID)
 	query := fmt.Sprintf(`
 		UPDATE schema_group SET 
 			%s 
-		WHERE resource_id = $%d
-		RETURNING id, created_ts, updated_ts, creator_id, updater_id, db_group_resource_id, resource_id, placeholder, expression;
+		WHERE id = $%d
+		RETURNING id, created_ts, updated_ts, creator_id, updater_id, db_group_id, resource_id, placeholder, expression;
 	`, strings.Join(set, ", "), len(args))
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -467,12 +463,12 @@ func (s *Store) UpdateSchemaGroup(ctx context.Context, updaterPrincipalID int, s
 		query,
 		args...,
 	).Scan(
-		&updatedSchemaGroup.ID,
+		&updatedSchemaGroup.UID,
 		&updatedSchemaGroup.CreatedTs,
 		&updatedSchemaGroup.UpdatedTs,
 		&updatedSchemaGroup.CreatorID,
 		&updatedSchemaGroup.UpdaterID,
-		&updatedSchemaGroup.DatabaseGroupResourceID,
+		&updatedSchemaGroup.DatabaseGroupUID,
 		&updatedSchemaGroup.ResourceID,
 		&updatedSchemaGroup.Placeholder,
 		&stringExpr,
@@ -496,12 +492,12 @@ func (s *Store) CreateSchemaGroup(ctx context.Context, creatorPrincipalID int, s
 	INSERT INTO schema_group (
 		creator_id,
 		updater_id,
-		db_resource_id,
+		db_group_id,
 		resource_id,
 		placeholder,
 		expression
 	) VALUES ($1, $2, $3, $4, $5, $6)
-	RETURNING id, created_ts, updated_ts, creator_id, updater_id, db_group_resource_id, resource_id, placeholder, expression;
+	RETURNING id, created_ts, updated_ts, creator_id, updater_id, db_group_id, resource_id, placeholder, expression;
 	`
 	jsonExpr, err := protojson.Marshal(schemaGroup.Expression)
 	if err != nil {
@@ -521,17 +517,17 @@ func (s *Store) CreateSchemaGroup(ctx context.Context, creatorPrincipalID int, s
 		query,
 		creatorPrincipalID,
 		creatorPrincipalID,
-		schemaGroup.DatabaseGroupResourceID,
+		schemaGroup.DatabaseGroupUID,
 		schemaGroup.ResourceID,
 		schemaGroup.Placeholder,
 		jsonExpr,
 	).Scan(
-		&insertedSchemaGroup.ID,
+		&insertedSchemaGroup.UID,
 		&insertedSchemaGroup.CreatedTs,
 		&insertedSchemaGroup.UpdatedTs,
 		&insertedSchemaGroup.CreatorID,
 		&insertedSchemaGroup.UpdaterID,
-		&insertedSchemaGroup.DatabaseGroupResourceID,
+		&insertedSchemaGroup.DatabaseGroupUID,
 		&insertedSchemaGroup.ResourceID,
 		&insertedSchemaGroup.Placeholder,
 		&stringExpr,

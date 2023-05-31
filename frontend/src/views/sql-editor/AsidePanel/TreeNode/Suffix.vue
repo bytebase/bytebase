@@ -24,7 +24,7 @@ const connected = computed(() => {
     }
   }
   if (atom.type === "instance") {
-    if (databaseId === UNKNOWN_ID && atom.id === instanceId) {
+    if (databaseId === String(UNKNOWN_ID) && atom.id === instanceId) {
       return true;
     }
   }

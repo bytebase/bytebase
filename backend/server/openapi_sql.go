@@ -58,7 +58,7 @@ type sqlCheckRequestBody struct {
 // @Produce  json
 // @Param  environmentName  body  string  true   "The environment name. Case sensitive."
 // @Param  statement        body  string  true   "The SQL statement."
-// @Param  databaseType     body  string  false  "The database type. Required if the port, host and database name is not specified."  Enums(MYSQL, POSTGRES, TIDB)
+// @Param  databaseType     body  string  false  "The database type. Required if the port, host and database name is not specified."  Enums(MYSQL, POSTGRES, TIDB, OCEANBASE)
 // @Param  host             body  string  false  "The instance host."
 // @Param  port             body  string  false  "The instance port."
 // @Param  databaseName     body  string  false  "The database name in the instance."

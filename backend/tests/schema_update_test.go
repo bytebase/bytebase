@@ -562,7 +562,7 @@ func TestVCS(t *testing.T) {
 			// TODO(p0ny): expose task DAG list and check the dependency.
 			a.Equal(3, len(issue.Pipeline.StageList[0].TaskList))
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
-			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
+			a.Equal("[testVCSSchemaUpdate] Alter schema: Create table book", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
@@ -635,7 +635,7 @@ func TestVCS(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
-			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
+			a.Equal("[testVCSSchemaUpdate] Change data: Insert data", issue.Name)
 			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver4##data##insert_data.sql\n", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
@@ -2607,7 +2607,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.Equal(api.TaskDone, status)
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
-			a.Equal(fmt.Sprintf("[%s] Change data", databaseName), issue.Name)
+			a.Equal(fmt.Sprintf("[%s] Change data: Insert data", databaseName), issue.Name)
 			a.Equal(fmt.Sprintf("By VCS files:\n\nprod/%s##ver2##data##insert_data.sql\n", databaseName), issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{

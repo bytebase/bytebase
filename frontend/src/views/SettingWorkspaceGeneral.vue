@@ -16,10 +16,10 @@ import {
   NetworkSetting,
   AIAugmentationSetting,
 } from "@/components/GeneralSetting";
-import { useActuatorStore } from "@/store";
+import { useActuatorV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 
 onMounted(async () => {
   await useSettingV1Store().fetchSettingList();

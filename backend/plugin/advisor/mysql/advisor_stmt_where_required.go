@@ -18,6 +18,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
 }
 
 // WhereRequirementAdvisor is the advisor checking for the WHERE clause requirement.

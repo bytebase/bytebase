@@ -1,9 +1,10 @@
 import slug from "slug";
-import { keyBy } from "lodash-es";
+import { keyBy, orderBy } from "lodash-es";
 
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { ComposedInstance } from "@/types";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");
@@ -21,6 +22,18 @@ export const extractInstanceResourceName = (name: string) => {
   const pattern = /(?:^|\/)instances\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
+};
+
+export const sortInstanceV1List = (instanceList: ComposedInstance[]) => {
+  return orderBy(
+    instanceList,
+    [
+      (instance) => instance.environmentEntity.order,
+      (instance) => Number(instance.uid),
+      (instance) => instance.title,
+    ],
+    ["desc", "asc", "asc"]
+  );
 };
 
 export const hostPortOfInstanceV1 = (instance: Instance) => {
@@ -104,14 +117,14 @@ export const instanceV1HasBackupRestore = (
   return true;
 };
 
-// export const instanceHasReadonlyMode = (
-//   instanceOrEngine: Instance | EngineType
-// ): boolean => {
-//   const engine = engineOfInstance(instanceOrEngine);
-//   if (engine === "MONGODB") return false;
-//   if (engine === "REDIS") return false;
-//   return true;
-// };
+export const instanceV1HasReadonlyMode = (
+  instanceOrEngine: Instance | Engine
+): boolean => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  if (engine === Engine.MONGODB) return false;
+  if (engine === Engine.REDIS) return false;
+  return true;
+};
 
 export const instanceV1HasCreateDatabase = (
   instanceOrEngine: Instance | Engine
@@ -212,4 +225,14 @@ export const engineNameV1 = (type: Engine): string => {
       return "OceanBase";
   }
   return "";
+};
+
+export const formatEngineV1 = (instance: Instance): string => {
+  switch (instance.engine) {
+    case Engine.POSTGRES:
+      return "PostgreSQL";
+    // Use MySQL as default engine.
+    default:
+      return "MySQL";
+  }
 };

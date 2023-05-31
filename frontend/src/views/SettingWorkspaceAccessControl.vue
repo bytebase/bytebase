@@ -40,33 +40,30 @@
       >
         <template #body="{ rowData: policy }: { rowData: Policy }">
           <BBTableCell class="w-[25%]" :left-padding="4">
-            <div class="flex items-center space-x-2">
-              <span>{{ databaseOfPolicy(policy).name }}</span>
-            </div>
+            <DatabaseV1Name
+              :database="databaseOfPolicy(policy)"
+              :link="false"
+            />
           </BBTableCell>
           <BBTableCell class="w-[15%]">
-            {{ projectName(databaseOfPolicy(policy).project) }}
+            <ProjectV1Name
+              :project="databaseOfPolicy(policy).projectEntity"
+              :link="false"
+            />
           </BBTableCell>
           <BBTableCell class="w-[15%]">
-            <div class="flex items-center">
-              {{
-                environmentName(databaseOfPolicy(policy).instance.environment)
-              }}
-              <ProductionEnvironmentIcon
-                class="ml-1"
-                :environment="databaseOfPolicy(policy).instance.environment"
-              />
-            </div>
+            <EnvironmentV1Name
+              :environment="
+                databaseOfPolicy(policy).instanceEntity.environmentEntity
+              "
+              :link="false"
+            />
           </BBTableCell>
           <BBTableCell class="w-[15%]">
-            <div class="flex flex-row items-center space-x-1">
-              <InstanceEngineIcon
-                :instance="databaseOfPolicy(policy).instance"
-              />
-              <span class="flex-1 whitespace-pre-wrap">
-                {{ instanceName(databaseOfPolicy(policy).instance) }}
-              </span>
-            </div>
+            <InstanceV1Name
+              :instance="databaseOfPolicy(policy).instanceEntity"
+              :link="false"
+            />
           </BBTableCell>
           <BBTableCell>
             <div class="flex items-center justify-center">
@@ -121,28 +118,24 @@
               </div>
             </BBTableCell>
             <BBTableCell class="w-[15%]">
-              {{ projectName(databaseOfPolicy(policy).project) }}
+              <ProjectV1Name
+                :project="databaseOfPolicy(policy).projectEntity"
+                :link="false"
+              />
             </BBTableCell>
             <BBTableCell class="w-[15%]">
-              <div class="flex items-center">
-                {{
-                  environmentName(databaseOfPolicy(policy).instance.environment)
-                }}
-                <ProductionEnvironmentIcon
-                  class="ml-1"
-                  :environment="databaseOfPolicy(policy).instance.environment"
-                />
-              </div>
+              <EnvironmentV1Name
+                :environment="
+                  databaseOfPolicy(policy).instanceEntity.environmentEntity
+                "
+                :link="false"
+              />
             </BBTableCell>
             <BBTableCell class="w-[15%]">
-              <div class="flex flex-row items-center space-x-1">
-                <InstanceEngineIcon
-                  :instance="databaseOfPolicy(policy).instance"
-                />
-                <span class="flex-1 whitespace-pre-wrap">
-                  {{ instanceName(databaseOfPolicy(policy).instance) }}
-                </span>
-              </div>
+              <InstanceV1Name
+                :instance="databaseOfPolicy(policy).instanceEntity"
+                :link="false"
+              />
             </BBTableCell>
             <BBTableCell>
               <div class="flex items-center justify-center">
@@ -215,8 +208,8 @@ import { useI18n } from "vue-i18n";
 import { NPopconfirm } from "naive-ui";
 import { uniq } from "lodash-es";
 
-import { featureToRef, useCurrentUserV1, useDatabaseStore } from "@/store";
-import { Database, DatabaseId, DEFAULT_PROJECT_ID } from "@/types";
+import { featureToRef, useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { BBTableColumn } from "@/bbkit/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import AddRuleForm from "@/components/AccessControl/AddRuleForm.vue";
@@ -226,7 +219,12 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { getDatabasePathByLegacyDatabase } from "@/store/modules/v1/common";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import {
+  InstanceV1Name,
+  ProjectV1Name,
+  EnvironmentV1Name,
+} from "@/components/v2";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -234,7 +232,7 @@ interface LocalState {
   isLoading: boolean;
   isUpdating: boolean;
   policyList: Policy[];
-  databaseList: Database[];
+  databaseList: ComposedDatabase[];
 }
 
 const { t } = useI18n();
@@ -246,7 +244,7 @@ const state = reactive<LocalState>({
   policyList: [],
   databaseList: [],
 });
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const policyStore = usePolicyV1Store();
 const hasAccessControlFeature = featureToRef("bb.feature.access-control");
 
@@ -259,20 +257,22 @@ const allowAdmin = computed(() => {
 });
 
 const databaseOfPolicy = (policy: Policy) => {
-  return databaseStore.getDatabaseById(policy.resourceUid as DatabaseId);
+  return databaseStore.getDatabaseByUID(policy.resourceUid);
 };
 
 const activePolicyList = computed(() => {
   return state.policyList.filter(
     (policy) =>
-      databaseOfPolicy(policy).instance.environment.tier === "PROTECTED"
+      databaseOfPolicy(policy).instanceEntity.environmentEntity.tier ===
+      EnvironmentTier.PROTECTED
   );
 });
 
 const inactivePolicyList = computed(() => {
   return state.policyList.filter(
     (policy) =>
-      databaseOfPolicy(policy).instance.environment.tier === "UNPROTECTED"
+      databaseOfPolicy(policy).instanceEntity.environmentEntity.tier ===
+      EnvironmentTier.UNPROTECTED
   );
 });
 
@@ -284,24 +284,29 @@ const prepareList = async () => {
     resourceType: PolicyResourceType.DATABASE,
   });
 
-  const allDatabaseList = await databaseStore.fetchDatabaseList();
+  const allDatabaseList = await databaseStore.fetchDatabaseList({
+    parent: "instances/-",
+  });
   state.databaseList = allDatabaseList
-    .filter((db) => db.instance.environment.tier === "PROTECTED")
-    .filter((db) => db.project.id !== DEFAULT_PROJECT_ID);
+    .filter(
+      (db) =>
+        db.instanceEntity.environmentEntity.tier === EnvironmentTier.PROTECTED
+    )
+    .filter((db) => db.project !== DEFAULT_PROJECT_V1_NAME);
 
   // For some policy related databases that are not in the state.databaseList,
   // fetch them.
   const databaseIdList = uniq(
     policyList
-      .map((policy) => policy.resourceUid as DatabaseId)
+      .map((policy) => policy.resourceUid)
       .filter((databaseId) =>
-        state.databaseList.findIndex((db) => `${db.id}` == databaseId)
+        state.databaseList.findIndex((db) => db.uid == databaseId)
       )
   );
 
   Promise.all(
     databaseIdList.map((databaseId) =>
-      databaseStore.getOrFetchDatabaseById(databaseId)
+      databaseStore.getOrFetchDatabaseByUID(databaseId)
     )
   );
 
@@ -312,7 +317,7 @@ const prepareList = async () => {
 
 watchEffect(prepareList);
 
-const handleAddRule = async (databaseList: Database[]) => {
+const handleAddRule = async (databaseList: ComposedDatabase[]) => {
   if (!hasAccessControlFeature.value) {
     state.showFeatureModal = true;
     return;
@@ -324,7 +329,7 @@ const handleAddRule = async (databaseList: Database[]) => {
     for (let i = 0; i < databaseList.length; i++) {
       const database = databaseList[i];
       await policyStore.upsertPolicy({
-        parentPath: getDatabasePathByLegacyDatabase(database),
+        parentPath: database.name,
         updateMask: ["payload", "inherit_from_parent"],
         policy: {
           type: PolicyType.ACCESS_CONTROL,

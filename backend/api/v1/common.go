@@ -86,7 +86,7 @@ func getProjectID(name string) (string, error) {
 }
 
 func getProjectIDDatabaseGroupID(name string) (string, string, error) {
-	tokens, err := getNameParentTokens(name, databaseGroupNamePrefix)
+	tokens, err := getNameParentTokens(name, projectNamePrefix, databaseGroupNamePrefix)
 	if err != nil {
 		return "", "", err
 	}
@@ -94,7 +94,7 @@ func getProjectIDDatabaseGroupID(name string) (string, string, error) {
 }
 
 func getProjectIDDatabaseGroupIDSchemaGroupID(name string) (string, string, string, error) {
-	tokens, err := getNameParentTokens(name, databaseGroupNamePrefix, schemaGroupNamePrefix)
+	tokens, err := getNameParentTokens(name, projectNamePrefix, databaseGroupNamePrefix, schemaGroupNamePrefix)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -296,6 +296,18 @@ func getPlanID(name string) (int64, error) {
 		return 0, errors.Errorf("invalid plan ID %q", tokens[1])
 	}
 	return planID, nil
+}
+
+func getProjectIDRolloutID(name string) (string, int, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix, rolloutPrefix)
+	if err != nil {
+		return "", 0, err
+	}
+	rolloutID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, errors.Errorf("invalid rollout ID %q", tokens[1])
+	}
+	return tokens[0], rolloutID, nil
 }
 
 func getRoleID(name string) (string, error) {

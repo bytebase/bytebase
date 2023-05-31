@@ -1,6 +1,8 @@
 /* eslint-disable */
+import * as Long from "long";
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
@@ -33,7 +35,10 @@ export interface QueryResponse {
 export interface QueryResult {
   /** Column names of the query result. */
   columnNames: string[];
-  /** Column types of the query result. */
+  /**
+   * Column types of the query result.
+   * The types come from the Golang SQL driver.
+   */
   columnTypeNames: string[];
   /** Rows of the query result. */
   rows: QueryRow[];
@@ -45,7 +50,24 @@ export interface QueryResult {
 
 export interface QueryRow {
   /** Row values of the query result. */
-  values: string[];
+  values: RowValue[];
+}
+
+export interface RowValue {
+  nullValue?: NullValue | undefined;
+  boolValue?: boolean | undefined;
+  bytesValue?: Uint8Array | undefined;
+  doubleValue?: number | undefined;
+  floatValue?: number | undefined;
+  int32Value?: number | undefined;
+  int64Value?: number | undefined;
+  stringValue?: string | undefined;
+  uint32Value?: number | undefined;
+  uint64Value?:
+    | number
+    | undefined;
+  /** value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. */
+  valueValue?: any;
 }
 
 export interface Advice {
@@ -448,7 +470,7 @@ function createBaseQueryRow(): QueryRow {
 export const QueryRow = {
   encode(message: QueryRow, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.values) {
-      writer.uint32(10).string(v!);
+      RowValue.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -465,7 +487,7 @@ export const QueryRow = {
             break;
           }
 
-          message.values.push(reader.string());
+          message.values.push(RowValue.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -477,13 +499,13 @@ export const QueryRow = {
   },
 
   fromJSON(object: any): QueryRow {
-    return { values: Array.isArray(object?.values) ? object.values.map((e: any) => String(e)) : [] };
+    return { values: Array.isArray(object?.values) ? object.values.map((e: any) => RowValue.fromJSON(e)) : [] };
   },
 
   toJSON(message: QueryRow): unknown {
     const obj: any = {};
     if (message.values) {
-      obj.values = message.values.map((e) => e);
+      obj.values = message.values.map((e) => e ? RowValue.toJSON(e) : undefined);
     } else {
       obj.values = [];
     }
@@ -496,7 +518,209 @@ export const QueryRow = {
 
   fromPartial(object: DeepPartial<QueryRow>): QueryRow {
     const message = createBaseQueryRow();
-    message.values = object.values?.map((e) => e) || [];
+    message.values = object.values?.map((e) => RowValue.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseRowValue(): RowValue {
+  return {
+    nullValue: undefined,
+    boolValue: undefined,
+    bytesValue: undefined,
+    doubleValue: undefined,
+    floatValue: undefined,
+    int32Value: undefined,
+    int64Value: undefined,
+    stringValue: undefined,
+    uint32Value: undefined,
+    uint64Value: undefined,
+    valueValue: undefined,
+  };
+}
+
+export const RowValue = {
+  encode(message: RowValue, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.nullValue !== undefined) {
+      writer.uint32(8).int32(message.nullValue);
+    }
+    if (message.boolValue !== undefined) {
+      writer.uint32(16).bool(message.boolValue);
+    }
+    if (message.bytesValue !== undefined) {
+      writer.uint32(26).bytes(message.bytesValue);
+    }
+    if (message.doubleValue !== undefined) {
+      writer.uint32(33).double(message.doubleValue);
+    }
+    if (message.floatValue !== undefined) {
+      writer.uint32(45).float(message.floatValue);
+    }
+    if (message.int32Value !== undefined) {
+      writer.uint32(48).int32(message.int32Value);
+    }
+    if (message.int64Value !== undefined) {
+      writer.uint32(56).int64(message.int64Value);
+    }
+    if (message.stringValue !== undefined) {
+      writer.uint32(66).string(message.stringValue);
+    }
+    if (message.uint32Value !== undefined) {
+      writer.uint32(72).uint32(message.uint32Value);
+    }
+    if (message.uint64Value !== undefined) {
+      writer.uint32(80).uint64(message.uint64Value);
+    }
+    if (message.valueValue !== undefined) {
+      Value.encode(Value.wrap(message.valueValue), writer.uint32(90).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RowValue {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRowValue();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.nullValue = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.boolValue = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.bytesValue = reader.bytes();
+          continue;
+        case 4:
+          if (tag !== 33) {
+            break;
+          }
+
+          message.doubleValue = reader.double();
+          continue;
+        case 5:
+          if (tag !== 45) {
+            break;
+          }
+
+          message.floatValue = reader.float();
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.int32Value = reader.int32();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.int64Value = longToNumber(reader.int64() as Long);
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.stringValue = reader.string();
+          continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.uint32Value = reader.uint32();
+          continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.uint64Value = longToNumber(reader.uint64() as Long);
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.valueValue = Value.unwrap(Value.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RowValue {
+    return {
+      nullValue: isSet(object.nullValue) ? nullValueFromJSON(object.nullValue) : undefined,
+      boolValue: isSet(object.boolValue) ? Boolean(object.boolValue) : undefined,
+      bytesValue: isSet(object.bytesValue) ? bytesFromBase64(object.bytesValue) : undefined,
+      doubleValue: isSet(object.doubleValue) ? Number(object.doubleValue) : undefined,
+      floatValue: isSet(object.floatValue) ? Number(object.floatValue) : undefined,
+      int32Value: isSet(object.int32Value) ? Number(object.int32Value) : undefined,
+      int64Value: isSet(object.int64Value) ? Number(object.int64Value) : undefined,
+      stringValue: isSet(object.stringValue) ? String(object.stringValue) : undefined,
+      uint32Value: isSet(object.uint32Value) ? Number(object.uint32Value) : undefined,
+      uint64Value: isSet(object.uint64Value) ? Number(object.uint64Value) : undefined,
+      valueValue: isSet(object?.valueValue) ? object.valueValue : undefined,
+    };
+  },
+
+  toJSON(message: RowValue): unknown {
+    const obj: any = {};
+    message.nullValue !== undefined &&
+      (obj.nullValue = message.nullValue !== undefined ? nullValueToJSON(message.nullValue) : undefined);
+    message.boolValue !== undefined && (obj.boolValue = message.boolValue);
+    message.bytesValue !== undefined &&
+      (obj.bytesValue = message.bytesValue !== undefined ? base64FromBytes(message.bytesValue) : undefined);
+    message.doubleValue !== undefined && (obj.doubleValue = message.doubleValue);
+    message.floatValue !== undefined && (obj.floatValue = message.floatValue);
+    message.int32Value !== undefined && (obj.int32Value = Math.round(message.int32Value));
+    message.int64Value !== undefined && (obj.int64Value = Math.round(message.int64Value));
+    message.stringValue !== undefined && (obj.stringValue = message.stringValue);
+    message.uint32Value !== undefined && (obj.uint32Value = Math.round(message.uint32Value));
+    message.uint64Value !== undefined && (obj.uint64Value = Math.round(message.uint64Value));
+    message.valueValue !== undefined && (obj.valueValue = message.valueValue);
+    return obj;
+  },
+
+  create(base?: DeepPartial<RowValue>): RowValue {
+    return RowValue.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<RowValue>): RowValue {
+    const message = createBaseRowValue();
+    message.nullValue = object.nullValue ?? undefined;
+    message.boolValue = object.boolValue ?? undefined;
+    message.bytesValue = object.bytesValue ?? undefined;
+    message.doubleValue = object.doubleValue ?? undefined;
+    message.floatValue = object.floatValue ?? undefined;
+    message.int32Value = object.int32Value ?? undefined;
+    message.int64Value = object.int64Value ?? undefined;
+    message.stringValue = object.stringValue ?? undefined;
+    message.uint32Value = object.uint32Value ?? undefined;
+    message.uint64Value = object.uint64Value ?? undefined;
+    message.valueValue = object.valueValue ?? undefined;
     return message;
   },
 };
@@ -860,12 +1084,70 @@ export interface SQLServiceClient<CallOptionsExt = {}> {
   query(request: DeepPartial<QueryRequest>, options?: CallOptions & CallOptionsExt): Promise<QueryResponse>;
 }
 
+declare var self: any | undefined;
+declare var window: any | undefined;
+declare var global: any | undefined;
+var tsProtoGlobalThis: any = (() => {
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
+  }
+  if (typeof self !== "undefined") {
+    return self;
+  }
+  if (typeof window !== "undefined") {
+    return window;
+  }
+  if (typeof global !== "undefined") {
+    return global;
+  }
+  throw "Unable to locate global object";
+})();
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if (tsProtoGlobalThis.Buffer) {
+    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = tsProtoGlobalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if (tsProtoGlobalThis.Buffer) {
+    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(String.fromCharCode(byte));
+    });
+    return tsProtoGlobalThis.btoa(bin.join(""));
+  }
+}
+
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

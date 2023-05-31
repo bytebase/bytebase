@@ -1,23 +1,33 @@
+import { watchEffect } from "vue";
 import axios from "axios";
-import { defineStore } from "pinia";
-import { ActuatorState, Release } from "@/types";
+import { RemovableRef } from "@vueuse/core";
+import { defineStore, storeToRefs } from "pinia";
+import { Release, ReleaseInfo } from "@/types";
 import { useLocalStorage } from "@vueuse/core";
+import { actuatorServiceClient } from "@/grpcweb";
 import { semverCompare } from "@/utils";
 import { useSilentRequest } from "@/plugins/silent-request";
-import { ActuatorInfo } from "@/types/proto/v1/actuator_service";
+import { ActuatorInfo, DebugLog } from "@/types/proto/v1/actuator_service";
 
 const EXTERNAL_URL_PLACEHOLDER =
   "https://www.bytebase.com/docs/get-started/install/external-url";
 const GITHUB_API_LIST_BYTEBASE_RELEASE =
   "https://api.github.com/repos/bytebase/bytebase/releases";
 
-export const useActuatorStore = defineStore("actuator", {
+interface ActuatorState {
+  serverInfo?: ActuatorInfo;
+  releaseInfo: RemovableRef<ReleaseInfo>;
+  debugLogList: DebugLog[];
+}
+
+export const useActuatorV1Store = defineStore("actuator_v1", {
   state: (): ActuatorState => ({
     serverInfo: undefined,
     releaseInfo: useLocalStorage("bytebase_release", {
       ignoreRemindModalTillNextRelease: false,
       nextCheckTs: 0,
     }),
+    debugLogList: [],
   }),
   getters: {
     info: (state) => {
@@ -34,6 +44,9 @@ export const useActuatorStore = defineStore("actuator", {
     },
     isReadonly: (state) => {
       return state.serverInfo?.readonly || false;
+    },
+    isDebug: (state) => {
+      return state.serverInfo?.debug || false;
     },
     isSaaSMode: (state) => {
       return state.serverInfo?.saas || false;
@@ -64,13 +77,24 @@ export const useActuatorStore = defineStore("actuator", {
       this.serverInfo = serverInfo;
     },
     async fetchServerInfo() {
-      const { data: serverInfo } = await axios.get<ActuatorInfo>(
-        `/v1/actuator/info`
-      );
-
+      const serverInfo = await actuatorServiceClient.getActuatorInfo({});
       this.setServerInfo(serverInfo);
 
       return serverInfo;
+    },
+    async patchDebug({ debug }: { debug: boolean }) {
+      const serverInfo = await actuatorServiceClient.updateActuatorInfo({
+        actuator: {
+          debug,
+        },
+        updateMask: ["debug"],
+      });
+      this.setServerInfo(serverInfo);
+    },
+    async fetchDebugLogList() {
+      const { logs } = await actuatorServiceClient.listDebugLog({});
+      this.debugLogList = logs;
+      return logs;
     },
     async tryToRemindRelease(): Promise<boolean> {
       if (this.serverInfo?.saas ?? false) {
@@ -121,3 +145,10 @@ export const useActuatorStore = defineStore("actuator", {
     },
   },
 });
+
+export const useDebugLogList = () => {
+  const store = useActuatorV1Store();
+  watchEffect(() => store.fetchDebugLogList());
+
+  return storeToRefs(store).debugLogList;
+};

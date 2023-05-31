@@ -52,7 +52,7 @@
   </BBTable>
   <BBModal
     v-if="schemaDriftDetail"
-    :title="`'${schemaDriftDetail.database.name}' schema drift - ${schemaDriftDetail.payload.version} vs Actual`"
+    :title="`'${schemaDriftDetail.database.databaseName}' schema drift - ${schemaDriftDetail.payload.version} vs Actual`"
     @close="dismissModal"
   >
     <div class="space-y-4">
@@ -87,8 +87,8 @@ import {
   AnomalyInstanceConnectionPayload,
   AnomalyType,
 } from "../types";
-import { databaseV1Slug, humanizeTs, instanceSlug } from "../utils";
-import { useDatabaseV1Store, useInstanceStore } from "@/store";
+import { databaseV1Slug, instanceV1Slug, humanizeTs } from "../utils";
+import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import { useEnvironmentV1Store } from "@/store";
 
 type Action = {
@@ -200,15 +200,15 @@ export default defineComponent({
     const action = (anomaly: Anomaly): Action => {
       switch (anomaly.type) {
         case "bb.anomaly.instance.connection": {
-          const instance = useInstanceStore().getInstanceById(
-            anomaly.instanceId!
+          const instance = useInstanceV1Store().getInstanceByUID(
+            String(anomaly.instanceId!)
           );
           return {
             onClick: () => {
               router.push({
                 name: "workspace.instance.detail",
                 params: {
-                  instanceSlug: instanceSlug(instance),
+                  instanceSlug: instanceV1Slug(instance),
                 },
               });
             },
@@ -216,15 +216,15 @@ export default defineComponent({
           };
         }
         case "bb.anomaly.instance.migration-schema": {
-          const instance = useInstanceStore().getInstanceById(
-            anomaly.instanceId!
+          const instance = useInstanceV1Store().getInstanceByUID(
+            String(anomaly.instanceId!)
           );
           return {
             onClick: () => {
               router.push({
                 name: "workspace.instance.detail",
                 params: {
-                  instanceSlug: instanceSlug(instance),
+                  instanceSlug: instanceV1Slug(instance),
                 },
               });
             },
@@ -266,15 +266,15 @@ export default defineComponent({
           };
         }
         case "bb.anomaly.database.connection": {
-          const instance = useInstanceStore().getInstanceById(
-            anomaly.instanceId!
+          const instance = useInstanceV1Store().getInstanceByUID(
+            String(anomaly.instanceId!)
           );
           return {
             onClick: () => {
               router.push({
                 name: "workspace.instance.detail",
                 params: {
-                  instanceSlug: instanceSlug(instance),
+                  instanceSlug: instanceV1Slug(instance),
                 },
               });
             },

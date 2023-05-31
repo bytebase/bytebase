@@ -213,7 +213,7 @@ import { hasWorkspacePermissionV1, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 import {
   useCurrentUser,
-  useDebugStore,
+  useActuatorV1Store,
   useSubscriptionV1Store,
   useInboxStore,
   useCurrentUserV1,
@@ -235,7 +235,7 @@ export default defineComponent({
   },
   setup() {
     const { t, availableLocales } = useI18n();
-    const debugStore = useDebugStore();
+    const actuatorV1Store = useActuatorV1Store();
     const inboxStore = useInboxStore();
     const subscriptionStore = useSubscriptionV1Store();
     const router = useRouter();
@@ -361,11 +361,11 @@ export default defineComponent({
       );
     };
 
-    const { isDebug } = storeToRefs(debugStore);
+    const { isDebug } = storeToRefs(actuatorV1Store);
 
     const toggleDebug = () => {
-      debugStore.patchDebug({
-        isDebug: !isDebug.value,
+      actuatorV1Store.patchDebug({
+        debug: !isDebug.value,
       });
     };
 

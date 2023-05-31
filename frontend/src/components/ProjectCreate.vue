@@ -26,9 +26,6 @@
           @update:value="state.resourceId = $event"
         />
       </div>
-      <div>
-        {{ state.resourceId }}
-      </div>
       <div class="col-span-1">
         <label for="name" class="text-base leading-6 font-medium text-control">
           {{ $t("project.create-modal.key") }}

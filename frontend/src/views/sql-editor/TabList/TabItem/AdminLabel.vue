@@ -1,15 +1,13 @@
 <template>
   <label class="flex items-center text-sm h-6 ml-0.5 whitespace-nowrap">
-    <template v-if="instance.id !== UNKNOWN_ID">
-      <span>{{ instance.environment.name }}</span>
-      <ProductionEnvironmentIcon
-        :environment="instance.environment"
-        class="w-4 h-4 ml-0.5 !text-current"
-      />
-    </template>
-    <template v-if="instance.id !== UNKNOWN_ID">
+    <EnvironmentV1Name
+      v-if="instance.uid !== String(UNKNOWN_ID)"
+      :environment="instance.environmentEntity"
+      :link="false"
+    />
+    <template v-if="instance.uid !== String(UNKNOWN_ID)">
       <heroicons-solid:chevron-right class="flex-shrink-0 h-4 w-4 opacity-70" />
-      <span>{{ instance.name }}</span>
+      <span>{{ instance.title }}</span>
     </template>
     <template v-if="databaseV1.uid !== String(UNKNOWN_ID)">
       <heroicons-solid:chevron-right class="flex-shrink-0 h-4 w-4 opacity-70" />
@@ -23,8 +21,8 @@ import { computed, PropType } from "vue";
 
 import type { TabInfo } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { useDatabaseV1ByUID, useInstanceById } from "@/store";
-import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
+import { useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
+import { EnvironmentV1Name } from "@/components/v2";
 
 const props = defineProps({
   tab: {
@@ -39,7 +37,9 @@ const props = defineProps({
 
 const connection = computed(() => props.tab.connection);
 
-const instance = useInstanceById(computed(() => connection.value.instanceId));
+const { instance } = useInstanceV1ByUID(
+  computed(() => connection.value.instanceId)
+);
 
 const { database: databaseV1 } = useDatabaseV1ByUID(
   computed(() => String(connection.value.databaseId))

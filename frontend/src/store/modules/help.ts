@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { useActuatorStore, useOnboardingGuideStore } from "@/store";
+import { useActuatorV1Store, useOnboardingGuideStore } from "@/store";
 
 export const useHelpStore = defineStore("help", {
   state: (): {
@@ -13,7 +13,7 @@ export const useHelpStore = defineStore("help", {
   },
   actions: {
     showHelp(id: string, openByDefault: boolean): void {
-      const actuatorStore = useActuatorStore();
+      const actuatorStore = useActuatorV1Store();
       const onboardingGuideName = useOnboardingGuideStore().guideName;
 
       const demoName = actuatorStore.serverInfo?.demoName;

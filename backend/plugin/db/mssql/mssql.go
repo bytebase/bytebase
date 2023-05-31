@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var (
@@ -123,4 +124,49 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 // QueryConn querys a SQL statement in a given connection.
 func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	return util.Query(ctx, db.MSSQL, conn, statement, queryContext)
+}
+
+func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
+	// TODO(d): support SELECT 1 (mssql: No column name was specified for column 1 of 'result').
+	return fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, limit)
+}
+
+// QueryConn2 queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	singleSQLs, err := parser.SplitMultiSQL(parser.MSSQL, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+
+	var results []*v1pb.QueryResult
+	for _, singleSQL := range singleSQLs {
+		result, err := driver.querySingleSQL(ctx, conn, singleSQL, queryContext)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+		} else {
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	statement := singleSQL.Text
+	statement = strings.TrimRight(statement, " \n\t;")
+	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
+		statement = getMSSQLStatementWithResultLimit(statement, queryContext.Limit)
+	}
+
+	if queryContext.ReadOnly {
+		// MSSQL does not support transaction isolation level for read-only queries.
+		queryContext.ReadOnly = false
+	}
+
+	return util.Query2(ctx, db.MSSQL, conn, statement, queryContext)
 }

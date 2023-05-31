@@ -25,9 +25,8 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import {
-  useActuatorStore,
+  useActuatorV1Store,
   useCurrentUserV1,
-  useDebugStore,
   useSubscriptionV1Store,
 } from "@/store/modules";
 import { hasWorkspacePermissionV1, isDev } from "@/utils";
@@ -37,14 +36,12 @@ import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
 import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
 
-const actuatorStore = useActuatorStore();
+const actuatorStore = useActuatorV1Store();
 const currentUserV1 = useCurrentUserV1();
-const debugStore = useDebugStore();
 const subscriptionStore = useSubscriptionV1Store();
 
-const { isDemo, isReadonly, needConfigureExternalUrl } =
+const { isDemo, isReadonly, isDebug, needConfigureExternalUrl } =
   storeToRefs(actuatorStore);
-const { isDebug } = storeToRefs(debugStore);
 const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
 
 const shouldShowDemoBanner = computed(() => {

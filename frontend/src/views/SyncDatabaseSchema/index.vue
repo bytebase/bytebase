@@ -45,7 +45,7 @@
             />
             <DatabaseSelect
               class="!w-128"
-              :selected-id="(state.sourceSchema.databaseId as DatabaseId)"
+              :selected-id="state.sourceSchema.databaseId ?? String(UNKNOWN_ID)"
               :mode="'USER'"
               :environment-id="state.sourceSchema.environmentId"
               :project-id="state.projectId"
@@ -56,11 +56,12 @@
             >
               <template #customizeItem="{ database }">
                 <div class="flex items-center">
-                  <InstanceEngineIcon :instance="database.instance" />
-                  <span class="mx-2">{{ database.name }}</span>
-                  <span class="text-gray-400"
-                    >({{ database.instance.name }})</span
-                  >
+                  <InstanceV1EngineIcon :instance="database.instanceEntity" />
+                  <span class="mx-2">{{ database.databaseName }}</span>
+
+                  <span class="text-gray-400">
+                    ({{ instanceV1Name(database.instanceEntity) }})
+                  </span>
                 </div>
               </template>
             </DatabaseSelect>
@@ -77,10 +78,10 @@
                 class="w-full"
                 :selected-item="state.sourceSchema.migrationHistory"
                 :item-list="
-                databaseMigrationHistoryList(state.sourceSchema.databaseId as DatabaseId)
+                databaseMigrationHistoryList(state.sourceSchema.databaseId as string)
               "
                 :placeholder="$t('change-history.select')"
-                :show-prefix-item="databaseMigrationHistoryList(state.sourceSchema.databaseId as DatabaseId).length > 0"
+                :show-prefix-item="databaseMigrationHistoryList(state.sourceSchema.databaseId as string).length > 0"
                 @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
               >
                 <template #menuItem="{ item: migrationHistory }">
@@ -140,18 +141,16 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
   hasFeature,
-  useDatabaseStore,
+  useDatabaseV1Store,
   useInstanceStore,
   useProjectV1Store,
 } from "@/store";
-import {
-  DatabaseId,
-  EngineType,
-  MigrationHistory,
-  MigrationType,
-  UNKNOWN_ID,
-} from "@/types";
+import { MigrationHistory, MigrationType, UNKNOWN_ID } from "@/types";
+import DatabaseSelect from "@/components/DatabaseSelect.vue";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
+import { Engine } from "@/types/proto/v1/common";
+import { InstanceV1EngineIcon } from "@/components/v2";
+import { instanceV1Name } from "@/utils";
 
 const SELECT_SOURCE_DATABASE = 0;
 const SELECT_TARGET_DATABASE_LIST = 1;
@@ -160,7 +159,7 @@ type Step = typeof SELECT_SOURCE_DATABASE | typeof SELECT_TARGET_DATABASE_LIST;
 
 interface SourceSchema {
   environmentId?: string;
-  databaseId?: DatabaseId;
+  databaseId?: string;
   migrationHistory?: MigrationHistory;
 }
 
@@ -171,7 +170,7 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
-const allowedEngineTypeList: EngineType[] = ["MYSQL", "POSTGRES"];
+const allowedEngineTypeList: Engine[] = [Engine.MYSQL, Engine.POSTGRES];
 const allowedMigrationTypeList: MigrationType[] = [
   "BASELINE",
   "MIGRATE",
@@ -182,8 +181,8 @@ const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
 const projectStore = useProjectV1Store();
-const instanceStore = useInstanceStore();
-const databaseStore = useDatabaseStore();
+const legacyInstanceStore = useInstanceStore();
+const databaseStore = useDatabaseV1Store();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
@@ -199,7 +198,7 @@ const hasSyncSchemaFeature = computed(() => {
 const shouldShowMoreVersionButton = computed(() => {
   return (
     !hasSyncSchemaFeature.value &&
-    databaseMigrationHistoryList(state.sourceSchema.databaseId as DatabaseId)
+    databaseMigrationHistoryList(state.sourceSchema.databaseId as string)
       .length > 0
   );
 });
@@ -225,9 +224,9 @@ const allowNext = computed(() => {
     const targetDatabaseList = targetDatabaseViewRef.value?.targetDatabaseList;
     const targetDatabaseDiffList = targetDatabaseList
       .map((db) => {
-        const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.id];
+        const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.uid];
         return {
-          id: db.id,
+          id: db.uid,
           diff: diff?.edited || "",
         };
       })
@@ -236,12 +235,12 @@ const allowNext = computed(() => {
   }
 });
 
-const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
-  const database = databaseStore.getDatabaseById(databaseId);
-  const list = instanceStore
+const databaseMigrationHistoryList = (databaseId: string) => {
+  const database = databaseStore.getDatabaseByUID(databaseId);
+  const list = legacyInstanceStore
     .getMigrationHistoryListByInstanceIdAndDatabaseName(
-      database.instance.id,
-      database.name
+      Number(database.instanceEntity.uid),
+      database.databaseName
     )
     .filter((migrationHistory) =>
       allowedMigrationTypeList.includes(migrationHistory.type)
@@ -255,26 +254,25 @@ const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
 
 const handleSourceProjectSelect = async (projectId: string) => {
   if (projectId !== state.projectId) {
-    state.sourceSchema.databaseId = UNKNOWN_ID;
+    state.sourceSchema.databaseId = String(UNKNOWN_ID);
   }
   state.projectId = projectId;
 };
 
 const handleSourceEnvironmentSelect = async (environmentId: string) => {
   if (environmentId !== state.sourceSchema.environmentId) {
-    state.sourceSchema.databaseId = UNKNOWN_ID;
+    state.sourceSchema.databaseId = String(UNKNOWN_ID);
   }
   state.sourceSchema.environmentId = environmentId;
 };
 
-const handleSourceDatabaseSelect = async (databaseId: DatabaseId) => {
+const handleSourceDatabaseSelect = async (databaseId: string) => {
   if (isValidId(databaseId)) {
-    const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
+    const database = databaseStore.getDatabaseByUID(databaseId);
     if (database) {
-      state.projectId = String(database.projectId);
-      state.sourceSchema.environmentId = String(
-        database.instance.environment.id
-      );
+      state.projectId = database.projectEntity.uid;
+      state.sourceSchema.environmentId =
+        database.instanceEntity.environmentEntity.uid;
       state.sourceSchema.databaseId = databaseId;
     }
   }
@@ -284,8 +282,8 @@ const handleSchemaVersionSelect = (migrationHistory: MigrationHistory) => {
   state.sourceSchema.migrationHistory = migrationHistory;
 };
 
-const isValidId = (id: any) => {
-  if (isNull(id) || isUndefined(id) || id === UNKNOWN_ID) {
+const isValidId = (id: any): id is string => {
+  if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
     return false;
   }
   return true;
@@ -331,9 +329,9 @@ const tryFinishSetup = async () => {
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
   const targetDatabaseDiffList = targetDatabaseList
     .map((db) => {
-      const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.id];
+      const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.uid];
       return {
-        id: db.id,
+        id: db.uid,
         diff: diff.edited,
       };
     })
@@ -392,12 +390,12 @@ watch(
       return;
     }
 
-    const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
+    const database = databaseStore.getDatabaseByUID(databaseId);
     if (database) {
       const migrationHistoryList = (
-        await instanceStore.fetchMigrationHistory({
-          instanceId: database.instance.id,
-          databaseName: database.name,
+        await legacyInstanceStore.fetchMigrationHistory({
+          instanceId: database.instanceEntity.uid,
+          databaseName: database.databaseName,
         })
       ).filter((migrationHistory) =>
         allowedMigrationTypeList.includes(migrationHistory.type)
@@ -408,13 +406,13 @@ watch(
         state.sourceSchema.migrationHistory = head(migrationHistoryList);
       } else {
         // If database has no migration history, we will use its latest schema.
-        const schema = await databaseStore.fetchDatabaseSchemaById(
-          databaseId as DatabaseId
+        const schema = await databaseStore.fetchDatabaseSchema(
+          `${database.name}/schema`
         );
         state.sourceSchema.migrationHistory = {
           id: UNKNOWN_ID,
           updatedTs: Date.now() / 1000,
-          schema: schema,
+          schema: schema.schema,
           version: "Latest version",
           description: "the latest schema of database",
         } as any as MigrationHistory;

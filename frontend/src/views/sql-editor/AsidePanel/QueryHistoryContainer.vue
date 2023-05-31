@@ -142,8 +142,8 @@ const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
   const { instanceId, databaseId, instanceName, databaseName, statement } =
     queryHistory;
   const connection = searchConnectionByName(
-    instanceId,
-    databaseId,
+    String(instanceId),
+    String(databaseId),
     instanceName,
     databaseName
   );

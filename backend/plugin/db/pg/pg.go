@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var (
@@ -445,4 +446,43 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 		return []any{field, types, rows}, nil
 	}
 	return util.Query(ctx, db.Postgres, conn, statement, queryContext)
+}
+
+// QueryConn2 queries a SQL statement in a given connection.
+func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+
+	var results []*v1pb.QueryResult
+	for _, singleSQL := range singleSQLs {
+		result, err := driver.querySingleSQL(ctx, conn, singleSQL, queryContext)
+		if err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+		} else {
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+func getStatementWithResultLimit(stmt string, limit int) string {
+	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+}
+
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	statement := singleSQL.Text
+	statement = strings.TrimRight(statement, " \n\t;")
+	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
+		statement = getStatementWithResultLimit(statement, queryContext.Limit)
+	}
+
+	return util.Query2(ctx, db.Postgres, conn, statement, queryContext)
 }

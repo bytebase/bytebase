@@ -100,11 +100,11 @@ const showIndexAdvisor = computed(() => {
 const handleCreateIndex = () => {
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: database.value.projectId,
+    project: database.value.projectEntity.uid,
     mode: "normal",
     ghost: undefined,
   };
-  query.databaseList = database.value.id;
+  query.databaseList = database.value.uid;
   query.sql = state.createIndexStatement;
   query.name = generateIssueName();
 
@@ -120,7 +120,7 @@ const handleCreateIndex = () => {
 
 const generateIssueName = () => {
   const issueNameParts: string[] = [];
-  issueNameParts.push(`[${database.value.name}]`);
+  issueNameParts.push(`[${database.value.databaseName}]`);
   issueNameParts.push(`Create index`);
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");

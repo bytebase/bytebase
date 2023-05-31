@@ -25,7 +25,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { pushNotification, useActuatorStore } from "@/store";
+import { pushNotification, useActuatorV1Store } from "@/store";
 import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import { ActuatorInfo } from "@/types/proto/v1/actuator_service";
@@ -37,7 +37,7 @@ export default defineComponent({
     BannersWrapper,
   },
   setup() {
-    const actuatorStore = useActuatorStore();
+    const actuatorStore = useActuatorV1Store();
 
     const ping = () => {
       actuatorStore.fetchServerInfo().then((info: ActuatorInfo) => {

@@ -31,19 +31,3 @@ func NewErrorRecordRing() ErrorRecordRing {
 		RWMutex: sync.RWMutex{},
 	}
 }
-
-// ErrorRecord is the struct to record an error's useful details.
-type ErrorRecord struct {
-	RecordTs    int64  `jsonapi:"attr,recordTs"`
-	Method      string `jsonapi:"attr,method"`
-	RequestPath string `jsonapi:"attr,requestPath"`
-	Role        `jsonapi:"attr,role"`
-	Error       string `jsonapi:"attr,error"`
-	StackTrace  string `jsonapi:"attr,stackTrace"`
-}
-
-// DebugLog is the API message for debug log.
-type DebugLog struct {
-	ID          int `jsonapi:"primary,debugLog"`
-	ErrorRecord `jsonapi:"attr,errorRecord"`
-}

@@ -18,6 +18,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
 }
 
 // NoSelectAllAdvisor is the advisor checking for no "select *".
