@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	SQLService_Pretty_FullMethodName = "/bytebase.v1.SQLService/Pretty"
 	SQLService_Query_FullMethodName  = "/bytebase.v1.SQLService/Query"
+	SQLService_Export_FullMethodName = "/bytebase.v1.SQLService/Export"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -29,6 +30,7 @@ const (
 type SQLServiceClient interface {
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 }
 
 type sQLServiceClient struct {
@@ -57,12 +59,22 @@ func (c *sQLServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...
 	return out, nil
 }
 
+func (c *sQLServiceClient) Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error) {
+	out := new(ExportResponse)
+	err := c.cc.Invoke(ctx, SQLService_Export_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility
 type SQLServiceServer interface {
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -75,6 +87,9 @@ func (UnimplementedSQLServiceServer) Pretty(context.Context, *PrettyRequest) (*P
 }
 func (UnimplementedSQLServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
+}
+func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
 }
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 
@@ -125,6 +140,24 @@ func _SQLService_Query_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SQLService_Export_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).Export(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_Export_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).Export(ctx, req.(*ExportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +172,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Query",
 			Handler:    _SQLService_Query_Handler,
+		},
+		{
+			MethodName: "Export",
+			Handler:    _SQLService_Export_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
