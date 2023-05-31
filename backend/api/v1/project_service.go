@@ -782,6 +782,33 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
+	if projectResourceID == "-" {
+		var apiDatabaseGroups []*v1pb.DatabaseGroup
+		databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		for _, databaseGroup := range databaseGroups {
+			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+				UID: &databaseGroup.ProjectUID,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if project == nil {
+				return nil, status.Errorf(codes.DataLoss, "project %d not found", databaseGroup.ProjectUID)
+			}
+			if project.Deleted {
+				continue
+			}
+			apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
+		}
+		return &v1pb.ListDatabaseGroupsResponse{
+			DatabaseGroups: apiDatabaseGroups,
+		}, nil
+	}
+
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
