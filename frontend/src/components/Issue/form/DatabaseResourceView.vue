@@ -3,7 +3,7 @@
     class="flex flex-row justify-start items-center flex-nowrap whitespace-nowrap"
   >
     <Prefix class="flex-shrink-0 mr-1" />
-    {{ database.name }}
+    {{ database.databaseName }}
     <template v-if="props.databaseResource.schema">
       /
       {{ props.databaseResource.schema }}
@@ -18,7 +18,7 @@
 <script lang="ts" setup>
 import { computed, h } from "vue";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
-import { useDatabaseStore } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import TableIcon from "~icons/heroicons-outline/table-cells";
@@ -27,10 +27,10 @@ const props = defineProps<{
   databaseResource: DatabaseResource;
 }>();
 
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 
 const database = computed(() => {
-  return databaseStore.getDatabaseById(props.databaseResource.databaseId);
+  return databaseStore.getDatabaseByUID(props.databaseResource.databaseId);
 });
 
 const Prefix = () => {

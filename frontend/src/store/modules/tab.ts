@@ -11,9 +11,10 @@ import {
   isSimilarTab,
   WebStorageHelper,
 } from "@/utils";
-import { useInstanceStore } from "./instance";
+import { useInstanceV1Store } from "./v1/instance";
 import { useSheetV1Store } from "./v1/sheet";
 import { useWebTerminalStore } from "./webTerminal";
+import { Engine } from "@/types/proto/v1/common";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor.tab-list";
 const KEYS = {
@@ -38,7 +39,7 @@ type PersistentTabInfo = Pick<TabInfo, typeof PERSISTENT_TAB_FIELDS[number]>;
 
 export const useTabStore = defineStore("tab", () => {
   const storage = new WebStorageHelper("bb.sql-editor.tab-list", localStorage);
-  const instanceStore = useInstanceStore();
+  const instanceStore = useInstanceV1Store();
 
   // states
   // We store the tabIdList and the tabs separately.
@@ -62,8 +63,8 @@ export const useTabStore = defineStore("tab", () => {
     if (instanceId === String(UNKNOWN_ID)) {
       return true;
     }
-    const instance = instanceStore.getInstanceById(instanceId);
-    if (instance.engine === "MYSQL" || instance.engine === "TIDB") {
+    const instance = instanceStore.getInstanceByUID(instanceId);
+    if (instance.engine === Engine.MYSQL || instance.engine === Engine.TIDB) {
       // Connecting to instance directly.
       return false;
     }

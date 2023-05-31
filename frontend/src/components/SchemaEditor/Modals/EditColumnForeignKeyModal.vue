@@ -73,9 +73,9 @@
 
 <script lang="ts" setup>
 import { isUndefined } from "lodash-es";
-import { computed, onMounted, PropType, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { v1 as uuidv1 } from "uuid";
-import { DatabaseId, DatabaseSchema, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { useSchemaEditorStore } from "@/store";
 import {
   Column,
@@ -84,6 +84,7 @@ import {
   Table,
 } from "@/types/schemaEditor/atomType";
 import { BBModal, BBSelect } from "@/bbkit";
+import { Engine } from "@/types/proto/v1/common";
 
 interface LocalState {
   referencedSchemaId?: string;
@@ -93,19 +94,19 @@ interface LocalState {
 
 const props = defineProps({
   databaseId: {
-    type: Number as PropType<DatabaseId>,
-    default: UNKNOWN_ID,
+    type: String,
+    default: String(UNKNOWN_ID),
   },
   schemaId: {
-    type: String as PropType<string>,
+    type: String,
     default: "",
   },
   tableId: {
-    type: String as PropType<string>,
+    type: String,
     default: "",
   },
   columnId: {
-    type: String as PropType<string>,
+    type: String,
     default: "",
   },
 });
@@ -115,12 +116,12 @@ const emit = defineEmits<{
 }>();
 
 const editorStore = useSchemaEditorStore();
-const databaseSchema = editorStore.databaseSchemaById.get(
-  props.databaseId
-) as DatabaseSchema;
-const database = databaseSchema.database;
-const databaseEngine = database.instance.engine;
-const schemaList = databaseSchema.schemaList;
+const databaseSchema = computed(() => {
+  return editorStore.databaseSchemaById.get(props.databaseId)!;
+});
+const database = computed(() => databaseSchema.value.database);
+const databaseEngine = computed(() => database.value.instanceEntity.engine);
+const schemaList = computed(() => databaseSchema.value.schemaList);
 const state = reactive<LocalState>({
   referencedSchemaId: props.schemaId,
 });
@@ -144,11 +145,13 @@ const foreignKeyList = computed(() => {
 });
 
 const shouldShowSchemaSelector = computed(() => {
-  return databaseEngine === "POSTGRES";
+  return databaseEngine.value === Engine.POSTGRES;
 });
 
 const selectedSchema = computed(() => {
-  return schemaList.find((schema) => schema.id === state.referencedSchemaId);
+  return schemaList.value.find(
+    (schema) => schema.id === state.referencedSchemaId
+  );
 });
 
 const tableList = computed(() => {

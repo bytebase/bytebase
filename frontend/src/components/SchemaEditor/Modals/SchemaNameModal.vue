@@ -30,9 +30,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, PropType, reactive } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { DatabaseId, SchemaEditorTabType, UNKNOWN_ID } from "@/types";
+import { SchemaEditorTabType, UNKNOWN_ID } from "@/types";
 import {
   useSchemaEditorStore,
   useNotificationStore,
@@ -49,11 +49,11 @@ interface LocalState {
 
 const props = defineProps({
   databaseId: {
-    type: Number as PropType<DatabaseId>,
-    default: UNKNOWN_ID,
+    type: String,
+    default: String(UNKNOWN_ID),
   },
   schemaId: {
-    type: String as PropType<string | undefined>,
+    type: String,
     default: undefined,
   },
 });

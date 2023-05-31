@@ -2,8 +2,8 @@ import type { Ref } from "vue";
 import { type useDialog } from "naive-ui";
 import { IssueTemplate } from "@/plugins";
 import {
+  ComposedDatabase,
   ComposedProject,
-  Database,
   Issue,
   IssueCreate,
   IssuePatch,
@@ -29,7 +29,7 @@ type IssueLogic = {
   // states
   selectedStage: Ref<Stage | StageCreate>;
   selectedTask: Ref<Task | TaskCreate>;
-  selectedDatabase: Ref<Database | undefined>;
+  selectedDatabase: Ref<ComposedDatabase | undefined>;
 
   // ui state logic
   isTenantMode: Ref<boolean>;

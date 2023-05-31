@@ -1,4 +1,4 @@
-import { IssueCreate, IssueType, MigrationContext } from "@/types";
+import { IssueCreate, IssueType, MigrationContext, UNKNOWN_ID } from "@/types";
 import {
   findDatabaseListByQuery,
   BuildNewIssueContext,
@@ -39,9 +39,10 @@ const buildNewGhostIssue = async (
     createContext.detailList = databaseList.map((db) => {
       return {
         migrationType: "MIGRATE",
-        databaseId: db.id,
+        databaseId: Number(db.uid),
         statement: VALIDATE_ONLY_SQL,
         earliestAllowedTs: 0,
+        sheetId: UNKNOWN_ID,
       };
     });
   } else {
@@ -51,6 +52,7 @@ const buildNewGhostIssue = async (
         migrationType: "MIGRATE",
         statement: VALIDATE_ONLY_SQL,
         earliestAllowedTs: 0,
+        sheetId: UNKNOWN_ID,
       },
     ];
   }

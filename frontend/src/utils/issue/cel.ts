@@ -1,8 +1,8 @@
 import { cloneDeep, last } from "lodash-es";
-import { getDatabaseIdByName, getDatabaseNameById } from "./expr";
+import { getDatabaseIdByName } from "./expr";
 import { celServiceClient } from "@/grpcweb";
 import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
-import { useDatabaseStore } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
 
 interface DatabaseLevelCondition {
@@ -37,8 +37,10 @@ export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
   const conditionList: DatabaseResourceCondition[] = [];
 
   for (const resource of resources) {
-    const database = useDatabaseStore().getDatabaseById(resource.databaseId);
-    const databaseName = getDatabaseNameById(database.id);
+    const database = useDatabaseV1Store().getDatabaseByUID(
+      String(resource.databaseId)
+    );
+    const databaseName = database.name;
     if (resource.table === undefined && resource.schema === undefined) {
       // Database level
       conditionList.push({

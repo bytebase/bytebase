@@ -45,8 +45,8 @@ import {
   useSheetV1Store,
   useAuthStore,
   useActuatorV1Store,
-  useDatabaseStore,
-  useInstanceStore,
+  useLegacyDatabaseStore,
+  useLegacyInstanceStore,
   useRouterStore,
   useDBSchemaStore,
   useConnectionTreeStore,
@@ -996,7 +996,7 @@ const routes: Array<RouteRecordRaw> = [
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.migrationHistorySlug as string;
                     const migrationHistory =
-                      useInstanceStore().getMigrationHistoryById(
+                      useLegacyInstanceStore().getMigrationHistoryById(
                         migrationHistoryIdFromSlug(slug)
                       );
                     return migrationHistory?.version ?? "";
@@ -1027,8 +1027,9 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return useInstanceStore().getInstanceById(idFromSlug(slug))
-                      .name;
+                    return useInstanceV1Store().getInstanceByUID(
+                      String(idFromSlug(slug))
+                    ).title;
                   },
                 },
                 component: () => import("../views/InstanceDetail.vue"),
@@ -1163,9 +1164,9 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
   const authStore = useAuthStore();
-  const databaseStore = useDatabaseStore();
+  const databaseStore = useLegacyDatabaseStore();
   const dbSchemaStore = useDBSchemaStore();
-  const instanceStore = useInstanceStore();
+  const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
   const projectStore = useLegacyProjectStore();
   const projectV1Store = useProjectV1Store();
@@ -1662,13 +1663,16 @@ router.beforeEach((to, from, next) => {
     if (Number.isNaN(databaseId)) {
       // Connected to instance
       useConnectionTreeStore()
-        .fetchConnectionByInstanceId(instanceId)
+        .fetchConnectionByInstanceId(String(instanceId))
         .then(() => next())
         .catch(() => next());
     } else {
       // Connected to db
       useConnectionTreeStore()
-        .fetchConnectionByInstanceIdAndDatabaseId(instanceId, databaseId)
+        .fetchConnectionByInstanceIdAndDatabaseId(
+          String(instanceId),
+          String(databaseId)
+        )
         .then(() => next())
         .catch(() => next());
     }

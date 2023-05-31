@@ -109,9 +109,12 @@ import { unparse } from "papaparse";
 import dayjs from "dayjs";
 
 import type { SingleSQLResult } from "@/types";
-import { createExplainToken, instanceHasStructuredQueryResult } from "@/utils";
 import {
-  useInstanceStore,
+  createExplainToken,
+  instanceV1HasStructuredQueryResult,
+} from "@/utils";
+import {
+  useInstanceV1Store,
   useTabStore,
   RESULT_ROWS_LIMIT,
   featureToRef,
@@ -123,6 +126,7 @@ import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
 import { useSQLResultViewContext } from "./context";
+import { Engine } from "@/types/proto/v1/common";
 
 type LocalState = {
   search: string;
@@ -144,7 +148,7 @@ const { dark } = useSQLResultViewContext();
 
 const { t } = useI18n();
 const tabStore = useTabStore();
-const instanceStore = useInstanceStore();
+const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const dataTable = ref<InstanceType<typeof DataTable>>();
 
@@ -164,10 +168,10 @@ const viewMode = computed((): ViewMode => {
 });
 
 const showSearchFeature = computed(() => {
-  const instance = instanceStore.getInstanceById(
+  const instance = instanceStore.getInstanceByUID(
     tabStore.currentTab.connection.instanceId
   );
-  return instanceHasStructuredQueryResult(instance);
+  return instanceV1HasStructuredQueryResult(instance);
 });
 
 // show export button only when the subscription is not enterprise.
@@ -281,7 +285,7 @@ const handleExportBtnClick = (format: "csv" | "json") => {
     for (const item of data.value) {
       const object = {} as any;
       for (let i = 0; i < columns.value.length; i++) {
-        object[columns.value[i].header] = item[i];
+        object[columns.value[i].header as string] = item[i];
       }
       objects.push(object);
     }
@@ -300,12 +304,12 @@ const handleExportBtnClick = (format: "csv" | "json") => {
 };
 
 const showVisualizeButton = computed((): boolean => {
-  const instance = instanceStore.getInstanceById(
+  const instance = instanceStore.getInstanceByUID(
     tabStore.currentTab.connection.instanceId
   );
   const databaseType = instance.engine;
   const { executeParams } = tabStore.currentTab;
-  return databaseType === "POSTGRES" && !!executeParams?.option?.explain;
+  return databaseType === Engine.POSTGRES && !!executeParams?.option?.explain;
 });
 
 const visualizeExplain = () => {

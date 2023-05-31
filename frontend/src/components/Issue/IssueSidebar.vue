@@ -178,7 +178,7 @@
         >
           <div class="flex items-center">
             <span>{{ databaseName }}</span>
-            <SQLEditorButton
+            <SQLEditorButtonV1
               v-if="databaseEntity"
               class="ml-1"
               :database="databaseEntity"
@@ -190,17 +190,17 @@
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
         <span class="mr-1">{{ $t("common.instance") }}</span>
-        <InstanceEngineIcon :instance="instance" />
+        <InstanceV1EngineIcon :instance="instance" />
       </h2>
       <router-link
         v-if="allowManageInstance"
-        :to="`/instance/${instanceSlug(instance)}`"
+        :to="`/instance/${instanceV1Slug(instance)}`"
         class="col-span-2 text-sm font-medium text-main hover:underline"
       >
-        {{ instanceName(instance) }}
+        {{ instanceV1Name(instance) }}
       </router-link>
       <span v-else class="col-span-2 text-sm font-medium text-main">
-        {{ instanceName(instance) }}
+        {{ instanceV1Name(instance) }}
       </span>
 
       <h2 class="textlabel flex items-center col-span-1 col-start-1">
@@ -300,38 +300,38 @@ import IssueStatusIcon from "./IssueStatusIcon.vue";
 import { IssueReviewSidebarSection } from "./review";
 import IssueSubscriberPanel from "./IssueSubscriberPanel.vue";
 import TaskRollbackView from "./rollback/TaskRollbackView.vue";
-import InstanceEngineIcon from "../InstanceEngineIcon.vue";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import MemberSelect from "../MemberSelect.vue";
 import FeatureModal from "../FeatureModal.vue";
-import { EnvironmentV1Name } from "@/components/v2";
+import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { InputField } from "@/plugins";
 import {
-  Database,
+  ComposedDatabase,
   Issue,
   IssueCreate,
   Task,
   TaskId,
   Stage,
   StageCreate,
-  Instance,
-  DatabaseLabel,
   UNKNOWN_ID,
+  ComposedInstance,
 } from "@/types";
 import {
   allTaskList,
-  databaseSlug,
   hasWorkspacePermissionV1,
   hidePrefix,
   taskSlug,
   extractDatabaseNameFromTask,
   PRESET_LABEL_KEYS,
   extractUserUID,
+  instanceV1Slug,
+  instanceV1Name,
+  databaseV1Slug,
 } from "@/utils";
 import {
   hasFeature,
   useCurrentUserV1,
-  useDatabaseStore,
+  useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -342,7 +342,7 @@ import {
   useExtraIssueLogic,
   useIssueLogic,
 } from "./logic";
-import { SQLEditorButton } from "@/components/DatabaseDetail";
+import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { ProjectV1Name } from "@/components/v2";
 import { User } from "@/types/proto/v1/auth_service";
@@ -356,12 +356,12 @@ interface LocalState {
 
 const props = defineProps({
   database: {
-    type: Object as PropType<Database | undefined>,
+    type: Object as PropType<ComposedDatabase | undefined>,
     default: undefined,
   },
   instance: {
     required: true,
-    type: Object as PropType<Instance>,
+    type: Object as PropType<ComposedInstance>,
   },
 });
 
@@ -417,7 +417,7 @@ watch(selectedTask, (cur) => {
 const currentUserV1 = useCurrentUserV1();
 
 const fieldValue = <T = string>(field: InputField): T => {
-  return issue.value.payload[field.id] as T;
+  return (issue.value.payload as Record<string, any>)[field.id] as T;
 };
 
 const databaseName = computed((): string | undefined => {
@@ -446,15 +446,20 @@ const assigneeId = computed(() => {
   return String((issue.value as Issue).assignee.id);
 });
 
-const databaseEntity = ref<Database>();
+const databaseEntity = ref<ComposedDatabase>();
 
-const visibleLabelList = computed((): DatabaseLabel[] => {
+const visibleLabelList = computed(() => {
   // transform non-reserved labels to db properties
   if (!props.database) return [];
 
-  return props.database.labels.filter((label) =>
-    PRESET_LABEL_KEYS.includes(label.key)
-  );
+  const labelList: { key: string; value: string }[] = [];
+  for (const key in props.database.labels) {
+    if (PRESET_LABEL_KEYS.includes(key)) {
+      const value = props.database.labels[key];
+      labelList.push({ key, value });
+    }
+  }
+  return labelList;
 });
 
 const showStageSelect = computed((): boolean => {
@@ -536,20 +541,19 @@ const clickDatabase = () => {
     router.push({
       name: "workspace.database.detail",
       params: {
-        databaseSlug: databaseSlug(props.database),
+        databaseSlug: databaseV1Slug(props.database),
       },
     });
   } else {
-    useDatabaseStore()
-      .fetchDatabaseByInstanceIdAndName({
-        instanceId: props.instance.id,
-        name: databaseName.value!, // guarded in template to ensure databaseName is not empty
-      })
-      .then((database: Database) => {
+    useDatabaseV1Store()
+      .getOrFetchDatabaseByName(
+        `${props.instance.name}/databases/${databaseName.value!}`
+      )
+      .then((database) => {
         router.push({
           name: "workspace.database.detail",
           params: {
-            databaseSlug: databaseSlug(database),
+            databaseSlug: databaseV1Slug(database),
           },
         });
       });
@@ -562,13 +566,10 @@ watchEffect(() => {
   } else {
     const name = databaseName.value;
     if (name) {
-      useDatabaseStore()
-        .fetchDatabaseByInstanceIdAndName({
-          instanceId: props.instance.id,
-          name,
-        })
+      useDatabaseV1Store()
+        .getOrFetchDatabaseByName(`${props.instance.name}/databases/${name!}`)
         .then((db) => {
-          if (db && db.id !== UNKNOWN_ID) {
+          if (db && db.uid !== String(UNKNOWN_ID)) {
             databaseEntity.value = db;
           } else {
             databaseEntity.value = undefined;

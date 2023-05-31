@@ -60,24 +60,26 @@ import { TreeOption, NEllipsis, NInput } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { DatabaseId, InstanceId, SchemaEditorTabType } from "@/types";
+import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
+import SchemaIcon from "~icons/heroicons-outline/view-columns";
+import TableIcon from "~icons/heroicons-outline/table-cells";
+import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
+
+import { SchemaEditorTabType } from "@/types";
 import { Schema, Table } from "@/types/schemaEditor/atomType";
 import {
   useSchemaEditorStore,
   generateUniqueTabId,
-  useInstanceStore,
+  useInstanceV1Store,
   useNotificationStore,
 } from "@/store";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import { isSchemaChanged } from "./utils/schema";
 import { isTableChanged } from "./utils/table";
 import SchemaNameModal from "./Modals/SchemaNameModal.vue";
-import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 import TableNameModal from "./Modals/TableNameModal.vue";
-import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
-import TableIcon from "~icons/heroicons-outline/table-cells";
-import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
+import { Engine } from "@/types/proto/v1/common";
+import { InstanceV1EngineIcon } from "@/components/v2";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -88,26 +90,26 @@ interface BaseTreeNode extends TreeOption {
 
 interface TreeNodeForInstance extends BaseTreeNode {
   type: "instance";
-  instanceId: InstanceId;
+  instanceId: string;
 }
 
 interface TreeNodeForDatabase extends BaseTreeNode {
   type: "database";
-  instanceId: InstanceId;
-  databaseId: DatabaseId;
+  instanceId: string;
+  databaseId: string;
 }
 
 interface TreeNodeForSchema extends BaseTreeNode {
   type: "schema";
-  instanceId: InstanceId;
-  databaseId: DatabaseId;
+  instanceId: string;
+  databaseId: string;
   schemaId: string;
 }
 
 interface TreeNodeForTable extends BaseTreeNode {
   type: "table";
-  instanceId: InstanceId;
-  databaseId: DatabaseId;
+  instanceId: string;
+  databaseId: string;
   schemaId: string;
   tableId: string;
 }
@@ -128,11 +130,11 @@ interface TreeContextMenu {
 interface LocalState {
   shouldRelocateTreeNode: boolean;
   schemaNameModalContext?: {
-    databaseId: DatabaseId;
+    databaseId: string;
     schemaId: string | undefined;
   };
   tableNameModalContext?: {
-    databaseId: DatabaseId;
+    databaseId: string;
     schemaId: string;
     tableId: string | undefined;
   };
@@ -140,7 +142,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const editorStore = useSchemaEditorStore();
-const instanceStore = useInstanceStore();
+const instanceStore = useInstanceV1Store();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
@@ -155,7 +157,7 @@ const searchPattern = ref("");
 const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
 const treeDataRef = ref<TreeNode[]>([]);
-const databaseDataLoadedSet = ref<Set<DatabaseId>>(new Set());
+const databaseDataLoadedSet = ref<Set<string>>(new Set());
 
 const databaseList = computed(() => editorStore.databaseList);
 const schemaList = computed(() =>
@@ -171,18 +173,18 @@ const contextMenuOptions = computed(() => {
   if (isUndefined(treeNode)) {
     return [];
   }
-  const instanceEngine = instanceStore.getInstanceById(
+  const instanceEngine = instanceStore.getInstanceByUID(
     treeNode.instanceId
   ).engine;
 
   if (treeNode.type === "database") {
     const options = [];
-    if (instanceEngine === "MYSQL") {
+    if (instanceEngine === Engine.MYSQL) {
       options.push({
         key: "create-table",
         label: t("schema-editor.actions.create-table"),
       });
-    } else if (instanceEngine === "POSTGRES") {
+    } else if (instanceEngine === Engine.POSTGRES) {
       options.push({
         key: "create-schema",
         label: t("schema-editor.actions.create-schema"),
@@ -191,7 +193,7 @@ const contextMenuOptions = computed(() => {
     return options;
   } else if (treeNode.type === "schema") {
     const options = [];
-    if (instanceEngine === "POSTGRES") {
+    if (instanceEngine === Engine.POSTGRES) {
       const schema = editorStore.getSchema(
         treeNode.databaseId,
         treeNode.schemaId
@@ -256,25 +258,25 @@ const contextMenuOptions = computed(() => {
 
 onMounted(async () => {
   const treeNodeList: TreeNode[] = [];
-  const instanceTreeNodeMap: Map<InstanceId, TreeNodeForInstance> = new Map();
+  const instanceTreeNodeMap: Map<string, TreeNodeForInstance> = new Map();
   const databaseTreeNodeList: TreeNodeForDatabase[] = [];
   for (const database of databaseList.value) {
-    const instance = instanceStore.getInstanceById(database.instanceId);
+    const instance = database.instanceEntity;
     let instanceTreeNode: TreeNodeForInstance;
-    if (instanceTreeNodeMap.has(instance.id)) {
+    if (instanceTreeNodeMap.has(instance.uid)) {
       instanceTreeNode = instanceTreeNodeMap.get(
-        instance.id
+        instance.uid
       ) as TreeNodeForInstance;
     } else {
       instanceTreeNode = {
         type: "instance",
-        key: `i-${instance.id}`,
-        label: instance.name,
+        key: `i-${instance.uid}`,
+        label: instance.title,
         isLeaf: false,
-        instanceId: database.instance.id,
+        instanceId: instance.uid,
         children: [],
       };
-      instanceTreeNodeMap.set(instance.id, instanceTreeNode);
+      instanceTreeNodeMap.set(instance.uid, instanceTreeNode);
       treeNodeList.push(instanceTreeNode);
       // Make the instance tree node expanded as default.
       expandedKeysRef.value.push(instanceTreeNode.key);
@@ -282,11 +284,11 @@ onMounted(async () => {
 
     const databaseTreeNode: TreeNodeForDatabase = {
       type: "database",
-      key: `d-${database.id}`,
-      label: database.name,
+      key: `d-${database.uid}`,
+      label: database.databaseName,
       isLeaf: false,
-      instanceId: database.instance.id,
-      databaseId: database.id,
+      instanceId: instance.uid,
+      databaseId: database.uid,
     };
     instanceTreeNode.children?.push(databaseTreeNode);
     databaseTreeNodeList.push(databaseTreeNode);
@@ -311,23 +313,22 @@ watch(
     }
 
     for (const database of databaseList.value) {
-      if (!databaseDataLoadedSet.value.has(database.id)) {
+      if (!databaseDataLoadedSet.value.has(database.uid)) {
         continue;
       }
       const databaseTreeNode = databaseTreeNodeList.find(
         (treeNode) =>
-          treeNode.databaseId === database.id &&
+          treeNode.databaseId === database.uid &&
           databaseDataLoadedSet.value.has(treeNode.databaseId)
       );
       if (isUndefined(databaseTreeNode)) {
         continue;
       }
-      const instanceEngine = instanceStore.getInstanceById(
-        database.instanceId
-      ).engine;
-      if (instanceEngine === "MYSQL") {
+      const instance = database.instanceEntity;
+      const instanceEngine = instance.engine;
+      if (instanceEngine === Engine.MYSQL) {
         const schemaList: Schema[] =
-          editorStore.databaseSchemaById.get(database.id)?.schemaList || [];
+          editorStore.databaseSchemaById.get(database.uid)?.schemaList || [];
         const schema = head(schemaList);
         if (!schema) {
           return;
@@ -341,28 +342,28 @@ watch(
           databaseTreeNode.children = tableList.map((table) => {
             return {
               type: "table",
-              key: `t-${database.id}-${table.id}`,
+              key: `t-${database.uid}-${table.id}`,
               label: table.name,
               children: [],
               isLeaf: true,
-              instanceId: database.instance.id,
-              databaseId: database.id,
+              instanceId: instance.uid,
+              databaseId: database.uid,
               schemaId: schema.id,
               tableId: table.id,
             };
           });
         }
-      } else if (instanceEngine === "POSTGRES") {
+      } else if (instanceEngine === Engine.POSTGRES) {
         const schemaList: Schema[] =
-          editorStore.databaseSchemaById.get(database.id)?.schemaList || [];
+          editorStore.databaseSchemaById.get(database.uid)?.schemaList || [];
         const schemaTreeNodeList: TreeNodeForSchema[] = [];
         for (const schema of schemaList) {
           const schemaTreeNode: TreeNodeForSchema = {
             type: "schema",
-            key: `s-${database.id}-${schema.id}`,
+            key: `s-${database.uid}-${schema.id}`,
             label: schema.name,
-            instanceId: database.instance.id,
-            databaseId: database.id,
+            instanceId: instance.uid,
+            databaseId: database.uid,
             schemaId: schema.id,
             isLeaf: true,
           };
@@ -375,12 +376,12 @@ watch(
             schemaTreeNode.children = schema.tableList.map((table) => {
               return {
                 type: "table",
-                key: `t-${database.id}-${table.id}`,
+                key: `t-${database.uid}-${table.id}`,
                 label: table.name,
                 children: [],
                 isLeaf: true,
-                instanceId: database.instance.id,
-                databaseId: database.id,
+                instanceId: instance.uid,
+                databaseId: database.uid,
                 schemaId: schema.id,
                 tableId: table.id,
               };
@@ -462,9 +463,9 @@ watch(searchPattern, () => {
 // Render prefix icons before label text.
 const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
   if (treeNode.type === "instance") {
-    const instance = instanceStore.getInstanceById(treeNode.instanceId);
+    const instance = instanceStore.getInstanceByUID(treeNode.instanceId);
     const children = [
-      h(InstanceEngineIcon, {
+      h(InstanceV1EngineIcon, {
         instance,
       }),
       h(
@@ -472,7 +473,7 @@ const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
         {
           class: "text-gray-500 text-sm",
         },
-        `(${instance.environment.name})`
+        `(${instance.environmentEntity.title})`
       ),
     ];
 
@@ -562,13 +563,13 @@ const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
       handleShowDropdown(e, treeNode);
     },
   });
-  const instanceEngine = instanceStore.getInstanceById(
+  const instanceEngine = instanceStore.getInstanceByUID(
     treeNode.instanceId
   ).engine;
   if (treeNode.type === "database") {
     return icon;
   } else if (treeNode.type === "schema") {
-    if (instanceEngine === "POSTGRES") {
+    if (instanceEngine === Engine.POSTGRES) {
       return icon;
     }
   } else if (treeNode.type === "table") {
@@ -708,10 +709,10 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   if (treeNode?.type === "database") {
     if (key === "create-table") {
       await loadSubTree(treeNode);
-      const instanceEngine = instanceStore.getInstanceById(
+      const instanceEngine = instanceStore.getInstanceByUID(
         treeNode.instanceId
       ).engine;
-      if (instanceEngine === "MYSQL") {
+      if (instanceEngine === Engine.MYSQL) {
         const schemaList: Schema[] =
           editorStore.databaseSchemaById.get(treeNode.databaseId)?.schemaList ||
           [];

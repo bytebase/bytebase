@@ -297,6 +297,7 @@ import { isColumnChanged } from "../utils/column";
 import { isTableChanged } from "../utils/table";
 import { diffSchema } from "@/utils/schemaEditor/diffSchema";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
+import { Engine } from "@/types/proto/v1/common";
 
 type SubtabType = "column-list" | "raw-sql";
 
@@ -399,7 +400,7 @@ const columnHeaderList = computed(() => {
 });
 
 const databaseEngine = computed(() => {
-  return databaseSchema.database.instance.engine;
+  return databaseSchema.database.instanceEntity.engine;
 });
 
 const dataTypeOptions = computed(() => {
@@ -455,7 +456,7 @@ watch(
         schema.value
       );
       const databaseEdit: DatabaseEdit = {
-        databaseId: currentTab.value.databaseId,
+        databaseId: Number(currentTab.value.databaseId),
         createSchemaList: [],
         renameSchemaList: [],
         dropSchemaList: [],
@@ -538,7 +539,7 @@ const getReferencedForeignKeyName = (column: Column) => {
   const referColumn = referencedTable.columnList.find(
     (column) => column.id === fk.referencedColumnIdList[index]
   );
-  if (databaseEngine.value === "MYSQL") {
+  if (databaseEngine.value === Engine.MYSQL) {
     return `${referencedTable.name}(${referColumn?.name})`;
   } else {
     return `${referencedSchema?.name}.${referencedTable.name}(${referColumn?.name})`;

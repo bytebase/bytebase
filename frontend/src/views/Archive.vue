@@ -22,9 +22,9 @@
       :project-list="filteredProjectList"
       class="border-x-0"
     />
-    <InstanceTable
+    <InstanceV1Table
       v-else-if="state.selectedIndex == INSTANCE_TAB"
-      :instance-list="filteredInstanceList(instanceList)"
+      :instance-list="filteredInstanceList"
     />
     <EnvironmentV1Table
       v-else-if="state.selectedIndex == ENVIRONMENT_TAB"
@@ -39,20 +39,23 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive, watchEffect } from "vue";
-import InstanceTable from "../components/InstanceTable.vue";
-import { EnvironmentV1Table, ProjectV1Table } from "../components/v2";
-import { Instance } from "../types";
+import { useI18n } from "vue-i18n";
+
+import {
+  EnvironmentV1Table,
+  InstanceV1Table,
+  ProjectV1Table,
+} from "@/components/v2";
 import {
   filterProjectV1ListByKeyword,
   hasWorkspacePermissionV1,
-} from "../utils";
-import { BBTabFilterItem } from "../bbkit/types";
-import { useI18n } from "vue-i18n";
+} from "@/utils";
+import { BBTabFilterItem } from "@/bbkit/types";
 import {
   useCurrentUserV1,
   useEnvironmentV1Store,
   useIdentityProviderStore,
-  useInstanceStore,
+  useInstanceV1Store,
   useProjectV1ListByCurrentUser,
 } from "@/store";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
@@ -73,13 +76,13 @@ export default defineComponent({
   name: "Archive",
   components: {
     EnvironmentV1Table,
-    InstanceTable,
+    InstanceV1Table,
     ProjectV1Table,
     IdentityProviderTable,
   },
   setup() {
     const { t } = useI18n();
-    const instanceStore = useInstanceStore();
+    const instanceStore = useInstanceV1Store();
 
     const state = reactive<LocalState>({
       selectedIndex: PROJECT_TAB,
@@ -113,7 +116,7 @@ export default defineComponent({
           currentUserV1.value.userRole
         )
       ) {
-        instanceStore.fetchInstanceList(["ARCHIVED"]);
+        instanceStore.fetchInstanceList(true /* showDeleted */);
 
         useEnvironmentV1Store().fetchEnvironments(true);
       }
@@ -121,8 +124,10 @@ export default defineComponent({
 
     watchEffect(prepareList);
 
-    const instanceList = computed((): Instance[] => {
-      return instanceStore.getInstanceList(["ARCHIVED"]);
+    const instanceList = computed(() => {
+      return instanceStore.instanceList.filter(
+        (instance) => instance.state === State.DELETED
+      );
     });
 
     const environmentList = computed(() => {
@@ -177,16 +182,17 @@ export default defineComponent({
       return filterProjectV1ListByKeyword(list, state.searchText);
     });
 
-    const filteredInstanceList = (list: Instance[]) => {
-      if (!state.searchText) {
-        return list;
+    const filteredInstanceList = computed(() => {
+      const keyword = state.searchText.trim();
+      if (!keyword) {
+        return instanceList.value;
       }
-      return list.filter((instance) => {
-        return instance.name
+      return instanceList.value.filter((instance) => {
+        return instance.title
           .toLowerCase()
           .includes(state.searchText.toLowerCase());
       });
-    };
+    });
 
     const filteredEnvironmentList = computed(() => {
       const list = environmentList.value;

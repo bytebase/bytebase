@@ -135,14 +135,14 @@ export const instanceV1HasCreateDatabase = (
   return true;
 };
 
-// export const instanceHasStructuredQueryResult = (
-//   instanceOrEngine: Instance | EngineType
-// ): boolean => {
-//   const engine = engineOfInstance(instanceOrEngine);
-//   if (engine === "MONGODB") return false;
-//   if (engine === "REDIS") return false;
-//   return true;
-// };
+export const instanceV1HasStructuredQueryResult = (
+  instanceOrEngine: Instance | Engine
+): boolean => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  if (engine === Engine.MONGODB) return false;
+  if (engine === Engine.REDIS) return false;
+  return true;
+};
 
 export const instanceV1HasSSL = (
   instanceOrEngine: Instance | Engine

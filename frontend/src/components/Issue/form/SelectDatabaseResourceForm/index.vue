@@ -27,6 +27,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed, h, onMounted, ref, watch } from "vue";
+import { uniq } from "lodash-es";
 import {
   NTransfer,
   TransferRenderSourceList,
@@ -34,8 +36,12 @@ import {
   NTree,
   TreeOption,
 } from "naive-ui";
-import { computed, h, onMounted, ref } from "vue";
-import { useDatabaseStore, useDBSchemaStore } from "@/store";
+
+import {
+  useDatabaseV1Store,
+  useDBSchemaStore,
+  useProjectV1Store,
+} from "@/store";
 import {
   flattenTreeOptions,
   mapTreeOptions,
@@ -43,13 +49,10 @@ import {
   DatabaseResource,
 } from "./common";
 import Label from "./Label.vue";
-import { watch } from "vue";
-import { uniq } from "lodash-es";
-import { IdType } from "@/types";
 
 const props = defineProps<{
   projectId: string;
-  databaseId?: IdType;
+  databaseId?: string;
   selectedDatabaseResourceList: DatabaseResource[];
 }>();
 
@@ -58,34 +61,38 @@ const emits = defineEmits<{
   (e: "update", databaseResourceList: DatabaseResource[]): void;
 }>();
 
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaStore();
 const selectedValueList = ref<string[]>([]);
 const databaseResourceMap = ref<Map<string, DatabaseResource>>(new Map());
 const loading = ref(false);
 
 onMounted(async () => {
-  const databaseList = await databaseStore.fetchDatabaseListByProjectId(
+  const project = await useProjectV1Store().getOrFetchProjectByUID(
     props.projectId
   );
+  const databaseList = await databaseStore.fetchDatabaseList({
+    parent: "instances/-",
+    filter: `project == "${project.name}"`,
+  });
 
   for (const database of databaseList) {
     const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadataById(
-      database.id
+      Number(database.uid)
     );
-    databaseResourceMap.value.set(`d-${database.id}`, {
-      databaseId: database.id,
+    databaseResourceMap.value.set(`d-${database.uid}`, {
+      databaseId: database.uid,
     });
     for (const schema of databaseMetadata.schemas) {
-      databaseResourceMap.value.set(`s-${database.id}-${schema.name}`, {
-        databaseId: database.id,
+      databaseResourceMap.value.set(`s-${database.uid}-${schema.name}`, {
+        databaseId: database.uid,
         schema: schema.name,
       });
       for (const table of schema.tables) {
         databaseResourceMap.value.set(
-          `t-${database.id}-${schema.name}-${table.name}`,
+          `t-${database.uid}-${schema.name}-${table.name}`,
           {
-            databaseId: database.id,
+            databaseId: database.uid,
             schema: schema.name,
             table: table.name,
           }
@@ -97,9 +104,10 @@ onMounted(async () => {
 });
 
 const databaseList = computed(() => {
-  const list = databaseStore.getDatabaseListByProjectId(props.projectId);
+  const project = useProjectV1Store().getProjectByUID(props.projectId);
+  const list = databaseStore.databaseListByProject(project.name);
   return props.databaseId
-    ? list.filter((item) => item.id === props.databaseId)
+    ? list.filter((item) => item.uid === props.databaseId)
     : list;
 });
 
