@@ -34,6 +34,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -355,7 +356,23 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	if dbSchema == nil {
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
-	return &v1pb.DatabaseSchema{Schema: string(dbSchema.Schema)}, nil
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	// We only support MySQL engine for now.
+	schema := string(dbSchema.Schema)
+	if request.SdlFormat {
+		switch instance.Engine {
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+			sdlSchema, err := transform.SchemaTransform(parser.MySQL, schema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			schema = sdlSchema
+		}
+	}
+	return &v1pb.DatabaseSchema{Schema: schema}, nil
 }
 
 // GetBackupSetting gets the backup setting of a database.
