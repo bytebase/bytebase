@@ -108,7 +108,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	})
 	a.NoError(err)
 
-	for idx, tt := range tests {
+	for _, tt := range tests {
 		var instance *v1pb.Instance
 		databaseOwner := ""
 		switch tt.dbType {
@@ -123,24 +123,12 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		err = ctl.createDatabase(ctx, projectUID, instance, tt.databaseName, databaseOwner, nil)
 		a.NoError(err)
 
-		databases, err := ctl.getDatabases(api.DatabaseFind{
-			ProjectID: &projectUID,
+		database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+			Name: fmt.Sprintf("%s/databases/%s", instance.Name, tt.databaseName),
 		})
 		a.NoError(err)
-		a.Equal(idx+1, len(databases))
-
-		var database *api.Database
-		for _, d := range databases {
-			if d.Name == tt.databaseName {
-				database = d
-				break
-			}
-		}
-		a.NotNil(database)
-
-		instanceUID, err := strconv.Atoi(instance.Uid)
+		databaseUID, err := strconv.Atoi(database.Uid)
 		a.NoError(err)
-		a.Equal(instanceUID, database.Instance.ID)
 
 		sheet, err := ctl.createSheet(api.SheetCreate{
 			ProjectID:  projectUID,
@@ -157,7 +145,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			DetailList: []*api.MigrationDetail{
 				{
 					MigrationType: db.Migrate,
-					DatabaseID:    database.ID,
+					DatabaseID:    databaseUID,
 					SheetID:       sheet.ID,
 				},
 			},

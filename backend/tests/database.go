@@ -132,38 +132,6 @@ func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, projectUID i
 	return nil
 }
 
-// getDatabases gets the databases.
-func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Database, error) {
-	params := make(map[string]string)
-	if databaseFind.InstanceID != nil {
-		params["instance"] = fmt.Sprintf("%d", *databaseFind.InstanceID)
-	}
-	if databaseFind.ProjectID != nil {
-		params["project"] = fmt.Sprintf("%d", *databaseFind.ProjectID)
-	}
-	if databaseFind.Name != nil {
-		params["name"] = *databaseFind.Name
-	}
-	body, err := ctl.get("/database", params)
-	if err != nil {
-		return nil, err
-	}
-
-	var databases []*api.Database
-	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Database)))
-	if err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal get database response")
-	}
-	for _, p := range ps {
-		database, ok := p.(*api.Database)
-		if !ok {
-			return nil, errors.Errorf("fail to convert database")
-		}
-		databases = append(databases, database)
-	}
-	return databases, nil
-}
-
 // DatabaseEditResult is a subset struct of api.DatabaseEditResult for testing,
 // because of jsonapi doesn't support to unmarshal struct pointer slice.
 type DatabaseEditResult struct {
