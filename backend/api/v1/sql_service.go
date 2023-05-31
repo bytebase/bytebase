@@ -111,7 +111,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 // postQuery does the following:
 //  1. Check index hit Explain statements
 //  2. Update SQL query activity
-func (s *SQLService) postQuery(ctx context.Context, request *v1pb.QueryRequest, adviceStatus advisor.Status, adviceList []*v1pb.Advice, instance *store.InstanceMessage, activity *api.Activity, durationNs int64, queryErr error) ([]*v1pb.Advice, error) {
+func (s *SQLService) postQuery(ctx context.Context, _ *v1pb.QueryRequest, adviceStatus advisor.Status, adviceList []*v1pb.Advice, _ *store.InstanceMessage, activity *api.Activity, durationNs int64, queryErr error) ([]*v1pb.Advice, error) {
 	indexHitAdvices, err := s.checkIndexHit()
 	if err != nil {
 		return nil, err
@@ -119,14 +119,13 @@ func (s *SQLService) postQuery(ctx context.Context, request *v1pb.QueryRequest, 
 
 	var finalAdviceList []*v1pb.Advice
 	newLevel := activity.Level
-	if len(indexHitAdvices) < 0 {
+	if len(indexHitAdvices) == 0 {
 		finalAdviceList = append(finalAdviceList, adviceList...)
 	} else {
 		if adviceStatus != advisor.Success {
 			finalAdviceList = append(finalAdviceList, adviceList...)
 		}
 		finalAdviceList = append(finalAdviceList, indexHitAdvices...)
-		adviceStatus = advisor.Error
 		newLevel = api.ActivityError
 	}
 
@@ -155,12 +154,14 @@ func (s *SQLService) postQuery(ctx context.Context, request *v1pb.QueryRequest, 
 	}
 
 	payloadString := string(payloadBytes)
-	s.store.PatchActivity(ctx, &api.ActivityPatch{
+	if _, err := s.store.PatchActivity(ctx, &api.ActivityPatch{
 		ID:        activity.ID,
 		UpdaterID: activity.CreatorID,
 		Level:     &newLevel,
 		Payload:   &payloadString,
-	})
+	}); err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to update activity after executing sql statement: %v", err)
+	}
 
 	return finalAdviceList, nil
 }
@@ -216,7 +217,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	}
 
 	// Validate the request.
-	if err := s.validateQueryRequest(ctx, request, instance); err != nil {
+	if err := s.validateQueryRequest(request, instance); err != nil {
 		return nil, advisor.Success, nil, nil, nil, err
 	}
 
@@ -591,7 +592,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, request *v1pb.Qu
 // 2. Check connection_database if the instance is postgres.
 // 3. Parse statement for Postgres, MySQL, TiDB, Oracle.
 // 4. Check if all statements are (EXPLAIN) SELECT statements.
-func (*SQLService) validateQueryRequest(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage) error {
+func (*SQLService) validateQueryRequest(request *v1pb.QueryRequest, instance *store.InstanceMessage) error {
 	if instance.Engine == db.Postgres {
 		if len(request.ConnectionDatabase) == 0 {
 			return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
@@ -747,7 +748,6 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, principalID in
 		hasAccessRights = true
 	}
 	return hasAccessRights, usedExpression, nil
-
 }
 
 func evaluateCondition(expression string, attributes map[string]any) (bool, error) {
