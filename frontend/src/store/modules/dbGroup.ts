@@ -5,25 +5,25 @@ import { projectServiceClient } from "@/grpcweb";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 
 export const useDBGroupStore = defineStore("db-group", () => {
-  const dbGroupMapById = ref<Map<string, DatabaseGroup>>(new Map());
-  const schemaGroupMapById = ref<Map<string, SchemaGroup>>(new Map());
+  const dbGroupMapByName = ref<Map<string, DatabaseGroup>>(new Map());
+  const schemaGroupMapByName = ref<Map<string, SchemaGroup>>(new Map());
   const cachedProjectNameSet = ref<Set<string>>(new Set());
 
-  const getOrFetchDBGroupById = async (dbGroupId: string) => {
-    const cached = dbGroupMapById.value.get(dbGroupId);
+  const getOrFetchDBGroupByName = async (name: string) => {
+    const cached = dbGroupMapByName.value.get(name);
     if (cached) return cached;
 
     const databaseGroup = await projectServiceClient.getDatabaseGroup({
-      name: dbGroupId,
+      name: name,
     });
-    dbGroupMapById.value.set(dbGroupId, databaseGroup);
+    dbGroupMapByName.value.set(name, databaseGroup);
     return databaseGroup;
   };
 
   const getOrFetchDBGroupListByProjectName = async (projectName: string) => {
     const hasCache = cachedProjectNameSet.value.has(projectName);
     if (hasCache) {
-      return Array.from(dbGroupMapById.value.values()).filter((dbGroup) =>
+      return Array.from(dbGroupMapByName.value.values()).filter((dbGroup) =>
         dbGroup.name.startsWith(projectName)
       );
     }
@@ -32,20 +32,20 @@ export const useDBGroupStore = defineStore("db-group", () => {
       parent: projectName,
     });
     for (const dbGroup of databaseGroups) {
-      dbGroupMapById.value.set(dbGroup.name, dbGroup);
+      dbGroupMapByName.value.set(dbGroup.name, dbGroup);
     }
     cachedProjectNameSet.value.add(projectName);
     return databaseGroups;
   };
 
   const getDBGroupListByProjectName = (projectName: string) => {
-    return Array.from(dbGroupMapById.value.values()).filter((dbGroup) =>
+    return Array.from(dbGroupMapByName.value.values()).filter((dbGroup) =>
       dbGroup.name.startsWith(projectName)
     );
   };
 
   const getDBGroupByName = (name: string) => {
-    return dbGroupMapById.value.get(name);
+    return dbGroupMapByName.value.get(name);
   };
 
   const createDatabaseGroup = async (
@@ -54,18 +54,18 @@ export const useDBGroupStore = defineStore("db-group", () => {
       DatabaseGroup,
       "name" | "databasePlaceholder" | "databaseExpr"
     >,
-    databaseGroupId: string
+    name: string
   ) => {
     // Note: use resource id as placeholder right now.
-    databaseGroup.databasePlaceholder = databaseGroupId;
+    databaseGroup.databasePlaceholder = name;
     const createdDatabaseGroup = await projectServiceClient.createDatabaseGroup(
       {
         parent: projectName,
         databaseGroup,
-        databaseGroupId,
+        databaseGroupId: name,
       }
     );
-    dbGroupMapById.value.set(createdDatabaseGroup.name, createdDatabaseGroup);
+    dbGroupMapByName.value.set(createdDatabaseGroup.name, createdDatabaseGroup);
     return createdDatabaseGroup;
   };
 
@@ -75,7 +75,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       "name" | "databasePlaceholder" | "databaseExpr"
     >
   ) => {
-    const rawDatabaseGroup = dbGroupMapById.value.get(databaseGroup.name);
+    const rawDatabaseGroup = dbGroupMapByName.value.get(databaseGroup.name);
     if (!rawDatabaseGroup) {
       throw new Error("Database group not found");
     }
@@ -89,7 +89,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
         updateMask,
       }
     );
-    dbGroupMapById.value.set(updatedDatabaseGroup.name, updatedDatabaseGroup);
+    dbGroupMapByName.value.set(updatedDatabaseGroup.name, updatedDatabaseGroup);
     return updatedDatabaseGroup;
   };
 
@@ -97,17 +97,17 @@ export const useDBGroupStore = defineStore("db-group", () => {
     await projectServiceClient.deleteDatabaseGroup({
       name: name,
     });
-    dbGroupMapById.value.delete(name);
+    dbGroupMapByName.value.delete(name);
   };
 
-  const getOrFetchSchemaGroupById = async (schemaGroupId: string) => {
-    const cached = schemaGroupMapById.value.get(schemaGroupId);
+  const getOrFetchSchemaGroupByName = async (name: string) => {
+    const cached = schemaGroupMapByName.value.get(name);
     if (cached) return cached;
 
     const schemaGroup = await projectServiceClient.getSchemaGroup({
-      name: schemaGroupId,
+      name: name,
     });
-    schemaGroupMapById.value.set(schemaGroupId, schemaGroup);
+    schemaGroupMapByName.value.set(name, schemaGroup);
     return schemaGroup;
   };
 
@@ -118,41 +118,41 @@ export const useDBGroupStore = defineStore("db-group", () => {
       parent: dbGroupName,
     });
     for (const schemaGroup of schemaGroups) {
-      schemaGroupMapById.value.set(schemaGroup.name, schemaGroup);
+      schemaGroupMapByName.value.set(schemaGroup.name, schemaGroup);
     }
     return schemaGroups;
   };
 
   const getSchemaGroupListByDBGroupName = (dbGroupName: string) => {
-    return Array.from(schemaGroupMapById.value.values()).filter((schemaGroup) =>
-      schemaGroup.name.startsWith(dbGroupName)
+    return Array.from(schemaGroupMapByName.value.values()).filter(
+      (schemaGroup) => schemaGroup.name.startsWith(dbGroupName)
     );
   };
 
   const getSchemaGroupByName = (name: string) => {
-    return schemaGroupMapById.value.get(name);
+    return schemaGroupMapByName.value.get(name);
   };
 
   const createSchemaGroup = async (
     dbGroupName: string,
     schemaGroup: Pick<SchemaGroup, "name" | "tablePlaceholder" | "tableExpr">,
-    schemaGroupId: string
+    name: string
   ) => {
     // Note: use resource id as placeholder right now.
-    schemaGroup.tablePlaceholder = schemaGroupId;
+    schemaGroup.tablePlaceholder = name;
     const createdSchemaGroup = await projectServiceClient.createSchemaGroup({
       parent: dbGroupName,
       schemaGroup,
-      schemaGroupId,
+      schemaGroupId: name,
     });
-    schemaGroupMapById.value.set(createdSchemaGroup.name, createdSchemaGroup);
+    schemaGroupMapByName.value.set(createdSchemaGroup.name, createdSchemaGroup);
     return createdSchemaGroup;
   };
 
   const updateSchemaGroup = async (
     schemaGroup: Pick<SchemaGroup, "name" | "tablePlaceholder" | "tableExpr">
   ) => {
-    const rawSchemaGroup = schemaGroupMapById.value.get(schemaGroup.name);
+    const rawSchemaGroup = schemaGroupMapByName.value.get(schemaGroup.name);
     if (!rawSchemaGroup) {
       throw new Error("Schema group not found");
     }
@@ -164,7 +164,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       schemaGroup,
       updateMask,
     });
-    schemaGroupMapById.value.set(updatedSchemaGroup.name, updatedSchemaGroup);
+    schemaGroupMapByName.value.set(updatedSchemaGroup.name, updatedSchemaGroup);
     return updatedSchemaGroup;
   };
 
@@ -172,18 +172,18 @@ export const useDBGroupStore = defineStore("db-group", () => {
     await projectServiceClient.deleteSchemaGroup({
       name: name,
     });
-    schemaGroupMapById.value.delete(name);
+    schemaGroupMapByName.value.delete(name);
   };
 
   return {
-    getOrFetchDBGroupById,
+    getOrFetchDBGroupByName,
     getOrFetchDBGroupListByProjectName,
     getDBGroupListByProjectName,
     getDBGroupByName,
     createDatabaseGroup,
     updateDatabaseGroup,
     deleteDatabaseGroup,
-    getOrFetchSchemaGroupById,
+    getOrFetchSchemaGroupByName,
     getOrFetchSchemaGroupListByDBGroupName,
     getSchemaGroupListByDBGroupName,
     getSchemaGroupByName,

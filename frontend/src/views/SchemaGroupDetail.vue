@@ -62,9 +62,10 @@
         </div>
         <div class="col-span-2">
           <p class="text-lg mb-2">Databases</p>
-          <MatchedDatabaseView
+          <MatchedTableView
             :project="project"
-            :environment-id="''"
+            :database-group-name="databaseGroupName"
+            :schema-group="schemaGroup"
             :expr="state.expr!"
           />
         </div>
@@ -93,7 +94,7 @@ import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 import { ConditionGroupExpr } from "@/plugins/cel";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
-import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
+import MatchedTableView from "@/components/DatabaseGroup/MatchedTableView.vue";
 
 interface LocalState {
   isLoaded: boolean;
@@ -136,7 +137,7 @@ const schemaGroup = computed(() => {
 watch(
   () => [props, schemaGroup.value],
   async () => {
-    const schemaGroup = await dbGroupStore.getOrFetchSchemaGroupById(
+    const schemaGroup = await dbGroupStore.getOrFetchSchemaGroupByName(
       `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}/${schemaGroupNamePrefix}${props.schemaGroupName}`
     );
 

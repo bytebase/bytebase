@@ -58,9 +58,9 @@
     </div>
     <div v-show="state.showUnmatchedDatabaseList">
       <div
-        v-for="database in matchedDatabaseList"
+        v-for="database in unmatchedDatabaseList"
         :key="database.name"
-        class="w-full flex flex-row justify-between items-center"
+        class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
         <span>{{ database.databaseName }}</span>
         <div class="flex flex-row justify-end items-center">
@@ -75,12 +75,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch, reactive } from "vue";
+import { ref, watch, reactive, computed } from "vue";
 import { ConditionGroupExpr } from "@/plugins/cel";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { ComposedDatabase, ComposedProject } from "@/types";
-import { sortDatabaseV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../v2";
+import {
+  DatabaseGroup,
+  DatabaseGroupView,
+} from "@/types/proto/v1/project_service";
+import { projectServiceClient } from "@/grpcweb";
+import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
+import { Expr } from "@/types/proto/google/type/expr";
+import { useDebounceFn } from "@vueuse/core";
 
 interface LocalState {
   showMatchedDatabaseList: boolean;
@@ -91,28 +98,82 @@ const props = defineProps<{
   project: ComposedProject;
   environmentId: string;
   expr: ConditionGroupExpr;
+  databaseGroup?: DatabaseGroup;
 }>();
 
+const environmentStore = useEnvironmentV1Store();
+const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   showMatchedDatabaseList: false,
   showUnmatchedDatabaseList: false,
 });
 const matchedDatabaseList = ref<ComposedDatabase[]>([]);
 const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
-const databaseList = computed(() => {
-  const list = useDatabaseV1Store().databaseListByProject(props.project.name);
-  return sortDatabaseV1List(list);
-});
 
-watch(
-  () => [databaseList.value, props.expr],
-  async () => {
-    // TODO: fetch matched and unmatched database list with expr.
-    matchedDatabaseList.value = databaseList.value;
-    unmatchedDatabaseList.value = [];
-  },
-  {
-    immediate: true,
+const isCreating = computed(() => props.databaseGroup === undefined);
+
+const updateMatchingState = useDebounceFn(async () => {
+  const matchedDatabaseNameList: string[] = [];
+  const unmatchedDatabaseNameList: string[] = [];
+
+  if (isCreating.value) {
+    const environment = environmentStore.getEnvironmentByUID(
+      props.environmentId
+    );
+    const celString = stringifyDatabaseGroupExpr({
+      environmentId: environment.name,
+      conditionGroupExpr: props.expr,
+    });
+    const validateOnlyResourceId = "creating-database-group";
+    const result = await projectServiceClient.createDatabaseGroup({
+      parent: props.project.name,
+      databaseGroup: {
+        name: `${props.project.name}/databaseGroups/${validateOnlyResourceId}`,
+        databasePlaceholder: validateOnlyResourceId,
+        databaseExpr: Expr.fromJSON({
+          expression: celString,
+        }),
+      },
+      databaseGroupId: validateOnlyResourceId,
+      validateOnly: true,
+    });
+    matchedDatabaseNameList.push(
+      ...result.matchedDatabases.map((item) => item.name)
+    );
+    unmatchedDatabaseNameList.push(
+      ...result.unmatchedDatabases.map((item) => item.name)
+    );
+  } else {
+    const result = await projectServiceClient.getDatabaseGroup({
+      name: props.databaseGroup!.name,
+      view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
+    });
+    matchedDatabaseNameList.push(
+      ...result.matchedDatabases.map((item) => item.name)
+    );
+    unmatchedDatabaseNameList.push(
+      ...result.unmatchedDatabases.map((item) => item.name)
+    );
   }
-);
+
+  matchedDatabaseList.value = [];
+  unmatchedDatabaseList.value = [];
+  for (const name of matchedDatabaseNameList) {
+    const database = await databaseStore.getOrFetchDatabaseByName(name);
+    if (database) {
+      matchedDatabaseList.value.push(database);
+    }
+  }
+  for (const name of unmatchedDatabaseNameList) {
+    const database = await databaseStore.getOrFetchDatabaseByName(name);
+    if (database) {
+      unmatchedDatabaseList.value.push(database);
+    }
+  }
+}, 500);
+
+watch(() => props, updateMatchingState, {
+  immediate: true,
+  deep: true,
+});
 </script>
