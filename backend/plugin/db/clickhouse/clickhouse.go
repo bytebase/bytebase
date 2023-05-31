@@ -171,7 +171,7 @@ func (driver *Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement 
 	// TODO(rebelice): implement multi-statement query
 	var results []*v1pb.QueryResult
 
-	result, err := driver.querySingleSQL(context.Background(), conn, statement, queryContext)
+	result, err := driver.querySingleSQL(ctx, conn, statement, queryContext)
 	if err != nil {
 		results = append(results, &v1pb.QueryResult{
 			Error: err.Error(),
@@ -187,7 +187,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
 
-func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement = strings.TrimRight(statement, " \n\t;")
 
 	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
