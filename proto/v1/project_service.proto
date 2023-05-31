@@ -120,7 +120,14 @@ service ProjectService {
     };
   }
 
-  rpc GetProjectGitOpsInfo(SetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
+  rpc SetProjectSQLReviewCI(SetupSQLReviewCIRequest) returns (SetupSQLReviewCIResponse) {
+    option (google.api.http) = {
+      patch: "/v1/{project=projects/*}/gitOpsInfo:setupSQLReviewCI"
+      body: "*"
+    };
+  }
+
+  rpc GetProjectGitOpsInfo(GetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
     option (google.api.http) = {get: "/v1/{project=projects/*}/gitOpsInfo"};
   }
 
@@ -332,12 +339,31 @@ message SetProjectGitOpsInfoRequest {
 
   // The binding for the project and external version control.
   ProjectGitOpsInfo project_gitops_info = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The mask of the fields to be updated.
+  google.protobuf.FieldMask update_mask = 3;
+
+  // If true, the gitops will be created if it does not exist.
+  bool allow_missing = 4;
 }
 
 message GetProjectGitOpsInfoRequest {
   // The name of the project.
   // Format: projects/{project}
   string project = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SetupSQLReviewCIRequest {
+  // The name of the project.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  bool enable_sql_review_ci = 2;
+}
+
+message SetupSQLReviewCIResponse {
+  // The CI setup PR URL for the repository.
+  string pull_request_url = 1;
 }
 
 message Project {

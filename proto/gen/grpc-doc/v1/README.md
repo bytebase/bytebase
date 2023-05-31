@@ -298,6 +298,8 @@
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
     - [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest)
+    - [SetupSQLReviewCIRequest](#bytebase-v1-SetupSQLReviewCIRequest)
+    - [SetupSQLReviewCIResponse](#bytebase-v1-SetupSQLReviewCIResponse)
     - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
     - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
@@ -4828,6 +4830,39 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | ----- | ---- | ----- | ----------- |
 | project | [string](#string) |  | The name of the project. Format: projects/{project} |
 | project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  | The binding for the project and external version control. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
+| allow_missing | [bool](#bool) |  | If true, the gitops will be created if it does not exist. |
+
+
+
+
+
+
+<a name="bytebase-v1-SetupSQLReviewCIRequest"></a>
+
+### SetupSQLReviewCIRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project. Format: projects/{project} |
+| enable_sql_review_ci | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SetupSQLReviewCIResponse"></a>
+
+### SetupSQLReviewCIResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pull_request_url | [string](#string) |  | The CI setup PR URL for the repository. |
 
 
 
@@ -5173,7 +5208,8 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
 | SetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
-| GetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
+| SetProjectSQLReviewCI | [SetupSQLReviewCIRequest](#bytebase-v1-SetupSQLReviewCIRequest) | [SetupSQLReviewCIResponse](#bytebase-v1-SetupSQLReviewCIResponse) |  |
+| GetProjectGitOpsInfo | [GetProjectGitOpsInfoRequest](#bytebase-v1-GetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
 | ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) |  |
 | GetDatabaseGroup | [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
 | CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
