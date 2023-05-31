@@ -525,7 +525,7 @@ type RowValue_Uint64Value struct {
 }
 
 type RowValue_ValueValue struct {
-	// value_value is used for Spanner only.
+	// value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
 	ValueValue *structpb.Value `protobuf:"bytes,11,opt,name=value_value,json=valueValue,proto3,oneof"`
 }
 
