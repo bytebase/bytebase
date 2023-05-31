@@ -208,26 +208,16 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
-
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
-	})
-	a.NoError(err)
-	a.Nil(databases)
 
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil)
 	a.NoError(err)
 
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-
-	database := databases[0]
-	a.Equal(instanceUID, database.Instance.ID)
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectUID,
@@ -244,7 +234,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseID:    database.ID,
+				DatabaseID:    databaseUID,
 				SheetID:       sheet.ID,
 			},
 		},
@@ -263,7 +253,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	metadata, err := ctl.getLatestSchemaMetadata(database.ID)
+	metadata, err := ctl.getLatestSchemaMetadata(databaseUID)
 	a.NoError(err)
 
 	var latestSchemaMetadata storepb.DatabaseMetadata
@@ -496,26 +486,16 @@ func TestSyncerForMySQL(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
-
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
-	})
-	a.NoError(err)
-	a.Nil(databases)
 
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-
-	database := databases[0]
-	a.Equal(instanceUID, database.Instance.ID)
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectUID,
@@ -532,7 +512,7 @@ func TestSyncerForMySQL(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseID:    database.ID,
+				DatabaseID:    databaseUID,
 				SheetID:       sheet.ID,
 			},
 		},
@@ -551,7 +531,7 @@ func TestSyncerForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	metadata, err := ctl.getLatestSchemaMetadata(database.ID)
+	metadata, err := ctl.getLatestSchemaMetadata(databaseUID)
 	a.NoError(err)
 
 	var latestSchemaMetadata storepb.DatabaseMetadata
