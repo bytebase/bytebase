@@ -261,7 +261,7 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows2(rows, dbType, columnTypes, columnTypeNames, fieldList)
+	data, err := readRows2(rows, columnTypes, columnTypeNames, fieldList)
 	if err != nil {
 		return nil, err
 	}
@@ -323,11 +323,7 @@ func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement s
 }
 
 // TODO(rebelice): remove the readRows and rename readRows2 to readRows if legacy API is deprecated.
-func readRows2(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]*v1pb.QueryRow, error) {
-	if dbType == db.ClickHouse {
-		// TODO(rebelice): implement clickhouse support
-		return nil, errors.New("clickhouse is not supported")
-	}
+func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]*v1pb.QueryRow, error) {
 	var data []*v1pb.QueryRow
 	for rows.Next() {
 		scanArgs := make([]any, len(columnTypes))
