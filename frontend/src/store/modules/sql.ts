@@ -12,7 +12,6 @@ import {
   Attributes,
 } from "@/types";
 import { useDatabaseStore } from "./database";
-import { useInstanceStore } from "./instance";
 
 export function convertSingleSQLResult(
   attributes: Attributes
@@ -75,7 +74,6 @@ export const useSQLStore = defineStore("sql", {
       if (!resultSet.error) {
         // Refresh the corresponding list.
         useDatabaseStore().fetchDatabaseListByInstanceId(instanceId);
-        useInstanceStore().fetchInstanceUserListById(instanceId);
       }
 
       return resultSet;
