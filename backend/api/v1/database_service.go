@@ -1275,6 +1275,7 @@ func convertToBackup(backup *store.BackupMessage, instanceID string, databaseNam
 		State:      backupState,
 		BackupType: backupType,
 		Comment:    backup.Comment,
+		Uid:        fmt.Sprintf("%d", backup.UID),
 	}
 }
 

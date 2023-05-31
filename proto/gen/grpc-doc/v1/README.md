@@ -1446,6 +1446,7 @@ The message of the backup.
 | state | [Backup.BackupState](#bytebase-v1-Backup-BackupState) |  | The state of the backup. |
 | backup_type | [Backup.BackupType](#bytebase-v1-Backup-BackupType) |  | The type of the backup. |
 | comment | [string](#string) |  | The comment of the backup. |
+| uid | [string](#string) |  |  |
 
 
 
