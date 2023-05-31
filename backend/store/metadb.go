@@ -137,6 +137,10 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		connCfg.Port = port
 	}
 
+	if connCfg.Port == "" {
+		connCfg.Port = "5432"
+	}
+
 	if u.Path == "" {
 		return nil, errors.Errorf("missing database in the --pg connection string")
 	}
