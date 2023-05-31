@@ -117,7 +117,6 @@ export interface RepositoryState {
   // repositoryListByVCSId are used in workspace GitOps panel, while repositoryByProjectId are used in project GitOps panel.
   // Because they are used separately, so we don't need to worry about repository inconsistency issue between them.
   repositoryListByVCSId: Map<VCSId, Repository[]>;
-  repositoryByProjectId: Map<ProjectId, Repository>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

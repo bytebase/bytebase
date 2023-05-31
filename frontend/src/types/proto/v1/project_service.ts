@@ -505,6 +505,14 @@ export interface SetProjectGitOpsInfoRequest {
   allowMissing: boolean;
 }
 
+export interface DeleteProjectGitOpsInfoRequest {
+  /**
+   * The name of the project.
+   * Format: projects/{project}
+   */
+  project: string;
+}
+
 export interface GetProjectGitOpsInfoRequest {
   /**
    * The name of the project.
@@ -519,7 +527,6 @@ export interface SetupSQLReviewCIRequest {
    * Format: projects/{project}
    */
   project: string;
-  enableSqlReviewCi: boolean;
 }
 
 export interface SetupSQLReviewCIResponse {
@@ -2374,6 +2381,62 @@ export const SetProjectGitOpsInfoRequest = {
   },
 };
 
+function createBaseDeleteProjectGitOpsInfoRequest(): DeleteProjectGitOpsInfoRequest {
+  return { project: "" };
+}
+
+export const DeleteProjectGitOpsInfoRequest = {
+  encode(message: DeleteProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteProjectGitOpsInfoRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteProjectGitOpsInfoRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.project = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteProjectGitOpsInfoRequest {
+    return { project: isSet(object.project) ? String(object.project) : "" };
+  },
+
+  toJSON(message: DeleteProjectGitOpsInfoRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteProjectGitOpsInfoRequest>): DeleteProjectGitOpsInfoRequest {
+    return DeleteProjectGitOpsInfoRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DeleteProjectGitOpsInfoRequest>): DeleteProjectGitOpsInfoRequest {
+    const message = createBaseDeleteProjectGitOpsInfoRequest();
+    message.project = object.project ?? "";
+    return message;
+  },
+};
+
 function createBaseGetProjectGitOpsInfoRequest(): GetProjectGitOpsInfoRequest {
   return { project: "" };
 }
@@ -2431,16 +2494,13 @@ export const GetProjectGitOpsInfoRequest = {
 };
 
 function createBaseSetupSQLReviewCIRequest(): SetupSQLReviewCIRequest {
-  return { project: "", enableSqlReviewCi: false };
+  return { project: "" };
 }
 
 export const SetupSQLReviewCIRequest = {
   encode(message: SetupSQLReviewCIRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.project !== "") {
       writer.uint32(10).string(message.project);
-    }
-    if (message.enableSqlReviewCi === true) {
-      writer.uint32(16).bool(message.enableSqlReviewCi);
     }
     return writer;
   },
@@ -2459,13 +2519,6 @@ export const SetupSQLReviewCIRequest = {
 
           message.project = reader.string();
           continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.enableSqlReviewCi = reader.bool();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2476,16 +2529,12 @@ export const SetupSQLReviewCIRequest = {
   },
 
   fromJSON(object: any): SetupSQLReviewCIRequest {
-    return {
-      project: isSet(object.project) ? String(object.project) : "",
-      enableSqlReviewCi: isSet(object.enableSqlReviewCi) ? Boolean(object.enableSqlReviewCi) : false,
-    };
+    return { project: isSet(object.project) ? String(object.project) : "" };
   },
 
   toJSON(message: SetupSQLReviewCIRequest): unknown {
     const obj: any = {};
     message.project !== undefined && (obj.project = message.project);
-    message.enableSqlReviewCi !== undefined && (obj.enableSqlReviewCi = message.enableSqlReviewCi);
     return obj;
   },
 
@@ -2496,7 +2545,6 @@ export const SetupSQLReviewCIRequest = {
   fromPartial(object: DeepPartial<SetupSQLReviewCIRequest>): SetupSQLReviewCIRequest {
     const message = createBaseSetupSQLReviewCIRequest();
     message.project = object.project ?? "";
-    message.enableSqlReviewCi = object.enableSqlReviewCi ?? false;
     return message;
   },
 };
@@ -6122,8 +6170,62 @@ export const ProjectServiceDefinition = {
         },
       },
     },
-    setProjectSQLReviewCI: {
-      name: "SetProjectSQLReviewCI",
+    deleteProjectGitOpsInfo: {
+      name: "DeleteProjectGitOpsInfo",
+      requestType: DeleteProjectGitOpsInfoRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              37,
+              42,
+              35,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              103,
+              105,
+              116,
+              79,
+              112,
+              115,
+              73,
+              110,
+              102,
+              111,
+            ]),
+          ],
+        },
+      },
+    },
+    setupProjectSQLReviewCI: {
+      name: "SetupProjectSQLReviewCI",
       requestType: SetupSQLReviewCIRequest,
       requestStream: false,
       responseType: SetupSQLReviewCIResponse,
@@ -7133,7 +7235,11 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
     request: SetProjectGitOpsInfoRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ProjectGitOpsInfo>>;
-  setProjectSQLReviewCI(
+  deleteProjectGitOpsInfo(
+    request: DeleteProjectGitOpsInfoRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
+  setupProjectSQLReviewCI(
     request: SetupSQLReviewCIRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<SetupSQLReviewCIResponse>>;
@@ -7226,7 +7332,11 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<SetProjectGitOpsInfoRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ProjectGitOpsInfo>;
-  setProjectSQLReviewCI(
+  deleteProjectGitOpsInfo(
+    request: DeepPartial<DeleteProjectGitOpsInfoRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
+  setupProjectSQLReviewCI(
     request: DeepPartial<SetupSQLReviewCIRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<SetupSQLReviewCIResponse>;

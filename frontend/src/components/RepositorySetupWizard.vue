@@ -41,7 +41,7 @@
           :config="state.config"
           :project="project"
           @change-schema-change-type="
-            (type) => (state.config.schemaChangeType = type)
+            (type: SchemaChange) => (state.config.schemaChangeType = type)
           "
         />
       </template>
@@ -127,31 +127,28 @@
   </div>
 </template>
 
-<script lang="ts">
-import { reactive, computed, PropType, defineComponent } from "vue";
+<script lang="ts" setup>
+import { reactive, computed, PropType } from "vue";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
+import { cloneDeep } from "lodash-es";
 import { BBStepTabItem } from "../bbkit/types";
-import RepositoryVCSProviderPanel from "./RepositoryVCSProviderPanel.vue";
-import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
-import RepositoryConfigPanel from "./RepositoryConfigPanel.vue";
 import {
   ExternalRepositoryInfo,
   OAuthToken,
-  Project,
   ProjectRepositoryConfig,
-  RepositoryCreate,
   unknown,
   VCS,
 } from "../types";
-import { projectSlug } from "../utils";
+import { projectSlugV1 } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useRepositoryStore, hasFeature, useProjectV1Store } from "@/store";
+import { useRepositoryV1Store, hasFeature, useProjectV1Store } from "@/store";
 import {
-  Project as ProjectV1,
+  Project,
+  TenantMode,
   SchemaChange,
 } from "@/types/proto/v1/project_service";
-import { cloneDeep } from "lodash-es";
+import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
@@ -182,250 +179,209 @@ interface LocalState {
   sqlReviewCIPullRequestURL: string;
 }
 
-export default defineComponent({
-  name: "RepositorySetupWizard",
-  components: {
-    RepositoryVCSProviderPanel,
-    RepositorySelectionPanel,
-    RepositoryConfigPanel,
+const props = defineProps({
+  // If false, then we intend to change the existing linked repository intead of just linking a new repository.
+  create: {
+    type: Boolean,
+    default: false,
   },
-  props: {
-    // If false, then we intend to change the existing linked repository intead of just linking a new repository.
-    create: {
-      type: Boolean,
-      default: false,
-    },
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-    projectV1: {
-      required: true,
-      type: Object as PropType<ProjectV1>,
-    },
-  },
-  emits: ["cancel", "finish"],
-  setup(props, { emit }) {
-    const { t } = useI18n();
-
-    const router = useRouter();
-    const repositoryStore = useRepositoryStore();
-
-    const stepList: BBStepTabItem[] = [
-      { title: t("repository.choose-git-provider"), hideNext: true },
-      { title: t("repository.select-repository"), hideNext: true },
-      { title: t("repository.configure-deploy") },
-    ];
-
-    const isTenantProject = computed(() => {
-      return props.project.tenantMode === "TENANT";
-    });
-
-    const state = reactive<LocalState>({
-      config: {
-        vcs: unknown("VCS") as VCS,
-        code: "",
-        token: {
-          accessToken: "",
-          expiresTs: 0,
-          refreshToken: "",
-        },
-        repositoryInfo: {
-          externalId: "",
-          name: "",
-          fullPath: "",
-          webUrl: "",
-        },
-        repositoryConfig: {
-          baseDirectory: "bytebase",
-          branchFilter: "main",
-          filePathTemplate: isTenantProject.value
-            ? DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE
-            : DEFAULT_FILE_PATH_TEMPLATE,
-          schemaPathTemplate: isTenantProject.value
-            ? DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE
-            : DEFAULT_SCHEMA_PATH_TEMPLATE,
-          sheetPathTemplate: isTenantProject.value
-            ? DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE
-            : DEFAULT_SHEET_PATH_TEMPLATE,
-          enableSQLReviewCI: false,
-        },
-        schemaChangeType: props.project.schemaChangeType,
-      },
-      currentStep: CHOOSE_PROVIDER_STEP,
-      showFeatureModal: false,
-      showSetupSQLReviewCIModal: false,
-      showSetupSQLReviewCIFailureModal: false,
-      showLoadingSQLReviewPRModal: false,
-      sqlReviewCIPullRequestURL: "",
-    });
-
-    const allowNext = computed((): boolean => {
-      if (state.currentStep == CONFIGURE_DEPLOY_STEP) {
-        return (
-          !isEmpty(state.config.repositoryConfig.branchFilter.trim()) &&
-          !isEmpty(state.config.repositoryConfig.filePathTemplate.trim())
-        );
-      }
-      return true;
-    });
-
-    const tryChangeStep = (
-      oldStep: number,
-      newStep: number,
-      allowChangeCallback: () => void
-    ) => {
-      state.currentStep = newStep;
-      allowChangeCallback();
-    };
-
-    const createSQLReviewCI = async () => {
-      const repository = repositoryStore.getRepositoryByProjectId(
-        props.project.id
-      );
-      state.showLoadingSQLReviewPRModal = true;
-
-      try {
-        const sqlReviewCISetup = await repositoryStore.createSQLReviewCI({
-          projectId: props.project.id,
-          repositoryId: repository.id,
-        });
-        state.sqlReviewCIPullRequestURL = sqlReviewCISetup.pullRequestURL;
-        state.showSetupSQLReviewCIModal = true;
-        window.open(sqlReviewCISetup.pullRequestURL, "_blank");
-        repositoryStore.setRepositorySQLReviewCIEnabled({
-          projectId: props.project.id,
-          sqlReviewCIEnabled: true,
-        });
-      } catch {
-        state.showSetupSQLReviewCIFailureModal = true;
-      } finally {
-        state.showLoadingSQLReviewPRModal = false;
-      }
-    };
-
-    const tryFinishSetup = (allowFinishCallback: () => void) => {
-      if (
-        state.config.repositoryConfig.enableSQLReviewCI &&
-        !hasFeature("bb.feature.vcs-sql-review")
-      ) {
-        state.showFeatureModal = true;
-        return;
-      }
-
-      const createFunc = async () => {
-        let externalId = state.config.repositoryInfo.externalId;
-        if (
-          state.config.vcs.type == "GITHUB" ||
-          state.config.vcs.type == "BITBUCKET"
-        ) {
-          externalId = state.config.repositoryInfo.fullPath;
-        }
-
-        // Update project schemaChangeType field firstly.
-        if (state.config.schemaChangeType !== props.project.schemaChangeType) {
-          const projectPatch = cloneDeep(props.projectV1);
-          projectPatch.schemaChange =
-            state.config.schemaChangeType === "DDL"
-              ? SchemaChange.DDL
-              : SchemaChange.SDL;
-          const updateMask = ["schema_change"];
-          await useProjectV1Store().updateProject(projectPatch, updateMask);
-          // WARNING: using mixed new/old APIs so we need to force update the
-          // legacy project entity's local value manually
-          /* eslint-disable-next-line vue/no-mutating-props */
-          props.project.schemaChangeType = state.config.schemaChangeType;
-        }
-
-        const repositoryCreate: RepositoryCreate = {
-          vcsId: state.config.vcs.id,
-          name: state.config.repositoryInfo.name,
-          fullPath: state.config.repositoryInfo.fullPath,
-          webUrl: state.config.repositoryInfo.webUrl,
-          branchFilter: state.config.repositoryConfig.branchFilter,
-          baseDirectory: state.config.repositoryConfig.baseDirectory,
-          filePathTemplate: state.config.repositoryConfig.filePathTemplate,
-          schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
-          sheetPathTemplate: state.config.repositoryConfig.sheetPathTemplate,
-          externalId: externalId,
-          accessToken: state.config.token.accessToken,
-          expiresTs: state.config.token.expiresTs,
-          refreshToken: state.config.token.refreshToken,
-        };
-        await repositoryStore.createRepository({
-          projectId: props.project.id,
-          repositoryCreate,
-        });
-
-        if (state.config.repositoryConfig.enableSQLReviewCI) {
-          createSQLReviewCI();
-        } else {
-          emit("finish");
-        }
-
-        allowFinishCallback();
-      };
-
-      if (props.create) {
-        createFunc();
-      } else {
-        // It's simple to implement change behavior as delete followed by create.
-        // Though the delete can succeed while the create fails, this is rare, and
-        // even it happens, user can still configure it again.
-        repositoryStore
-          .deleteRepositoryByProjectId(props.project.id)
-          .then(() => {
-            createFunc();
-          });
-      }
-    };
-
-    const closeSetupSQLReviewModal = () => {
-      state.showSetupSQLReviewCIModal = false;
-      emit("finish");
-    };
-
-    const cancel = () => {
-      emit("cancel");
-      router.push({
-        name: "workspace.project.detail",
-        params: {
-          projectSlug: projectSlug(props.project),
-        },
-        hash: "#gitops",
-      });
-    };
-
-    const setCode = (code: string) => {
-      state.config.code = code;
-    };
-
-    const setToken = (token: OAuthToken) => {
-      state.config.token = token;
-    };
-
-    const setVCS = (vcs: VCS) => {
-      state.config.vcs = vcs;
-    };
-
-    const setRepository = (repository: ExternalRepositoryInfo) => {
-      state.config.repositoryInfo = repository;
-    };
-
-    return {
-      state,
-      stepList,
-      allowNext,
-      tryChangeStep,
-      tryFinishSetup,
-      cancel,
-      setCode,
-      setVCS,
-      setToken,
-      setRepository,
-      createSQLReviewCI,
-      closeSetupSQLReviewModal,
-    };
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
   },
 });
+
+const emit = defineEmits<{
+  (event: "cancel"): void;
+  (event: "finish"): void;
+}>();
+
+const { t } = useI18n();
+
+const router = useRouter();
+const repositoryV1Store = useRepositoryV1Store();
+
+const stepList: BBStepTabItem[] = [
+  { title: t("repository.choose-git-provider"), hideNext: true },
+  { title: t("repository.select-repository"), hideNext: true },
+  { title: t("repository.configure-deploy") },
+];
+
+const isTenantProject = computed(() => {
+  return props.project.tenantMode === TenantMode.TENANT_MODE_ENABLED;
+});
+
+const state = reactive<LocalState>({
+  config: {
+    vcs: unknown("VCS") as VCS,
+    code: "",
+    token: {
+      accessToken: "",
+      expiresTs: 0,
+      refreshToken: "",
+    },
+    repositoryInfo: {
+      externalId: "",
+      name: "",
+      fullPath: "",
+      webUrl: "",
+    },
+    repositoryConfig: {
+      baseDirectory: "bytebase",
+      branchFilter: "main",
+      filePathTemplate: isTenantProject.value
+        ? DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE
+        : DEFAULT_FILE_PATH_TEMPLATE,
+      schemaPathTemplate: isTenantProject.value
+        ? DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE
+        : DEFAULT_SCHEMA_PATH_TEMPLATE,
+      sheetPathTemplate: isTenantProject.value
+        ? DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE
+        : DEFAULT_SHEET_PATH_TEMPLATE,
+      enableSQLReviewCI: false,
+    },
+    schemaChangeType: props.project.schemaChange,
+  },
+  currentStep: CHOOSE_PROVIDER_STEP,
+  showFeatureModal: false,
+  showSetupSQLReviewCIModal: false,
+  showSetupSQLReviewCIFailureModal: false,
+  showLoadingSQLReviewPRModal: false,
+  sqlReviewCIPullRequestURL: "",
+});
+
+const allowNext = computed((): boolean => {
+  if (state.currentStep == CONFIGURE_DEPLOY_STEP) {
+    return (
+      !isEmpty(state.config.repositoryConfig.branchFilter.trim()) &&
+      !isEmpty(state.config.repositoryConfig.filePathTemplate.trim())
+    );
+  }
+  return true;
+});
+
+const tryChangeStep = (
+  oldStep: number,
+  newStep: number,
+  allowChangeCallback: () => void
+) => {
+  state.currentStep = newStep;
+  allowChangeCallback();
+};
+
+const createSQLReviewCI = async () => {
+  state.showLoadingSQLReviewPRModal = true;
+
+  try {
+    const pullRequestURL = await repositoryV1Store.setupSQLReviewCI(
+      props.project.name
+    );
+    state.sqlReviewCIPullRequestURL = pullRequestURL;
+    state.showSetupSQLReviewCIModal = true;
+    window.open(pullRequestURL, "_blank");
+  } catch {
+    state.showSetupSQLReviewCIFailureModal = true;
+  } finally {
+    state.showLoadingSQLReviewPRModal = false;
+  }
+};
+
+const tryFinishSetup = (allowFinishCallback: () => void) => {
+  if (
+    state.config.repositoryConfig.enableSQLReviewCI &&
+    !hasFeature("bb.feature.vcs-sql-review")
+  ) {
+    state.showFeatureModal = true;
+    return;
+  }
+
+  const createFunc = async () => {
+    let externalId = state.config.repositoryInfo.externalId;
+    if (
+      state.config.vcs.type == "GITHUB" ||
+      state.config.vcs.type == "BITBUCKET"
+    ) {
+      externalId = state.config.repositoryInfo.fullPath;
+    }
+
+    // Update project schemaChangeType field firstly.
+    if (state.config.schemaChangeType !== props.project.schemaChange) {
+      const projectPatch = cloneDeep(props.project);
+      projectPatch.schemaChange = state.config.schemaChangeType;
+      await useProjectV1Store().updateProject(projectPatch, ["schema_change"]);
+    }
+
+    const repositoryCreate: Partial<ProjectGitOpsInfo> = {
+      vcsUid: `${state.config.vcs.id}`,
+      title: state.config.repositoryInfo.name,
+      fullPath: state.config.repositoryInfo.fullPath,
+      webUrl: state.config.repositoryInfo.webUrl,
+      branchFilter: state.config.repositoryConfig.branchFilter,
+      baseDirectory: state.config.repositoryConfig.baseDirectory,
+      filePathTemplate: state.config.repositoryConfig.filePathTemplate,
+      schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
+      sheetPathTemplate: state.config.repositoryConfig.sheetPathTemplate,
+      externalId: externalId,
+      accessToken: state.config.token.accessToken,
+      expiresTime: new Date(state.config.token.expiresTs * 1000),
+      refreshToken: state.config.token.refreshToken,
+      enableSqlReviewCi: false,
+    };
+    await repositoryV1Store.upsertRepository(
+      props.project.name,
+      repositoryCreate
+    );
+
+    if (state.config.repositoryConfig.enableSQLReviewCI) {
+      createSQLReviewCI();
+    } else {
+      emit("finish");
+    }
+
+    allowFinishCallback();
+  };
+
+  if (props.create) {
+    createFunc();
+  } else {
+    // It's simple to implement change behavior as delete followed by create.
+    // Though the delete can succeed while the create fails, this is rare, and
+    // even it happens, user can still configure it again.
+    repositoryV1Store.deleteRepository(props.project.name).then(() => {
+      createFunc();
+    });
+  }
+};
+
+const closeSetupSQLReviewModal = () => {
+  state.showSetupSQLReviewCIModal = false;
+  emit("finish");
+};
+
+const cancel = () => {
+  emit("cancel");
+  router.push({
+    name: "workspace.project.detail",
+    params: {
+      projectSlug: projectSlugV1(props.project),
+    },
+    hash: "#gitops",
+  });
+};
+
+const setCode = (code: string) => {
+  state.config.code = code;
+};
+
+const setToken = (token: OAuthToken) => {
+  state.config.token = token;
+};
+
+const setVCS = (vcs: VCS) => {
+  state.config.vcs = vcs;
+};
+
+const setRepository = (repository: ExternalRepositoryInfo) => {
+  state.config.repositoryInfo = repository;
+};
 </script>

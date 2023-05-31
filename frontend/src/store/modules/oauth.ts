@@ -22,8 +22,8 @@ export const useOAuthStore = defineStore("oauth", {
     }: {
       code: string;
       vcsId: VCSId;
-      clientId: string;
-      clientSecret: string;
+      clientId?: string;
+      clientSecret?: string;
     }): Promise<OAuthToken> {
       const data = (
         await axios.post(`/api/oauth/vcs/exchange-token`, {
