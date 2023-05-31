@@ -325,4 +325,7 @@ type ActivityPatch struct {
 
 	// TODO(d): remove the payload after the backfill.
 	Payload *string
+
+	// Level is the activity level.
+	Level *ActivityLevel `jsonapi:"attr,level"`
 }

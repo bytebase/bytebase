@@ -108,7 +108,7 @@ func (*Driver) GetType() db.Type {
 
 // GetDB gets the database.
 func (*Driver) GetDB() *sql.DB {
-	panic("not implemented")
+	return nil
 }
 
 // Execute executes a SQL statement.
