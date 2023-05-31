@@ -186,6 +186,8 @@ export interface GetDatabaseSchemaRequest {
    * Format: instances/{instance}/databases/{database}
    */
   name: string;
+  /** Format the schema dump into SDL format. */
+  sdlFormat: boolean;
 }
 
 export interface GetBackupSettingRequest {
@@ -1665,13 +1667,16 @@ export const GetDatabaseMetadataRequest = {
 };
 
 function createBaseGetDatabaseSchemaRequest(): GetDatabaseSchemaRequest {
-  return { name: "" };
+  return { name: "", sdlFormat: false };
 }
 
 export const GetDatabaseSchemaRequest = {
   encode(message: GetDatabaseSchemaRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.sdlFormat === true) {
+      writer.uint32(16).bool(message.sdlFormat);
     }
     return writer;
   },
@@ -1690,6 +1695,13 @@ export const GetDatabaseSchemaRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.sdlFormat = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1700,12 +1712,16 @@ export const GetDatabaseSchemaRequest = {
   },
 
   fromJSON(object: any): GetDatabaseSchemaRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      sdlFormat: isSet(object.sdlFormat) ? Boolean(object.sdlFormat) : false,
+    };
   },
 
   toJSON(message: GetDatabaseSchemaRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.sdlFormat !== undefined && (obj.sdlFormat = message.sdlFormat);
     return obj;
   },
 
@@ -1716,6 +1732,7 @@ export const GetDatabaseSchemaRequest = {
   fromPartial(object: DeepPartial<GetDatabaseSchemaRequest>): GetDatabaseSchemaRequest {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
+    message.sdlFormat = object.sdlFormat ?? false;
     return message;
   },
 };
