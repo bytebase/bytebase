@@ -78,7 +78,7 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 // Query executes a SQL query.
 // We have the following stages:
 //  1. pre-query
-//  2. query
+//  2. do query
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
 	instanceMessage, adviceStatus, adviceList, sensitiveSchemaInfo, activity, err := s.preQuery(ctx, request)
@@ -90,7 +90,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	var queryErr error
 	var durationNs int64
 	if adviceStatus != advisor.Error {
-		results, durationNs, queryErr = s.query(ctx, request, instanceMessage, sensitiveSchemaInfo)
+		results, durationNs, queryErr = s.doQuery(ctx, request, instanceMessage, sensitiveSchemaInfo)
 	}
 
 	adviceList, err = s.postQuery(ctx, request, adviceStatus, adviceList, instanceMessage, activity, durationNs, queryErr)
@@ -170,7 +170,7 @@ func (*SQLService) checkIndexHit() ([]*v1pb.Advice, error) {
 	return nil, nil
 }
 
-func (s *SQLService) query(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
+func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
 	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, request.ConnectionDatabase)
 	if err != nil {
 		return nil, 0, err
@@ -591,7 +591,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, request *v1pb.Qu
 // 2. Check connection_database if the instance is postgres.
 // 3. Parse statement for Postgres, MySQL, TiDB, Oracle.
 // 4. Check if all statements are (EXPLAIN) SELECT statements.
-func (s *SQLService) validateQueryRequest(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage) error {
+func (*SQLService) validateQueryRequest(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage) error {
 	if instance.Engine == db.Postgres {
 		if len(request.ConnectionDatabase) == 0 {
 			return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
