@@ -63,15 +63,10 @@ export const usePITRLogic = (database: Ref<ComposedDatabase>) => {
   });
 
   const prepareMigrationHistoryList = async () => {
-    const migration = await instanceStore.checkMigrationSetup(
-      Number(database.value.instanceEntity.uid)
-    );
-    if (migration.status === "OK") {
-      instanceStore.fetchMigrationHistory({
-        instanceId: Number(database.value.instanceEntity.uid),
-        databaseName: database.value.databaseName,
-      });
-    }
+    instanceStore.fetchMigrationHistory({
+      instanceId: Number(database.value.instanceEntity.uid),
+      databaseName: database.value.databaseName,
+    });
   };
 
   watch(database, prepareMigrationHistoryList, { immediate: true });
