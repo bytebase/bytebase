@@ -584,6 +584,8 @@ message Backup {
 
   // The comment of the backup.
   string comment = 6;
+
+  string uid = 7;
 }
 
 // ListSlowQueriesRequest is the request of listing slow query.
