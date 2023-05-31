@@ -32,7 +32,7 @@
                     v-if="isActiveTask(task)"
                     class="w-5 h-5 inline-block"
                   />
-                  <span>{{ databaseForTask(task).name }}</span>
+                  <span>{{ databaseForTask(task).databaseName }}</span>
                   <span
                     v-if="schemaVersionForTask(task)"
                     class="schema-version"
@@ -45,12 +45,10 @@
             </div>
             <div class="flex items-center justify-between px-1 py-1">
               <div class="flex flex-1 items-center whitespace-pre-wrap">
-                <InstanceEngineIcon
-                  :instance="databaseForTask(task).instance"
+                <InstanceV1Name
+                  :instance="databaseForTask(task).instanceEntity"
+                  :link="false"
                 />
-                <span class="flex-1 ml-2 overflow-x-hidden whitespace-pre-wrap">
-                  {{ instanceName(databaseForTask(task).instance) }}
-                </span>
               </div>
             </div>
           </div>
@@ -63,21 +61,22 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
 
-import { useDatabaseStore } from "@/store";
+import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import {
-  Database,
   Pipeline,
   Stage,
   StageCreate,
   Task,
   TaskCreate,
   TaskDatabaseCreatePayload,
-  unknown,
+  unknownDatabase,
 } from "@/types";
 import { taskSlug } from "@/utils";
 import { useIssueLogic } from "./logic";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 import { useVerticalScrollState } from "@/composables/useScrollState";
+import { InstanceV1Name } from "../v2";
+import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 
 const {
   create,
@@ -88,7 +87,7 @@ const {
   activeTaskOfPipeline,
   selectStageOrTask,
 } = useIssueLogic();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, 192);
@@ -112,47 +111,48 @@ const isActiveTask = (task: Task | TaskCreate): boolean => {
   return activeTaskOfPipeline(pipeline.value as Pipeline).id === task.id;
 };
 
-const extractDatabaseInfoFromDatabaseCreateTask = (
-  database: Database,
-  task: Task
-) => {
+const extractCoreDatabaseInfoFromDatabaseCreateTask = (task: Task) => {
   const payload = task.payload as TaskDatabaseCreatePayload;
-  database.name = payload.databaseName;
-  database.characterSet = payload.characterSet;
-  database.collation = payload.collation;
-  database.instance = task.instance;
-  database.instanceId = task.instance.id;
-  database.project = project.value;
-  database.projectId = project.value.id;
+  const { databaseName } = payload;
+  const instance = useInstanceV1Store().getInstanceByUID(
+    String(task.instance.id)
+  );
+  return {
+    name: `${instance.name}/databases/${databaseName}`,
+    databaseName,
+    instance: instance.name,
+    instanceEntity: instance,
+    project: project.value.name,
+    projectEntity: project.value,
+  };
 };
 
-const databaseForTask = (task: Task | TaskCreate): Database => {
+const databaseForTask = (task: Task | TaskCreate) => {
   const taskEntity = task as Task;
   const taskCreate = task as TaskCreate;
   if (create.value) {
-    return databaseStore.getDatabaseById(taskCreate.databaseId!);
+    return databaseStore.getDatabaseByUID(String(taskCreate.databaseId!));
   }
 
-  let database: Database = unknown("DATABASE");
   if (
     task.type === "bb.task.database.create" ||
     task.type === "bb.task.database.restore"
   ) {
     // The database is not created yet.
     // extract database info from the task's and payload's properties.
-    extractDatabaseInfoFromDatabaseCreateTask(database, taskEntity);
+    return extractCoreDatabaseInfoFromDatabaseCreateTask(taskEntity);
   } else if (taskEntity.database) {
-    database = taskEntity.database;
+    return databaseStore.getDatabaseByUID(String(taskEntity.database.id));
   }
-  return database;
+  return unknownDatabase();
 };
 
 const schemaVersionForTask = (task: Task | TaskCreate): string => {
   // show the schema version for a task if
   // the project is standard mode and VCS workflow
   if (create.value) return "";
-  if (project.value.tenantMode === "TENANT") return "";
-  if (project.value.workflowType === "UI") return "";
+  if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) return "";
+  if (project.value.workflow === Workflow.UI) return "";
 
   // The schema version is specified in the filename
   // parsed and stored to the payload.schemaVersion
@@ -185,7 +185,7 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
   const taskId = create.value ? index + 1 : (task as Task).id;
   const ts = taskSlug(taskName, taskId);
 
-  selectStageOrTask(stageId, ts);
+  selectStageOrTask(Number(stageId), ts);
 };
 </script>
 

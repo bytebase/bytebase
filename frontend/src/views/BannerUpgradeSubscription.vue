@@ -63,7 +63,7 @@
 import { reactive } from "vue";
 import {
   useIdentityProviderStore,
-  useInstanceStore,
+  useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import { onMounted } from "vue";
@@ -89,7 +89,7 @@ const state = reactive<LocalState>({
 
 const idpStore = useIdentityProviderStore();
 const settingV1Store = useSettingV1Store();
-const instanceStore = useInstanceStore();
+const instanceStore = useInstanceV1Store();
 const environmentV1Store = useEnvironmentV1Store();
 
 const showBanner = computed(() => {
@@ -161,10 +161,10 @@ const overusedFeatureList = computed(() => {
   for (const feature of overusedEnterprisePlanFeatureList.value) {
     list.push(t(`subscription.features.${feature.split(".").join("-")}.title`));
   }
-  if (instanceStore.instanceById.size > subscriptionStore.instanceCount) {
+  if (instanceStore.instanceList.length > subscriptionStore.instanceCount) {
     list.push(
       t("subscription.overuse-modal.instance-count-exceeds", {
-        count: instanceStore.instanceById.size,
+        count: instanceStore.instanceList.length,
         limit: subscriptionStore.instanceCount,
       })
     );

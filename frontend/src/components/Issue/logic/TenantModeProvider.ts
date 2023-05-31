@@ -1,11 +1,11 @@
 import { computed, defineComponent } from "vue";
 import { cloneDeep, head } from "lodash-es";
 import {
-  useDatabaseStore,
   useSheetV1Store,
   useProjectV1Store,
   useTaskStore,
   useSheetStatementByUid,
+  useDatabaseV1Store,
 } from "@/store";
 import {
   Issue,
@@ -38,7 +38,7 @@ export default defineComponent({
   setup() {
     const { create, issue, selectedTask, createIssue, onStatusChanged } =
       useIssueLogic();
-    const databaseStore = useDatabaseStore();
+    const databaseStore = useDatabaseV1Store();
     const sheetV1Store = useSheetV1Store();
     const projectV1Store = useProjectV1Store();
     const taskStore = useTaskStore();
@@ -59,7 +59,7 @@ export default defineComponent({
         return context.detailList[0].statement;
       } else {
         const issueEntity = issue.value as Issue;
-        const task = issueEntity.pipeline.stageList[0].taskList[0];
+        const task = issueEntity.pipeline!.stageList[0].taskList[0];
         const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
         const selectedTaskSheetId = sheetIdOfTask(selectedTask.value as Task);
         return (
@@ -125,7 +125,7 @@ export default defineComponent({
         taskStore
           .patchAllTasksInIssue({
             issueId: issueEntity.id,
-            pipelineId: issueEntity.pipeline.id,
+            pipelineId: issueEntity.pipeline!.id,
             taskPatch: {
               sheetId,
             },
@@ -151,7 +151,7 @@ export default defineComponent({
         // throw error
         return;
       }
-      const db = databaseStore.getDatabaseById(detail.databaseId!);
+      const db = databaseStore.getDatabaseByUID(String(detail.databaseId!));
       if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
         const statement = maybeFormatStatementOnSave(detail.statement, db);
         const project = await projectV1Store.getOrFetchProjectByUID(

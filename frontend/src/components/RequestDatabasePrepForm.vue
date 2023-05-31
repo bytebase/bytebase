@@ -141,7 +141,7 @@ import { UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
 import {
   useCurrentUserV1,
-  useDatabaseStore,
+  useLegacyDatabaseStore,
   useEnvironmentV1Store,
 } from "@/store";
 
@@ -160,7 +160,7 @@ export default defineComponent({
   components: { ProjectSelect, DatabaseSelect, EnvironmentSelect },
   emits: ["dismiss"],
   setup(props, { emit }) {
-    const databaseStore = useDatabaseStore();
+    const databaseStore = useLegacyDatabaseStore();
     const router = useRouter();
 
     const currentUserV1 = useCurrentUserV1();

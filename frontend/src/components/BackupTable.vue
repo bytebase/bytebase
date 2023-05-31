@@ -163,7 +163,7 @@ import {
   SYSTEM_BOT_ID,
 } from "../types";
 import { databaseV1Slug, issueSlug, migrationHistorySlug } from "../utils";
-import { featureToRef, useInstanceStore, useIssueStore } from "@/store";
+import { featureToRef, useLegacyInstanceStore, useIssueStore } from "@/store";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
   default as RestoreTargetForm,
@@ -304,7 +304,7 @@ const statusIconClass = (backup: Backup) => {
 
 const gotoMigrationHistory = (backup: Backup) => {
   state.loadingMigrationHistory = true;
-  useInstanceStore()
+  useLegacyInstanceStore()
     .fetchMigrationHistoryByVersion({
       instanceId: Number(props.database.instanceEntity.uid),
       databaseName: props.database.databaseName,

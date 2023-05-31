@@ -1,5 +1,5 @@
 import { IssueCreate, PresetRoleType } from "@/types";
-import { useInstanceStore, useProjectV1Store, useUserStore } from "@/store";
+import { useInstanceV1Store, useProjectV1Store, useUserStore } from "@/store";
 import {
   extractUserUID,
   hasWorkspacePermissionV1,
@@ -7,7 +7,6 @@ import {
 } from "@/utils";
 import { extractRollOutPolicyValue } from "@/components/Issue/logic";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
-import { getEnvironmentPathByLegacyEnvironment } from "@/store/modules/v1/common";
 import {
   PolicyType,
   ApprovalStrategy,
@@ -20,12 +19,12 @@ export const tryGetDefaultAssignee = async (issueCreate: IssueCreate) => {
   // The pipeline is accidentally empty, so we won't go further
   if (!firstTask) return;
 
-  const instance = await useInstanceStore().getOrFetchInstanceById(
-    firstTask.instanceId
+  const instance = await useInstanceV1Store().getOrFetchInstanceByUID(
+    String(firstTask.instanceId)
   );
 
   const policy = await usePolicyV1Store().getOrFetchPolicyByParentAndType({
-    parentPath: getEnvironmentPathByLegacyEnvironment(instance.environment),
+    parentPath: instance.environment,
     policyType: PolicyType.DEPLOYMENT_APPROVAL,
   });
 

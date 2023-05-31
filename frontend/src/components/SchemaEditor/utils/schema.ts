@@ -1,9 +1,8 @@
 import { isEqual } from "lodash-es";
 import { useSchemaEditorStore } from "@/store";
-import { DatabaseId } from "@/types";
 
 export const isSchemaChanged = (
-  databaseId: DatabaseId,
+  databaseId: string,
   schemaId: string
 ): boolean => {
   const editorStore = useSchemaEditorStore();

@@ -4,7 +4,7 @@ import { head } from "lodash-es";
 import {
   ActivityCreate,
   ActivityIssueCommentCreatePayload,
-  Database,
+  ComposedDatabase,
   Issue,
   IssueCreate,
   IssueId,
@@ -27,10 +27,11 @@ import { flattenTaskList, useIssueLogic } from "../logic";
 import {
   useActivityStore,
   useCurrentUserV1,
-  useDatabaseStore,
+  useDatabaseV1Store,
   useIssueStore,
   useProjectV1Store,
 } from "@/store";
+import { Engine } from "@/types/proto/v1/common";
 
 const MIN_ROLLBACK_SQL_MYSQL_VERSION = "5.7.0";
 
@@ -59,16 +60,16 @@ export const useRollbackLogic = () => {
       return "NONE";
     }
     const database = databaseOfTask(task.value);
-    const { engine, engineVersion } = database.instance;
+    const { engine, engineVersion } = database.instanceEntity;
     switch (engine) {
-      case "MYSQL":
+      case Engine.MYSQL:
         if (
           !semverCompare(engineVersion, MIN_ROLLBACK_SQL_MYSQL_VERSION, "gte")
         ) {
           return "NONE";
         }
         break;
-      case "ORACLE":
+      case Engine.ORACLE:
         // We don't have a check for oracle similar to the MySQL version check.
         break;
       default:
@@ -216,12 +217,11 @@ export const useRollbackLogic = () => {
   };
 };
 
-const databaseOfTask = (task: Task | TaskCreate): Database => {
-  if (isTaskCreate(task)) {
-    return useDatabaseStore().getDatabaseById((task as TaskCreate).databaseId!);
-  }
-
-  return task.database!;
+const databaseOfTask = (task: Task | TaskCreate): ComposedDatabase => {
+  const uid = isTaskCreate(task)
+    ? String((task as TaskCreate).databaseId!)
+    : String(task.database!.id);
+  return useDatabaseV1Store().getDatabaseByUID(uid);
 };
 
 export const maybeCreateBackTraceComments = async (newIssue: Issue) => {

@@ -1,9 +1,9 @@
 // parse expired time string from expression string for issue grant request paylod.
 
-import { useDatabaseStore } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
-import { DatabaseId, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 
 // e.g. timestamp("2021-08-31T00:00:00Z") => "2021-08-31T00:00:00Z"
 export const parseExpiredTimeString = (expiredTime: string): string => {
@@ -56,13 +56,14 @@ export const getDatabaseIdByName = async (name: string) => {
   const instance = await useInstanceV1Store().getOrFetchInstanceByName(
     instanceNamePrefix + instanceName
   );
-  const databaseList =
-    await useDatabaseStore().getOrFetchDatabaseListByInstanceId(instance.uid);
-  const database = databaseList.find((db) => db.name === databaseName);
-  return database?.id || UNKNOWN_ID;
+  const databaseList = await useDatabaseV1Store().fetchDatabaseList({
+    parent: instance.name,
+  });
+  const database = databaseList.find((db) => db.databaseName === databaseName);
+  return database?.uid || String(UNKNOWN_ID);
 };
 
-export const getDatabaseNameById = (id: DatabaseId) => {
-  const database = useDatabaseStore().getDatabaseById(id);
-  return `instances/${database.instance.resourceId}/databases/${database.name}`;
+export const getDatabaseNameById = (id: string) => {
+  const database = useDatabaseV1Store().getDatabaseByUID(id);
+  return database.name;
 };

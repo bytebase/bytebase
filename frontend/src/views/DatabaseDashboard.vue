@@ -71,11 +71,10 @@ import { NInputGroup, NTooltip } from "naive-ui";
 import {
   EnvironmentTabFilter,
   InstanceSelect,
+  DatabaseV1Table,
   SearchBox,
 } from "@/components/v2";
-import { DatabaseV1Table } from "../components/v2";
 import {
-  type Database as LegacyDatabase,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   UNKNOWN_USER_NAME,
@@ -84,12 +83,11 @@ import {
 import {
   filterDatabaseV1ByKeyword,
   hasWorkspacePermissionV1,
-  sortDatabaseListByEnvironmentV1,
   sortDatabaseV1List,
 } from "../utils";
 import {
   useCurrentUserV1,
-  useDatabaseStore,
+  useLegacyDatabaseStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useUIStateStore,
@@ -98,7 +96,6 @@ import {
 interface LocalState {
   instanceFilter: string;
   searchText: string;
-  databaseList: LegacyDatabase[];
   databaseV1List: ComposedDatabase[];
   loading: boolean;
 }
@@ -111,13 +108,12 @@ const route = useRoute();
 const state = reactive<LocalState>({
   instanceFilter: String(UNKNOWN_ID),
   searchText: "",
-  databaseList: [],
   databaseV1List: [],
   loading: false,
 });
 
 const currentUserV1 = useCurrentUserV1();
-const databaseStore = useDatabaseStore();
+const databaseStore = useLegacyDatabaseStore();
 const databaseV1Store = useDatabaseV1Store();
 
 const selectedEnvironment = computed(() => {
@@ -154,13 +150,6 @@ const prepareDatabaseList = async () => {
 
     // For legacy support
     await databaseStore.fetchDatabaseList();
-    const databaseList = databaseStore.getDatabaseListByUser(
-      currentUserV1.value
-    );
-    state.databaseList = sortDatabaseListByEnvironmentV1(
-      databaseList,
-      environmentV1Store.getEnvironmentList()
-    );
     state.loading = false;
   }
 };

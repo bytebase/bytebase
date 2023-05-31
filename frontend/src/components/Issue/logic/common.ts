@@ -2,17 +2,19 @@ import { computed } from "vue";
 import { cloneDeep, isNaN, isNumber } from "lodash-es";
 import { useRoute } from "vue-router";
 import { v4 as uuidv4 } from "uuid";
+import { t } from "@/plugins/i18n";
+
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import {
   useCurrentUserV1,
-  useDatabaseStore,
+  useDatabaseV1Store,
   useIssueStore,
   useSheetV1Store,
   useTaskStore,
   useUIStateStore,
 } from "@/store";
 import {
-  Database,
+  ComposedDatabase,
   Issue,
   IssueCreate,
   IssuePatch,
@@ -26,9 +28,9 @@ import {
   MigrationType,
   SheetId,
   MigrationContext,
-  dialectOfEngine,
-  languageOfEngine,
   UNKNOWN_ID,
+  languageOfEngineV1,
+  dialectOfEngineV1,
 } from "@/types";
 import { IssueLogic, useIssueLogic } from "./index";
 import {
@@ -40,11 +42,6 @@ import {
   taskCheckRunSummary,
 } from "@/utils";
 import { maybeApplyRollbackParams } from "@/plugins/issue/logic/initialize/standard";
-import { t } from "@/plugins/i18n";
-import {
-  getSheetPathByLegacyProject,
-  getProjectPathByLegacyProject,
-} from "@/store/modules/v1/common";
 import {
   Sheet_Visibility,
   Sheet_Source,
@@ -52,11 +49,18 @@ import {
 } from "@/types/proto/v1/sheet_service";
 
 export const useCommonLogic = () => {
-  const { create, issue, selectedTask, createIssue, onStatusChanged, dialog } =
-    useIssueLogic();
+  const {
+    create,
+    issue,
+    project,
+    selectedTask,
+    createIssue,
+    onStatusChanged,
+    dialog,
+  } = useIssueLogic();
   const route = useRoute();
   const currentUserV1 = useCurrentUserV1();
-  const databaseStore = useDatabaseStore();
+  const databaseStore = useDatabaseV1Store();
   const issueStore = useIssueStore();
   const taskStore = useTaskStore();
   const sheetV1Store = useSheetV1Store();
@@ -102,7 +106,7 @@ export const useCommonLogic = () => {
       });
   };
 
-  const initialTaskListStatementFromRoute = () => {
+  const initialTaskListStatementFromRoute = async () => {
     if (!create.value) {
       return;
     }
@@ -127,8 +131,14 @@ export const useCommonLogic = () => {
         const task = taskList.find(
           (task) => task.databaseId === Number(databaseId)
         );
+        const database = await databaseStore.getOrFetchDatabaseByUID(
+          databaseId
+        );
         if (task) {
           task.sheetId = sheetId;
+          const sheetName = `${database.project}/sheets/${sheetId}`;
+          const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);
+          task.statement = new TextDecoder().decode(sheet?.content);
         }
       }
     } else if (sqlListString) {
@@ -210,19 +220,16 @@ export const useCommonLogic = () => {
       if (patchingTaskList.length === 0) return;
 
       // Create a new sheet instead of reusing the old one.
-      const sheet = await sheetV1Store.createSheet(
-        getProjectPathByLegacyProject(issueEntity.project),
-        {
-          title: uuidv4(),
-          content: new TextEncoder().encode(newStatement),
-          visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-          source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
-          type: Sheet_Type.TYPE_SQL,
-          payload: JSON.stringify(
-            getBacktracePayloadWithIssue(issue.value as Issue)
-          ),
-        }
-      );
+      const sheet = await sheetV1Store.createSheet(project.value.name, {
+        title: uuidv4(),
+        content: new TextEncoder().encode(newStatement),
+        visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+        source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+        type: Sheet_Type.TYPE_SQL,
+        payload: JSON.stringify(
+          getBacktracePayloadWithIssue(issue.value as Issue)
+        ),
+      });
 
       const patchRequestList = patchingTaskList.map((task) => {
         patchTask(task.id, { sheetId: sheetV1Store.getSheetUid(sheet.name) });
@@ -249,7 +256,7 @@ export const useCommonLogic = () => {
     const taskCreateList = flattenTaskList<TaskCreate>(issueCreate);
     const detailList: MigrationDetail[] = [];
     for (const taskCreate of taskCreateList) {
-      const db = databaseStore.getDatabaseById(taskCreate.databaseId!);
+      const db = databaseStore.getDatabaseByUID(String(taskCreate.databaseId!));
       const statement = maybeFormatStatementOnSave(taskCreate.statement, db);
       const migrationDetail: MigrationDetail = {
         migrationType: getMigrationTypeFromTask(taskCreate),
@@ -261,23 +268,17 @@ export const useCommonLogic = () => {
       };
       // Create a new sheet to save statement.
       if (!taskCreate.sheetId || taskCreate.sheetId === UNKNOWN_ID) {
-        const sheet = await sheetV1Store.createSheet(
-          getProjectPathByLegacyProject(db.project),
-          {
-            title: issueCreate.name + " - " + db.name,
-            content: new TextEncoder().encode(statement),
-            visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-            source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
-            type: Sheet_Type.TYPE_SQL,
-            payload: "{}",
-          }
-        );
+        const sheet = await sheetV1Store.createSheet(db.project, {
+          title: issueCreate.name + " - " + db.databaseName,
+          content: new TextEncoder().encode(statement),
+          visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+          source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+          type: Sheet_Type.TYPE_SQL,
+          payload: "{}",
+        });
         migrationDetail.sheetId = sheetV1Store.getSheetUid(sheet.name);
       } else if (taskCreate.sheetId !== UNKNOWN_ID) {
-        const sheetName = getSheetPathByLegacyProject(
-          db.project,
-          taskCreate.sheetId
-        );
+        const sheetName = `${db.project}/sheets/${taskCreate.sheetId}`;
         const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);
         if (
           new TextDecoder().decode(sheet?.content).length === sheet?.contentSize
@@ -351,7 +352,7 @@ export const flattenTaskList = <T extends Task | TaskCreate>(
 
 export const maybeFormatStatementOnSave = (
   statement: string,
-  database?: Database
+  database?: ComposedDatabase
 ): string => {
   const uiStateStore = useUIStateStore();
   if (!uiStateStore.issueFormatStatementOnSave) {
@@ -359,11 +360,11 @@ export const maybeFormatStatementOnSave = (
     return statement;
   }
 
-  const language = languageOfEngine(database?.instance.engine);
+  const language = languageOfEngineV1(database?.instanceEntity.engine);
   if (language !== "sql") {
     return statement;
   }
-  const dialect = dialectOfEngine(database?.instance.engine);
+  const dialect = dialectOfEngineV1(database?.instanceEntity.engine);
 
   const result = formatSQL(statement, dialect);
   if (!result.error) {
