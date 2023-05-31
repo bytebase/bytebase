@@ -1615,7 +1615,7 @@ func convertDatabaseLabels(labelsJSON string) ([]*api.DatabaseLabel, error) {
 	return labels, nil
 }
 
-// TODO(zp): keep this function as same as the one in the project_service.go
+// TODO(zp): keep this function as same as the one in the project_service.go.
 func getMatchesAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	e, err := cel.NewEnv(
 		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
