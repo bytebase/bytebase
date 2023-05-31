@@ -12,7 +12,6 @@ import {
   Attributes,
 } from "@/types";
 import { useDatabaseStore } from "./database";
-import { useInstanceStore } from "./instance";
 
 export function convertSingleSQLResult(
   attributes: Attributes
