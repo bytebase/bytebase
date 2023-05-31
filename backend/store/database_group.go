@@ -107,7 +107,7 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 }
 
 func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
-	where, args := []string{}, []any{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.ProjectUID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -373,7 +373,7 @@ func (s *Store) GetSchemaGroup(ctx context.Context, find *FindSchemaGroupMessage
 }
 
 func (*Store) listSchemaGroupsImpl(ctx context.Context, tx *Tx, find *FindSchemaGroupMessage) ([]*SchemaGroupMessage, error) {
-	where, args := []string{}, []any{}
+	where, args := []string{"TRUE"}, []any{}
 	if v := find.DatabaseGroupUID; v != nil {
 		where, args = append(where, fmt.Sprintf("db_group_id = $%d", len(args)+1)), append(args, *v)
 	}
