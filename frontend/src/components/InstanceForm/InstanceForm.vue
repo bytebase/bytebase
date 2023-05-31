@@ -638,7 +638,6 @@ import {
   useEnvironmentV1Store,
   useInstanceStore,
   useInstanceV1Store,
-  useDatabaseStore,
   useGracefulRequest,
   featureToRef,
 } from "@/store";
@@ -1213,7 +1212,6 @@ const updateEditState = async (instance: Instance) => {
 
   // Legacy API compatibility
   useInstanceStore().fetchInstanceById(Number(instance.uid));
-  useDatabaseStore().fetchDatabaseListByInstanceId(Number(instance.uid));
 };
 
 const handleWarningModalOkClick = async () => {

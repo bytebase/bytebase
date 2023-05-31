@@ -1,7 +1,7 @@
 import { isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import axios from "axios";
-import { computed, unref, watch, markRaw } from "vue";
+import { markRaw } from "vue";
 import {
   Database,
   DatabaseFind,
@@ -13,7 +13,6 @@ import {
   EMPTY_ID,
   Instance,
   InstanceId,
-  MaybeRef,
   Project,
   ResourceIdentifier,
   ResourceObject,
@@ -464,20 +463,3 @@ export const useDatabaseStore = defineStore("database", {
     },
   },
 });
-
-export const useDatabaseById = (databaseId: MaybeRef<DatabaseId>) => {
-  const store = useDatabaseStore();
-  watch(
-    () => unref(databaseId),
-    (id) => {
-      if (id !== UNKNOWN_ID) {
-        if (store.getDatabaseById(id).id === UNKNOWN_ID) {
-          store.fetchDatabaseById(id);
-        }
-      }
-    },
-    { immediate: true }
-  );
-
-  return computed(() => store.getDatabaseById(unref(databaseId)));
-};

@@ -201,6 +201,7 @@ export const useIssueStore = defineStore("issue", {
         const databaseV1Store = useDatabaseV1Store();
         for (const stage of issue.pipeline!.stageList) {
           for (const task of stage.taskList) {
+            // Legacy compatibility
             instanceStore.setInstanceById({
               instanceId: task.instance.id,
               instance: task.instance,

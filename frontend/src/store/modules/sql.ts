@@ -99,6 +99,7 @@ export const useSQLStore = defineStore("sql", {
       const resultSet = convert(res.data);
       if (!resultSet.error) {
         // Refresh the corresponding list.
+        // Legacy compatibility
         useDatabaseStore().fetchDatabaseById(databaseId);
       }
 

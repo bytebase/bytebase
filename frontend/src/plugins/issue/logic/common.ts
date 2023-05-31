@@ -1,7 +1,7 @@
 import { Ref } from "vue";
 import { useRoute } from "vue-router";
-import { useDatabaseStore, useProjectV1Store } from "@/store";
-import { Database, unknownProject, UNKNOWN_ID } from "@/types";
+import { useDatabaseV1Store, useProjectV1Store } from "@/store";
+import { ComposedDatabase, unknownProject, UNKNOWN_ID } from "@/types";
 import { IssueTemplate } from "@/plugins";
 import { Project } from "@/types/proto/v1/project_service";
 
@@ -37,7 +37,7 @@ export const findProject = async (
 
 export const findDatabaseListByQuery = (
   context: BuildNewIssueContext
-): Database[] => {
+): ComposedDatabase[] => {
   // route.query.databaseList is comma-splitted databaseId list
   // e.g. databaseList=7002,7006,7014
   const { route } = context;
@@ -46,11 +46,11 @@ export const findDatabaseListByQuery = (
     return [];
   }
 
-  const databaseList: Database[] = [];
+  const databaseList: ComposedDatabase[] = [];
   const databaseIdList = idList.split(",");
-  const databaseStore = useDatabaseStore();
+  const databaseStore = useDatabaseV1Store();
   for (const databaseId of databaseIdList) {
-    databaseList.push(databaseStore.getDatabaseById(parseInt(databaseId, 10)));
+    databaseList.push(databaseStore.getDatabaseByUID(databaseId));
   }
   return databaseList;
 };

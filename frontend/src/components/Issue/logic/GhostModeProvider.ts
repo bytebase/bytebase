@@ -19,13 +19,12 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
-  useDatabaseStore,
   useSheetV1Store,
   useSheetStatementByUid,
   useTaskStore,
+  useDatabaseV1Store,
 } from "@/store";
 import { sheetIdOfTask } from "@/utils";
-import { getProjectPathByLegacyProject } from "@/store/modules/v1/common";
 import {
   Sheet_Visibility,
   Sheet_Source,
@@ -46,7 +45,7 @@ export default defineComponent({
       applyTaskStateToOthers: baseApplyTaskStateToOthers,
       onStatusChanged,
     } = useIssueLogic();
-    const databaseStore = useDatabaseStore();
+    const databaseStore = useDatabaseV1Store();
     const taskStore = useTaskStore();
     const sheetV1Store = useSheetV1Store();
 
@@ -61,7 +60,7 @@ export default defineComponent({
           );
         } else {
           const issueEntity = issue.value as Issue;
-          const task = issueEntity.pipeline.stageList[0].taskList[0];
+          const task = issueEntity.pipeline!.stageList[0].taskList[0];
           const payload =
             task.payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
           return useSheetStatementByUid(payload.sheetId).value || "";
@@ -126,7 +125,7 @@ export default defineComponent({
             const issueEntity = issue.value as Issue;
             await taskStore.patchAllTasksInIssue({
               issueId: issueEntity.id,
-              pipelineId: issueEntity.pipeline.id,
+              pipelineId: issueEntity.pipeline!.id,
               taskPatch: {
                 sheetId,
               },
@@ -173,20 +172,17 @@ export default defineComponent({
         // so we just format the statement if needed
         const context = issueCreate.createContext as MigrationContext;
         for (const detail of context.detailList) {
-          const db = databaseStore.getDatabaseById(detail.databaseId!);
+          const db = databaseStore.getDatabaseByUID(String(detail.databaseId!));
           if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
             const statement = maybeFormatStatementOnSave(detail.statement, db);
-            const sheet = await sheetV1Store.createSheet(
-              getProjectPathByLegacyProject(db.project),
-              {
-                title: issueCreate.name + " - " + db.name,
-                content: new TextEncoder().encode(statement),
-                visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-                source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
-                type: Sheet_Type.TYPE_SQL,
-                payload: "{}",
-              }
-            );
+            const sheet = await sheetV1Store.createSheet(db.project, {
+              title: issueCreate.name + " - " + db.databaseName,
+              content: new TextEncoder().encode(statement),
+              visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+              source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+              type: Sheet_Type.TYPE_SQL,
+              payload: "{}",
+            });
             detail.statement = "";
             detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
           }
@@ -208,20 +204,17 @@ export default defineComponent({
             (detail) => detail.databaseId === databaseId
           );
           if (detail) {
-            const db = databaseStore.getDatabaseById(databaseId);
+            const db = databaseStore.getDatabaseByUID(String(databaseId));
             if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
               const statement = maybeFormatStatementOnSave(task.statement, db);
-              const sheet = await sheetV1Store.createSheet(
-                getProjectPathByLegacyProject(db.project),
-                {
-                  title: issueCreate.name + " - " + db.name,
-                  content: new TextEncoder().encode(statement),
-                  visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-                  source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
-                  type: Sheet_Type.TYPE_SQL,
-                  payload: "{}",
-                }
-              );
+              const sheet = await sheetV1Store.createSheet(db.project, {
+                title: issueCreate.name + " - " + db.name,
+                content: new TextEncoder().encode(statement),
+                visibility: Sheet_Visibility.VISIBILITY_PROJECT,
+                source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
+                type: Sheet_Type.TYPE_SQL,
+                payload: "{}",
+              });
               detail.statement = "";
               detail.sheetId = sheetV1Store.getSheetUid(sheet.name);
             }

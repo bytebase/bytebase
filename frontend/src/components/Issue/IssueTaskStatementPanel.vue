@@ -128,13 +128,13 @@ import {
   pushNotification,
   useDBSchemaStore,
   useUIStateStore,
-  useDatabaseStore,
   useSheetV1Store,
+  useDatabaseV1Store,
 } from "@/store";
 import { useIssueLogic } from "./logic";
 import {
-  Database,
-  dialectOfEngine,
+  ComposedDatabase,
+  dialectOfEngineV1,
   Issue,
   SQLDialect,
   Task,
@@ -145,16 +145,12 @@ import {
 import {
   getBacktracePayloadWithIssue,
   sheetNameOfTask,
-  useInstanceEditorLanguage,
+  useInstanceV1EditorLanguage,
 } from "@/utils";
 import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
 import UploadProgressButton from "../misc/UploadProgressButton.vue";
-import {
-  getSheetPathByLegacyProject,
-  getProjectPathByLegacyProject,
-} from "@/store/modules/v1/common";
 import {
   Sheet_Visibility,
   Sheet_Source,
@@ -322,13 +318,13 @@ const readonly = computed(() => {
 
 const { markers } = useSQLAdviceMarkers();
 
-const language = useInstanceEditorLanguage(
-  computed(() => selectedDatabase.value?.instance)
+const language = useInstanceV1EditorLanguage(
+  computed(() => selectedDatabase.value?.instanceEntity)
 );
 
 const dialect = computed((): SQLDialect => {
   const db = selectedDatabase.value;
-  return dialectOfEngine(db?.instance.engine);
+  return dialectOfEngineV1(db?.instanceEntity.engine);
 });
 
 const formatOnSave = computed({
@@ -413,10 +409,10 @@ watch(
     if (create.value) {
       const taskCreate = task as TaskCreate;
       if (taskCreate.databaseId) {
-        const db = await useDatabaseStore().getOrFetchDatabaseById(
-          taskCreate.databaseId
+        const db = await useDatabaseV1Store().getOrFetchDatabaseByUID(
+          String(taskCreate.databaseId)
         );
-        sheetName = getSheetPathByLegacyProject(db.project, taskCreate.sheetId);
+        sheetName = `${db.project}/sheets/${taskCreate.sheetId}`;
       }
     } else {
       sheetName = sheetNameOfTask(task as Task);
@@ -493,9 +489,7 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
   }
 
   state.isUploadingFile = true;
-  const projectName = getProjectPathByLegacyProject(
-    selectedDatabase.value.project
-  );
+  const projectName = selectedDatabase.value.project;
   const { filename, content: statement } = await handleUploadFileEvent(
     event,
     100
@@ -638,14 +632,18 @@ const useDatabaseAndTableList = () => {
   watch(
     databaseList,
     (list) => {
-      list.forEach((db) => dbSchemaStore.getOrFetchDatabaseMetadataById(db.id));
+      list.forEach((db) => {
+        if (db.uid !== String(UNKNOWN_ID)) {
+          dbSchemaStore.getOrFetchDatabaseMetadataById(Number(db.uid));
+        }
+      });
     },
     { immediate: true }
   );
 
   const tableList = computed(() => {
     return databaseList.value
-      .map((item) => dbSchemaStore.getTableListByDatabaseId(item.id))
+      .map((item) => dbSchemaStore.getTableListByDatabaseId(Number(item.uid)))
       .flat();
   });
 
@@ -655,14 +653,14 @@ const useDatabaseAndTableList = () => {
 const { databaseList, tableList } = useDatabaseAndTableList();
 
 const handleUpdateEditorAutoCompletionContext = async () => {
-  const databaseMap: Map<Database, TableMetadata[]> = new Map();
+  const databaseMap: Map<ComposedDatabase, TableMetadata[]> = new Map();
   for (const database of databaseList.value) {
     const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
-      database.id
+      Number(database.uid)
     );
     databaseMap.set(database, tableList);
   }
-  editorRef.value?.setEditorAutoCompletionContext(databaseMap);
+  editorRef.value?.setEditorAutoCompletionContextV1(databaseMap);
 };
 
 const updateEditorHeight = () => {

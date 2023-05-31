@@ -92,7 +92,7 @@ const isActiveStage = (stage: Stage | StageCreate): boolean => {
     return false;
   }
 
-  const activeTask = activeTaskOfPipeline((issue.value as Issue).pipeline);
+  const activeTask = activeTaskOfPipeline((issue.value as Issue).pipeline!);
   const taskFound = (stage as Stage).taskList.find(
     (t) => t.id === activeTask.id
   );
@@ -129,7 +129,7 @@ const onClickStage = (stage: Stage | StageCreate, index: number) => {
     selectStageOrTask(index);
     return;
   }
-  selectStageOrTask((stage as Stage).id);
+  selectStageOrTask(Number((stage as Stage).id));
 };
 </script>
 
