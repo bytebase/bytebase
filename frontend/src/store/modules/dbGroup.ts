@@ -3,11 +3,57 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
+import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
+import { useEnvironmentV1Store, useProjectV1Store } from "./v1";
+import { ComposedDatabaseGroup } from "@/types";
+import { Environment } from "@/types/proto/v1/environment_service";
+import {
+  getProjectNameAndDatabaseGroupName,
+  projectNamePrefix,
+} from "./v1/common";
+
+const composeDatabaseGroup = async (
+  databaseGroup: DatabaseGroup
+): Promise<ComposedDatabaseGroup> => {
+  const [projectName, databaseGroupName] = getProjectNameAndDatabaseGroupName(
+    databaseGroup.name
+  );
+  const expression = databaseGroup.databaseExpr?.expression ?? "";
+  const convertResult = await convertDatabaseGroupExprFromCEL(expression);
+  const project = await useProjectV1Store().getOrFetchProjectByName(
+    `${projectNamePrefix}${projectName}`
+  );
+  const environment = useEnvironmentV1Store().getEnvironmentByName(
+    convertResult.environmentId
+  ) as Environment;
+
+  return {
+    ...databaseGroup,
+    databaseGroupName: databaseGroupName,
+    projectName: projectName,
+    project: project,
+    environmentName: convertResult.environmentId ?? "",
+    environment: environment,
+  };
+};
 
 export const useDBGroupStore = defineStore("db-group", () => {
-  const dbGroupMapByName = ref<Map<string, DatabaseGroup>>(new Map());
+  const dbGroupMapByName = ref<Map<string, ComposedDatabaseGroup>>(new Map());
   const schemaGroupMapByName = ref<Map<string, SchemaGroup>>(new Map());
   const cachedProjectNameSet = ref<Set<string>>(new Set());
+
+  const fetchAllDatabaseGroupList = async () => {
+    const { databaseGroups } = await projectServiceClient.listDatabaseGroups({
+      parent: "projects/-",
+    });
+    const composedList = [];
+    for (const dbGroup of databaseGroups) {
+      const composedData = await composeDatabaseGroup(dbGroup);
+      dbGroupMapByName.value.set(dbGroup.name, composedData);
+      composedList.push(composedData);
+    }
+    return composedList;
+  };
 
   const getOrFetchDBGroupByName = async (name: string) => {
     const cached = dbGroupMapByName.value.get(name);
@@ -16,7 +62,8 @@ export const useDBGroupStore = defineStore("db-group", () => {
     const databaseGroup = await projectServiceClient.getDatabaseGroup({
       name: name,
     });
-    dbGroupMapByName.value.set(name, databaseGroup);
+    const composedData = await composeDatabaseGroup(databaseGroup);
+    dbGroupMapByName.value.set(name, composedData);
     return databaseGroup;
   };
 
@@ -32,7 +79,8 @@ export const useDBGroupStore = defineStore("db-group", () => {
       parent: projectName,
     });
     for (const dbGroup of databaseGroups) {
-      dbGroupMapByName.value.set(dbGroup.name, dbGroup);
+      const composedData = await composeDatabaseGroup(dbGroup);
+      dbGroupMapByName.value.set(dbGroup.name, composedData);
     }
     cachedProjectNameSet.value.add(projectName);
     return databaseGroups;
@@ -65,7 +113,8 @@ export const useDBGroupStore = defineStore("db-group", () => {
         databaseGroupId: name,
       }
     );
-    dbGroupMapByName.value.set(createdDatabaseGroup.name, createdDatabaseGroup);
+    const composedData = await composeDatabaseGroup(createdDatabaseGroup);
+    dbGroupMapByName.value.set(createdDatabaseGroup.name, composedData);
     return createdDatabaseGroup;
   };
 
@@ -89,7 +138,8 @@ export const useDBGroupStore = defineStore("db-group", () => {
         updateMask,
       }
     );
-    dbGroupMapByName.value.set(updatedDatabaseGroup.name, updatedDatabaseGroup);
+    const composedData = await composeDatabaseGroup(updatedDatabaseGroup);
+    dbGroupMapByName.value.set(updatedDatabaseGroup.name, composedData);
     return updatedDatabaseGroup;
   };
 
@@ -176,6 +226,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
   };
 
   return {
+    fetchAllDatabaseGroupList,
     getOrFetchDBGroupByName,
     getOrFetchDBGroupListByProjectName,
     getDBGroupListByProjectName,
