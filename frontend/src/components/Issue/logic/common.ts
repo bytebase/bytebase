@@ -106,7 +106,7 @@ export const useCommonLogic = () => {
       });
   };
 
-  const initialTaskListStatementFromRoute = () => {
+  const initialTaskListStatementFromRoute = async () => {
     if (!create.value) {
       return;
     }
@@ -131,8 +131,14 @@ export const useCommonLogic = () => {
         const task = taskList.find(
           (task) => task.databaseId === Number(databaseId)
         );
+        const database = await databaseStore.getOrFetchDatabaseByUID(
+          databaseId
+        );
         if (task) {
           task.sheetId = sheetId;
+          const sheetName = `${database.project}/sheets/${sheetId}`;
+          const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);
+          task.statement = new TextDecoder().decode(sheet?.content);
         }
       }
     } else if (sqlListString) {
