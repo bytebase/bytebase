@@ -469,6 +469,8 @@
   
 - [v1/sql_service.proto](#v1_sql_service-proto)
     - [Advice](#bytebase-v1-Advice)
+    - [ExportRequest](#bytebase-v1-ExportRequest)
+    - [ExportResponse](#bytebase-v1-ExportResponse)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
     - [PrettyResponse](#bytebase-v1-PrettyResponse)
     - [QueryRequest](#bytebase-v1-QueryRequest)
@@ -478,6 +480,7 @@
     - [RowValue](#bytebase-v1-RowValue)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
+    - [ExportRequest.Format](#bytebase-v1-ExportRequest-Format)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -7344,6 +7347,40 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
 
+<a name="bytebase-v1-ExportRequest"></a>
+
+### ExportRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance} |
+| connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
+| statement | [string](#string) |  | The SQL statement to execute. |
+| limit | [int32](#int32) |  | The maximum number of rows to return. |
+| format | [ExportRequest.Format](#bytebase-v1-ExportRequest-Format) |  | The export format. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportResponse"></a>
+
+### ExportResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  | The export file content. |
+
+
+
+
+
+
 <a name="bytebase-v1-PrettyRequest"></a>
 
 ### PrettyRequest
@@ -7485,6 +7522,19 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | ERROR | 3 |  |
 
 
+
+<a name="bytebase-v1-ExportRequest-Format"></a>
+
+### ExportRequest.Format
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FORMAT_UNSPECIFIED | 0 |  |
+| CSV | 1 |  |
+| JSON | 2 |  |
+
+
  
 
  
@@ -7499,6 +7549,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | ----------- | ------------ | ------------- | ------------|
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
+| Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
 
  
 
