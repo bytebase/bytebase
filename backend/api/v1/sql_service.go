@@ -37,7 +37,7 @@ import (
 
 const (
 	// The maximum number of bytes for sql results in response body.
-	// 10 MB
+	// 10 MB.
 	maximumSQLResultSize = 10 * 1024 * 1024
 )
 
