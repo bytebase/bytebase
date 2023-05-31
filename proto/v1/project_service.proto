@@ -604,6 +604,7 @@ message Activity {
 message ListDatabaseGroupsRequest {
   // The parent resource whose database groups are to be listed.
   // Format: projects/{project}
+  // Using "projects/-" will list database groups across all projects.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // Not used. The maximum number of anomalies to return. The service may return fewer than
