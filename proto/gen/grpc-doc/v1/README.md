@@ -7462,7 +7462,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | string_value | [string](#string) |  |  |
 | uint32_value | [uint32](#uint32) |  |  |
 | uint64_value | [uint64](#uint64) |  |  |
-| value_value | [google.protobuf.Value](#google-protobuf-Value) |  | value_value is used for Spanner only. |
+| value_value | [google.protobuf.Value](#google-protobuf-Value) |  | value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. |
 
 
 

@@ -66,7 +66,7 @@ export interface RowValue {
   uint64Value?:
     | number
     | undefined;
-  /** value_value is used for Spanner only. */
+  /** value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. */
   valueValue?: any;
 }
 
