@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/google/cel-go/cel"
 	"github.com/labstack/echo/v4"
@@ -32,6 +33,12 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+)
+
+const (
+	// The maximum number of bytes for sql results in response body.
+	// 10 MB
+	maximumSQLResultSize = 10 * 1024 * 1024
 )
 
 // SQLService is the service for SQL.
@@ -102,10 +109,21 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, queryErr
 	}
 
-	return &v1pb.QueryResponse{
+	response := &v1pb.QueryResponse{
 		Results: results,
-		Advices: adviceList,
-	}, nil
+	}
+
+	if proto.Size(response) > maximumSQLResultSize {
+		response.Results = []*v1pb.QueryResult{
+			{
+				Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024),
+			},
+		}
+	}
+
+	response.Advices = adviceList
+
+	return response, nil
 }
 
 // postQuery does the following:
