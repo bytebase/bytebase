@@ -1715,7 +1715,7 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 }
 
 func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.DatabaseGroup, error) {
-	matches, unmatches, err := s.getMatchesAndUnmatchedDatabases(ctx, databaseGroup, projectResourceID)
+	matches, unmatches, err := s.getMatchedAndUnmatchedDatabases(ctx, databaseGroup, projectResourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -1737,7 +1737,7 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 	return ret, nil
 }
 
-func (s *ProjectService) getMatchesAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+func (s *ProjectService) getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &projectResourceID,
 	})
@@ -1810,7 +1810,7 @@ func (s *ProjectService) convertStoreToAPISchemaGroupFull(ctx context.Context, s
 }
 
 func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schemaGroup *store.SchemaGroupMessage, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*v1pb.SchemaGroup_Table, []*v1pb.SchemaGroup_Table, error) {
-	matchesDatabases, _, err := s.getMatchesAndUnmatchedDatabases(ctx, databaseGroup, projectResourceID)
+	matchesDatabases, _, err := s.getMatchedAndUnmatchedDatabases(ctx, databaseGroup, projectResourceID)
 	if err != nil {
 		return nil, nil, err
 	}

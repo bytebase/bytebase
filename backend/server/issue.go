@@ -955,7 +955,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid database group name")
 			}
 			// TODO(zp): get matching databases.
-			matches, _, err := getMatchesAndUnmatchedDatabases(ctx, databaseGroup, allDatabases)
+			matches, _, err := getMatchedAndUnmatchedDatabases(ctx, databaseGroup, allDatabases)
 			if err != nil {
 				return nil, err
 			}
@@ -1616,7 +1616,7 @@ func convertDatabaseLabels(labelsJSON string) ([]*api.DatabaseLabel, error) {
 }
 
 // TODO(zp): keep this function as same as the one in the project_service.go.
-func getMatchesAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	e, err := cel.NewEnv(
 		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
 	)
