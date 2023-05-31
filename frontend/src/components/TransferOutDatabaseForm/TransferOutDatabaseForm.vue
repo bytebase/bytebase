@@ -226,12 +226,11 @@ const filterTargetProject = (project: Project) => {
 
 const doTransfer = async () => {
   const target = targetProject.value!;
-  if (!target) if (!targetProject.value) return;
+  if (!target) return;
 
   const transferOneDatabase = async (database: ComposedDatabase) => {
-    const targetProject = useProjectV1Store().getProjectByUID(props.projectId);
     const databasePatch = cloneDeep(database);
-    databasePatch.project = targetProject.name;
+    databasePatch.project = target.name;
     const updateMask = ["project"];
     const updated = await useDatabaseV1Store().updateDatabase({
       database: databasePatch,
