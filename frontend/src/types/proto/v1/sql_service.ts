@@ -7,6 +7,70 @@ import { Engine, engineFromJSON, engineToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
+export interface ExportRequest {
+  /**
+   * The name is the instance name to execute the query against.
+   * Format: instances/{instance}
+   */
+  name: string;
+  /**
+   * The connection database name to execute the query against.
+   * For PostgreSQL, it's required.
+   * For other database engines, it's optional. Use empty string to execute against without specifying a database.
+   */
+  connectionDatabase: string;
+  /** The SQL statement to execute. */
+  statement: string;
+  /** The maximum number of rows to return. */
+  limit: number;
+  /** The export format. */
+  format: ExportRequest_Format;
+}
+
+export enum ExportRequest_Format {
+  FORMAT_UNSPECIFIED = 0,
+  CSV = 1,
+  JSON = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function exportRequest_FormatFromJSON(object: any): ExportRequest_Format {
+  switch (object) {
+    case 0:
+    case "FORMAT_UNSPECIFIED":
+      return ExportRequest_Format.FORMAT_UNSPECIFIED;
+    case 1:
+    case "CSV":
+      return ExportRequest_Format.CSV;
+    case 2:
+    case "JSON":
+      return ExportRequest_Format.JSON;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ExportRequest_Format.UNRECOGNIZED;
+  }
+}
+
+export function exportRequest_FormatToJSON(object: ExportRequest_Format): string {
+  switch (object) {
+    case ExportRequest_Format.FORMAT_UNSPECIFIED:
+      return "FORMAT_UNSPECIFIED";
+    case ExportRequest_Format.CSV:
+      return "CSV";
+    case ExportRequest_Format.JSON:
+      return "JSON";
+    case ExportRequest_Format.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface ExportResponse {
+  /** The export file content. */
+  content: Uint8Array;
+}
+
 export interface QueryRequest {
   /**
    * The name is the instance name to execute the query against.
@@ -148,6 +212,173 @@ export interface PrettyResponse {
   /** The expected SDL schema after normalizing. */
   expectedSchema: string;
 }
+
+function createBaseExportRequest(): ExportRequest {
+  return { name: "", connectionDatabase: "", statement: "", limit: 0, format: 0 };
+}
+
+export const ExportRequest = {
+  encode(message: ExportRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.connectionDatabase !== "") {
+      writer.uint32(18).string(message.connectionDatabase);
+    }
+    if (message.statement !== "") {
+      writer.uint32(26).string(message.statement);
+    }
+    if (message.limit !== 0) {
+      writer.uint32(32).int32(message.limit);
+    }
+    if (message.format !== 0) {
+      writer.uint32(40).int32(message.format);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExportRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.connectionDatabase = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.limit = reader.int32();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.format = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportRequest {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
+      statement: isSet(object.statement) ? String(object.statement) : "",
+      limit: isSet(object.limit) ? Number(object.limit) : 0,
+      format: isSet(object.format) ? exportRequest_FormatFromJSON(object.format) : 0,
+    };
+  },
+
+  toJSON(message: ExportRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
+    message.statement !== undefined && (obj.statement = message.statement);
+    message.limit !== undefined && (obj.limit = Math.round(message.limit));
+    message.format !== undefined && (obj.format = exportRequest_FormatToJSON(message.format));
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportRequest>): ExportRequest {
+    return ExportRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ExportRequest>): ExportRequest {
+    const message = createBaseExportRequest();
+    message.name = object.name ?? "";
+    message.connectionDatabase = object.connectionDatabase ?? "";
+    message.statement = object.statement ?? "";
+    message.limit = object.limit ?? 0;
+    message.format = object.format ?? 0;
+    return message;
+  },
+};
+
+function createBaseExportResponse(): ExportResponse {
+  return { content: new Uint8Array() };
+}
+
+export const ExportResponse = {
+  encode(message: ExportResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.content.length !== 0) {
+      writer.uint32(10).bytes(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExportResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.content = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportResponse {
+    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array() };
+  },
+
+  toJSON(message: ExportResponse): unknown {
+    const obj: any = {};
+    message.content !== undefined &&
+      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array()));
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportResponse>): ExportResponse {
+    return ExportResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ExportResponse>): ExportResponse {
+    const message = createBaseExportResponse();
+    message.content = object.content ?? new Uint8Array();
+    return message;
+  },
+};
 
 function createBaseQueryRequest(): QueryRequest {
   return { name: "", connectionDatabase: "", statement: "", limit: 0 };
@@ -1071,17 +1302,69 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    export: {
+      name: "Export",
+      requestType: ExportRequest,
+      requestStream: false,
+      responseType: ExportResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              34,
+              58,
+              1,
+              42,
+              34,
+              29,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
 export interface SQLServiceImplementation<CallContextExt = {}> {
   pretty(request: PrettyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<PrettyResponse>>;
   query(request: QueryRequest, context: CallContext & CallContextExt): Promise<DeepPartial<QueryResponse>>;
+  export(request: ExportRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ExportResponse>>;
 }
 
 export interface SQLServiceClient<CallOptionsExt = {}> {
   pretty(request: DeepPartial<PrettyRequest>, options?: CallOptions & CallOptionsExt): Promise<PrettyResponse>;
   query(request: DeepPartial<QueryRequest>, options?: CallOptions & CallOptionsExt): Promise<QueryResponse>;
+  export(request: DeepPartial<ExportRequest>, options?: CallOptions & CallOptionsExt): Promise<ExportResponse>;
 }
 
 declare var self: any | undefined;
