@@ -186,6 +186,8 @@ export interface GetDatabaseSchemaRequest {
    * Format: instances/{instance}/databases/{database}
    */
   name: string;
+  /** Format the schema dump into SDL format. */
+  sdlFormat: boolean;
 }
 
 export interface GetBackupSettingRequest {
@@ -491,6 +493,7 @@ export interface Backup {
   backupType: Backup_BackupType;
   /** The comment of the backup. */
   comment: string;
+  uid: string;
 }
 
 /** The type of the backup. */
@@ -1664,13 +1667,16 @@ export const GetDatabaseMetadataRequest = {
 };
 
 function createBaseGetDatabaseSchemaRequest(): GetDatabaseSchemaRequest {
-  return { name: "" };
+  return { name: "", sdlFormat: false };
 }
 
 export const GetDatabaseSchemaRequest = {
   encode(message: GetDatabaseSchemaRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.sdlFormat === true) {
+      writer.uint32(16).bool(message.sdlFormat);
     }
     return writer;
   },
@@ -1689,6 +1695,13 @@ export const GetDatabaseSchemaRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.sdlFormat = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1699,12 +1712,16 @@ export const GetDatabaseSchemaRequest = {
   },
 
   fromJSON(object: any): GetDatabaseSchemaRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      sdlFormat: isSet(object.sdlFormat) ? Boolean(object.sdlFormat) : false,
+    };
   },
 
   toJSON(message: GetDatabaseSchemaRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.sdlFormat !== undefined && (obj.sdlFormat = message.sdlFormat);
     return obj;
   },
 
@@ -1715,6 +1732,7 @@ export const GetDatabaseSchemaRequest = {
   fromPartial(object: DeepPartial<GetDatabaseSchemaRequest>): GetDatabaseSchemaRequest {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
+    message.sdlFormat = object.sdlFormat ?? false;
     return message;
   },
 };
@@ -3726,7 +3744,7 @@ export const BackupSetting = {
 };
 
 function createBaseBackup(): Backup {
-  return { name: "", createTime: undefined, updateTime: undefined, state: 0, backupType: 0, comment: "" };
+  return { name: "", createTime: undefined, updateTime: undefined, state: 0, backupType: 0, comment: "", uid: "" };
 }
 
 export const Backup = {
@@ -3748,6 +3766,9 @@ export const Backup = {
     }
     if (message.comment !== "") {
       writer.uint32(50).string(message.comment);
+    }
+    if (message.uid !== "") {
+      writer.uint32(58).string(message.uid);
     }
     return writer;
   },
@@ -3801,6 +3822,13 @@ export const Backup = {
 
           message.comment = reader.string();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.uid = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3818,6 +3846,7 @@ export const Backup = {
       state: isSet(object.state) ? backup_BackupStateFromJSON(object.state) : 0,
       backupType: isSet(object.backupType) ? backup_BackupTypeFromJSON(object.backupType) : 0,
       comment: isSet(object.comment) ? String(object.comment) : "",
+      uid: isSet(object.uid) ? String(object.uid) : "",
     };
   },
 
@@ -3829,6 +3858,7 @@ export const Backup = {
     message.state !== undefined && (obj.state = backup_BackupStateToJSON(message.state));
     message.backupType !== undefined && (obj.backupType = backup_BackupTypeToJSON(message.backupType));
     message.comment !== undefined && (obj.comment = message.comment);
+    message.uid !== undefined && (obj.uid = message.uid);
     return obj;
   },
 
@@ -3844,6 +3874,7 @@ export const Backup = {
     message.state = object.state ?? 0;
     message.backupType = object.backupType ?? 0;
     message.comment = object.comment ?? "";
+    message.uid = object.uid ?? "";
     return message;
   },
 };
