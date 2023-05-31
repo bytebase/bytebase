@@ -137,7 +137,7 @@ const schemaGroup = computed(() => {
 watch(
   () => [props, schemaGroup.value],
   async () => {
-    const schemaGroup = await dbGroupStore.getOrFetchSchemaGroupById(
+    const schemaGroup = await dbGroupStore.getOrFetchSchemaGroupByName(
       `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}/${schemaGroupNamePrefix}${props.schemaGroupName}`
     );
 

@@ -171,7 +171,7 @@ onMounted(async () => {
     state.expr = expr;
 
     // Fetch related database group environment.
-    const relatedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupById(
+    const relatedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
       `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`
     );
     const convertResult = await convertDatabaseGroupExprFromCEL(
@@ -194,12 +194,12 @@ const validateResourceId = useDebounceFn(
 
     let request = undefined;
     if (props.resourceType === "DATABASE_GROUP") {
-      request = dbGroupStore.getOrFetchDBGroupById(
+      request = dbGroupStore.getOrFetchDBGroupByName(
         `${props.project.name}/databaseGroups/${resourceId}`
       );
     } else if (props.resourceType === "SCHEMA_GROUP") {
       if (state.selectedDatabaseGroupId) {
-        request = dbGroupStore.getOrFetchSchemaGroupById(
+        request = dbGroupStore.getOrFetchSchemaGroupByName(
           `${state.selectedDatabaseGroupId}/schemaGroups/${resourceId}`
         );
       }
