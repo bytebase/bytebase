@@ -480,7 +480,7 @@
     - [RowValue](#bytebase-v1-RowValue)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
-    - [ExportFormat](#bytebase-v1-ExportFormat)
+    - [ExportRequest.Format](#bytebase-v1-ExportRequest-Format)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -7358,7 +7358,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
-| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
+| format | [ExportRequest.Format](#bytebase-v1-ExportRequest-Format) |  | The export format. |
 
 
 
@@ -7373,8 +7373,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| file_name | [string](#string) |  | The export file name. |
-| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export file format. |
 | content | [bytes](#bytes) |  | The export file content. |
 
 
@@ -7524,14 +7522,14 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
 
-<a name="bytebase-v1-ExportFormat"></a>
+<a name="bytebase-v1-ExportRequest-Format"></a>
 
-### ExportFormat
+### ExportRequest.Format
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| EXPORT_FORMAT_UNSPECIFIED | 0 |  |
+| FORMAT_UNSPECIFIED | 0 |  |
 | CSV | 1 |  |
 | JSON | 2 |  |
 

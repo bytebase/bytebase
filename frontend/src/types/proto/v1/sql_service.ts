@@ -7,45 +7,6 @@ import { Engine, engineFromJSON, engineToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
-export enum ExportFormat {
-  EXPORT_FORMAT_UNSPECIFIED = 0,
-  CSV = 1,
-  JSON = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function exportFormatFromJSON(object: any): ExportFormat {
-  switch (object) {
-    case 0:
-    case "EXPORT_FORMAT_UNSPECIFIED":
-      return ExportFormat.EXPORT_FORMAT_UNSPECIFIED;
-    case 1:
-    case "CSV":
-      return ExportFormat.CSV;
-    case 2:
-    case "JSON":
-      return ExportFormat.JSON;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ExportFormat.UNRECOGNIZED;
-  }
-}
-
-export function exportFormatToJSON(object: ExportFormat): string {
-  switch (object) {
-    case ExportFormat.EXPORT_FORMAT_UNSPECIFIED:
-      return "EXPORT_FORMAT_UNSPECIFIED";
-    case ExportFormat.CSV:
-      return "CSV";
-    case ExportFormat.JSON:
-      return "JSON";
-    case ExportFormat.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export interface ExportRequest {
   /**
    * The name is the instance name to execute the query against.
@@ -63,14 +24,49 @@ export interface ExportRequest {
   /** The maximum number of rows to return. */
   limit: number;
   /** The export format. */
-  format: ExportFormat;
+  format: ExportRequest_Format;
+}
+
+export enum ExportRequest_Format {
+  FORMAT_UNSPECIFIED = 0,
+  CSV = 1,
+  JSON = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function exportRequest_FormatFromJSON(object: any): ExportRequest_Format {
+  switch (object) {
+    case 0:
+    case "FORMAT_UNSPECIFIED":
+      return ExportRequest_Format.FORMAT_UNSPECIFIED;
+    case 1:
+    case "CSV":
+      return ExportRequest_Format.CSV;
+    case 2:
+    case "JSON":
+      return ExportRequest_Format.JSON;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ExportRequest_Format.UNRECOGNIZED;
+  }
+}
+
+export function exportRequest_FormatToJSON(object: ExportRequest_Format): string {
+  switch (object) {
+    case ExportRequest_Format.FORMAT_UNSPECIFIED:
+      return "FORMAT_UNSPECIFIED";
+    case ExportRequest_Format.CSV:
+      return "CSV";
+    case ExportRequest_Format.JSON:
+      return "JSON";
+    case ExportRequest_Format.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface ExportResponse {
-  /** The export file name. */
-  fileName: string;
-  /** The export file format. */
-  format: ExportFormat;
   /** The export file content. */
   content: Uint8Array;
 }
@@ -298,7 +294,7 @@ export const ExportRequest = {
       connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
       limit: isSet(object.limit) ? Number(object.limit) : 0,
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+      format: isSet(object.format) ? exportRequest_FormatFromJSON(object.format) : 0,
     };
   },
 
@@ -308,7 +304,7 @@ export const ExportRequest = {
     message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
     message.statement !== undefined && (obj.statement = message.statement);
     message.limit !== undefined && (obj.limit = Math.round(message.limit));
-    message.format !== undefined && (obj.format = exportFormatToJSON(message.format));
+    message.format !== undefined && (obj.format = exportRequest_FormatToJSON(message.format));
     return obj;
   },
 
@@ -328,19 +324,13 @@ export const ExportRequest = {
 };
 
 function createBaseExportResponse(): ExportResponse {
-  return { fileName: "", format: 0, content: new Uint8Array() };
+  return { content: new Uint8Array() };
 }
 
 export const ExportResponse = {
   encode(message: ExportResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.fileName !== "") {
-      writer.uint32(10).string(message.fileName);
-    }
-    if (message.format !== 0) {
-      writer.uint32(16).int32(message.format);
-    }
     if (message.content.length !== 0) {
-      writer.uint32(26).bytes(message.content);
+      writer.uint32(10).bytes(message.content);
     }
     return writer;
   },
@@ -357,20 +347,6 @@ export const ExportResponse = {
             break;
           }
 
-          message.fileName = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.format = reader.int32() as any;
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
           message.content = reader.bytes();
           continue;
       }
@@ -383,17 +359,11 @@ export const ExportResponse = {
   },
 
   fromJSON(object: any): ExportResponse {
-    return {
-      fileName: isSet(object.fileName) ? String(object.fileName) : "",
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
-      content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(),
-    };
+    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array() };
   },
 
   toJSON(message: ExportResponse): unknown {
     const obj: any = {};
-    message.fileName !== undefined && (obj.fileName = message.fileName);
-    message.format !== undefined && (obj.format = exportFormatToJSON(message.format));
     message.content !== undefined &&
       (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array()));
     return obj;
@@ -405,8 +375,6 @@ export const ExportResponse = {
 
   fromPartial(object: DeepPartial<ExportResponse>): ExportResponse {
     const message = createBaseExportResponse();
-    message.fileName = object.fileName ?? "";
-    message.format = object.format ?? 0;
     message.content = object.content ?? new Uint8Array();
     return message;
   },

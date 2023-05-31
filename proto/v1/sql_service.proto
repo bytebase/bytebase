@@ -30,13 +30,12 @@ service SQLService {
   }
 }
 
-enum ExportFormat {
-  EXPORT_FORMAT_UNSPECIFIED = 0;
-  CSV = 1;
-  JSON = 2;
-}
-
 message ExportRequest {
+  enum Format {
+    FORMAT_UNSPECIFIED = 0;
+    CSV = 1;
+    JSON = 2;
+  }
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
@@ -53,18 +52,12 @@ message ExportRequest {
   int32 limit = 4;
 
   // The export format.
-  ExportFormat format = 5;
+  Format format = 5;
 }
 
 message ExportResponse {
-  // The export file name.
-  string file_name = 1;
-
-  // The export file format.
-  ExportFormat format = 2;
-
   // The export file content.
-  bytes content = 3;
+  bytes content = 1;
 }
 
 message QueryRequest {
