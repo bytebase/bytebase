@@ -921,6 +921,7 @@ export interface ListDatabaseGroupsRequest {
   /**
    * The parent resource whose database groups are to be listed.
    * Format: projects/{project}
+   * Using "projects/-" will list database groups across all projects.
    */
   parent: string;
   /**
@@ -1043,6 +1044,8 @@ export interface CreateSchemaGroupRequest {
    * are /[a-z][0-9]-/.
    */
   schemaGroupId: string;
+  /** If set, validate the create request and preview the full schema group response, but do not actually create it. */
+  validateOnly: boolean;
 }
 
 export interface UpdateSchemaGroupRequest {
@@ -4334,7 +4337,7 @@ export const DatabaseGroup_Database = {
 };
 
 function createBaseCreateSchemaGroupRequest(): CreateSchemaGroupRequest {
-  return { parent: "", schemaGroup: undefined, schemaGroupId: "" };
+  return { parent: "", schemaGroup: undefined, schemaGroupId: "", validateOnly: false };
 }
 
 export const CreateSchemaGroupRequest = {
@@ -4347,6 +4350,9 @@ export const CreateSchemaGroupRequest = {
     }
     if (message.schemaGroupId !== "") {
       writer.uint32(26).string(message.schemaGroupId);
+    }
+    if (message.validateOnly === true) {
+      writer.uint32(32).bool(message.validateOnly);
     }
     return writer;
   },
@@ -4379,6 +4385,13 @@ export const CreateSchemaGroupRequest = {
 
           message.schemaGroupId = reader.string();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.validateOnly = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4393,6 +4406,7 @@ export const CreateSchemaGroupRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       schemaGroup: isSet(object.schemaGroup) ? SchemaGroup.fromJSON(object.schemaGroup) : undefined,
       schemaGroupId: isSet(object.schemaGroupId) ? String(object.schemaGroupId) : "",
+      validateOnly: isSet(object.validateOnly) ? Boolean(object.validateOnly) : false,
     };
   },
 
@@ -4402,6 +4416,7 @@ export const CreateSchemaGroupRequest = {
     message.schemaGroup !== undefined &&
       (obj.schemaGroup = message.schemaGroup ? SchemaGroup.toJSON(message.schemaGroup) : undefined);
     message.schemaGroupId !== undefined && (obj.schemaGroupId = message.schemaGroupId);
+    message.validateOnly !== undefined && (obj.validateOnly = message.validateOnly);
     return obj;
   },
 
@@ -4416,6 +4431,7 @@ export const CreateSchemaGroupRequest = {
       ? SchemaGroup.fromPartial(object.schemaGroup)
       : undefined;
     message.schemaGroupId = object.schemaGroupId ?? "";
+    message.validateOnly = object.validateOnly ?? false;
     return message;
   },
 };

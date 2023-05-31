@@ -20,6 +20,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
 }
 
 // ColumnAutoIncrementInitialValueAdvisor is the advisor checking for auto-increment column initial value.

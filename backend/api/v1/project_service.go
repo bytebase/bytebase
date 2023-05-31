@@ -782,6 +782,33 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
+	if projectResourceID == "-" {
+		var apiDatabaseGroups []*v1pb.DatabaseGroup
+		databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		for _, databaseGroup := range databaseGroups {
+			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+				UID: &databaseGroup.ProjectUID,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if project == nil {
+				return nil, status.Errorf(codes.DataLoss, "project %d not found", databaseGroup.ProjectUID)
+			}
+			if project.Deleted {
+				continue
+			}
+			apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
+		}
+		return &v1pb.ListDatabaseGroupsResponse{
+			DatabaseGroups: apiDatabaseGroups,
+		}, nil
+	}
+
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
@@ -881,18 +908,22 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.InvalidArgument, "schema group table expression is required")
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	storeSchemaGroup := &store.SchemaGroupMessage{
 		ResourceID:       request.SchemaGroupId,
 		DatabaseGroupUID: databaseGroup.UID,
 		Placeholder:      request.SchemaGroup.TablePlaceholder,
 		Expression:       request.SchemaGroup.TableExpr,
 	}
+	if request.ValidateOnly {
+		return s.convertStoreToAPISchemaGroupFull(ctx, storeSchemaGroup, databaseGroup, projectResourceID)
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	schemaGroup, err := s.store.CreateSchemaGroup(ctx, principalID, storeSchemaGroup)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPISchemaGroup(schemaGroup, projectResourceID, databaseGroupResourceID), nil
+	return convertStoreToAPISchemaGroupBasic(schemaGroup, projectResourceID, databaseGroupResourceID), nil
 }
 
 // UpdateSchemaGroup updates a schema group.
@@ -956,7 +987,7 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPISchemaGroup(schemaGroup, projectResourceID, databaseGroupResourceID), nil
+	return convertStoreToAPISchemaGroupBasic(schemaGroup, projectResourceID, databaseGroupResourceID), nil
 }
 
 // DeleteSchemaGroup deletes a schema group.
@@ -1042,7 +1073,7 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 	}
 	var apiSchemaGroups []*v1pb.SchemaGroup
 	for _, schemaGroup := range schemaGroups {
-		apiSchemaGroups = append(apiSchemaGroups, convertStoreToAPISchemaGroup(schemaGroup, projectResourceID, databaseGroup.ResourceID))
+		apiSchemaGroups = append(apiSchemaGroups, convertStoreToAPISchemaGroupBasic(schemaGroup, projectResourceID, databaseGroup.ResourceID))
 	}
 	return &v1pb.ListSchemaGroupsResponse{
 		SchemaGroups: apiSchemaGroups,
@@ -1087,33 +1118,59 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 	if schemaGroup == nil {
 		return nil, status.Errorf(codes.NotFound, "schema group %q not found", schemaGroupResourceID)
 	}
-	return convertStoreToAPISchemaGroup(schemaGroup, projectResourceID, databaseGroupResourceID), nil
+	if request.View == v1pb.SchemaGroupView_SCHEMA_GROUP_VIEW_BASIC || request.View == v1pb.SchemaGroupView_SCHEMA_GROUP_VIEW_UNSPECIFIED {
+		return convertStoreToAPISchemaGroupBasic(schemaGroup, projectResourceID, databaseGroupResourceID), nil
+	}
+	return s.convertStoreToAPISchemaGroupFull(ctx, schemaGroup, databaseGroup, projectResourceID)
 }
 
 func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.DatabaseGroup, error) {
+	matches, unmatches, err := s.getMatchesAndUnmatchesDatabases(ctx, databaseGroup, projectResourceID)
+	if err != nil {
+		return nil, err
+	}
+	ret := &v1pb.DatabaseGroup{
+		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
+		DatabasePlaceholder: databaseGroup.Placeholder,
+		DatabaseExpr:        databaseGroup.Expression,
+	}
+	for _, database := range matches {
+		ret.MatchedDatabases = append(ret.MatchedDatabases, &v1pb.DatabaseGroup_Database{
+			Name: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+		})
+	}
+	for _, database := range unmatches {
+		ret.UnmatchedDatabases = append(ret.UnmatchedDatabases, &v1pb.DatabaseGroup_Database{
+			Name: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
+		})
+	}
+	return ret, nil
+}
+
+func (s *ProjectService) getMatchesAndUnmatchesDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 	e, err := cel.NewEnv(
 		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 	ast, issues := e.Parse(databaseGroup.Expression.Expression)
 	if issues != nil && issues.Err() != nil {
-		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
 	}
 	prog, err := e.Program(ast)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	var matches []*v1pb.DatabaseGroup_Database
-	var unmatches []*v1pb.DatabaseGroup_Database
+	var matches []*store.DatabaseMessage
+	var unmatches []*store.DatabaseMessage
 
 	for _, database := range databases {
 		res, _, err := prog.ContextEval(ctx, map[string]any{
@@ -1123,30 +1180,20 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 			},
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, nil, status.Errorf(codes.Internal, err.Error())
 		}
 
 		val, err := res.ConvertToNative(reflect.TypeOf(false))
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "expect bool result")
+			return nil, nil, status.Errorf(codes.Internal, "expect bool result")
 		}
 		if boolVal, ok := val.(bool); ok && boolVal {
-			matches = append(matches, &v1pb.DatabaseGroup_Database{
-				Name: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
-			})
+			matches = append(matches, database)
 		} else {
-			unmatches = append(unmatches, &v1pb.DatabaseGroup_Database{
-				Name: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
-			})
+			unmatches = append(unmatches, database)
 		}
 	}
-	return &v1pb.DatabaseGroup{
-		Name:                fmt.Sprintf("%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID),
-		DatabasePlaceholder: databaseGroup.Placeholder,
-		DatabaseExpr:        databaseGroup.Expression,
-		MatchedDatabases:    matches,
-		UnmatchedDatabases:  unmatches,
-	}, nil
+	return matches, unmatches, nil
 }
 
 func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
@@ -1157,7 +1204,90 @@ func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessa
 	}
 }
 
-func convertStoreToAPISchemaGroup(schemaGroup *store.SchemaGroupMessage, projectResourceID, databaseGroupResourceID string) *v1pb.SchemaGroup {
+func (s *ProjectService) convertStoreToAPISchemaGroupFull(ctx context.Context, schemaGroup *store.SchemaGroupMessage, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.SchemaGroup, error) {
+	matches, unmatches, err := s.getMatchesAndUnmatchesTables(ctx, schemaGroup, databaseGroup, projectResourceID)
+	if err != nil {
+		return nil, err
+	}
+	ret := &v1pb.SchemaGroup{
+		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroup.ResourceID, schemaGroupNamePrefix, schemaGroup.ResourceID),
+		TablePlaceholder: schemaGroup.Placeholder,
+		TableExpr:        schemaGroup.Expression,
+		MatchedTables:    matches,
+		UnmatchedTables:  unmatches,
+	}
+	return ret, nil
+}
+
+func (s *ProjectService) getMatchesAndUnmatchesTables(ctx context.Context, schemaGroup *store.SchemaGroupMessage, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*v1pb.SchemaGroup_Table, []*v1pb.SchemaGroup_Table, error) {
+	matchesDatabases, _, err := s.getMatchesAndUnmatchesDatabases(ctx, databaseGroup, projectResourceID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	e, err := cel.NewEnv(
+		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+	)
+	if err != nil {
+		return nil, nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(schemaGroup.Expression.Expression)
+	if issues != nil && issues.Err() != nil {
+		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	var matches []*v1pb.SchemaGroup_Table
+	var unmatches []*v1pb.SchemaGroup_Table
+
+	for _, matchesDatabase := range matchesDatabases {
+		dbSchema, err := s.store.GetDBSchema(ctx, matchesDatabase.UID)
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if dbSchema == nil {
+			return nil, nil, status.Errorf(codes.Internal, "database %q schema not found", matchesDatabase.DatabaseName)
+		}
+		if dbSchema.Schema == nil {
+			return nil, nil, status.Errorf(codes.Internal, "database %q schema is empty", matchesDatabase.DatabaseName)
+		}
+		for _, schema := range dbSchema.Metadata.Schemas {
+			for _, table := range schema.Tables {
+				res, _, err := prog.ContextEval(ctx, map[string]any{
+					"resource": map[string]any{
+						"table_name": table.Name,
+					},
+				})
+				if err != nil {
+					return nil, nil, status.Errorf(codes.Internal, err.Error())
+				}
+
+				val, err := res.ConvertToNative(reflect.TypeOf(false))
+				if err != nil {
+					return nil, nil, status.Errorf(codes.Internal, "expect bool result")
+				}
+
+				schemaGroupTable := &v1pb.SchemaGroup_Table{
+					Database: fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, matchesDatabase.InstanceID, databaseIDPrefix, matchesDatabase.DatabaseName),
+					Schema:   schema.Name,
+					Table:    table.Name,
+				}
+
+				if boolVal, ok := val.(bool); ok && boolVal {
+					matches = append(matches, schemaGroupTable)
+				} else {
+					unmatches = append(unmatches, schemaGroupTable)
+				}
+			}
+		}
+	}
+	return matches, unmatches, nil
+}
+
+func convertStoreToAPISchemaGroupBasic(schemaGroup *store.SchemaGroupMessage, projectResourceID, databaseGroupResourceID string) *v1pb.SchemaGroup {
 	return &v1pb.SchemaGroup{
 		Name:             fmt.Sprintf("%s%s/%s%s/%s%s", projectNamePrefix, projectResourceID, databaseGroupNamePrefix, databaseGroupResourceID, schemaGroupNamePrefix, schemaGroup.ResourceID),
 		TablePlaceholder: schemaGroup.Placeholder,

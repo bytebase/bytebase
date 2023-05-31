@@ -17,16 +17,13 @@
     </div>
     <div v-show="state.showMatchedTableList" class="w-full">
       <div
-        v-for="database in matchedTableList"
-        :key="database.name"
+        v-for="table in matchedTableList"
+        :key="table.database"
         class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
-        <span>{{ database.databaseName }}</span>
+        <span>{{ table.table }}</span>
         <div class="flex flex-row justify-end items-center">
-          <InstanceV1EngineIcon :instance="database.instanceEntity" />
-          <span class="ml-1 text-sm text-gray-400">{{
-            database.instanceEntity.title
-          }}</span>
+          <DatabaseView :database-name="table.database" />
         </div>
       </div>
     </div>
@@ -52,16 +49,13 @@
     </div>
     <div v-show="state.showUnmatchedTableList">
       <div
-        v-for="database in matchedTableList"
-        :key="database.name"
-        class="w-full flex flex-row justify-between items-center"
+        v-for="table in unmatchedTableList"
+        :key="table.database"
+        class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
-        <span>{{ database.databaseName }}</span>
+        <span>{{ table.table }}</span>
         <div class="flex flex-row justify-end items-center">
-          <InstanceV1EngineIcon :instance="database.instanceEntity" />
-          <span class="ml-1 text-sm text-gray-400">{{
-            database.instanceEntity.title
-          }}</span>
+          <DatabaseView :database-name="table.database" />
         </div>
       </div>
     </div>
@@ -70,11 +64,18 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch, reactive } from "vue";
-import { ConditionGroupExpr } from "@/plugins/cel";
-import { useDatabaseV1Store } from "@/store";
-import { ComposedDatabase, ComposedProject } from "@/types";
-import { sortDatabaseV1List } from "@/utils";
-import { InstanceV1EngineIcon } from "../v2";
+import { ConditionGroupExpr, convertToCELString } from "@/plugins/cel";
+import { ComposedProject } from "@/types";
+import { DatabaseView } from "../v2";
+import {
+  SchemaGroup,
+  SchemaGroupView,
+  SchemaGroup_Table,
+} from "@/types/proto/v1/project_service";
+import { projectServiceClient } from "@/grpcweb";
+import { Expr } from "@/types/proto/google/type/expr";
+import { useDebounceFn } from "@vueuse/core";
+import { schemaGroupNamePrefix } from "@/store/modules/v1/common";
 
 interface LocalState {
   showMatchedTableList: boolean;
@@ -83,30 +84,55 @@ interface LocalState {
 
 const props = defineProps<{
   project: ComposedProject;
-  environmentId: string;
+  databaseGroupName: string;
   expr: ConditionGroupExpr;
+  schemaGroup?: SchemaGroup;
 }>();
 
 const state = reactive<LocalState>({
   showMatchedTableList: false,
   showUnmatchedTableList: false,
 });
-const matchedTableList = ref<ComposedDatabase[]>([]);
-const unmatchedTableList = ref<ComposedDatabase[]>([]);
-const databaseList = computed(() => {
-  const list = useDatabaseV1Store().databaseListByProject(props.project.name);
-  return sortDatabaseV1List(list);
-});
+const matchedTableList = ref<SchemaGroup_Table[]>([]);
+const unmatchedTableList = ref<SchemaGroup_Table[]>([]);
 
-watch(
-  () => [databaseList.value, props.expr],
-  async () => {
-    // TODO: fetch matched and unmatched table list with expr.
-    matchedTableList.value = databaseList.value;
-    unmatchedTableList.value = [];
-  },
-  {
-    immediate: true,
+const isCreating = computed(() => props.schemaGroup === undefined);
+
+const updateMatchingState = useDebounceFn(async () => {
+  const tempMatchedTableList: SchemaGroup_Table[] = [];
+  const tempUnmatchedTableList: SchemaGroup_Table[] = [];
+
+  if (isCreating.value) {
+    const celString = convertToCELString(props.expr);
+    const validateOnlyResourceId = "creating-schema-group";
+    const result = await projectServiceClient.createSchemaGroup({
+      parent: props.databaseGroupName,
+      schemaGroup: {
+        name: `${props.databaseGroupName}/${schemaGroupNamePrefix}/${validateOnlyResourceId}`,
+        tablePlaceholder: validateOnlyResourceId,
+        tableExpr: Expr.fromJSON({
+          expression: celString,
+        }),
+      },
+      schemaGroupId: validateOnlyResourceId,
+      validateOnly: true,
+    });
+    tempMatchedTableList.push(...result.matchedTables);
+    tempUnmatchedTableList.push(...result.unmatchedTables);
+  } else {
+    const result = await projectServiceClient.getSchemaGroup({
+      name: props.schemaGroup!.name,
+      view: SchemaGroupView.SCHEMA_GROUP_VIEW_FULL,
+    });
+    tempMatchedTableList.push(...result.matchedTables);
+    tempUnmatchedTableList.push(...result.unmatchedTables);
   }
-);
+  matchedTableList.value = tempMatchedTableList;
+  unmatchedTableList.value = tempUnmatchedTableList;
+}, 500);
+
+watch(() => props, updateMatchingState, {
+  immediate: true,
+  deep: true,
+});
 </script>

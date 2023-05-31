@@ -84,6 +84,8 @@ message RowValue {
     string string_value = 8;
     uint32 uint32_value = 9;
     uint64 uint64_value = 10;
+    // value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
+    google.protobuf.Value value_value = 11;
   }
 }
 

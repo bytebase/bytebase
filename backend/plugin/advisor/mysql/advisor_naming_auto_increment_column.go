@@ -21,6 +21,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
 }
 
 // NamingAutoIncrementColumnAdvisor is the advisor checking for auto-increment naming convention.

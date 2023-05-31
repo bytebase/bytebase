@@ -4294,6 +4294,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | schema_group_id | [string](#string) |  | The ID to use for the schema group, which will become the final component of the schema group&#39;s resource name.
 
 This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | If set, validate the create request and preview the full schema group response, but do not actually create it. |
 
 
 
@@ -4559,7 +4560,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} |
+| parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} Using &#34;projects/-&#34; will list database groups across all projects. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListDatabaseGroups` call. Provide this to retrieve the subsequent page.
 
@@ -7461,6 +7462,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | string_value | [string](#string) |  |  |
 | uint32_value | [uint32](#uint32) |  |  |
 | uint64_value | [uint64](#uint64) |  |  |
+| value_value | [google.protobuf.Value](#google-protobuf-Value) |  | value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. |
 
 
 

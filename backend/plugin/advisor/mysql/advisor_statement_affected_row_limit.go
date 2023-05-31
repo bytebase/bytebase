@@ -23,6 +23,7 @@ var (
 func init() {
 	advisor.Register(db.MySQL, advisor.MySQLStatementAffectedRowLimit, &StatementAffectedRowLimitAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLStatementAffectedRowLimit, &StatementAffectedRowLimitAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLStatementAffectedRowLimit, &StatementAffectedRowLimitAdvisor{})
 }
 
 // StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE affected row limit.

@@ -21,6 +21,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLColumnMaximumCharacterLength, &ColumnMaximumCharacterLengthAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLColumnMaximumCharacterLength, &ColumnMaximumCharacterLengthAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLColumnMaximumCharacterLength, &ColumnMaximumCharacterLengthAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLColumnMaximumCharacterLength, &ColumnMaximumCharacterLengthAdvisor{})
 }
 
 // ColumnMaximumCharacterLengthAdvisor is the advisor checking for max character length.

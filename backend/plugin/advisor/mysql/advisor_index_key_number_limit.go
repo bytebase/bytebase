@@ -20,6 +20,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
 }
 
 // IndexKeyNumberLimitAdvisor is the advisor checking for index key number limit.

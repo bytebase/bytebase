@@ -63,12 +63,14 @@
           v-if="resourceType === 'DATABASE_GROUP'"
           :project="project"
           :environment-id="state.environmentId || ''"
+          :database-group="databaseGroup as DatabaseGroup"
           :expr="state.expr"
         />
         <MatchedTableView
           v-if="resourceType === 'SCHEMA_GROUP'"
           :project="project"
-          :environment-id="state.environmentId || ''"
+          :schema-group="databaseGroup as SchemaGroup"
+          :database-group-name="state.selectedDatabaseGroupId || ''"
           :expr="state.expr"
         />
       </div>
@@ -86,7 +88,10 @@ import ExprEditor from "./common/ExprEditor";
 import { ResourceType } from "./common/ExprEditor/context";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { ComposedProject, ResourceId, ValidatedMessage } from "@/types";
-import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
+import {
+  convertCELStringToExpr,
+  convertDatabaseGroupExprFromCEL,
+} from "@/utils/databaseGroup/cel";
 import { useDBGroupStore, useEnvironmentV1Store } from "@/store";
 import { getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "../EnvironmentSelect.vue";
@@ -100,6 +105,7 @@ import {
   getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
 } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { useDebounceFn } from "@vueuse/core";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -139,73 +145,92 @@ onMounted(async () => {
     return;
   }
 
-  let expression = "";
   if (props.resourceType === "DATABASE_GROUP") {
-    expression =
+    const expression =
       (databaseGroup as DatabaseGroup).databaseExpr?.expression ?? "";
     const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
       databaseGroup.name
     );
     state.resourceId = databaseGroupName;
+    const convertResult = await convertDatabaseGroupExprFromCEL(expression);
+    if (convertResult.environmentId) {
+      const environment = environmentStore.getEnvironmentByName(
+        convertResult.environmentId
+      );
+      state.environmentId = environment?.uid;
+    }
+    state.expr = convertResult.conditionGroupExpr;
   } else {
-    expression = (databaseGroup as SchemaGroup).tableExpr?.expression ?? "";
+    const schemaGroup = databaseGroup as SchemaGroup;
+    const expression = schemaGroup.tableExpr?.expression ?? "";
     const [projectName, databaseGroupName, schemaGroupName] =
-      getProjectNameAndDatabaseGroupNameAndSchemaGroupName(databaseGroup.name);
+      getProjectNameAndDatabaseGroupNameAndSchemaGroupName(schemaGroup.name);
     state.resourceId = schemaGroupName;
     state.selectedDatabaseGroupId = `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
+    const expr = await convertCELStringToExpr(expression);
+    state.expr = expr;
+
+    // Fetch related database group environment.
+    const relatedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+      `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`
+    );
+    const convertResult = await convertDatabaseGroupExprFromCEL(
+      relatedDatabaseGroup.databaseExpr?.expression ?? ""
+    );
+    if (convertResult.environmentId) {
+      const environment = environmentStore.getEnvironmentByName(
+        convertResult.environmentId
+      );
+      state.environmentId = environment?.uid;
+    }
   }
-  const convertResult = await convertDatabaseGroupExprFromCEL(expression);
-  const environment = environmentStore.getEnvironmentByName(
-    convertResult.environmentId
-  );
-  state.environmentId = environment?.uid;
-  state.expr = convertResult.conditionGroupExpr;
 });
 
-const validateResourceId = async (
-  resourceId: ResourceId
-): Promise<ValidatedMessage[]> => {
-  if (!resourceId) {
-    return [];
-  }
+const validateResourceId = useDebounceFn(
+  async (resourceId: ResourceId): Promise<ValidatedMessage[]> => {
+    if (!resourceId) {
+      return [];
+    }
 
-  let request = undefined;
-  if (props.resourceType === "DATABASE_GROUP") {
-    request = dbGroupStore.getOrFetchDBGroupById(
-      `${props.project.name}/databaseGroups/${resourceId}`
-    );
-  } else if (props.resourceType === "SCHEMA_GROUP") {
-    if (state.selectedDatabaseGroupId) {
-      request = dbGroupStore.getOrFetchSchemaGroupById(
-        `${state.selectedDatabaseGroupId}/schemaGroups/${resourceId}`
+    let request = undefined;
+    if (props.resourceType === "DATABASE_GROUP") {
+      request = dbGroupStore.getOrFetchDBGroupByName(
+        `${props.project.name}/databaseGroups/${resourceId}`
       );
+    } else if (props.resourceType === "SCHEMA_GROUP") {
+      if (state.selectedDatabaseGroupId) {
+        request = dbGroupStore.getOrFetchSchemaGroupByName(
+          `${state.selectedDatabaseGroupId}/schemaGroups/${resourceId}`
+        );
+      }
     }
-  }
 
-  if (!request) {
+    if (!request) {
+      return [];
+    }
+
+    try {
+      const data = await request;
+      if (data) {
+        return [
+          {
+            type: "error",
+            message: t("resource-id.validation.duplicated", {
+              resource: t(`resource.${resourceIdType.value}`),
+            }),
+          },
+        ];
+      }
+    } catch (error) {
+      if (getErrorCode(error) !== Status.NOT_FOUND) {
+        throw error;
+      }
+    }
+
     return [];
-  }
-
-  try {
-    const data = await request;
-    if (data) {
-      return [
-        {
-          type: "error",
-          message: t("resource-id.validation.duplicated", {
-            resource: t(`resource.${resourceIdType.value}`),
-          }),
-        },
-      ];
-    }
-  } catch (error) {
-    if (getErrorCode(error) !== Status.NOT_FOUND) {
-      throw error;
-    }
-  }
-
-  return [];
-};
+  },
+  500
+);
 
 defineExpose({
   getFormState: () => {

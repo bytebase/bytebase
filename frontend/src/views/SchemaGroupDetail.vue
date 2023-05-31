@@ -27,18 +27,6 @@
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
           >
-            <dt class="sr-only">{{ $t("common.environment") }}</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
-              >
-              <EnvironmentV1Name
-                :environment="state.environment"
-                icon-class="textinfolabel"
-              />
-            </dd>
-            <dt class="sr-only">{{ $t("common.instance") }}</dt>
-            <dt class="sr-only">{{ $t("common.project") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel"
                 >{{ $t("common.project") }}&nbsp;-&nbsp;</span
@@ -74,9 +62,10 @@
         </div>
         <div class="col-span-2">
           <p class="text-lg mb-2">Databases</p>
-          <MatchedDatabaseView
+          <MatchedTableView
             :project="project"
-            :environment-id="state.environment?.name || ''"
+            :database-group-name="databaseGroupName"
+            :schema-group="schemaGroup"
             :expr="state.expr!"
           />
         </div>
@@ -94,29 +83,22 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed } from "vue";
-import {
-  useDBGroupStore,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { reactive, computed, watch } from "vue";
+import { useDBGroupStore, useProjectV1Store } from "@/store";
 import {
   databaseGroupNamePrefix,
   projectNamePrefix,
   schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
-import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
+import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 import { ConditionGroupExpr } from "@/plugins/cel";
-import { Environment } from "@/types/proto/v1/environment_service";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
-import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
-import { watch } from "vue";
+import MatchedTableView from "@/components/DatabaseGroup/MatchedTableView.vue";
 
 interface LocalState {
   isLoaded: boolean;
   showConfigurePanel: boolean;
-  environment?: Environment;
   expr?: ConditionGroupExpr;
 }
 
@@ -135,7 +117,6 @@ const props = defineProps({
   },
 });
 
-const environmentStore = useEnvironmentV1Store();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
@@ -156,18 +137,13 @@ const schemaGroup = computed(() => {
 watch(
   () => [props, schemaGroup.value],
   async () => {
-    const schemaGroup = await dbGroupStore.getOrFetchSchemaGroupById(
+    const schemaGroup = await dbGroupStore.getOrFetchSchemaGroupByName(
       `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}/${schemaGroupNamePrefix}${props.schemaGroupName}`
     );
 
     const expression = schemaGroup.tableExpr?.expression ?? "";
-    const convertResult = await convertDatabaseGroupExprFromCEL(expression);
-    const environment = environmentStore.getEnvironmentByName(
-      convertResult.environmentId
-    );
-
-    state.environment = environment;
-    state.expr = convertResult.conditionGroupExpr;
+    const convertResult = await convertCELStringToExpr(expression);
+    state.expr = convertResult;
     state.isLoaded = true;
   },
   {

@@ -20,6 +20,7 @@ func init() {
 	advisor.Register(db.MySQL, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
 	advisor.Register(db.TiDB, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
 	advisor.Register(db.MariaDB, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
+	advisor.Register(db.OceanBase, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
 }
 
 // ColumnSetDefaultForNotNullAdvisor is the advisor checking for set default value for not null column.

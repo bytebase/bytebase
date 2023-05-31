@@ -3,7 +3,8 @@
     "mysql": "MySQL",
     "tidb": "TiDB",
     "postgres": "PostgreSQL",
-    "oracle": "Oracle"
+    "oracle": "Oracle",
+    "oceanbase": "OceanBase"
   },
   "category": {
     "engine": "Engine",
