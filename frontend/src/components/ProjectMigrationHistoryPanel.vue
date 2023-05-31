@@ -31,7 +31,7 @@ import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import { ComposedDatabase, MigrationHistory } from "../types";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { databaseV1Slug } from "../utils";
-import { useInstanceStore } from "@/store";
+import { useLegacyInstanceStore } from "@/store";
 
 // Show at most 5 recent migration history for each database
 const MAX_MIGRATION_HISTORY_COUNT = 5;
@@ -48,7 +48,7 @@ const props = defineProps({
   },
 });
 
-const instanceStore = useInstanceStore();
+const instanceStore = useLegacyInstanceStore();
 
 const state = reactive<LocalState>({
   databaseSectionList: [],

@@ -33,12 +33,13 @@ import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
 
 const props = withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database?: ComposedDatabase;
     label?: boolean;
     disabled?: boolean;
     tooltip?: boolean;
   }>(),
   {
+    database: undefined,
     label: false,
     disabled: false,
     tooltip: false,
@@ -50,6 +51,8 @@ const emit = defineEmits<{
 }>();
 
 const currentUserV1 = useCurrentUserV1();
+
+const disabled = computed(() => props.disabled || !props.database);
 
 const showTooltip = computed((): boolean => {
   return !props.disabled && props.tooltip;
@@ -69,10 +72,11 @@ const classes = computed((): string[] => {
 });
 
 const gotoSQLEditor = () => {
-  const { disabled, database } = props;
-  if (disabled) {
+  if (disabled.value) {
     return;
   }
+
+  const database = props.database as ComposedDatabase;
   if (
     database.project === DEFAULT_PROJECT_V1_NAME ||
     database.project === UNKNOWN_PROJECT_NAME
@@ -85,7 +89,7 @@ const gotoSQLEditor = () => {
     ) {
       // For unassigned databases, only high-privileged users
       // are accessible via SQL Editor.
-      emit("failed", props.database);
+      emit("failed", database);
       return;
     }
     // Set the default sidebar view of SQL Editor to "INSTANCE"

@@ -11,8 +11,7 @@ import {
   SingleSQLResult,
   Attributes,
 } from "@/types";
-import { useDatabaseStore } from "./database";
-import { useInstanceStore } from "./instance";
+import { useLegacyDatabaseStore } from "./database";
 
 export function convertSingleSQLResult(
   attributes: Attributes
@@ -74,8 +73,7 @@ export const useSQLStore = defineStore("sql", {
       const resultSet = convert(res.data);
       if (!resultSet.error) {
         // Refresh the corresponding list.
-        useDatabaseStore().fetchDatabaseListByInstanceId(instanceId);
-        useInstanceStore().fetchInstanceUserListById(instanceId);
+        useLegacyDatabaseStore().fetchDatabaseListByInstanceId(instanceId);
       }
 
       return resultSet;
@@ -101,7 +99,8 @@ export const useSQLStore = defineStore("sql", {
       const resultSet = convert(res.data);
       if (!resultSet.error) {
         // Refresh the corresponding list.
-        useDatabaseStore().fetchDatabaseById(databaseId);
+        // Legacy compatibility
+        useLegacyDatabaseStore().fetchDatabaseById(databaseId);
       }
 
       return resultSet;

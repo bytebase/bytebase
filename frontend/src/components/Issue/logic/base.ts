@@ -25,11 +25,11 @@ import {
   taskSlug,
 } from "@/utils";
 import {
-  useDatabaseStore,
   useIssueStore,
   useProjectV1Store,
   useSheetV1Store,
   useSheetStatementByUid,
+  useDatabaseV1Store,
 } from "@/store";
 import { flattenTaskList, TaskTypeWithStatement } from "./common";
 import { maybeCreateBackTraceComments } from "../rollback/common";
@@ -50,7 +50,7 @@ export const useBaseIssueLogic = (params: {
   const router = useRouter();
   const issueStore = useIssueStore();
   const projectV1Store = useProjectV1Store();
-  const databaseStore = useDatabaseStore();
+  const databaseStore = useDatabaseV1Store();
   const sheetV1Store = useSheetV1Store();
 
   const project = computed(() => {
@@ -166,14 +166,13 @@ export const useBaseIssueLogic = (params: {
   });
 
   const selectedDatabase = computed(() => {
-    if (create.value) {
-      const databaseId = (selectedTask.value as TaskCreate).databaseId;
-      if (databaseId) {
-        return databaseStore.getDatabaseById(databaseId);
-      }
+    const databaseId = create.value
+      ? (selectedTask.value as TaskCreate).databaseId
+      : (selectedTask.value as Task).database?.id;
+    if (!databaseId) {
       return undefined;
     }
-    return (selectedTask.value as Task).database;
+    return databaseStore.getDatabaseByUID(String(databaseId));
   });
 
   const isGhostMode = computed((): boolean => {
@@ -298,8 +297,10 @@ export const useBaseIssueLogic = (params: {
             let database = "";
             if (taskItem.databaseId) {
               database = (
-                await databaseStore.getOrFetchDatabaseById(taskItem.databaseId)
-              ).name;
+                await databaseStore.getOrFetchDatabaseByUID(
+                  String(taskItem.databaseId)
+                )
+              ).databaseName;
             }
             const newSheet = await sheetV1Store.createSheet(
               project.value.name,

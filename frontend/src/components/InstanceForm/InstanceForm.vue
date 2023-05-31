@@ -636,9 +636,8 @@ import {
   useSettingV1Store,
   useActuatorV1Store,
   useEnvironmentV1Store,
-  useInstanceStore,
+  useLegacyInstanceStore,
   useInstanceV1Store,
-  useDatabaseStore,
   useGracefulRequest,
   featureToRef,
 } from "@/store";
@@ -1212,9 +1211,7 @@ const updateEditState = async (instance: Instance) => {
   instanceV1Store.fetchInstanceRoleListByName(instance.name);
 
   // Legacy API compatibility
-  useInstanceStore().fetchInstanceById(Number(instance.uid));
-  useDatabaseStore().fetchDatabaseListByInstanceId(Number(instance.uid));
-  useInstanceStore().fetchInstanceUserListById(Number(instance.uid));
+  useLegacyInstanceStore().fetchInstanceById(Number(instance.uid));
 };
 
 const handleWarningModalOkClick = async () => {

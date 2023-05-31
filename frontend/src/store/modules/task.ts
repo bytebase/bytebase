@@ -23,8 +23,8 @@ import {
   unknown,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
-import { useDatabaseStore } from "./database";
-import { useInstanceStore } from "./instance";
+import { useLegacyDatabaseStore } from "./database";
+import { useLegacyInstanceStore } from "./instance";
 import { useIssueStore } from "./issue";
 
 function convertTaskRun(
@@ -154,8 +154,8 @@ function convertPartial(
   }
 
   let database = undefined;
-  const databaseStore = useDatabaseStore();
-  const instanceStore = useInstanceStore();
+  const databaseStore = useLegacyDatabaseStore();
+  const instanceStore = useLegacyInstanceStore();
   for (const item of includedList || []) {
     if (
       item.type == "instance" &&

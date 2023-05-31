@@ -24,11 +24,12 @@ import {
 import { isDatabaseRelatedIssueType } from "@/utils";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useActivityStore } from "./activity";
-import { useDatabaseStore } from "./database";
-import { useInstanceStore } from "./instance";
+import { useLegacyDatabaseStore } from "./database";
+import { useLegacyInstanceStore } from "./instance";
 import { usePipelineStore } from "./pipeline";
 import { useLegacyProjectStore } from "./project";
 import { convertEntityList } from "./utils";
+import { useDatabaseV1Store, useInstanceV1Store } from "./v1";
 
 function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
   const result: Issue = {
@@ -194,19 +195,24 @@ export const useIssueStore = defineStore("issue", {
       // unknown instance/database when navigating to other UI from the issue detail page
       // since other UIs are getting instance/database by id from the store.
       if (isDatabaseRelatedIssueType(issue.type)) {
-        const instanceStore = useInstanceStore();
-        const databaseStore = useDatabaseStore();
+        const instanceStore = useLegacyInstanceStore();
+        const databaseStore = useLegacyDatabaseStore();
+        const instanceV1Store = useInstanceV1Store();
+        const databaseV1Store = useDatabaseV1Store();
         for (const stage of issue.pipeline!.stageList) {
           for (const task of stage.taskList) {
+            // Legacy compatibility
             instanceStore.setInstanceById({
               instanceId: task.instance.id,
               instance: task.instance,
             });
+            instanceV1Store.getOrFetchInstanceByUID(String(task.instance.id));
 
             if (task.database) {
               databaseStore.upsertDatabaseList({
                 databaseList: [task.database],
               });
+              databaseV1Store.getOrFetchDatabaseByUID(String(task.database.id));
             }
           }
         }

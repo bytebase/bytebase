@@ -84,7 +84,7 @@ import {
   instanceV1HasAlterSchema,
   instanceV1Slug,
 } from "@/utils";
-import { useCurrentUserV1, useInstanceStore } from "@/store";
+import { useCurrentUserV1, useLegacyInstanceStore } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
 
 interface LocalState {
@@ -106,7 +106,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 
-const instanceStore = useInstanceStore();
+const instanceStore = useLegacyInstanceStore();
 const router = useRouter();
 
 const state = reactive<LocalState>({

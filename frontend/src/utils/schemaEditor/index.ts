@@ -1,4 +1,4 @@
-import { ComposedDatabase, Database, EngineType } from "@/types";
+import { ComposedDatabase, Database } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 
 // Only allow using Schema Editor with MySQL.
@@ -17,8 +17,8 @@ export const allowUsingSchemaEditorV1 = (
   });
 };
 
-export const getDataTypeSuggestionList = (engineType: EngineType = "MYSQL") => {
-  if (engineType === "MYSQL") {
+export const getDataTypeSuggestionList = (engine: Engine = Engine.MYSQL) => {
+  if (engine === Engine.MYSQL) {
     return [
       "BIT",
       "BOOLEAN",
@@ -30,7 +30,7 @@ export const getDataTypeSuggestionList = (engineType: EngineType = "MYSQL") => {
       "JSON",
       "VARCHAR(255)",
     ];
-  } else if (engineType === "POSTGRES") {
+  } else if (engine === Engine.POSTGRES) {
     return [
       "BOOLEAN",
       "CHAR(1)",

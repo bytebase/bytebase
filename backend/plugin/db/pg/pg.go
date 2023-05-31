@@ -82,12 +82,27 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 		return nil, errors.Errorf("user must be set")
 	}
 
+	if config.Host == "" {
+		return nil, errors.Errorf("host must be set")
+	}
+
+	if config.Port == "" {
+		return nil, errors.Errorf("port must be set")
+	}
+
 	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
 		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connConfig, err := pgx.ParseConfig(fmt.Sprintf("host=%s port=%s", config.Host, config.Port))
+	connStr := fmt.Sprintf("host=%s port=%s", config.Host, config.Port)
+	// Neon requires new driver, however due to https://github.com/jackc/pgx/issues/1600, we have to
+	// stay at pgx/v4 to support SSH tunnelling. So we do a hack here to support Neon SSL following
+	// https://neon.tech/docs/connect/connectivity-issues#c-set-verify-full-for-golang-based-clients
+	if strings.HasSuffix(config.Host, ".neon.tech") {
+		connStr += " sslmode=verify-full"
+	}
+	connConfig, err := pgx.ParseConfig(connStr)
 	if err != nil {
 		return nil, err
 	}

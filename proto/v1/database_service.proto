@@ -223,6 +223,9 @@ message GetDatabaseSchemaRequest {
   // The name of the database to retrieve schema.
   // Format: instances/{instance}/databases/{database}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Format the schema dump into SDL format.
+  bool sdl_format = 2;
 }
 
 message GetBackupSettingRequest {
@@ -584,6 +587,8 @@ message Backup {
 
   // The comment of the backup.
   string comment = 6;
+
+  string uid = 7;
 }
 
 // ListSlowQueriesRequest is the request of listing slow query.

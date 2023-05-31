@@ -11,6 +11,7 @@ import {
   BuildNewIssueContext,
   VALIDATE_ONLY_SQL,
   findDatabaseListByQuery,
+  findDatabaseGroupAndSchemaGroupListByQuery,
 } from "../common";
 import { IssueCreateHelper } from "./helper";
 
@@ -51,13 +52,27 @@ const buildNewTenantSchemaUpdateIssue = async (
   }
 
   const databaseList = findDatabaseListByQuery(context);
-  if (databaseList.length > 0) {
+  const databaseGroupContext =
+    findDatabaseGroupAndSchemaGroupListByQuery(context);
+  if (databaseGroupContext && databaseGroupContext.databaseGroupName !== "") {
+    helper.issueCreate!.createContext = {
+      detailList: [
+        {
+          migrationType: migrationType,
+          databaseGroupName: databaseGroupContext.databaseGroupName,
+          schemaGroupNames: databaseGroupContext.schemaGroupNameList,
+          statement: VALIDATE_ONLY_SQL,
+          earliestAllowedTs: 0,
+        },
+      ],
+    };
+  } else if (databaseList.length > 0) {
     // For multi-selection pipeline, pass databaseId accordingly.
     helper.issueCreate!.createContext = {
       detailList: databaseList.map((db) => {
         return {
           migrationType: migrationType,
-          databaseId: db.id,
+          databaseId: Number(db.uid),
           statement: VALIDATE_ONLY_SQL,
           earliestAllowedTs: 0,
         };

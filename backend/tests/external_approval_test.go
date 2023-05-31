@@ -108,35 +108,18 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
-
-	// Expecting project to have no database.
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
-	})
-	a.NoError(err)
-	a.Zero(len(databases))
-	// Expecting instance to have no database.
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instanceUID,
-	})
-	a.NoError(err)
-	a.Zero(len(databases))
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
-	// Expecting project to have 1 database.
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-	database := databases[0]
-	a.Equal(instanceUID, database.Instance.ID)
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectUID,
@@ -153,7 +136,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseID:    database.ID,
+				DatabaseID:    databaseUID,
 				SheetID:       sheet.ID,
 			},
 		},
@@ -299,35 +282,18 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
-
-	// Expecting project to have no database.
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
-	})
-	a.NoError(err)
-	a.Zero(len(databases))
-	// Expecting instance to have no database.
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instanceUID,
-	})
-	a.NoError(err)
-	a.Zero(len(databases))
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
-	// Expecting project to have 1 database.
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-	database := databases[0]
-	a.Equal(instanceUID, database.Instance.ID)
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectUID,
@@ -344,7 +310,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseID:    database.ID,
+				DatabaseID:    databaseUID,
 				SheetID:       sheet.ID,
 			},
 		},

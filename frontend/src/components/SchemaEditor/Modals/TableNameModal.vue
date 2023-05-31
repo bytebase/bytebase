@@ -30,14 +30,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, PropType, reactive } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { DatabaseId, UNKNOWN_ID, SchemaEditorTabType } from "@/types";
+import { UNKNOWN_ID, SchemaEditorTabType } from "@/types";
 import {
   useSchemaEditorStore,
   useNotificationStore,
   generateUniqueTabId,
-  useDatabaseStore,
+  useDatabaseV1Store,
 } from "@/store";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import {
@@ -45,6 +45,7 @@ import {
   convertTableMetadataToTable,
   Schema,
 } from "@/types/schemaEditor/atomType";
+import { Engine } from "@/types/proto/v1/common";
 
 const tableNameFieldRegexp = /^\S+$/;
 
@@ -54,15 +55,15 @@ interface LocalState {
 
 const props = defineProps({
   databaseId: {
-    type: Number as PropType<DatabaseId>,
-    default: UNKNOWN_ID,
+    type: String,
+    default: String(UNKNOWN_ID),
   },
   schemaId: {
-    type: String as PropType<string>,
+    type: String,
     default: "",
   },
   tableId: {
-    type: String as PropType<string | undefined>,
+    type: String,
     default: undefined,
   },
 });
@@ -112,8 +113,8 @@ const handleConfirmButtonClick = async () => {
   }
 
   const databaseId = props.databaseId;
-  const database = useDatabaseStore().getDatabaseById(databaseId);
-  const instanceEngine = database.instance.engine;
+  const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
+  const instanceEngine = database.instanceEntity.engine;
   const schema = editorStore.getSchema(databaseId, props.schemaId) as Schema;
   const tableNameList = schema.tableList.map((table) => table.name);
   if (tableNameList.includes(state.tableName)) {
@@ -134,7 +135,7 @@ const handleConfirmButtonClick = async () => {
       ColumnMetadata.fromPartial({})
     );
     column.name = "id";
-    if (instanceEngine === "POSTGRES") {
+    if (instanceEngine === Engine.POSTGRES) {
       column.type = "INTEGER";
     } else {
       column.type = "INT";

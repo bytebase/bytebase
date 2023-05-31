@@ -33,7 +33,7 @@
                       v-if="isActiveTask(task)"
                       class="w-5 h-5 inline-block"
                     />
-                    <span>{{ databaseOfTask(task).name }}</span>
+                    <span>{{ databaseOfTask(task).databaseName }}</span>
                   </div>
                 </div>
 
@@ -75,17 +75,10 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import type {
-  Pipeline,
-  Stage,
-  StageCreate,
-  Task,
-  TaskCreate,
-  Database,
-} from "@/types";
+import type { Pipeline, Stage, StageCreate, Task, TaskCreate } from "@/types";
 import { activeTask, taskSlug } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
-import { useDatabaseStore } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import PipelineStageList from "./PipelineStageList.vue";
 import TaskProgressPie from "./TaskProgressPie.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
@@ -93,7 +86,7 @@ import { useIssueLogic } from "./logic";
 import { useVerticalScrollState } from "@/composables/useScrollState";
 
 const { t } = useI18n();
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 
 const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
   useIssueLogic();
@@ -106,11 +99,11 @@ const taskList = computed(() => {
   return selectedStage.value.taskList;
 });
 
-const databaseOfTask = (task: Task | TaskCreate): Database => {
-  if (create.value) {
-    return databaseStore.getDatabaseById((task as TaskCreate).databaseId!);
-  }
-  return (task as Task).database!;
+const databaseOfTask = (task: Task | TaskCreate) => {
+  const uid = create.value
+    ? String((task as TaskCreate).databaseId!)
+    : String((task as Task).database!.id);
+  return databaseStore.getDatabaseByUID(uid);
 };
 
 const isSelectedTask = (task: Task | TaskCreate): boolean => {
@@ -153,7 +146,7 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
   const taskId = create.value ? index + 1 : (task as Task).id;
   const ts = taskSlug(taskName, taskId);
 
-  selectStageOrTask(stageId, ts);
+  selectStageOrTask(Number(stageId), ts);
 };
 </script>
 

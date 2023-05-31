@@ -73,7 +73,7 @@ import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import {
-  useDatabaseStore,
+  useLegacyDatabaseStore,
   useSearchDatabaseV1List,
   useDatabaseV1Store,
   useLegacyProjectStore,
@@ -98,7 +98,7 @@ const props = defineProps({
 });
 
 const route = useRoute();
-const legacyDatabaseStore = useDatabaseStore();
+const legacyDatabaseStore = useLegacyDatabaseStore();
 const projectStore = useLegacyProjectStore();
 const projectV1Store = useProjectV1Store();
 

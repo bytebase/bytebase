@@ -130,7 +130,7 @@ import { SQLResultSet } from "@/types";
 import {
   featureToRef,
   pushNotification,
-  useInstanceStore,
+  useLegacyInstanceStore,
   useSubscriptionV1Store,
   useSQLStore,
   useDBSchemaStore,
@@ -155,7 +155,7 @@ const props = defineProps({
   },
 });
 
-const instanceStore = useInstanceStore();
+const instanceStore = useLegacyInstanceStore();
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const subscriptionStore = useSubscriptionV1Store();

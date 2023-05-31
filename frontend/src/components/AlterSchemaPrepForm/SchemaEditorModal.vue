@@ -299,7 +299,7 @@ const handleSyncSQLFromSchemaEditor = async () => {
 const getDatabaseEditListWithSchemaEditor = () => {
   const databaseEditList: DatabaseEdit[] = [];
   for (const database of editorStore.databaseList) {
-    const databaseSchema = editorStore.databaseSchemaById.get(database.id);
+    const databaseSchema = editorStore.databaseSchemaById.get(database.uid);
     if (!databaseSchema) {
       continue;
     }
@@ -308,19 +308,19 @@ const getDatabaseEditListWithSchemaEditor = () => {
       const originSchema = databaseSchema.originSchemaList.find(
         (originSchema) => originSchema.id === schema.id
       );
-      const diffSchemaResult = diffSchema(database.id, originSchema, schema);
+      const diffSchemaResult = diffSchema(database.uid, originSchema, schema);
       if (checkHasSchemaChanges(diffSchemaResult)) {
         const index = databaseEditList.findIndex(
-          (edit) => edit.databaseId === database.id
+          (edit) => String(edit.databaseId) === database.uid
         );
         if (index !== -1) {
           databaseEditList[index] = {
-            databaseId: database.id,
+            databaseId: Number(database.uid),
             ...mergeDiffResults([diffSchemaResult, databaseEditList[index]]),
           };
         } else {
           databaseEditList.push({
-            databaseId: database.id,
+            databaseId: Number(database.uid),
             ...diffSchemaResult,
           });
         }

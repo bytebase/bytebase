@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import axios from "axios";
-import { computed, onBeforeMount, unref, watch } from "vue";
 import {
   DataSource,
   empty,
@@ -11,9 +10,7 @@ import {
   InstanceId,
   InstancePatch,
   InstanceState,
-  InstanceUserId,
   INSTANCE_OPERATION_TIMEOUT,
-  MaybeRef,
   MigrationHistory,
   MigrationHistoryId,
   ResourceIdentifier,
@@ -86,13 +83,6 @@ function convert(
   };
 }
 
-function convertInstanceUser(instanceUser: ResourceObject): InstanceUser {
-  return {
-    ...(instanceUser.attributes as Omit<InstanceUser, "id">),
-    id: instanceUser.id,
-  };
-}
-
 function convertMigrationHistory(history: ResourceObject): MigrationHistory {
   const payload = history.attributes.payload
     ? JSON.parse((history.attributes.payload as string) || "{}")
@@ -110,7 +100,7 @@ function convertMigrationHistory(history: ResourceObject): MigrationHistory {
   };
 }
 
-export const useInstanceStore = defineStore("instance", {
+export const useLegacyInstanceStore = defineStore("legacy_instance", {
   state: (): InstanceState => ({
     instanceById: new Map(),
     instanceUserListById: new Map(),
@@ -319,24 +309,6 @@ export const useInstanceStore = defineStore("instance", {
       await axios.delete(`/api/instance/${instanceId}`);
       this.instanceById.delete(instanceId);
     },
-    async fetchInstanceUser(instanceId: InstanceId, userId: InstanceUserId) {
-      const data = (
-        await axios.get(`/api/instance/${instanceId}/user/${userId}`)
-      ).data;
-      return convertInstanceUser(data.data);
-    },
-    async fetchInstanceUserListById(instanceId: InstanceId) {
-      const data = (await axios.get(`/api/instance/${instanceId}/user`)).data;
-      const instanceUserList = data.data.map((instanceUser: ResourceObject) => {
-        return convertInstanceUser(instanceUser);
-      });
-
-      this.setInstanceUserListById({
-        instanceId,
-        instanceUserList,
-      });
-      return instanceUserList;
-    },
     async fetchMigrationHistoryById({
       instanceId,
       migrationHistoryId,
@@ -431,30 +403,3 @@ export const useInstanceStore = defineStore("instance", {
     },
   },
 });
-
-export const useInstanceList = (rowStatusList?: RowStatus[]) => {
-  const store = useInstanceStore();
-  // SQL Editor will visit instanceList very early.
-  // Using `watchEffect` here might get a data race here, which leads a vue's
-  // internal error.
-  // So we fetch data when "before mount" - trying to be early but not too early.
-  onBeforeMount(() => store.fetchInstanceList(rowStatusList));
-  return computed(() => store.getInstanceList(rowStatusList));
-};
-
-export const useInstanceById = (instanceId: MaybeRef<InstanceId>) => {
-  const store = useInstanceStore();
-  watch(
-    () => unref(instanceId),
-    (id) => {
-      if (id !== UNKNOWN_ID) {
-        if (store.getInstanceById(id).id === UNKNOWN_ID) {
-          store.fetchInstanceById(id);
-        }
-      }
-    },
-    { immediate: true }
-  );
-
-  return computed(() => store.getInstanceById(unref(instanceId)));
-};

@@ -447,6 +447,9 @@ func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*
 	if v := patch.Payload; v != nil {
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Level; v != nil {
+		set, args = append(set, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
