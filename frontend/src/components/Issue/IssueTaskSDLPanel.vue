@@ -95,7 +95,7 @@ import {
   hasFeature,
   pushNotification,
   useLegacyDatabaseStore,
-  useInstanceStore,
+  useLegacyInstanceStore,
 } from "@/store";
 import { useIssueLogic } from "./logic";
 import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
@@ -212,7 +212,7 @@ const useSDLState = () => {
       return undefined;
     }
     const history = await useSilentRequest(() =>
-      useInstanceStore().fetchMigrationHistoryById({
+      useLegacyInstanceStore().fetchMigrationHistoryById({
         instanceId: task.instance.id,
         migrationHistoryId: migrationId,
         sdl: true,

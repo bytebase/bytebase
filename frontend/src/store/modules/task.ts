@@ -24,7 +24,7 @@ import {
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useLegacyDatabaseStore } from "./database";
-import { useInstanceStore } from "./instance";
+import { useLegacyInstanceStore } from "./instance";
 import { useIssueStore } from "./issue";
 
 function convertTaskRun(
@@ -155,7 +155,7 @@ function convertPartial(
 
   let database = undefined;
   const databaseStore = useLegacyDatabaseStore();
-  const instanceStore = useInstanceStore();
+  const instanceStore = useLegacyInstanceStore();
   for (const item of includedList || []) {
     if (
       item.type == "instance" &&

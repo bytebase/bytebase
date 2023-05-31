@@ -25,7 +25,7 @@ import { isDatabaseRelatedIssueType } from "@/utils";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useActivityStore } from "./activity";
 import { useLegacyDatabaseStore } from "./database";
-import { useInstanceStore } from "./instance";
+import { useLegacyInstanceStore } from "./instance";
 import { usePipelineStore } from "./pipeline";
 import { useLegacyProjectStore } from "./project";
 import { convertEntityList } from "./utils";
@@ -195,7 +195,7 @@ export const useIssueStore = defineStore("issue", {
       // unknown instance/database when navigating to other UI from the issue detail page
       // since other UIs are getting instance/database by id from the store.
       if (isDatabaseRelatedIssueType(issue.type)) {
-        const instanceStore = useInstanceStore();
+        const instanceStore = useLegacyInstanceStore();
         const databaseStore = useLegacyDatabaseStore();
         const instanceV1Store = useInstanceV1Store();
         const databaseV1Store = useDatabaseV1Store();

@@ -20,7 +20,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { useDataSourceStore } from "./dataSource";
-import { useInstanceStore } from "./instance";
+import { useLegacyInstanceStore } from "./instance";
 import { useLegacyProjectStore } from "./project";
 import { hasWorkspacePermissionV1, isMemberOfProjectV1 } from "@/utils";
 import { useProjectV1Store } from "./v1";
@@ -53,7 +53,7 @@ function convert(
     dataSourceList.push(dataSource);
   }
 
-  const instanceStore = useInstanceStore();
+  const instanceStore = useLegacyInstanceStore();
   const projectStore = useLegacyProjectStore();
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {

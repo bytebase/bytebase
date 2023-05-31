@@ -142,7 +142,7 @@ import { useRouter } from "vue-router";
 import {
   hasFeature,
   useDatabaseV1Store,
-  useInstanceStore,
+  useLegacyInstanceStore,
   useProjectV1Store,
 } from "@/store";
 import { MigrationHistory, MigrationType, UNKNOWN_ID } from "@/types";
@@ -181,7 +181,7 @@ const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
 const projectStore = useProjectV1Store();
-const legacyInstanceStore = useInstanceStore();
+const legacyInstanceStore = useLegacyInstanceStore();
 const databaseStore = useDatabaseV1Store();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();

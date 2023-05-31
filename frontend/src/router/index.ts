@@ -46,7 +46,7 @@ import {
   useAuthStore,
   useActuatorV1Store,
   useLegacyDatabaseStore,
-  useInstanceStore,
+  useLegacyInstanceStore,
   useRouterStore,
   useDBSchemaStore,
   useConnectionTreeStore,
@@ -996,7 +996,7 @@ const routes: Array<RouteRecordRaw> = [
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.migrationHistorySlug as string;
                     const migrationHistory =
-                      useInstanceStore().getMigrationHistoryById(
+                      useLegacyInstanceStore().getMigrationHistoryById(
                         migrationHistoryIdFromSlug(slug)
                       );
                     return migrationHistory?.version ?? "";
@@ -1027,7 +1027,7 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return useInstanceStore().getInstanceById(idFromSlug(slug))
+                    return useLegacyInstanceStore().getInstanceById(idFromSlug(slug))
                       .name;
                   },
                 },
@@ -1165,7 +1165,7 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   const databaseStore = useLegacyDatabaseStore();
   const dbSchemaStore = useDBSchemaStore();
-  const instanceStore = useInstanceStore();
+  const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
   const projectStore = useLegacyProjectStore();
   const projectV1Store = useProjectV1Store();
