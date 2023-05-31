@@ -42,11 +42,16 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {
+	// Exclude nested tables, their DDL is part of their parent table.
+	// Exclude overflow segments, their DDL is part of their parent table.
 	query := fmt.Sprintf(`
 		SELECT
 			DBMS_METADATA.GET_DDL(u.OBJECT_TYPE, u.OBJECT_NAME, u.OWNER)
 			FROM DBA_OBJECTS u
-			WHERE OWNER IN (%s) AND u.OBJECT_TYPE IN ('TABLE','INDEX','SEQUENCE','DIRECTORY','VIEW','FUNCTION','PROCEDURE','TABLE PARTITION','INDEX PARTITION','TRIGGER','SCHEDULE','JOB','QUEUE','WINDOW')`,
+			WHERE OWNER IN (%s)
+				AND u.OBJECT_TYPE IN ('TABLE','INDEX','SEQUENCE','DIRECTORY','VIEW','FUNCTION','PROCEDURE','TABLE PARTITION','INDEX PARTITION','TRIGGER','SCHEDULE','JOB','QUEUE','WINDOW')
+				AND (owner, object_name) not in (select owner, table_name from dba_nested_tables)
+				AND (owner, object_name) not in (select owner, table_name from dba_tables where iot_type = 'IOT_OVERFLOW')`,
 		strings.Join(schemas, ","))
 
 	rows, err := txn.QueryContext(ctx, query)
