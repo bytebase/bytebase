@@ -1,7 +1,7 @@
 import { isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import axios from "axios";
-import { computed, unref, watch, markRaw } from "vue";
+import { markRaw } from "vue";
 import {
   Database,
   DatabaseFind,
@@ -13,7 +13,6 @@ import {
   EMPTY_ID,
   Instance,
   InstanceId,
-  MaybeRef,
   Project,
   ResourceIdentifier,
   ResourceObject,
@@ -21,7 +20,7 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { useDataSourceStore } from "./dataSource";
-import { useInstanceStore } from "./instance";
+import { useLegacyInstanceStore } from "./instance";
 import { useLegacyProjectStore } from "./project";
 import { hasWorkspacePermissionV1, isMemberOfProjectV1 } from "@/utils";
 import { useProjectV1Store } from "./v1";
@@ -54,7 +53,7 @@ function convert(
     dataSourceList.push(dataSource);
   }
 
-  const instanceStore = useInstanceStore();
+  const instanceStore = useLegacyInstanceStore();
   const projectStore = useLegacyProjectStore();
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
@@ -140,7 +139,7 @@ const databaseSorter = (a: Database, b: Database): number => {
   return a.name.localeCompare(b.name);
 };
 
-export const useDatabaseStore = defineStore("database", {
+export const useLegacyDatabaseStore = defineStore("legacy_database", {
   state: (): DatabaseState => ({
     databaseListByInstanceId: new Map(),
     databaseListByProjectId: new Map(),
@@ -464,20 +463,3 @@ export const useDatabaseStore = defineStore("database", {
     },
   },
 });
-
-export const useDatabaseById = (databaseId: MaybeRef<DatabaseId>) => {
-  const store = useDatabaseStore();
-  watch(
-    () => unref(databaseId),
-    (id) => {
-      if (id !== UNKNOWN_ID) {
-        if (store.getDatabaseById(id).id === UNKNOWN_ID) {
-          store.fetchDatabaseById(id);
-        }
-      }
-    },
-    { immediate: true }
-  );
-
-  return computed(() => store.getDatabaseById(unref(databaseId)));
-};

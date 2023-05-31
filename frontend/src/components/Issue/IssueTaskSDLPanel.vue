@@ -94,8 +94,8 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import {
   hasFeature,
   pushNotification,
-  useDatabaseStore,
-  useInstanceStore,
+  useLegacyDatabaseStore,
+  useLegacyInstanceStore,
 } from "@/store";
 import { useIssueLogic } from "./logic";
 import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
@@ -167,7 +167,7 @@ const useSDLState = () => {
   ): Promise<SDLDetail | undefined> => {
     const database = task.database;
     if (!database) return undefined;
-    const previousSDL = await useDatabaseStore().fetchDatabaseSchemaById(
+    const previousSDL = await useLegacyDatabaseStore().fetchDatabaseSchemaById(
       task.database!.id,
       true // fetch SDL format
     );
@@ -212,7 +212,7 @@ const useSDLState = () => {
       return undefined;
     }
     const history = await useSilentRequest(() =>
-      useInstanceStore().fetchMigrationHistoryById({
+      useLegacyInstanceStore().fetchMigrationHistoryById({
         instanceId: task.instance.id,
         migrationHistoryId: migrationId,
         sdl: true,

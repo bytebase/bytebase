@@ -257,7 +257,7 @@ import {
 import {
   pushNotification,
   useDatabaseV1ByUID,
-  useInstanceStore,
+  useLegacyInstanceStore,
 } from "@/store";
 
 interface LocalState {
@@ -276,7 +276,7 @@ const props = defineProps({
   },
 });
 
-const legacyInstanceStore = useInstanceStore();
+const legacyInstanceStore = useLegacyInstanceStore();
 
 const { database } = useDatabaseV1ByUID(
   computed(() => String(idFromSlug(props.databaseSlug)))

@@ -9,7 +9,7 @@ import {
 import {
   useBackupListByDatabaseId,
   useCurrentUserV1,
-  useInstanceStore,
+  useLegacyInstanceStore,
   useIssueStore,
 } from "@/store";
 import { useI18n } from "vue-i18n";
@@ -30,7 +30,7 @@ export const isPITRAvailableOnInstanceV1 = (instance: Instance): boolean => {
 export const usePITRLogic = (database: Ref<ComposedDatabase>) => {
   const { t } = useI18n();
   const currentUserV1 = useCurrentUserV1();
-  const instanceStore = useInstanceStore();
+  const instanceStore = useLegacyInstanceStore();
 
   const backupList = useBackupListByDatabaseId(
     computed(() => Number(database.value.uid))

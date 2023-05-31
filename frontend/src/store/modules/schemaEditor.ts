@@ -2,8 +2,7 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import { cloneDeep, isUndefined, uniqueId } from "lodash-es";
 import {
-  DatabaseId,
-  Database,
+  ComposedDatabase,
   TabContext,
   SchemaEditorState,
   SchemaEditorTabType,
@@ -18,7 +17,8 @@ import {
   Table,
 } from "@/types/schemaEditor/atomType";
 import { SchemaMetadata } from "@/types/proto/store/database";
-import { useDatabaseStore, useDBSchemaStore } from ".";
+import { useDatabaseV1Store, useDBSchemaStore } from ".";
+import { Engine } from "@/types/proto/v1/common";
 
 export const generateUniqueTabId = () => {
   return uniqueId();
@@ -56,7 +56,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
     tabList(): TabContext[] {
       return Array.from(this.tabState.tabMap.values());
     },
-    databaseList(): Database[] {
+    databaseList(): ComposedDatabase[] {
       return Array.from(this.databaseSchemaById.values()).map(
         (databaseSchema) => databaseSchema.database
       );
@@ -125,7 +125,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
       }
       this.tabState.tabMap.delete(tabId);
     },
-    findTab(databaseId: DatabaseId, tableId?: string) {
+    findTab(databaseId: string, tableId?: string) {
       let tabType = SchemaEditorTabType.TabForDatabase;
       if (tableId !== undefined) {
         tabType = SchemaEditorTabType.TabForTable;
@@ -150,57 +150,57 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
 
       return tab;
     },
-    async fetchDatabaseList(databaseIdList: DatabaseId[]) {
-      const databaseList: Database[] = [];
+    async fetchDatabaseList(databaseIdList: string[]) {
+      const databaseList: ComposedDatabase[] = [];
       for (const id of databaseIdList) {
         const database = cloneDeep(
-          await useDatabaseStore().getOrFetchDatabaseById(id)
+          await useDatabaseV1Store().getOrFetchDatabaseByUID(id)
         );
         databaseList.push(database);
-        this.databaseSchemaById.set(database.id, {
-          database: database,
+        this.databaseSchemaById.set(database.uid, {
+          database,
           schemaList: [],
           originSchemaList: [],
         });
       }
       return databaseList;
     },
-    async fetchSchemaListByDatabaseId(
-      databaseId: DatabaseId,
-      skipCache = false
-    ) {
-      const database = useDatabaseStore().getDatabaseById(databaseId);
+    async fetchSchemaListByDatabaseId(databaseId: string, skipCache = false) {
+      const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
       const schemaMetadataList =
         await useDBSchemaStore().getOrFetchSchemaListByDatabaseId(
           databaseId,
           skipCache
         );
       const schemaList = convertSchemaMetadataList(schemaMetadataList);
-      if (schemaList.length === 0 && database.instance.engine === "MYSQL") {
+      if (
+        schemaList.length === 0 &&
+        database.instanceEntity.engine === Engine.MYSQL
+      ) {
         schemaList.push(
           convertSchemaMetadataToSchema(SchemaMetadata.fromPartial({}))
         );
       }
 
       this.databaseSchemaById.set(databaseId, {
-        database: database,
+        database,
         schemaList: schemaList,
         originSchemaList: cloneDeep(schemaList),
       });
 
       return this.databaseSchemaById.get(databaseId)!.schemaList;
     },
-    getSchema(databaseId: DatabaseId, schemaId: string) {
+    getSchema(databaseId: string, schemaId: string) {
       return this.databaseSchemaById
         .get(databaseId)
         ?.schemaList.find((schema) => schema.id === schemaId);
     },
-    getOriginSchema(databaseId: DatabaseId, schemaId: string) {
+    getOriginSchema(databaseId: string, schemaId: string) {
       return this.databaseSchemaById
         .get(databaseId)
         ?.originSchemaList.find((schema) => schema.id === schemaId);
     },
-    dropSchema(databaseId: DatabaseId, schemaId: string) {
+    dropSchema(databaseId: string, schemaId: string) {
       const schema = this.getSchema(databaseId, schemaId);
       if (!schema) {
         return;
@@ -232,7 +232,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
         schema.status = "dropped";
       }
     },
-    restoreSchema(databaseId: DatabaseId, schemaId: string) {
+    restoreSchema(databaseId: string, schemaId: string) {
       const schema = this.getSchema(databaseId, schemaId);
       if (!schema) {
         return;
@@ -240,12 +240,12 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
 
       schema.status = "normal";
     },
-    getTable(databaseId: DatabaseId, schemaId: string, tableId: string) {
+    getTable(databaseId: string, schemaId: string, tableId: string) {
       return this.getSchema(databaseId, schemaId)?.tableList.find(
         (table) => table.id === tableId
       );
     },
-    getOriginTable(databaseId: DatabaseId, schemaId: string, tableId: string) {
+    getOriginTable(databaseId: string, schemaId: string, tableId: string) {
       return this.getOriginSchema(databaseId, schemaId)?.tableList.find(
         (table) => table.id === tableId
       );
@@ -256,7 +256,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
         ?.schemaList.find((schema) => schema.id === tab.schemaId)
         ?.tableList?.find((table) => table.id === tab.tableId);
     },
-    dropTable(databaseId: DatabaseId, schemaId: string, tableId: string) {
+    dropTable(databaseId: string, schemaId: string, tableId: string) {
       const table = this.getTable(databaseId, schemaId, tableId);
       if (!table) {
         return;
@@ -278,7 +278,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
         table.status = "dropped";
       }
     },
-    restoreTable(databaseId: DatabaseId, schemaId: string, tableId: string) {
+    restoreTable(databaseId: string, schemaId: string, tableId: string) {
       const table = this.getTable(databaseId, schemaId, tableId);
       if (!table) {
         return;

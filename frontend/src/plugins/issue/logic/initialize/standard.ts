@@ -40,7 +40,7 @@ export const buildNewStandardIssue = async (
     detailList: databaseList.map((db, index) => {
       const detail: MigrationDetail = {
         migrationType: migrationType,
-        databaseId: db.id,
+        databaseId: Number(db.uid),
         statement,
         sheetId: UNKNOWN_ID,
         earliestAllowedTs: 0,

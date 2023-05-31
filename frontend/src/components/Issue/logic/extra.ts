@@ -168,11 +168,12 @@ export const useExtraIssueLogic = () => {
   };
 
   const updateCustomField = (field: InputField | OutputField, value: any) => {
-    if (!isEqual(issue.value.payload[field.id], value)) {
+    const payload = issue.value.payload as Record<string, any>;
+    if (!isEqual(payload[field.id], value)) {
       if (create.value) {
-        issue.value.payload[field.id] = value;
+        payload[field.id] = value;
       } else {
-        const newPayload = cloneDeep(issue.value.payload);
+        const newPayload = cloneDeep(payload);
         newPayload[field.id] = value;
         patchIssue({
           payload: newPayload,
@@ -199,7 +200,7 @@ export const useExtraIssueLogic = () => {
   ) => {
     // Switch to the last task in this stage
     const lastTask = stage.taskList[stage.taskList.length - 1];
-    selectStageOrTask(stage.id);
+    selectStageOrTask(Number(stage.id));
     nextTick(() => {
       selectTask(lastTask);
     });
@@ -209,7 +210,7 @@ export const useExtraIssueLogic = () => {
       id: stage.id,
       status: newStatus,
       comment,
-      updatedTs: stage.updatedTs,
+      updatedTs: Math.floor(Date.now() / 1000),
     };
     taskStore
       .updateStageAllTaskStatus({
@@ -228,7 +229,7 @@ export const useExtraIssueLogic = () => {
     comment: string
   ) => {
     // Switch to the stage view containing this task
-    selectStageOrTask(task.stage.id);
+    selectStageOrTask(Number(task.stage.id));
     nextTick().then(() => {
       selectTask(task);
     });
@@ -241,7 +242,7 @@ export const useExtraIssueLogic = () => {
     taskStore
       .updateStatus({
         issueId: (issue.value as Issue).id,
-        pipelineId: (issue.value as Issue).pipeline.id,
+        pipelineId: (issue.value as Issue).pipeline!.id,
         taskId: task.id,
         taskStatusPatch,
       })
@@ -254,7 +255,7 @@ export const useExtraIssueLogic = () => {
     taskStore
       .runChecks({
         issueId: (issue.value as Issue).id,
-        pipelineId: (issue.value as Issue).pipeline.id,
+        pipelineId: (issue.value as Issue).pipeline!.id,
         taskId: task.id,
       })
       .then(() => {

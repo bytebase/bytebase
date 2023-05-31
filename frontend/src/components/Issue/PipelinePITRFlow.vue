@@ -133,7 +133,7 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
   const taskId = create.value ? index + 1 : (task as Task).id;
   const ts = taskSlug(taskName, taskId);
 
-  selectStageOrTask(stageId, ts);
+  selectStageOrTask(Number(stageId), ts);
 };
 </script>
 

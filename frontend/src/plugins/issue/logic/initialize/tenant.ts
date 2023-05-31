@@ -57,7 +57,7 @@ const buildNewTenantSchemaUpdateIssue = async (
       detailList: databaseList.map((db) => {
         return {
           migrationType: migrationType,
-          databaseId: db.id,
+          databaseId: Number(db.uid),
           statement: VALIDATE_ONLY_SQL,
           earliestAllowedTs: 0,
         };

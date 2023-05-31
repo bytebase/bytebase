@@ -104,9 +104,9 @@ const getTabComputedClassList = (tab: TabContext) => {
 const getTabName = (tab: TabContext) => {
   if (tab.type === SchemaEditorTabType.TabForDatabase) {
     const database = editorStore.databaseList.find(
-      (database) => database.id === tab.databaseId
+      (database) => database.uid === tab.databaseId
     );
-    return `${database?.name || "unknown database"}`;
+    return `${database?.databaseName || "unknown database"}`;
   } else if (tab.type === SchemaEditorTabType.TabForTable) {
     const table = editorStore.getTable(
       tab.databaseId,
