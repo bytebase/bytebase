@@ -367,7 +367,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
 			sdlSchema, err := transform.SchemaTransform(parser.MySQL, schema)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
+				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
 			}
 			schema = sdlSchema
 		}
@@ -678,6 +678,21 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	converted, err := convertToChangeHistory(changeHistory[0])
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert change history, error: %v", err)
+	}
+	if request.SdlFormat {
+		switch instance.Engine {
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+			sdlSchema, err := transform.SchemaTransform(parser.MySQL, converted.Schema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
+			}
+			converted.Schema = sdlSchema
+			sdlSchema, err = transform.SchemaTransform(parser.MySQL, converted.PrevSchema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to convert previous schema to sdl format, error %v", err.Error())
+			}
+			converted.PrevSchema = sdlSchema
+		}
 	}
 	return converted, nil
 }
