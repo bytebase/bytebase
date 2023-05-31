@@ -14,13 +14,17 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
 
   const fetchRepositoryByProject = async (
     project: string
-  ): Promise<ProjectGitOpsInfo> => {
-    const gitopsInfo = await projectServiceClient.getProjectGitOpsInfo({
-      project,
-    });
+  ): Promise<ProjectGitOpsInfo | undefined> => {
+    try {
+      const gitopsInfo = await projectServiceClient.getProjectGitOpsInfo({
+        project,
+      });
 
-    repositoryState.repositoryByProject.set(project, gitopsInfo);
-    return gitopsInfo;
+      repositoryState.repositoryByProject.set(project, gitopsInfo);
+      return gitopsInfo;
+    } catch {
+      return;
+    }
   };
 
   const getRepositoryByProject = (
