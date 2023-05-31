@@ -76,6 +76,7 @@
             :project="project"
             :environment-id="state.environment?.name || ''"
             :expr="state.expr!"
+            :database-group="databaseGroup"
           />
         </div>
       </div>
