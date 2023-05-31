@@ -156,6 +156,8 @@ const updateMatchingState = useDebounceFn(async () => {
     );
   }
 
+  matchedDatabaseList.value = [];
+  unmatchedDatabaseList.value = [];
   for (const name of matchedDatabaseNameList) {
     const database = await databaseStore.getOrFetchDatabaseByName(name);
     if (database) {
