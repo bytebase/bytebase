@@ -45,7 +45,7 @@ import {
   useSheetV1Store,
   useAuthStore,
   useActuatorV1Store,
-  useDatabaseStore,
+  useLegacyDatabaseStore,
   useInstanceStore,
   useRouterStore,
   useDBSchemaStore,
@@ -1163,7 +1163,7 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
   const authStore = useAuthStore();
-  const databaseStore = useDatabaseStore();
+  const databaseStore = useLegacyDatabaseStore();
   const dbSchemaStore = useDBSchemaStore();
   const instanceStore = useInstanceStore();
   const routerStore = useRouterStore();

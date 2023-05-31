@@ -139,7 +139,7 @@ const databaseSorter = (a: Database, b: Database): number => {
   return a.name.localeCompare(b.name);
 };
 
-export const useDatabaseStore = defineStore("database", {
+export const useLegacyDatabaseStore = defineStore("legacy_database", {
   state: (): DatabaseState => ({
     databaseListByInstanceId: new Map(),
     databaseListByProjectId: new Map(),

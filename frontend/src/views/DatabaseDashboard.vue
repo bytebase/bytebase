@@ -87,7 +87,7 @@ import {
 } from "../utils";
 import {
   useCurrentUserV1,
-  useDatabaseStore,
+  useLegacyDatabaseStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useUIStateStore,
@@ -113,7 +113,7 @@ const state = reactive<LocalState>({
 });
 
 const currentUserV1 = useCurrentUserV1();
-const databaseStore = useDatabaseStore();
+const databaseStore = useLegacyDatabaseStore();
 const databaseV1Store = useDatabaseV1Store();
 
 const selectedEnvironment = computed(() => {

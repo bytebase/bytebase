@@ -94,7 +94,7 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import {
   hasFeature,
   pushNotification,
-  useDatabaseStore,
+  useLegacyDatabaseStore,
   useInstanceStore,
 } from "@/store";
 import { useIssueLogic } from "./logic";
@@ -167,7 +167,7 @@ const useSDLState = () => {
   ): Promise<SDLDetail | undefined> => {
     const database = task.database;
     if (!database) return undefined;
-    const previousSDL = await useDatabaseStore().fetchDatabaseSchemaById(
+    const previousSDL = await useLegacyDatabaseStore().fetchDatabaseSchemaById(
       task.database!.id,
       true // fetch SDL format
     );

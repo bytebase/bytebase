@@ -17,7 +17,7 @@ import {
   DatabaseId,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
-import { useDatabaseStore, useInstanceStore } from ".";
+import { useLegacyDatabaseStore, useInstanceStore } from ".";
 
 function convert(
   anomaly: ResourceObject,
@@ -29,7 +29,7 @@ function convert(
   let database: Database = unknown("DATABASE") as Database;
 
   const instanceStore = useInstanceStore();
-  const databaseStore = useDatabaseStore();
+  const databaseStore = useLegacyDatabaseStore();
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == String(instanceId)) {
       instance = instanceStore.convert(item, includedList);
