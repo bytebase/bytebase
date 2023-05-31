@@ -20,10 +20,10 @@ import (
 )
 
 func TestSyncSchema(t *testing.T) {
+	databaseName := "sync_schema"
+	newDatabaseName := "sync_schema_new"
 	const (
-		databaseName    = "sync_schema"
-		newDatabaseName = "sync_schema_new"
-		createSchema    = `
+		createSchema = `
 			create schema schema_a;
 			create table schema_a.table_t1(c1 int, c2 int, c3 int);
 			create index idx_table_t1_c1_c2_c3 on schema_a.table_t1(c1, c2, c3);
@@ -100,23 +100,15 @@ DROP SCHEMA "schema_a";
 	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
-	})
-	a.NoError(err)
-	a.Nil(databases)
-
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil)
 	a.NoError(err)
 
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-
-	database := databases[0]
-	a.Equal(instanceUID, database.Instance.ID)
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectUID,
@@ -133,7 +125,7 @@ DROP SCHEMA "schema_a";
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseID:    database.ID,
+				DatabaseID:    databaseUID,
 				SheetID:       sheet.ID,
 			},
 		},
@@ -153,7 +145,7 @@ DROP SCHEMA "schema_a";
 	a.Equal(api.TaskDone, status)
 
 	history, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{
-		Database: &database.Name,
+		Database: &databaseName,
 	})
 	a.NoError(err)
 
@@ -164,18 +156,14 @@ DROP SCHEMA "schema_a";
 	err = ctl.createDatabase(ctx, projectUID, instance, newDatabaseName, "bytebase", nil)
 	a.NoError(err)
 
-	dbName := newDatabaseName
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
-		Name:      &dbName,
+	newDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, newDatabaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
+	newDatabaseUID, err := strconv.Atoi(newDatabase.Uid)
+	a.NoError(err)
 
-	newDatabase := databases[0]
-	a.Equal(instanceUID, database.Instance.ID)
-
-	newDatabaseSchema, err := ctl.getLatestSchemaDump(newDatabase.ID)
+	newDatabaseSchema, err := ctl.getLatestSchemaDump(newDatabaseUID)
 	a.NoError(err)
 
 	diff, err := ctl.getSchemaDiff(schemaDiffRequest{

@@ -139,19 +139,18 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instanceUID,
+
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-	database := databases[0]
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
 	dbMySQL, err := connectTestMySQL(mysqlPort, "")
 	a.NoError(err)
@@ -181,7 +180,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType:   db.Data,
-				DatabaseID:      database.ID,
+				DatabaseID:      databaseUID,
 				SheetID:         dmlSheet.ID,
 				RollbackEnabled: true,
 			},
@@ -254,7 +253,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Data,
-				DatabaseID:    database.ID,
+				DatabaseID:    databaseUID,
 				SheetID:       payload.RollbackSheetID,
 				RollbackDetail: &api.RollbackDetail{
 					IssueID: issue.ID,
@@ -350,19 +349,18 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instanceUID,
+
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-	database := databases[0]
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
 	dbMySQL, err := connectTestMySQL(mysqlPort, "")
 	a.NoError(err)
@@ -392,7 +390,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Data,
-				DatabaseID:    database.ID,
+				DatabaseID:    databaseUID,
 				SheetID:       dmlSheet.ID,
 				// RollbackEnabled: true,
 			},
@@ -473,7 +471,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Data,
-				DatabaseID:    database.ID,
+				DatabaseID:    databaseUID,
 				SheetID:       payload.RollbackSheetID,
 				RollbackDetail: &api.RollbackDetail{
 					IssueID: issue.ID,
@@ -569,19 +567,18 @@ func TestRollbackCanceled(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
 	t.Log("Instance added.")
 
 	databaseName := t.Name()
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instanceUID,
+
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-	database := databases[0]
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
 	dbMySQL, err := connectTestMySQL(mysqlPort, "")
 	a.NoError(err)
@@ -611,7 +608,7 @@ func TestRollbackCanceled(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType:   db.Data,
-				DatabaseID:      database.ID,
+				DatabaseID:      databaseUID,
 				SheetID:         sheet.ID,
 				RollbackEnabled: true,
 			},

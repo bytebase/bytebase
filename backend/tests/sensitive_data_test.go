@@ -92,31 +92,16 @@ func TestSensitiveData(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
-
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
-	})
-	a.NoError(err)
-	a.Nil(databases)
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instanceUID,
-	})
-	a.NoError(err)
-	a.Nil(databases)
 
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-
-	database := databases[0]
-	a.Equal(instanceUID, database.Instance.ID)
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
 	sheet, err := ctl.createSheet(api.SheetCreate{
 		ProjectID:  projectUID,
@@ -133,7 +118,7 @@ func TestSensitiveData(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseID:    database.ID,
+				DatabaseID:    databaseUID,
 				SheetID:       sheet.ID,
 			},
 		},
@@ -154,7 +139,7 @@ func TestSensitiveData(t *testing.T) {
 
 	// Create sensitive data policy.
 	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: fmt.Sprintf("%s/databases/%s", instance.Name, database.Name),
+		Parent: database.Name,
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_SENSITIVE_DATA,
 			Policy: &v1pb.Policy_SensitiveDataPolicy{
@@ -192,7 +177,7 @@ func TestSensitiveData(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Data,
-				DatabaseID:    database.ID,
+				DatabaseID:    databaseUID,
 				SheetID:       insertDataSheet.ID,
 			},
 		},
