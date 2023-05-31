@@ -159,8 +159,12 @@ type MigrationDetail struct {
 	DatabaseID int `json:"databaseId"`
 	// SheetID is the ID of a sheet. Statement and sheet ID is mutually exclusive.
 	SheetID int `json:"sheetId"`
+	// DatabaseGroupName is the name of a database group.
+	DatabaseGroupName string `json:"databaseGroupName"`
+	// SchemaGroupNames is the list of schema group names.
+	SchemaGroupNames []string `json:"schemaGroupNames"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
-	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
+	EarliestAllowedTs int64 `json:"earliestAllowedTs"`
 	// SchemaVersion is parsed from VCS file name.
 	// It is automatically generated in the UI workflow.
 	SchemaVersion string `json:"schemaVersion"`
