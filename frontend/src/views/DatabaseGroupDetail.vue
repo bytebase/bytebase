@@ -56,6 +56,13 @@
           >
             Configure
           </button>
+          <button
+            type="button"
+            class="btn-normal"
+            @click.prevent="createMigration('bb.issue.database.schema.update')"
+          >
+            Alter Schema
+          </button>
         </div>
       </div>
 
@@ -132,6 +139,9 @@ import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
+import dayjs from "dayjs";
+import { useRouter } from "vue-router";
+import { ComposedDatabaseGroup } from "@/types";
 
 interface LocalState {
   isLoaded: boolean;
@@ -156,6 +166,7 @@ const props = defineProps({
   },
 });
 
+const router = useRouter();
 const environmentStore = useEnvironmentV1Store();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
@@ -170,7 +181,9 @@ const databaseGroupResourceName = computed(() => {
   return `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
 });
 const databaseGroup = computed(() => {
-  return dbGroupStore.getDBGroupByName(databaseGroupResourceName.value);
+  return dbGroupStore.getDBGroupByName(
+    databaseGroupResourceName.value
+  ) as ComposedDatabaseGroup;
 });
 const schemaGroupList = computed(() => {
   return dbGroupStore.getSchemaGroupListByDBGroupName(
@@ -203,6 +216,41 @@ const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
   editState.type = "SCHEMA_GROUP";
   editState.databaseGroup = schemaGroup;
   editState.showConfigurePanel = true;
+};
+
+const createMigration = async (
+  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
+) => {
+  const issueNameParts: string[] = [];
+  issueNameParts.push(`[${databaseGroup.value.databaseGroupName}]`);
+  issueNameParts.push(
+    type === "bb.issue.database.schema.update" ? `Alter schema` : `Change data`
+  );
+  const datetime = dayjs().format("@MM-DD HH:mm");
+  const tz = "UTC" + dayjs().format("ZZ");
+  issueNameParts.push(`${datetime} ${tz}`);
+  const schemaGroupList =
+    await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(
+      databaseGroup.value.name
+    );
+
+  const query: Record<string, any> = {
+    template: type,
+    mode: "tenant",
+    name: issueNameParts.join(" "),
+    project: project.value.uid,
+    databaseGroupName: databaseGroup.value.name,
+    // TODO(steven): support select schema group.
+    schemaGroupNames: schemaGroupList.map((s) => s.name).join(","),
+  };
+
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query,
+  });
 };
 
 watch(
