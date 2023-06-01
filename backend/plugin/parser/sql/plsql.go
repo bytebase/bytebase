@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -433,6 +434,45 @@ func ParsePLSQL(sql string) (antlr.Tree, error) {
 	}
 
 	return tree, nil
+}
+
+// PLSQLValidateForEditor validates the given PLSQL for editor.
+func PLSQLValidateForEditor(tree antlr.Tree) error {
+	l := &validateForEditorListener{
+		validate: true,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	if !l.validate {
+		return errors.New("Malformed sql execute request, only support SELECT sql statement")
+	}
+	return nil
+}
+
+type validateForEditorListener struct {
+	*parser.BasePlSqlParserListener
+
+	validate bool
+}
+
+// EnterSql_script is called when production sql_script is entered.
+func (l *validateForEditorListener) EnterSql_script(ctx *parser.Sql_scriptContext) {
+	if len(ctx.AllSql_plus_command()) > 0 {
+		l.validate = false
+	}
+}
+
+// EnterUnit_statement is called when production unit_statement is entered.
+func (l *validateForEditorListener) EnterUnit_statement(ctx *parser.Unit_statementContext) {
+	if ctx.Data_manipulation_language_statements() == nil {
+		l.validate = false
+	}
+}
+
+// EnterData_manipulation_language_statements is called when production data_manipulation_language_statements is entered.
+func (l *validateForEditorListener) EnterData_manipulation_language_statements(ctx *parser.Data_manipulation_language_statementsContext) {
+	if ctx.Select_statement() == nil && ctx.Explain_statement() == nil {
+		l.validate = false
+	}
 }
 
 // PLSQLEquivalentType returns true if the given type is equivalent to the given text.

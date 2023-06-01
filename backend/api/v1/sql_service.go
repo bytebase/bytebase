@@ -24,6 +24,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
+	tidbast "github.com/pingcap/tidb/parser/ast"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
@@ -34,6 +36,7 @@ import (
 	advisorDB "github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -929,26 +932,54 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 
 	switch instance.Engine {
 	case db.Postgres:
-		if _, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement); err != nil {
+		stmtList, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
+		}
+		for _, stmt := range stmtList {
+			switch stmt.(type) {
+			case *ast.SelectStmt, *ast.ExplainStmt:
+			default:
+				return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
+			}
 		}
 	case db.MySQL:
-		if _, err := parser.ParseMySQL(statement, "", ""); err != nil {
+		stmtList, err := parser.ParseMySQL(statement, "", "")
+		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
+		}
+		for _, stmt := range stmtList {
+			switch stmt.(type) {
+			case *tidbast.SelectStmt, *tidbast.ExplainStmt:
+			default:
+				return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
+			}
 		}
 	case db.TiDB:
-		if _, err := parser.ParseTiDB(statement, "", ""); err != nil {
+		stmtList, err := parser.ParseTiDB(statement, "", "")
+		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
+		}
+		for _, stmt := range stmtList {
+			switch stmt.(type) {
+			case *tidbast.SelectStmt, *tidbast.ExplainStmt:
+			default:
+				return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
+			}
 		}
 	case db.Oracle:
-		if _, err := parser.ParsePLSQL(statement); err != nil {
+		tree, err := parser.ParsePLSQL(statement)
+		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
-	}
-
-	// TODO(rebelice): support multiple statements here.
-	if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), statement) {
-		return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
+		if err := parser.PLSQLValidateForEditor(tree); err != nil {
+			return status.Errorf(codes.InvalidArgument, err.Error())
+		}
+	default:
+		// TODO(rebelice): support multiple statements here.
+		if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), statement) {
+			return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
+		}
 	}
 
 	return nil
@@ -1185,20 +1216,6 @@ func getDatabasesFromQuery(engine db.Type, databaseName, statement string) ([]st
 			return nil, status.Errorf(codes.Internal, "failed to extract database list from query: %s", err.Error())
 		}
 
-		if databaseName != "" {
-			// Disallow cross-database query if specify database.
-			for _, name := range databases {
-				upperDatabaseName := strings.ToUpper(name)
-				// We allow querying information schema.
-				if upperDatabaseName == "" || upperDatabaseName == "INFORMATION_SCHEMA" {
-					continue
-				}
-				if databaseName != name {
-					return nil, status.Errorf(codes.InvalidArgument, "Malformed sql execute request, specify database %q but access database %q", databaseName, name)
-				}
-			}
-			return []string{databaseName}, nil
-		}
 		return databases, nil
 	}
 	if databaseName == "" {
