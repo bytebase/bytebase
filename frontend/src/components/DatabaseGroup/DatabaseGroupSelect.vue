@@ -17,14 +17,16 @@
 import { computed, reactive, watch } from "vue";
 import { useDBGroupStore } from "@/store";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
+import { ComposedDatabaseGroup } from "@/types";
 
 interface LocalState {
-  selectedDatabaseGroup?: DatabaseGroup;
+  selectedDatabaseGroup?: ComposedDatabaseGroup;
 }
 
 const props = defineProps<{
-  selectedId?: string;
   projectId: string;
+  selectedId?: string;
+  environmentId?: string;
   disabled?: boolean;
 }>();
 
@@ -39,7 +41,13 @@ const state = reactive<LocalState>({
 const dbGroupStore = useDBGroupStore();
 
 const dbGroupList = computed(() => {
-  return dbGroupStore.getDBGroupListByProjectName(props.projectId);
+  return dbGroupStore
+    .getDBGroupListByProjectName(props.projectId)
+    .filter((dbGroup) =>
+      props.environmentId
+        ? dbGroup.environment.uid === props.environmentId
+        : true
+    );
 });
 
 const getDatabaseGroupTitle = (databaseGroupName: string): string => {
@@ -59,13 +67,13 @@ const invalidateSelectionIfNeeded = () => {
 };
 
 watch(
-  () => props.selectedId,
-  (selectedId) => {
+  () => props,
+  () => {
     invalidateSelectionIfNeeded();
     state.selectedDatabaseGroup = dbGroupList.value.find(
-      (item) => item.name === selectedId
+      (item) => item.name === props.selectedId
     );
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 );
 </script>

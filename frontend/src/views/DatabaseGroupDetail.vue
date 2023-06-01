@@ -99,13 +99,9 @@
         <div class="w-full flex flex-row justify-between items-center">
           <p class="my-4">Table group</p>
           <div>
-            <button
-              type="button"
-              class="btn-normal"
-              @click.prevent="handleCreateSchemaGroup"
-            >
+            <NButton @click.prevent="handleCreateSchemaGroup">
               New table group
-            </button>
+            </NButton>
           </div>
         </div>
         <SchemaGroupTable
@@ -148,6 +144,7 @@ import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/conte
 import { useRouter } from "vue-router";
 import { ComposedDatabaseGroup } from "@/types";
 import { generateIssueRoute } from "@/utils/databaseGroup/issue";
+import { NButton } from "naive-ui";
 
 interface LocalState {
   isLoaded: boolean;
