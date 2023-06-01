@@ -73,7 +73,7 @@
   "devDependencies": {
     "@iconify/json": "2.2.46",
     "@intlify/vite-plugin-vue-i18n": "6.0.3",
-    "@popperjs/core": "2.11.7",
+    "@popperjs/core": "2.11.8",
     "@rollup/plugin-yaml": "4.0.1",
     "@tailwindcss/forms": "0.5.3",
     "@tailwindcss/line-clamp": "0.4.2",
