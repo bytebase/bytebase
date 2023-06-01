@@ -60,36 +60,36 @@
             v-if="pushEvent"
             class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
           >
-            <template v-if="pushEvent?.vcsType.startsWith('GITLAB')">
-              <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
+            <template
+              v-if="vcsTypeToJSON(pushEvent?.vcsType).startsWith('GITLAB')"
+            >
+              <img class="h-4 w-auto" src="@/assets/gitlab-logo.svg" />
             </template>
-            <template v-if="pushEvent?.vcsType.startsWith('GITHUB')">
-              <img class="h-4 w-auto" src="../assets/github-logo.svg" />
+            <template
+              v-if="vcsTypeToJSON(pushEvent?.vcsType).startsWith('GITHUB')"
+            >
+              <img class="h-4 w-auto" src="@/assets/github-logo.svg" />
             </template>
-            <template v-if="pushEvent?.vcsType.startsWith('BITBUCKET')">
-              <img class="h-4 w-auto" src="../assets/bitbucket-logo.svg" />
+            <template
+              v-if="vcsTypeToJSON(pushEvent?.vcsType).startsWith('BITBUCKET')"
+            >
+              <img class="h-4 w-auto" src="@/assets/bitbucket-logo.svg" />
             </template>
             <a :href="vcsBranchUrl" target="_blank" class="normal-link">
               {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
             </a>
-            <span>
+            <span v-if="vcsCommit">
               {{ $t("common.commit") }}
-              <a
-                :href="pushEvent.fileCommit.url"
-                target="_blank"
-                class="normal-link"
-              >
-                {{ pushEvent.fileCommit.id.substring(0, 7) }}:
+              <a :href="vcsCommit.url" target="_blank" class="normal-link">
+                {{ vcsCommit.id.substring(0, 7) }}:
               </a>
-              <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
+              <span class="text-main mr-1">{{ vcsCommit.title }}</span>
               <i18n-t keypath="change-history.commit-info">
                 <template #author>
                   {{ pushEvent.authorName }}
                 </template>
                 <template #time>
-                  {{
-                    dayjs(pushEvent.fileCommit.createdTs * 1000).format("LLL")
-                  }}
+                  {{ humanizeDate(vcsCommit.createdTime) }}
                 </template>
               </i18n-t>
             </span>
@@ -249,7 +249,6 @@ import {
   extractReviewId,
   extractUserResourceName,
 } from "@/utils";
-import { VCSPushEvent } from "@/types";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -262,6 +261,7 @@ import {
   changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
 } from "@/types/proto/v1/database_service";
+import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 
 interface LocalState {
@@ -381,17 +381,28 @@ const previousHistoryLink = computed(() => {
   return changeHistoryLink(previous);
 });
 
-const pushEvent = computed((): VCSPushEvent | undefined => {
-  // TODO
+const pushEvent = computed((): PushEvent | undefined => {
+  return changeHistory.value?.pushEvent;
+});
+
+const vcsCommit = computed(() => {
+  const fileCommit = pushEvent.value?.fileCommit;
+  if (fileCommit && fileCommit.id) {
+    return fileCommit;
+  }
+  const commit = pushEvent.value?.commits[0];
+  if (commit && commit.id) {
+    return commit;
+  }
   return undefined;
 });
 
 const vcsBranch = computed((): string => {
   if (pushEvent.value) {
     if (
-      pushEvent.value.vcsType == "GITLAB" ||
-      pushEvent.value.vcsType == "GITHUB" ||
-      pushEvent.value.vcsType == "BITBUCKET"
+      pushEvent.value.vcsType === VcsType.GITLAB ||
+      pushEvent.value.vcsType === VcsType.GITHUB ||
+      pushEvent.value.vcsType === VcsType.BITBUCKET
     ) {
       const parts = pushEvent.value.ref.split("/");
       return parts[parts.length - 1];
@@ -402,11 +413,11 @@ const vcsBranch = computed((): string => {
 
 const vcsBranchUrl = computed((): string => {
   if (pushEvent.value) {
-    if (pushEvent.value.vcsType == "GITLAB") {
+    if (pushEvent.value.vcsType === VcsType.GITLAB) {
       return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
-    } else if (pushEvent.value.vcsType == "GITHUB") {
+    } else if (pushEvent.value.vcsType === VcsType.GITHUB) {
       return `${pushEvent.value.repositoryUrl}/tree/${vcsBranch.value}`;
-    } else if (pushEvent.value.vcsType == "BITBUCKET") {
+    } else if (pushEvent.value.vcsType === VcsType.BITBUCKET) {
       return `${pushEvent.value.repositoryUrl}/src/${vcsBranch.value}`;
     }
   }
