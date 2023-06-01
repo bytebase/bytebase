@@ -63,6 +63,13 @@
           >
             Alter Schema
           </button>
+          <button
+            type="button"
+            class="btn-normal"
+            @click.prevent="createMigration('bb.issue.database.data.update')"
+          >
+            Change Data
+          </button>
         </div>
       </div>
 
