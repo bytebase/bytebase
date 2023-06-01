@@ -487,6 +487,13 @@
   
     - [SQLService](#bytebase-v1-SQLService)
   
+- [v1/vcs.proto](#v1_vcs-proto)
+    - [Commit](#bytebase-v1-Commit)
+    - [FileCommit](#bytebase-v1-FileCommit)
+    - [PushEvent](#bytebase-v1-PushEvent)
+  
+    - [VcsType](#bytebase-v1-VcsType)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -7609,6 +7616,106 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
+
+ 
+
+
+
+<a name="v1_vcs-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/vcs.proto
+
+
+
+<a name="bytebase-v1-Commit"></a>
+
+### Commit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| message | [string](#string) |  |  |
+| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| url | [string](#string) |  |  |
+| author_name | [string](#string) |  |  |
+| author_email | [string](#string) |  |  |
+| added_list | [string](#string) | repeated |  |
+| modified_list | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-FileCommit"></a>
+
+### FileCommit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| message | [string](#string) |  |  |
+| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| url | [string](#string) |  |  |
+| author_name | [string](#string) |  |  |
+| author_email | [string](#string) |  |  |
+| added | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PushEvent"></a>
+
+### PushEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_type | [VcsType](#bytebase-v1-VcsType) |  |  |
+| base_dir | [string](#string) |  |  |
+| ref | [string](#string) |  |  |
+| before | [string](#string) |  |  |
+| after | [string](#string) |  |  |
+| repository_id | [string](#string) |  |  |
+| repository_url | [string](#string) |  |  |
+| repository_full_path | [string](#string) |  |  |
+| author_name | [string](#string) |  |  |
+| commits | [Commit](#bytebase-v1-Commit) | repeated |  |
+| file_commit | [FileCommit](#bytebase-v1-FileCommit) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-VcsType"></a>
+
+### VcsType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VCS_TYPE_UNSPECIFIED | 0 |  |
+| GITLAB | 1 |  |
+| GITHUB | 2 |  |
+| BITBUCKET | 3 |  |
+
+
+ 
+
+ 
 
  
 
