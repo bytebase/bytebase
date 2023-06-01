@@ -1,16 +1,11 @@
 import { defineStore } from "pinia";
+import { reactive } from "vue";
 import { isEqual, isUndefined } from "lodash-es";
 import { projectServiceClient } from "@/grpcweb";
 import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
 
-interface RepositoryState {
-  repositoryByProject: Map<string, ProjectGitOpsInfo>;
-}
-
 export const useRepositoryV1Store = defineStore("repository_v1", () => {
-  const repositoryState: RepositoryState = {
-    repositoryByProject: new Map<string, ProjectGitOpsInfo>(),
-  };
+  const repositoryMapByProject = reactive(new Map<string, ProjectGitOpsInfo>());
 
   const fetchRepositoryByProject = async (
     project: string
@@ -20,9 +15,10 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
         project,
       });
 
-      repositoryState.repositoryByProject.set(project, gitopsInfo);
+      repositoryMapByProject.set(project, gitopsInfo);
       return gitopsInfo;
-    } catch {
+    } catch (e) {
+      console.error(e);
       return;
     }
   };
@@ -30,12 +26,12 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
   const getRepositoryByProject = (
     project: string
   ): ProjectGitOpsInfo | undefined => {
-    return repositoryState.repositoryByProject.get(project);
+    return repositoryMapByProject.get(project);
   };
 
   const getOrFetchRepositoryByProject = (project: string) => {
-    if (repositoryState.repositoryByProject.has(project)) {
-      return repositoryState.repositoryByProject.get(project);
+    if (repositoryMapByProject.has(project)) {
+      return Promise.resolve(repositoryMapByProject.get(project));
     }
     return fetchRepositoryByProject(project);
   };
@@ -66,7 +62,7 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
       });
     }
 
-    repositoryState.repositoryByProject.set(project, gitops);
+    repositoryMapByProject.set(project, gitops);
     return gitops;
   };
 

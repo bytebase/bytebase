@@ -145,6 +145,7 @@ import { useI18n } from "vue-i18n";
 import { useRepositoryV1Store, hasFeature, useProjectV1Store } from "@/store";
 import {
   Project,
+  Workflow,
   TenantMode,
   SchemaChange,
 } from "@/types/proto/v1/project_service";
@@ -304,12 +305,15 @@ const tryFinishSetup = (allowFinishCallback: () => void) => {
       externalId = state.config.repositoryInfo.fullPath;
     }
 
-    // Update project schemaChangeType field firstly.
+    const projectPatch = cloneDeep(props.project);
+    projectPatch.workflow = Workflow.VCS;
+    const updateMask = ["workflow"];
+    // Update project schemaChangeType field.
     if (state.config.schemaChangeType !== props.project.schemaChange) {
-      const projectPatch = cloneDeep(props.project);
+      updateMask.push("schema_change");
       projectPatch.schemaChange = state.config.schemaChangeType;
-      await useProjectV1Store().updateProject(projectPatch, ["schema_change"]);
     }
+    await useProjectV1Store().updateProject(projectPatch, updateMask);
 
     const repositoryCreate: Partial<ProjectGitOpsInfo> = {
       vcsUid: `${state.config.vcs.id}`,

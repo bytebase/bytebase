@@ -89,7 +89,7 @@ export const useVCSStore = defineStore("vcs", {
       const vcs = convert(data.data, data.included);
 
       this.setVCSById({
-        vcsId,
+        vcsId: vcs.id,
         vcs,
       });
       return vcs;

@@ -13,8 +13,7 @@
       />
     </template>
     <template v-else>
-      <!-- Use the persistent workflowType here -->
-      <template v-if="project.workflow == Workflow.UI">
+      <template v-if="project.workflow === Workflow.UI">
         <div class="text-lg leading-6 font-medium text-main">
           {{ $t("workflow.current-workflow") }}
         </div>
@@ -73,7 +72,7 @@
           </div>
         </template>
       </template>
-      <template v-else-if="project.workflow == Workflow.VCS && repository">
+      <template v-else-if="project.workflow === Workflow.VCS && repository">
         <RepositoryPanel
           :project="project"
           :vcs="vcs"
@@ -121,13 +120,14 @@ const state = reactive<LocalState>({
   showWizardForChange: false,
 });
 
-watchEffect(async () => {
-  const repo = await repositoryV1Store.getOrFetchRepositoryByProject(
-    props.project.name
-  );
-  if (repo) {
-    await vcsStore.fetchVCSById(repo.vcsUid);
-  }
+watchEffect(() => {
+  repositoryV1Store
+    .getOrFetchRepositoryByProject(props.project.name)
+    .then((repo) => {
+      if (repo) {
+        return vcsStore.fetchVCSById(repo.vcsUid);
+      }
+    });
 });
 
 watch(
@@ -171,6 +171,7 @@ const finishWizard = () => {
           project: props.project.title,
         }),
   });
+  state.workflowType = Workflow.VCS;
   state.showWizardForCreate = false;
   state.showWizardForChange = false;
 };

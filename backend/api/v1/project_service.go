@@ -502,6 +502,7 @@ func (s *ProjectService) DeleteProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSID)
 	}
 
+	// TODO: migrate to v1 store.
 	repositoryDelete := &api.RepositoryDelete{
 		ProjectResourceID: repo.Project.ResourceID,
 		DeleterID:         ctx.Value(common.PrincipalIDContextKey).(int),
