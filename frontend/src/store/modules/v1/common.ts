@@ -19,6 +19,7 @@ export const settingNamePrefix = "settings/";
 export const sheetNamePrefix = "sheets/";
 export const databaseGroupNamePrefix = "databaseGroups/";
 export const schemaGroupNamePrefix = "schemaGroups/";
+export const externalVersionControlPrefix = "externalVersionControls/";
 
 export const getNameParentTokens = (
   name: string,
@@ -142,4 +143,8 @@ export const getSheetPathByLegacyProject = (
   return `${getProjectPathByLegacyProject(
     project
   )}/${sheetNamePrefix}${sheetId}`;
+};
+
+export const getProjectPathFromRepoName = (repoName: string): string => {
+  return repoName.split("/gitOpsInfo")[0];
 };

@@ -215,6 +215,8 @@ message ProjectGitOpsInfo {
   string webhook_endpoint_id = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string access_token = 14 [(google.api.field_behavior) = INPUT_ONLY];
+
   google.protobuf.Timestamp expires_time = 15 [(google.api.field_behavior) = INPUT_ONLY];
+
   string refresh_token = 16 [(google.api.field_behavior) = INPUT_ONLY];
 }
