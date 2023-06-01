@@ -47,6 +47,8 @@ import {
   ProjectRepositoryConfig,
 } from "../types";
 import { useOAuthStore, useGitlabStore } from "@/store";
+import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { getVCSUid } from "@/store/modules/v1/common";
 
 interface LocalState {
   repositoryList: ExternalRepositoryInfo[];
@@ -74,14 +76,14 @@ onMounted(() => {
 const prepareRepositoryList = () => {
   useOAuthStore()
     .exchangeVCSTokenWithID({
-      vcsId: props.config.vcs.id,
+      vcsId: getVCSUid(props.config.vcs.name),
       code: props.config.code,
     })
     .then((token: OAuthToken) => {
       emit("set-token", token);
       gitlabStore
         .fetchProjectList({
-          vcs: props.config.vcs,
+          vcsId: getVCSUid(props.config.vcs.name),
           token: token,
         })
         .then((list) => {
@@ -91,10 +93,10 @@ const prepareRepositoryList = () => {
 };
 
 const refreshRepositoryList = () => {
-  if (props.config.vcs.type == "GITLAB") {
+  if (props.config.vcs.type == ExternalVersionControl_Type.GITLAB) {
     gitlabStore
       .fetchProjectList({
-        vcs: props.config.vcs,
+        vcsId: getVCSUid(props.config.vcs.name),
         token: props.config.token,
       })
       .then((list) => {
@@ -113,11 +115,11 @@ const repositoryList = computed(() => {
 });
 
 const attentionText = computed((): string => {
-  if (props.config.vcs.type == "GITLAB") {
+  if (props.config.vcs.type === ExternalVersionControl_Type.GITLAB) {
     return "repository.select-repository-attention-gitlab";
-  } else if (props.config.vcs.type == "GITHUB") {
+  } else if (props.config.vcs.type === ExternalVersionControl_Type.GITHUB) {
     return "repository.select-repository-attention-github";
-  } else if (props.config.vcs.type == "BITBUCKET") {
+  } else if (props.config.vcs.type === ExternalVersionControl_Type.BITBUCKET) {
     return "repository.select-repository-attention-bitbucket";
   }
   return "";

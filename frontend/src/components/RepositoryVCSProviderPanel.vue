@@ -9,13 +9,13 @@
         class="btn-normal items-center space-x-2 mx-2 my-2"
         @click.prevent="selectVCS(vcs)"
       >
-        <template v-if="vcs.type.startsWith('GITLAB')">
+        <template v-if="vcs.type === ExternalVersionControl_Type.GITLAB">
           <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
-        <template v-if="vcs.type.startsWith('GITHUB')">
+        <template v-if="vcs.type === ExternalVersionControl_Type.GITHUB">
           <img class="h-6 w-auto" src="../assets/github-logo.svg" />
         </template>
-        <template v-if="vcs.type.startsWith('BITBUCKET')">
+        <template v-if="vcs.type === ExternalVersionControl_Type.BITBUCKET">
           <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
         </template>
         <span>{{ vcs.name }}</span>
@@ -46,27 +46,31 @@ export default { name: "RepositoryVCSProviderPanel" };
 <script setup lang="ts">
 import { reactive, computed, watchEffect, onUnmounted, onMounted } from "vue";
 import isEmpty from "lodash-es/isEmpty";
-import { OAuthWindowEventPayload, openWindowForOAuth, VCS } from "../types";
+import { OAuthWindowEventPayload, openWindowForOAuth } from "../types";
 import { hasWorkspacePermissionV1 } from "../utils";
-import { pushNotification, useCurrentUserV1, useVCSStore } from "@/store";
+import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
+import {
+  ExternalVersionControl,
+  ExternalVersionControl_Type,
+} from "@/types/proto/v1/externalvs_service";
 
 interface LocalState {
-  selectedVCS?: VCS;
+  selectedVCS?: ExternalVersionControl;
 }
 
 const emit = defineEmits<{
   (event: "next"): void;
-  (event: "set-vcs", payload: VCS): void;
+  (event: "set-vcs", payload: ExternalVersionControl): void;
   (event: "set-code", payload: string): void;
 }>();
 
-const vcsStore = useVCSStore();
+const vcsV1Store = useVCSV1Store();
 const state = reactive<LocalState>({});
 
 const currentUserV1 = useCurrentUserV1();
 
 const prepareVCSList = () => {
-  vcsStore.fetchVCSList();
+  vcsV1Store.fetchVCSList();
 };
 
 watchEffect(prepareVCSList);
@@ -79,7 +83,7 @@ onUnmounted(() => {
 });
 
 const vcsList = computed(() => {
-  return vcsStore.getVCSList();
+  return vcsV1Store.getVCSList();
 });
 
 const eventListener = (event: Event) => {
@@ -103,14 +107,14 @@ const canManageVCSProvider = computed(() => {
   );
 });
 
-const selectVCS = (vcs: VCS) => {
+const selectVCS = (vcs: ExternalVersionControl) => {
   state.selectedVCS = vcs;
   emit("set-vcs", vcs);
 
-  let authorizeUrl = `${vcs.instanceUrl}/oauth/authorize`;
-  if (vcs.type == "GITHUB") {
+  let authorizeUrl = `${vcs.url}/oauth/authorize`;
+  if (vcs.type === ExternalVersionControl_Type.GITHUB) {
     authorizeUrl = `https://github.com/login/oauth/authorize`;
-  } else if (vcs.type == "BITBUCKET") {
+  } else if (vcs.type === ExternalVersionControl_Type.BITBUCKET) {
     authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
   }
   openWindowForOAuth(

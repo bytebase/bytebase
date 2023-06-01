@@ -12,3 +12,4 @@ export * from "./user";
 export * from "./instance";
 export * from "./sqlEditor";
 export * from "./sheet";
+export * from "./vcs";

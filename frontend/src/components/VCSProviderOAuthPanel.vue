@@ -376,6 +376,7 @@ import {
 } from "../types";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
+import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 
 interface LocalState {
   applicationIdValidationTimer?: ReturnType<typeof setTimeout>;
@@ -528,15 +529,15 @@ export default defineComponent({
     };
 
     const applicationIdErrorDescription = computed((): string => {
-      if (props.config.type == "GITLAB") {
+      if (props.config.type === ExternalVersionControl_Type.GITLAB) {
         return t(
           "gitops.setting.add-git-provider.oauth-info.gitlab-application-id-error"
         );
-      } else if (props.config.type == "GITHUB") {
+      } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
         return t(
           "gitops.setting.add-git-provider.oauth-info.github-application-id-error"
         );
-      } else if (props.config.type == "BITBUCKET") {
+      } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
         return t(
           "gitops.setting.add-git-provider.oauth-info.bitbucket-application-id-error"
         );
@@ -545,15 +546,15 @@ export default defineComponent({
     });
 
     const secretErrorDescription = computed((): string => {
-      if (props.config.type == "GITLAB") {
+      if (props.config.type === ExternalVersionControl_Type.GITLAB) {
         return t(
           "gitops.setting.add-git-provider.oauth-info.gitlab-secret-error"
         );
-      } else if (props.config.type == "GITHUB") {
+      } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
         return t(
           "gitops.setting.add-git-provider.oauth-info.github-secret-error"
         );
-      } else if (props.config.type == "BITBUCKET") {
+      } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
         return t(
           "gitops.setting.add-git-provider.oauth-info.bitbucket-secret-error"
         );
