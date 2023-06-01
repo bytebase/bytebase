@@ -42,11 +42,12 @@
                     :checked="state.databaseSelectedTab === 'DATABASE_GROUP'"
                     value="DATABASE_GROUP"
                     name="database-tab"
-                    @update:checked="
-                      state.databaseSelectedTab = 'DATABASE_GROUP'
-                    "
+                    @update:checked="handleDatabaseGroupTabSelect"
                   >
-                    Database group
+                    <div class="flex flex-row items-center">
+                      <span class="mr-1">Database group</span>
+                      <FeatureBadge feature="bb.feature.sharding" />
+                    </div>
                   </NRadio>
                 </div>
                 <div
@@ -175,9 +176,12 @@
                 :checked="state.databaseSelectedTab === 'DATABASE_GROUP'"
                 value="DATABASE_GROUP"
                 name="database-tab"
-                @update:checked="state.databaseSelectedTab = 'DATABASE_GROUP'"
+                @update:checked="handleDatabaseGroupTabSelect"
               >
-                Database group
+                <div class="flex flex-row items-center">
+                  <span class="mr-1">Database group</span>
+                  <FeatureBadge feature="bb.feature.sharding" />
+                </div>
               </NRadio>
             </div>
             <aside class="flex justify-end">
@@ -279,9 +283,9 @@
   </div>
 
   <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.multi-tenancy"
-    @cancel="state.showFeatureModal = false"
+    v-if="featureModalContext.feature"
+    :feature="featureModalContext.feature"
+    @cancel="featureModalContext.feature = undefined"
   />
 
   <GhostDialog ref="ghostDialog" />
@@ -302,7 +306,12 @@ import { NTabs, NTabPane, NRadio } from "naive-ui";
 import { computed, reactive, PropType, ref } from "vue";
 import { useRouter } from "vue-router";
 
-import { ComposedDatabase, ComposedDatabaseGroup, UNKNOWN_ID } from "@/types";
+import {
+  ComposedDatabase,
+  ComposedDatabaseGroup,
+  FeatureType,
+  UNKNOWN_ID,
+} from "@/types";
 import {
   allowGhostMigrationV1,
   allowUsingSchemaEditorV1,
@@ -342,7 +351,6 @@ type LocalState = ProjectStandardViewState &
     databaseSelectedTab: "DATABASE" | "DATABASE_GROUP";
     showSchemaLessDatabaseList: boolean;
     showSchemaEditorModal: boolean;
-    showFeatureModal: boolean;
     selectedDatabaseGroupName?: string;
     selectedSchemaGroupNameList?: string[];
   };
@@ -368,6 +376,10 @@ const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
+
+const featureModalContext = ref<{
+  feature?: FeatureType;
+}>({});
 
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const schemaEditorContext = ref<{
@@ -395,7 +407,6 @@ const state = reactive<LocalState>({
   databaseSelectedTab: "DATABASE",
   showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
-  showFeatureModal: false,
 });
 
 // Returns true if alter schema, false if change data.
@@ -677,6 +688,15 @@ const toggleDatabaseSelection = (database: ComposedDatabase, on: boolean) => {
   }
 };
 
+const handleDatabaseGroupTabSelect = () => {
+  if (!hasFeature("bb.feature.sharding")) {
+    state.databaseSelectedTab = "DATABASE";
+    featureModalContext.value.feature = "bb.feature.sharding";
+    return;
+  }
+  state.databaseSelectedTab = "DATABASE_GROUP";
+};
+
 const generateTenant = async () => {
   if (state.selectedDatabaseGroupName) {
     const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
@@ -692,7 +712,7 @@ const generateTenant = async () => {
   }
 
   if (!hasFeature("bb.feature.multi-tenancy")) {
-    state.showFeatureModal = true;
+    featureModalContext.value.feature = "bb.feature.multi-tenancy";
     return;
   }
 

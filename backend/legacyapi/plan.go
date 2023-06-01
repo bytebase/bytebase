@@ -122,6 +122,8 @@ const (
 	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
 	// FeatureEncryptedSecrets is a feature that allows user to setting the encrypted secrets for the database.
 	FeatureEncryptedSecrets FeatureType = "bb.feature.encrypted-secrets"
+	// FeatureSharding allows user to create database/schema groups.
+	FeatureSharding FeatureType = "bb.feature.sharding"
 
 	// VCS Integration.
 
@@ -223,6 +225,8 @@ func (e FeatureType) Name() string {
 		return "Task schedule time"
 	case FeatureEncryptedSecrets:
 		return "Encrypted secrets"
+	case FeatureSharding:
+		return "Sharding"
 	// VCS Integration
 	case FeatureVCSSchemaWriteBack:
 		return "Schema write-back"
@@ -305,6 +309,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSQLReview:        {true, true, true},
 	FeatureTaskScheduleTime: {false, true, true},
 	FeatureEncryptedSecrets: {false, true, true},
+	FeatureSharding:         {false, false, true},
 	// VCS Integration
 	FeatureVCSSchemaWriteBack:   {false, true, true},
 	FeatureVCSSheetSync:         {false, true, true},
