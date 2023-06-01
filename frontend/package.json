@@ -71,7 +71,7 @@
     "vueuc": "0.4.51"
   },
   "devDependencies": {
-    "@iconify/json": "2.2.46",
+    "@iconify/json": "2.2.72",
     "@intlify/vite-plugin-vue-i18n": "6.0.3",
     "@popperjs/core": "2.11.7",
     "@rollup/plugin-yaml": "4.0.1",
