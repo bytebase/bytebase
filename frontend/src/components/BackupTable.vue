@@ -16,11 +16,10 @@
       <BBTableHeaderCell class="w-16" :title="columnList[1].title" />
       <BBTableHeaderCell class="w-48" :title="columnList[2].title" />
       <BBTableHeaderCell class="w-16" :title="columnList[3].title" />
-      <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
       <BBTableHeaderCell
         v-if="allowEdit"
         class="w-4"
-        :title="columnList[5].title"
+        :title="columnList[4].title"
       />
     </template>
     <template #body="{ rowData: backup }">
@@ -62,17 +61,6 @@
             ? backup.comment.substring(0, 100) + "..."
             : backup.comment
         }}
-      </BBTableCell>
-      <BBTableCell>
-        <div class="flex flex-row space-x-2">
-          <div
-            class="normal-link"
-            @click.prevent="gotoMigrationHistory(backup)"
-          >
-            {{ backup.migrationHistoryVersion }}
-          </div>
-          <BBSpin v-if="state.loadingMigrationHistory" />
-        </div>
       </BBTableCell>
       <BBTableCell class="tooltip-wrapper">
         <span class="tooltip whitespace-nowrap">
@@ -158,22 +146,11 @@ import {
   Backup,
   ComposedDatabase,
   IssueCreate,
-  MigrationHistory,
   PITRContext,
   SYSTEM_BOT_ID,
 } from "../types";
-import {
-  changeHistorySlug,
-  extractDatabaseResourceName,
-  extractInstanceResourceName,
-  issueSlug,
-} from "../utils";
-import {
-  featureToRef,
-  useLegacyInstanceStore,
-  useIssueStore,
-  pushNotification,
-} from "@/store";
+import { issueSlug } from "../utils";
+import { featureToRef, useIssueStore } from "@/store";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
   default as RestoreTargetForm,
@@ -235,9 +212,6 @@ const EDIT_COLUMN_LIST: BBTableColumn[] = [
     title: t("common.comment"),
   },
   {
-    title: t("common.schema-version"),
-  },
-  {
     title: t("common.time"),
   },
   {
@@ -254,9 +228,6 @@ const NON_EDIT_COLUMN_LIST: BBTableColumn[] = [
   },
   {
     title: t("common.comment"),
-  },
-  {
-    title: t("common.schema-version"),
   },
   {
     title: t("common.time"),
@@ -310,39 +281,6 @@ const statusIconClass = (backup: Backup) => {
         iconClass + " bg-error text-white hover:text-white hover:bg-error-hover"
       );
   }
-};
-
-const gotoMigrationHistory = (backup: Backup) => {
-  state.loadingMigrationHistory = true;
-  useLegacyInstanceStore()
-    .fetchMigrationHistoryByVersion({
-      instanceId: Number(props.database.instanceEntity.uid),
-      databaseName: props.database.databaseName,
-      version: backup.migrationHistoryVersion,
-    })
-    .then((history: MigrationHistory) => {
-      router
-        .push({
-          name: "workspace.database.history.detail",
-          params: {
-            instance: extractInstanceResourceName(props.database.instance),
-            database: extractDatabaseResourceName(props.database.name).database,
-            changeHistorySlug: changeHistorySlug(history.id, history.version),
-          },
-          hash: "#schema",
-        })
-        .then(() => {
-          state.loadingMigrationHistory = false;
-        });
-    })
-    .catch((error) => {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: error.message,
-      });
-      state.loadingMigrationHistory = false;
-    });
 };
 
 const columnList = computed(() => {
