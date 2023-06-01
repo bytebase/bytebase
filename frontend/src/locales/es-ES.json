@@ -764,6 +764,7 @@
       "expire-days": "días de caducidad",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
+      "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
       "customize": "personalice",
       "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez."
