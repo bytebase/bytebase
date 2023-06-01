@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -162,17 +163,21 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 	t.Log("Schema initialized.")
 
-	dmlSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID: projectUID,
-		Name:      "migration statement sheet",
-		Statement: `
-		DELETE FROM t WHERE id = 1;
-		UPDATE t SET name = 'unknown\nunknown';
-	`,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	dmlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title: "migration statement sheet",
+			Content: []byte(`
+			DELETE FROM t WHERE id = 1;
+			UPDATE t SET name = 'unknown\nunknown';
+		`),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	dmlSheetUID, err := strconv.Atoi(strings.TrimPrefix(dmlSheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Run a DML issue.
@@ -181,7 +186,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 			{
 				MigrationType:   db.Data,
 				DatabaseID:      databaseUID,
-				SheetID:         dmlSheet.ID,
+				SheetID:         dmlSheetUID,
 				RollbackEnabled: true,
 			},
 		},
@@ -372,17 +377,21 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	a.NoError(err)
 	t.Log("Schema initialized.")
 
-	dmlSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID: projectUID,
-		Name:      "migration statement sheet",
-		Statement: `
-		DELETE FROM t WHERE id = 1;
-		UPDATE t SET name = 'unknown\nunknown';
-	`,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	dmlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title: "migration statement sheet",
+			Content: []byte(`
+			DELETE FROM t WHERE id = 1;
+			UPDATE t SET name = 'unknown\nunknown';
+		`),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	dmlSheetUID, err := strconv.Atoi(strings.TrimPrefix(dmlSheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Run a DML issue with rollbackEnabled set to false.
@@ -391,7 +400,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 			{
 				MigrationType: db.Data,
 				DatabaseID:    databaseUID,
-				SheetID:       dmlSheet.ID,
+				SheetID:       dmlSheetUID,
 				// RollbackEnabled: true,
 			},
 		},
@@ -590,17 +599,21 @@ func TestRollbackCanceled(t *testing.T) {
 	a.NoError(err)
 	t.Log("Schema initialized.")
 
-	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID: projectUID,
-		Name:      "delete statement sheet",
-		Statement: `
-		DELETE FROM t WHERE id = 1;
-		UPDATE t SET name = 'unknown\nunknown';
-	`,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title: "delete statement sheet",
+			Content: []byte(`
+			DELETE FROM t WHERE id = 1;
+			UPDATE t SET name = 'unknown\nunknown';
+		`),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Run a DML issue.
@@ -609,7 +622,7 @@ func TestRollbackCanceled(t *testing.T) {
 			{
 				MigrationType:   db.Data,
 				DatabaseID:      databaseUID,
-				SheetID:         sheet.ID,
+				SheetID:         sheetUID,
 				RollbackEnabled: true,
 			},
 		},

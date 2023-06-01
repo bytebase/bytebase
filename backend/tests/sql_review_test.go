@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	// Import pg driver.
@@ -175,7 +176,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	for i, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, project.Name, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
@@ -200,7 +201,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, project.Name, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 
 	// delete the SQL review policy
@@ -209,7 +210,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, statements[0], false)
+	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, project.Name, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 
@@ -357,7 +358,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	for i, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, t.Statement, t.Run)
+		result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, project.Name, t.Statement, t.Run)
 		if record {
 			tests[i].Result = result
 		} else {
@@ -388,14 +389,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		`INSERT INTO test(id, name) VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');`,
 	}
 	for _, stmt := range initialStmts {
-		createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, stmt, true /* wait */)
+		createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, project.Name, stmt, true /* wait */)
 	}
 	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	origin, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
 	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]],[false]]", origin)
-	createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, dmlSQL, false /* wait */)
+	createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, project.Name, dmlSQL, false /* wait */)
 	finial, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
 	a.Equal(origin, finial)
@@ -416,19 +417,23 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, project.Name, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 
-func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Assertions, ctl *controller, databaseID int, projectID int, statement string, wait bool) []api.TaskCheckResult {
-	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectID,
-		Name:       "statement",
-		Statement:  statement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Assertions, ctl *controller, databaseID int, projectID int, projectName, statement string, wait bool) []api.TaskCheckResult {
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: projectName,
+		Sheet: &v1pb.Sheet{
+			Title:      "statement",
+			Content:    []byte(statement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", projectName)))
 	a.NoError(err)
 
 	createContext, err := json.Marshal(&api.MigrationContext{
@@ -436,7 +441,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    databaseID,
-				SheetID:       sheet.ID,
+				SheetID:       sheetUID,
 			},
 		},
 	})

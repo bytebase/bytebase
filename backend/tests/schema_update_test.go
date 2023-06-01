@@ -89,14 +89,18 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
-	migrationStatementSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "migration statement sheet",
-		Statement:  migrationStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "migration statement sheet",
+			Content:    []byte(migrationStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
@@ -105,7 +109,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    databaseUID,
-				SheetID:       migrationStatementSheet.ID,
+				SheetID:       sheetUID,
 			},
 		},
 	})
@@ -128,14 +132,18 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	a.Equal(bookSchemaSQLResult, result)
 
-	dataUpdateStatementSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "dataUpdateStatement",
-		Statement:  dataUpdateStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet, err = ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "dataUpdateStatement",
+			Content:    []byte(dataUpdateStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err = strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database data.
@@ -144,7 +152,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			{
 				MigrationType: db.Data,
 				DatabaseID:    databaseUID,
-				SheetID:       dataUpdateStatementSheet.ID,
+				SheetID:       sheetUID,
 			},
 		},
 	})
@@ -249,17 +257,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		want := wantCloneHistories[i]
 		a.Equal(want, got)
 	}
-
-	// Create a sheet to mock SQL editor new tab action with UNKNOWN ProjectID.
-	_, err = ctl.createSheet(api.SheetCreate{
-		ProjectID:  -1,
-		DatabaseID: &databaseUID,
-		Name:       "my-sheet",
-		Statement:  "SELECT * FROM demo",
-		Visibility: api.PrivateSheet,
-		Source:     api.SheetFromBytebase,
-	})
-	a.NoError(err)
 
 	_, err = ctl.sheetServiceClient.SearchSheets(ctx, &v1pb.SearchSheetsRequest{
 		Parent: "projects/-",
@@ -629,14 +626,18 @@ func TestVCS(t *testing.T) {
 			)
 			a.NoError(err)
 
-			sheet, err := ctl.createSheet(api.SheetCreate{
-				ProjectID:  projectUID,
-				Name:       "migration statement 4 sheet",
-				Statement:  migrationStatement4,
-				Visibility: api.ProjectSheet,
-				Source:     api.SheetFromBytebaseArtifact,
-				Type:       api.SheetForSQL,
+			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+				Parent: project.Name,
+				Sheet: &v1pb.Sheet{
+					Title:      "migration statement 4 sheet",
+					Content:    []byte(migrationStatement4),
+					Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+					Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+					Type:       v1pb.Sheet_TYPE_SQL,
+				},
 			})
+			a.NoError(err)
+			sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 			a.NoError(err)
 
 			// Schema change from UI.
@@ -646,7 +647,7 @@ func TestVCS(t *testing.T) {
 					{
 						MigrationType: db.Migrate,
 						DatabaseID:    databaseUID,
-						SheetID:       sheet.ID,
+						SheetID:       sheetUID,
 					},
 				},
 			})
@@ -2151,14 +2152,18 @@ CREATE TABLE public.book (
 			databaseUID, err := strconv.Atoi(database.Uid)
 			a.NoError(err)
 
-			ddlSheet, err := ctl.createSheet(api.SheetCreate{
-				ProjectID:  projectUID,
-				Name:       "test ddl",
-				Statement:  test.ddl,
-				Visibility: api.ProjectSheet,
-				Source:     api.SheetFromBytebaseArtifact,
-				Type:       api.SheetForSQL,
+			ddlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+				Parent: project.Name,
+				Sheet: &v1pb.Sheet{
+					Title:      "test ddl",
+					Content:    []byte(test.ddl),
+					Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+					Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+					Type:       v1pb.Sheet_TYPE_SQL,
+				},
 			})
+			a.NoError(err)
+			ddlSheetUID, err := strconv.Atoi(strings.TrimPrefix(ddlSheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 			a.NoError(err)
 
 			// Create an issue that updates database schema.
@@ -2167,7 +2172,7 @@ CREATE TABLE public.book (
 					{
 						MigrationType: db.Migrate,
 						DatabaseID:    databaseUID,
-						SheetID:       ddlSheet.ID,
+						SheetID:       ddlSheetUID,
 					},
 				},
 			})
@@ -2255,14 +2260,18 @@ func TestMarkTaskAsDone(t *testing.T) {
 	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
-	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "migration statement sheet",
-		Statement:  migrationStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "migration statement sheet",
+			Content:    []byte(migrationStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
@@ -2271,7 +2280,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    databaseUID,
-				SheetID:       sheet.ID,
+				SheetID:       sheetUID,
 			},
 		},
 	})
