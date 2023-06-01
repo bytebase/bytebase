@@ -58,7 +58,6 @@
         />
       </div>
       <div class="col-span-2">
-        <p class="text-lg mb-2">{{ matchedSectionTitle }}</p>
         <MatchedDatabaseView
           v-if="resourceType === 'DATABASE_GROUP'"
           :project="project"
@@ -133,10 +132,6 @@ const isCreating = computed(() => props.databaseGroup === undefined);
 
 const resourceIdType = computed(() =>
   props.resourceType === "DATABASE_GROUP" ? "database-group" : "schema-group"
-);
-
-const matchedSectionTitle = computed(() =>
-  props.resourceType === "DATABASE_GROUP" ? "Database" : "Table"
 );
 
 onMounted(async () => {

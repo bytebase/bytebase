@@ -1,5 +1,6 @@
 <template>
-  <div class="w-full border min-h-[20rem]">
+  <p class="text-lg mb-2">Databases</p>
+  <div class="w-full border min-h-[20rem] max-h-[24rem] overflow-y-auto">
     <div
       class="w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b"
     >
@@ -19,13 +20,13 @@
         <heroicons-outline:chevron-down v-else class="w-5 h-auto" />
       </button>
     </div>
-    <div v-show="state.showMatchedDatabaseList" class="w-full">
+    <div v-show="state.showMatchedDatabaseList" class="w-full py-1">
       <div
         v-for="database in matchedDatabaseList"
         :key="database.name"
         class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
-        <span>{{ database.databaseName }}</span>
+        <span class="text-sm">{{ database.databaseName }}</span>
         <div class="flex flex-row justify-end items-center">
           <InstanceV1EngineIcon :instance="database.instanceEntity" />
           <span class="ml-1 text-sm text-gray-400">{{
@@ -56,13 +57,13 @@
         <heroicons-outline:chevron-down v-else class="w-5 h-auto" />
       </button>
     </div>
-    <div v-show="state.showUnmatchedDatabaseList">
+    <div v-show="state.showUnmatchedDatabaseList" class="w-full py-1">
       <div
         v-for="database in unmatchedDatabaseList"
         :key="database.name"
         class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
-        <span>{{ database.databaseName }}</span>
+        <span class="text-sm">{{ database.databaseName }}</span>
         <div class="flex flex-row justify-end items-center">
           <InstanceV1EngineIcon :instance="database.instanceEntity" />
           <span class="ml-1 text-sm text-gray-400">{{
@@ -104,7 +105,7 @@ const props = defineProps<{
 const environmentStore = useEnvironmentV1Store();
 const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
-  showMatchedDatabaseList: false,
+  showMatchedDatabaseList: true,
   showUnmatchedDatabaseList: false,
 });
 const matchedDatabaseList = ref<ComposedDatabase[]>([]);
