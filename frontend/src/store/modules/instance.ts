@@ -4,7 +4,6 @@ import {
   Environment,
   Instance,
   InstanceState,
-  MigrationHistory,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -69,23 +68,6 @@ function convert(
     ...(instancePartial as Omit<Instance, "environment" | "dataSourceList">),
     environment,
     dataSourceList,
-  };
-}
-
-function convertMigrationHistory(history: ResourceObject): MigrationHistory {
-  const payload = history.attributes.payload
-    ? JSON.parse((history.attributes.payload as string) || "{}")
-    : {};
-  return {
-    ...(history.attributes as Omit<
-      MigrationHistory,
-      "id" | "issueId" | "payload"
-    >),
-    id: history.id,
-    // This issueId is special since it's stored in the migration history table
-    // and may refer to the issueId from the external system in the future.
-    issueId: parseInt(history.attributes.issueId as string),
-    payload,
   };
 }
 
