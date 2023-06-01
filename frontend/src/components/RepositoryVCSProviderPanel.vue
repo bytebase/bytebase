@@ -18,7 +18,7 @@
         <template v-if="vcs.type === ExternalVersionControl_Type.BITBUCKET">
           <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
         </template>
-        <span>{{ vcs.name }}</span>
+        <span>{{ vcs.title }}</span>
       </button>
     </template>
   </div>
