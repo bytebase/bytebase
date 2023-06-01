@@ -347,7 +347,7 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 			return nil, err
 		}
 
-		var rowData *v1pb.QueryRow
+		var rowData v1pb.QueryRow
 		for i := range columnTypes {
 			if len(fieldList) > 0 && fieldList[i].Sensitive {
 				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}})
@@ -377,7 +377,7 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 			rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
 		}
 
-		data = append(data, rowData)
+		data = append(data, &rowData)
 	}
 
 	return data, nil

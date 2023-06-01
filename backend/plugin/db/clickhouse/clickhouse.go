@@ -268,7 +268,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			return nil, err
 		}
 
-		var rowData *v1pb.QueryRow
+		var rowData v1pb.QueryRow
 		for i := range cols {
 			// handle TUPLE ARRAY MAP
 			if v, ok := cols[i].(*any); ok && v != nil {
@@ -446,7 +446,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
 		}
 
-		data = append(data, rowData)
+		data = append(data, &rowData)
 	}
 
 	return data, nil
