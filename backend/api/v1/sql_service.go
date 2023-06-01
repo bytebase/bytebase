@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/base64"
@@ -8,13 +9,16 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/google/cel-go/cel"
 	"github.com/labstack/echo/v4"
@@ -22,6 +26,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -44,17 +49,19 @@ const (
 // SQLService is the service for SQL.
 type SQLService struct {
 	v1pb.UnimplementedSQLServiceServer
-	store        *store.Store
-	schemaSyncer *schemasync.Syncer
-	dbFactory    *dbfactory.DBFactory
+	store           *store.Store
+	schemaSyncer    *schemasync.Syncer
+	dbFactory       *dbfactory.DBFactory
+	activityManager *activity.Manager
 }
 
 // NewSQLService creates a SQLService.
-func NewSQLService(store *store.Store, schemaSyncer *schemasync.Syncer, dbFactory *dbfactory.DBFactory) *SQLService {
+func NewSQLService(store *store.Store, schemaSyncer *schemasync.Syncer, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager) *SQLService {
 	return &SQLService{
-		store:        store,
-		schemaSyncer: schemaSyncer,
-		dbFactory:    dbFactory,
+		store:           store,
+		schemaSyncer:    schemaSyncer,
+		dbFactory:       dbFactory,
+		activityManager: activityManager,
 	}
 }
 
@@ -80,6 +87,309 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 		CurrentSchema:  prettyCurrentSchema,
 		ExpectedSchema: prettyExpectedSchema,
 	}, nil
+}
+
+// Export exports the SQL query result.
+func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
+	instanceMessage, sensitiveSchemaInfo, activity, err := s.preExport(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	bytes, durationNs, exportErr := s.doExport(ctx, request, instanceMessage, sensitiveSchemaInfo)
+
+	if err := s.postExport(ctx, activity, durationNs, exportErr); err != nil {
+		return nil, err
+	}
+
+	if exportErr != nil {
+		return nil, exportErr
+	}
+
+	return &v1pb.ExportResponse{
+		Content: bytes,
+	}, nil
+}
+
+func (s *SQLService) postExport(ctx context.Context, activity *api.Activity, durationNs int64, queryErr error) error {
+	// Update the activity
+	var payload api.ActivitySQLExportPayload
+	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
+		return status.Errorf(codes.Internal, "failed to unmarshal activity payload: %v", err)
+	}
+
+	var newLevel *api.ActivityLevel
+	payload.DurationNs = durationNs
+	if queryErr != nil {
+		payload.Error = queryErr.Error()
+		errorLevel := api.ActivityError
+		newLevel = &errorLevel
+	}
+
+	// TODO: update the advice list
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Warn("Failed to marshal activity after exporting sql statement",
+			zap.String("database_name", payload.DatabaseName),
+			zap.Int("instance_id", payload.InstanceID),
+			zap.String("statement", payload.Statement),
+			zap.Error(err))
+		return status.Errorf(codes.Internal, "Failed to marshal activity after exporting sql statement: %v", err)
+	}
+
+	payloadString := string(payloadBytes)
+	if _, err := s.store.PatchActivity(ctx, &api.ActivityPatch{
+		ID:        activity.ID,
+		UpdaterID: activity.CreatorID,
+		Level:     newLevel,
+		Payload:   &payloadString,
+	}); err != nil {
+		return status.Errorf(codes.Internal, "Failed to update activity after exporting sql statement: %v", err)
+	}
+
+	return nil
+}
+
+func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, sensitiveSchemaInfo *db.SensitiveSchemaInfo) ([]byte, int64, error) {
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, request.ConnectionDatabase)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer driver.Close(ctx)
+
+	sqlDB := driver.GetDB()
+	var conn *sql.Conn
+	if sqlDB != nil {
+		conn, err = sqlDB.Conn(ctx)
+		if err != nil {
+			return nil, 0, err
+		}
+		defer conn.Close()
+	}
+
+	start := time.Now().UnixNano()
+	result, err := driver.QueryConn2(ctx, conn, request.Statement, &db.QueryContext{
+		Limit:           int(request.Limit),
+		ReadOnly:        true,
+		CurrentDatabase: request.ConnectionDatabase,
+		// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
+		SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
+		SensitiveSchemaInfo:   sensitiveSchemaInfo,
+	})
+	durationNs := time.Now().UnixNano() - start
+	if err != nil {
+		return nil, durationNs, err
+	}
+	if len(result) != 1 {
+		return nil, durationNs, errors.Errorf("expecting 1 result, but got %d", len(result))
+	}
+
+	var content []byte
+	switch request.Format {
+	case v1pb.ExportRequest_CSV:
+		if content, err = s.exportCSV(result[0]); err != nil {
+			return nil, durationNs, err
+		}
+	case v1pb.ExportRequest_JSON:
+		if content, err = s.exportJSON(result[0]); err != nil {
+			return nil, durationNs, err
+		}
+	default:
+		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
+	}
+	return content, durationNs, nil
+}
+
+func (*SQLService) exportCSV(result *v1pb.QueryResult) ([]byte, error) {
+	var buf bytes.Buffer
+	if _, err := buf.WriteString(strings.Join(result.ColumnNames, ",")); err != nil {
+		return nil, err
+	}
+	if err := buf.WriteByte('\n'); err != nil {
+		return nil, err
+	}
+	for _, row := range result.Rows {
+		for i, value := range row.Values {
+			if i != 0 {
+				if err := buf.WriteByte(','); err != nil {
+					return nil, err
+				}
+			}
+			if _, err := buf.Write(convertValueToBytes(value)); err != nil {
+				return nil, err
+			}
+		}
+		if err := buf.WriteByte('\n'); err != nil {
+			return nil, err
+		}
+	}
+	return buf.Bytes(), nil
+}
+
+func convertValueToBytes(value *v1pb.RowValue) []byte {
+	switch value.Kind.(type) {
+	case *v1pb.RowValue_StringValue:
+		var result []byte
+		result = append(result, '"')
+		result = append(result, []byte(value.GetStringValue())...)
+		result = append(result, '"')
+		return result
+	case *v1pb.RowValue_Int32Value:
+		return []byte(strconv.FormatInt(int64(value.GetInt32Value()), 10))
+	case *v1pb.RowValue_Int64Value:
+		return []byte(strconv.FormatInt(value.GetInt64Value(), 10))
+	case *v1pb.RowValue_Uint32Value:
+		return []byte(strconv.FormatUint(uint64(value.GetUint32Value()), 10))
+	case *v1pb.RowValue_Uint64Value:
+		return []byte(strconv.FormatUint(value.GetUint64Value(), 10))
+	case *v1pb.RowValue_FloatValue:
+		return []byte(strconv.FormatFloat(float64(value.GetFloatValue()), 'f', -1, 32))
+	case *v1pb.RowValue_DoubleValue:
+		return []byte(strconv.FormatFloat(value.GetDoubleValue(), 'f', -1, 64))
+	case *v1pb.RowValue_BoolValue:
+		return []byte(strconv.FormatBool(value.GetBoolValue()))
+	case *v1pb.RowValue_BytesValue:
+		var result []byte
+		result = append(result, '"')
+		result = append(result, value.GetBytesValue()...)
+		result = append(result, '"')
+		return result
+	case *v1pb.RowValue_NullValue:
+		return []byte("")
+	case *v1pb.RowValue_ValueValue:
+		return convertValueValueToBytes(value.GetValueValue())
+	default:
+		return []byte("")
+	}
+}
+
+func convertValueValueToBytes(value *structpb.Value) []byte {
+	switch value.Kind.(type) {
+	case *structpb.Value_NullValue:
+		return []byte("")
+	case *structpb.Value_StringValue:
+		var result []byte
+		result = append(result, '"')
+		result = append(result, []byte(value.GetStringValue())...)
+		result = append(result, '"')
+		return result
+	case *structpb.Value_NumberValue:
+		return []byte(strconv.FormatFloat(value.GetNumberValue(), 'f', -1, 64))
+	case *structpb.Value_BoolValue:
+		return []byte(strconv.FormatBool(value.GetBoolValue()))
+	case *structpb.Value_ListValue:
+		var buf [][]byte
+		for _, v := range value.GetListValue().Values {
+			buf = append(buf, convertValueValueToBytes(v))
+		}
+		var result []byte
+		result = append(result, '"')
+		result = append(result, '[')
+		result = append(result, bytes.Join(buf, []byte(","))...)
+		result = append(result, ']')
+		result = append(result, '"')
+		return result
+	case *structpb.Value_StructValue:
+		first := true
+		var buf []byte
+		buf = append(buf, '"')
+		for k, v := range value.GetStructValue().Fields {
+			if first {
+				first = false
+			} else {
+				buf = append(buf, ',')
+			}
+			buf = append(buf, []byte(k)...)
+			buf = append(buf, ':')
+			buf = append(buf, convertValueValueToBytes(v)...)
+		}
+		buf = append(buf, '"')
+		return buf
+	default:
+		return []byte("")
+	}
+}
+
+func (*SQLService) exportJSON(result *v1pb.QueryResult) ([]byte, error) {
+	return protojson.Marshal(result)
+}
+
+func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest) (*store.InstanceMessage, *db.SensitiveSchemaInfo, *api.Activity, error) {
+	// Prepare related message.
+	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Validate the request.
+	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
+		return nil, nil, nil, err
+	}
+
+	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, request.Statement, request.Limit, user, environment, instance, true /* isExport */); err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Get sensitive schema info.
+	var sensitiveSchemaInfo *db.SensitiveSchemaInfo
+	switch instance.Engine {
+	case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+		databaseList, err := parser.ExtractDatabaseList(parser.MySQL, request.Statement)
+		if err != nil {
+			return nil, nil, nil, status.Errorf(codes.Internal, "Failed to get database list: %s", request.Statement)
+		}
+
+		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, request.ConnectionDatabase)
+		if err != nil {
+			return nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+		}
+	case db.Postgres:
+		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, []string{request.ConnectionDatabase}, request.ConnectionDatabase)
+		if err != nil {
+			return nil, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info: %s", request.Statement)
+		}
+	}
+
+	// Create export activity.
+	level := api.ActivityInfo
+	activity, err := s.createExportActivity(ctx, user, level, instance.UID, api.ActivitySQLExportPayload{
+		Statement:    request.Statement,
+		InstanceID:   instance.UID,
+		DatabaseID:   database.UID,
+		DatabaseName: request.ConnectionDatabase,
+	})
+
+	return instance, sensitiveSchemaInfo, activity, nil
+}
+
+func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLExportPayload) (*api.Activity, error) {
+	// TODO: use v1 activity API instead of
+	activityBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Warn("Failed to marshal activity before exporting sql statement",
+			zap.String("database_name", payload.DatabaseName),
+			zap.Int("instance_id", payload.InstanceID),
+			zap.String("statement", payload.Statement),
+			zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
+	}
+
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   user.ID,
+		Type:        api.ActivitySQLExport,
+		ContainerID: containerID,
+		Level:       level,
+		Comment: fmt.Sprintf("Export `%q` in database %q of instance %d.",
+			payload.Statement, payload.DatabaseName, payload.InstanceID),
+		Payload: string(activityBytes),
+	}
+
+	activity, err := s.store.CreateActivity(ctx, activityCreate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to create activity: %v", err)
+	}
+	return activity, nil
 }
 
 // Query executes a SQL query.
@@ -229,18 +539,18 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 //  5. Create query activity.
 func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (*store.InstanceMessage, advisor.Status, []*v1pb.Advice, *db.SensitiveSchemaInfo, *api.Activity, error) {
 	// Prepare related message.
-	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request)
+	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, advisor.Success, nil, nil, nil, err
 	}
 
 	// Validate the request.
-	if err := s.validateQueryRequest(request, instance); err != nil {
+	if err := s.validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
 		return nil, advisor.Success, nil, nil, nil, err
 	}
 
 	// Check if the user has permission to execute the query.
-	if err := s.checkQueryRights(ctx, request, user, environment, instance); err != nil {
+	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, request.Statement, request.Limit, user, environment, instance, false /* isExport */); err != nil {
 		return nil, advisor.Success, nil, nil, nil, err
 	}
 
@@ -298,7 +608,7 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Warn("Failed to marshal activity after executing sql statement",
+		log.Warn("Failed to marshal activity before executing sql statement",
 			zap.String("database_name", payload.DatabaseName),
 			zap.Int("instance_id", payload.InstanceID),
 			zap.String("statement", payload.Statement),
@@ -575,13 +885,13 @@ func (s *SQLService) sqlCheck(
 	return adviceLevel, adviceList, nil
 }
 
-func (s *SQLService) prepareRelatedMessage(ctx context.Context, request *v1pb.QueryRequest) (*store.UserMessage, *store.EnvironmentMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
+func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken string, databaseName string) (*store.UserMessage, *store.EnvironmentMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
 	user, err := s.getUser(ctx)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
-	instance, err := s.getInstanceMessage(ctx, request.Name)
+	instance, err := s.getInstanceMessage(ctx, instanceToken)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -595,8 +905,8 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, request *v1pb.Qu
 	}
 
 	var database *store.DatabaseMessage
-	if request.ConnectionDatabase != "" {
-		database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &request.ConnectionDatabase})
+	if databaseName != "" {
+		database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 		if err != nil {
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
@@ -610,48 +920,57 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, request *v1pb.Qu
 // 2. Check connection_database if the instance is postgres.
 // 3. Parse statement for Postgres, MySQL, TiDB, Oracle.
 // 4. Check if all statements are (EXPLAIN) SELECT statements.
-func (*SQLService) validateQueryRequest(request *v1pb.QueryRequest, instance *store.InstanceMessage) error {
+func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databaseName string, statement string) error {
 	if instance.Engine == db.Postgres {
-		if len(request.ConnectionDatabase) == 0 {
+		if databaseName == "" {
 			return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
 		}
 	}
 
 	switch instance.Engine {
 	case db.Postgres:
-		if _, err := parser.Parse(parser.Postgres, parser.ParseContext{}, request.Statement); err != nil {
+		if _, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement); err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
 	case db.MySQL:
-		if _, err := parser.ParseMySQL(request.Statement, "", ""); err != nil {
+		if _, err := parser.ParseMySQL(statement, "", ""); err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
 	case db.TiDB:
-		if _, err := parser.ParseTiDB(request.Statement, "", ""); err != nil {
+		if _, err := parser.ParseTiDB(statement, "", ""); err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
 	case db.Oracle:
-		if _, err := parser.ParsePLSQL(request.Statement); err != nil {
+		if _, err := parser.ParsePLSQL(statement); err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
 	}
 
 	// TODO(rebelice): support multiple statements here.
-	if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), request.Statement) {
+	if !parser.ValidateSQLForEditor(convertToParserEngine(instance.Engine), statement) {
 		return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
 	}
 
 	return nil
 }
 
-func (s *SQLService) checkQueryRights(ctx context.Context, request *v1pb.QueryRequest, user *store.UserMessage, environment *store.EnvironmentMessage, instance *store.InstanceMessage) error {
+func (s *SQLService) checkQueryRights(
+	ctx context.Context,
+	databaseName string,
+	statement string,
+	limit int32,
+	user *store.UserMessage,
+	environment *store.EnvironmentMessage,
+	instance *store.InstanceMessage,
+	isExport bool,
+) error {
 	// Owner and DBA have all rights.
 	if user.Role == api.Owner || user.Role == api.DBA {
 		return nil
 	}
 
 	// TODO(rebelice): implement table-level query permission check.
-	databases, err := getDatabasesFromQuery(instance.Engine, request.ConnectionDatabase, request.Statement)
+	databases, err := getDatabasesFromQuery(instance.Engine, databaseName, statement)
 	if err != nil {
 		return err
 	}
@@ -682,31 +1001,73 @@ func (s *SQLService) checkQueryRights(ctx context.Context, request *v1pb.QueryRe
 	}
 
 	// TODO(rebelice): perfect matching condition expression.
+	var conditionExpression string
 	for _, database := range databaseMessages {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)
 		attributes := map[string]any{
 			"request.time":          time.Now(),
 			"resource.database":     databaseResourceURL,
-			"request.statement":     base64.StdEncoding.EncodeToString([]byte(request.Statement)),
-			"request.row_limit":     request.Limit,
+			"request.statement":     base64.StdEncoding.EncodeToString([]byte(statement)),
+			"request.row_limit":     limit,
 			"request.export_format": "QUERY",
 		}
 
-		ok, _, err := s.hasDatabaseAccessRights(ctx, user.ID, projectPolicy, database, environment, attributes)
+		ok, expression, err := s.hasDatabaseAccessRights(ctx, user.ID, projectPolicy, database, environment, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", database.DatabaseName)
 		}
 		if !ok {
 			return status.Errorf(codes.PermissionDenied, "permission denied to access database: %q", database.DatabaseName)
 		}
+		conditionExpression = expression
+	}
+
+	if isExport {
+		newPolicy := removeExportBinding(user.ID, conditionExpression, projectPolicy)
+		if _, err := s.store.SetProjectIAMPolicy(ctx, newPolicy, api.SystemBotID, project.UID); err != nil {
+			return err
+		}
+		// Post project IAM policy update activity.
+		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: project.UID,
+			Type:        api.ActivityProjectMemberCreate,
+			Level:       api.ActivityInfo,
+			Comment:     fmt.Sprintf("Granted %s to %s (%s).", user.Name, user.Email, api.Role(common.ProjectExporter)),
+		}, &activity.Metadata{}); err != nil {
+			log.Warn("Failed to create project activity", zap.Error(err))
+		}
 	}
 	return nil
 }
 
-func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any) (bool, string, error) {
+func removeExportBinding(principalID int, usedExpression string, projectPolicy *store.IAMPolicyMessage) *store.IAMPolicyMessage {
+	var newPolicy store.IAMPolicyMessage
+	for _, binding := range projectPolicy.Bindings {
+		if binding.Role != api.Role(common.ProjectExporter) || binding.Condition.Expression != usedExpression {
+			newPolicy.Bindings = append(newPolicy.Bindings, binding)
+			continue
+		}
+
+		var newMembers []*store.UserMessage
+		for _, member := range binding.Members {
+			if member.ID != principalID {
+				newMembers = append(newMembers, member)
+			}
+		}
+		if len(newMembers) == 0 {
+			continue
+		}
+		newBinding := *binding
+		newBinding.Members = newMembers
+		newPolicy.Bindings = append(newPolicy.Bindings, &newBinding)
+	}
+	return &newPolicy
+}
+
+func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, principalID int, projectPolicy *store.IAMPolicyMessage, database *store.DatabaseMessage, environment *store.EnvironmentMessage, attributes map[string]any, isExport bool) (bool, string, error) {
 	// TODO(rebelice): implement table-level query permission check and refactor this function.
 	// Project IAM policy evaluation.
-	isExport := false
 	pass := false
 	var usedExpression string
 	for _, binding := range projectPolicy.Bindings {
