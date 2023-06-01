@@ -2007,6 +2007,10 @@
         "title": "Encrypted Secrets",
         "desc": "Store your secrets of database and use them in your issue SQL scripts."
       },
+      "bb-feature-sharding": {
+        "title": "Database/schema group",
+        "desc": "Easy to manage database/table sharding with database groups."
+      },
       "bb-feature-disallow-signup": {
         "title": "Disable self-service signup",
         "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
