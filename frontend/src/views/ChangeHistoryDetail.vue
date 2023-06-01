@@ -249,7 +249,7 @@ import {
   extractReviewId,
   extractUserResourceName,
 } from "@/utils";
-import { MigrationHistoryPayload, VCSPushEvent } from "@/types";
+import { VCSPushEvent } from "@/types";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -383,7 +383,7 @@ const previousHistoryLink = computed(() => {
 
 const pushEvent = computed((): VCSPushEvent | undefined => {
   // TODO
-  return (changeHistory.value as MigrationHistoryPayload)?.pushEvent;
+  return undefined;
 });
 
 const vcsBranch = computed((): string => {
