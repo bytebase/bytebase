@@ -243,9 +243,9 @@ func getExternalVersionControlID(name string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	externalVersionControlID, err := strconv.Atoi(tokens[1])
+	externalVersionControlID, err := strconv.Atoi(tokens[0])
 	if err != nil {
-		return 0, errors.Errorf("invalid external version control ID %q", tokens[1])
+		return 0, errors.Errorf("invalid external version control ID %q", tokens[0])
 	}
 	return externalVersionControlID, nil
 }

@@ -20,7 +20,6 @@ export * from "./pipeline";
 export * from "./slowQueryPolicy";
 export * from "./principal";
 export * from "./project";
-export * from "./repository";
 export * from "./router";
 export * from "./stage";
 export * from "./sql";

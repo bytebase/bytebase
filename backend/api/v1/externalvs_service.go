@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -181,8 +182,26 @@ func (s *ExternalVersionControlService) SearchExternalVersionControlProjects(ctx
 }
 
 // ListProjectGitOpsInfo lists GitOps info of a project.
-func (*ExternalVersionControlService) ListProjectGitOpsInfo(context.Context, *v1pb.ListProjectGitOpsInfoRequest) (*v1pb.ListProjectGitOpsInfoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListProjectGitOpsInfo not implemented")
+func (s *ExternalVersionControlService) ListProjectGitOpsInfo(ctx context.Context, request *v1pb.ListProjectGitOpsInfoRequest) (*v1pb.ListProjectGitOpsInfoResponse, error) {
+	externalVersionControlUID, err := getExternalVersionControlID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	repositoryFind := &api.RepositoryFind{
+		VCSID: &externalVersionControlUID,
+	}
+	repoList, err := s.store.FindRepository(ctx, repositoryFind)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch external repository list: %v", err)
+	}
+
+	resp := &v1pb.ListProjectGitOpsInfoResponse{}
+	for _, repo := range repoList {
+		resp.ProjectGitopsInfo = append(resp.ProjectGitopsInfo, convertToProjectGitOpsInfo(fmt.Sprintf("%s%s", projectNamePrefix, repo.Project.ResourceID), repo))
+	}
+
+	return resp, nil
 }
 
 func convertToExternalVersionControls(externalVersionControls []*store.ExternalVersionControlMessage) []*v1pb.ExternalVersionControl {

@@ -19,7 +19,7 @@
       />
       <BBTextField
         class="mt-2 w-full"
-        :value="environmentTitleV1(selectedEnvironment)"
+        :value="environmentV1Name(selectedEnvironment)"
         :disabled="true"
       />
     </div>
@@ -54,7 +54,7 @@
 <script lang="ts" setup>
 import { PropType } from "vue";
 import { SQLReviewPolicyTemplate } from "@/types";
-import { environmentTitleV1 } from "@/utils";
+import { environmentV1Name } from "@/utils";
 import { BBTextField } from "@/bbkit";
 import { SQLReviewTemplateSelector } from "./components";
 import { Environment } from "@/types/proto/v1/environment_service";
