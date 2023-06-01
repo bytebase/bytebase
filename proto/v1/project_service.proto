@@ -120,7 +120,12 @@ service ProjectService {
     };
   }
 
-  rpc SetProjectSQLReviewCI(SetupSQLReviewCIRequest) returns (SetupSQLReviewCIResponse) {
+  rpc DeleteProjectGitOpsInfo(DeleteProjectGitOpsInfoRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{project=projects/*}/gitOpsInfo"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc SetupProjectSQLReviewCI(SetupSQLReviewCIRequest) returns (SetupSQLReviewCIResponse) {
     option (google.api.http) = {
       patch: "/v1/{project=projects/*}/gitOpsInfo:setupSQLReviewCI"
       body: "*"
@@ -347,6 +352,12 @@ message SetProjectGitOpsInfoRequest {
   bool allow_missing = 4;
 }
 
+message DeleteProjectGitOpsInfoRequest {
+  // The name of the project.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
 message GetProjectGitOpsInfoRequest {
   // The name of the project.
   // Format: projects/{project}
@@ -357,8 +368,6 @@ message SetupSQLReviewCIRequest {
   // The name of the project.
   // Format: projects/{project}
   string project = 1 [(google.api.field_behavior) = REQUIRED];
-
-  bool enable_sql_review_ci = 2;
 }
 
 message SetupSQLReviewCIResponse {
