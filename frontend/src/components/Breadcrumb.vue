@@ -67,7 +67,7 @@ import { useI18n } from "vue-i18n";
 import { useTitle } from "@vueuse/core";
 
 import { Bookmark, UNKNOWN_ID, BookmarkCreate, RouteMapList } from "../types";
-import { idFromSlug } from "../utils";
+import { databaseV1Slug, idFromSlug } from "../utils";
 import {
   useCurrentUser,
   useRouterStore,
@@ -135,7 +135,6 @@ export default defineComponent({
       const databaseSlug = routeSlug.databaseSlug;
       const tableName = routeSlug.tableName;
       const dataSourceSlug = routeSlug.dataSourceSlug;
-      const migrationHistory = routeSlug.migrationHistorySlug;
       const vcsSlug = routeSlug.vcsSlug;
       const sqlReviewPolicySlug = routeSlug.sqlReviewPolicySlug;
       const ssoName = routeSlug.ssoName;
@@ -176,7 +175,7 @@ export default defineComponent({
           path: "/db",
         });
 
-        if (tableName || dataSourceSlug || migrationHistory) {
+        if (tableName || dataSourceSlug) {
           const database = useDatabaseV1Store().getDatabaseByUID(
             String(idFromSlug(databaseSlug))
           );
@@ -184,12 +183,6 @@ export default defineComponent({
             name: database.name,
             path: `/db/${databaseSlug}`,
           });
-          if (migrationHistory) {
-            list.push({
-              name: t("common.change"),
-              path: `/db/${databaseSlug}#change-history`,
-            });
-          }
         }
       } else if (vcsSlug) {
         list.push({
@@ -223,6 +216,18 @@ export default defineComponent({
             }
           );
         }
+      }
+      if (route.name === "workspace.database.history.detail") {
+        const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
+        const database = useDatabaseV1Store().getDatabaseByName(parent);
+        list.push({
+          name: database.databaseName,
+          path: `/db/${databaseV1Slug(database)}`,
+        });
+        list.push({
+          name: t("common.change"),
+          path: `/db/${databaseV1Slug(database)}#change-history`,
+        });
       }
 
       const {

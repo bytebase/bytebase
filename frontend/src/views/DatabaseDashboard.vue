@@ -89,7 +89,6 @@ import {
 } from "../utils";
 import {
   useCurrentUserV1,
-  useLegacyDatabaseStore,
   useDBGroupStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
@@ -118,7 +117,6 @@ const state = reactive<LocalState>({
 });
 
 const currentUserV1 = useCurrentUserV1();
-const databaseStore = useLegacyDatabaseStore();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
 
@@ -153,9 +151,6 @@ const prepareDatabaseList = async () => {
       parent: "instances/-",
     });
     state.databaseV1List = sortDatabaseV1List(databaseV1List);
-
-    // For legacy support
-    await databaseStore.fetchDatabaseList();
     state.loading = false;
   }
 };
