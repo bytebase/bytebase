@@ -75,7 +75,6 @@
           />
         </div>
         <div class="col-span-2">
-          <p class="text-lg mb-2">Databases</p>
           <MatchedTableView
             :project="project"
             :database-group-name="databaseGroupName"
