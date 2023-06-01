@@ -996,6 +996,8 @@ export interface GetChangeHistoryRequest {
    */
   name: string;
   view: ChangeHistoryView;
+  /** Format the schema dump into SDL format. */
+  sdlFormat: boolean;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -5494,7 +5496,7 @@ export const ListChangeHistoriesResponse = {
 };
 
 function createBaseGetChangeHistoryRequest(): GetChangeHistoryRequest {
-  return { name: "", view: 0 };
+  return { name: "", view: 0, sdlFormat: false };
 }
 
 export const GetChangeHistoryRequest = {
@@ -5504,6 +5506,9 @@ export const GetChangeHistoryRequest = {
     }
     if (message.view !== 0) {
       writer.uint32(16).int32(message.view);
+    }
+    if (message.sdlFormat === true) {
+      writer.uint32(24).bool(message.sdlFormat);
     }
     return writer;
   },
@@ -5529,6 +5534,13 @@ export const GetChangeHistoryRequest = {
 
           message.view = reader.int32() as any;
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.sdlFormat = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5542,6 +5554,7 @@ export const GetChangeHistoryRequest = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       view: isSet(object.view) ? changeHistoryViewFromJSON(object.view) : 0,
+      sdlFormat: isSet(object.sdlFormat) ? Boolean(object.sdlFormat) : false,
     };
   },
 
@@ -5549,6 +5562,7 @@ export const GetChangeHistoryRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.view !== undefined && (obj.view = changeHistoryViewToJSON(message.view));
+    message.sdlFormat !== undefined && (obj.sdlFormat = message.sdlFormat);
     return obj;
   },
 
@@ -5560,6 +5574,7 @@ export const GetChangeHistoryRequest = {
     const message = createBaseGetChangeHistoryRequest();
     message.name = object.name ?? "";
     message.view = object.view ?? 0;
+    message.sdlFormat = object.sdlFormat ?? false;
     return message;
   },
 };
