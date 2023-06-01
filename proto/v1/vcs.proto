@@ -1,8 +1,10 @@
 syntax = "proto3";
 
-package bytebase.store;
+package bytebase.v1;
 
-option go_package = "generated-go/store";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "generated-go/v1";
 
 message PushEvent {
   VcsType vcs_type = 1;
@@ -22,7 +24,7 @@ message Commit {
   string id = 1;
   string title = 2;
   string message = 3;
-  int64 created_ts = 4;
+  google.protobuf.Timestamp created_time = 4;
   string url = 5;
   string author_name = 6;
   string author_email = 7;
@@ -34,7 +36,7 @@ message FileCommit {
   string id = 1;
   string title = 2;
   string message = 3;
-  int64 created_ts = 4;
+  google.protobuf.Timestamp created_time = 4;
   string url = 5;
   string author_name = 6;
   string author_email = 7;

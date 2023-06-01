@@ -1,8 +1,8 @@
 /* eslint-disable */
-import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
+import { Timestamp } from "../google/protobuf/timestamp";
 
-export const protobufPackage = "bytebase.store";
+export const protobufPackage = "bytebase.v1";
 
 export enum VcsType {
   VCS_TYPE_UNSPECIFIED = 0,
@@ -67,7 +67,7 @@ export interface Commit {
   id: string;
   title: string;
   message: string;
-  createdTs: number;
+  createdTime?: Date;
   url: string;
   authorName: string;
   authorEmail: string;
@@ -79,7 +79,7 @@ export interface FileCommit {
   id: string;
   title: string;
   message: string;
-  createdTs: number;
+  createdTime?: Date;
   url: string;
   authorName: string;
   authorEmail: string;
@@ -298,7 +298,7 @@ function createBaseCommit(): Commit {
     id: "",
     title: "",
     message: "",
-    createdTs: 0,
+    createdTime: undefined,
     url: "",
     authorName: "",
     authorEmail: "",
@@ -318,8 +318,8 @@ export const Commit = {
     if (message.message !== "") {
       writer.uint32(26).string(message.message);
     }
-    if (message.createdTs !== 0) {
-      writer.uint32(32).int64(message.createdTs);
+    if (message.createdTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.url !== "") {
       writer.uint32(42).string(message.url);
@@ -368,11 +368,11 @@ export const Commit = {
           message.message = reader.string();
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag !== 34) {
             break;
           }
 
-          message.createdTs = longToNumber(reader.int64() as Long);
+          message.createdTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
@@ -423,7 +423,7 @@ export const Commit = {
       id: isSet(object.id) ? String(object.id) : "",
       title: isSet(object.title) ? String(object.title) : "",
       message: isSet(object.message) ? String(object.message) : "",
-      createdTs: isSet(object.createdTs) ? Number(object.createdTs) : 0,
+      createdTime: isSet(object.createdTime) ? fromJsonTimestamp(object.createdTime) : undefined,
       url: isSet(object.url) ? String(object.url) : "",
       authorName: isSet(object.authorName) ? String(object.authorName) : "",
       authorEmail: isSet(object.authorEmail) ? String(object.authorEmail) : "",
@@ -437,7 +437,7 @@ export const Commit = {
     message.id !== undefined && (obj.id = message.id);
     message.title !== undefined && (obj.title = message.title);
     message.message !== undefined && (obj.message = message.message);
-    message.createdTs !== undefined && (obj.createdTs = Math.round(message.createdTs));
+    message.createdTime !== undefined && (obj.createdTime = message.createdTime.toISOString());
     message.url !== undefined && (obj.url = message.url);
     message.authorName !== undefined && (obj.authorName = message.authorName);
     message.authorEmail !== undefined && (obj.authorEmail = message.authorEmail);
@@ -463,7 +463,7 @@ export const Commit = {
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.message = object.message ?? "";
-    message.createdTs = object.createdTs ?? 0;
+    message.createdTime = object.createdTime ?? undefined;
     message.url = object.url ?? "";
     message.authorName = object.authorName ?? "";
     message.authorEmail = object.authorEmail ?? "";
@@ -474,7 +474,16 @@ export const Commit = {
 };
 
 function createBaseFileCommit(): FileCommit {
-  return { id: "", title: "", message: "", createdTs: 0, url: "", authorName: "", authorEmail: "", added: "" };
+  return {
+    id: "",
+    title: "",
+    message: "",
+    createdTime: undefined,
+    url: "",
+    authorName: "",
+    authorEmail: "",
+    added: "",
+  };
 }
 
 export const FileCommit = {
@@ -488,8 +497,8 @@ export const FileCommit = {
     if (message.message !== "") {
       writer.uint32(26).string(message.message);
     }
-    if (message.createdTs !== 0) {
-      writer.uint32(32).int64(message.createdTs);
+    if (message.createdTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.url !== "") {
       writer.uint32(42).string(message.url);
@@ -535,11 +544,11 @@ export const FileCommit = {
           message.message = reader.string();
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag !== 34) {
             break;
           }
 
-          message.createdTs = longToNumber(reader.int64() as Long);
+          message.createdTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
@@ -583,7 +592,7 @@ export const FileCommit = {
       id: isSet(object.id) ? String(object.id) : "",
       title: isSet(object.title) ? String(object.title) : "",
       message: isSet(object.message) ? String(object.message) : "",
-      createdTs: isSet(object.createdTs) ? Number(object.createdTs) : 0,
+      createdTime: isSet(object.createdTime) ? fromJsonTimestamp(object.createdTime) : undefined,
       url: isSet(object.url) ? String(object.url) : "",
       authorName: isSet(object.authorName) ? String(object.authorName) : "",
       authorEmail: isSet(object.authorEmail) ? String(object.authorEmail) : "",
@@ -596,7 +605,7 @@ export const FileCommit = {
     message.id !== undefined && (obj.id = message.id);
     message.title !== undefined && (obj.title = message.title);
     message.message !== undefined && (obj.message = message.message);
-    message.createdTs !== undefined && (obj.createdTs = Math.round(message.createdTs));
+    message.createdTime !== undefined && (obj.createdTime = message.createdTime.toISOString());
     message.url !== undefined && (obj.url = message.url);
     message.authorName !== undefined && (obj.authorName = message.authorName);
     message.authorEmail !== undefined && (obj.authorEmail = message.authorEmail);
@@ -613,7 +622,7 @@ export const FileCommit = {
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.message = object.message ?? "";
-    message.createdTs = object.createdTs ?? 0;
+    message.createdTime = object.createdTime ?? undefined;
     message.url = object.url ?? "";
     message.authorName = object.authorName ?? "";
     message.authorEmail = object.authorEmail ?? "";
@@ -622,25 +631,6 @@ export const FileCommit = {
   },
 };
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -648,18 +638,26 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
 }
 
-// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
-// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
-if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any;
-  _m0.configure();
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
 }
 
 function isSet(value: any): boolean {
