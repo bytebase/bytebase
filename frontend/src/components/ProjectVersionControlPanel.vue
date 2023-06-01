@@ -86,11 +86,14 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, watchEffect, watch } from "vue";
+import { reactive, ref, watchEffect, watch } from "vue";
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useRepositoryV1Store, useVCSStore } from "@/store";
 import { Project, Workflow } from "@/types/proto/v1/project_service";
+// FIXME: this fails in browser with:
+//   vue-router.mjs:3451 SyntaxError: The requested module '/src/types/index.ts' does not provide an export named 'VCS'
+// import { VCS } from "@/types";
 
 interface LocalState {
   workflowType: Workflow;
@@ -120,12 +123,15 @@ const state = reactive<LocalState>({
   showWizardForChange: false,
 });
 
-watchEffect(() => {
+// const vcs = ref<VCS>();
+const vcs = ref(vcsStore.getVCSById(""));
+
+watchEffect(async () => {
   repositoryV1Store
     .getOrFetchRepositoryByProject(props.project.name)
-    .then((repo) => {
+    .then(async (repo) => {
       if (repo) {
-        return vcsStore.fetchVCSById(repo.vcsUid);
+        vcs.value = await vcsStore.fetchVCSById(repo.vcsUid);
       }
     });
 });
@@ -139,10 +145,6 @@ watch(
 
 const repository = computed(() => {
   return repositoryV1Store.getRepositoryByProject(props.project.name);
-});
-
-const vcs = computed(() => {
-  return vcsStore.getVCSById(repository.value?.vcsUid ?? "");
 });
 
 const enterWizard = (create: boolean) => {
