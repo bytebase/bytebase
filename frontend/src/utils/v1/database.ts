@@ -16,7 +16,8 @@ import {
 } from "@/store";
 import { hasWorkspacePermissionV1 } from "../role";
 import { Engine, State } from "@/types/proto/v1/common";
-import { semverCompare } from "../util";
+import { isDev, semverCompare } from "../util";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 
 export const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");
@@ -193,4 +194,35 @@ export function allowGhostMigrationV1(
       )
     );
   });
+}
+
+export function allowDatabaseV1Access(
+  database: ComposedDatabase,
+  user: User,
+  type: DataSourceType
+): boolean {
+  // "ADMIN" data source should only be used by the system, thus it shouldn't
+  // touch this method at all. If it touches somehow, we will reject it and
+  // log a warning
+  if (type === DataSourceType.ADMIN) {
+    if (isDev()) {
+      console.trace(
+        "Should not check database access against ADMIN connection"
+      );
+    } else {
+      console.warn("Should not check database access against ADMIN connection");
+    }
+    return false;
+  }
+
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-instance",
+      user.userRole
+    )
+  ) {
+    return true;
+  }
+
+  return false;
 }

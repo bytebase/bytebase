@@ -113,7 +113,6 @@ export default defineComponent({
       ) {
         // TODO: we do not support filtering database list by environment in v1
         // API so we need to fetch them all
-        // databaseStore.fetchDatabaseListByEnvironmentId(props.environmentId);
         databaseStore.fetchDatabaseList({
           parent: "instances/-",
         });

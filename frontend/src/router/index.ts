@@ -17,7 +17,6 @@ import SQLEditorLayout from "../layouts/SQLEditorLayout.vue";
 import SheetDashboardLayout from "../layouts/SheetDashboardLayout.vue";
 import { t } from "../plugins/i18n";
 import {
-  Database,
   DEFAULT_PROJECT_ID,
   QuickActionType,
   unknownUser,
@@ -45,7 +44,6 @@ import {
   useSheetV1Store,
   useAuthStore,
   useActuatorV1Store,
-  useLegacyDatabaseStore,
   useLegacyInstanceStore,
   useRouterStore,
   useDBSchemaStore,
@@ -1168,7 +1166,6 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
   const authStore = useAuthStore();
-  const databaseStore = useLegacyDatabaseStore();
   const dbSchemaStore = useDBSchemaStore();
   const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
@@ -1564,10 +1561,9 @@ router.beforeEach((to, from, next) => {
     }
     useDatabaseV1Store()
       .fetchDatabaseByUID(String(idFromSlug(databaseSlug)))
-      .then(() => databaseStore.fetchDatabaseById(idFromSlug(databaseSlug)))
-      .then((database: Database) => {
+      .then((database) => {
         dbSchemaStore
-          .getOrFetchDatabaseMetadataById(database.id, true)
+          .getOrFetchDatabaseMetadataById(Number(database.uid), true)
           .then(() => {
             if (!dataSourceSlug) {
               next();
@@ -1575,7 +1571,7 @@ router.beforeEach((to, from, next) => {
               useDataSourceStore()
                 .fetchDataSourceById({
                   dataSourceId: idFromSlug(dataSourceSlug),
-                  databaseId: database.id,
+                  databaseId: Number(database.uid),
                 })
                 .then(() => {
                   next();

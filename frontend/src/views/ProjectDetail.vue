@@ -58,7 +58,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import { DEFAULT_PROJECT_ID } from "@/types";
@@ -73,7 +73,6 @@ import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import {
-  useLegacyDatabaseStore,
   useSearchDatabaseV1List,
   useDatabaseV1Store,
   useLegacyProjectStore,
@@ -98,7 +97,6 @@ const props = defineProps({
 });
 
 const route = useRoute();
-const legacyDatabaseStore = useLegacyDatabaseStore();
 const projectStore = useLegacyProjectStore();
 const projectV1Store = useProjectV1Store();
 
@@ -110,12 +108,6 @@ const project = computed(() => {
 const projectV1 = computed(() => {
   return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));
 });
-
-const prepareLegacyDatabaseList = () => {
-  legacyDatabaseStore.fetchDatabaseListByProjectId(String(project.value.id));
-};
-
-watchEffect(prepareLegacyDatabaseList);
 
 useSearchDatabaseV1List(
   computed(() => ({

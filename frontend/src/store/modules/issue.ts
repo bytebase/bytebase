@@ -202,10 +202,12 @@ export const useIssueStore = defineStore("issue", {
             instanceV1Store.getOrFetchInstanceByUID(String(task.instance.id));
 
             if (task.database) {
+              databaseV1Store.getOrFetchDatabaseByUID(String(task.database.id));
+
+              // Legacy compatibility
               databaseStore.upsertDatabaseList({
                 databaseList: [task.database],
               });
-              databaseV1Store.getOrFetchDatabaseByUID(String(task.database.id));
             }
           }
         }
