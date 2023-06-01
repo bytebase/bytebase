@@ -99,7 +99,7 @@
   >
     <MonacoEditor
       ref="editorRef"
-      class="w-full max-h-[360px]"
+      class="w-full h-auto max-h-[360px] min-h-[120px]"
       data-label="bb-issue-sql-editor"
       :value="state.editStatement"
       :readonly="readonly"
@@ -167,10 +167,7 @@ interface LocalState {
 
 type LocalEditState = Pick<LocalState, "editing" | "editStatement">;
 
-const EDITOR_MIN_HEIGHT = {
-  READONLY: 0, // not limited to keep the UI compact
-  EDITABLE: 120, // ~= 6 lines, a reasonable size to start writing SQL
-};
+const EDITOR_MIN_HEIGHT = 120; // ~= 6 lines, a reasonable size to start writing SQL
 
 defineProps({
   sqlHint: {
@@ -615,8 +612,6 @@ const onStatementChange = (value: string) => {
     // time the user types.
     updateStatement(state.editStatement);
   }
-
-  if (selectedTask.value) updateEditorHeight();
 };
 
 // Handle and update monaco editor auto completion context.
@@ -668,8 +663,8 @@ const updateEditorHeight = () => {
     const contentHeight =
       editorRef.value?.editorInstance?.getContentHeight() as number;
     let actualHeight = contentHeight;
-    if (state.editing && actualHeight < EDITOR_MIN_HEIGHT.EDITABLE) {
-      actualHeight = EDITOR_MIN_HEIGHT.EDITABLE;
+    if (actualHeight < EDITOR_MIN_HEIGHT) {
+      actualHeight = EDITOR_MIN_HEIGHT;
     }
     editorRef.value?.setEditorContentHeight(actualHeight);
   });
@@ -683,4 +678,7 @@ const handleMonacoEditorReady = () => {
 watch([databaseList, tableList], () => {
   handleUpdateEditorAutoCompletionContext();
 });
+
+watch(() => state.editing, updateEditorHeight);
+watch(() => state.editStatement, updateEditorHeight);
 </script>
