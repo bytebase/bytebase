@@ -8,6 +8,7 @@ import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
 import { State, stateFromJSON, stateToJSON } from "./common";
+import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -801,6 +802,7 @@ export interface ChangeHistory {
   executionDuration?: Duration;
   /** Format: projects/{project}/reviews/{review} */
   review: string;
+  pushEvent?: PushEvent;
 }
 
 export enum ChangeHistory_Source {
@@ -5053,6 +5055,7 @@ function createBaseChangeHistory(): ChangeHistory {
     prevSchema: "",
     executionDuration: undefined,
     review: "",
+    pushEvent: undefined,
   };
 }
 
@@ -5108,6 +5111,9 @@ export const ChangeHistory = {
     }
     if (message.review !== "") {
       writer.uint32(138).string(message.review);
+    }
+    if (message.pushEvent !== undefined) {
+      PushEvent.encode(message.pushEvent, writer.uint32(146).fork()).ldelim();
     }
     return writer;
   },
@@ -5238,6 +5244,13 @@ export const ChangeHistory = {
 
           message.review = reader.string();
           continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.pushEvent = PushEvent.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5266,6 +5279,7 @@ export const ChangeHistory = {
       prevSchema: isSet(object.prevSchema) ? String(object.prevSchema) : "",
       executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
       review: isSet(object.review) ? String(object.review) : "",
+      pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
   },
 
@@ -5289,6 +5303,8 @@ export const ChangeHistory = {
     message.executionDuration !== undefined &&
       (obj.executionDuration = message.executionDuration ? Duration.toJSON(message.executionDuration) : undefined);
     message.review !== undefined && (obj.review = message.review);
+    message.pushEvent !== undefined &&
+      (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
     return obj;
   },
 
@@ -5317,6 +5333,9 @@ export const ChangeHistory = {
       ? Duration.fromPartial(object.executionDuration)
       : undefined;
     message.review = object.review ?? "";
+    message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
+      ? PushEvent.fromPartial(object.pushEvent)
+      : undefined;
     return message;
   },
 };
