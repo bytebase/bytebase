@@ -217,7 +217,7 @@
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
-            {{ $t("quick-action.export-data") }}
+            {{ $t("quick-action.request-export") }}
           </h3>
         </div>
       </template>

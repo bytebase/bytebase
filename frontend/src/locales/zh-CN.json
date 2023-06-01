@@ -805,7 +805,7 @@
     "transfer-out-db": "转出数据库",
     "transfer-out-db-title": "转出数据库",
     "request-query": "申请查询权限",
-    "export-data": "导出数据"
+    "request-export": "申请导出数据"
   },
   "create-db": {
     "new-database-name": "新数据库名称",
