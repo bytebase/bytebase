@@ -7,7 +7,7 @@
       </button>
       <BBTableSearch
         :placeholder="$t('repository.select-repository-search')"
-        @change-text="(text) => changeSearchText(text)"
+        @change-text="(text: string) => changeSearchText(text)"
       />
     </div>
     <div

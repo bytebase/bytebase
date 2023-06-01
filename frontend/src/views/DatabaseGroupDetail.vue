@@ -63,6 +63,13 @@
           >
             Alter Schema
           </button>
+          <button
+            type="button"
+            class="btn-normal"
+            @click.prevent="createMigration('bb.issue.database.data.update')"
+          >
+            Change Data
+          </button>
         </div>
       </div>
 
@@ -78,7 +85,6 @@
           />
         </div>
         <div class="col-span-2">
-          <p class="text-lg mb-2">Databases</p>
           <MatchedDatabaseView
             :project="project"
             :environment-id="state.environment?.name || ''"
@@ -139,9 +145,9 @@ import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
-import dayjs from "dayjs";
 import { useRouter } from "vue-router";
 import { ComposedDatabaseGroup } from "@/types";
+import { generateIssueRoute } from "@/utils/databaseGroup/issue";
 
 interface LocalState {
   isLoaded: boolean;
@@ -218,39 +224,11 @@ const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
   editState.showConfigurePanel = true;
 };
 
-const createMigration = async (
+const createMigration = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
-  const issueNameParts: string[] = [];
-  issueNameParts.push(`[${databaseGroup.value.databaseGroupName}]`);
-  issueNameParts.push(
-    type === "bb.issue.database.schema.update" ? `Alter schema` : `Change data`
-  );
-  const datetime = dayjs().format("@MM-DD HH:mm");
-  const tz = "UTC" + dayjs().format("ZZ");
-  issueNameParts.push(`${datetime} ${tz}`);
-  const schemaGroupList =
-    await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(
-      databaseGroup.value.name
-    );
-
-  const query: Record<string, any> = {
-    template: type,
-    mode: "tenant",
-    name: issueNameParts.join(" "),
-    project: project.value.uid,
-    databaseGroupName: databaseGroup.value.name,
-    // TODO(steven): support select schema group.
-    schemaGroupNames: schemaGroupList.map((s) => s.name).join(","),
-  };
-
-  router.push({
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query,
-  });
+  const issueRoute = generateIssueRoute(type, databaseGroup.value);
+  router.push(issueRoute);
 };
 
 watch(

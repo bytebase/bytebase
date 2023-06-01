@@ -768,6 +768,7 @@
       "expire-days": "过期天数",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",
+      "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "manually-select": "手动选择",
       "customize": "自定义",
       "data-export-attention": "数据将被导出到一个文件并自动下载。而且您只能完成一次导出操作。"

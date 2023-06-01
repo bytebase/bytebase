@@ -12,6 +12,7 @@ import {
 } from "../types";
 import { IdType } from "../types/id";
 import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
+import { Project as ProjectV1 } from "@/types/proto/v1/project_service";
 import {
   getProjectAndSheetId,
   projectNamePrefix,
@@ -46,6 +47,10 @@ export function environmentSlug(environment: Environment): string {
 
 export function projectSlug(project: Project): string {
   return [slug(project.name), project.id].join("-");
+}
+
+export function projectSlugV1(project: ProjectV1): string {
+  return [slug(project.title), project.uid].join("-");
 }
 
 export function instanceSlug(instance: Instance): string {

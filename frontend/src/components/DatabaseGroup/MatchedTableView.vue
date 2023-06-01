@@ -1,5 +1,6 @@
 <template>
-  <div class="w-full border min-h-[20rem]">
+  <p class="text-lg mb-2">Tables</p>
+  <div class="w-full border min-h-[20rem] max-h-[24rem] overflow-y-auto">
     <div
       class="w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b"
     >
@@ -15,13 +16,13 @@
         <heroicons-outline:chevron-down v-else class="w-5 h-auto" />
       </button>
     </div>
-    <div v-show="state.showMatchedTableList" class="w-full">
+    <div v-show="state.showMatchedTableList" class="w-full my-1">
       <div
         v-for="table in matchedTableList"
         :key="table.database"
         class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
-        <span>{{ table.table }}</span>
+        <span class="text-sm">{{ table.table }}</span>
         <div class="flex flex-row justify-end items-center">
           <DatabaseView :database-name="table.database" />
         </div>
@@ -47,13 +48,13 @@
         <heroicons-outline:chevron-down v-else class="w-5 h-auto" />
       </button>
     </div>
-    <div v-show="state.showUnmatchedTableList">
+    <div v-show="state.showUnmatchedTableList" class="w-full py-1">
       <div
         v-for="table in unmatchedTableList"
         :key="table.database"
         class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
-        <span>{{ table.table }}</span>
+        <span class="text-sm">{{ table.table }}</span>
         <div class="flex flex-row justify-end items-center">
           <DatabaseView :database-name="table.database" />
         </div>
@@ -90,7 +91,7 @@ const props = defineProps<{
 }>();
 
 const state = reactive<LocalState>({
-  showMatchedTableList: false,
+  showMatchedTableList: true,
   showUnmatchedTableList: false,
 });
 const matchedTableList = ref<SchemaGroup_Table[]>([]);

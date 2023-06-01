@@ -3,6 +3,7 @@ import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -171,6 +172,8 @@ export interface ProjectGitOpsInfo {
    * Format: projects/{project}/gitOpsInfo
    */
   name: string;
+  /** The uid for related VCS. */
+  vcsUid: string;
   /** The title of the repository. For axample: sample. */
   title: string;
   /** The full_path of the repository. For example: bytebase/sample. */
@@ -199,10 +202,15 @@ export interface ProjectGitOpsInfo {
    * If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, {{DB_NAME}}.
    */
   sheetPathTemplate: string;
+  /** The reposition external id in target VCS. */
+  externalId: string;
   /** Set to true to enable SQL review CI for all PR/MRs. */
   enableSqlReviewCi: boolean;
   /** The webhook endpoint ID of the repository. */
   webhookEndpointId: string;
+  accessToken: string;
+  expiresTime?: Date;
+  refreshToken: string;
 }
 
 function createBaseCreateExternalVersionControlRequest(): CreateExternalVersionControlRequest {
@@ -1131,6 +1139,7 @@ export const ExternalVersionControl = {
 function createBaseProjectGitOpsInfo(): ProjectGitOpsInfo {
   return {
     name: "",
+    vcsUid: "",
     title: "",
     fullPath: "",
     webUrl: "",
@@ -1139,8 +1148,12 @@ function createBaseProjectGitOpsInfo(): ProjectGitOpsInfo {
     filePathTemplate: "",
     schemaPathTemplate: "",
     sheetPathTemplate: "",
+    externalId: "",
     enableSqlReviewCi: false,
     webhookEndpointId: "",
+    accessToken: "",
+    expiresTime: undefined,
+    refreshToken: "",
   };
 }
 
@@ -1149,35 +1162,50 @@ export const ProjectGitOpsInfo = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.vcsUid !== "") {
+      writer.uint32(18).string(message.vcsUid);
+    }
     if (message.title !== "") {
-      writer.uint32(18).string(message.title);
+      writer.uint32(26).string(message.title);
     }
     if (message.fullPath !== "") {
-      writer.uint32(26).string(message.fullPath);
+      writer.uint32(34).string(message.fullPath);
     }
     if (message.webUrl !== "") {
-      writer.uint32(34).string(message.webUrl);
+      writer.uint32(42).string(message.webUrl);
     }
     if (message.branchFilter !== "") {
-      writer.uint32(42).string(message.branchFilter);
+      writer.uint32(50).string(message.branchFilter);
     }
     if (message.baseDirectory !== "") {
-      writer.uint32(50).string(message.baseDirectory);
+      writer.uint32(58).string(message.baseDirectory);
     }
     if (message.filePathTemplate !== "") {
-      writer.uint32(58).string(message.filePathTemplate);
+      writer.uint32(66).string(message.filePathTemplate);
     }
     if (message.schemaPathTemplate !== "") {
-      writer.uint32(66).string(message.schemaPathTemplate);
+      writer.uint32(74).string(message.schemaPathTemplate);
     }
     if (message.sheetPathTemplate !== "") {
-      writer.uint32(74).string(message.sheetPathTemplate);
+      writer.uint32(82).string(message.sheetPathTemplate);
+    }
+    if (message.externalId !== "") {
+      writer.uint32(90).string(message.externalId);
     }
     if (message.enableSqlReviewCi === true) {
-      writer.uint32(80).bool(message.enableSqlReviewCi);
+      writer.uint32(96).bool(message.enableSqlReviewCi);
     }
     if (message.webhookEndpointId !== "") {
-      writer.uint32(90).string(message.webhookEndpointId);
+      writer.uint32(106).string(message.webhookEndpointId);
+    }
+    if (message.accessToken !== "") {
+      writer.uint32(114).string(message.accessToken);
+    }
+    if (message.expiresTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.expiresTime), writer.uint32(122).fork()).ldelim();
+    }
+    if (message.refreshToken !== "") {
+      writer.uint32(130).string(message.refreshToken);
     }
     return writer;
   },
@@ -1201,70 +1229,105 @@ export const ProjectGitOpsInfo = {
             break;
           }
 
-          message.title = reader.string();
+          message.vcsUid = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.fullPath = reader.string();
+          message.title = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.webUrl = reader.string();
+          message.fullPath = reader.string();
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.branchFilter = reader.string();
+          message.webUrl = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.baseDirectory = reader.string();
+          message.branchFilter = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.filePathTemplate = reader.string();
+          message.baseDirectory = reader.string();
           continue;
         case 8:
           if (tag !== 66) {
             break;
           }
 
-          message.schemaPathTemplate = reader.string();
+          message.filePathTemplate = reader.string();
           continue;
         case 9:
           if (tag !== 74) {
             break;
           }
 
-          message.sheetPathTemplate = reader.string();
+          message.schemaPathTemplate = reader.string();
           continue;
         case 10:
-          if (tag !== 80) {
+          if (tag !== 82) {
             break;
           }
 
-          message.enableSqlReviewCi = reader.bool();
+          message.sheetPathTemplate = reader.string();
           continue;
         case 11:
           if (tag !== 90) {
             break;
           }
 
+          message.externalId = reader.string();
+          continue;
+        case 12:
+          if (tag !== 96) {
+            break;
+          }
+
+          message.enableSqlReviewCi = reader.bool();
+          continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
           message.webhookEndpointId = reader.string();
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.accessToken = reader.string();
+          continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.expiresTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.refreshToken = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1278,6 +1341,7 @@ export const ProjectGitOpsInfo = {
   fromJSON(object: any): ProjectGitOpsInfo {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      vcsUid: isSet(object.vcsUid) ? String(object.vcsUid) : "",
       title: isSet(object.title) ? String(object.title) : "",
       fullPath: isSet(object.fullPath) ? String(object.fullPath) : "",
       webUrl: isSet(object.webUrl) ? String(object.webUrl) : "",
@@ -1286,14 +1350,19 @@ export const ProjectGitOpsInfo = {
       filePathTemplate: isSet(object.filePathTemplate) ? String(object.filePathTemplate) : "",
       schemaPathTemplate: isSet(object.schemaPathTemplate) ? String(object.schemaPathTemplate) : "",
       sheetPathTemplate: isSet(object.sheetPathTemplate) ? String(object.sheetPathTemplate) : "",
+      externalId: isSet(object.externalId) ? String(object.externalId) : "",
       enableSqlReviewCi: isSet(object.enableSqlReviewCi) ? Boolean(object.enableSqlReviewCi) : false,
       webhookEndpointId: isSet(object.webhookEndpointId) ? String(object.webhookEndpointId) : "",
+      accessToken: isSet(object.accessToken) ? String(object.accessToken) : "",
+      expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
+      refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : "",
     };
   },
 
   toJSON(message: ProjectGitOpsInfo): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.vcsUid !== undefined && (obj.vcsUid = message.vcsUid);
     message.title !== undefined && (obj.title = message.title);
     message.fullPath !== undefined && (obj.fullPath = message.fullPath);
     message.webUrl !== undefined && (obj.webUrl = message.webUrl);
@@ -1302,8 +1371,12 @@ export const ProjectGitOpsInfo = {
     message.filePathTemplate !== undefined && (obj.filePathTemplate = message.filePathTemplate);
     message.schemaPathTemplate !== undefined && (obj.schemaPathTemplate = message.schemaPathTemplate);
     message.sheetPathTemplate !== undefined && (obj.sheetPathTemplate = message.sheetPathTemplate);
+    message.externalId !== undefined && (obj.externalId = message.externalId);
     message.enableSqlReviewCi !== undefined && (obj.enableSqlReviewCi = message.enableSqlReviewCi);
     message.webhookEndpointId !== undefined && (obj.webhookEndpointId = message.webhookEndpointId);
+    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
+    message.expiresTime !== undefined && (obj.expiresTime = message.expiresTime.toISOString());
+    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
     return obj;
   },
 
@@ -1314,6 +1387,7 @@ export const ProjectGitOpsInfo = {
   fromPartial(object: DeepPartial<ProjectGitOpsInfo>): ProjectGitOpsInfo {
     const message = createBaseProjectGitOpsInfo();
     message.name = object.name ?? "";
+    message.vcsUid = object.vcsUid ?? "";
     message.title = object.title ?? "";
     message.fullPath = object.fullPath ?? "";
     message.webUrl = object.webUrl ?? "";
@@ -1322,8 +1396,12 @@ export const ProjectGitOpsInfo = {
     message.filePathTemplate = object.filePathTemplate ?? "";
     message.schemaPathTemplate = object.schemaPathTemplate ?? "";
     message.sheetPathTemplate = object.sheetPathTemplate ?? "";
+    message.externalId = object.externalId ?? "";
     message.enableSqlReviewCi = object.enableSqlReviewCi ?? false;
     message.webhookEndpointId = object.webhookEndpointId ?? "";
+    message.accessToken = object.accessToken ?? "";
+    message.expiresTime = object.expiresTime ?? undefined;
+    message.refreshToken = object.refreshToken ?? "";
     return message;
   },
 };
@@ -1912,6 +1990,28 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

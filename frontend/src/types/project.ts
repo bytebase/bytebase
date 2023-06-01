@@ -4,6 +4,7 @@ import { OAuthToken } from "./oauth";
 import { Principal } from "./principal";
 import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
 import { VCS } from "./vcs";
+import { SchemaChange } from "@/types/proto/v1/project_service";
 
 export type ProjectRoleType =
   | "OWNER"
@@ -71,5 +72,5 @@ export type ProjectRepositoryConfig = {
   code: string;
   repositoryInfo: ExternalRepositoryInfo;
   repositoryConfig: RepositoryConfig;
-  schemaChangeType: SchemaChangeType;
+  schemaChangeType: SchemaChange;
 };

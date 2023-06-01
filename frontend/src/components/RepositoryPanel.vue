@@ -81,13 +81,13 @@
   <RepositoryForm
     class="mt-4"
     :allow-edit="allowEdit"
-    :vcs-type="repository.vcs.type"
-    :vcs-name="repository.vcs.name"
+    :vcs-type="vcs.type"
+    :vcs-name="vcs.name"
     :repository-info="repositoryInfo"
     :repository-config="state.repositoryConfig"
     :project="project"
     :schema-change-type="state.schemaChangeType"
-    @change-schema-change-type="(type) => (state.schemaChangeType = type)"
+    @change-schema-change-type="(type: SchemaChange) => (state.schemaChangeType = type)"
     @change-repository="$emit('change-repository')"
   />
   <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
@@ -121,7 +121,7 @@
       <div class="whitespace-pre-wrap">
         {{
           $t("repository.sql-review-ci-setup-modal", {
-            pr: repository.vcs.type.startsWith("GITLAB")
+            pr: vcs.type.startsWith("GITLAB")
               ? $t("repository.merge-request")
               : $t("repository.pull-request"),
           })
@@ -136,7 +136,7 @@
         >
           {{
             $t("repository.sql-review-ci-setup-pr", {
-              pr: repository.vcs.type.startsWith("GITLAB")
+              pr: vcs.type.startsWith("GITLAB")
                 ? $t("repository.merge-request")
                 : $t("repository.pull-request"),
             })
@@ -176,7 +176,7 @@
       <BBSpin class="mt-1" />
       {{
         $t("repository.sql-review-ci-loading-modal", {
-          pr: repository.vcs.type.startsWith("GITLAB")
+          pr: vcs.type.startsWith("GITLAB")
             ? $t("repository.merge-request")
             : $t("repository.pull-request"),
         })
@@ -193,11 +193,7 @@
       <div class="whitespace-pre-wrap">
         <i18n-t keypath="repository.sql-review-ci-restore-modal">
           <template #vcs>
-            {{
-              repository.vcs.type.startsWith("GITLAB")
-                ? "GitLab CI"
-                : "GitHub Action"
-            }}
+            {{ vcs.type.startsWith("GITLAB") ? "GitLab CI" : "GitHub Action" }}
           </template>
           <template #repository>
             <a class="normal-link" :href="repository.webUrl" target="_blank">{{
@@ -228,11 +224,7 @@
       <div class="whitespace-pre-wrap">
         <i18n-t keypath="repository.sql-review-ci-remove-modal">
           <template #vcs>
-            {{
-              repository.vcs.type.startsWith("GITLAB")
-                ? "GitLab CI"
-                : "GitHub Action"
-            }}
+            {{ vcs.type.startsWith("GITLAB") ? "GitLab CI" : "GitHub Action" }}
           </template>
           <template #repository>
             <a class="normal-link" :href="repository.webUrl" target="_blank">{{
@@ -260,35 +252,28 @@
   />
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, PropType, reactive, watch } from "vue";
+<script lang="ts" setup>
+import { computed, PropType, reactive, watch } from "vue";
 import isEmpty from "lodash-es/isEmpty";
-import RepositoryForm from "./RepositoryForm.vue";
-import {
-  Repository,
-  RepositoryPatch,
-  ExternalRepositoryInfo,
-  RepositoryConfig,
-  Project,
-  SchemaChangeType,
-} from "../types";
+import { VCS, ExternalRepositoryInfo, RepositoryConfig } from "../types";
 import { useI18n } from "vue-i18n";
 import {
   hasFeature,
   pushNotification,
   useProjectV1Store,
-  useRepositoryStore,
+  useRepositoryV1Store,
 } from "@/store";
 import {
-  Project as ProjectV1,
+  Project,
   SchemaChange,
   Workflow,
 } from "@/types/proto/v1/project_service";
 import { cloneDeep } from "lodash-es";
+import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
-  schemaChangeType: SchemaChangeType;
+  schemaChangeType: SchemaChange;
   showFeatureModal: boolean;
   showSetupSQLReviewCIModal: boolean;
   showSetupSQLReviewCIFailureModal: boolean;
@@ -298,262 +283,215 @@ interface LocalState {
   sqlReviewCIPullRequestURL: string;
 }
 
-export default defineComponent({
-  name: "RepositoryPanel",
-  components: { RepositoryForm },
-  props: {
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-    projectV1: {
-      required: true,
-      type: Object as PropType<ProjectV1>,
-    },
-    repository: {
-      required: true,
-      type: Object as PropType<Repository>,
-    },
-    allowEdit: {
-      default: true,
-      type: Boolean,
-    },
+const props = defineProps({
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
   },
-  emits: ["change-repository"],
-  setup(props) {
-    const { t } = useI18n();
-    const repositoryStore = useRepositoryStore();
-    const state = reactive<LocalState>({
-      repositoryConfig: {
-        baseDirectory: props.repository.baseDirectory,
-        branchFilter: props.repository.branchFilter,
-        filePathTemplate: props.repository.filePathTemplate,
-        schemaPathTemplate: props.repository.schemaPathTemplate,
-        sheetPathTemplate: props.repository.sheetPathTemplate,
-        enableSQLReviewCI: props.repository.enableSQLReviewCI,
-      },
-      schemaChangeType: props.project.schemaChangeType,
-      showFeatureModal: false,
-      showSetupSQLReviewCIModal: false,
-      showSetupSQLReviewCIFailureModal: false,
-      showLoadingSQLReviewPRModal: false,
-      showDisableSQLReviewCIModal: false,
-      showRestoreSQLReviewCIModal: false,
-      sqlReviewCIPullRequestURL: "",
-    });
-
-    watch(
-      () => props.repository,
-      (cur) => {
-        state.repositoryConfig = {
-          baseDirectory: cur.baseDirectory,
-          branchFilter: cur.branchFilter,
-          filePathTemplate: cur.filePathTemplate,
-          schemaPathTemplate: cur.schemaPathTemplate,
-          sheetPathTemplate: cur.sheetPathTemplate,
-          enableSQLReviewCI: cur.enableSQLReviewCI,
-        };
-      }
-    );
-
-    const repositoryInfo = computed((): ExternalRepositoryInfo => {
-      return {
-        externalId: props.repository.externalId,
-        name: props.repository.name,
-        fullPath: props.repository.fullPath,
-        webUrl: props.repository.webUrl,
-      };
-    });
-
-    const isProjectSchemaChangeTypeDDL = computed(() => {
-      return state.schemaChangeType === "DDL";
-    });
-
-    const isProjectSchemaChangeTypeSDL = computed(() => {
-      return state.schemaChangeType === "SDL";
-    });
-
-    const allowUpdate = computed(() => {
-      return (
-        !isEmpty(state.repositoryConfig.branchFilter) &&
-        !isEmpty(state.repositoryConfig.filePathTemplate) &&
-        (props.repository.branchFilter !==
-          state.repositoryConfig.branchFilter ||
-          props.repository.baseDirectory !==
-            state.repositoryConfig.baseDirectory ||
-          props.repository.filePathTemplate !==
-            state.repositoryConfig.filePathTemplate ||
-          props.repository.schemaPathTemplate !==
-            state.repositoryConfig.schemaPathTemplate ||
-          props.repository.sheetPathTemplate !==
-            state.repositoryConfig.sheetPathTemplate ||
-          props.repository.enableSQLReviewCI !==
-            state.repositoryConfig.enableSQLReviewCI ||
-          props.project.schemaChangeType !== state.schemaChangeType)
-      );
-    });
-
-    const disableSQLReviewCI = computed(() => {
-      return (
-        props.repository.enableSQLReviewCI &&
-        !state.repositoryConfig.enableSQLReviewCI
-      );
-    });
-
-    const onSQLReviewCIModalClose = () => {
-      state.showRestoreSQLReviewCIModal = false;
-      restoreToUIWorkflowType(false);
-    };
-
-    const restoreToUIWorkflowType = async (checkSQLReviewCI: boolean) => {
-      if (checkSQLReviewCI && props.repository.enableSQLReviewCI) {
-        state.showRestoreSQLReviewCIModal = true;
-        return;
-      }
-      await repositoryStore.deleteRepositoryByProjectId(props.project.id);
-
-      const projectPatch = cloneDeep(props.projectV1);
-      projectPatch.workflow = Workflow.UI;
-      const updateMask = ["workflow"];
-      await useProjectV1Store().updateProject(projectPatch, updateMask);
-      // WARNING: using mixed new/old APIs so we need to force update the
-      // legacy project entity's local value manually
-      /* eslint-disable-next-line vue/no-mutating-props */
-      props.project.workflowType = "UI";
-
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("repository.restore-ui-workflow-success"),
-      });
-    };
-
-    const createSQLReviewCI = async () => {
-      const repository = repositoryStore.getRepositoryByProjectId(
-        props.project.id
-      );
-
-      state.showLoadingSQLReviewPRModal = true;
-
-      try {
-        const sqlReviewCISetup = await repositoryStore.createSQLReviewCI({
-          projectId: props.project.id,
-          repositoryId: repository.id,
-        });
-        state.sqlReviewCIPullRequestURL = sqlReviewCISetup.pullRequestURL;
-        state.showSetupSQLReviewCIModal = true;
-        window.open(sqlReviewCISetup.pullRequestURL, "_blank");
-        repositoryStore.setRepositorySQLReviewCIEnabled({
-          projectId: props.project.id,
-          sqlReviewCIEnabled: true,
-        });
-      } catch {
-        state.showSetupSQLReviewCIFailureModal = true;
-      } finally {
-        state.showLoadingSQLReviewPRModal = false;
-      }
-    };
-
-    const doUpdate = async () => {
-      if (
-        state.repositoryConfig.enableSQLReviewCI &&
-        !props.repository.enableSQLReviewCI &&
-        !hasFeature("bb.feature.vcs-sql-review")
-      ) {
-        state.showFeatureModal = true;
-        return;
-      }
-
-      const needSetupCI =
-        !props.repository.enableSQLReviewCI &&
-        state.repositoryConfig.enableSQLReviewCI;
-
-      const repositoryPatch: RepositoryPatch = {};
-      if (
-        props.repository.branchFilter != state.repositoryConfig.branchFilter
-      ) {
-        repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
-      }
-      if (
-        props.repository.baseDirectory != state.repositoryConfig.baseDirectory
-      ) {
-        repositoryPatch.baseDirectory = state.repositoryConfig.baseDirectory;
-      }
-      if (
-        props.repository.filePathTemplate !=
-        state.repositoryConfig.filePathTemplate
-      ) {
-        repositoryPatch.filePathTemplate =
-          state.repositoryConfig.filePathTemplate;
-      }
-      if (
-        props.repository.schemaPathTemplate !=
-        state.repositoryConfig.schemaPathTemplate
-      ) {
-        repositoryPatch.schemaPathTemplate =
-          state.repositoryConfig.schemaPathTemplate;
-      }
-      if (
-        props.repository.sheetPathTemplate !=
-        state.repositoryConfig.sheetPathTemplate
-      ) {
-        repositoryPatch.sheetPathTemplate =
-          state.repositoryConfig.sheetPathTemplate;
-      }
-      if (
-        props.repository.enableSQLReviewCI !=
-        state.repositoryConfig.enableSQLReviewCI
-      ) {
-        repositoryPatch.enableSQLReviewCI =
-          state.repositoryConfig.enableSQLReviewCI;
-      }
-
-      // Update project schemaChangeType field firstly.
-      if (state.schemaChangeType !== props.project.schemaChangeType) {
-        const projectPatch = cloneDeep(props.projectV1);
-        projectPatch.schemaChange =
-          state.schemaChangeType === "DDL"
-            ? SchemaChange.DDL
-            : SchemaChange.SDL;
-        const updateMask = ["schema_change"];
-        await useProjectV1Store().updateProject(projectPatch, updateMask);
-        // WARNING: using mixed new/old APIs so we need to force update the
-        // legacy project entity's local value manually
-        /* eslint-disable-next-line vue/no-mutating-props */
-        props.project.schemaChangeType = state.schemaChangeType;
-      }
-
-      const disableSQLReview = disableSQLReviewCI.value;
-
-      await repositoryStore.updateRepositoryByProjectId({
-        projectId: props.project.id,
-        repositoryPatch,
-      });
-
-      if (needSetupCI) {
-        createSQLReviewCI();
-      } else if (disableSQLReview) {
-        state.showDisableSQLReviewCIModal = true;
-      }
-
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("repository.update-gitops-config-success"),
-      });
-    };
-
-    return {
-      state,
-      repositoryInfo,
-      allowUpdate,
-      isProjectSchemaChangeTypeDDL,
-      isProjectSchemaChangeTypeSDL,
-      restoreToUIWorkflowType,
-      onSQLReviewCIModalClose,
-      doUpdate,
-      createSQLReviewCI,
-    };
+  repository: {
+    required: true,
+    type: Object as PropType<ProjectGitOpsInfo>,
+  },
+  vcs: {
+    required: true,
+    type: Object as PropType<VCS>,
+  },
+  allowEdit: {
+    default: true,
+    type: Boolean,
   },
 });
+
+defineEmits<{
+  (event: "change-repository"): void;
+}>();
+
+const { t } = useI18n();
+const repositoryV1Store = useRepositoryV1Store();
+const state = reactive<LocalState>({
+  repositoryConfig: {
+    baseDirectory: props.repository.baseDirectory,
+    branchFilter: props.repository.branchFilter,
+    filePathTemplate: props.repository.filePathTemplate,
+    schemaPathTemplate: props.repository.schemaPathTemplate,
+    sheetPathTemplate: props.repository.sheetPathTemplate,
+    enableSQLReviewCI: props.repository.enableSqlReviewCi,
+  },
+  schemaChangeType: props.project.schemaChange,
+  showFeatureModal: false,
+  showSetupSQLReviewCIModal: false,
+  showSetupSQLReviewCIFailureModal: false,
+  showLoadingSQLReviewPRModal: false,
+  showDisableSQLReviewCIModal: false,
+  showRestoreSQLReviewCIModal: false,
+  sqlReviewCIPullRequestURL: "",
+});
+
+watch(
+  () => props.repository,
+  (cur) => {
+    state.repositoryConfig = {
+      baseDirectory: cur.baseDirectory,
+      branchFilter: cur.branchFilter,
+      filePathTemplate: cur.filePathTemplate,
+      schemaPathTemplate: cur.schemaPathTemplate,
+      sheetPathTemplate: cur.sheetPathTemplate,
+      enableSQLReviewCI: cur.enableSqlReviewCi,
+    };
+  }
+);
+
+const repositoryInfo = computed((): ExternalRepositoryInfo => {
+  return {
+    externalId: props.repository.externalId,
+    name: props.repository.name,
+    fullPath: props.repository.fullPath,
+    webUrl: props.repository.webUrl,
+  };
+});
+
+const isProjectSchemaChangeTypeDDL = computed(() => {
+  return state.schemaChangeType === SchemaChange.DDL;
+});
+
+const isProjectSchemaChangeTypeSDL = computed(() => {
+  return state.schemaChangeType === SchemaChange.SDL;
+});
+
+const allowUpdate = computed(() => {
+  return (
+    !isEmpty(state.repositoryConfig.branchFilter) &&
+    !isEmpty(state.repositoryConfig.filePathTemplate) &&
+    (props.repository.branchFilter !== state.repositoryConfig.branchFilter ||
+      props.repository.baseDirectory !== state.repositoryConfig.baseDirectory ||
+      props.repository.filePathTemplate !==
+        state.repositoryConfig.filePathTemplate ||
+      props.repository.schemaPathTemplate !==
+        state.repositoryConfig.schemaPathTemplate ||
+      props.repository.sheetPathTemplate !==
+        state.repositoryConfig.sheetPathTemplate ||
+      props.repository.enableSqlReviewCi !==
+        state.repositoryConfig.enableSQLReviewCI ||
+      props.project.schemaChange !== state.schemaChangeType)
+  );
+});
+
+const disableSQLReviewCI = computed(() => {
+  return (
+    props.repository.enableSqlReviewCi &&
+    !state.repositoryConfig.enableSQLReviewCI
+  );
+});
+
+const onSQLReviewCIModalClose = () => {
+  state.showRestoreSQLReviewCIModal = false;
+  restoreToUIWorkflowType(false);
+};
+
+const restoreToUIWorkflowType = async (checkSQLReviewCI: boolean) => {
+  if (checkSQLReviewCI && props.repository.enableSqlReviewCi) {
+    state.showRestoreSQLReviewCIModal = true;
+    return;
+  }
+  await repositoryV1Store.deleteRepository(props.project.name);
+
+  const projectPatch = cloneDeep(props.project);
+  projectPatch.workflow = Workflow.UI;
+  await useProjectV1Store().updateProject(projectPatch, ["workflow"]);
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("repository.restore-ui-workflow-success"),
+  });
+};
+
+const createSQLReviewCI = async () => {
+  state.showLoadingSQLReviewPRModal = true;
+
+  try {
+    const pullRequestURL = await repositoryV1Store.setupSQLReviewCI(
+      props.project.name
+    );
+    state.sqlReviewCIPullRequestURL = pullRequestURL;
+    state.showSetupSQLReviewCIModal = true;
+    window.open(pullRequestURL, "_blank");
+  } catch {
+    state.showSetupSQLReviewCIFailureModal = true;
+  } finally {
+    state.showLoadingSQLReviewPRModal = false;
+  }
+};
+
+const doUpdate = async () => {
+  if (
+    state.repositoryConfig.enableSQLReviewCI &&
+    !props.repository.enableSqlReviewCi &&
+    !hasFeature("bb.feature.vcs-sql-review")
+  ) {
+    state.showFeatureModal = true;
+    return;
+  }
+
+  const needSetupCI =
+    !props.repository.enableSqlReviewCi &&
+    state.repositoryConfig.enableSQLReviewCI;
+
+  const repositoryPatch: Partial<ProjectGitOpsInfo> = {};
+  if (props.repository.branchFilter != state.repositoryConfig.branchFilter) {
+    repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
+  }
+  if (props.repository.baseDirectory != state.repositoryConfig.baseDirectory) {
+    repositoryPatch.baseDirectory = state.repositoryConfig.baseDirectory;
+  }
+  if (
+    props.repository.filePathTemplate != state.repositoryConfig.filePathTemplate
+  ) {
+    repositoryPatch.filePathTemplate = state.repositoryConfig.filePathTemplate;
+  }
+  if (
+    props.repository.schemaPathTemplate !=
+    state.repositoryConfig.schemaPathTemplate
+  ) {
+    repositoryPatch.schemaPathTemplate =
+      state.repositoryConfig.schemaPathTemplate;
+  }
+  if (
+    props.repository.sheetPathTemplate !=
+    state.repositoryConfig.sheetPathTemplate
+  ) {
+    repositoryPatch.sheetPathTemplate =
+      state.repositoryConfig.sheetPathTemplate;
+  }
+  if (
+    props.repository.enableSqlReviewCi !=
+    state.repositoryConfig.enableSQLReviewCI
+  ) {
+    repositoryPatch.enableSqlReviewCi =
+      state.repositoryConfig.enableSQLReviewCI;
+  }
+
+  // Update project schemaChangeType field firstly.
+  if (state.schemaChangeType !== props.project.schemaChange) {
+    const projectPatch = cloneDeep(props.project);
+    projectPatch.schemaChange = state.schemaChangeType;
+    await useProjectV1Store().updateProject(projectPatch, ["schema_change"]);
+  }
+
+  const disableSQLReview = disableSQLReviewCI.value;
+
+  await repositoryV1Store.upsertRepository(props.project.name, repositoryPatch);
+
+  if (needSetupCI) {
+    createSQLReviewCI();
+  } else if (disableSQLReview) {
+    state.showDisableSQLReviewCIModal = true;
+  }
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("repository.update-gitops-config-success"),
+  });
+};
 </script>
