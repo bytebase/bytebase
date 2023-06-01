@@ -840,6 +840,10 @@ func (s *Store) ListSheetsV2(ctx context.Context, find *api.SheetFind, currentPr
 
 // CreateSheetV2 creates a new sheet.
 func (s *Store) CreateSheetV2(ctx context.Context, create *SheetMessage) (*SheetMessage, error) {
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
+
 	query := fmt.Sprintf(`
 		INSERT INTO sheet (
 			creator_id,
