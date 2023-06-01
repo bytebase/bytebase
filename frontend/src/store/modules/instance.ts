@@ -1,14 +1,10 @@
 import { defineStore } from "pinia";
-import axios from "axios";
 import {
   DataSource,
   Environment,
   Instance,
-  InstanceId,
   InstanceState,
-  INSTANCE_OPERATION_TIMEOUT,
   MigrationHistory,
-  MigrationHistoryId,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -106,75 +102,6 @@ export const useLegacyInstanceStore = defineStore("legacy_instance", {
       includedList: ResourceObject[]
     ): Instance {
       return convert(instance, includedList);
-    },
-    setMigrationHistoryById({
-      migrationHistoryId,
-      migrationHistory,
-    }: {
-      migrationHistoryId: MigrationHistoryId;
-      migrationHistory: MigrationHistory;
-    }) {
-      this.migrationHistoryById.set(migrationHistoryId, migrationHistory);
-    },
-    async fetchMigrationHistoryById({
-      instanceId,
-      migrationHistoryId,
-      sdl,
-    }: {
-      instanceId: InstanceId;
-      migrationHistoryId: MigrationHistoryId;
-      sdl?: boolean;
-    }) {
-      let url = `/api/instance/${instanceId}/migration/history/${migrationHistoryId}`;
-      if (sdl) {
-        url += "?sdl=true";
-      }
-      const data = (
-        await axios.get(url, {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        })
-      ).data;
-      const migrationHistory = convertMigrationHistory(data.data);
-
-      this.setMigrationHistoryById({
-        migrationHistoryId,
-        migrationHistory,
-      });
-      return migrationHistory;
-    },
-    async fetchMigrationHistoryByVersion({
-      instanceId,
-      databaseName,
-      version,
-    }: {
-      instanceId: InstanceId;
-      databaseName: string;
-      version: string;
-    }) {
-      const data = (
-        await axios.get(
-          `/api/instance/${instanceId}/migration/history?database=${databaseName}&version=${version}`,
-          {
-            timeout: INSTANCE_OPERATION_TIMEOUT,
-          }
-        )
-      ).data.data;
-      const historyList: MigrationHistory[] = data.map(
-        (history: ResourceObject) => {
-          return convertMigrationHistory(history);
-        }
-      );
-
-      if (historyList.length > 0) {
-        this.setMigrationHistoryById({
-          migrationHistoryId: historyList[0].id,
-          migrationHistory: historyList[0],
-        });
-        return historyList[0];
-      }
-      throw new Error(
-        `Migration version ${version} not found in database ${databaseName}.`
-      );
     },
   },
 });
