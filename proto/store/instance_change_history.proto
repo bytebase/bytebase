@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "store/vcs.proto";
+
+option go_package = "generated-go/store";
+
+message InstanceChangeHistoryPayload {
+  PushEvent push_event = 1;
+}
