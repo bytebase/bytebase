@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -103,14 +104,18 @@ func TestSensitiveData(t *testing.T) {
 	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
-	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "createTable",
-		Statement:  createTable,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "createTable",
+			Content:    []byte(createTable),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
@@ -119,7 +124,7 @@ func TestSensitiveData(t *testing.T) {
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    databaseUID,
-				SheetID:       sheet.ID,
+				SheetID:       sheetUID,
 			},
 		},
 	})
@@ -162,14 +167,18 @@ func TestSensitiveData(t *testing.T) {
 	})
 	a.NoError(err)
 
-	insertDataSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "insertData",
-		Statement:  insertData,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	insertDataSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "insertData",
+			Content:    []byte(insertData),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	insertDataSheetUID, err := strconv.Atoi(strings.TrimPrefix(insertDataSheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Insert data into table tech_book.
@@ -178,7 +187,7 @@ func TestSensitiveData(t *testing.T) {
 			{
 				MigrationType: db.Data,
 				DatabaseID:    databaseUID,
-				SheetID:       insertDataSheet.ID,
+				SheetID:       insertDataSheetUID,
 			},
 		},
 	})
