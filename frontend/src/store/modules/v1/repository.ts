@@ -1,11 +1,23 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { isEqual, isUndefined } from "lodash-es";
-import { projectServiceClient } from "@/grpcweb";
+import {
+  projectServiceClient,
+  externalVersionControlServiceClient,
+} from "@/grpcweb";
 import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
+import { VCSId, ComposedRepository } from "@/types";
+import {
+  externalVersionControlPrefix,
+  getProjectPathFromRepoName,
+} from "./common";
+import { useProjectV1Store } from "./project";
 
 export const useRepositoryV1Store = defineStore("repository_v1", () => {
   const repositoryMapByProject = reactive(new Map<string, ProjectGitOpsInfo>());
+  const repositoryMapByVCSId = reactive(
+    new Map<string, ComposedRepository[]>()
+  );
 
   const fetchRepositoryByProject = async (
     project: string
@@ -79,12 +91,43 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     return resp.pullRequestUrl;
   };
 
+  const fetchRepositoryListByVCSId = async (
+    vcsId: VCSId
+  ): Promise<ProjectGitOpsInfo[]> => {
+    const resp =
+      await externalVersionControlServiceClient.listProjectGitOpsInfo({
+        name: `${externalVersionControlPrefix}${vcsId}`,
+      });
+
+    const projectV1Store = useProjectV1Store();
+    const repoList: ComposedRepository[] = await Promise.all(
+      resp.projectGitopsInfo.map(async (repo) => {
+        const project = await projectV1Store.getOrFetchProjectByName(
+          getProjectPathFromRepoName(repo.name)
+        );
+        return {
+          ...repo,
+          project,
+        };
+      })
+    );
+
+    repositoryMapByVCSId.set(`${vcsId}`, repoList);
+    return repoList;
+  };
+
+  const getRepositoryListByVCSId = (vcsId: VCSId): ComposedRepository[] => {
+    return repositoryMapByVCSId.get(`${vcsId}`) || [];
+  };
+
   return {
     setupSQLReviewCI,
     upsertRepository,
     deleteRepository,
     getRepositoryByProject,
     getOrFetchRepositoryByProject,
+    fetchRepositoryListByVCSId,
+    getRepositoryListByVCSId,
   };
 });
 

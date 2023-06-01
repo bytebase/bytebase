@@ -197,7 +197,7 @@ import {
 import {
   pushNotification,
   useOAuthStore,
-  useRepositoryStore,
+  useRepositoryV1Store,
   useVCSStore,
 } from "@/store";
 
@@ -219,7 +219,7 @@ export default defineComponent({
   },
   setup(props) {
     const vcsStore = useVCSStore();
-    const repositoryStore = useRepositoryStore();
+    const repositoryV1Store = useRepositoryV1Store();
     const router = useRouter();
 
     const vcs = computed((): VCS => {
@@ -268,7 +268,7 @@ export default defineComponent({
     };
 
     const prepareRepositoryList = () => {
-      repositoryStore.fetchRepositoryListByVCSId(vcs.value.id);
+      repositoryV1Store.fetchRepositoryListByVCSId(vcs.value.id);
     };
 
     watchEffect(prepareRepositoryList);
@@ -283,7 +283,7 @@ export default defineComponent({
     });
 
     const repositoryList = computed(() =>
-      repositoryStore.getRepositoryListByVCSId(vcs.value.id)
+      repositoryV1Store.getRepositoryListByVCSId(vcs.value.id)
     );
 
     const allowUpdate = computed(() => {
