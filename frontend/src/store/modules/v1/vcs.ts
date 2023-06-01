@@ -67,6 +67,7 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     const resp =
       await externalVersionControlServiceClient.updateExternalVersionControl({
         externalVersionControl: vcs,
+        updateMask,
       });
     vcsMapByName.set(resp.name, resp);
     return resp;

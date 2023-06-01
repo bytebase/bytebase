@@ -14,7 +14,7 @@
           <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
         </template>
         <h3 class="text-lg leading-6 font-medium text-main">
-          {{ vcs.name }}
+          {{ vcs.title }}
         </h3>
       </div>
       <button
