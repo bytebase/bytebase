@@ -120,10 +120,8 @@ service ProjectService {
     };
   }
 
-    rpc DeleteProjectGitOpsInfo(DeleteProjectGitOpsInfoRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/v1/{project=projects/*}/gitOpsInfo"
-    };
+  rpc DeleteProjectGitOpsInfo(DeleteProjectGitOpsInfoRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{project=projects/*}/gitOpsInfo"};
     option (google.api.method_signature) = "name";
   }
 
