@@ -8,9 +8,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // InstanceChangeHistoryMessage records the change history of an instance.
@@ -35,7 +37,7 @@ type InstanceChangeHistoryMessage struct {
 	Schema              string
 	SchemaPrev          string
 	ExecutionDurationNs int64
-	Payload             string
+	Payload             *storepb.InstanceChangeHistoryPayload
 
 	// Output only
 	UID            string
@@ -124,8 +126,9 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 
 	count := 1
 	for _, create := range creates {
-		if create.Payload == "" {
-			create.Payload = "{}"
+		payload, err := protojson.Marshal(create.Payload)
+		if err != nil {
+			return nil, err
 		}
 		values = append(values,
 			create.CreatorID,
@@ -144,7 +147,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 			create.Schema,
 			create.SchemaPrev,
 			create.ExecutionDurationNs,
-			create.Payload,
+			payload,
 		)
 		const countToPayload = 17
 		var valueStr []string
@@ -232,6 +235,11 @@ func convertInstanceChangeHistoryToMigrationHistory(change *InstanceChangeHistor
 		return nil, err
 	}
 
+	payload, err := protojson.Marshal(change.Payload)
+	if err != nil {
+		return nil, err
+	}
+
 	return &db.MigrationHistory{
 		ID:                    change.UID,
 		Creator:               "",
@@ -251,7 +259,7 @@ func convertInstanceChangeHistoryToMigrationHistory(change *InstanceChangeHistor
 		SchemaPrev:            change.SchemaPrev,
 		ExecutionDurationNs:   change.ExecutionDurationNs,
 		IssueID:               issueID,
-		Payload:               change.Payload,
+		Payload:               string(payload),
 		UseSemanticVersion:    useSemanticVersion,
 		SemanticVersionSuffix: semanticVersionSuffix,
 	}, nil
@@ -393,7 +401,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	var list []*InstanceChangeHistoryMessage
 	for rows.Next() {
 		var changeHistory InstanceChangeHistoryMessage
-		var rowStatus string
+		var rowStatus, payload string
 		var instanceID, databaseID, issueID sql.NullInt32
 		if err := rows.Scan(
 			&changeHistory.UID,
@@ -416,7 +424,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			&changeHistory.Schema,
 			&changeHistory.SchemaPrev,
 			&changeHistory.ExecutionDurationNs,
-			&changeHistory.Payload,
+			&payload,
 			&changeHistory.InstanceID,
 			&changeHistory.DatabaseName,
 		); err != nil {
@@ -433,6 +441,10 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		if issueID.Valid {
 			n := int(issueID.Int32)
 			changeHistory.IssueUID = &n
+		}
+		changeHistory.Payload = &storepb.InstanceChangeHistoryPayload{}
+		if err := protojson.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
+			return nil, err
 		}
 
 		changeHistory.Deleted = convertRowStatusToDeleted(rowStatus)
