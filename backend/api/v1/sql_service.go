@@ -360,7 +360,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		DatabaseName: request.ConnectionDatabase,
 	})
 
-	return instance, sensitiveSchemaInfo, activity, nil
+	return instance, sensitiveSchemaInfo, activity, err
 }
 
 func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLExportPayload) (*api.Activity, error) {
