@@ -5,10 +5,12 @@ import { projectServiceClient } from "@/grpcweb";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
 import { useEnvironmentV1Store, useProjectV1Store } from "./v1";
-import { ComposedDatabaseGroup } from "@/types";
+import { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import {
+  databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
+  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
   projectNamePrefix,
 } from "./v1/common";
 
@@ -37,9 +39,26 @@ const composeDatabaseGroup = async (
   };
 };
 
+const composeSchemaGroup = async (
+  schemaGroup: SchemaGroup
+): Promise<ComposedSchemaGroup> => {
+  const [projectName, databaseGroupName] =
+    getProjectNameAndDatabaseGroupNameAndSchemaGroupName(schemaGroup.name);
+  const databaseGroup = await composeDatabaseGroup(
+    await useDBGroupStore().getOrFetchDBGroupByName(
+      `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`
+    )
+  );
+  const composedData: ComposedSchemaGroup = {
+    ...schemaGroup,
+    databaseGroup: databaseGroup,
+  };
+  return composedData;
+};
+
 export const useDBGroupStore = defineStore("db-group", () => {
   const dbGroupMapByName = ref<Map<string, ComposedDatabaseGroup>>(new Map());
-  const schemaGroupMapByName = ref<Map<string, SchemaGroup>>(new Map());
+  const schemaGroupMapByName = ref<Map<string, ComposedSchemaGroup>>(new Map());
   const cachedProjectNameSet = ref<Set<string>>(new Set());
 
   const fetchAllDatabaseGroupList = async () => {
@@ -55,6 +74,10 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return composedList;
   };
 
+  const getAllDatabaseGroupList = () => {
+    return Array.from(dbGroupMapByName.value.values());
+  };
+
   const getOrFetchDBGroupByName = async (name: string) => {
     const cached = dbGroupMapByName.value.get(name);
     if (cached) return cached;
@@ -64,7 +87,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
     });
     const composedData = await composeDatabaseGroup(databaseGroup);
     dbGroupMapByName.value.set(name, composedData);
-    return databaseGroup;
+    return composedData;
   };
 
   const getOrFetchDBGroupListByProjectName = async (projectName: string) => {
@@ -78,12 +101,14 @@ export const useDBGroupStore = defineStore("db-group", () => {
     const { databaseGroups } = await projectServiceClient.listDatabaseGroups({
       parent: projectName,
     });
+    const composedList = [];
     for (const dbGroup of databaseGroups) {
       const composedData = await composeDatabaseGroup(dbGroup);
       dbGroupMapByName.value.set(dbGroup.name, composedData);
+      composedList.push(composedData);
     }
     cachedProjectNameSet.value.add(projectName);
-    return databaseGroups;
+    return composedList;
   };
 
   const getDBGroupListByProjectName = (projectName: string) => {
@@ -157,7 +182,8 @@ export const useDBGroupStore = defineStore("db-group", () => {
     const schemaGroup = await projectServiceClient.getSchemaGroup({
       name: name,
     });
-    schemaGroupMapByName.value.set(name, schemaGroup);
+    const composedData = await composeSchemaGroup(schemaGroup);
+    schemaGroupMapByName.value.set(name, composedData);
     return schemaGroup;
   };
 
@@ -167,10 +193,13 @@ export const useDBGroupStore = defineStore("db-group", () => {
     const { schemaGroups } = await projectServiceClient.listSchemaGroups({
       parent: dbGroupName,
     });
+    const composedList: ComposedSchemaGroup[] = [];
     for (const schemaGroup of schemaGroups) {
-      schemaGroupMapByName.value.set(schemaGroup.name, schemaGroup);
+      const composedData = await composeSchemaGroup(schemaGroup);
+      schemaGroupMapByName.value.set(schemaGroup.name, composedData);
+      composedList.push(composedData);
     }
-    return schemaGroups;
+    return composedList;
   };
 
   const getSchemaGroupListByDBGroupName = (dbGroupName: string) => {
@@ -195,8 +224,9 @@ export const useDBGroupStore = defineStore("db-group", () => {
       schemaGroup,
       schemaGroupId: name,
     });
-    schemaGroupMapByName.value.set(createdSchemaGroup.name, createdSchemaGroup);
-    return createdSchemaGroup;
+    const composedData = await composeSchemaGroup(createdSchemaGroup);
+    schemaGroupMapByName.value.set(composedData.name, composedData);
+    return composedData;
   };
 
   const updateSchemaGroup = async (
@@ -214,8 +244,9 @@ export const useDBGroupStore = defineStore("db-group", () => {
       schemaGroup,
       updateMask,
     });
-    schemaGroupMapByName.value.set(updatedSchemaGroup.name, updatedSchemaGroup);
-    return updatedSchemaGroup;
+    const composedData = await composeSchemaGroup(updatedSchemaGroup);
+    schemaGroupMapByName.value.set(composedData.name, composedData);
+    return composedData;
   };
 
   const deleteSchemaGroup = async (name: string) => {
@@ -227,6 +258,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
 
   return {
     fetchAllDatabaseGroupList,
+    getAllDatabaseGroupList,
     getOrFetchDBGroupByName,
     getOrFetchDBGroupListByProjectName,
     getDBGroupListByProjectName,

@@ -10,6 +10,7 @@
     <div class="mt-4">
       <DatabaseGroupTable
         :database-group-list="databaseGroupList"
+        :show-edit="true"
         @edit="handleConfigureDatabaseGroup"
       />
     </div>
