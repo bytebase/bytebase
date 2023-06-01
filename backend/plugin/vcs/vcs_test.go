@@ -96,11 +96,4 @@ func TestPushEventUnmarshalToProto(t *testing.T) {
 	err = protojson.Unmarshal(bytes, &pushEvent)
 	a.NoError(err)
 	a.Equal(storepb.VcsType_GITLAB, pushEvent.VcsType)
-
-	p := &storepb.InstanceChangeHistoryPayload{
-		PushEvent: &pushEvent,
-	}
-	bytes, err = protojson.Marshal(p)
-	a.NoError(err)
-	t.Logf("%q", string(bytes))
 }
