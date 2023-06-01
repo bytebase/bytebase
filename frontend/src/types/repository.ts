@@ -1,5 +1,5 @@
 import isEmpty from "lodash-es/isEmpty";
-import { RepositoryId, VCSId } from "./id";
+import { RepositoryId } from "./id";
 import { Project } from "./project";
 import { VCS } from "./vcs";
 
@@ -26,38 +26,6 @@ export type Repository = {
   sqlReviewCIPullRequestURL: string;
   // e.g. In GitLab, this is the corresponding project id.
   externalId: string;
-};
-
-export type SQLReviewCISetup = {
-  pullRequestURL: string;
-};
-
-export type RepositoryCreate = {
-  // Related fields
-  vcsId: VCSId;
-
-  // Domain specific fields
-  name: string;
-  fullPath: string;
-  webUrl: string;
-  branchFilter: string;
-  baseDirectory: string;
-  filePathTemplate: string;
-  schemaPathTemplate: string;
-  sheetPathTemplate: string;
-  externalId: string;
-  accessToken: string;
-  expiresTs: number;
-  refreshToken: string;
-};
-
-export type RepositoryPatch = {
-  baseDirectory?: string;
-  branchFilter?: string;
-  filePathTemplate?: string;
-  schemaPathTemplate?: string;
-  sheetPathTemplate?: string;
-  enableSQLReviewCI?: boolean;
 };
 
 export type RepositoryConfig = {
