@@ -96,6 +96,13 @@
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
   
+- [store/vcs.proto](#store_vcs-proto)
+    - [Commit](#bytebase-store-Commit)
+    - [FileCommit](#bytebase-store-FileCommit)
+    - [PushEvent](#bytebase-store-PushEvent)
+  
+    - [VcsType](#bytebase-store-VcsType)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -1412,6 +1419,106 @@ MFAConfig is the MFA configuration for a user.
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_vcs-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/vcs.proto
+
+
+
+<a name="bytebase-store-Commit"></a>
+
+### Commit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| message | [string](#string) |  |  |
+| created_ts | [int64](#int64) |  |  |
+| url | [string](#string) |  |  |
+| author_name | [string](#string) |  |  |
+| author_email | [string](#string) |  |  |
+| added_list | [string](#string) | repeated |  |
+| modified_list | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-FileCommit"></a>
+
+### FileCommit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| message | [string](#string) |  |  |
+| created_ts | [int64](#int64) |  |  |
+| url | [string](#string) |  |  |
+| author_name | [string](#string) |  |  |
+| author_email | [string](#string) |  |  |
+| added | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PushEvent"></a>
+
+### PushEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_type | [VcsType](#bytebase-store-VcsType) |  |  |
+| base_directory | [string](#string) |  |  |
+| ref | [string](#string) |  |  |
+| before | [string](#string) |  |  |
+| after | [string](#string) |  |  |
+| repository_id | [string](#string) |  |  |
+| repository_url | [string](#string) |  |  |
+| repository_full_path | [string](#string) |  |  |
+| author_name | [string](#string) |  |  |
+| commits | [Commit](#bytebase-store-Commit) | repeated |  |
+| file_commit | [FileCommit](#bytebase-store-FileCommit) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-VcsType"></a>
+
+### VcsType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VCS_TYPE_UNSPECIFIED | 0 |  |
+| GITLAB | 1 |  |
+| GITHUB | 2 |  |
+| BITBUCKET | 3 |  |
+
 
  
 
