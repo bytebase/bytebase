@@ -517,7 +517,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
-	s.registerSheetRoutes(apiGroup)
 	s.registerAnomalyRoutes(apiGroup)
 
 	// Register healthz endpoint.

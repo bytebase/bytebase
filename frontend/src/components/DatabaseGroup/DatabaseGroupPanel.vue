@@ -19,7 +19,7 @@
       <template #footer>
         <div class="w-full flex justify-between items-center">
           <div>
-            <NButton v-if="!isCreating" type="error" @click="doDelete">{{
+            <NButton v-if="showDeleteButton" type="error" @click="doDelete">{{
               $t("common.delete")
             }}</NButton>
           </div>
@@ -41,13 +41,17 @@
 
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ComposedProject } from "@/types";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { Expr } from "@/types/proto/google/type/expr";
 import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
-import { useDBGroupStore, useEnvironmentV1Store } from "@/store";
+import {
+  pushNotification,
+  useDBGroupStore,
+  useEnvironmentV1Store,
+} from "@/store";
 import { ResourceType } from "./common/ExprEditor/context";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
 import { convertToCELString } from "@/plugins/cel/logic";
@@ -102,7 +106,32 @@ const allowConfirm = computed(() => {
   return false;
 });
 
+const showDeleteButton = computed(() => {
+  return !isCreating.value;
+});
+
+const allowDelete = computed(() => {
+  return (
+    props.resourceType === "SCHEMA_GROUP" ||
+    dbGroupStore.getSchemaGroupListByDBGroupName(props.databaseGroup!.name)
+      .length === 0
+  );
+});
+
+onMounted(async () => {
+  await dbGroupStore.fetchAllDatabaseGroupList();
+});
+
 const doDelete = () => {
+  if (!allowDelete.value) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: "You need to delete related table groups first.",
+    });
+    return;
+  }
+
   dialog.error({
     title: "Confirm to delete",
     positiveText: t("common.confirm"),
