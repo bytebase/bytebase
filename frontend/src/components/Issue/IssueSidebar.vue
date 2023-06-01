@@ -566,15 +566,14 @@ watchEffect(() => {
   } else {
     const name = databaseName.value;
     if (name) {
-      useDatabaseV1Store()
-        .getOrFetchDatabaseByName(`${props.instance.name}/databases/${name!}`)
-        .then((db) => {
-          if (db && db.uid !== String(UNKNOWN_ID)) {
-            databaseEntity.value = db;
-          } else {
-            databaseEntity.value = undefined;
-          }
-        });
+      const existed = useDatabaseV1Store().getDatabaseByName(
+        `${props.instance.name}/databases/${name}`
+      );
+      if (existed && existed.uid !== String(UNKNOWN_ID)) {
+        databaseEntity.value = existed;
+      } else {
+        databaseEntity.value = undefined;
+      }
     } else {
       databaseEntity.value = undefined;
     }

@@ -1,6 +1,6 @@
 <template>
   <div class="flex-1 overflow-auto focus:outline-none" tabindex="0">
-    <main class="flex-1 relative pb-8 overflow-y-auto">
+    <main v-if="changeHistory" class="flex-1 relative pb-8 overflow-y-auto">
       <!-- Highlight Panel -->
       <div
         class="px-4 pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
@@ -8,14 +8,15 @@
         <div class="flex-1 min-w-0 space-y-3">
           <!-- Summary -->
           <div class="pt-2 flex items-center space-x-2">
-            <MigrationHistoryStatusIcon :status="migrationHistory.status" />
+            <ChangeHistoryStatusIcon :status="changeHistory.status" />
             <h1 class="text-xl font-bold leading-6 text-main truncate">
-              {{ $t("common.version") }} {{ migrationHistory.version }}
+              {{ $t("common.version") }} {{ changeHistory.version }}
             </h1>
           </div>
           <p class="text-control">
-            {{ migrationHistory.source }} {{ migrationHistory.type }} -
-            {{ migrationHistory.description }}
+            {{ changeHistory_SourceToJSON(changeHistory.source) }}
+            {{ changeHistory_TypeToJSON(changeHistory.type) }} -
+            {{ changeHistory.description }}
           </p>
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
@@ -26,10 +27,10 @@
                 >{{ $t("common.issue") }}&nbsp;-&nbsp;</span
               >
               <router-link
-                :to="`/issue/${migrationHistory.issueId}`"
+                :to="`/issue/${extractReviewId(changeHistory.review)}`"
                 class="normal-link"
               >
-                {{ migrationHistory.issueId }}
+                {{ extractReviewId(changeHistory.review) }}
               </router-link>
             </dd>
             <dt class="sr-only">{{ $t("common.duration") }}</dt>
@@ -37,58 +38,58 @@
               <span class="textlabel"
                 >{{ $t("common.duration") }}&nbsp;-&nbsp;</span
               >
-              {{ nanosecondsToString(migrationHistory.executionDurationNs) }}
+              {{ humanizeDurationV1(changeHistory.executionDuration) }}
             </dd>
             <dt class="sr-only">{{ $t("common.creator") }}</dt>
-            <dd class="flex items-center text-sm md:mr-4">
+            <dd v-if="creator" class="flex items-center text-sm md:mr-4">
               <span class="textlabel"
                 >{{ $t("common.creator") }}&nbsp;-&nbsp;</span
               >
-              {{ migrationHistory.creator }}
+              {{ creator.title }}
             </dd>
             <dt class="sr-only">{{ $t("common.created-at") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel"
                 >{{ $t("common.created-at") }}&nbsp;-&nbsp;</span
               >
-              {{ humanizeTs(migrationHistory.createdTs) }} by
-              {{ `version ${migrationHistory.releaseVersion}` }}
+              {{ humanizeDate(changeHistory.createTime) }} by
+              {{ `version ${changeHistory.releaseVersion}` }}
             </dd>
           </dl>
           <div
             v-if="pushEvent"
             class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
           >
-            <template v-if="pushEvent?.vcsType.startsWith('GITLAB')">
-              <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
+            <template
+              v-if="vcsTypeToJSON(pushEvent?.vcsType).startsWith('GITLAB')"
+            >
+              <img class="h-4 w-auto" src="@/assets/gitlab-logo.svg" />
             </template>
-            <template v-if="pushEvent?.vcsType.startsWith('GITHUB')">
-              <img class="h-4 w-auto" src="../assets/github-logo.svg" />
+            <template
+              v-if="vcsTypeToJSON(pushEvent?.vcsType).startsWith('GITHUB')"
+            >
+              <img class="h-4 w-auto" src="@/assets/github-logo.svg" />
             </template>
-            <template v-if="pushEvent?.vcsType.startsWith('BITBUCKET')">
-              <img class="h-4 w-auto" src="../assets/bitbucket-logo.svg" />
+            <template
+              v-if="vcsTypeToJSON(pushEvent?.vcsType).startsWith('BITBUCKET')"
+            >
+              <img class="h-4 w-auto" src="@/assets/bitbucket-logo.svg" />
             </template>
             <a :href="vcsBranchUrl" target="_blank" class="normal-link">
               {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
             </a>
-            <span>
+            <span v-if="vcsCommit">
               {{ $t("common.commit") }}
-              <a
-                :href="pushEvent.fileCommit.url"
-                target="_blank"
-                class="normal-link"
-              >
-                {{ pushEvent.fileCommit.id.substring(0, 7) }}:
+              <a :href="vcsCommit.url" target="_blank" class="normal-link">
+                {{ vcsCommit.id.substring(0, 7) }}:
               </a>
-              <span class="text-main">{{ pushEvent.fileCommit.title }}</span>
+              <span class="text-main mr-1">{{ vcsCommit.title }}</span>
               <i18n-t keypath="change-history.commit-info">
                 <template #author>
                   {{ pushEvent.authorName }}
                 </template>
                 <template #time>
-                  {{
-                    dayjs(pushEvent.fileCommit.createdTs * 1000).format("LLL")
-                  }}
+                  {{ humanizeDate(vcsCommit.createdTime) }}
                 </template>
               </i18n-t>
             </span>
@@ -113,7 +114,7 @@
         </a>
         <highlight-code-block
           class="border px-2 whitespace-pre-wrap w-full"
-          :code="migrationHistory.statement"
+          :code="changeHistory.statement"
         />
         <a
           id="schema"
@@ -182,16 +183,16 @@
         <code-diff
           v-if="state.showDiff"
           class="mt-4 w-full"
-          :old-string="migrationHistory.schemaPrev"
-          :new-string="migrationHistory.schema"
+          :old-string="changeHistory.prevSchema"
+          :new-string="changeHistory.schema"
           output-format="side-by-side"
           data-label="bb-change-history-code-diff-block"
         />
         <template v-else>
           <highlight-code-block
-            v-if="migrationHistory.schema"
+            v-if="changeHistory.schema"
             class="border mt-2 px-2 whitespace-pre-wrap w-full"
-            :code="migrationHistory.schema"
+            :code="changeHistory.schema"
             data-label="bb-change-history-code-block"
           />
           <div v-else class="mt-2">
@@ -202,7 +203,7 @@
     </main>
 
     <BBModal
-      v-if="previousHistory && state.viewDrift"
+      v-if="changeHistory && previousHistory && state.viewDrift"
       @close="state.viewDrift = false"
     >
       <template #title>
@@ -221,7 +222,7 @@
         <code-diff
           class="w-full"
           :old-string="previousHistory.schema"
-          :new-string="migrationHistory.schema"
+          :new-string="changeHistory.schema"
           output-format="side-by-side"
         />
         <div class="flex justify-end px-4">
@@ -239,115 +240,134 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, onMounted } from "vue";
+import { computed, reactive, watch } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
-import MigrationHistoryStatusIcon from "../components/MigrationHistoryStatusIcon.vue";
 import {
-  idFromSlug,
-  nanosecondsToString,
-  migrationHistorySlug,
-  migrationHistoryIdFromSlug,
-} from "../utils";
-import {
-  MigrationHistory,
-  MigrationHistoryPayload,
-  VCSPushEvent,
-} from "../types";
+  changeHistoryLink,
+  extractChangeHistoryUID,
+  extractReviewId,
+  extractUserResourceName,
+} from "@/utils";
 import {
   pushNotification,
-  useDatabaseV1ByUID,
-  useLegacyInstanceStore,
+  useChangeHistoryStore,
+  useDatabaseV1Store,
+  useUserStore,
 } from "@/store";
+import {
+  ChangeHistory,
+  ChangeHistory_Type,
+  changeHistory_SourceToJSON,
+  changeHistory_TypeToJSON,
+} from "@/types/proto/v1/database_service";
+import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
+import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 
 interface LocalState {
   showDiff: boolean;
   viewDrift: boolean;
 }
 
-const props = defineProps({
-  databaseSlug: {
-    required: true,
-    type: String,
-  },
-  migrationHistorySlug: {
-    required: true,
-    type: String,
-  },
+const props = defineProps<{
+  instance: string;
+  database: string;
+  changeHistorySlug: string;
+}>();
+
+const changeHistoryStore = useChangeHistoryStore();
+
+const changeHistoryParent = computed(() => {
+  return `instances/${props.instance}/databases/${props.database}`;
+});
+const changeHistoryUID = computed(() => {
+  return extractChangeHistoryUID(props.changeHistorySlug);
+});
+const changeHistoryName = computed(() => {
+  return `${changeHistoryParent.value}/changeHistories/${changeHistoryUID.value}`;
 });
 
-const legacyInstanceStore = useLegacyInstanceStore();
-
-const { database } = useDatabaseV1ByUID(
-  computed(() => String(idFromSlug(props.databaseSlug)))
+watch(
+  changeHistoryParent,
+  (parent) => {
+    useDatabaseV1Store().getOrFetchDatabaseByName(parent);
+    changeHistoryStore.fetchChangeHistoryList({
+      parent,
+    });
+  },
+  { immediate: true }
+);
+watch(
+  changeHistoryName,
+  (name) => {
+    changeHistoryStore.fetchChangeHistory({
+      name,
+    });
+  },
+  { immediate: true }
 );
 
-const migrationHistoryId = migrationHistoryIdFromSlug(
-  props.migrationHistorySlug
-);
+// get all change histories before (include) the one of given id, ordered by descending version.
+const prevChangeHistoryList = computed(() => {
+  const changeHistoryList = changeHistoryStore.changeHistoryListByDatabase(
+    changeHistoryParent.value
+  );
 
-onMounted(() => {
-  legacyInstanceStore.fetchMigrationHistory({
-    instanceId: Number(database.value.instanceEntity.uid),
-    databaseName: database.value.databaseName,
-  });
-});
-
-// get all migration histories before (include) the one of given id, ordered by descending version.
-const prevMigrationHistoryList = computed((): MigrationHistory[] => {
-  const migrationHistoryList =
-    legacyInstanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
-      Number(database.value.instanceEntity.uid),
-      database.value.databaseName
-    );
-
-  // If migrationHistoryList does not contain current migration, it indicates cache stale.
-  // Dispatch a fetch. When new data is returned, it will update computed value.
-  if (migrationHistoryList.every((mh) => mh.id !== migrationHistoryId)) {
-    legacyInstanceStore.fetchInstanceList();
-  }
-
-  // The returned migration history list has been ordered by `id` DESC or (`namespace` ASC, `sequence` DESC) .
-  // We can obtain prevMigrationHistoryList by cutting up the array by the `migrationHistoryId`.
-  const idx = migrationHistoryList.findIndex(
-    (mh) => mh.id === migrationHistoryId
+  // The returned change history list has been ordered by `id` DESC or (`namespace` ASC, `sequence` DESC) .
+  // We can obtain prevChangeHistoryList by cutting up the array by the `changeHistoryId`.
+  const idx = changeHistoryList.findIndex(
+    (history) => history.uid === changeHistoryUID.value
   );
   if (idx === -1) {
     return [];
   }
-  return migrationHistoryList.slice(idx);
+  return changeHistoryList.slice(idx);
 });
 
-// migrationHistory is the latest migration NOW.
-const migrationHistory = computed((): MigrationHistory => {
-  if (prevMigrationHistoryList.value.length > 0) {
-    return prevMigrationHistoryList.value[0];
+// changeHistory is the latest migration NOW.
+const changeHistory = computed((): ChangeHistory | undefined => {
+  if (prevChangeHistoryList.value.length > 0) {
+    return prevChangeHistoryList.value[0];
   }
-  return legacyInstanceStore.getMigrationHistoryById(migrationHistoryId)!;
+  return changeHistoryStore.getChangeHistoryByName(changeHistoryName.value)!;
 });
 
-// previousHistory is the last migration history before the one of given id.
+// previousHistory is the last change history before the one of given id.
 // Only referenced if hasDrift is true.
-const previousHistory = computed((): MigrationHistory | undefined => {
-  return prevMigrationHistoryList.value[1];
+const previousHistory = computed((): ChangeHistory | undefined => {
+  return prevChangeHistoryList.value[1];
 });
 
 // "Show diff" feature is enabled when current migration has changed the schema.
 const allowShowDiff = computed((): boolean => {
-  return migrationHistory.value.schema !== migrationHistory.value.schemaPrev;
+  if (!changeHistory.value) {
+    return false;
+  }
+  return changeHistory.value.schema !== changeHistory.value.prevSchema;
 });
 
 // A schema drift is detected when the schema AFTER previousHistory has been
-// changed unexpectedly BEFORE current migrationHistory.
+// changed unexpectedly BEFORE current changeHistory.
 const hasDrift = computed((): boolean => {
-  if (migrationHistory.value.type === "BASELINE") {
+  if (!changeHistory.value) {
+    return false;
+  }
+  if (changeHistory.value.type === ChangeHistory_Type.BASELINE) {
     return false;
   }
 
   return (
-    prevMigrationHistoryList.value.length > 1 && // no drift if no previous migration history
-    previousHistory.value?.schema !== migrationHistory.value.schemaPrev
+    prevChangeHistoryList.value.length > 1 && // no drift if no previous change history
+    previousHistory.value?.schema !== changeHistory.value.prevSchema
   );
+});
+
+const creator = computed(() => {
+  if (!changeHistory.value) {
+    return undefined;
+  }
+  const email = extractUserResourceName(changeHistory.value.creator);
+  return useUserStore().getUserByEmail(email);
 });
 
 const state = reactive<LocalState>({
@@ -358,22 +378,31 @@ const state = reactive<LocalState>({
 const previousHistoryLink = computed(() => {
   const previous = previousHistory.value;
   if (!previous) return "";
-  return `/db/${props.databaseSlug}/history/${migrationHistorySlug(
-    previous.id,
-    previous.version
-  )}`;
+  return changeHistoryLink(previous);
 });
 
-const pushEvent = computed((): VCSPushEvent | undefined => {
-  return (migrationHistory.value.payload as MigrationHistoryPayload)?.pushEvent;
+const pushEvent = computed((): PushEvent | undefined => {
+  return changeHistory.value?.pushEvent;
+});
+
+const vcsCommit = computed(() => {
+  const fileCommit = pushEvent.value?.fileCommit;
+  if (fileCommit && fileCommit.id) {
+    return fileCommit;
+  }
+  const commit = pushEvent.value?.commits[0];
+  if (commit && commit.id) {
+    return commit;
+  }
+  return undefined;
 });
 
 const vcsBranch = computed((): string => {
   if (pushEvent.value) {
     if (
-      pushEvent.value.vcsType == "GITLAB" ||
-      pushEvent.value.vcsType == "GITHUB" ||
-      pushEvent.value.vcsType == "BITBUCKET"
+      pushEvent.value.vcsType === VcsType.GITLAB ||
+      pushEvent.value.vcsType === VcsType.GITHUB ||
+      pushEvent.value.vcsType === VcsType.BITBUCKET
     ) {
       const parts = pushEvent.value.ref.split("/");
       return parts[parts.length - 1];
@@ -384,11 +413,11 @@ const vcsBranch = computed((): string => {
 
 const vcsBranchUrl = computed((): string => {
   if (pushEvent.value) {
-    if (pushEvent.value.vcsType == "GITLAB") {
+    if (pushEvent.value.vcsType === VcsType.GITLAB) {
       return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
-    } else if (pushEvent.value.vcsType == "GITHUB") {
+    } else if (pushEvent.value.vcsType === VcsType.GITHUB) {
       return `${pushEvent.value.repositoryUrl}/tree/${vcsBranch.value}`;
-    } else if (pushEvent.value.vcsType == "BITBUCKET") {
+    } else if (pushEvent.value.vcsType === VcsType.BITBUCKET) {
       return `${pushEvent.value.repositoryUrl}/src/${vcsBranch.value}`;
     }
   }
@@ -396,7 +425,10 @@ const vcsBranchUrl = computed((): string => {
 });
 
 const copyStatement = () => {
-  toClipboard(migrationHistory.value.statement).then(() => {
+  if (!changeHistory.value) {
+    return false;
+  }
+  toClipboard(changeHistory.value.statement).then(() => {
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -406,7 +438,10 @@ const copyStatement = () => {
 };
 
 const copySchema = () => {
-  toClipboard(migrationHistory.value.schema).then(() => {
+  if (!changeHistory.value) {
+    return false;
+  }
+  toClipboard(changeHistory.value.schema).then(() => {
     pushNotification({
       module: "bytebase",
       style: "INFO",

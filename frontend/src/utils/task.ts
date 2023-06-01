@@ -16,7 +16,6 @@ import {
   TaskDatabaseSchemaUpdateSDLPayload,
   TaskStatus,
   TaskType,
-  unknown,
   unknownDatabase,
 } from "@/types";
 import { issueSlug, stageSlug, taskSlug } from "./slug";
@@ -70,7 +69,7 @@ export const extractDatabaseNameFromTask = (
   }
 
   // Fallback to <<Unknown database>>. Won't be happy to see it.
-  return unknown("DATABASE").name;
+  return unknownDatabase().databaseName;
 };
 
 export const buildIssueLinkWithTask = (
