@@ -324,8 +324,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	if singleSQL.Empty {
 		return nil, nil
 	}
-	statement := singleSQL.Text
-
+	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
 		var err error
 		statement, err = driver.getStatementWithResultLimit(statement, queryContext.Limit)
