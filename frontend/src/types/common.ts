@@ -13,7 +13,6 @@ import { Issue } from "./issue";
 import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
-import { Repository } from "./repository";
 import { VCS } from "./vcs";
 import { SQLReviewPolicy } from "./sqlReview";
 import { AuditLog, AuditActivityType, AuditActivityLevel } from "./auditLog";
@@ -80,34 +79,6 @@ export type Command = {
   run: () => void;
 };
 
-export type EnvironmentQuickActionType =
-  | "quickaction.bb.environment.create"
-  | "quickaction.bb.environment.reorder";
-export type ProjectQuickActionType =
-  | "quickaction.bb.project.create"
-  | "quickaction.bb.project.database.transfer"
-  | "quickaction.bb.project.database.transfer-out";
-export type InstanceQuickActionType = "quickaction.bb.instance.create";
-export type UserQuickActionType = "quickaction.bb.user.manage";
-export type DatabaseQuickActionType =
-  | "quickaction.bb.database.create" // Used by DBA and Owner
-  | "quickaction.bb.database.request" // Used by Developer
-  | "quickaction.bb.database.schema.update"
-  | "quickaction.bb.database.data.update"
-  | "quickaction.bb.database.troubleshoot"
-  | "quickaction.bb.database.schema.sync";
-export type IssueQuickActionType =
-  | "quickaction.bb.issue.grant.request.querier"
-  | "quickaction.bb.issue.grant.request.exporter";
-
-export type QuickActionType =
-  | EnvironmentQuickActionType
-  | ProjectQuickActionType
-  | InstanceQuickActionType
-  | UserQuickActionType
-  | DatabaseQuickActionType
-  | IssueQuickActionType;
-
 export type ResourceType =
   | "PRINCIPAL"
   | "ENVIRONMENT"
@@ -152,7 +123,6 @@ interface ResourceMaker {
   (type: "INBOX"): Inbox;
   (type: "BOOKMARK"): Bookmark;
   (type: "VCS"): VCS;
-  (type: "REPOSITORY"): Repository;
   (type: "ANOMALY"): Anomaly;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
   (type: "AUDIT_LOG"): AuditLog;
@@ -363,23 +333,6 @@ const makeUnknown = (type: ResourceType) => {
     secret: "",
   };
 
-  const UNKNOWN_REPOSITORY: Repository = {
-    id: UNKNOWN_ID,
-    vcs: UNKNOWN_VCS,
-    project: UNKNOWN_PROJECT,
-    name: "",
-    fullPath: "",
-    webUrl: "",
-    baseDirectory: "",
-    branchFilter: "",
-    filePathTemplate: "",
-    schemaPathTemplate: "",
-    sheetPathTemplate: "",
-    enableSQLReviewCI: false,
-    sqlReviewCIPullRequestURL: "",
-    externalId: UNKNOWN_ID.toString(),
-  };
-
   const UNKNOWN_ANOMALY: Anomaly = {
     id: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
@@ -434,12 +387,11 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_BOOKMARK;
     case "VCS":
       return UNKNOWN_VCS;
-    case "REPOSITORY":
-      return UNKNOWN_REPOSITORY;
     case "ANOMALY":
       return UNKNOWN_ANOMALY;
   }
 };
+
 export const unknown = makeUnknown as ResourceMaker;
 
 const makeEmpty = (type: ResourceType) => {
@@ -647,23 +599,6 @@ const makeEmpty = (type: ResourceType) => {
     secret: "",
   };
 
-  const EMPTY_REPOSITORY: Repository = {
-    id: EMPTY_ID,
-    vcs: EMPTY_VCS,
-    project: EMPTY_PROJECT,
-    name: "",
-    fullPath: "",
-    webUrl: "",
-    baseDirectory: "",
-    branchFilter: "",
-    filePathTemplate: "",
-    schemaPathTemplate: "",
-    sheetPathTemplate: "",
-    enableSQLReviewCI: false,
-    sqlReviewCIPullRequestURL: "",
-    externalId: EMPTY_ID.toString(),
-  };
-
   const EMPTY_ANOMALY: Anomaly = {
     id: EMPTY_ID,
     creator: EMPTY_PRINCIPAL,
@@ -727,12 +662,11 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_BOOKMARK;
     case "VCS":
       return EMPTY_VCS;
-    case "REPOSITORY":
-      return EMPTY_REPOSITORY;
     case "ANOMALY":
       return EMPTY_ANOMALY;
     case "AUDIT_LOG":
       return EMPTY_AUDIT_LOG;
   }
 };
+
 export const empty = makeEmpty as ResourceMaker;

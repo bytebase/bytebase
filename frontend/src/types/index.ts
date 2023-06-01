@@ -48,5 +48,6 @@ export * from "./workspaceApprovalSetting";
 export * from "./review";
 export * from "./slowQuery";
 export * from "./dbGroup";
+export * from "./quickAction";
 
 export * from "./v1";
