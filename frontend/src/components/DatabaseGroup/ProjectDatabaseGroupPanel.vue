@@ -3,7 +3,6 @@
     <div class="w-full flex flex-row justify-between items-center">
       <span>Database groups</span>
       <div class="flex flex-row gap-x-2">
-        <NButton @click="handleCreateSchemaGroup">New table group</NButton>
         <NButton @click="handleCreateDatabaseGroup">New database group</NButton>
       </div>
     </div>
@@ -67,12 +66,6 @@ const handleCreateDatabaseGroup = () => {
 
 const handleConfigureDatabaseGroup = (databaseGroup: DatabaseGroup) => {
   state.editingDatabaseGroup = cloneDeep(databaseGroup);
-  state.showDatabaseGroupPanel = true;
-};
-
-const handleCreateSchemaGroup = () => {
-  state.resourceType = "SCHEMA_GROUP";
-  state.editingDatabaseGroup = undefined;
   state.showDatabaseGroupPanel = true;
 };
 </script>

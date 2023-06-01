@@ -11,7 +11,7 @@
       <div class="bb-grid-cell">
         {{ item.resourceId }}
       </div>
-      <div class="bb-grid-cell gap-x-2">
+      <div class="bb-grid-cell gap-x-2 justify-end">
         <NButton size="small" @click.stop="$emit('edit', item.schemaGroup)"
           >Configure</NButton
         >

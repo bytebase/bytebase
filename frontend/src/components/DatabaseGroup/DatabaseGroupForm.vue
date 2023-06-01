@@ -39,6 +39,7 @@
         <DatabaseGroupSelect
           :disabled="!isCreating"
           :project-id="project.name"
+          :environment-id="state.environmentId || ''"
           :selected-id="state.selectedDatabaseGroupId"
           @select-database-group-id="
             (id) => {
@@ -69,7 +70,7 @@
           v-if="resourceType === 'SCHEMA_GROUP'"
           :project="project"
           :schema-group="databaseGroup as SchemaGroup"
-          :database-group-name="state.selectedDatabaseGroupId || ''"
+          :database-group-name="selectedDatabaseGroupName || ''"
           :expr="state.expr"
         />
       </div>
@@ -127,6 +128,12 @@ const state = reactive<LocalState>({
   expr: wrapAsGroup(resolveCELExpr(CELExpr.fromJSON({}))),
 });
 const resourceIdInput = ref<InstanceType<typeof ResourceIdInput>>();
+const selectedDatabaseGroupName = computed(() => {
+  const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
+    state.selectedDatabaseGroupId || ""
+  );
+  return databaseGroupName;
+});
 
 const isCreating = computed(() => props.databaseGroup === undefined);
 
