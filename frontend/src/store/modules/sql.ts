@@ -12,6 +12,7 @@ import {
   Attributes,
 } from "@/types";
 import { useLegacyDatabaseStore } from "./database";
+import { useDatabaseV1Store } from "./v1";
 
 export function convertSingleSQLResult(
   attributes: Attributes
@@ -46,7 +47,7 @@ export function convert(resultSet: ResourceObject): SQLResultSet {
   };
 }
 
-export const useSQLStore = defineStore("sql", {
+export const useLegacySQLStore = defineStore("legacy_sql", {
   actions: {
     convert(resultSet: ResourceObject): SQLResultSet {
       return convert(resultSet);
@@ -99,8 +100,7 @@ export const useSQLStore = defineStore("sql", {
       const resultSet = convert(res.data);
       if (!resultSet.error) {
         // Refresh the corresponding list.
-        // Legacy compatibility
-        useLegacyDatabaseStore().fetchDatabaseById(databaseId);
+        useDatabaseV1Store().fetchDatabaseByUID(String(databaseId));
       }
 
       return resultSet;

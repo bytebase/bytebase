@@ -1,7 +1,7 @@
 <template>
-  <ResultView
+  <ResultViewV1
     class="w-full h-full"
-    :result-set="queryResult"
+    :result-set="resultSet"
     :loading="loading"
   />
 </template>
@@ -9,11 +9,11 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 
-import { ResultView } from "../EditorCommon/";
+import { ResultViewV1 } from "../EditorCommon/";
 import { useTabStore } from "@/store";
 
 const tabStore = useTabStore();
 
-const queryResult = computed(() => tabStore.currentTab.queryResult);
+const resultSet = computed(() => tabStore.currentTab.sqlResultSet);
 const loading = computed(() => tabStore.currentTab.isExecutingSQL);
 </script>

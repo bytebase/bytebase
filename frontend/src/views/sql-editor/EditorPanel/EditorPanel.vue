@@ -62,14 +62,14 @@ const sheetBacktracePayload = computed(() => {
   return getSheetIssueBacktracePayloadV1(sheet);
 });
 
-const { execute } = useExecuteSQL();
+const { executeReadonly } = useExecuteSQL();
 
 const handleExecute = (
   query: string,
   config: ExecuteConfig,
   option?: ExecuteOption
 ) => {
-  execute(query, config, option);
+  executeReadonly(query, config, option);
 };
 
 const trySaveSheet = (sheetName?: string) => {
