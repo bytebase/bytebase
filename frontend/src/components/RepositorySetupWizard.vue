@@ -40,9 +40,7 @@
         <RepositoryConfigPanel
           :config="state.config"
           :project="project"
-          @change-schema-change-type="
-            (type: SchemaChange) => (state.config.schemaChangeType = type)
-          "
+          @change-schema-change-type="setSchemaChangeType"
         />
       </template>
     </BBStepTab>
@@ -387,5 +385,9 @@ const setVCS = (vcs: VCS) => {
 
 const setRepository = (repository: ExternalRepositoryInfo) => {
   state.config.repositoryInfo = repository;
+};
+
+const setSchemaChangeType = (schemaChange: SchemaChange) => {
+  state.config.schemaChangeType = schemaChange;
 };
 </script>
