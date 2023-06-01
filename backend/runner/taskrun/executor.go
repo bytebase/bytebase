@@ -26,6 +26,8 @@ import (
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -121,14 +123,9 @@ func preMigration(ctx context.Context, stores *store.Store, profile config.Profi
 	} else {
 		mi.Source = db.VCS
 		mi.Creator = vcsPushEvent.AuthorName
-		miPayload := &db.MigrationInfoPayload{
-			VCSPushEvent: vcsPushEvent,
+		mi.Payload = &storepb.InstanceChangeHistoryPayload{
+			PushEvent: utils.ConvertVcsPushEvent(vcsPushEvent),
 		}
-		bytes, err := json.Marshal(miPayload)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to prepare for database migration, unable to marshal vcs push event payload")
-		}
-		mi.Payload = string(bytes)
 	}
 
 	statement = strings.TrimSpace(statement)
