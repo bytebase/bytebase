@@ -5,7 +5,7 @@
     exact-active-class=""
     @click.prevent="noop"
   >
-    <heroicons-solid:sparkles class="w-5 h-5" />
+    <heroicons-solid:sparkles class="text-accent w-5 h-5" />
   </router-link>
 </template>
 
