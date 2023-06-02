@@ -1,17 +1,14 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/casbin/casbin/v2"
-	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 
 	"github.com/labstack/echo/v4"
@@ -138,20 +135,6 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, projectRolesFinder)
 			} else if strings.HasPrefix(path, "/sheet") {
 				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, projectRolesFinder, sheetFinder)
-			} else if strings.HasPrefix(path, "/database") {
-				// We need to copy the body because it will be consumed by the next middleware.
-				// And TeeReader require us the write must complete before the read completes.
-				// The body under the /issue route is a JSON object, and always not too large, so using ioutil.ReadAll is fine here.
-				bodyBytes, err := io.ReadAll(c.Request().Body)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read request body.").SetInternal(err)
-				}
-				if err := c.Request().Body.Close(); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to close request body.").SetInternal(err)
-				}
-				c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-				aclErr = enforceWorkspaceDeveloperDatabaseRouteACL(s.licenseService.GetEffectivePlan(), path, method, string(bodyBytes), principalID, getRetrieveDatabaseProjectID(ctx, s.store), projectRolesFinder)
 			}
 			if aclErr != nil {
 				return aclErr
@@ -204,63 +187,6 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 		}
 	}
 
-	return nil
-}
-
-var databaseGeneralRouteRegex = regexp.MustCompile(`^/database/(?P<databaseID>\d+)$`)
-
-func enforceWorkspaceDeveloperDatabaseRouteACL(plan api.PlanType, path string, method string, body string, principalID int, projectIDOfDatabase func(databaseID int) (int, error), projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error)) *echo.HTTPError {
-	switch method {
-	case http.MethodGet:
-	case http.MethodPatch:
-		// PATCH /database/xxx
-		if matches := databaseGeneralRouteRegex.FindStringSubmatch(path); len(matches) > 0 {
-			databaseID := matches[1]
-			databaseIDInt, err := strconv.Atoi(databaseID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid database id").SetInternal(err)
-			}
-			oldProjectID, err := projectIDOfDatabase(databaseIDInt)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project id for database %d", databaseIDInt)).SetInternal(err)
-			}
-			oldProjectRoles, err := projectRolesFinder(oldProjectID, principalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", oldProjectID)).SetInternal(err)
-			}
-			if plan == api.ENTERPRISE {
-				if _, ok := oldProjectRoles[common.ProjectOwner]; !ok {
-					return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("user is not project owner of project owns the database %d", databaseIDInt))
-				}
-			} else {
-				if len(oldProjectRoles) == 0 {
-					return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("user is not a project member of project owns the database %d", databaseIDInt))
-				}
-			}
-
-			// Workspace developer can only modify the database belongs to the project which he is a member of.
-			var databasePatch api.DatabasePatch
-			if err := jsonapi.UnmarshalPayload(strings.NewReader(body), &databasePatch); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch database request").SetInternal(err)
-			}
-			// Workspace developer cannot transfer the project to the project that he is not a member of.
-			if databasePatch.ProjectID != nil {
-				newProjectRoles, err := projectRolesFinder(*databasePatch.ProjectID, principalID)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Cannot find project member ids for project %d", *databasePatch.ProjectID)).SetInternal(err)
-				}
-				if plan == api.ENTERPRISE {
-					if _, ok := newProjectRoles[common.ProjectOwner]; !ok {
-						return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("user is not project owner of project want owns the database %d", databaseIDInt))
-					}
-				} else {
-					if len(newProjectRoles) == 0 {
-						return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("user is not a project member of project want to owns the database %d", databaseIDInt))
-					}
-				}
-			}
-		}
-	}
 	return nil
 }
 
@@ -342,30 +268,6 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 	}
 
 	return nil
-}
-
-func getRetrieveDatabaseProjectID(ctx context.Context, s *store.Store) func(databaseID int) (int, error) {
-	return func(databaseID int) (int, error) {
-		db, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			UID: &databaseID,
-		})
-		if err != nil {
-			return 0, err
-		}
-		if db == nil {
-			return 0, errors.Errorf("cannot find database %d", databaseID)
-		}
-		project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &db.ProjectID,
-		})
-		if err != nil {
-			return 0, err
-		}
-		if project == nil {
-			return 0, errors.Errorf("cannot find project %s", db.ProjectID)
-		}
-		return project.UID, nil
-	}
 }
 
 func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int, method string, path string) (bool, error) {

@@ -62,16 +62,6 @@ func (find *DatabaseFind) String() string {
 	return string(str)
 }
 
-// DatabasePatch is the API message for patching a database.
-type DatabasePatch struct {
-	// Related fields
-	ProjectID *int `jsonapi:"attr,projectId"`
-
-	// Labels is a json-encoded string from a list of DatabaseLabel,
-	// e.g. "[{"key":"bb.location","value":"earth"},{"key":"bb.tenant","value":"bytebase"}]".
-	Labels *string `jsonapi:"attr,labels"`
-}
-
 // DatabaseEdit is the API message for updating a database in UI editor.
 type DatabaseEdit struct {
 	DatabaseID int `json:"databaseId"`
