@@ -112,7 +112,9 @@ const handleResourceIdChange = async (newValue: string) => {
   // custom validation for resource id. (e.g. check if the resource id is already used)
   if (state.validatedMessages.length === 0 && props.validate) {
     const messages = await props.validate(state.resourceId);
-    state.validatedMessages.push(...messages);
+    if (Array.isArray(messages)) {
+      state.validatedMessages.push(...messages);
+    }
   }
 };
 

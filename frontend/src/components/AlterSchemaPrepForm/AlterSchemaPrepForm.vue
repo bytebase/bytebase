@@ -46,7 +46,7 @@
                   >
                     <div class="flex flex-row items-center">
                       <span class="mr-1">{{ $t("database-group.self") }}</span>
-                      <FeatureBadge feature="bb.feature.sharding" />
+                      <FeatureBadge feature="bb.feature.database-grouping" />
                     </div>
                   </NRadio>
                 </div>
@@ -180,7 +180,7 @@
               >
                 <div class="flex flex-row items-center">
                   <span class="mr-1">{{ $t("database-group.self") }}</span>
-                  <FeatureBadge feature="bb.feature.sharding" />
+                  <FeatureBadge feature="bb.feature.database-grouping" />
                 </div>
               </NRadio>
             </div>
@@ -689,9 +689,9 @@ const toggleDatabaseSelection = (database: ComposedDatabase, on: boolean) => {
 };
 
 const handleDatabaseGroupTabSelect = () => {
-  if (!hasFeature("bb.feature.sharding")) {
+  if (!hasFeature("bb.feature.database-grouping")) {
     state.databaseSelectedTab = "DATABASE";
-    featureModalContext.value.feature = "bb.feature.sharding";
+    featureModalContext.value.feature = "bb.feature.database-grouping";
     return;
   }
   state.databaseSelectedTab = "DATABASE_GROUP";

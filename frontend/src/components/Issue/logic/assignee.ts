@@ -31,7 +31,6 @@ import { User } from "@/types/proto/v1/auth_service";
 export const useCurrentRollOutPolicyForActiveEnvironment = () => {
   const { create, issue, activeStageOfPipeline } = useIssueLogic();
 
-  // TODO(steven): figure out how to handle this for grant request issues.
   if (!isDatabaseRelatedIssueType(issue.value.type)) {
     return computed(() => ({
       policy: ApprovalStrategy.MANUAL,

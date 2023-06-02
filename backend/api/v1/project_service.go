@@ -1309,8 +1309,8 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 
 // CreateDatabaseGroup creates a database group.
 func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
 	}
 	projectResourceID, err := getProjectID(request.Parent)
 	if err != nil {
@@ -1359,8 +1359,8 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 
 // UpdateDatabaseGroup updates a database group.
 func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.UpdateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
 	}
 	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
 	if err != nil {
@@ -1546,8 +1546,8 @@ func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.Get
 
 // CreateSchemaGroup creates a database group.
 func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.CreateSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
 	}
 	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Parent)
 	if err != nil {
@@ -1605,8 +1605,8 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 
 // UpdateSchemaGroup updates a schema group.
 func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.UpdateSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
-	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
-		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
 	}
 	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.SchemaGroup.Name)
 	if err != nil {
