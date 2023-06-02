@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SQLService_Pretty_FullMethodName = "/bytebase.v1.SQLService/Pretty"
-	SQLService_Query_FullMethodName  = "/bytebase.v1.SQLService/Query"
-	SQLService_Export_FullMethodName = "/bytebase.v1.SQLService/Export"
+	SQLService_Pretty_FullMethodName       = "/bytebase.v1.SQLService/Pretty"
+	SQLService_Query_FullMethodName        = "/bytebase.v1.SQLService/Query"
+	SQLService_Export_FullMethodName       = "/bytebase.v1.SQLService/Export"
+	SQLService_AdminExecute_FullMethodName = "/bytebase.v1.SQLService/AdminExecute"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -31,6 +32,7 @@ type SQLServiceClient interface {
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
+	AdminExecute(ctx context.Context, in *AdminExecuteRequest, opts ...grpc.CallOption) (*AdminExecuteResponse, error)
 }
 
 type sQLServiceClient struct {
@@ -68,6 +70,15 @@ func (c *sQLServiceClient) Export(ctx context.Context, in *ExportRequest, opts .
 	return out, nil
 }
 
+func (c *sQLServiceClient) AdminExecute(ctx context.Context, in *AdminExecuteRequest, opts ...grpc.CallOption) (*AdminExecuteResponse, error) {
+	out := new(AdminExecuteResponse)
+	err := c.cc.Invoke(ctx, SQLService_AdminExecute_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility
@@ -75,6 +86,7 @@ type SQLServiceServer interface {
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
+	AdminExecute(context.Context, *AdminExecuteRequest) (*AdminExecuteResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -90,6 +102,9 @@ func (UnimplementedSQLServiceServer) Query(context.Context, *QueryRequest) (*Que
 }
 func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
+}
+func (UnimplementedSQLServiceServer) AdminExecute(context.Context, *AdminExecuteRequest) (*AdminExecuteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminExecute not implemented")
 }
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 
@@ -158,6 +173,24 @@ func _SQLService_Export_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SQLService_AdminExecute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminExecuteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).AdminExecute(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_AdminExecute_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).AdminExecute(ctx, req.(*AdminExecuteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -176,6 +209,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Export",
 			Handler:    _SQLService_Export_Handler,
+		},
+		{
+			MethodName: "AdminExecute",
+			Handler:    _SQLService_AdminExecute_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
