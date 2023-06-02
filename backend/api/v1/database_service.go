@@ -448,8 +448,8 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 	return convertToBackupSetting(backupSetting, instance.ResourceID, database.DatabaseName)
 }
 
-// ListBackup lists the backups of a database.
-func (s *DatabaseService) ListBackup(ctx context.Context, request *v1pb.ListBackupRequest) (*v1pb.ListBackupResponse, error) {
+// ListBackups lists the backups of a database.
+func (s *DatabaseService) ListBackups(ctx context.Context, request *v1pb.ListBackupsRequest) (*v1pb.ListBackupsResponse, error) {
 	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -487,7 +487,7 @@ func (s *DatabaseService) ListBackup(ctx context.Context, request *v1pb.ListBack
 	for _, existedBackup := range existedBackupList {
 		backupList = append(backupList, convertToBackup(existedBackup, instance.ResourceID, database.DatabaseName))
 	}
-	return &v1pb.ListBackupResponse{
+	return &v1pb.ListBackupsResponse{
 		Backups: backupList,
 	}, nil
 }
