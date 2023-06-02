@@ -17,7 +17,6 @@ import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
 import SheetDashboardLayout from "@/layouts/SheetDashboardLayout.vue";
 import { t } from "@/plugins/i18n";
 import {
-  Database,
   DEFAULT_PROJECT_ID,
   DEFAULT_PROJECT_V1_NAME,
   QuickActionType,
@@ -29,8 +28,8 @@ import {
   hasWorkspacePermissionV1,
   idFromSlug,
   sheetNameFromSlug,
-  migrationHistoryIdFromSlug,
   isOwnerOfProjectV1,
+  extractChangeHistoryUID,
 } from "@/utils";
 import Signin from "@/views/auth/Signin.vue";
 import Signup from "@/views/auth/Signup.vue";
@@ -39,14 +38,13 @@ import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import Home from "@/views/Home.vue";
 import {
   hasFeature,
-  useVCSStore,
+  useVCSV1Store,
   useDataSourceStore,
   useSQLReviewStore,
   useLegacyProjectStore,
   useSheetV1Store,
   useAuthStore,
   useActuatorV1Store,
-  useLegacyDatabaseStore,
   useLegacyInstanceStore,
   useRouterStore,
   useDBSchemaStore,
@@ -61,6 +59,7 @@ import {
   useCurrentUserV1,
   useInstanceV1Store,
   useDatabaseV1Store,
+  useChangeHistoryStore,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
 import { State } from "@/types/proto/v1/common";
@@ -472,7 +471,9 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.vcsSlug as string;
-                    return useVCSStore().getVCSById(idFromSlug(slug)).name;
+                    return (
+                      useVCSV1Store().getVCSByUid(idFromSlug(slug))?.title ?? ""
+                    );
                   },
                 },
                 component: () =>
@@ -877,26 +878,29 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import("../views/TableDetail.vue"),
                 props: true,
               },
-              {
-                path: "history/:migrationHistorySlug",
-                name: "workspace.database.history.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.migrationHistorySlug as string;
-                    const migrationHistory =
-                      useLegacyInstanceStore().getMigrationHistoryById(
-                        migrationHistoryIdFromSlug(slug)
-                      );
-                    return migrationHistory?.version ?? "";
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/MigrationHistoryDetail.vue"),
-                props: (to) => ({
-                  key: to.fullPath, // force refresh the component when slug changed
-                }),
-              },
             ],
+          },
+          {
+            path: "instances/:instance/databases/:database/changeHistories/:changeHistorySlug",
+            name: "workspace.database.history.detail",
+            meta: {
+              title: (route) => {
+                const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
+                const uid = extractChangeHistoryUID(
+                  route.params.changeHistorySlug as string
+                );
+                const name = `${parent}/changeHistories/${uid}`;
+                const history =
+                  useChangeHistoryStore().getChangeHistoryByName(name);
+
+                return history?.version ?? "";
+              },
+            },
+            components: {
+              content: () => import("../views/ChangeHistoryDetail.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true, leftSidebar: true },
           },
           {
             path: "instance/:instanceSlug",
@@ -1052,7 +1056,6 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
   const authStore = useAuthStore();
-  const databaseStore = useLegacyDatabaseStore();
   const dbSchemaStore = useDBSchemaStore();
   const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
@@ -1324,6 +1327,28 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
+  if (to.name === "workspace.database.history.detail") {
+    const parent = `instances/${to.params.instance}/databases/${to.params.database}`;
+    const uid = extractChangeHistoryUID(to.params.changeHistorySlug as string);
+    Promise.all([
+      useDatabaseV1Store().getOrFetchDatabaseByName(parent),
+      useChangeHistoryStore().fetchChangeHistory({
+        name: `${parent}/changeHistories/${uid}`,
+      }),
+    ])
+      .then(() => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
+    return;
+  }
+
   const routerSlug = routerStore.routeSlug(to);
   const principalId = routerSlug.principalId;
   const environmentSlug = routerSlug.environmentSlug;
@@ -1333,7 +1358,6 @@ router.beforeEach((to, from, next) => {
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
   const dataSourceSlug = routerSlug.dataSourceSlug;
-  const migrationHistorySlug = routerSlug.migrationHistorySlug;
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
@@ -1427,35 +1451,17 @@ router.beforeEach((to, from, next) => {
     }
     useDatabaseV1Store()
       .fetchDatabaseByUID(String(idFromSlug(databaseSlug)))
-      .then(() => databaseStore.fetchDatabaseById(idFromSlug(databaseSlug)))
-      .then((database: Database) => {
+      .then((database) => {
         dbSchemaStore
-          .getOrFetchDatabaseMetadataById(database.id, true)
+          .getOrFetchDatabaseMetadataById(Number(database.uid), true)
           .then(() => {
-            if (!dataSourceSlug && !migrationHistorySlug) {
+            if (!dataSourceSlug) {
               next();
             } else if (dataSourceSlug) {
               useDataSourceStore()
                 .fetchDataSourceById({
                   dataSourceId: idFromSlug(dataSourceSlug),
-                  databaseId: database.id,
-                })
-                .then(() => {
-                  next();
-                })
-                .catch((error) => {
-                  next({
-                    name: "error.404",
-                    replace: false,
-                  });
-                  throw error;
-                });
-            } else if (migrationHistorySlug) {
-              instanceStore
-                .fetchMigrationHistoryById({
-                  instanceId: database.instance.id,
-                  migrationHistoryId:
-                    migrationHistoryIdFromSlug(migrationHistorySlug),
+                  databaseId: Number(database.uid),
                 })
                 .then(() => {
                   next();
@@ -1481,13 +1487,9 @@ router.beforeEach((to, from, next) => {
   }
 
   if (instanceSlug) {
-    instanceStore
-      .fetchInstanceById(idFromSlug(instanceSlug))
-      .then(() =>
-        useInstanceV1Store().getOrFetchInstanceByUID(
-          String(idFromSlug(instanceSlug))
-        )
-      )
+    instanceStore;
+    useInstanceV1Store()
+      .getOrFetchInstanceByUID(String(idFromSlug(instanceSlug)))
       .then(() => {
         next();
       })
@@ -1502,8 +1504,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (vcsSlug) {
-    useVCSStore()
-      .fetchVCSById(idFromSlug(vcsSlug))
+    useVCSV1Store()
+      .fetchVCSByUid(idFromSlug(vcsSlug))
       .then(() => {
         next();
       })

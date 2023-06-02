@@ -148,3 +148,9 @@ export const getSheetPathByLegacyProject = (
 export const getProjectPathFromRepoName = (repoName: string): string => {
   return repoName.split("/gitOpsInfo")[0];
 };
+
+export const getVCSUid = (name: string): number => {
+  const tokens = getNameParentTokens(name, [externalVersionControlPrefix]);
+  const vcsUid = Number(tokens[0] || UNKNOWN_ID);
+  return vcsUid;
+};

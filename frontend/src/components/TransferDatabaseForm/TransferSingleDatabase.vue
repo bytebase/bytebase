@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, watchEffect } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 
@@ -163,6 +163,4 @@ watch(targetProject, (tar) => {
 watch(sourceProject, (src) => {
   targetProject.value = src;
 });
-
-watchEffect(() => console.log(JSON.stringify(editingLabels.value)));
 </script>

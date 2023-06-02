@@ -1,4 +1,7 @@
-import { VCSType } from ".";
+import {
+  ExternalVersionControl_Type,
+  externalVersionControl_TypeToJSON,
+} from "@/types/proto/v1/externalvs_service";
 
 export type OAuthConfig = {
   endpoint: string;
@@ -37,13 +40,15 @@ export function openWindowForOAuth(
   endpoint: string,
   applicationId: string,
   type: OAuthType,
-  vcsType: VCSType
+  vcsType: ExternalVersionControl_Type
 ): Window | null {
   // we use type to determine oauth type when receiving the callback
-  const stateQueryParameter = `${type}.${vcsType}-${applicationId}`;
+  const stateQueryParameter = `${type}.${externalVersionControl_TypeToJSON(
+    vcsType
+  )}-${applicationId}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
-  if (vcsType == "GITHUB") {
+  if (vcsType == ExternalVersionControl_Type.GITHUB) {
     // GitHub OAuth App scopes: https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps
     // We need the workflow scope to update GitHub action files.
     return window.open(
@@ -53,7 +58,7 @@ export function openWindowForOAuth(
       "oauth",
       "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
     );
-  } else if (vcsType == "BITBUCKET") {
+  } else if (vcsType == ExternalVersionControl_Type.BITBUCKET) {
     // Bitbucket OAuth App scopes: https://developer.atlassian.com/cloud/bitbucket/rest/intro/#authentication
     return window.open(
       `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(

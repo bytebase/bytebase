@@ -12,11 +12,11 @@
     />
     <ProjectDatabasesPanel v-else :database-list="databaseV1List" />
   </template>
-  <template v-if="isDev && hash === 'database-groups'">
+  <template v-if="hash === 'database-groups'">
     <ProjectDatabaseGroupPanel :project="projectV1" />
   </template>
   <template v-if="hash === 'change-history'">
-    <ProjectMigrationHistoryPanel
+    <ProjectChangeHistoryPanel
       id="change-history"
       :database-list="databaseV1List"
     />
@@ -57,13 +57,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import { DEFAULT_PROJECT_ID } from "@/types";
 import { idFromSlug, sortDatabaseV1List } from "../utils";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
-import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
+import ProjectChangeHistoryPanel from "../components/ProjectChangeHistoryPanel.vue";
 import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
 import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
 import ProjectDatabasesPanel from "../components/ProjectDatabasesPanel.vue";
@@ -72,7 +72,6 @@ import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import {
-  useLegacyDatabaseStore,
   useSearchDatabaseV1List,
   useDatabaseV1Store,
   useLegacyProjectStore,
@@ -97,7 +96,6 @@ const props = defineProps({
 });
 
 const route = useRoute();
-const legacyDatabaseStore = useLegacyDatabaseStore();
 const projectStore = useLegacyProjectStore();
 const projectV1Store = useProjectV1Store();
 
@@ -109,12 +107,6 @@ const project = computed(() => {
 const projectV1 = computed(() => {
   return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));
 });
-
-const prepareLegacyDatabaseList = () => {
-  legacyDatabaseStore.fetchDatabaseListByProjectId(String(project.value.id));
-};
-
-watchEffect(prepareLegacyDatabaseList);
 
 useSearchDatabaseV1List(
   computed(() => ({

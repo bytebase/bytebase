@@ -157,7 +157,7 @@
         <DatabaseOverviewPanel :database="database" />
       </template>
       <template v-if="selectedTabItem?.hash === 'change-history'">
-        <DatabaseMigrationHistoryPanel
+        <DatabaseChangeHistoryPanel
           :database="database"
           :allow-edit="allowEdit"
         />
@@ -250,7 +250,7 @@ import { useI18n } from "vue-i18n";
 import { startCase } from "lodash-es";
 
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
-import DatabaseMigrationHistoryPanel from "@/components/DatabaseMigrationHistoryPanel.vue";
+import DatabaseChangeHistoryPanel from "@/components/DatabaseChangeHistoryPanel.vue";
 import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
 import {

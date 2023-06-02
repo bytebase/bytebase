@@ -1,6 +1,6 @@
 <template>
   <div class="mb-2 flex flex-row items-center">
-    <span class="text-lg mr-2">Databases</span>
+    <span class="text-lg mr-2">{{ $t("common.databases") }}</span>
     <BBLoader v-show="state.isRequesting" class="opacity-60" />
   </div>
   <div
@@ -11,7 +11,7 @@
       @click="state.showMatchedDatabaseList = !state.showMatchedDatabaseList"
     >
       <div>
-        <span>Matched database</span>
+        <span>{{ $t("database-group.matched-database") }}</span>
         <span class="ml-1 text-gray-400"
           >({{ matchedDatabaseList.length }})</span
         >
@@ -48,7 +48,7 @@
       "
     >
       <div>
-        <span>Unmatched database</span>
+        <span>{{ $t("database-group.unmatched-database") }}</span>
         <span class="ml-1 text-gray-400"
           >({{ unmatchedDatabaseList.length }})</span
         >

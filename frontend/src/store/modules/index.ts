@@ -29,7 +29,6 @@ export * from "./connectionTree";
 export * from "./tab";
 export * from "./task";
 export * from "./uistate";
-export * from "./vcs";
 export * from "./sqlReview";
 export * from "./onboardingState";
 export * from "./onboardingGuide";

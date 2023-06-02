@@ -6,18 +6,13 @@ import {
   externalVersionControlServiceClient,
 } from "@/grpcweb";
 import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
-import { VCSId, ComposedRepository } from "@/types";
-import {
-  externalVersionControlPrefix,
-  getProjectPathFromRepoName,
-} from "./common";
+import { ComposedRepository } from "@/types";
+import { getProjectPathFromRepoName } from "./common";
 import { useProjectV1Store } from "./project";
 
 export const useRepositoryV1Store = defineStore("repository_v1", () => {
   const repositoryMapByProject = reactive(new Map<string, ProjectGitOpsInfo>());
-  const repositoryMapByVCSId = reactive(
-    new Map<string, ComposedRepository[]>()
-  );
+  const repositoryMapByVCS = reactive(new Map<string, ComposedRepository[]>());
 
   const fetchRepositoryByProject = async (
     project: string
@@ -91,12 +86,12 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     return resp.pullRequestUrl;
   };
 
-  const fetchRepositoryListByVCSId = async (
-    vcsId: VCSId
+  const fetchRepositoryListByVCS = async (
+    vcsName: string
   ): Promise<ProjectGitOpsInfo[]> => {
     const resp =
       await externalVersionControlServiceClient.listProjectGitOpsInfo({
-        name: `${externalVersionControlPrefix}${vcsId}`,
+        name: vcsName,
       });
 
     const projectV1Store = useProjectV1Store();
@@ -112,12 +107,12 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
       })
     );
 
-    repositoryMapByVCSId.set(`${vcsId}`, repoList);
+    repositoryMapByVCS.set(vcsName, repoList);
     return repoList;
   };
 
-  const getRepositoryListByVCSId = (vcsId: VCSId): ComposedRepository[] => {
-    return repositoryMapByVCSId.get(`${vcsId}`) || [];
+  const getRepositoryListByVCS = (vcsName: string): ComposedRepository[] => {
+    return repositoryMapByVCS.get(vcsName) || [];
   };
 
   return {
@@ -126,8 +121,8 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     deleteRepository,
     getRepositoryByProject,
     getOrFetchRepositoryByProject,
-    fetchRepositoryListByVCSId,
-    getRepositoryListByVCSId,
+    fetchRepositoryListByVCS,
+    getRepositoryListByVCS,
   };
 });
 

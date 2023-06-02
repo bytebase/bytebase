@@ -119,6 +119,7 @@ import isEmpty from "lodash-es/isEmpty";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
+import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 
 interface LocalState {
   urlValidationTimer?: ReturnType<typeof setTimeout>;
@@ -147,30 +148,30 @@ export default defineComponent({
     });
 
     const namePlaceholder = computed((): string => {
-      if (props.config.type == "GITLAB") {
+      if (props.config.type === ExternalVersionControl_Type.GITLAB) {
         if (props.config.uiType == "GITLAB_SELF_HOST") {
           return t("gitops.setting.add-git-provider.gitlab-self-host");
         } else if (props.config.uiType == "GITLAB_COM") {
           return "GitLab.com";
         }
-      } else if (props.config.type == "GITHUB") {
+      } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
         return "GitHub.com";
-      } else if (props.config.type == "BITBUCKET") {
+      } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
         return "Bitbucket.org";
       }
       return "";
     });
 
     const instanceUrlLabel = computed((): string => {
-      if (props.config.type == "GITLAB") {
+      if (props.config.type === ExternalVersionControl_Type.GITLAB) {
         return t(
           "gitops.setting.add-git-provider.basic-info.gitlab-instance-url"
         );
-      } else if (props.config.type == "GITHUB") {
+      } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
         return t(
           "gitops.setting.add-git-provider.basic-info.github-instance-url"
         );
-      } else if (props.config.type == "BITBUCKET") {
+      } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
         return t(
           "gitops.setting.add-git-provider.basic-info.bitbucket-instance-url"
         );
@@ -179,15 +180,15 @@ export default defineComponent({
     });
 
     const instanceUrlPlaceholder = computed((): string => {
-      if (props.config.type == "GITLAB") {
+      if (props.config.type === ExternalVersionControl_Type.GITLAB) {
         if (props.config.uiType == "GITLAB_SELF_HOST") {
           return "https://gitlab.example.com";
         } else if (props.config.uiType == "GITLAB_COM") {
           return "https://gitlab.com";
         }
-      } else if (props.config.type == "GITHUB") {
+      } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
         return "https://github.com";
-      } else if (props.config.type == "BITBUCKET") {
+      } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
         return "https://bitbucket.org";
       }
       return "";
@@ -196,9 +197,10 @@ export default defineComponent({
     // github.com instance url is always https://github.com
     const instanceUrlDisabled = computed((): boolean => {
       return (
-        props.config.type == "GITHUB" ||
-        props.config.type == "BITBUCKET" ||
-        (props.config.type == "GITLAB" && props.config.uiType == "GITLAB_COM")
+        props.config.type === ExternalVersionControl_Type.GITHUB ||
+        props.config.type === ExternalVersionControl_Type.BITBUCKET ||
+        (props.config.type === ExternalVersionControl_Type.GITLAB &&
+          props.config.uiType == "GITLAB_COM")
       );
     });
 
@@ -232,7 +234,7 @@ export default defineComponent({
     const changeUIType = () => {
       if (props.config.uiType == "GITLAB_SELF_HOST") {
         // eslint-disable-next-line vue/no-mutating-props
-        props.config.type = "GITLAB";
+        props.config.type = ExternalVersionControl_Type.GITLAB;
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "";
         // eslint-disable-next-line vue/no-mutating-props
@@ -241,21 +243,21 @@ export default defineComponent({
         );
       } else if (props.config.uiType == "GITLAB_COM") {
         // eslint-disable-next-line vue/no-mutating-props
-        props.config.type = "GITLAB";
+        props.config.type = ExternalVersionControl_Type.GITLAB;
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "https://gitlab.com";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.name = "GitLab.com";
       } else if (props.config.uiType == "GITHUB_COM") {
         // eslint-disable-next-line vue/no-mutating-props
-        props.config.type = "GITHUB";
+        props.config.type = ExternalVersionControl_Type.GITHUB;
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "https://github.com";
         // eslint-disable-next-line vue/no-mutating-props
         props.config.name = "GitHub.com";
       } else if (props.config.uiType == "BITBUCKET_ORG") {
         // eslint-disable-next-line vue/no-mutating-props
-        props.config.type = "BITBUCKET";
+        props.config.type = ExternalVersionControl_Type.BITBUCKET;
         // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "https://bitbucket.org";
         // eslint-disable-next-line vue/no-mutating-props

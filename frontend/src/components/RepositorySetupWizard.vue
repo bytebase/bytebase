@@ -54,9 +54,10 @@
         <div class="whitespace-pre-wrap">
           {{
             $t("repository.sql-review-ci-setup-modal", {
-              pr: state.config.vcs.type.startsWith("GITLAB")
-                ? $t("repository.merge-request")
-                : $t("repository.pull-request"),
+              pr:
+                state.config.vcs.type === ExternalVersionControl_Type.GITLAB
+                  ? $t("repository.merge-request")
+                  : $t("repository.pull-request"),
             })
           }}
         </div>
@@ -69,9 +70,10 @@
           >
             {{
               $t("repository.sql-review-ci-setup-pr", {
-                pr: state.config.vcs.type.startsWith("GITLAB")
-                  ? $t("repository.merge-request")
-                  : $t("repository.pull-request"),
+                pr:
+                  state.config.vcs.type === ExternalVersionControl_Type.GITLAB
+                    ? $t("repository.merge-request")
+                    : $t("repository.pull-request"),
               })
             }}
           </a>
@@ -110,9 +112,10 @@
         <BBSpin class="mt-1" />
         {{
           $t("repository.sql-review-ci-loading-modal", {
-            pr: state.config.vcs.type.startsWith("GITLAB")
-              ? $t("repository.merge-request")
-              : $t("repository.pull-request"),
+            pr:
+              state.config.vcs.type === ExternalVersionControl_Type.GITLAB
+                ? $t("repository.merge-request")
+                : $t("repository.pull-request"),
           })
         }}
       </div>
@@ -135,19 +138,22 @@ import {
   ExternalRepositoryInfo,
   OAuthToken,
   ProjectRepositoryConfig,
-  unknown,
-  VCS,
 } from "../types";
 import { projectSlugV1 } from "../utils";
 import { useI18n } from "vue-i18n";
 import { useRepositoryV1Store, hasFeature, useProjectV1Store } from "@/store";
+import { getVCSUid } from "@/store/modules/v1/common";
 import {
   Project,
   Workflow,
   TenantMode,
   SchemaChange,
 } from "@/types/proto/v1/project_service";
-import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
+import {
+  ProjectGitOpsInfo,
+  ExternalVersionControl,
+  ExternalVersionControl_Type,
+} from "@/types/proto/v1/externalvs_service";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
@@ -212,7 +218,7 @@ const isTenantProject = computed(() => {
 
 const state = reactive<LocalState>({
   config: {
-    vcs: unknown("VCS") as VCS,
+    vcs: {} as ExternalVersionControl,
     code: "",
     token: {
       accessToken: "",
@@ -297,8 +303,8 @@ const tryFinishSetup = (allowFinishCallback: () => void) => {
   const createFunc = async () => {
     let externalId = state.config.repositoryInfo.externalId;
     if (
-      state.config.vcs.type == "GITHUB" ||
-      state.config.vcs.type == "BITBUCKET"
+      state.config.vcs.type === ExternalVersionControl_Type.GITHUB ||
+      state.config.vcs.type === ExternalVersionControl_Type.BITBUCKET
     ) {
       externalId = state.config.repositoryInfo.fullPath;
     }
@@ -314,7 +320,7 @@ const tryFinishSetup = (allowFinishCallback: () => void) => {
     await useProjectV1Store().updateProject(projectPatch, updateMask);
 
     const repositoryCreate: Partial<ProjectGitOpsInfo> = {
-      vcsUid: `${state.config.vcs.id}`,
+      vcsUid: `${getVCSUid(state.config.vcs.name)}`,
       title: state.config.repositoryInfo.name,
       fullPath: state.config.repositoryInfo.fullPath,
       webUrl: state.config.repositoryInfo.webUrl,
@@ -379,7 +385,7 @@ const setToken = (token: OAuthToken) => {
   state.config.token = token;
 };
 
-const setVCS = (vcs: VCS) => {
+const setVCS = (vcs: ExternalVersionControl) => {
   state.config.vcs = vcs;
 };
 
