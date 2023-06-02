@@ -254,14 +254,19 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+	iamPolicyMessage, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
 		ProjectID: &projectID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToIamPolicy(iamPolicy), nil
+	iamPolicy, err := convertToIamPolicy(iamPolicyMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return iamPolicy, nil
 }
 
 // BatchGetIamPolicy returns the IAM policy for projects in batch.
@@ -273,15 +278,19 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 
-		iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+		iamPolicyMessage, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
 			ProjectID: &projectID,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
+		iamPolicy, err := convertToIamPolicy(iamPolicyMessage)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
 		resp.PolicyResults = append(resp.PolicyResults, &v1pb.BatchGetIamPolicyResponse_PolicyResult{
 			Project: name,
-			Policy:  convertToIamPolicy(iamPolicy),
+			Policy:  iamPolicy,
 		})
 	}
 	return resp, nil
@@ -332,12 +341,17 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 	s.CreateIAMPolicyUpdateActivity(ctx, remove, add, project, creatorUID)
 
-	iamPolicy, err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID)
+	iamPolicyMessage, err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToIamPolicy(iamPolicy), nil
+	iamPolicy, err := convertToIamPolicy(iamPolicyMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return iamPolicy, nil
 }
 
 // GetProjectGitOpsInfo gets the GitOps info for a project.
@@ -2211,7 +2225,7 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
-func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) *v1pb.IamPolicy {
+func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) (*v1pb.IamPolicy, error) {
 	var bindings []*v1pb.Binding
 
 	for _, binding := range iamPolicy.Bindings {
@@ -2219,15 +2233,31 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) *v1pb.IamPolicy {
 		for _, member := range binding.Members {
 			members = append(members, fmt.Sprintf("user:%s", member.Email))
 		}
-		bindings = append(bindings, &v1pb.Binding{
+		v1pbBinding := &v1pb.Binding{
 			Role:      convertToProjectRole(binding.Role),
 			Members:   members,
 			Condition: binding.Condition,
-		})
+		}
+		if binding.Condition.Expression != "" {
+			e, err := cel.NewEnv(queryAttributes...)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create cel environment")
+			}
+			ast, issues := e.Parse(binding.Condition.Expression)
+			if issues != nil && issues.Err() != nil {
+				return nil, errors.Wrap(issues.Err(), "failed to parse expression")
+			}
+			expr, err := cel.AstToParsedExpr(ast)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to convert ast to parsed expression")
+			}
+			v1pbBinding.ParsedExpr = expr
+		}
+		bindings = append(bindings, v1pbBinding)
 	}
 	return &v1pb.IamPolicy{
 		Bindings: bindings,
-	}
+	}, nil
 }
 
 // convertToIAMPolicyMessage will convert the IAM policy to IAM policy message.
