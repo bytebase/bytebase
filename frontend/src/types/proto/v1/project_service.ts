@@ -1,6 +1,7 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
@@ -584,6 +585,8 @@ export interface Binding {
    * If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
    */
   condition?: Expr;
+  /** The parsed expression of the condition. */
+  parsedExpr?: ParsedExpr;
 }
 
 export interface AddWebhookRequest {
@@ -2884,7 +2887,7 @@ export const IamPolicy = {
 };
 
 function createBaseBinding(): Binding {
-  return { role: "", members: [], condition: undefined };
+  return { role: "", members: [], condition: undefined, parsedExpr: undefined };
 }
 
 export const Binding = {
@@ -2897,6 +2900,9 @@ export const Binding = {
     }
     if (message.condition !== undefined) {
       Expr.encode(message.condition, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.parsedExpr !== undefined) {
+      ParsedExpr.encode(message.parsedExpr, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -2929,6 +2935,13 @@ export const Binding = {
 
           message.condition = Expr.decode(reader, reader.uint32());
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.parsedExpr = ParsedExpr.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2943,6 +2956,7 @@ export const Binding = {
       role: isSet(object.role) ? String(object.role) : "",
       members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+      parsedExpr: isSet(object.parsedExpr) ? ParsedExpr.fromJSON(object.parsedExpr) : undefined,
     };
   },
 
@@ -2955,6 +2969,8 @@ export const Binding = {
       obj.members = [];
     }
     message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    message.parsedExpr !== undefined &&
+      (obj.parsedExpr = message.parsedExpr ? ParsedExpr.toJSON(message.parsedExpr) : undefined);
     return obj;
   },
 
@@ -2968,6 +2984,9 @@ export const Binding = {
     message.members = object.members?.map((e) => e) || [];
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
+      : undefined;
+    message.parsedExpr = (object.parsedExpr !== undefined && object.parsedExpr !== null)
+      ? ParsedExpr.fromPartial(object.parsedExpr)
       : undefined;
     return message;
   },
