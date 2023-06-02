@@ -167,7 +167,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 }
 
 // RunStatement runs a SQL statement.
-func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	var results []*v1pb.QueryResult
 	if err := util.ApplyMultiStatements(strings.NewReader(statement), func(stmt string) error {
 		rows, err := conn.QueryContext(ctx, statement)

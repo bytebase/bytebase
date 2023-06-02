@@ -277,7 +277,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 // applyMultiStatements will apply the split statements from scanner.
 // This function only used for SQLite, snowflake.
 // For MySQL and PostgreSQL, use parser.SplitMultiSQLStream instead.
-// Copy from plugin/db/util/driverutil.go
+// Copy from plugin/db/util/driverutil.go.
 func applyMultiStatements(sc io.Reader, f func(string) error) error {
 	// TODO(rebelice): use parser/tokenizer to split SQL statements.
 	reader := bufio.NewReader(sc)

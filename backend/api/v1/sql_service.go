@@ -187,7 +187,7 @@ func (s *SQLService) postAdminExecute(ctx context.Context, activity *api.Activit
 	return nil
 }
 
-func (s *SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *sql.Conn, request *v1pb.AdminExecuteRequest, instance *store.InstanceMessage) ([]*v1pb.QueryResult, int64, error) {
+func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *sql.Conn, request *v1pb.AdminExecuteRequest, instance *store.InstanceMessage) ([]*v1pb.QueryResult, int64, error) {
 	start := time.Now().UnixNano()
 	result, err := driver.RunStatement(ctx, conn, request.Statement)
 	return result, time.Now().UnixNano() - start, err
