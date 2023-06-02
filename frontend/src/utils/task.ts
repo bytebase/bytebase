@@ -1,6 +1,6 @@
 import { groupBy, maxBy } from "lodash-es";
 
-import { useCurrentUserV1, useDatabaseStore } from "@/store";
+import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
 import {
   Issue,
   Task,
@@ -16,7 +16,7 @@ import {
   TaskDatabaseSchemaUpdateSDLPayload,
   TaskStatus,
   TaskType,
-  unknown,
+  unknownDatabase,
 } from "@/types";
 import { issueSlug, stageSlug, taskSlug } from "./slug";
 import { activeTask } from "./pipeline";
@@ -32,9 +32,11 @@ export const extractDatabaseNameFromTask = (
     // The task is not created yet
     // Find the database by databaseId if possible
     if (taskCreate.databaseId) {
-      return useDatabaseStore().getDatabaseById(taskCreate.databaseId!).name;
+      return useDatabaseV1Store().getDatabaseByUID(
+        String(taskCreate.databaseId!)
+      ).databaseName;
     }
-    return unknown("DATABASE").name;
+    return unknownDatabase().databaseName;
   }
 
   const taskType = taskEntity.type;
@@ -67,7 +69,7 @@ export const extractDatabaseNameFromTask = (
   }
 
   // Fallback to <<Unknown database>>. Won't be happy to see it.
-  return unknown("DATABASE").name;
+  return unknownDatabase().databaseName;
 };
 
 export const buildIssueLinkWithTask = (
@@ -76,7 +78,7 @@ export const buildIssueLinkWithTask = (
   simple = false
 ) => {
   const stage = task.stage;
-  const stageIndex = issue.pipeline.stageList.findIndex(
+  const stageIndex = issue.pipeline!.stageList.findIndex(
     (s) => s.id === stage.id
   );
 
@@ -216,7 +218,7 @@ export const canSkipTask = (
   failedOnly = false
 ) => {
   const pipeline = issue.pipeline;
-  const isActiveTask = task.id === activeTask(pipeline).id;
+  const isActiveTask = task.id === activeTask(pipeline!).id;
   if (activeOnly && !isActiveTask) {
     return false;
   }

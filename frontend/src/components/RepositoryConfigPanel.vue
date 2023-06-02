@@ -2,35 +2,34 @@
   <RepositoryForm
     :create="true"
     :vcs-type="config.vcs.type"
-    :vcs-name="config.vcs.name"
+    :vcs-name="config.vcs.title"
     :repository-info="config.repositoryInfo"
     :repository-config="config.repositoryConfig"
     :schema-change-type="config.schemaChangeType"
     :project="project"
     @change-schema-change-type="
-      (type) => $emit('change-schema-change-type', type)
+      (type: SchemaChange) => $emit('change-schema-change-type', type)
     "
   />
 </template>
 
-<script lang="ts">
-import { PropType, defineComponent } from "vue";
-import RepositoryForm from "./RepositoryForm.vue";
-import { Project, ProjectRepositoryConfig } from "../types";
+<script lang="ts" setup>
+import { PropType } from "vue";
+import { ProjectRepositoryConfig } from "../types";
+import { Project, SchemaChange } from "@/types/proto/v1/project_service";
 
-export default defineComponent({
-  name: "RepositoryConfigPanel",
-  components: { RepositoryForm },
-  props: {
-    config: {
-      required: true,
-      type: Object as PropType<ProjectRepositoryConfig>,
-    },
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
+defineProps({
+  config: {
+    required: true,
+    type: Object as PropType<ProjectRepositoryConfig>,
   },
-  emits: ["change-schema-change-type"],
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
+  },
 });
+
+defineEmits<{
+  (event: "change-schema-change-type", schemaChange: SchemaChange): void;
+}>();
 </script>

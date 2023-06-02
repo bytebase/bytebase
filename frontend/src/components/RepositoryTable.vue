@@ -9,59 +9,43 @@
   >
     <template #body="{ rowData: repository }">
       <BBTableCell :left-padding="4" class="w-16">
-        {{ projectName(repository.project) }}
+        {{ projectV1Name(repository.project) }}
       </BBTableCell>
       <BBTableCell class="w-32">
         {{ repository.fullPath }}
-      </BBTableCell>
-      <BBTableCell class="w-16">
-        {{ humanizeTs(repository.createdTs) }}
       </BBTableCell>
     </template>
   </BBTable>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, PropType } from "vue";
+<script lang="ts" setup>
+import { computed, PropType } from "vue";
 import { useRouter } from "vue-router";
-import { projectSlug } from "../utils";
-import { Repository } from "../types";
+import { projectSlugV1, projectV1Name } from "../utils";
 import { useI18n } from "vue-i18n";
+import { ComposedRepository } from "@/types";
 
-export default defineComponent({
-  name: "RepositoryTable",
-  props: {
-    repositoryList: {
-      required: true,
-      type: Object as PropType<Repository[]>,
-    },
-  },
-  setup(props) {
-    const { t } = useI18n();
-
-    const router = useRouter();
-
-    const columnList = computed(() => [
-      {
-        title: t("common.project"),
-      },
-      {
-        title: t("common.repository"),
-      },
-      {
-        title: t("common.created-at"),
-      },
-    ]);
-
-    const clickRepository = function (section: number, row: number) {
-      const repository = props.repositoryList[row];
-      router.push(`/project/${projectSlug(repository.project)}#gitops`);
-    };
-
-    return {
-      columnList,
-      clickRepository,
-    };
+const props = defineProps({
+  repositoryList: {
+    required: true,
+    type: Object as PropType<ComposedRepository[]>,
   },
 });
+const { t } = useI18n();
+
+const router = useRouter();
+
+const columnList = computed(() => [
+  {
+    title: t("common.project"),
+  },
+  {
+    title: t("common.repository"),
+  },
+]);
+
+const clickRepository = function (_: number, row: number) {
+  const repository = props.repositoryList[row];
+  router.push(`/project/${projectSlugV1(repository.project)}#gitops`);
+};
 </script>

@@ -61,6 +61,11 @@ const (
 	// ActivitySQLEditorQuery is the type for executing query.
 	ActivitySQLEditorQuery ActivityType = "bb.sql-editor.query"
 
+	// SQL related.
+
+	// ActivitySQLExport is the type for exporting SQL.
+	ActivitySQLExport ActivityType = "bb.sql.export"
+
 	// Database related.
 
 	// ActivityDatabaseRecoveryPITRDone is the type for performing PITR on the database successfully.
@@ -240,6 +245,17 @@ type ActivitySQLEditorQueryPayload struct {
 	AdviceList             []advisor.Advice `json:"adviceList"`
 }
 
+// ActivitySQLExportPayload is the API message payloads for the exported SQL info.
+type ActivitySQLExportPayload struct {
+	// Used by activity table to display info without paying the join cost
+	Statement    string `json:"statement"`
+	DurationNs   int64  `json:"durationNs"`
+	InstanceID   int    `json:"instanceId"`
+	DatabaseID   int    `json:"databaseId"`
+	DatabaseName string `json:"databaseName"`
+	Error        string `json:"error"`
+}
+
 // Activity is the API message for an activity.
 type Activity struct {
 	ID int `jsonapi:"primary,activity"`
@@ -325,4 +341,7 @@ type ActivityPatch struct {
 
 	// TODO(d): remove the payload after the backfill.
 	Payload *string
+
+	// Level is the activity level.
+	Level *ActivityLevel `jsonapi:"attr,level"`
 }

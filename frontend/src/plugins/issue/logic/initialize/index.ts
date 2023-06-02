@@ -2,7 +2,12 @@ import { computed, ref, Ref, watch } from "vue";
 import { type LocationQuery, useRoute, useRouter } from "vue-router";
 import { EMPTY_ID, Issue, IssueCreate, IssueType } from "@/types";
 import { SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
-import { pushNotification, useDatabaseStore, useIssueStore } from "@/store";
+import {
+  pushNotification,
+  useDatabaseV1Store,
+  useIssueStore,
+  useProjectV1Store,
+} from "@/store";
 import { idFromSlug } from "@/utils";
 import { defaultTemplate, templateForType } from "@/plugins";
 import { BuildNewIssueContext } from "../common";
@@ -106,32 +111,33 @@ const buildNewIssue = async (
 };
 
 const prepareDatabaseListForIssueCreation = async (query: LocationQuery) => {
-  const databaseStore = useDatabaseStore();
+  const databaseStore = useDatabaseV1Store();
   // For preparing the database if user visits creating issue url directly.
-  // It's horrible to fetchDatabaseById one-by-one when query.databaseList
+  // It's horrible to fetchDatabaseByUID one-by-one when query.databaseList
   // is big (100+ sometimes)
   // So we are fetching databaseList by project since that's better cached.
   if (query.project) {
-    // If we found query.project, we can directly fetchDatabaseListByProjectId
+    // If we found query.project, we can directly search database list by project
     const projectId = query.project as string;
-    await databaseStore.fetchDatabaseListByProjectId(projectId);
+    const project = await useProjectV1Store().getOrFetchProjectByUID(projectId);
+    await databaseStore.searchDatabaseList({
+      parent: `instances/-`,
+      filter: `project == "${project.name}"`,
+    });
   } else if (query.databaseList) {
     // Otherwise, we don't have the projectId (very rare to see, theoretically)
     // so we need to fetch the first database in databaseList by id,
     // and see what project it belongs.
-    const databaseIdList = (query.databaseList as string)
-      .split(",")
-      .map((str) => parseInt(str, 10));
+    const databaseIdList = (query.databaseList as string).split(",");
     if (databaseIdList.length > 0) {
-      const firstDB = await databaseStore.getOrFetchDatabaseById(
-        databaseIdList[0]
-      );
+      const firstDB = await databaseStore.getDatabaseByUID(databaseIdList[0]);
       if (databaseIdList.length > 1) {
         // If we have more than one databases in the list
         // fetch the rest of databases by projectId
-        await databaseStore.fetchDatabaseListByProjectId(
-          String(firstDB.project.id)
-        );
+        await databaseStore.searchDatabaseList({
+          parent: `instances/-`,
+          filter: `project == "${firstDB.project}"`,
+        });
       }
     }
   }

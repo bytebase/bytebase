@@ -20,10 +20,13 @@ import (
 	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -278,6 +281,109 @@ func Query2(ctx context.Context, dbType db.Type, conn *sql.Conn, statement strin
 	}, nil
 }
 
+// RunStatement runs a SQL statement in a given connection.
+func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	singleSQLs, err := parser.SplitMultiSQL(engineType, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+
+	var results []*v1pb.QueryResult
+	for _, singleSQL := range singleSQLs {
+		if singleSQL.Empty {
+			continue
+		}
+		if IsAffectedRowsStatement(singleSQL.Text) {
+			sqlResult, err := conn.ExecContext(ctx, singleSQLs[0].Text)
+			if err != nil {
+				return nil, err
+			}
+			affectedRows, err := sqlResult.RowsAffected()
+			if err != nil {
+				log.Info("rowsAffected returns error", zap.Error(err))
+			}
+
+			field := []string{"Affected Rows"}
+			types := []string{"INT"}
+			rows := []*v1pb.QueryRow{
+				{
+					Values: []*v1pb.RowValue{
+						{
+							Kind: &v1pb.RowValue_Int64Value{
+								Int64Value: affectedRows,
+							},
+						},
+					},
+				},
+			}
+			results = append(results, &v1pb.QueryResult{
+				ColumnNames:     field,
+				ColumnTypeNames: types,
+				Rows:            rows,
+			})
+			continue
+		}
+		results = append(results, adminQuery(ctx, conn, singleSQL.Text))
+	}
+
+	return results, nil
+}
+
+func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.QueryResult {
+	rows, err := conn.QueryContext(ctx, statement)
+	if err != nil {
+		return &v1pb.QueryResult{
+			Error: err.Error(),
+		}
+	}
+	defer rows.Close()
+
+	result, err := rowsToQueryResult(rows)
+	if err != nil {
+		return &v1pb.QueryResult{
+			Error: err.Error(),
+		}
+	}
+	return result
+}
+
+func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
+	columnNames, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	var columnTypeNames []string
+	for _, v := range columnTypes {
+		// DatabaseTypeName returns the database system name of the column type.
+		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
+	}
+
+	data, err := readRows2(rows, columnTypes, columnTypeNames, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &v1pb.QueryResult{
+		ColumnNames:     columnNames,
+		ColumnTypeNames: columnTypeNames,
+		Rows:            data,
+	}, nil
+}
+
 // query will execute a query.
 func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement string, _ int) ([]any, error) {
 	rows, err := conn.QueryContext(ctx, statement)
@@ -347,7 +453,7 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 			return nil, err
 		}
 
-		var rowData *v1pb.QueryRow
+		var rowData v1pb.QueryRow
 		for i := range columnTypes {
 			if len(fieldList) > 0 && fieldList[i].Sensitive {
 				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}})
@@ -377,7 +483,7 @@ func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []
 			rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
 		}
 
-		data = append(data, rowData)
+		data = append(data, &rowData)
 	}
 
 	return data, nil

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// Just choose an empirical timeout value. The default 15 miniutes seems too long.
+	// Just choose an empirical timeout value. The default 15 minutes seems too long.
 	timeout = 5 * time.Minute
 )
 

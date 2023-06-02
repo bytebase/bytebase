@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -129,44 +130,47 @@ func TestTenant(t *testing.T) {
 	}
 
 	// Getting databases for each environment.
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
+		Parent: "instances/-",
+		Filter: fmt.Sprintf(`project == "%s"`, project.Name),
 	})
 	a.NoError(err)
+	databases := resp.Databases
 
-	var testDatabases []*api.Database
-	var prodDatabases []*api.Database
+	var testDatabases []*v1pb.Database
+	var prodDatabases []*v1pb.Database
 	for _, testInstance := range testInstances {
-		testInstanceUID, err := strconv.Atoi(testInstance.Uid)
-		a.NoError(err)
 		for _, database := range databases {
-			if database.Instance.ID == testInstanceUID {
+			if strings.HasPrefix(database.Name, testInstance.Name) {
 				testDatabases = append(testDatabases, database)
 				break
 			}
 		}
 	}
 	for _, prodInstance := range prodInstances {
-		prodInstanceUID, err := strconv.Atoi(prodInstance.Uid)
-		a.NoError(err)
 		for _, database := range databases {
-			if database.Instance.ID == prodInstanceUID {
+			if strings.HasPrefix(database.Name, prodInstance.Name) {
 				prodDatabases = append(prodDatabases, database)
 				break
 			}
 		}
 	}
+
 	a.Equal(testTenantNumber, len(testDatabases))
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
-	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "migration statement sheet",
-		Statement:  migrationStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "migration statement sheet",
+			Content:    []byte(migrationStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
@@ -174,7 +178,7 @@ func TestTenant(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				SheetID:       sheet.ID,
+				SheetID:       sheetUID,
 			},
 		},
 	})
@@ -437,31 +441,32 @@ func TestTenantVCS(t *testing.T) {
 			}
 
 			// Getting databases for each environment.
-			databases, err := ctl.getDatabases(api.DatabaseFind{ProjectID: &projectUID})
+			resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
+				Parent: "instances/-",
+				Filter: fmt.Sprintf(`project == "%s"`, project.Name),
+			})
 			a.NoError(err)
+			databases := resp.Databases
 
-			var testDatabases []*api.Database
-			var prodDatabases []*api.Database
+			var testDatabases []*v1pb.Database
+			var prodDatabases []*v1pb.Database
 			for _, testInstance := range testInstances {
-				instanceUID, err := strconv.Atoi(testInstance.Uid)
-				a.NoError(err)
 				for _, database := range databases {
-					if database.Instance.ID == instanceUID {
+					if strings.HasPrefix(database.Name, testInstance.Name) {
 						testDatabases = append(testDatabases, database)
 						break
 					}
 				}
 			}
 			for _, prodInstance := range prodInstances {
-				instanceUID, err := strconv.Atoi(prodInstance.Uid)
-				a.NoError(err)
 				for _, database := range databases {
-					if database.Instance.ID == instanceUID {
+					if strings.HasPrefix(database.Name, prodInstance.Name) {
 						prodDatabases = append(prodDatabases, database)
 						break
 					}
 				}
 			}
+
 			a.Equal(len(testDatabases), testTenantNumber)
 			a.Equal(len(prodDatabases), prodTenantNumber)
 
@@ -581,8 +586,6 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	testInstanceUID, err := strconv.Atoi(testInstance.Uid)
-	a.NoError(err)
 
 	prodInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
@@ -593,8 +596,6 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
 		},
 	})
-	a.NoError(err)
-	prodInstanceUID, err := strconv.Atoi(prodInstance.Uid)
 	a.NoError(err)
 
 	// Create deployment configuration.
@@ -620,26 +621,28 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	}
 
 	// Getting databases for each environment.
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
+		Parent: "instances/-",
+		Filter: fmt.Sprintf(`project == "%s"`, project.Name),
 	})
 	a.NoError(err)
+	databases := resp.Databases
 
-	var testDatabases []*api.Database
-	var prodDatabases []*api.Database
+	var testDatabases []*v1pb.Database
+	var prodDatabases []*v1pb.Database
 	for i := 0; i < testTenantNumber; i++ {
-		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
+		databaseName := fmt.Sprintf("%s/databases/%s_tenant%d", testInstance.Name, baseDatabaseName, i)
 		for _, database := range databases {
-			if database.Instance.ID == testInstanceUID && database.Name == databaseName {
+			if database.Name == databaseName {
 				testDatabases = append(testDatabases, database)
 				break
 			}
 		}
 	}
 	for i := 0; i < prodTenantNumber; i++ {
-		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
+		databaseName := fmt.Sprintf("%s/databases/%s_tenant%d", prodInstance.Name, baseDatabaseName, i)
 		for _, database := range databases {
-			if database.Instance.ID == prodInstanceUID && database.Name == databaseName {
+			if database.Name == databaseName {
 				prodDatabases = append(prodDatabases, database)
 				break
 			}
@@ -648,14 +651,18 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.Equal(len(testDatabases), testTenantNumber)
 	a.Equal(len(prodDatabases), prodTenantNumber)
 
-	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "migration statement sheet",
-		Statement:  migrationStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "migration statement sheet",
+			Content:    []byte(migrationStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
@@ -663,7 +670,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				SheetID:       sheet.ID,
+				SheetID:       sheetUID,
 			},
 		},
 	})
@@ -917,31 +924,32 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			}
 
 			// Getting databases for each environment.
-			databases, err := ctl.getDatabases(api.DatabaseFind{ProjectID: &projectUID})
+			resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
+				Parent: "instances/-",
+				Filter: fmt.Sprintf(`project == "%s"`, project.Name),
+			})
 			a.NoError(err)
+			databases := resp.Databases
 
-			var testDatabases []*api.Database
-			var prodDatabases []*api.Database
+			var testDatabases []*v1pb.Database
+			var prodDatabases []*v1pb.Database
 			for _, testInstance := range testInstances {
-				instanceUID, err := strconv.Atoi(testInstance.Uid)
-				a.NoError(err)
 				for _, database := range databases {
-					if database.Instance.ID == instanceUID {
+					if strings.HasPrefix(database.Name, testInstance.Name) {
 						testDatabases = append(testDatabases, database)
 						break
 					}
 				}
 			}
 			for _, prodInstance := range prodInstances {
-				instanceUID, err := strconv.Atoi(prodInstance.Uid)
-				a.NoError(err)
 				for _, database := range databases {
-					if database.Instance.ID == instanceUID {
+					if strings.HasPrefix(database.Name, prodInstance.Name) {
 						prodDatabases = append(prodDatabases, database)
 						break
 					}
 				}
 			}
+
 			a.Equal(testTenantNumber, len(testDatabases))
 			a.Equal(prodTenantNumber, len(prodDatabases))
 
@@ -1243,19 +1251,17 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			}
 
 			// Getting databases for each environment.
-			databases, err := ctl.getDatabases(
-				api.DatabaseFind{
-					ProjectID: &projectUID,
-				},
-			)
+			resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
+				Parent: "instances/-",
+				Filter: fmt.Sprintf(`project == "%s"`, project.Name),
+			})
 			a.NoError(err)
+			databases := resp.Databases
 
-			var testDatabases []*api.Database
+			var testDatabases []*v1pb.Database
 			for _, testInstance := range testInstances {
-				instanceUID, err := strconv.Atoi(testInstance.Uid)
-				a.NoError(err)
 				for _, database := range databases {
-					if database.Instance.ID == instanceUID {
+					if strings.HasPrefix(database.Name, testInstance.Name) {
 						testDatabases = append(testDatabases, database)
 						break
 					}
@@ -1529,19 +1535,17 @@ func TestTenantVCS_YAML(t *testing.T) {
 			}
 
 			// Getting databases for each environment.
-			databases, err := ctl.getDatabases(
-				api.DatabaseFind{
-					ProjectID: &projectUID,
-				},
-			)
+			resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
+				Parent: "instances/-",
+				Filter: fmt.Sprintf(`project == "%s"`, project.Name),
+			})
 			require.NoError(t, err)
+			databases := resp.Databases
 
-			var testDatabases []*api.Database
+			var testDatabases []*v1pb.Database
 			for _, testInstance := range testInstances {
-				instanceUID, err := strconv.Atoi(testInstance.Uid)
-				require.NoError(t, err)
 				for _, database := range databases {
-					if database.Instance.ID == instanceUID {
+					if strings.HasPrefix(database.Name, testInstance.Name) {
 						testDatabases = append(testDatabases, database)
 						break
 					}
@@ -1571,6 +1575,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			require.Equal(t, api.TaskDone, status)
 
 			// Simulate Git commits for data update.
+			database0Name := "TestTenantVCS_YAML_tenant0"
 			gitFile2 := baseDirectory + "/ver2##data##insert_a_new_row.yml"
 			err = ctl.vcsProvider.AddFiles(
 				test.externalID,
@@ -1581,7 +1586,7 @@ databases:
 statement: |
   INSERT INTO book (name) VALUES ('Star Wars')
 `,
-						databases[0].Name,
+						database0Name,
 					),
 				},
 			)
@@ -1608,7 +1613,7 @@ statement: |
 			histories, err := ctl.getInstanceMigrationHistory(
 				instanceUID0,
 				db.MigrationHistoryFind{
-					Database: &databases[0].Name,
+					Database: &database0Name,
 				},
 			)
 			require.NoError(t, err)
@@ -1617,10 +1622,11 @@ statement: |
 
 			instanceUID1, err := strconv.Atoi(testInstances[1].Uid)
 			require.NoError(t, err)
+			database1Name := "TestTenantVCS_YAML_tenant1"
 			histories, err = ctl.getInstanceMigrationHistory(
 				instanceUID1,
 				db.MigrationHistoryFind{
-					Database: &databases[1].Name,
+					Database: &database1Name,
 				},
 			)
 			require.NoError(t, err)

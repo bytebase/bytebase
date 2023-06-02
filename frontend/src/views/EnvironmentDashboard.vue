@@ -251,8 +251,6 @@ const doCreate = async (
     order: environmentList.value.length,
     tier: environmentTier,
   });
-  // After creating with v1 store, we need to fetch the latest data in old store.
-  // TODO(steven): using grpc store.
   await environmentV1Store.fetchEnvironments();
 
   const requests = [

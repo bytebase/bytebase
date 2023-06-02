@@ -195,7 +195,7 @@ type MigrationInfo struct {
 	Creator        string
 	IssueID        string
 	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
-	Payload string
+	Payload *storepb.InstanceChangeHistoryPayload
 	// UseSemanticVersion is whether version is a semantic version.
 	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
 	// For example, for setting non-semantic version "hello", the values should be Version = "hello", UseSemanticVersion = false, SemanticVersionSuffix = "".
@@ -496,6 +496,8 @@ type Driver interface {
 	// Used for execute readonly SELECT statement
 	// TODO(rebelice): remove QueryConn and rename QueryConn2 to QueryConn when legacy code is removed.
 	QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]*v1pb.QueryResult, error)
+	// RunStatement will execute the statement and return the result, for both SELECT and non-SELECT statements.
+	RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.

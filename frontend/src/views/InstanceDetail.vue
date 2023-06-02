@@ -130,9 +130,8 @@ import { SQLResultSet } from "@/types";
 import {
   featureToRef,
   pushNotification,
-  useInstanceStore,
   useSubscriptionV1Store,
-  useSQLStore,
+  useLegacySQLStore,
   useDBSchemaStore,
   useCurrentUserV1,
   useInstanceV1Store,
@@ -155,14 +154,13 @@ const props = defineProps({
   },
 });
 
-const instanceStore = useInstanceStore();
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();
-const sqlStore = useSQLStore();
+const sqlStore = useLegacySQLStore();
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
@@ -234,8 +232,6 @@ const allowArchiveOrRestore = computed(() => {
 const doArchive = async () => {
   await useGracefulRequest(async () => {
     await instanceV1Store.archiveInstance(instance.value);
-    // Legacy compatibility
-    await instanceStore.fetchInstanceById(Number(instance.value.uid));
 
     pushNotification({
       module: "bytebase",
@@ -255,8 +251,6 @@ const doRestore = async () => {
   }
   await useGracefulRequest(async () => {
     await instanceV1Store.restoreInstance(instance.value);
-    // Legacy compatibility
-    await instanceStore.fetchInstanceById(Number(instance.value.uid));
 
     pushNotification({
       module: "bytebase",

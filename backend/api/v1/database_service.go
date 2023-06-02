@@ -34,6 +34,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -355,7 +356,23 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	if dbSchema == nil {
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
-	return &v1pb.DatabaseSchema{Schema: string(dbSchema.Schema)}, nil
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	// We only support MySQL engine for now.
+	schema := string(dbSchema.Schema)
+	if request.SdlFormat {
+		switch instance.Engine {
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+			sdlSchema, err := transform.SchemaTransform(parser.MySQL, schema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
+			}
+			schema = sdlSchema
+		}
+	}
+	return &v1pb.DatabaseSchema{Schema: schema}, nil
 }
 
 // GetBackupSetting gets the backup setting of a database.
@@ -662,6 +679,21 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert change history, error: %v", err)
 	}
+	if request.SdlFormat {
+		switch instance.Engine {
+		case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
+			sdlSchema, err := transform.SchemaTransform(parser.MySQL, converted.Schema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
+			}
+			converted.Schema = sdlSchema
+			sdlSchema, err = transform.SchemaTransform(parser.MySQL, converted.PrevSchema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to convert previous schema to sdl format, error %v", err.Error())
+			}
+			converted.PrevSchema = sdlSchema
+		}
+	}
 	return converted, nil
 }
 
@@ -699,12 +731,81 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		Schema:            h.Schema,
 		PrevSchema:        h.SchemaPrev,
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
+		PushEvent:         convertToPushEvent(h.Payload.GetPushEvent()),
 		Review:            "",
 	}
 	if h.IssueUID != nil {
 		v1pbHistory.Review = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, h.IssueProjectID, reviewPrefix, *h.IssueUID)
 	}
 	return v1pbHistory, nil
+}
+
+func convertToPushEvent(e *storepb.PushEvent) *v1pb.PushEvent {
+	if e == nil {
+		return nil
+	}
+	return &v1pb.PushEvent{
+		VcsType:            convertToVcsType(e.VcsType),
+		BaseDir:            e.BaseDir,
+		Ref:                e.Ref,
+		Before:             e.Before,
+		After:              e.After,
+		RepositoryId:       e.RepositoryId,
+		RepositoryUrl:      e.RepositoryUrl,
+		RepositoryFullPath: e.RepositoryFullPath,
+		AuthorName:         e.AuthorName,
+		Commits:            convertToCommits(e.Commits),
+		FileCommit:         convertToFileCommit(e.FileCommit),
+	}
+}
+
+func convertToVcsType(t storepb.VcsType) v1pb.VcsType {
+	switch t {
+	case storepb.VcsType_GITLAB:
+		return v1pb.VcsType_GITLAB
+	case storepb.VcsType_GITHUB:
+		return v1pb.VcsType_GITHUB
+	case storepb.VcsType_BITBUCKET:
+		return v1pb.VcsType_BITBUCKET
+	case storepb.VcsType_VCS_TYPE_UNSPECIFIED:
+		return v1pb.VcsType_VCS_TYPE_UNSPECIFIED
+	default:
+		return v1pb.VcsType_VCS_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToCommits(commits []*storepb.Commit) []*v1pb.Commit {
+	var converted []*v1pb.Commit
+	for _, c := range commits {
+		converted = append(converted, &v1pb.Commit{
+			Id:           c.Id,
+			Title:        c.Title,
+			Message:      c.Message,
+			CreatedTime:  timestamppb.New(time.Unix(c.CreatedTs, 0)),
+			Url:          c.Url,
+			AuthorName:   c.AuthorName,
+			AuthorEmail:  c.AuthorEmail,
+			AddedList:    c.AddedList,
+			ModifiedList: c.ModifiedList,
+		})
+	}
+	return converted
+}
+
+func convertToFileCommit(c *storepb.FileCommit) *v1pb.FileCommit {
+	if c == nil {
+		return nil
+	}
+	return &v1pb.FileCommit{
+		Id:          c.Id,
+		Title:       c.Title,
+		Message:     c.Message,
+		CreatedTime: timestamppb.New(time.Unix(c.CreatedTs, 0)),
+		Url:         c.Url,
+		AuthorName:  c.AuthorName,
+		AuthorEmail: c.AuthorEmail,
+		Added:       c.Added,
+	}
 }
 
 func convertToChangeHistorySource(source db.MigrationSource) v1pb.ChangeHistory_Source {
@@ -1269,12 +1370,13 @@ func convertToBackup(backup *store.BackupMessage, instanceID string, databaseNam
 		backupType = v1pb.Backup_PITR
 	}
 	return &v1pb.Backup{
-		Name:       fmt.Sprintf("%s%s/%s%s/%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backup.Name),
+		Name:       fmt.Sprintf("%s%s/%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupPrefix, backup.Name),
 		CreateTime: createTime,
 		UpdateTime: updateTime,
 		State:      backupState,
 		BackupType: backupType,
 		Comment:    backup.Comment,
+		Uid:        fmt.Sprintf("%d", backup.UID),
 	}
 }
 

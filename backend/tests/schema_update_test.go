@@ -77,41 +77,30 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
-	// Expecting project to have no database.
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
-	})
-	a.NoError(err)
-	a.Zero(len(databases))
-	// Expecting instance to have no database.
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instanceUID,
-	})
-	a.NoError(err)
-	a.Zero(len(databases))
-
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
-	// Expecting project to have 1 database.
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-	database := databases[0]
-	a.Equal(instanceUID, database.Instance.ID)
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
-	migrationStatementSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "migration statement sheet",
-		Statement:  migrationStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "migration statement sheet",
+			Content:    []byte(migrationStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
@@ -119,8 +108,8 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseID:    database.ID,
-				SheetID:       migrationStatementSheet.ID,
+				DatabaseID:    databaseUID,
+				SheetID:       sheetUID,
 			},
 		},
 	})
@@ -143,14 +132,18 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	a.Equal(bookSchemaSQLResult, result)
 
-	dataUpdateStatementSheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "dataUpdateStatement",
-		Statement:  dataUpdateStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet, err = ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "dataUpdateStatement",
+			Content:    []byte(dataUpdateStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err = strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database data.
@@ -158,8 +151,8 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Data,
-				DatabaseID:    database.ID,
-				SheetID:       dataUpdateStatementSheet.ID,
+				DatabaseID:    databaseUID,
+				SheetID:       sheetUID,
 			},
 		},
 	})
@@ -215,7 +208,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create a manual backup.
 	backup, err := ctl.createBackup(api.BackupCreate{
-		DatabaseID:     database.ID,
+		DatabaseID:     databaseUID,
 		Name:           "name",
 		Type:           api.BackupTypeManual,
 		StorageBackend: api.BackupStorageBackendLocal,
@@ -264,17 +257,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		want := wantCloneHistories[i]
 		a.Equal(want, got)
 	}
-
-	// Create a sheet to mock SQL editor new tab action with UNKNOWN ProjectID.
-	_, err = ctl.createSheet(api.SheetCreate{
-		ProjectID:  -1,
-		DatabaseID: &database.ID,
-		Name:       "my-sheet",
-		Statement:  "SELECT * FROM demo",
-		Visibility: api.PrivateSheet,
-		Source:     api.SheetFromBytebase,
-	})
-	a.NoError(err)
 
 	_, err = ctl.sheetServiceClient.SearchSheets(ctx, &v1pb.SearchSheetsRequest{
 		Parent: "projects/-",
@@ -511,14 +493,13 @@ func TestVCS(t *testing.T) {
 			databaseName := "testVCSSchemaUpdate"
 			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
 			a.NoError(err)
-			// Expecting project to have 1 database.
-			databases, err := ctl.getDatabases(api.DatabaseFind{
-				ProjectID: &projectUID,
+
+			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+				Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 			})
 			a.NoError(err)
-			a.Equal(1, len(databases))
-			database := databases[0]
-			a.Equal(instanceUID, database.Instance.ID)
+			databaseUID, err := strconv.Atoi(database.Uid)
+			a.NoError(err)
 
 			// Simulate Git commits for schema update.
 			// We create multiple commits in one push event to test for the behavior of creating one issue per database.
@@ -645,14 +626,18 @@ func TestVCS(t *testing.T) {
 			)
 			a.NoError(err)
 
-			sheet, err := ctl.createSheet(api.SheetCreate{
-				ProjectID:  projectUID,
-				Name:       "migration statement 4 sheet",
-				Statement:  migrationStatement4,
-				Visibility: api.ProjectSheet,
-				Source:     api.SheetFromBytebaseArtifact,
-				Type:       api.SheetForSQL,
+			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+				Parent: project.Name,
+				Sheet: &v1pb.Sheet{
+					Title:      "migration statement 4 sheet",
+					Content:    []byte(migrationStatement4),
+					Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+					Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+					Type:       v1pb.Sheet_TYPE_SQL,
+				},
 			})
+			a.NoError(err)
+			sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 			a.NoError(err)
 
 			// Schema change from UI.
@@ -661,8 +646,8 @@ func TestVCS(t *testing.T) {
 				DetailList: []*api.MigrationDetail{
 					{
 						MigrationType: db.Migrate,
-						DatabaseID:    database.ID,
-						SheetID:       sheet.ID,
+						DatabaseID:    databaseUID,
+						SheetID:       sheetUID,
 					},
 				},
 			})
@@ -680,7 +665,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 			environmentResourceID := strings.TrimPrefix(prodEnvironment.Name, "environments/")
-			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, environmentResourceID, database.Name)
+			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, environmentResourceID, databaseName)
 			files, err := ctl.vcsProvider.GetFiles(test.externalID, latestFileName)
 			a.NoError(err)
 			a.Len(files, 1)
@@ -2156,34 +2141,29 @@ CREATE TABLE public.book (
 				a.FailNow("unsupported db type")
 			}
 			a.NoError(err)
-			instanceUID, err := strconv.Atoi(instance.Uid)
-			a.NoError(err)
 
-			a.NoError(err)
 			err = ctl.createDatabase(ctx, projectUID, instance, test.databaseName, "root", nil /* labelMap */)
 			a.NoError(err)
-			databases, err := ctl.getDatabases(api.DatabaseFind{
-				InstanceID: &instanceUID,
+
+			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+				Name: fmt.Sprintf("%s/databases/%s", instance.Name, test.databaseName),
 			})
 			a.NoError(err)
-			// Find databases
-			var database *api.Database
-			for _, db := range databases {
-				if db.Name == test.databaseName {
-					database = db
-					break
-				}
-			}
-			a.NotNil(database)
+			databaseUID, err := strconv.Atoi(database.Uid)
+			a.NoError(err)
 
-			ddlSheet, err := ctl.createSheet(api.SheetCreate{
-				ProjectID:  projectUID,
-				Name:       "test ddl",
-				Statement:  test.ddl,
-				Visibility: api.ProjectSheet,
-				Source:     api.SheetFromBytebaseArtifact,
-				Type:       api.SheetForSQL,
+			ddlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+				Parent: project.Name,
+				Sheet: &v1pb.Sheet{
+					Title:      "test ddl",
+					Content:    []byte(test.ddl),
+					Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+					Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+					Type:       v1pb.Sheet_TYPE_SQL,
+				},
 			})
+			a.NoError(err)
+			ddlSheetUID, err := strconv.Atoi(strings.TrimPrefix(ddlSheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 			a.NoError(err)
 
 			// Create an issue that updates database schema.
@@ -2191,8 +2171,8 @@ CREATE TABLE public.book (
 				DetailList: []*api.MigrationDetail{
 					{
 						MigrationType: db.Migrate,
-						DatabaseID:    database.ID,
-						SheetID:       ddlSheet.ID,
+						DatabaseID:    databaseUID,
+						SheetID:       ddlSheetUID,
 					},
 				},
 			})
@@ -2209,15 +2189,15 @@ CREATE TABLE public.book (
 			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
-			latestSchemaDump, err := ctl.getLatestSchemaDump(database.ID)
+			latestSchemaDump, err := ctl.getLatestSchemaDump(databaseUID)
 			a.NoError(err)
 			a.Equal(test.wantRawSchema, latestSchemaDump)
 			if test.dbType == db.MySQL {
-				latestSchemaSDL, err := ctl.getLatestSchemaSDL(database.ID)
+				latestSchemaSDL, err := ctl.getLatestSchemaSDL(databaseUID)
 				a.NoError(err)
 				a.Equal(test.wantSDL, latestSchemaSDL)
 			}
-			latestSchemaMetadataString, err := ctl.getLatestSchemaMetadata(database.ID)
+			latestSchemaMetadataString, err := ctl.getLatestSchemaMetadata(databaseUID)
 			a.NoError(err)
 			var latestSchemaMetadata storepb.DatabaseMetadata
 			err = protojson.Unmarshal([]byte(latestSchemaMetadataString), &latestSchemaMetadata)
@@ -2267,44 +2247,31 @@ func TestMarkTaskAsDone(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
-
-	// Expecting project to have no database.
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
-	})
-	a.NoError(err)
-	a.Zero(len(databases))
-	// Expecting instance to have no database.
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instanceUID,
-	})
-	a.NoError(err)
-	a.Zero(len(databases))
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
-	// Expecting project to have 1 database.
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
 	a.NoError(err)
-	a.Equal(1, len(databases))
-	database := databases[0]
-	a.Equal(instanceUID, database.Instance.ID)
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
-	sheet, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "migration statement sheet",
-		Statement:  migrationStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "migration statement sheet",
+			Content:    []byte(migrationStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
@@ -2312,8 +2279,8 @@ func TestMarkTaskAsDone(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseID:    database.ID,
-				SheetID:       sheet.ID,
+				DatabaseID:    databaseUID,
+				SheetID:       sheetUID,
 			},
 		},
 	})

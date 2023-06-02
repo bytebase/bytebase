@@ -80,7 +80,7 @@ func (*Driver) GetType() db.Type {
 
 // GetDB gets the database.
 func (*Driver) GetDB() *sql.DB {
-	panic("mongodb doesn't support GetD")
+	return nil
 }
 
 // Execute executes a statement, always returns 0 as the number of rows affected because we execute the statement by mongosh, it's hard to catch the row effected number.
@@ -247,4 +247,9 @@ func (driver *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement str
 		ColumnTypeNames: types,
 		Rows:            rows,
 	}}, nil
+}
+
+// RunStatement runs a SQL statement in a given connection.
+func (driver *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	return driver.QueryConn2(ctx, nil, statement, nil)
 }

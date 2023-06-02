@@ -116,49 +116,37 @@ func TestGhostSchemaUpdate(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
-
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
-	})
-	a.NoError(err)
-	a.Zero(len(databases))
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		InstanceID: &instanceUID,
-	})
-	a.NoError(err)
-	a.Zero(len(databases))
 
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "", nil)
 	a.NoError(err)
 
-	databases, err = ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 	})
-
 	a.NoError(err)
-	a.Equal(1, len(databases))
+	databaseUID, err := strconv.Atoi(database.Uid)
+	a.NoError(err)
 
-	database := databases[0]
-	a.Equal(instanceUID, database.Instance.ID)
-
-	sheet1, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "mysql migration statement sheet 1",
-		Statement:  mysqlMigrationStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "migration statement sheet 1",
+			Content:    []byte(mysqlMigrationStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheet1UID, err := strconv.Atoi(strings.TrimPrefix(sheet1.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseID:    database.ID,
-				SheetID:       sheet1.ID,
+				DatabaseID:    databaseUID,
+				SheetID:       sheet1UID,
 			},
 		},
 	})
@@ -181,22 +169,26 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 	a.Equal(mysqlBookSchema1, result)
 
-	sheet2, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "migration statement sheet 2",
-		Statement:  mysqlGhostMigrationStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "migration statement sheet 2",
+			Content:    []byte(mysqlGhostMigrationStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheet2UID, err := strconv.Atoi(strings.TrimPrefix(sheet2.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	createContext, err = json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseID:    database.ID,
-				SheetID:       sheet2.ID,
+				DatabaseID:    databaseUID,
+				SheetID:       sheet2UID,
 			},
 		},
 	})
@@ -304,28 +296,26 @@ func TestGhostTenant(t *testing.T) {
 	}
 
 	// Getting databases for each environment.
-	databases, err := ctl.getDatabases(api.DatabaseFind{
-		ProjectID: &projectUID,
+	resp, err := ctl.databaseServiceClient.ListDatabases(ctx, &v1pb.ListDatabasesRequest{
+		Parent: "instances/-",
+		Filter: fmt.Sprintf(`project == "%s"`, project.Name),
 	})
 	a.NoError(err)
+	databases := resp.Databases
 
-	var testDatabases []*api.Database
-	var prodDatabases []*api.Database
+	var testDatabases []*v1pb.Database
+	var prodDatabases []*v1pb.Database
 	for _, testInstance := range testInstances {
-		testInstanceUID, err := strconv.Atoi(testInstance.Uid)
-		a.NoError(err)
 		for _, database := range databases {
-			if database.Instance.ID == testInstanceUID {
+			if strings.HasPrefix(database.Name, testInstance.Name) {
 				testDatabases = append(testDatabases, database)
 				break
 			}
 		}
 	}
 	for _, prodInstance := range prodInstances {
-		prodInstanceUID, err := strconv.Atoi(prodInstance.Uid)
-		a.NoError(err)
 		for _, database := range databases {
-			if database.Instance.ID == prodInstanceUID {
+			if strings.HasPrefix(database.Name, prodInstance.Name) {
 				prodDatabases = append(prodDatabases, database)
 				break
 			}
@@ -334,14 +324,18 @@ func TestGhostTenant(t *testing.T) {
 	a.Equal(testTenantNumber, len(testDatabases))
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
-	sheet1, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "migration statement sheet 1",
-		Statement:  mysqlMigrationStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "migration statement sheet 1",
+			Content:    []byte(mysqlMigrationStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheet1UID, err := strconv.Atoi(strings.TrimPrefix(sheet1.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database schema.
@@ -349,7 +343,7 @@ func TestGhostTenant(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				SheetID:       sheet1.ID,
+				SheetID:       sheet1UID,
 			},
 		},
 	})
@@ -379,14 +373,18 @@ func TestGhostTenant(t *testing.T) {
 		a.Equal(mysqlBookSchema1, result)
 	}
 
-	sheet2, err := ctl.createSheet(api.SheetCreate{
-		ProjectID:  projectUID,
-		Name:       "migration statement sheet 2",
-		Statement:  mysqlGhostMigrationStatement,
-		Visibility: api.ProjectSheet,
-		Source:     api.SheetFromBytebaseArtifact,
-		Type:       api.SheetForSQL,
+	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet: &v1pb.Sheet{
+			Title:      "migration statement sheet 2",
+			Content:    []byte(mysqlGhostMigrationStatement),
+			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+			Type:       v1pb.Sheet_TYPE_SQL,
+		},
 	})
+	a.NoError(err)
+	sheet2UID, err := strconv.Atoi(strings.TrimPrefix(sheet2.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 	a.NoError(err)
 
 	// Create an issue that updates database schema using gh-ost.
@@ -395,7 +393,7 @@ func TestGhostTenant(t *testing.T) {
 			{
 				MigrationType: db.Migrate,
 				DatabaseID:    0,
-				SheetID:       sheet2.ID,
+				SheetID:       sheet2UID,
 			},
 		},
 	})

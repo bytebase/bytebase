@@ -136,7 +136,7 @@ func (*Driver) GetType() db.Type {
 
 // GetDB gets the database.
 func (*Driver) GetDB() *sql.DB {
-	panic("redis: not supported")
+	return nil
 }
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
@@ -273,4 +273,9 @@ func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, 
 		ColumnTypeNames: []string{"TEXT"},
 		Rows:            data,
 	}}, nil
+}
+
+// RunStatement runs a SQL statement in a given connection.
+func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	return d.QueryConn2(ctx, nil, statement, nil)
 }

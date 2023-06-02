@@ -1,6 +1,10 @@
 import { defineStore } from "pinia";
 import axios from "axios";
-import { VCSId, OAuthToken, ResourceObject, VCSType } from "@/types";
+import { VCSId, OAuthToken, ResourceObject } from "@/types";
+import {
+  ExternalVersionControl_Type,
+  externalVersionControl_TypeToJSON,
+} from "@/types/proto/v1/externalvs_service";
 
 const convert = (raw: ResourceObject): OAuthToken => {
   const attr = raw.attributes;
@@ -22,8 +26,8 @@ export const useOAuthStore = defineStore("oauth", {
     }: {
       code: string;
       vcsId: VCSId;
-      clientId: string;
-      clientSecret: string;
+      clientId?: string;
+      clientSecret?: string;
     }): Promise<OAuthToken> {
       const data = (
         await axios.post(`/api/oauth/vcs/exchange-token`, {
@@ -52,7 +56,7 @@ export const useOAuthStore = defineStore("oauth", {
       clientSecret,
       code,
     }: {
-      vcsType: VCSType;
+      vcsType: ExternalVersionControl_Type;
       instanceUrl: string;
       clientId: string;
       clientSecret: string;
@@ -63,7 +67,8 @@ export const useOAuthStore = defineStore("oauth", {
           data: {
             type: "exchangeToken",
             attributes: {
-              vcsType,
+              // TODO(ed): change vcs type
+              vcsType: externalVersionControl_TypeToJSON(vcsType),
               instanceUrl,
               clientId,
               clientSecret,

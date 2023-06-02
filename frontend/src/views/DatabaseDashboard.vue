@@ -50,7 +50,8 @@
 
     <DatabaseV1Table
       pagination-class="mb-4"
-      :database-list="filteredV1List"
+      :database-list="filteredDatabaseList"
+      :database-group-list="filteredDatabaseGroupList"
       :show-placeholder="true"
     />
 
@@ -71,25 +72,24 @@ import { NInputGroup, NTooltip } from "naive-ui";
 import {
   EnvironmentTabFilter,
   InstanceSelect,
+  DatabaseV1Table,
   SearchBox,
 } from "@/components/v2";
-import { DatabaseV1Table } from "../components/v2";
 import {
-  type Database as LegacyDatabase,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   UNKNOWN_USER_NAME,
   ComposedDatabase,
+  ComposedDatabaseGroup,
 } from "../types";
 import {
   filterDatabaseV1ByKeyword,
   hasWorkspacePermissionV1,
-  sortDatabaseListByEnvironmentV1,
   sortDatabaseV1List,
 } from "../utils";
 import {
   useCurrentUserV1,
-  useDatabaseStore,
+  useDBGroupStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useUIStateStore,
@@ -98,8 +98,8 @@ import {
 interface LocalState {
   instanceFilter: string;
   searchText: string;
-  databaseList: LegacyDatabase[];
   databaseV1List: ComposedDatabase[];
+  databaseGroupList: ComposedDatabaseGroup[];
   loading: boolean;
 }
 
@@ -111,14 +111,14 @@ const route = useRoute();
 const state = reactive<LocalState>({
   instanceFilter: String(UNKNOWN_ID),
   searchText: "",
-  databaseList: [],
   databaseV1List: [],
+  databaseGroupList: [],
   loading: false,
 });
 
 const currentUserV1 = useCurrentUserV1();
-const databaseStore = useDatabaseStore();
 const databaseV1Store = useDatabaseV1Store();
+const dbGroupStore = useDBGroupStore();
 
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
@@ -151,21 +151,22 @@ const prepareDatabaseList = async () => {
       parent: "instances/-",
     });
     state.databaseV1List = sortDatabaseV1List(databaseV1List);
-
-    // For legacy support
-    await databaseStore.fetchDatabaseList();
-    const databaseList = databaseStore.getDatabaseListByUser(
-      currentUserV1.value
-    );
-    state.databaseList = sortDatabaseListByEnvironmentV1(
-      databaseList,
-      environmentV1Store.getEnvironmentList()
-    );
     state.loading = false;
   }
 };
 
-watchEffect(prepareDatabaseList);
+const prepareDatabaseGroupList = async () => {
+  if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
+    state.databaseGroupList = await dbGroupStore.fetchAllDatabaseGroupList();
+  }
+};
+
+watchEffect(async () => {
+  state.loading = true;
+  await prepareDatabaseList();
+  await prepareDatabaseGroupList();
+  state.loading = false;
+});
 
 const changeEnvironmentId = (environment: string | undefined) => {
   if (environment && environment !== String(UNKNOWN_ID)) {
@@ -182,7 +183,7 @@ const changeSearchText = (searchText: string) => {
   state.searchText = searchText;
 };
 
-const filteredV1List = computed(() => {
+const filteredDatabaseList = computed(() => {
   let list = [...state.databaseV1List];
   const environment = selectedEnvironment.value;
   if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
@@ -204,6 +205,25 @@ const filteredV1List = computed(() => {
         "instance",
         "project",
       ])
+    );
+  }
+  return list;
+});
+
+const filteredDatabaseGroupList = computed(() => {
+  let list = [...state.databaseGroupList];
+  const environment = selectedEnvironment.value;
+  if (environment && environment.name !== `environments/${UNKNOWN_ID}`) {
+    list = list.filter(
+      (dbGroup) => dbGroup.environmentName === environment.name
+    );
+  }
+  const keyword = state.searchText.trim().toLowerCase();
+  if (keyword) {
+    list = list.filter(
+      (dbGroup) =>
+        dbGroup.name.includes(keyword) ||
+        dbGroup.databasePlaceholder.includes(keyword)
     );
   }
   return list;

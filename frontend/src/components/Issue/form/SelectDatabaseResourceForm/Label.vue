@@ -7,8 +7,8 @@
     <!-- eslint-disable-next-line vue/no-v-html -->
     <span class="truncate" v-html="optionName" />
     <span v-if="database" class="ml-1 text-gray-500 flex flex-row items-center">
-      (<InstanceName
-        :instance="database.instance"
+      (<InstanceV1Name
+        :instance="database.instanceEntity"
         :link="false"
         class="whitespace-nowrap"
       />)
@@ -20,9 +20,9 @@
 import { escape } from "lodash-es";
 import { computed, h } from "vue";
 import { DatabaseTreeOption } from "./common";
-import { useDatabaseStore, useEnvironmentV1Store } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { getHighlightHTMLByRegExp } from "@/utils";
-import { EnvironmentV1Name, InstanceName } from "@/components/v2";
+import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import TableIcon from "~icons/heroicons-outline/table-cells";
@@ -38,15 +38,13 @@ const database = computed(() => {
   const { option } = props;
   if (option.level !== "database") return undefined;
   const databaseId = option.value.replace("d-", "");
-  return useDatabaseStore().getDatabaseById(databaseId);
+  return useDatabaseV1Store().getDatabaseByUID(databaseId);
 });
 
 const environment = computed(() => {
   const { option } = props;
   if (option.level !== "database") return undefined;
-  return useEnvironmentV1Store().getEnvironmentByUID(
-    database.value?.instance.environment.id as string
-  );
+  return database.value?.instanceEntity.environmentEntity;
 });
 
 const Prefix = () => {

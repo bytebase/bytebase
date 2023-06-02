@@ -636,9 +636,7 @@ import {
   useSettingV1Store,
   useActuatorV1Store,
   useEnvironmentV1Store,
-  useInstanceStore,
   useInstanceV1Store,
-  useDatabaseStore,
   useGracefulRequest,
   featureToRef,
 } from "@/store";
@@ -1210,10 +1208,6 @@ const updateEditState = async (instance: Instance) => {
 
   // Backend will sync the schema when connection info changed, so we need to fetch the synced schema here.
   instanceV1Store.fetchInstanceRoleListByName(instance.name);
-
-  // Legacy API compatibility
-  useInstanceStore().fetchInstanceById(Number(instance.uid));
-  useDatabaseStore().fetchDatabaseListByInstanceId(Number(instance.uid));
 };
 
 const handleWarningModalOkClick = async () => {

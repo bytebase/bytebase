@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed migration
@@ -170,7 +171,7 @@ func backfillHistory(ctx context.Context, storeInstance *store.Store, bytebasePg
 				Schema:              h.Schema,
 				SchemaPrev:          h.SchemaPrev,
 				ExecutionDurationNs: h.ExecutionDurationNs,
-				Payload:             h.Payload,
+				Payload:             &storepb.InstanceChangeHistoryPayload{},
 			}
 
 			creates = append(creates, &changeHistory)
@@ -351,7 +352,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 		Schema:              stmt,
 		SchemaPrev:          "",
 		ExecutionDurationNs: 0,
-		Payload:             "",
+		Payload:             nil,
 	}); err != nil {
 		return err
 	}

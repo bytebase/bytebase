@@ -2,7 +2,9 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -15,10 +17,17 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	webhookPlugin "github.com/bytebase/bytebase/backend/plugin/webhook"
+	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -26,18 +35,25 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+const (
+	// sqlReviewInVCSPRTitle is the pull request title for SQL review CI setup.
+	sqlReviewInVCSPRTitle = "chore: setup SQL review CI for Bytebase"
+)
+
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1pb.UnimplementedProjectServiceServer
 	store           *store.Store
 	activityManager *activity.Manager
+	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewProjectService creates a new ProjectService.
-func NewProjectService(store *store.Store, activityManager *activity.Manager) *ProjectService {
+func NewProjectService(store *store.Store, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService) *ProjectService {
 	return &ProjectService{
 		store:           store,
 		activityManager: activityManager,
+		licenseService:  licenseService,
 	}
 }
 
@@ -238,14 +254,19 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+	iamPolicyMessage, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
 		ProjectID: &projectID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToIamPolicy(iamPolicy), nil
+	iamPolicy, err := convertToIamPolicy(iamPolicyMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return iamPolicy, nil
 }
 
 // BatchGetIamPolicy returns the IAM policy for projects in batch.
@@ -257,15 +278,19 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 
-		iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+		iamPolicyMessage, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
 			ProjectID: &projectID,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
+		iamPolicy, err := convertToIamPolicy(iamPolicyMessage)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
 		resp.PolicyResults = append(resp.PolicyResults, &v1pb.BatchGetIamPolicyResponse_PolicyResult{
 			Project: name,
-			Policy:  convertToIamPolicy(iamPolicy),
+			Policy:  iamPolicy,
 		})
 	}
 	return resp, nil
@@ -316,12 +341,224 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 	s.CreateIAMPolicyUpdateActivity(ctx, remove, add, project, creatorUID)
 
-	iamPolicy, err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID)
+	iamPolicyMessage, err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToIamPolicy(iamPolicy), nil
+	iamPolicy, err := convertToIamPolicy(iamPolicyMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return iamPolicy, nil
+}
+
+// GetProjectGitOpsInfo gets the GitOps info for a project.
+func (s *ProjectService) GetProjectGitOpsInfo(ctx context.Context, request *v1pb.GetProjectGitOpsInfoRequest) (*v1pb.ProjectGitOpsInfo, error) {
+	repo, err := s.findProjectRepository(ctx, request.Project)
+	if err != nil {
+		return nil, err
+	}
+	return convertToProjectGitOpsInfo(request.Project, repo), nil
+}
+
+// SetProjectGitOpsInfo upserts the GitOps info for a project.
+func (s *ProjectService) SetProjectGitOpsInfo(ctx context.Context, request *v1pb.SetProjectGitOpsInfoRequest) (*v1pb.ProjectGitOpsInfo, error) {
+	project, err := s.getProjectMessage(ctx, request.Project)
+	if err != nil {
+		return nil, err
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project)
+	}
+
+	repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{
+		ProjectID: &project.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if repo == nil {
+		if !request.AllowMissing {
+			return nil, status.Errorf(codes.NotFound, "gitops not found, please set allow_missing flag for creation")
+		}
+
+		return s.createProjectGitOpsInfo(ctx, request, project)
+	}
+
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set to update gitops")
+	}
+
+	patch := &api.RepositoryPatch{
+		ID:        &repo.ID,
+		UpdaterID: ctx.Value(common.PrincipalIDContextKey).(int),
+	}
+
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "branch_filter":
+			patch.BranchFilter = &request.ProjectGitopsInfo.BranchFilter
+		case "base_directory":
+			baseDir := strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
+			patch.BaseDirectory = &baseDir
+		case "file_path_template":
+			if err := api.ValidateRepositoryFilePathTemplate(request.ProjectGitopsInfo.FilePathTemplate, project.TenantMode); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid file_path_template: %s", err.Error())
+			}
+			patch.FilePathTemplate = &request.ProjectGitopsInfo.FilePathTemplate
+		case "schema_path_template":
+			if err := api.ValidateRepositorySchemaPathTemplate(request.ProjectGitopsInfo.SchemaPathTemplate, project.TenantMode); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
+			}
+			patch.SchemaPathTemplate = &request.ProjectGitopsInfo.SchemaPathTemplate
+		case "sheet_path_template":
+			patch.SheetPathTemplate = &request.ProjectGitopsInfo.SheetPathTemplate
+		case "enable_sql_review_ci":
+			patch.EnableSQLReviewCI = &request.ProjectGitopsInfo.EnableSqlReviewCi
+		}
+	}
+
+	if v := patch.BranchFilter; v != nil && repo.BranchFilter != *v {
+		if *v == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
+		}
+
+		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
+		}
+		if vcs == nil {
+			return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSID)
+		}
+
+		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
+		if !strings.Contains(*v, "*") {
+			notFound, err := isBranchNotFound(
+				ctx,
+				vcs,
+				s.store,
+				repo.WebURL,
+				repo.AccessToken,
+				repo.RefreshToken,
+				repo.ExternalID,
+				*v,
+			)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
+			}
+			if notFound {
+				return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", *v, repo.FullPath)
+			}
+		}
+	}
+
+	// We need to check the FilePathTemplate in create repository request.
+	// This avoids to a certain extent that the creation succeeds but does not work.
+	newBaseDirectory, newFilePathTemplate := repo.BaseDirectory, repo.FilePathTemplate
+	if patch.BaseDirectory != nil {
+		newBaseDirectory = *patch.BaseDirectory
+	}
+	if patch.FilePathTemplate != nil {
+		newFilePathTemplate = *patch.FilePathTemplate
+	}
+
+	if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(newBaseDirectory, newFilePathTemplate)); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
+	}
+
+	updatedRepo, err := s.store.PatchRepository(ctx, patch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update repository with error: %v", err.Error())
+	}
+
+	return convertToProjectGitOpsInfo(request.Project, updatedRepo), nil
+}
+
+// SetupProjectSQLReviewCI sets the SQL review CI for a project.
+func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v1pb.SetupSQLReviewCIRequest) (*v1pb.SetupSQLReviewCIResponse, error) {
+	repo, err := s.findProjectRepository(ctx, request.Project)
+	if err != nil {
+		return nil, err
+	}
+
+	pullRequest, err := s.setupVCSSQLReviewCI(ctx, repo)
+	if err != nil {
+		return nil, err
+	}
+	response := &v1pb.SetupSQLReviewCIResponse{
+		PullRequestUrl: pullRequest.URL,
+	}
+
+	enableSQLReviewCi := true
+	repoPatch := &api.RepositoryPatch{
+		ID:                &repo.ID,
+		UpdaterID:         ctx.Value(common.PrincipalIDContextKey).(int),
+		EnableSQLReviewCI: &enableSQLReviewCi,
+	}
+	if _, err := s.store.PatchRepository(ctx, repoPatch); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to patch repository with error: %v", err.Error())
+	}
+
+	return response, nil
+}
+
+// DeleteProjectGitOpsInfo deletes the GitOps info for a project.
+func (s *ProjectService) DeleteProjectGitOpsInfo(ctx context.Context, request *v1pb.DeleteProjectGitOpsInfoRequest) (*emptypb.Empty, error) {
+	repo, err := s.findProjectRepository(ctx, request.Project)
+	if err != nil {
+		return nil, err
+	}
+
+	vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
+	}
+	if vcs == nil {
+		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSID)
+	}
+
+	// TODO: migrate to v1 store.
+	repositoryDelete := &api.RepositoryDelete{
+		ProjectResourceID: repo.Project.ResourceID,
+		DeleterID:         ctx.Value(common.PrincipalIDContextKey).(int),
+	}
+	if err := s.store.DeleteRepository(ctx, repositoryDelete); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete repository with error: %v", err.Error())
+	}
+
+	// We use one webhook in one repo for at least one Bytebase project, so we only delete the webhook if this project is the last one using this webhook.
+	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{
+		WebURL: &repo.WebURL,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, `failed to list repository for web url "%s" with error: %v`, repo.WebURL, err.Error())
+	}
+	if len(repos) == 0 {
+		// Delete the webhook after we successfully delete the repository.
+		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
+		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
+		if err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
+			ctx,
+			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
+			common.OauthContext{
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    refreshTokenNoop(),
+			},
+			vcs.InstanceURL,
+			repo.ExternalID,
+			repo.ExternalWebhookID,
+		); err != nil {
+			// Despite the error here, we have deleted the repository in the database, we still return success.
+			log.Error("failed to delete webhook for project", zap.String("project", request.Project), zap.Int("repo", repo.ID), zap.Error(err))
+		}
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 // CreateIAMPolicyUpdateActivity creates project IAM policy change activities.
@@ -533,6 +770,451 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 	return convertToProject(project), nil
 }
 
+func (s *ProjectService) findProjectRepository(ctx context.Context, projectName string) (*api.Repository, error) {
+	project, err := s.getProjectMessage(ctx, projectName)
+	if err != nil {
+		return nil, err
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, "project %s has been deleted", projectName)
+	}
+
+	// TODO: migrate repository store to v1
+	repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{
+		ProjectID: &project.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if repo == nil {
+		return nil, status.Errorf(codes.NotFound, "gitops not found")
+	}
+
+	return repo, nil
+}
+
+func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v1pb.SetProjectGitOpsInfoRequest, project *store.ProjectMessage) (*v1pb.ProjectGitOpsInfo, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
+	}
+
+	vcsID, err := strconv.ParseInt(request.ProjectGitopsInfo.VcsUid, 10, 64)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs id: %s", request.ProjectGitopsInfo.VcsUid)
+	}
+
+	// TODO: migrate to v1 store.
+	repositoryCreate := &api.RepositoryCreate{
+		ProjectID:          project.UID,
+		ProjectResourceID:  project.ResourceID,
+		CreatorID:          ctx.Value(common.PrincipalIDContextKey).(int),
+		WebhookURLHost:     setting.ExternalUrl,
+		VCSID:              int(vcsID),
+		Name:               request.ProjectGitopsInfo.Title,
+		FullPath:           request.ProjectGitopsInfo.FullPath,
+		WebURL:             request.ProjectGitopsInfo.WebUrl,
+		BranchFilter:       request.ProjectGitopsInfo.BranchFilter,
+		BaseDirectory:      request.ProjectGitopsInfo.BaseDirectory,
+		FilePathTemplate:   request.ProjectGitopsInfo.FilePathTemplate,
+		SchemaPathTemplate: request.ProjectGitopsInfo.SchemaPathTemplate,
+		SheetPathTemplate:  request.ProjectGitopsInfo.SheetPathTemplate,
+		ExternalID:         request.ProjectGitopsInfo.ExternalId,
+		AccessToken:        request.ProjectGitopsInfo.AccessToken,
+		RefreshToken:       request.ProjectGitopsInfo.RefreshToken,
+		ExpiresTs:          request.ProjectGitopsInfo.ExpiresTime.Seconds,
+	}
+
+	if repositoryCreate.BranchFilter == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
+	}
+
+	// We need to check the FilePathTemplate in create repository request.
+	// This avoids to a certain extent that the creation succeeds but does not work.
+	if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
+	}
+
+	if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid file_path_template: %v", err.Error())
+	}
+
+	if err := api.ValidateRepositorySchemaPathTemplate(repositoryCreate.SchemaPathTemplate, project.TenantMode); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
+	}
+
+	vcs, err := s.store.GetVCSByID(ctx, repositoryCreate.VCSID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
+	}
+	if vcs == nil {
+		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repositoryCreate.VCSID)
+	}
+
+	// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
+	if !strings.Contains(repositoryCreate.BranchFilter, "*") {
+		notFound, err := isBranchNotFound(
+			ctx,
+			vcs,
+			s.store,
+			repositoryCreate.WebURL,
+			repositoryCreate.AccessToken,
+			repositoryCreate.RefreshToken,
+			repositoryCreate.ExternalID,
+			repositoryCreate.BranchFilter,
+		)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", repositoryCreate.BranchFilter, err.Error())
+		}
+		if notFound {
+			return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", repositoryCreate.BranchFilter, repositoryCreate.FullPath)
+		}
+	}
+
+	// For a particular VCS repo, all Bytebase projects share the same webhook.
+	repositories, err := s.store.FindRepository(ctx, &api.RepositoryFind{
+		WebURL: &repositoryCreate.WebURL,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find repository with web url %s: %v", repositoryCreate.WebURL, err.Error())
+	}
+
+	// If we can find at least one repository with the same web url, we will use the same webhook instead of creating a new one.
+	if len(repositories) > 0 {
+		repo := repositories[0]
+		repositoryCreate.WebhookEndpointID = repo.WebhookEndpointID
+		repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
+		repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
+	} else {
+		workspaceID, err := s.store.GetWorkspaceID(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find workspace id with error: %v", err.Error())
+		}
+
+		repositoryCreate.WebhookEndpointID = fmt.Sprintf("%s-%d", workspaceID, time.Now().Unix())
+		secretToken, err := common.RandomString(gitlab.SecretTokenLength)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate random secret token for vcs with error: %v", err.Error())
+		}
+		repositoryCreate.WebhookSecretToken = secretToken
+
+		gitopsWebhookURL := setting.GitopsWebhookUrl
+		if gitopsWebhookURL == "" {
+			gitopsWebhookURL = setting.ExternalUrl
+		}
+		webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, gitopsWebhookURL)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create webhook for project %s with error: %v", repositoryCreate.ProjectResourceID, err.Error())
+		}
+		repositoryCreate.ExternalWebhookID = webhookID
+	}
+
+	// Remove enclosing /
+	repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
+	repository, err := s.store.CreateRepository(ctx, repositoryCreate)
+	if err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			return nil, status.Errorf(codes.AlreadyExists, "project %s has already linked repository", repositoryCreate.ProjectResourceID)
+		}
+		return nil, status.Errorf(codes.Internal, "failed to link project repository with error: %v", err.Error())
+	}
+
+	return convertToProjectGitOpsInfo(request.Project, repository), nil
+}
+
+func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) (*vcsPlugin.PullRequest, error) {
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	branch, err := s.setupVCSSQLReviewBranch(ctx, repository)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).UpsertEnvironmentVariable(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		vcsPlugin.SQLReviewAPISecretName,
+		repository.WebhookSecretToken,
+	); err != nil {
+		return nil, err
+	}
+
+	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", setting.ExternalUrl, repository.WebhookEndpointID)
+
+	switch repository.VCS.Type {
+	case vcsPlugin.GitHub:
+		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch, sqlReviewEndpoint); err != nil {
+			return nil, err
+		}
+	case vcsPlugin.GitLab:
+		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, branch, sqlReviewEndpoint); err != nil {
+			return nil, err
+		}
+	}
+
+	return vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).CreatePullRequest(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		&vcsPlugin.PullRequestCreate{
+			Title:                 sqlReviewInVCSPRTitle,
+			Body:                  "This pull request is auto-generated by Bytebase for GitOps workflow.",
+			Head:                  branch.Name,
+			Base:                  repository.BranchFilter,
+			RemoveHeadAfterMerged: true,
+		},
+	)
+}
+
+// setupVCSSQLReviewBranch will create a new branch to setup SQL review CI.
+func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Repository) (*vcsPlugin.BranchInfo, error) {
+	branch, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).GetBranch(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		repository.BranchFilter,
+	)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("VCS target branch info", zap.String("last_commit", branch.LastCommitID), zap.String("name", branch.Name))
+
+	branchCreate := &vcsPlugin.BranchInfo{
+		Name:         fmt.Sprintf("bytebase-vcs-%d", time.Now().Unix()),
+		LastCommitID: branch.LastCommitID,
+	}
+	if err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).CreateBranch(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		branchCreate,
+	); err != nil {
+		return nil, err
+	}
+
+	return branchCreate, nil
+}
+
+// setupVCSSQLReviewCIForGitHub will create the pull request in GitHub to setup SQL review action.
+func (s *ProjectService) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo, sqlReviewEndpoint string) error {
+	sqlReviewConfig := github.SetupSQLReviewCI(sqlReviewEndpoint)
+	fileLastCommitID := ""
+	fileSHA := ""
+
+	fileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		github.SQLReviewActionFilePath,
+		branch.Name,
+	)
+	if err != nil {
+		log.Debug(
+			"Failed to get file meta",
+			zap.String("file", github.SQLReviewActionFilePath),
+			zap.String("last_commit", branch.LastCommitID),
+			zap.Int("code", common.ErrorCode(err).Int()),
+			zap.Error(err),
+		)
+	} else if fileMeta != nil {
+		fileLastCommitID = fileMeta.LastCommitID
+		fileSHA = fileMeta.SHA
+	}
+
+	return vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).CreateFile(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		github.SQLReviewActionFilePath,
+		vcsPlugin.FileCommitCreate{
+			Branch:        branch.Name,
+			CommitMessage: sqlReviewInVCSPRTitle,
+			Content:       sqlReviewConfig,
+			LastCommitID:  fileLastCommitID,
+			SHA:           fileSHA,
+		},
+	)
+}
+
+// setupVCSSQLReviewCIForGitLab will create or update SQL review related files in GitLab to setup SQL review CI.
+func (s *ProjectService) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo, sqlReviewEndpoint string) error {
+	// create or update the .gitlab-ci.yml
+	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
+		content := make(map[string]any)
+
+		if fileMeta != nil {
+			ciFileContent, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(
+				ctx,
+				common.OauthContext{
+					ClientID:     repository.VCS.ApplicationID,
+					ClientSecret: repository.VCS.Secret,
+					AccessToken:  repository.AccessToken,
+					RefreshToken: repository.RefreshToken,
+					Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+				},
+				repository.VCS.InstanceURL,
+				repository.ExternalID,
+				gitlab.CIFilePath,
+				fileMeta.LastCommitID,
+			)
+			if err != nil {
+				return "", err
+			}
+			if err := yaml.Unmarshal([]byte(ciFileContent), &content); err != nil {
+				return "", err
+			}
+		}
+
+		newContent, err := gitlab.SetupGitLabCI(content)
+		if err != nil {
+			return "", err
+		}
+
+		return newContent, nil
+	}); err != nil {
+		return err
+	}
+
+	// create or update the SQL review CI.
+	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
+		return gitlab.SetupSQLReviewCI(sqlReviewEndpoint), nil
+	})
+}
+
+// createOrUpdateVCSSQLReviewFileForGitLab will create or update SQL review file for GitLab CI.
+func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
+	ctx context.Context,
+	repository *api.Repository,
+	branch *vcsPlugin.BranchInfo,
+	fileName string,
+	getNewContent func(meta *vcsPlugin.FileMeta) (string, error),
+) error {
+	fileExisted := true
+	fileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		fileName,
+		branch.Name,
+	)
+	if err != nil {
+		log.Debug(
+			"Failed to get file meta",
+			zap.String("last_commit", branch.LastCommitID),
+			zap.Int("code", common.ErrorCode(err).Int()),
+			zap.Error(err),
+		)
+		if common.ErrorCode(err) == common.NotFound {
+			fileExisted = false
+		} else {
+			return err
+		}
+	}
+
+	newContent, err := getNewContent(fileMeta)
+	if err != nil {
+		return err
+	}
+
+	if fileExisted {
+		return vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
+			ctx,
+			common.OauthContext{
+				ClientID:     repository.VCS.ApplicationID,
+				ClientSecret: repository.VCS.Secret,
+				AccessToken:  repository.AccessToken,
+				RefreshToken: repository.RefreshToken,
+				Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+			},
+			repository.VCS.InstanceURL,
+			repository.ExternalID,
+			fileName,
+			vcsPlugin.FileCommitCreate{
+				Branch:        branch.Name,
+				CommitMessage: sqlReviewInVCSPRTitle,
+				Content:       newContent,
+				LastCommitID:  fileMeta.LastCommitID,
+				SHA:           fileMeta.SHA,
+			},
+		)
+	}
+
+	return vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).CreateFile(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		fileName,
+		vcsPlugin.FileCommitCreate{
+			Branch:        branch.Name,
+			CommitMessage: sqlReviewInVCSPRTitle,
+			Content:       newContent,
+		},
+	)
+}
+
 // RemoveWebhook removes a webhook from a given project.
 func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.RemoveWebhookRequest) (*v1pb.Project, error) {
 	projectID, webhookID, err := getProjectIDWebhookID(request.Webhook.Name)
@@ -641,6 +1323,9 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 
 // CreateDatabaseGroup creates a database group.
 func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
+	}
 	projectResourceID, err := getProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -688,6 +1373,9 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 
 // UpdateDatabaseGroup updates a database group.
 func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.UpdateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
+	}
 	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -872,6 +1560,9 @@ func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.Get
 
 // CreateSchemaGroup creates a database group.
 func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.CreateSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
+	}
 	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -928,6 +1619,9 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 
 // UpdateSchemaGroup updates a schema group.
 func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.UpdateSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureDatabaseGrouping.AccessErrorMessage())
+	}
 	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.SchemaGroup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1125,7 +1819,7 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 }
 
 func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.DatabaseGroup, error) {
-	matches, unmatches, err := s.getMatchesAndUnmatchesDatabases(ctx, databaseGroup, projectResourceID)
+	matches, unmatches, err := s.getMatchedAndUnmatchedDatabases(ctx, databaseGroup, projectResourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -1147,7 +1841,7 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 	return ret, nil
 }
 
-func (s *ProjectService) getMatchesAndUnmatchesDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+func (s *ProjectService) getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &projectResourceID,
 	})
@@ -1205,7 +1899,7 @@ func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessa
 }
 
 func (s *ProjectService) convertStoreToAPISchemaGroupFull(ctx context.Context, schemaGroup *store.SchemaGroupMessage, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.SchemaGroup, error) {
-	matches, unmatches, err := s.getMatchesAndUnmatchesTables(ctx, schemaGroup, databaseGroup, projectResourceID)
+	matches, unmatches, err := s.getMatchesAndUnmatchedTables(ctx, schemaGroup, databaseGroup, projectResourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -1219,8 +1913,8 @@ func (s *ProjectService) convertStoreToAPISchemaGroupFull(ctx context.Context, s
 	return ret, nil
 }
 
-func (s *ProjectService) getMatchesAndUnmatchesTables(ctx context.Context, schemaGroup *store.SchemaGroupMessage, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*v1pb.SchemaGroup_Table, []*v1pb.SchemaGroup_Table, error) {
-	matchesDatabases, _, err := s.getMatchesAndUnmatchesDatabases(ctx, databaseGroup, projectResourceID)
+func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schemaGroup *store.SchemaGroupMessage, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*v1pb.SchemaGroup_Table, []*v1pb.SchemaGroup_Table, error) {
+	matchesDatabases, _, err := s.getMatchedAndUnmatchedDatabases(ctx, databaseGroup, projectResourceID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1531,7 +2225,17 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
-func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) *v1pb.IamPolicy {
+var iamPolicyCELAttributes = []cel.EnvOption{
+	cel.Variable("request.time", cel.TimestampType),
+	cel.Variable("request.statement", cel.StringType),
+	cel.Variable("request.row_limit", cel.IntType),
+	cel.Variable("request.export_format", cel.StringType),
+	cel.Variable("resource.database", cel.StringType),
+	cel.Variable("resource.schema", cel.StringType),
+	cel.Variable("resource.table", cel.StringType),
+}
+
+func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) (*v1pb.IamPolicy, error) {
 	var bindings []*v1pb.Binding
 
 	for _, binding := range iamPolicy.Bindings {
@@ -1539,15 +2243,31 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) *v1pb.IamPolicy {
 		for _, member := range binding.Members {
 			members = append(members, fmt.Sprintf("user:%s", member.Email))
 		}
-		bindings = append(bindings, &v1pb.Binding{
+		v1pbBinding := &v1pb.Binding{
 			Role:      convertToProjectRole(binding.Role),
 			Members:   members,
 			Condition: binding.Condition,
-		})
+		}
+		if binding.Condition.Expression != "" {
+			e, err := cel.NewEnv(iamPolicyCELAttributes...)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create cel environment")
+			}
+			ast, issues := e.Parse(binding.Condition.Expression)
+			if issues != nil && issues.Err() != nil {
+				return nil, errors.Wrap(issues.Err(), "failed to parse expression")
+			}
+			expr, err := cel.AstToParsedExpr(ast)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to convert ast to parsed expression")
+			}
+			v1pbBinding.ParsedExpr = expr
+		}
+		bindings = append(bindings, v1pbBinding)
 	}
 	return &v1pb.IamPolicy{
 		Bindings: bindings,
-	}
+	}, nil
 }
 
 // convertToIAMPolicyMessage will convert the IAM policy to IAM policy message.
@@ -1936,4 +2656,105 @@ func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
 		}
 	}
 	return false
+}
+
+func convertToProjectGitOpsInfo(parent string, repository *api.Repository) *v1pb.ProjectGitOpsInfo {
+	return &v1pb.ProjectGitOpsInfo{
+		Name:               fmt.Sprintf("%s/gitOpsInfo", parent),
+		VcsUid:             fmt.Sprintf("%d", repository.VCSID),
+		Title:              repository.Name,
+		FullPath:           repository.FullPath,
+		WebUrl:             repository.WebURL,
+		BranchFilter:       repository.BranchFilter,
+		BaseDirectory:      repository.BaseDirectory,
+		FilePathTemplate:   repository.FilePathTemplate,
+		SchemaPathTemplate: repository.SchemaPathTemplate,
+		SheetPathTemplate:  repository.SheetPathTemplate,
+		EnableSqlReviewCi:  repository.EnableSQLReviewCI,
+		WebhookEndpointId:  repository.WebhookEndpointID,
+		ExternalId:         repository.ExternalID,
+	}
+}
+
+func isBranchNotFound(ctx context.Context, vcs *api.VCS, store *store.Store, webURL, accessToken, refreshToken, externalID, branch string) (bool, error) {
+	_, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
+		common.OauthContext{
+			ClientID:     vcs.ApplicationID,
+			ClientSecret: vcs.Secret,
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+			Refresher:    utils.RefreshToken(ctx, store, webURL),
+		},
+		vcs.InstanceURL, externalID, branch)
+
+	if common.ErrorCode(err) == common.NotFound {
+		return true, nil
+	}
+	return false, err
+}
+
+func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID, gitopsWebhookURL string) (string, error) {
+	// Create a new webhook and retrieve the created webhook ID
+	var webhookCreatePayload []byte
+	var err error
+	switch vcsType {
+	case vcsPlugin.GitLab:
+		webhookCreate := gitlab.WebhookCreate{
+			URL:                   fmt.Sprintf("%s/hook/gitlab/%s", gitopsWebhookURL, webhookEndpointID),
+			SecretToken:           secretToken,
+			PushEvents:            true,
+			EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
+		}
+		webhookCreatePayload, err = json.Marshal(webhookCreate)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	case vcsPlugin.GitHub:
+		webhookPost := github.WebhookCreateOrUpdate{
+			Config: github.WebhookConfig{
+				URL:         fmt.Sprintf("%s/hook/github/%s", gitopsWebhookURL, webhookEndpointID),
+				ContentType: "json",
+				Secret:      secretToken,
+				InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
+			},
+			Events: []string{"push"},
+		}
+		webhookCreatePayload, err = json.Marshal(webhookPost)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	case vcsPlugin.Bitbucket:
+		webhookPost := bitbucket.WebhookCreateOrUpdate{
+			Description: "Bytebase GitOps",
+			URL:         fmt.Sprintf("%s/hook/bitbucket/%s", gitopsWebhookURL, webhookEndpointID),
+			Active:      true,
+			Events:      []string{"repo:push"},
+		}
+		webhookCreatePayload, err = json.Marshal(webhookPost)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	}
+	webhookID, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).CreateWebhook(
+		ctx,
+		common.OauthContext{
+			AccessToken: accessToken,
+			// We use refreshTokenNoop() because the repository isn't created yet.
+			Refresher: refreshTokenNoop(),
+		},
+		instanceURL,
+		externalRepoID,
+		webhookCreatePayload,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create webhook")
+	}
+	return webhookID, nil
+}
+
+// refreshToken is a no-op token refresher. It should be used when the repository isn't created yet.
+func refreshTokenNoop() common.TokenRefresher {
+	return func(newToken, newRefreshToken string, expiresTs int64) error {
+		return nil
+	}
 }

@@ -29,6 +29,7 @@ export type FeatureType =
   | "bb.feature.sql-review"
   | "bb.feature.task-schedule-time"
   | "bb.feature.encrypted-secrets"
+  | "bb.feature.database-grouping"
   // VCS Integration
   | "bb.feature.vcs-schema-write-back"
   | "bb.feature.vcs-sheet-sync"

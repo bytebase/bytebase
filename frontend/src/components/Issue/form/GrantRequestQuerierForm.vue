@@ -25,11 +25,16 @@
           class="w-full !flex flex-row justify-start items-start gap-4"
           name="radiogroup"
         >
-          <NRadio
-            class="!leading-6 whitespace-nowrap"
-            :value="true"
-            :label="$t('issue.grant-request.all-databases')"
-          />
+          <NTooltip trigger="hover">
+            <template #trigger>
+              <NRadio
+                class="!leading-6 whitespace-nowrap"
+                :value="true"
+                :label="$t('issue.grant-request.all-databases')"
+              />
+            </template>
+            {{ $t("issue.grant-request.all-databases-tip") }}
+          </NTooltip>
           <div class="flex flex-row justify-start flex-wrap gap-y-2">
             <NRadio
               class="!leading-6"
@@ -137,7 +142,7 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { NRadioGroup, NRadio, NInputNumber } from "naive-ui";
+import { NRadioGroup, NRadio, NInputNumber, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useIssueLogic } from "../logic";

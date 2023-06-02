@@ -3,7 +3,6 @@ import {
   AlterTableContext,
   CreateSchemaContext,
   CreateTableContext,
-  DatabaseId,
   DropSchemaContext,
   DropTableContext,
   RenameSchemaContext,
@@ -25,7 +24,7 @@ interface DiffResult {
 }
 
 export const diffSchema = (
-  databaseId: DatabaseId,
+  databaseId: string,
   originSchema: Schema | undefined,
   schema: Schema
 ): DiffResult => {

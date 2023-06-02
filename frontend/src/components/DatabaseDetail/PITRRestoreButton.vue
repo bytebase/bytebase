@@ -61,11 +61,11 @@
       </div>
 
       <template
-        v-if="state.step === 'LAST_MIGRATION_INFO' && lastMigrationHistory"
+        v-if="state.step === 'LAST_MIGRATION_INFO' && lastChangeHistory"
       >
-        <MigrationHistoryBrief
+        <ChangeHistoryBrief
           :database="database"
-          :migration-history="lastMigrationHistory"
+          :change-history="lastChangeHistory"
         />
       </template>
 
@@ -148,7 +148,7 @@
           v-if="state.step === 'LAST_MIGRATION_INFO'"
           type="button"
           class="btn-primary py-2 px-4"
-          @click.prevent="initLastMigrationParams"
+          @click.prevent="initLastChangeParams"
         >
           {{ $t("common.next") }}
         </button>
@@ -195,6 +195,7 @@ import { CreatePITRDatabaseContext } from "./utils";
 import BBContextMenuButton, {
   type ButtonAction,
 } from "@/bbkit/BBContextMenuButton.vue";
+import ChangeHistoryBrief from "./ChangeHistoryBrief.vue";
 
 type PITRTarget = "IN-PLACE" | "NEW";
 
@@ -244,7 +245,7 @@ const hasPITRFeature = featureToRef("bb.feature.pitr");
 
 const timezone = computed(() => "UTC" + dayjs().format("ZZ"));
 
-const { pitrAvailable, doneBackupList, lastMigrationHistory, createPITRIssue } =
+const { pitrAvailable, doneBackupList, lastChangeHistory, createPITRIssue } =
   usePITRLogic(toRef(props, "database"));
 
 const pitrButtonDisabled = computed((): boolean => {
@@ -277,9 +278,11 @@ const earliest = computed((): number => {
   if (!pitrAvailable.value) {
     return Infinity;
   }
-  const timestamps = doneBackupList.value.map((backup) => backup.createdTs);
+  const timestamps = doneBackupList.value.map(
+    (backup) => backup.createTime?.getTime() ?? 0
+  );
   const earliestAllowedRestoreTS = Math.min(...timestamps);
-  return earliestAllowedRestoreTS * 1000;
+  return earliestAllowedRestoreTS;
 });
 
 // Returns error message (string) if error occurs.
@@ -337,9 +340,12 @@ const openDialog = (step: Step = "PITR_FORM", mode: Mode = "CUSTOM") => {
   state.mode = mode;
 };
 
-const initLastMigrationParams = () => {
-  if (lastMigrationHistory.value) {
-    state.pitrTimestampMS = (lastMigrationHistory.value.createdTs - 1) * 1000;
+const initLastChangeParams = () => {
+  if (lastChangeHistory.value) {
+    const timestampMS = (
+      lastChangeHistory.value.createTime ?? new Date(0)
+    ).getTime();
+    state.pitrTimestampMS = timestampMS - 1000;
   }
 
   state.step = "PITR_FORM";
@@ -392,7 +398,7 @@ const onConfirm = async () => {
       issueNameParts.push(`to [${datetime} ${timezone.value}]`);
     } else {
       issueNameParts.push(
-        `before migration version [${lastMigrationHistory.value!.version}]`
+        `before migration version [${lastChangeHistory.value!.version}]`
       );
     }
     const issue = await createPITRIssue(

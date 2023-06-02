@@ -1215,21 +1215,6 @@ func isBranchNotFound(ctx context.Context, vcs *api.VCS, store *store.Store, web
 	return false, err
 }
 
-// isProjectOwnerOrDeveloper returns whether a principal is a project owner or developer in the project.
-func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
-	for _, binding := range projectPolicy.Bindings {
-		if binding.Role != api.Owner && binding.Role != api.Developer {
-			continue
-		}
-		for _, member := range binding.Members {
-			if member.ID == principalID {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // SheetInfo represents the sheet related information from sheetPathTemplate.
 type SheetInfo struct {
 	EnvironmentID string

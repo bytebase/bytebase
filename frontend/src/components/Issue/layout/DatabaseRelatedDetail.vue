@@ -128,13 +128,12 @@ import TaskCheckBar from "../TaskCheckBar.vue";
 import type {
   Issue,
   IssueCreate,
-  Instance,
   Task,
   TaskCreate,
   MigrationType,
 } from "@/types";
 import { defaultTemplate, templateForType } from "@/plugins";
-import { useInstanceStore, useProjectV1Store, useTaskStore } from "@/store";
+import { useInstanceV1Store, useProjectV1Store, useTaskStore } from "@/store";
 import {
   provideIssueLogic,
   TenantModeProvider,
@@ -144,6 +143,7 @@ import {
   IssueLogic,
   useBaseIssueLogic,
 } from "../logic";
+import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps({
   create: {
@@ -277,24 +277,27 @@ const showIssueTaskStatementPanel = computed(() => {
   return TaskTypeWithStatement.includes(task.type);
 });
 
-const instance = computed((): Instance => {
+const instance = computed(() => {
   if (props.create) {
     // If database is available, then we derive the instance from database because we always fetch database's instance.
     if (selectedDatabase.value) {
-      return selectedDatabase.value.instance;
+      return selectedDatabase.value.instanceEntity;
     }
-    return useInstanceStore().getInstanceById(
-      (selectedTask.value as TaskCreate).instanceId
+    return useInstanceV1Store().getInstanceByUID(
+      String((selectedTask.value as TaskCreate).instanceId)
     );
   }
-  return (selectedTask.value as Task).instance;
+
+  return useInstanceV1Store().getInstanceByUID(
+    String((selectedTask.value as Task).instance.id)
+  );
 });
 
 const sqlHint = (): string | undefined => {
-  if (selectedMigrateType.value == "BASELINE") {
+  if (selectedMigrateType.value === "BASELINE") {
     return t("issue.sql-hint.dont-apply-to-database-in-baseline-migration");
   }
-  if (instance.value.engine === "SNOWFLAKE") {
+  if (instance.value.engine === Engine.SNOWFLAKE) {
     return t("issue.sql-hint.snowflake");
   }
   if (isTenantMode.value) {

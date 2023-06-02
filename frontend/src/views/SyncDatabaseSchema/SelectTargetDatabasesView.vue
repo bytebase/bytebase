@@ -31,17 +31,12 @@
             >{{ sourceDatabase.databaseName }}</a
           >
         </div>
-        <div v-if="!isEqual(sourceSchema.migrationHistory.id, UNKNOWN_ID)">
+        <div v-if="sourceSchema.changeHistory.uid !== String(UNKNOWN_ID)">
           <span>{{ $t("database.sync-schema.schema-version.self") }} - </span>
           <a
             class="normal-link inline-flex items-center"
-            :href="`/db/${databaseV1Slug(
-              sourceDatabase
-            )}/history/${migrationHistorySlug(
-              sourceSchema.migrationHistory.id,
-              sourceSchema.migrationHistory.version
-            )}`"
-            >{{ sourceSchema.migrationHistory.version }}</a
+            :href="changeHistoryLink(sourceSchema.changeHistory)"
+            >{{ sourceSchema.changeHistory.version }}</a
           >
         </div>
       </div>
@@ -198,7 +193,7 @@
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import axios from "axios";
-import { head, isEqual } from "lodash-es";
+import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import {
   PropType,
@@ -216,17 +211,18 @@ import {
   useEnvironmentV1Store,
   useProjectV1ByUID,
 } from "@/store";
-import { ComposedDatabase, MigrationHistory, UNKNOWN_ID } from "@/types";
-import { databaseV1Slug, migrationHistorySlug, projectV1Slug } from "@/utils";
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import { changeHistoryLink, databaseV1Slug, projectV1Slug } from "@/utils";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import { Engine, engineToJSON } from "@/types/proto/v1/common";
 import { InstanceV1EngineIcon } from "@/components/v2";
+import { ChangeHistory } from "@/types/proto/v1/database_service";
 
 interface SourceSchema {
   environmentId: string;
   databaseId: string;
-  migrationHistory: MigrationHistory;
+  changeHistory: ChangeHistory;
 }
 
 interface LocalState {
@@ -280,7 +276,7 @@ const sourceDatabase = computed(() => {
   return databaseStore.getDatabaseByUID(props.sourceSchema.databaseId);
 });
 const sourceDatabaseSchema = computed(() => {
-  return props.sourceSchema.migrationHistory.schema || "";
+  return props.sourceSchema.changeHistory.schema || "";
 });
 const targetDatabaseList = computed(() => {
   return state.selectedDatabaseIdList.map((id) => {

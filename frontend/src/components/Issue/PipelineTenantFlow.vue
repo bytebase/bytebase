@@ -33,17 +33,23 @@
                   v-if="isActiveTask(task)"
                   class="w-5 h-5 inline-block"
                 />
-                <span>{{ j + 1 }} - {{ databaseForTask(task).name }}</span>
+                <span
+                  >{{ j + 1 }} - {{ databaseForTask(task).databaseName }}</span
+                >
               </div>
             </div>
             <TaskExtraActionsButton :task="(task as Task)" />
           </div>
           <div class="flex items-center justify-between px-1 py-1">
             <div class="flex flex-1 items-center whitespace-pre-wrap">
-              <InstanceEngineIcon :instance="databaseForTask(task).instance" />
+              <InstanceV1EngineIcon
+                :instance="databaseForTask(task).instanceEntity"
+              />
               <span
                 class="flex-1 ml-2 overflow-x-hidden whitespace-nowrap overflow-ellipsis"
-                >{{ instanceName(databaseForTask(task).instance) }}</span
+                >{{
+                  instanceV1Name(databaseForTask(task).instanceEntity)
+                }}</span
               >
             </div>
           </div>
@@ -55,27 +61,21 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
-import type {
-  Pipeline,
-  Stage,
-  StageCreate,
-  Task,
-  TaskCreate,
-  Database,
-} from "@/types";
-import { activeTask, taskSlug } from "@/utils";
+import type { Pipeline, Stage, StageCreate, Task, TaskCreate } from "@/types";
+import { activeTask, taskSlug, instanceV1Name } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
-import { useDatabaseStore } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { useIssueLogic } from "./logic";
 import { useVerticalScrollState } from "@/composables/useScrollState";
+import { InstanceV1EngineIcon } from "../v2";
 
 const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
   useIssueLogic();
 
 const pipeline = computed(() => issue.value.pipeline!);
 
-const databaseStore = useDatabaseStore();
+const databaseStore = useDatabaseV1Store();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, 192);
 
@@ -91,12 +91,11 @@ const isActiveTask = (task: Task | TaskCreate): boolean => {
   return activeTask(pipeline.value as Pipeline).id === task.id;
 };
 
-const databaseForTask = (task: Task | TaskCreate): Database => {
-  if (create.value) {
-    return databaseStore.getDatabaseById((task as TaskCreate).databaseId!);
-  } else {
-    return (task as Task).database!;
-  }
+const databaseForTask = (task: Task | TaskCreate) => {
+  const uid = create.value
+    ? String((task as TaskCreate).databaseId!)
+    : String((task as Task).database!.id);
+  return databaseStore.getDatabaseByUID(uid);
 };
 
 const selectedStageIdOrIndex = computed(() => {

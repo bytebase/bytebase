@@ -158,12 +158,39 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 		return 0, err
 	}
 
-	return 0, err
+	return totalRowsAffected, err
 }
 
 // QueryConn querys a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]any, error) {
 	return util.Query(ctx, driver.dbType, conn, statement, queryContext)
+}
+
+// RunStatement runs a SQL statement.
+func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	var results []*v1pb.QueryResult
+	if err := util.ApplyMultiStatements(strings.NewReader(statement), func(stmt string) error {
+		rows, err := conn.QueryContext(ctx, statement)
+		if err != nil {
+			// TODO(d): ClickHouse will return "driver: bad connection" if we use non-SELECT statement for Query(). We need to ignore the error.
+			//nolint
+			return nil
+		}
+		defer rows.Close()
+
+		result, err := convertRowsToQueryResult(rows)
+		if err != nil {
+			result = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
+		}
+		results = append(results, result)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 // QueryConn2 queries a SQL statement in a given connection.
@@ -211,6 +238,10 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement str
 	}
 	defer rows.Close()
 
+	return convertRowsToQueryResult(rows)
+}
+
+func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -268,7 +299,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			return nil, err
 		}
 
-		var rowData *v1pb.QueryRow
+		var rowData v1pb.QueryRow
 		for i := range cols {
 			// handle TUPLE ARRAY MAP
 			if v, ok := cols[i].(*any); ok && v != nil {
@@ -446,7 +477,7 @@ func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, column
 			rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
 		}
 
-		data = append(data, rowData)
+		data = append(data, &rowData)
 	}
 
 	return data, nil

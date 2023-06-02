@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -108,7 +109,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	})
 	a.NoError(err)
 
-	for idx, tt := range tests {
+	for _, tt := range tests {
 		var instance *v1pb.Instance
 		databaseOwner := ""
 		switch tt.dbType {
@@ -123,33 +124,25 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		err = ctl.createDatabase(ctx, projectUID, instance, tt.databaseName, databaseOwner, nil)
 		a.NoError(err)
 
-		databases, err := ctl.getDatabases(api.DatabaseFind{
-			ProjectID: &projectUID,
+		database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+			Name: fmt.Sprintf("%s/databases/%s", instance.Name, tt.databaseName),
 		})
 		a.NoError(err)
-		a.Equal(idx+1, len(databases))
-
-		var database *api.Database
-		for _, d := range databases {
-			if d.Name == tt.databaseName {
-				database = d
-				break
-			}
-		}
-		a.NotNil(database)
-
-		instanceUID, err := strconv.Atoi(instance.Uid)
+		databaseUID, err := strconv.Atoi(database.Uid)
 		a.NoError(err)
-		a.Equal(instanceUID, database.Instance.ID)
 
-		sheet, err := ctl.createSheet(api.SheetCreate{
-			ProjectID:  projectUID,
-			Name:       "prepareStatements",
-			Statement:  tt.prepareStatements,
-			Visibility: api.ProjectSheet,
-			Source:     api.SheetFromBytebaseArtifact,
-			Type:       api.SheetForSQL,
+		sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
+			Parent: project.Name,
+			Sheet: &v1pb.Sheet{
+				Title:      "prepareStatements",
+				Content:    []byte(tt.prepareStatements),
+				Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
+				Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
+				Type:       v1pb.Sheet_TYPE_SQL,
+			},
 		})
+		a.NoError(err)
+		sheetUID, err := strconv.Atoi(strings.TrimPrefix(sheet.Name, fmt.Sprintf("%s/sheets/", project.Name)))
 		a.NoError(err)
 
 		// Create an issue that updates database schema.
@@ -157,8 +150,8 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			DetailList: []*api.MigrationDetail{
 				{
 					MigrationType: db.Migrate,
-					DatabaseID:    database.ID,
-					SheetID:       sheet.ID,
+					DatabaseID:    databaseUID,
+					SheetID:       sheetUID,
 				},
 			},
 		})

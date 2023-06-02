@@ -8,6 +8,7 @@ import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
 import { State, stateFromJSON, stateToJSON } from "./common";
+import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -186,6 +187,8 @@ export interface GetDatabaseSchemaRequest {
    * Format: instances/{instance}/databases/{database}
    */
   name: string;
+  /** Format the schema dump into SDL format. */
+  sdlFormat: boolean;
 }
 
 export interface GetBackupSettingRequest {
@@ -491,6 +494,7 @@ export interface Backup {
   backupType: Backup_BackupType;
   /** The comment of the backup. */
   comment: string;
+  uid: string;
 }
 
 /** The type of the backup. */
@@ -798,6 +802,7 @@ export interface ChangeHistory {
   executionDuration?: Duration;
   /** Format: projects/{project}/reviews/{review} */
   review: string;
+  pushEvent?: PushEvent;
 }
 
 export enum ChangeHistory_Source {
@@ -993,6 +998,8 @@ export interface GetChangeHistoryRequest {
    */
   name: string;
   view: ChangeHistoryView;
+  /** Format the schema dump into SDL format. */
+  sdlFormat: boolean;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -1664,13 +1671,16 @@ export const GetDatabaseMetadataRequest = {
 };
 
 function createBaseGetDatabaseSchemaRequest(): GetDatabaseSchemaRequest {
-  return { name: "" };
+  return { name: "", sdlFormat: false };
 }
 
 export const GetDatabaseSchemaRequest = {
   encode(message: GetDatabaseSchemaRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.sdlFormat === true) {
+      writer.uint32(16).bool(message.sdlFormat);
     }
     return writer;
   },
@@ -1689,6 +1699,13 @@ export const GetDatabaseSchemaRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.sdlFormat = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1699,12 +1716,16 @@ export const GetDatabaseSchemaRequest = {
   },
 
   fromJSON(object: any): GetDatabaseSchemaRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      sdlFormat: isSet(object.sdlFormat) ? Boolean(object.sdlFormat) : false,
+    };
   },
 
   toJSON(message: GetDatabaseSchemaRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.sdlFormat !== undefined && (obj.sdlFormat = message.sdlFormat);
     return obj;
   },
 
@@ -1715,6 +1736,7 @@ export const GetDatabaseSchemaRequest = {
   fromPartial(object: DeepPartial<GetDatabaseSchemaRequest>): GetDatabaseSchemaRequest {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
+    message.sdlFormat = object.sdlFormat ?? false;
     return message;
   },
 };
@@ -3726,7 +3748,7 @@ export const BackupSetting = {
 };
 
 function createBaseBackup(): Backup {
-  return { name: "", createTime: undefined, updateTime: undefined, state: 0, backupType: 0, comment: "" };
+  return { name: "", createTime: undefined, updateTime: undefined, state: 0, backupType: 0, comment: "", uid: "" };
 }
 
 export const Backup = {
@@ -3748,6 +3770,9 @@ export const Backup = {
     }
     if (message.comment !== "") {
       writer.uint32(50).string(message.comment);
+    }
+    if (message.uid !== "") {
+      writer.uint32(58).string(message.uid);
     }
     return writer;
   },
@@ -3801,6 +3826,13 @@ export const Backup = {
 
           message.comment = reader.string();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.uid = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3818,6 +3850,7 @@ export const Backup = {
       state: isSet(object.state) ? backup_BackupStateFromJSON(object.state) : 0,
       backupType: isSet(object.backupType) ? backup_BackupTypeFromJSON(object.backupType) : 0,
       comment: isSet(object.comment) ? String(object.comment) : "",
+      uid: isSet(object.uid) ? String(object.uid) : "",
     };
   },
 
@@ -3829,6 +3862,7 @@ export const Backup = {
     message.state !== undefined && (obj.state = backup_BackupStateToJSON(message.state));
     message.backupType !== undefined && (obj.backupType = backup_BackupTypeToJSON(message.backupType));
     message.comment !== undefined && (obj.comment = message.comment);
+    message.uid !== undefined && (obj.uid = message.uid);
     return obj;
   },
 
@@ -3844,6 +3878,7 @@ export const Backup = {
     message.state = object.state ?? 0;
     message.backupType = object.backupType ?? 0;
     message.comment = object.comment ?? "";
+    message.uid = object.uid ?? "";
     return message;
   },
 };
@@ -5020,6 +5055,7 @@ function createBaseChangeHistory(): ChangeHistory {
     prevSchema: "",
     executionDuration: undefined,
     review: "",
+    pushEvent: undefined,
   };
 }
 
@@ -5075,6 +5111,9 @@ export const ChangeHistory = {
     }
     if (message.review !== "") {
       writer.uint32(138).string(message.review);
+    }
+    if (message.pushEvent !== undefined) {
+      PushEvent.encode(message.pushEvent, writer.uint32(146).fork()).ldelim();
     }
     return writer;
   },
@@ -5205,6 +5244,13 @@ export const ChangeHistory = {
 
           message.review = reader.string();
           continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.pushEvent = PushEvent.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5233,6 +5279,7 @@ export const ChangeHistory = {
       prevSchema: isSet(object.prevSchema) ? String(object.prevSchema) : "",
       executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
       review: isSet(object.review) ? String(object.review) : "",
+      pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
   },
 
@@ -5256,6 +5303,8 @@ export const ChangeHistory = {
     message.executionDuration !== undefined &&
       (obj.executionDuration = message.executionDuration ? Duration.toJSON(message.executionDuration) : undefined);
     message.review !== undefined && (obj.review = message.review);
+    message.pushEvent !== undefined &&
+      (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
     return obj;
   },
 
@@ -5284,6 +5333,9 @@ export const ChangeHistory = {
       ? Duration.fromPartial(object.executionDuration)
       : undefined;
     message.review = object.review ?? "";
+    message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
+      ? PushEvent.fromPartial(object.pushEvent)
+      : undefined;
     return message;
   },
 };
@@ -5463,7 +5515,7 @@ export const ListChangeHistoriesResponse = {
 };
 
 function createBaseGetChangeHistoryRequest(): GetChangeHistoryRequest {
-  return { name: "", view: 0 };
+  return { name: "", view: 0, sdlFormat: false };
 }
 
 export const GetChangeHistoryRequest = {
@@ -5473,6 +5525,9 @@ export const GetChangeHistoryRequest = {
     }
     if (message.view !== 0) {
       writer.uint32(16).int32(message.view);
+    }
+    if (message.sdlFormat === true) {
+      writer.uint32(24).bool(message.sdlFormat);
     }
     return writer;
   },
@@ -5498,6 +5553,13 @@ export const GetChangeHistoryRequest = {
 
           message.view = reader.int32() as any;
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.sdlFormat = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5511,6 +5573,7 @@ export const GetChangeHistoryRequest = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       view: isSet(object.view) ? changeHistoryViewFromJSON(object.view) : 0,
+      sdlFormat: isSet(object.sdlFormat) ? Boolean(object.sdlFormat) : false,
     };
   },
 
@@ -5518,6 +5581,7 @@ export const GetChangeHistoryRequest = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.view !== undefined && (obj.view = changeHistoryViewToJSON(message.view));
+    message.sdlFormat !== undefined && (obj.sdlFormat = message.sdlFormat);
     return obj;
   },
 
@@ -5529,6 +5593,7 @@ export const GetChangeHistoryRequest = {
     const message = createBaseGetChangeHistoryRequest();
     message.name = object.name ?? "";
     message.view = object.view ?? 0;
+    message.sdlFormat = object.sdlFormat ?? false;
     return message;
   },
 };

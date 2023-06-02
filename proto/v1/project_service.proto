@@ -4,6 +4,7 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/client.proto";
+import "google/api/expr/v1alpha1/syntax.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
@@ -120,7 +121,19 @@ service ProjectService {
     };
   }
 
-  rpc GetProjectGitOpsInfo(SetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
+  rpc DeleteProjectGitOpsInfo(DeleteProjectGitOpsInfoRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{project=projects/*}/gitOpsInfo"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc SetupProjectSQLReviewCI(SetupSQLReviewCIRequest) returns (SetupSQLReviewCIResponse) {
+    option (google.api.http) = {
+      patch: "/v1/{project=projects/*}/gitOpsInfo:setupSQLReviewCI"
+      body: "*"
+    };
+  }
+
+  rpc GetProjectGitOpsInfo(GetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
     option (google.api.http) = {get: "/v1/{project=projects/*}/gitOpsInfo"};
   }
 
@@ -332,12 +345,35 @@ message SetProjectGitOpsInfoRequest {
 
   // The binding for the project and external version control.
   ProjectGitOpsInfo project_gitops_info = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The mask of the fields to be updated.
+  google.protobuf.FieldMask update_mask = 3;
+
+  // If true, the gitops will be created if it does not exist.
+  bool allow_missing = 4;
+}
+
+message DeleteProjectGitOpsInfoRequest {
+  // The name of the project.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetProjectGitOpsInfoRequest {
   // The name of the project.
   // Format: projects/{project}
   string project = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SetupSQLReviewCIRequest {
+  // The name of the project.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SetupSQLReviewCIResponse {
+  // The CI setup PR URL for the repository.
+  string pull_request_url = 1;
 }
 
 message Project {
@@ -394,6 +430,9 @@ message Binding {
   // If the condition evaluates to true, then this binding applies to the current request.
   // If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
   google.type.Expr condition = 3;
+
+  // The parsed expression of the condition.
+  google.api.expr.v1alpha1.ParsedExpr parsed_expr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum Workflow {

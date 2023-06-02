@@ -6,26 +6,26 @@
       </label>
       <div class="flex-1">
         <a
-          :href="migrationHistoryLink"
+          :href="link"
           target="__BLANK"
           class="normal-link flex items-center gap-x-1"
         >
-          {{ migrationHistory.version }}
+          {{ changeHistory.version }}
         </a>
       </div>
     </div>
 
-    <div v-if="migrationHistory.issueId" class="flex items-center gap-x-4">
+    <div v-if="changeHistory" class="flex items-center gap-x-4">
       <label class="w-1/4 flex justify-end textlabel">
         {{ $t("common.issue") }}
       </label>
       <div class="flex-1">
         <a
-          :href="`/issue/${migrationHistory.issueId}`"
+          :href="`/issue/${extractReviewId(changeHistory.review)}`"
           target="__BLANK"
           class="normal-link flex items-center gap-x-1"
         >
-          {{ migrationHistory.issueId }}
+          {{ extractReviewId(changeHistory.review) }}
         </a>
       </div>
     </div>
@@ -36,7 +36,7 @@
       </label>
       <div class="flex-1">
         <NPopover
-          :disabled="migrationHistory.statement.length < MAX_SQL_LENGTH"
+          :disabled="changeHistory.statement.length < MAX_SQL_LENGTH"
           style="max-height: 300px"
           placement="bottom"
           overlap
@@ -44,7 +44,7 @@
           scrollable
         >
           <highlight-code-block
-            :code="migrationHistory.statement"
+            :code="changeHistory.statement"
             class="whitespace-pre-wrap"
           />
 
@@ -71,7 +71,9 @@
       <label class="w-1/4 flex justify-end textlabel">
         {{ $t("common.creator") }}
       </label>
-      <div class="flex-1">{{ migrationHistory.creator }}</div>
+      <div v-if="creator" class="flex-1">
+        {{ creator.title }} ({{ creator.email }})
+      </div>
     </div>
   </div>
 </template>
@@ -79,41 +81,47 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import dayjs from "dayjs";
-import { Database, MigrationHistory } from "@/types";
-import { databaseSlug, migrationHistorySlug } from "@/utils";
+import {
+  extractUserResourceName,
+  extractReviewId,
+  changeHistoryLink as makeChangeHistoryLink,
+} from "@/utils";
+import { ComposedDatabase } from "@/types";
+import { ChangeHistory } from "@/types/proto/v1/database_service";
+import { useUserStore } from "@/store";
 
 const props = defineProps({
   database: {
-    type: Object as PropType<Database>,
+    type: Object as PropType<ComposedDatabase>,
     required: true,
   },
-  migrationHistory: {
-    type: Object as PropType<MigrationHistory>,
+  changeHistory: {
+    type: Object as PropType<ChangeHistory>,
     required: true,
   },
 });
 
 const MAX_SQL_LENGTH = 100;
 
-const migrationHistoryLink = computed(() => {
-  const { database, migrationHistory } = props;
-  return `/db/${databaseSlug(database)}/history/${migrationHistorySlug(
-    migrationHistory.id,
-    migrationHistory.version
-  )}`;
+const link = computed(() => {
+  return makeChangeHistoryLink(props.changeHistory);
 });
 
 const createdAt = computed(() => {
-  return dayjs(props.migrationHistory.createdTs * 1000).format(
-    "YYYY-MM-DD HH:mm:ss"
-  );
+  const date = props.changeHistory.createTime ?? new Date(0);
+  return dayjs(date).format("YYYY-MM-DD HH:mm:ss");
 });
 const timezone = computed(() => "UTC" + dayjs().format("ZZ"));
 
 const displayStatement = computed((): string => {
-  const { migrationHistory } = props;
-  return migrationHistory.statement.length > MAX_SQL_LENGTH
-    ? migrationHistory.statement.substring(0, MAX_SQL_LENGTH) + "..."
-    : migrationHistory.statement;
+  const { changeHistory } = props;
+  return changeHistory.statement.length > MAX_SQL_LENGTH
+    ? changeHistory.statement.substring(0, MAX_SQL_LENGTH) + "..."
+    : changeHistory.statement;
+});
+
+const creator = computed(() => {
+  const email = extractUserResourceName(props.changeHistory.creator);
+  return useUserStore().getUserByEmail(email);
 });
 </script>

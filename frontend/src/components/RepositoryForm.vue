@@ -6,13 +6,13 @@
         <label for="gitprovider" class="textlabel">
           {{ $t("repository.git-provider") }}
         </label>
-        <template v-if="vcsType.startsWith('GITLAB')">
+        <template v-if="vcsType === ExternalVersionControl_Type.GITLAB">
           <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
-        <template v-if="vcsType.startsWith('GITHUB')">
+        <template v-if="vcsType === ExternalVersionControl_Type.GITHUB">
           <img class="h-4 w-auto" src="../assets/github-logo.svg" />
         </template>
-        <template v-if="vcsType.startsWith('BITBUCKET')">
+        <template v-if="vcsType === ExternalVersionControl_Type.BITBUCKET">
           <img class="h-4 w-auto" src="../assets/bitbucket-logo.svg" />
         </template>
       </div>
@@ -92,10 +92,10 @@
         id="schemamigrationtype"
         :disabled="!allowEdit"
         :selected-item="schemaChangeType"
-        :item-list="['DDL', 'SDL']"
+        :item-list="[SchemaChange.DDL, SchemaChange.SDL]"
         class="mt-1"
         @select-item="
-          (type: string) => {
+          (type: SchemaChange) => {
             $emit('change-schema-change-type', type);
           }
         "
@@ -104,10 +104,12 @@
           <div class="flex items-center gap-x-2">
             {{
               $t(
-                `project.settings.select-schema-change-type-${item.toLowerCase()}`
+                `project.settings.select-schema-change-type-${schemaChangeToJSON(
+                  item
+                ).toLowerCase()}`
               )
             }}
-            <BBBetaBadge v-if="item === 'SDL'" class="!leading-3" />
+            <BBBetaBadge v-if="item === SchemaChange.SDL" class="!leading-3" />
           </div>
         </template>
       </BBSelect>
@@ -185,7 +187,11 @@
         </template>
         <span v-if="!hasFeature('bb.feature.vcs-schema-write-back')">
           {{
-            $t(getFeatureRequiredPlanString("bb.feature.vcs-schema-write-back"))
+            $t(
+              subscriptionStore.getFeatureRequiredPlanString(
+                "bb.feature.vcs-schema-write-back"
+              )
+            )
           }}
         </span>
         <LearnMoreLink
@@ -215,7 +221,11 @@
         v-else-if="isProjectSchemaChangeTypeDDL"
         type="text"
         class="textfield mt-2 w-full"
-        :value="getRequiredPlanString('bb.feature.vcs-schema-write-back')"
+        :value="
+          subscriptionStore.getRquiredPlanString(
+            'bb.feature.vcs-schema-write-back'
+          )
+        "
         :disabled="true"
       />
       <div v-if="schemaTagPlaceholder" class="mt-2 textinfolabel">
@@ -262,7 +272,9 @@
         v-else
         type="text"
         class="textfield mt-2 w-full"
-        :value="getRequiredPlanString('bb.feature.vcs-sheet-sync')"
+        :value="
+          subscriptionStore.getRquiredPlanString('bb.feature.vcs-sheet-sync')
+        "
         :disabled="true"
       />
       <div class="mt-2 textinfolabel capitalize">
@@ -282,11 +294,12 @@
       <div class="mt-1 textinfolabel">
         {{
           $t("repository.sql-review-ci-description", {
-            pr: vcsType.startsWith("GITLAB")
-              ? $t("repository.merge-request")
-              : $t("repository.pull-request"),
+            pr:
+              vcsType === ExternalVersionControl_Type.GITLAB
+                ? $t("repository.merge-request")
+                : $t("repository.pull-request"),
             pathTemplate:
-              schemaChangeType == "DDL"
+              schemaChangeType == SchemaChange.DDL
                 ? $t("repository.file-path-template")
                 : $t("repository.schema-path-template"),
           })
@@ -312,19 +325,18 @@
   </div>
 </template>
 
-<script lang="ts">
-import { reactive, PropType, defineComponent, computed } from "vue";
+<script lang="ts" setup>
+import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  ExternalRepositoryInfo,
-  Project,
-  RepositoryConfig,
-  SchemaChangeType,
-  VCSType,
-} from "@/types";
-import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
+import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import { hasFeature, useSubscriptionV1Store } from "@/store";
-import LearnMoreLink from "./LearnMoreLink.vue";
+import {
+  Project,
+  TenantMode,
+  SchemaChange,
+  schemaChangeToJSON,
+} from "@/types/proto/v1/project_service";
+import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -337,214 +349,193 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
-export default defineComponent({
-  name: "RepositoryForm",
-  components: { BBBetaBadge, LearnMoreLink },
-  props: {
-    allowEdit: {
-      default: true,
-      type: Boolean,
-    },
-    create: {
-      type: Boolean,
-      default: false,
-    },
-    vcsType: {
-      required: true,
-      type: String as PropType<VCSType>,
-    },
-    vcsName: {
-      required: true,
-      type: String,
-    },
-    repositoryInfo: {
-      required: true,
-      type: Object as PropType<ExternalRepositoryInfo>,
-    },
-    repositoryConfig: {
-      required: true,
-      type: Object as PropType<RepositoryConfig>,
-    },
-    project: {
-      required: true,
-      type: Object as PropType<Project>,
-    },
-    schemaChangeType: {
-      required: true,
-      type: String as PropType<SchemaChangeType>,
-    },
+defineEmits<{
+  (event: "change-repository"): void;
+  (event: "change-schema-change-type", changeType: SchemaChange): void;
+}>();
+
+const props = defineProps({
+  allowEdit: {
+    default: true,
+    type: Boolean,
   },
-  emits: ["change-repository", "change-schema-change-type"],
-  setup(props) {
-    const { t } = useI18n();
-
-    const state = reactive<LocalState>({
-      showFeatureModal: false,
-    });
-
-    const subscriptionStore = useSubscriptionV1Store();
-
-    const isTenantProject = computed(() => {
-      return props.project.tenantMode === "TENANT";
-    });
-    const isProjectSchemaChangeTypeDDL = computed(() => {
-      return (props.schemaChangeType || "DDL") === "DDL";
-    });
-    const isProjectSchemaChangeTypeSDL = computed(() => {
-      return (props.schemaChangeType || "DDL") === "SDL";
-    });
-    const canEnableSQLReview = computed(() => {
-      return (
-        props.vcsType.startsWith("GITLAB") || props.vcsType.startsWith("GITHUB")
-      );
-    });
-    const enableSQLReviewTitle = computed(() => {
-      return props.vcsType.startsWith("GITLAB")
-        ? t("repository.sql-review-ci-enable-gitlab")
-        : t("repository.sql-review-ci-enable-github");
-    });
-
-    const sampleFilePath = (
-      baseDirectory: string,
-      filePathTemplate: string,
-      type: string
-    ): string => {
-      type Item = {
-        placeholder: string;
-        sampleText: string;
-      };
-      const placeholderList: Item[] = [
-        {
-          placeholder: "{{VERSION}}",
-          sampleText: "202101131000",
-        },
-        {
-          placeholder: "{{DB_NAME}}",
-          sampleText: "db1",
-        },
-        {
-          placeholder: "{{TYPE}}",
-          sampleText: type,
-        },
-        {
-          placeholder: "{{ENV_ID}}",
-          sampleText: "env1",
-        },
-        {
-          placeholder: "{{ENV_NAME}}", // for legacy support
-          sampleText: "env1",
-        },
-        {
-          placeholder: "{{DESCRIPTION}}",
-          sampleText: "create_tablefoo_for_bar",
-        },
-      ];
-      let result = `${baseDirectory}/${filePathTemplate}`;
-      // To replace the wildcard.
-      result = result.replace(SINGLE_ASTERISK_REGEX, "/foo/");
-      result = result.replace(DOUBLE_ASTERISKS_REGEX, "/foo/bar/");
-      for (const item of placeholderList) {
-        const re = new RegExp(item.placeholder, "g");
-        result = result.replace(re, item.sampleText);
-      }
-      return result;
-    };
-
-    const sampleSchemaPath = (
-      baseDirectory: string,
-      schemaPathTemplate: string
-    ): string => {
-      type Item = {
-        placeholder: string;
-        sampleText: string;
-      };
-      const placeholderList: Item[] = [
-        {
-          placeholder: "{{DB_NAME}}",
-          sampleText: "db1",
-        },
-        {
-          placeholder: "{{ENV_ID}}",
-          sampleText: "env1",
-        },
-        {
-          placeholder: "{{ENV_NAME}}", // for legacy support
-          sampleText: "env1",
-        },
-      ];
-      let result = `${baseDirectory}/${schemaPathTemplate}`;
-      for (const item of placeholderList) {
-        const re = new RegExp(item.placeholder, "g");
-        result = result.replace(re, item.sampleText);
-      }
-      return result;
-    };
-
-    const fileOptionalPlaceholder = computed(() => {
-      const tags = [] as string[];
-      // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
-      if (!isTenantProject.value) tags.push("{{ENV_ID}}");
-      tags.push("{{DESCRIPTION}}");
-      return tags;
-    });
-
-    const schemaRequiredTagPlaceholder = computed(() => {
-      const tags = [] as string[];
-      // Only allows {{DB_NAME}} to be an optional placeholder for non-tenant mode projects
-      if (!isTenantProject.value) tags.push(SCHEMA_REQUIRED_PLACEHOLDER);
-      return tags;
-    });
-
-    const schemaOptionalTagPlaceholder = computed(() => {
-      const tags = [] as string[];
-      // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
-      if (!isTenantProject.value) tags.push("{{ENV_ID}}");
-      return tags;
-    });
-
-    const schemaTagPlaceholder = computed(() => {
-      const placeholders: string[] = [];
-      const required = schemaRequiredTagPlaceholder.value;
-      const optional = schemaOptionalTagPlaceholder.value;
-      if (required.length > 0) {
-        placeholders.push(
-          `${t("common.required-placeholder")}: ${required.join(", ")}`
-        );
-      }
-      if (optional.length > 0) {
-        placeholders.push(
-          `${t("common.optional-placeholder")}: ${optional.join(", ")}`
-        );
-      }
-      return placeholders.join("; ");
-    });
-
-    const onSQLReviewCIToggle = (on: boolean) => {
-      if (on && !hasFeature("bb.feature.vcs-sql-review")) {
-        state.showFeatureModal = true;
-      }
-    };
-
-    return {
-      FILE_REQUIRED_PLACEHOLDER,
-      SCHEMA_REQUIRED_PLACEHOLDER,
-      FILE_OPTIONAL_DIRECTORY_WILDCARD,
-      fileOptionalPlaceholder,
-      schemaOptionalTagPlaceholder,
-      schemaTagPlaceholder,
-      state,
-      hasFeature,
-      getRequiredPlanString: subscriptionStore.getRquiredPlanString,
-      getFeatureRequiredPlanString:
-        subscriptionStore.getFeatureRequiredPlanString,
-      isProjectSchemaChangeTypeDDL,
-      isProjectSchemaChangeTypeSDL,
-      canEnableSQLReview,
-      enableSQLReviewTitle,
-      sampleFilePath,
-      sampleSchemaPath,
-      onSQLReviewCIToggle,
-    };
+  create: {
+    type: Boolean,
+    default: false,
+  },
+  vcsType: {
+    required: true,
+    type: Object as PropType<ExternalVersionControl_Type>,
+  },
+  vcsName: {
+    required: true,
+    type: String,
+  },
+  repositoryInfo: {
+    required: true,
+    type: Object as PropType<ExternalRepositoryInfo>,
+  },
+  repositoryConfig: {
+    required: true,
+    type: Object as PropType<RepositoryConfig>,
+  },
+  project: {
+    required: true,
+    type: Object as PropType<Project>,
+  },
+  schemaChangeType: {
+    required: true,
+    type: Object as PropType<SchemaChange>,
   },
 });
+
+const { t } = useI18n();
+
+const state = reactive<LocalState>({
+  showFeatureModal: false,
+});
+
+const subscriptionStore = useSubscriptionV1Store();
+
+const isTenantProject = computed(() => {
+  return props.project.tenantMode === TenantMode.TENANT_MODE_ENABLED;
+});
+const isProjectSchemaChangeTypeDDL = computed(() => {
+  return (props.schemaChangeType || SchemaChange.DDL) === SchemaChange.DDL;
+});
+const isProjectSchemaChangeTypeSDL = computed(() => {
+  return (props.schemaChangeType || SchemaChange.DDL) === SchemaChange.SDL;
+});
+const canEnableSQLReview = computed(() => {
+  return (
+    props.vcsType == ExternalVersionControl_Type.GITHUB ||
+    props.vcsType === ExternalVersionControl_Type.GITLAB
+  );
+});
+const enableSQLReviewTitle = computed(() => {
+  return props.vcsType === ExternalVersionControl_Type.GITLAB
+    ? t("repository.sql-review-ci-enable-gitlab")
+    : t("repository.sql-review-ci-enable-github");
+});
+
+const sampleFilePath = (
+  baseDirectory: string,
+  filePathTemplate: string,
+  type: string
+): string => {
+  type Item = {
+    placeholder: string;
+    sampleText: string;
+  };
+  const placeholderList: Item[] = [
+    {
+      placeholder: "{{VERSION}}",
+      sampleText: "202101131000",
+    },
+    {
+      placeholder: "{{DB_NAME}}",
+      sampleText: "db1",
+    },
+    {
+      placeholder: "{{TYPE}}",
+      sampleText: type,
+    },
+    {
+      placeholder: "{{ENV_ID}}",
+      sampleText: "env1",
+    },
+    {
+      placeholder: "{{ENV_NAME}}", // for legacy support
+      sampleText: "env1",
+    },
+    {
+      placeholder: "{{DESCRIPTION}}",
+      sampleText: "create_tablefoo_for_bar",
+    },
+  ];
+  let result = `${baseDirectory}/${filePathTemplate}`;
+  // To replace the wildcard.
+  result = result.replace(SINGLE_ASTERISK_REGEX, "/foo/");
+  result = result.replace(DOUBLE_ASTERISKS_REGEX, "/foo/bar/");
+  for (const item of placeholderList) {
+    const re = new RegExp(item.placeholder, "g");
+    result = result.replace(re, item.sampleText);
+  }
+  return result;
+};
+
+const sampleSchemaPath = (
+  baseDirectory: string,
+  schemaPathTemplate: string
+): string => {
+  type Item = {
+    placeholder: string;
+    sampleText: string;
+  };
+  const placeholderList: Item[] = [
+    {
+      placeholder: "{{DB_NAME}}",
+      sampleText: "db1",
+    },
+    {
+      placeholder: "{{ENV_ID}}",
+      sampleText: "env1",
+    },
+    {
+      placeholder: "{{ENV_NAME}}", // for legacy support
+      sampleText: "env1",
+    },
+  ];
+  let result = `${baseDirectory}/${schemaPathTemplate}`;
+  for (const item of placeholderList) {
+    const re = new RegExp(item.placeholder, "g");
+    result = result.replace(re, item.sampleText);
+  }
+  return result;
+};
+
+const fileOptionalPlaceholder = computed(() => {
+  const tags = [] as string[];
+  // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
+  if (!isTenantProject.value) tags.push("{{ENV_ID}}");
+  tags.push("{{DESCRIPTION}}");
+  return tags;
+});
+
+const schemaRequiredTagPlaceholder = computed(() => {
+  const tags = [] as string[];
+  // Only allows {{DB_NAME}} to be an optional placeholder for non-tenant mode projects
+  if (!isTenantProject.value) tags.push(SCHEMA_REQUIRED_PLACEHOLDER);
+  return tags;
+});
+
+const schemaOptionalTagPlaceholder = computed(() => {
+  const tags = [] as string[];
+  // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
+  if (!isTenantProject.value) tags.push("{{ENV_ID}}");
+  return tags;
+});
+
+const schemaTagPlaceholder = computed(() => {
+  const placeholders: string[] = [];
+  const required = schemaRequiredTagPlaceholder.value;
+  const optional = schemaOptionalTagPlaceholder.value;
+  if (required.length > 0) {
+    placeholders.push(
+      `${t("common.required-placeholder")}: ${required.join(", ")}`
+    );
+  }
+  if (optional.length > 0) {
+    placeholders.push(
+      `${t("common.optional-placeholder")}: ${optional.join(", ")}`
+    );
+  }
+  return placeholders.join("; ");
+});
+
+const onSQLReviewCIToggle = (on: boolean) => {
+  if (on && !hasFeature("bb.feature.vcs-sql-review")) {
+    state.showFeatureModal = true;
+  }
+};
 </script>

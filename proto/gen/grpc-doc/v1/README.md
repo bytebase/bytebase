@@ -72,6 +72,13 @@
   
     - [CelService](#bytebase-v1-CelService)
   
+- [v1/vcs.proto](#v1_vcs-proto)
+    - [Commit](#bytebase-v1-Commit)
+    - [FileCommit](#bytebase-v1-FileCommit)
+    - [PushEvent](#bytebase-v1-PushEvent)
+  
+    - [VcsType](#bytebase-v1-VcsType)
+  
 - [v1/database_service.proto](#v1_database_service-proto)
     - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
     - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
@@ -269,6 +276,7 @@
     - [DatabaseGroup](#bytebase-v1-DatabaseGroup)
     - [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database)
     - [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest)
+    - [DeleteProjectGitOpsInfoRequest](#bytebase-v1-DeleteProjectGitOpsInfoRequest)
     - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
     - [DeleteSchemaGroupRequest](#bytebase-v1-DeleteSchemaGroupRequest)
     - [DeploymentConfig](#bytebase-v1-DeploymentConfig)
@@ -298,6 +306,8 @@
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
     - [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest)
+    - [SetupSQLReviewCIRequest](#bytebase-v1-SetupSQLReviewCIRequest)
+    - [SetupSQLReviewCIResponse](#bytebase-v1-SetupSQLReviewCIResponse)
     - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
     - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
@@ -468,7 +478,11 @@
     - [SheetService](#bytebase-v1-SheetService)
   
 - [v1/sql_service.proto](#v1_sql_service-proto)
+    - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
+    - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
     - [Advice](#bytebase-v1-Advice)
+    - [ExportRequest](#bytebase-v1-ExportRequest)
+    - [ExportResponse](#bytebase-v1-ExportResponse)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
     - [PrettyResponse](#bytebase-v1-PrettyResponse)
     - [QueryRequest](#bytebase-v1-QueryRequest)
@@ -478,6 +492,7 @@
     - [RowValue](#bytebase-v1-RowValue)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
+    - [ExportRequest.Format](#bytebase-v1-ExportRequest-Format)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -1392,6 +1407,106 @@ When paginating, all other parameters provided to `ListBookmarks` must match the
 
 
 
+<a name="v1_vcs-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/vcs.proto
+
+
+
+<a name="bytebase-v1-Commit"></a>
+
+### Commit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| message | [string](#string) |  |  |
+| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| url | [string](#string) |  |  |
+| author_name | [string](#string) |  |  |
+| author_email | [string](#string) |  |  |
+| added_list | [string](#string) | repeated |  |
+| modified_list | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-FileCommit"></a>
+
+### FileCommit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| message | [string](#string) |  |  |
+| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| url | [string](#string) |  |  |
+| author_name | [string](#string) |  |  |
+| author_email | [string](#string) |  |  |
+| added | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PushEvent"></a>
+
+### PushEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_type | [VcsType](#bytebase-v1-VcsType) |  |  |
+| base_dir | [string](#string) |  |  |
+| ref | [string](#string) |  |  |
+| before | [string](#string) |  |  |
+| after | [string](#string) |  |  |
+| repository_id | [string](#string) |  |  |
+| repository_url | [string](#string) |  |  |
+| repository_full_path | [string](#string) |  |  |
+| author_name | [string](#string) |  |  |
+| commits | [Commit](#bytebase-v1-Commit) | repeated |  |
+| file_commit | [FileCommit](#bytebase-v1-FileCommit) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-VcsType"></a>
+
+### VcsType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VCS_TYPE_UNSPECIFIED | 0 |  |
+| GITLAB | 1 |  |
+| GITHUB | 2 |  |
+| BITBUCKET | 3 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="v1_database_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1446,6 +1561,7 @@ The message of the backup.
 | state | [Backup.BackupState](#bytebase-v1-Backup-BackupState) |  | The state of the backup. |
 | backup_type | [Backup.BackupType](#bytebase-v1-Backup-BackupType) |  | The type of the backup. |
 | comment | [string](#string) |  | The comment of the backup. |
+| uid | [string](#string) |  |  |
 
 
 
@@ -1528,6 +1644,7 @@ Default (empty): Disable automatic backup. |
 | prev_schema | [string](#string) |  |  |
 | execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 | review | [string](#string) |  | Format: projects/{project}/reviews/{review} |
+| push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
 
 
 
@@ -1756,6 +1873,7 @@ FunctionMetadata is the metadata for functions.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the change history to retrieve. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
+| sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
 
 
 
@@ -1801,6 +1919,7 @@ FunctionMetadata is the metadata for functions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database} |
+| sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
 
 
 
@@ -2711,6 +2830,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the linked repository, generated by the server, and also is the unique identifier. Format: projects/{project}/gitOpsInfo |
+| vcs_uid | [string](#string) |  | The uid for related VCS. |
 | title | [string](#string) |  | The title of the repository. For axample: sample. |
 | full_path | [string](#string) |  | The full_path of the repository. For example: bytebase/sample. |
 | web_url | [string](#string) |  | The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. |
@@ -2719,8 +2839,12 @@ The environment&#39;s `name` field is used to identify the environment to update
 | file_path_template | [string](#string) |  | Bytebase only observes the file path name matching the template pattern **relative** to the base directory. Required Placeholder: {{DB_NAME}}, {{VERSION}}, {{TYPE]}. Optional Placeholder: {{ENV_ID}}, {{DESCRIPTION}}. Optional Directory Wildcard: &#39;*&#39;, &#39;**&#39;. |
 | schema_path_template | [string](#string) |  | The file path template for storing the latest schema auto-generated by Bytebase after migration. If empty, then Bytebase won&#39;t auto generate it. If specified, required placeholder: {{DB_NAME}}, optional placeholder: {{ENV_ID}}. |
 | sheet_path_template | [string](#string) |  | The file path template for matching the sql files for sheet. If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, {{DB_NAME}}. |
+| external_id | [string](#string) |  | The reposition external id in target VCS. |
 | enable_sql_review_ci | [bool](#bool) |  | Set to true to enable SQL review CI for all PR/MRs. |
 | webhook_endpoint_id | [string](#string) |  | The webhook endpoint ID of the repository. |
+| access_token | [string](#string) |  |  |
+| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| refresh_token | [string](#string) |  |  |
 
 
 
@@ -2803,9 +2927,9 @@ The environment&#39;s `name` field is used to identify the environment to update
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| TYPE_GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
-| TYPE_GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
-| TYPE_BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
+| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
+| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
+| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
 
 
  
@@ -4237,6 +4361,7 @@ TODO(zp): move to activity later.
 
 * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com` . |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+| parsed_expr | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  | The parsed expression of the condition. |
 
 
 
@@ -4344,6 +4469,21 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database group to delete. Format: projects/{project}/databaseGroups/{databaseGroup} |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteProjectGitOpsInfoRequest"></a>
+
+### DeleteProjectGitOpsInfoRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project. Format: projects/{project} |
 
 
 
@@ -4828,6 +4968,38 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | ----- | ---- | ----- | ----------- |
 | project | [string](#string) |  | The name of the project. Format: projects/{project} |
 | project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  | The binding for the project and external version control. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
+| allow_missing | [bool](#bool) |  | If true, the gitops will be created if it does not exist. |
+
+
+
+
+
+
+<a name="bytebase-v1-SetupSQLReviewCIRequest"></a>
+
+### SetupSQLReviewCIRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project. Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-SetupSQLReviewCIResponse"></a>
+
+### SetupSQLReviewCIResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pull_request_url | [string](#string) |  | The CI setup PR URL for the repository. |
 
 
 
@@ -5173,7 +5345,9 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
 | SetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
-| GetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
+| DeleteProjectGitOpsInfo | [DeleteProjectGitOpsInfoRequest](#bytebase-v1-DeleteProjectGitOpsInfoRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| SetupProjectSQLReviewCI | [SetupSQLReviewCIRequest](#bytebase-v1-SetupSQLReviewCIRequest) | [SetupSQLReviewCIResponse](#bytebase-v1-SetupSQLReviewCIResponse) |  |
+| GetProjectGitOpsInfo | [GetProjectGitOpsInfoRequest](#bytebase-v1-GetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
 | ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) |  |
 | GetDatabaseGroup | [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
 | CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
@@ -7323,6 +7497,39 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
 
+<a name="bytebase-v1-AdminExecuteRequest"></a>
+
+### AdminExecuteRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance} |
+| connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
+| statement | [string](#string) |  | The SQL statement to execute. |
+| limit | [int32](#int32) |  | The maximum number of rows to return. |
+
+
+
+
+
+
+<a name="bytebase-v1-AdminExecuteResponse"></a>
+
+### AdminExecuteResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
+
+
+
+
+
+
 <a name="bytebase-v1-Advice"></a>
 
 ### Advice
@@ -7337,6 +7544,40 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | content | [string](#string) |  | The advice content. |
 | line | [int32](#int32) |  | The advice line number in the SQL statement. |
 | detail | [string](#string) |  | The advice detail. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportRequest"></a>
+
+### ExportRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance} |
+| connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
+| statement | [string](#string) |  | The SQL statement to execute. |
+| limit | [int32](#int32) |  | The maximum number of rows to return. |
+| format | [ExportRequest.Format](#bytebase-v1-ExportRequest-Format) |  | The export format. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportResponse"></a>
+
+### ExportResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  | The export file content. |
 
 
 
@@ -7484,6 +7725,19 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | ERROR | 3 |  |
 
 
+
+<a name="bytebase-v1-ExportRequest-Format"></a>
+
+### ExportRequest.Format
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FORMAT_UNSPECIFIED | 0 |  |
+| CSV | 1 |  |
+| JSON | 2 |  |
+
+
  
 
  
@@ -7498,6 +7752,8 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | ----------- | ------------ | ------------- | ------------|
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
+| Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
+| AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 
  
 

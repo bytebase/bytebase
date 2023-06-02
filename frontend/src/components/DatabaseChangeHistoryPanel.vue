@@ -32,19 +32,9 @@
         />
       </div>
     </div>
-    <MigrationHistoryTable
-      v-if="state.migrationSetupStatus == 'OK'"
+    <ChangeHistoryTable
       :database-section-list="[database]"
-      :history-section-list="migrationHistorySectionList"
-    />
-    <BBAttention
-      v-else
-      :style="`WARN`"
-      :title="attentionTitle"
-      :action-text="
-        allowConfigInstance ? $t('change-history.config-instance') : ''
-      "
-      @click-action="configInstance"
+      :history-section-list="changeHistorySectionList"
     />
   </div>
 
@@ -71,24 +61,15 @@ import { computed, onBeforeMount, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
-import MigrationHistoryTable from "@/components/MigrationHistoryTable.vue";
-import {
-  ComposedDatabase,
-  DEFAULT_PROJECT_V1_NAME,
-  MigrationHistory,
-  MigrationSchemaStatus,
-} from "@/types";
+import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import {
-  hasWorkspacePermissionV1,
-  instanceV1HasAlterSchema,
-  instanceV1Slug,
-} from "@/utils";
-import { useCurrentUserV1, useInstanceStore } from "@/store";
+import { instanceV1HasAlterSchema } from "@/utils";
+import { useChangeHistoryStore } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import { ChangeHistory } from "@/types/proto/v1/database_service";
+import { ChangeHistoryTable } from "@/components/ChangeHistory";
 
 interface LocalState {
-  migrationSetupStatus: MigrationSchemaStatus;
   showBaselineModal: boolean;
   loading: boolean;
 }
@@ -106,40 +87,27 @@ const props = defineProps({
 
 const { t } = useI18n();
 
-const instanceStore = useInstanceStore();
+const changeHistoryStore = useChangeHistoryStore();
 const router = useRouter();
 
 const state = reactive<LocalState>({
-  migrationSetupStatus: "OK",
   showBaselineModal: false,
   loading: false,
 });
 
-const currentUserV1 = useCurrentUserV1();
-
-const prepareMigrationHistoryList = () => {
+const prepareChangeHistoryList = () => {
   state.loading = true;
-  instanceStore
-    .fetchMigrationHistory({
-      instanceId: Number(props.database.instanceEntity.uid),
-      databaseName: props.database.databaseName,
+  changeHistoryStore
+    .fetchChangeHistoryList({
+      parent: props.database.name,
     })
-    .then(() => {
-      state.loading = false;
-    })
-    .catch(() => {
+    .finally(() => {
       state.loading = false;
     });
 };
 
-onBeforeMount(prepareMigrationHistoryList);
+onBeforeMount(prepareChangeHistoryList);
 
-const allowConfigInstance = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-instance",
-    currentUserV1.value.userRole
-  );
-});
 const isTenantProject = computed(() => {
   return (
     props.database.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
@@ -158,8 +126,6 @@ const showEstablishBaselineButton = computed(() => {
 const allowMigrate = computed(() => {
   if (!props.allowEdit) return false;
 
-  if (state.migrationSetupStatus !== "OK") return false;
-
   if (props.database.projectEntity.name === DEFAULT_PROJECT_V1_NAME) {
     return false;
   }
@@ -169,46 +135,20 @@ const allowMigrate = computed(() => {
   return !isTenantProject.value;
 });
 
-const attentionTitle = computed((): string => {
-  if (state.migrationSetupStatus == "NOT_EXIST") {
-    return (
-      t("change-history.instance-missing-change-schema", {
-        name: props.database.instance,
-      }) +
-      (allowConfigInstance.value ? "" : " " + t("change-history.contact-dba"))
-    );
-  } else if (state.migrationSetupStatus == "UNKNOWN") {
-    return (
-      t("change-history.instance-bad-connection", {
-        name: props.database.instance,
-      }) +
-      (allowConfigInstance.value ? "" : " " + t("change-history.contact-dba"))
-    );
-  }
-  return "";
+const changeHistoryList = computed(() => {
+  return changeHistoryStore.changeHistoryListByDatabase(props.database.name);
 });
 
-const migrationHistoryList = computed(() => {
-  return instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
-    Number(props.database.instanceEntity.uid),
-    props.database.databaseName
-  );
-});
-
-const migrationHistorySectionList = computed(
-  (): BBTableSectionDataSource<MigrationHistory>[] => {
+const changeHistorySectionList = computed(
+  (): BBTableSectionDataSource<ChangeHistory>[] => {
     return [
       {
         title: "",
-        list: migrationHistoryList.value,
+        list: changeHistoryList.value,
       },
     ];
   }
 );
-
-const configInstance = () => {
-  router.push(`/instance/${instanceV1Slug(props.database.instanceEntity)}`);
-};
 
 const doCreateBaseline = () => {
   state.showBaselineModal = false;

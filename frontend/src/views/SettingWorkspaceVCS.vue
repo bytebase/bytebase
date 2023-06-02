@@ -35,7 +35,7 @@ import { reactive, computed, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "../components/VCSCard.vue";
 import VCSSetupWizard from "../components/VCSSetupWizard.vue";
-import { useVCSStore } from "@/store";
+import { useVCSV1Store } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -47,18 +47,18 @@ export default defineComponent({
     VCSSetupWizard,
   },
   setup() {
-    const vcsStore = useVCSStore();
+    const vcsV1Store = useVCSV1Store();
     const router = useRouter();
     const state = reactive<LocalState>({});
 
     const prepareVCSList = () => {
-      vcsStore.fetchVCSList();
+      vcsV1Store.fetchVCSList();
     };
 
     watchEffect(prepareVCSList);
 
     const vcsList = computed(() => {
-      return vcsStore.getVCSList();
+      return vcsV1Store.getVCSList();
     });
 
     const addVCSProvider = () => {

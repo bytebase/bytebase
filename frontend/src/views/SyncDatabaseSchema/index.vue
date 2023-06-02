@@ -76,13 +76,13 @@
             >
               <BBSelect
                 class="w-full"
-                :selected-item="state.sourceSchema.migrationHistory"
+                :selected-item="state.sourceSchema.changeHistory"
                 :item-list="
-                databaseMigrationHistoryList(state.sourceSchema.databaseId as string)
+                databaseChangeHistoryList(state.sourceSchema.databaseId as string)
               "
                 :placeholder="$t('change-history.select')"
-                :show-prefix-item="databaseMigrationHistoryList(state.sourceSchema.databaseId as string).length > 0"
-                @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
+                :show-prefix-item="databaseChangeHistoryList(state.sourceSchema.databaseId as string).length > 0"
+                @select-item="(changeHistory: ChangeHistory) => handleSchemaVersionSelect(changeHistory)"
               >
                 <template #menuItem="{ item: migrationHistory }">
                   <div class="flex justify-between mr-2">
@@ -141,16 +141,20 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
   hasFeature,
+  useChangeHistoryStore,
   useDatabaseV1Store,
-  useInstanceStore,
   useProjectV1Store,
 } from "@/store";
-import { MigrationHistory, MigrationType, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import DatabaseSelect from "@/components/DatabaseSelect.vue";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
 import { Engine } from "@/types/proto/v1/common";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { instanceV1Name } from "@/utils";
+import {
+  ChangeHistory,
+  ChangeHistory_Type,
+} from "@/types/proto/v1/database_service";
 
 const SELECT_SOURCE_DATABASE = 0;
 const SELECT_TARGET_DATABASE_LIST = 1;
@@ -160,7 +164,7 @@ type Step = typeof SELECT_SOURCE_DATABASE | typeof SELECT_TARGET_DATABASE_LIST;
 interface SourceSchema {
   environmentId?: string;
   databaseId?: string;
-  migrationHistory?: MigrationHistory;
+  changeHistory?: ChangeHistory;
 }
 
 interface LocalState {
@@ -171,18 +175,18 @@ interface LocalState {
 }
 
 const allowedEngineTypeList: Engine[] = [Engine.MYSQL, Engine.POSTGRES];
-const allowedMigrationTypeList: MigrationType[] = [
-  "BASELINE",
-  "MIGRATE",
-  "BRANCH",
+const allowedMigrationTypeList: ChangeHistory_Type[] = [
+  ChangeHistory_Type.BASELINE,
+  ChangeHistory_Type.MIGRATE,
+  ChangeHistory_Type.BRANCH,
 ];
 
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
 const projectStore = useProjectV1Store();
-const legacyInstanceStore = useInstanceStore();
 const databaseStore = useDatabaseV1Store();
+const changeHistoryStore = useChangeHistoryStore();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
@@ -198,8 +202,8 @@ const hasSyncSchemaFeature = computed(() => {
 const shouldShowMoreVersionButton = computed(() => {
   return (
     !hasSyncSchemaFeature.value &&
-    databaseMigrationHistoryList(state.sourceSchema.databaseId as string)
-      .length > 0
+    databaseChangeHistoryList(state.sourceSchema.databaseId as string).length >
+      0
   );
 });
 
@@ -215,7 +219,7 @@ const allowNext = computed(() => {
     return (
       isValidId(state.sourceSchema.environmentId) &&
       isValidId(state.sourceSchema.databaseId) &&
-      !isUndefined(state.sourceSchema.migrationHistory)
+      !isUndefined(state.sourceSchema.changeHistory)
     );
   } else {
     if (!targetDatabaseViewRef.value) {
@@ -235,15 +239,12 @@ const allowNext = computed(() => {
   }
 });
 
-const databaseMigrationHistoryList = (databaseId: string) => {
+const databaseChangeHistoryList = (databaseId: string) => {
   const database = databaseStore.getDatabaseByUID(databaseId);
-  const list = legacyInstanceStore
-    .getMigrationHistoryListByInstanceIdAndDatabaseName(
-      Number(database.instanceEntity.uid),
-      database.databaseName
-    )
-    .filter((migrationHistory) =>
-      allowedMigrationTypeList.includes(migrationHistory.type)
+  const list = changeHistoryStore
+    .changeHistoryListByDatabase(database.name)
+    .filter((changeHistory) =>
+      allowedMigrationTypeList.includes(changeHistory.type)
     );
 
   if (!hasSyncSchemaFeature.value) {
@@ -278,8 +279,8 @@ const handleSourceDatabaseSelect = async (databaseId: string) => {
   }
 };
 
-const handleSchemaVersionSelect = (migrationHistory: MigrationHistory) => {
-  state.sourceSchema.migrationHistory = migrationHistory;
+const handleSchemaVersionSelect = (changeHistory: ChangeHistory) => {
+  state.sourceSchema.changeHistory = changeHistory;
 };
 
 const isValidId = (id: any): id is string => {
@@ -386,39 +387,37 @@ watch(
   async () => {
     const databaseId = state.sourceSchema.databaseId;
     if (!isValidId(databaseId)) {
-      state.sourceSchema.migrationHistory = undefined;
+      state.sourceSchema.changeHistory = undefined;
       return;
     }
 
     const database = databaseStore.getDatabaseByUID(databaseId);
     if (database) {
-      const migrationHistoryList = (
-        await legacyInstanceStore.fetchMigrationHistory({
-          instanceId: database.instanceEntity.uid,
-          databaseName: database.databaseName,
+      const changeHistoryList = (
+        await changeHistoryStore.fetchChangeHistoryList({
+          parent: database.name,
         })
-      ).filter((migrationHistory) =>
-        allowedMigrationTypeList.includes(migrationHistory.type)
+      ).filter((changeHistory) =>
+        allowedMigrationTypeList.includes(changeHistory.type)
       );
 
-      if (migrationHistoryList.length > 0) {
+      if (changeHistoryList.length > 0) {
         // Default select the first migration history.
-        state.sourceSchema.migrationHistory = head(migrationHistoryList);
+        state.sourceSchema.changeHistory = head(changeHistoryList);
       } else {
         // If database has no migration history, we will use its latest schema.
-        const schema = await databaseStore.fetchDatabaseSchema(
-          `${database.name}/schema`
-        );
-        state.sourceSchema.migrationHistory = {
-          id: UNKNOWN_ID,
-          updatedTs: Date.now() / 1000,
+        const schema = await databaseStore.fetchDatabaseSchema(database.name);
+        state.sourceSchema.changeHistory = {
+          name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
+          uid: String(UNKNOWN_ID),
+          updateTime: new Date(),
           schema: schema.schema,
           version: "Latest version",
           description: "the latest schema of database",
-        } as any as MigrationHistory;
+        } as ChangeHistory;
       }
     } else {
-      state.sourceSchema.migrationHistory = undefined;
+      state.sourceSchema.changeHistory = undefined;
     }
   }
 );

@@ -108,7 +108,7 @@ func (*Driver) GetType() db.Type {
 
 // GetDB gets the database.
 func (*Driver) GetDB() *sql.DB {
-	panic("not implemented")
+	return nil
 }
 
 // Execute executes a SQL statement.
@@ -505,7 +505,8 @@ func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, 
 
 	var results []*v1pb.QueryResult
 	for _, statement := range stmts {
-		result, err := d.querySingleSQL(ctx, statement, queryContext)
+		statement = getStatementWithResultLimit(statement, queryContext.Limit)
+		result, err := d.querySingleSQL(ctx, statement)
 		if err != nil {
 			results = append(results, &v1pb.QueryResult{
 				Error: err.Error(),
@@ -518,8 +519,7 @@ func (d *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement string, 
 	return results, nil
 }
 
-func (d *Driver) querySingleSQL(ctx context.Context, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement = getStatementWithResultLimit(statement, queryContext.Limit)
+func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
 	iter := d.client.Single().Query(ctx, spanner.NewStatement(statement))
 	defer iter.Stop()
 
@@ -577,4 +577,82 @@ func readRow2(row *spanner.Row) (*v1pb.QueryRow, error) {
 	}
 
 	return result, nil
+}
+
+// RunStatement executes a SQL statement.
+func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	stmts, err := sanitizeSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*v1pb.QueryResult
+	for _, statement := range stmts {
+		if isSelect(statement) {
+			result, err := d.querySingleSQL(ctx, statement)
+			if err != nil {
+				results = append(results, &v1pb.QueryResult{
+					Error: err.Error(),
+				})
+				continue
+			}
+			results = append(results, result)
+			continue
+		}
+
+		if isDDL(statement) {
+			op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
+				Database:   getDSN(d.config.Host, d.databaseName),
+				Statements: []string{statement},
+			})
+			if err != nil {
+				results = append(results, &v1pb.QueryResult{
+					Error: err.Error(),
+				})
+				continue
+			}
+			if err := op.Wait(ctx); err != nil {
+				results = append(results, &v1pb.QueryResult{
+					Error: err.Error(),
+				})
+				continue
+			}
+			results = append(results, &v1pb.QueryResult{})
+			continue
+		}
+
+		var rowCount int64
+		if _, err := d.client.ReadWriteTransaction(ctx, func(ctx context.Context, rwt *spanner.ReadWriteTransaction) error {
+			count, err := rwt.Update(ctx, spanner.NewStatement(statement))
+			if err != nil {
+				return err
+			}
+			rowCount = count
+			return nil
+		}); err != nil {
+			results = append(results, &v1pb.QueryResult{
+				Error: err.Error(),
+			})
+			continue
+		}
+
+		field := []string{"Affected Rows"}
+		types := []string{"INT64"}
+		rows := []*v1pb.QueryRow{
+			{
+				Values: []*v1pb.RowValue{
+					{
+						Kind: &v1pb.RowValue_Int64Value{Int64Value: rowCount},
+					},
+				},
+			},
+		}
+		results = append(results, &v1pb.QueryResult{
+			ColumnNames:     field,
+			ColumnTypeNames: types,
+			Rows:            rows,
+		})
+	}
+
+	return results, nil
 }

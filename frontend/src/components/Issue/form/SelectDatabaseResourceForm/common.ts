@@ -1,10 +1,11 @@
 import { flatten } from "lodash-es";
 import { TransferOption, TreeOption } from "naive-ui";
 import { useDBSchemaStore } from "@/store";
-import { Database, DatabaseId } from "@/types";
+import { ComposedDatabase } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 
 export interface DatabaseResource {
-  databaseId: DatabaseId;
+  databaseId: string;
   schema?: string;
   table?: string;
 }
@@ -16,34 +17,34 @@ export interface DatabaseTreeOption<L = "database" | "schema" | "table">
 }
 
 export const mapTreeOptions = (
-  databaseList: Database[],
+  databaseList: ComposedDatabase[],
   filterValueList?: string[]
 ) => {
   const dbSchemaStore = useDBSchemaStore();
   const databaseNodes: DatabaseTreeOption<"database">[] = [];
   for (const database of databaseList) {
     const databaseMetadata = dbSchemaStore.getDatabaseMetadataByDatabaseId(
-      database.id
+      Number(database.uid)
     );
     const databaseNode: DatabaseTreeOption<"database"> = {
       level: "database",
-      value: `d-${database.id}`,
-      label: database.name,
+      value: `d-${database.uid}`,
+      label: database.databaseName,
     };
 
-    if (database.instance.engine === "POSTGRES") {
+    if (database.instanceEntity.engine === Engine.POSTGRES) {
       const schemaNodes = databaseMetadata.schemas.map(
         (schema): DatabaseTreeOption<"schema"> => {
           const schemaNode: DatabaseTreeOption<"schema"> = {
             level: "schema",
-            value: `s-${database.id}-${schema.name}`,
+            value: `s-${database.uid}-${schema.name}`,
             label: schema.name,
           };
           const tableNodes = schema.tables.map(
             (table): DatabaseTreeOption<"table"> => {
               return {
                 level: "table",
-                value: `t-${database.id}-${schema.name}-${table.name}`,
+                value: `t-${database.uid}-${schema.name}-${table.name}`,
                 label: table.name,
               };
             }
@@ -75,7 +76,7 @@ export const mapTreeOptions = (
       ).map((table): DatabaseTreeOption<"table"> => {
         return {
           level: "table",
-          value: `t-${database.id}--${table.name}`,
+          value: `t-${database.uid}--${table.name}`,
           label: table.name,
         };
       });

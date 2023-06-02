@@ -133,17 +133,19 @@ import {
   defineComponent,
 } from "vue";
 import { useRouter } from "vue-router";
-import isEmpty from "lodash-es/isEmpty";
-import ProjectSelect from "../components/ProjectSelect.vue";
-import DatabaseSelect from "../components/DatabaseSelect.vue";
-import EnvironmentSelect from "../components/EnvironmentSelect.vue";
-import { UNKNOWN_ID } from "../types";
-import { allowDatabaseAccess } from "../utils";
+import { isEmpty } from "lodash-es";
+
+import ProjectSelect from "@/components/ProjectSelect.vue";
+import DatabaseSelect from "@/components/DatabaseSelect.vue";
+import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
+import { UNKNOWN_ID } from "@/types";
+import { allowDatabaseV1Access } from "@/utils";
 import {
   useCurrentUserV1,
-  useDatabaseStore,
   useEnvironmentV1Store,
+  useDatabaseV1Store,
 } from "@/store";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 
 interface LocalState {
   environmentId: string;
@@ -160,7 +162,7 @@ export default defineComponent({
   components: { ProjectSelect, DatabaseSelect, EnvironmentSelect },
   emits: ["dismiss"],
   setup(props, { emit }) {
-    const databaseStore = useDatabaseStore();
+    const databaseStore = useDatabaseV1Store();
     const router = useRouter();
 
     const currentUserV1 = useCurrentUserV1();
@@ -197,11 +199,11 @@ export default defineComponent({
         return false;
       }
 
-      const database = databaseStore.getDatabaseById(state.databaseId);
-      return allowDatabaseAccess(
+      const database = databaseStore.getDatabaseByUID(state.databaseId);
+      return allowDatabaseV1Access(
         database,
         currentUserV1.value,
-        state.readonly ? "RO" : "RW"
+        state.readonly ? DataSourceType.READ_ONLY : DataSourceType.ADMIN
       );
     });
 
@@ -233,14 +235,14 @@ export default defineComponent({
           },
           query: {
             template: "bb.issue.database.create",
-            name: `[${environment.name}] Request new database '${state.databaseName}'`,
+            name: `[${environment.title}] Request new database '${state.databaseName}'`,
             environment: state.environmentId,
             project: state.projectId,
             databaseName: state.databaseName,
           },
         });
       } else {
-        const database = databaseStore.getDatabaseById(state.databaseId);
+        const database = databaseStore.getDatabaseByUID(state.databaseId);
         router.push({
           name: "workspace.issue.detail",
           params: {
@@ -248,9 +250,9 @@ export default defineComponent({
           },
           query: {
             template: "bb.issue.database.grant",
-            name: `[${environment.name}] Request database '${database.name}' ${
-              state.readonly ? "Readonly access" : "Read & Write access"
-            }`,
+            name: `[${environment.title}] Request database '${
+              database.databaseName
+            }' ${state.readonly ? "Readonly access" : "Read & Write access"}`,
             environment: state.environmentId,
             project: state.projectId,
             databaseList: state.databaseId,

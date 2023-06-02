@@ -3,7 +3,8 @@ import { ProjectId } from "./id";
 import { OAuthToken } from "./oauth";
 import { Principal } from "./principal";
 import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
-import { VCS } from "./vcs";
+import { SchemaChange } from "@/types/proto/v1/project_service";
+import { ExternalVersionControl } from "@/types/proto/v1/externalvs_service";
 
 export type ProjectRoleType =
   | "OWNER"
@@ -65,11 +66,11 @@ export type ProjectMember = {
 };
 
 export type ProjectRepositoryConfig = {
-  vcs: VCS;
+  vcs: ExternalVersionControl;
   // TODO(zilong): get rid of the token in the frontend.
   token: OAuthToken;
   code: string;
   repositoryInfo: ExternalRepositoryInfo;
   repositoryConfig: RepositoryConfig;
-  schemaChangeType: SchemaChangeType;
+  schemaChangeType: SchemaChange;
 };

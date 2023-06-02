@@ -33,8 +33,8 @@
 import { uniq } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
 import { computed, onMounted, PropType, reactive } from "vue";
-import { useInstanceStore, useSchemaEditorStore } from "@/store";
-import { DatabaseId, SchemaEditorTabType } from "@/types";
+import { useInstanceV1Store, useSchemaEditorStore } from "@/store";
+import { SchemaEditorTabType } from "@/types";
 import AsidePanel from "./AsidePanel.vue";
 import EmptyTips from "./EmptyTips.vue";
 import TabsContainer from "./TabsContainer.vue";
@@ -47,7 +47,7 @@ interface LocalState {
 
 const props = defineProps({
   databaseIdList: {
-    type: Array as PropType<DatabaseId[]>,
+    type: Array as PropType<string[]>,
     required: true,
   },
 });
@@ -56,7 +56,7 @@ const state = reactive<LocalState>({
 });
 
 const editorStore = useSchemaEditorStore();
-const instanceStore = useInstanceStore();
+const instanceStore = useInstanceV1Store();
 const currentTab = computed(() => {
   return editorStore.currentTab;
 });
@@ -69,10 +69,10 @@ onMounted(async () => {
   const databaseIdList = props.databaseIdList;
   const databaseList = await editorStore.fetchDatabaseList(databaseIdList);
   const instanceIdList = uniq(
-    databaseList.map((database) => database.instanceId)
+    databaseList.map((database) => database.instanceEntity.uid)
   );
   for (const instanceId of instanceIdList) {
-    await instanceStore.getOrFetchInstanceById(instanceId);
+    await instanceStore.getOrFetchInstanceByUID(instanceId);
   }
   state.isLoading = false;
 });

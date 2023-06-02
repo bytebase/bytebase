@@ -4,7 +4,6 @@ import { defineStore } from "pinia";
 import { IamPolicy } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
 import { ComposedDatabase, Database, MaybeRef, PresetRoleType } from "@/types";
-import { useLegacyProjectStore } from "../project";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
 import {
@@ -66,15 +65,6 @@ export const useProjectIamPolicyStore = defineStore(
         policy,
       });
       policyMap.value.set(project, updated);
-
-      const projectEntity = await useProjectV1Store().getOrFetchProjectByName(
-        project
-      );
-      // legacy project API support
-      // re-fetch the legacy project entity to refresh its `memberList`
-      await useLegacyProjectStore().fetchProjectById(
-        parseInt(projectEntity.uid, 10)
-      );
     };
 
     const getProjectIamPolicy = (project: string) => {
@@ -210,7 +200,7 @@ export const useCurrentUserIamPolicy = () => {
           binding.condition?.expression || ""
         );
         if (conditionExpression.databases) {
-          const databaseResourceName = getDatabaseNameById(database.id);
+          const databaseResourceName = getDatabaseNameById(String(database.id));
           return conditionExpression.databases.includes(databaseResourceName);
         } else {
           return true;
@@ -272,51 +262,6 @@ export const useCurrentUserIamPolicy = () => {
     return false;
   };
 
-  const allowToExportDatabase = (database: Database) => {
-    if (hasWorkspaceSuperPrivilege) {
-      return true;
-    }
-
-    const policy = iamPolicyStore.getProjectIamPolicy(
-      `projects/${database.project.resourceId}`
-    );
-    if (!policy) {
-      return false;
-    }
-    const iamPolicyCheckResult = policy.bindings.map((binding) => {
-      if (
-        binding.role === PresetRoleType.OWNER &&
-        binding.members.find(
-          (member) => member === `user:${currentUser.value.email}`
-        )
-      ) {
-        return true;
-      }
-      if (
-        binding.role === PresetRoleType.EXPORTER &&
-        binding.members.find(
-          (member) => member === `user:${currentUser.value.email}`
-        )
-      ) {
-        const conditionExpression = parseConditionExpressionString(
-          binding.condition?.expression || ""
-        );
-        if (conditionExpression.databases) {
-          const databaseResourceName = getDatabaseNameById(database.id);
-          return conditionExpression.databases.includes(databaseResourceName);
-        } else {
-          return true;
-        }
-      }
-    });
-    // If one of the binding is true, then the user is allowed to export the database.
-    if (iamPolicyCheckResult.includes(true)) {
-      return true;
-    }
-
-    return false;
-  };
-
   const allowToExportDatabaseV1 = (database: ComposedDatabase) => {
     if (hasWorkspaceSuperPrivilege) {
       return true;
@@ -366,7 +311,6 @@ export const useCurrentUserIamPolicy = () => {
     allowToChangeDatabaseOfProject,
     allowToQueryDatabase,
     allowToQueryDatabaseV1,
-    allowToExportDatabase,
     allowToExportDatabaseV1,
   };
 };

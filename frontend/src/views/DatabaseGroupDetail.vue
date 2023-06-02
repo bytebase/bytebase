@@ -6,7 +6,6 @@
     v-bind="$attrs"
   >
     <main class="flex-1 relative overflow-y-auto">
-      <!-- Highlight Panel -->
       <div
         class="px-4 space-y-2 lg:space-y-0 lg:flex lg:items-center lg:justify-between"
       >
@@ -33,7 +32,7 @@
                 >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
               >
               <EnvironmentV1Name
-                :environment="state.environment"
+                :environment="environment"
                 icon-class="textinfolabel"
               />
             </dd>
@@ -49,13 +48,16 @@
         <div
           class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
         >
-          <button
-            type="button"
-            class="btn-normal"
-            @click.prevent="handleEditDatabaseGroup"
+          <NButton @click="handleEditDatabaseGroup">{{
+            $t("common.configure")
+          }}</NButton>
+          <NButton
+            @click="createMigration('bb.issue.database.schema.update')"
+            >{{ $t("database.alter-schema") }}</NButton
           >
-            Configure
-          </button>
+          <NButton @click="createMigration('bb.issue.database.data.update')">{{
+            $t("database.change-data")
+          }}</NButton>
         </div>
       </div>
 
@@ -63,7 +65,9 @@
 
       <div class="w-full px-3 max-w-5xl grid grid-cols-5 gap-x-6">
         <div class="col-span-3">
-          <p class="pl-1 text-lg mb-2">Condition</p>
+          <p class="pl-1 text-lg mb-2">
+            {{ $t("database-group.condition.self") }}
+          </p>
           <ExprEditor
             :expr="state.expr!"
             :allow-admin="false"
@@ -71,10 +75,9 @@
           />
         </div>
         <div class="col-span-2">
-          <p class="text-lg mb-2">Databases</p>
           <MatchedDatabaseView
             :project="project"
-            :environment-id="state.environment?.name || ''"
+            :environment-id="environment.uid"
             :expr="state.expr!"
             :database-group="databaseGroup"
           />
@@ -84,15 +87,11 @@
       <hr class="mt-8 my-4" />
       <div class="w-full max-w-5xl px-4">
         <div class="w-full flex flex-row justify-between items-center">
-          <p class="my-4">Table group</p>
+          <p class="my-4">{{ $t("database-group.table-group.self") }}</p>
           <div>
-            <button
-              type="button"
-              class="btn-normal"
-              @click.prevent="handleCreateSchemaGroup"
-            >
-              New table group
-            </button>
+            <NButton @click.prevent="handleCreateSchemaGroup">
+              {{ $t("database-group.table-group.create") }}
+            </NButton>
           </div>
         </div>
         <SchemaGroupTable
@@ -114,28 +113,25 @@
 
 <script lang="ts" setup>
 import { onMounted, reactive, computed, watch } from "vue";
-import {
-  useDBGroupStore,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useDBGroupStore, useProjectV1Store } from "@/store";
 import {
   databaseGroupNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
-import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
 import { ConditionGroupExpr } from "@/plugins/cel";
-import { Environment } from "@/types/proto/v1/environment_service";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
+import { useRouter } from "vue-router";
+import { ComposedDatabaseGroup } from "@/types";
+import { generateIssueRoute } from "@/utils/databaseGroup/issue";
+import { NButton } from "naive-ui";
 
 interface LocalState {
   isLoaded: boolean;
-  environment?: Environment;
   expr?: ConditionGroupExpr;
 }
 
@@ -156,7 +152,7 @@ const props = defineProps({
   },
 });
 
-const environmentStore = useEnvironmentV1Store();
+const router = useRouter();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
@@ -170,13 +166,16 @@ const databaseGroupResourceName = computed(() => {
   return `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
 });
 const databaseGroup = computed(() => {
-  return dbGroupStore.getDBGroupByName(databaseGroupResourceName.value);
+  return dbGroupStore.getDBGroupByName(
+    databaseGroupResourceName.value
+  ) as ComposedDatabaseGroup;
 });
 const schemaGroupList = computed(() => {
   return dbGroupStore.getSchemaGroupListByDBGroupName(
     databaseGroupResourceName.value
   );
 });
+const environment = computed(() => databaseGroup.value.environment);
 const project = computed(() => {
   return projectStore.getProjectByName(
     `${projectNamePrefix}${props.projectName}`
@@ -205,6 +204,13 @@ const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
   editState.showConfigurePanel = true;
 };
 
+const createMigration = (
+  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
+) => {
+  const issueRoute = generateIssueRoute(type, databaseGroup.value);
+  router.push(issueRoute);
+};
+
 watch(
   () => [databaseGroup.value],
   async () => {
@@ -212,15 +218,11 @@ watch(
       return;
     }
 
-    const expression = databaseGroup.value.databaseExpr?.expression ?? "";
-    const convertResult = await convertDatabaseGroupExprFromCEL(expression);
-    state.environment = environmentStore.getEnvironmentByName(
-      convertResult.environmentId
-    );
-    state.expr = convertResult.conditionGroupExpr;
+    state.expr = databaseGroup.value.simpleExpr;
     await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(
       databaseGroup.value.name
     );
+
     state.isLoaded = true;
   },
   {

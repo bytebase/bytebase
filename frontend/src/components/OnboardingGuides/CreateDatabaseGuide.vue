@@ -18,7 +18,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { lastTask } from "@/utils";
-import { useInstanceList, useIssueStore, useProjectV1List } from "@/store";
+import { useIssueStore, useProjectV1List, useInstanceV1List } from "@/store";
 import GuideDialog from "@/plugins/demo/components/GuideDialog.vue";
 import CreateDatabaseGuideFinished from "./CreateDatabaseGuideFinished.vue";
 import { useI18n } from "vue-i18n";
@@ -115,7 +115,7 @@ const guideStepList = computed(() => {
   ] as GuideData[][];
 });
 
-const instanceList = useInstanceList();
+const { instanceList } = useInstanceV1List(false /* !showDeleted */);
 const { projectList } = useProjectV1List(false /* !showDeleted */);
 const issueList = computed(() => useIssueStore().issueList);
 

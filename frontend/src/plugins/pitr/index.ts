@@ -3,19 +3,20 @@ import {
   CreateDatabaseContext,
   ComposedDatabase,
   IssueCreate,
-  MigrationHistory,
   PITRContext,
 } from "@/types";
 import {
-  useBackupListByDatabaseId,
+  useBackupListByDatabaseName,
+  useChangeHistoryStore,
   useCurrentUserV1,
-  useInstanceStore,
   useIssueStore,
 } from "@/store";
 import { useI18n } from "vue-i18n";
 import { extractUserUID, semverCompare } from "@/utils";
 import { Instance } from "@/types/proto/v1/instance_service";
 import { Engine } from "@/types/proto/v1/common";
+import { head } from "lodash-es";
+import { Backup_BackupState } from "@/types/proto/v1/database_service";
 
 export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
@@ -30,13 +31,15 @@ export const isPITRAvailableOnInstanceV1 = (instance: Instance): boolean => {
 export const usePITRLogic = (database: Ref<ComposedDatabase>) => {
   const { t } = useI18n();
   const currentUserV1 = useCurrentUserV1();
-  const instanceStore = useInstanceStore();
+  const changeHistoryStore = useChangeHistoryStore();
 
-  const backupList = useBackupListByDatabaseId(
-    computed(() => Number(database.value.uid))
+  const backupList = useBackupListByDatabaseName(
+    computed(() => database.value.name)
   );
   const doneBackupList = computed(() =>
-    backupList.value.filter((backup) => backup.status === "DONE")
+    backupList.value.filter(
+      (backup) => backup.state === Backup_BackupState.DONE
+    )
   );
 
   const pitrAvailable = computed((): { result: boolean; message: string } => {
@@ -62,24 +65,22 @@ export const usePITRLogic = (database: Ref<ComposedDatabase>) => {
     };
   });
 
-  const prepareMigrationHistoryList = async () => {
-    instanceStore.fetchMigrationHistory({
-      instanceId: Number(database.value.instanceEntity.uid),
-      databaseName: database.value.databaseName,
+  const prepareChangeHistoryList = async () => {
+    changeHistoryStore.fetchChangeHistoryList({
+      parent: database.value.name,
     });
   };
 
-  watch(database, prepareMigrationHistoryList, { immediate: true });
-
-  const migrationHistoryList = computed(() => {
-    return instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
-      Number(database.value.instanceEntity.uid),
-      database.value.databaseName
-    );
+  watch(() => database.value.name, prepareChangeHistoryList, {
+    immediate: true,
   });
 
-  const lastMigrationHistory = computed((): MigrationHistory | undefined => {
-    return migrationHistoryList.value[0];
+  const changeHistoryList = computed(() => {
+    return changeHistoryStore.changeHistoryListByDatabase(database.value.name);
+  });
+
+  const lastChangeHistory = computed(() => {
+    return head(changeHistoryList.value);
   });
 
   const createPITRIssue = async (
@@ -115,8 +116,8 @@ export const usePITRLogic = (database: Ref<ComposedDatabase>) => {
     backupList,
     doneBackupList,
     pitrAvailable,
-    migrationHistoryList,
-    lastMigrationHistory,
+    changeHistoryList,
+    lastChangeHistory,
     createPITRIssue,
   };
 };
