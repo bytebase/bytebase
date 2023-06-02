@@ -98,8 +98,6 @@ DROP SCHEMA "schema_a";
 		},
 	})
 	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	a.NoError(err)
 
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil)
 	a.NoError(err)
@@ -149,14 +147,14 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	history, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{
-		Database: &databaseName,
+	resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+		Parent: database.Name,
 	})
 	a.NoError(err)
-
+	histories := resp.ChangeHistories
 	// history[0] is SchemaUpdate
-	a.Equal(1, len(history))
-	latest := history[0]
+	a.Equal(1, len(histories))
+	latest := histories[0]
 
 	err = ctl.createDatabase(ctx, projectUID, instance, newDatabaseName, "bytebase", nil)
 	a.NoError(err)
