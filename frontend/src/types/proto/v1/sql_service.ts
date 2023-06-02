@@ -1535,41 +1535,22 @@ export const SQLServiceDefinition = {
     adminExecute: {
       name: "AdminExecute",
       requestType: AdminExecuteRequest,
-      requestStream: false,
+      requestStream: true,
       responseType: AdminExecuteResponse,
-      responseStream: false,
+      responseStream: true,
       options: {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              40,
+              21,
               58,
               1,
               42,
               34,
-              35,
+              16,
               47,
               118,
               49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              47,
-              42,
-              125,
               58,
               97,
               100,
@@ -1596,9 +1577,9 @@ export interface SQLServiceImplementation<CallContextExt = {}> {
   query(request: QueryRequest, context: CallContext & CallContextExt): Promise<DeepPartial<QueryResponse>>;
   export(request: ExportRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ExportResponse>>;
   adminExecute(
-    request: AdminExecuteRequest,
+    request: AsyncIterable<AdminExecuteRequest>,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<AdminExecuteResponse>>;
+  ): ServerStreamingMethodResult<DeepPartial<AdminExecuteResponse>>;
 }
 
 export interface SQLServiceClient<CallOptionsExt = {}> {
@@ -1606,9 +1587,9 @@ export interface SQLServiceClient<CallOptionsExt = {}> {
   query(request: DeepPartial<QueryRequest>, options?: CallOptions & CallOptionsExt): Promise<QueryResponse>;
   export(request: DeepPartial<ExportRequest>, options?: CallOptions & CallOptionsExt): Promise<ExportResponse>;
   adminExecute(
-    request: DeepPartial<AdminExecuteRequest>,
+    request: AsyncIterable<DeepPartial<AdminExecuteRequest>>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<AdminExecuteResponse>;
+  ): AsyncIterable<AdminExecuteResponse>;
 }
 
 declare var self: any | undefined;
@@ -1679,3 +1660,5 @@ if (_m0.util.Long !== Long) {
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
 }
+
+export type ServerStreamingMethodResult<Response> = { [Symbol.asyncIterator](): AsyncIterator<Response, void> };

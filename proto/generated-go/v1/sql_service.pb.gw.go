@@ -201,72 +201,47 @@ func local_request_SQLService_Export_0(ctx context.Context, marshaler runtime.Ma
 
 }
 
-func request_SQLService_AdminExecute_0(ctx context.Context, marshaler runtime.Marshaler, client SQLServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AdminExecuteRequest
+func request_SQLService_AdminExecute_0(ctx context.Context, marshaler runtime.Marshaler, client SQLServiceClient, req *http.Request, pathParams map[string]string) (SQLService_AdminExecuteClient, runtime.ServerMetadata, error) {
 	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["name"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
-	}
-
-	protoReq.Name, err = runtime.String(val)
+	stream, err := client.AdminExecute(ctx)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		grpclog.Infof("Failed to start streaming: %v", err)
+		return nil, metadata, err
 	}
-
-	msg, err := client.AdminExecute(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_SQLService_AdminExecute_0(ctx context.Context, marshaler runtime.Marshaler, server SQLServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AdminExecuteRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	dec := marshaler.NewDecoder(req.Body)
+	handleSend := func() error {
+		var protoReq AdminExecuteRequest
+		err := dec.Decode(&protoReq)
+		if err == io.EOF {
+			return err
+		}
+		if err != nil {
+			grpclog.Infof("Failed to decode request: %v", err)
+			return err
+		}
+		if err := stream.Send(&protoReq); err != nil {
+			grpclog.Infof("Failed to send request: %v", err)
+			return err
+		}
+		return nil
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["name"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
-	}
-
-	protoReq.Name, err = runtime.String(val)
+	go func() {
+		for {
+			if err := handleSend(); err != nil {
+				break
+			}
+		}
+		if err := stream.CloseSend(); err != nil {
+			grpclog.Infof("Failed to terminate client stream: %v", err)
+		}
+	}()
+	header, err := stream.Header()
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		grpclog.Infof("Failed to get header from client: %v", err)
+		return nil, metadata, err
 	}
-
-	msg, err := server.AdminExecute(ctx, &protoReq)
-	return msg, metadata, err
-
+	metadata.HeaderMD = header
+	return stream, metadata, nil
 }
 
 // RegisterSQLServiceHandlerServer registers the http handlers for service SQLService to "mux".
@@ -351,28 +326,10 @@ func RegisterSQLServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 	})
 
 	mux.Handle("POST", pattern_SQLService_AdminExecute_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SQLService/AdminExecute", runtime.WithHTTPPathPattern("/v1/{name=instances/*}:adminExecute"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_SQLService_AdminExecute_0(annotatedContext, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_SQLService_AdminExecute_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
+		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
+		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+		return
 	})
 
 	return nil
@@ -488,7 +445,7 @@ func RegisterSQLServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SQLService/AdminExecute", runtime.WithHTTPPathPattern("/v1/{name=instances/*}:adminExecute"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SQLService/AdminExecute", runtime.WithHTTPPathPattern("/v1:adminExecute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -500,7 +457,7 @@ func RegisterSQLServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 			return
 		}
 
-		forward_SQLService_AdminExecute_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SQLService_AdminExecute_0(annotatedContext, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -514,7 +471,7 @@ var (
 
 	pattern_SQLService_Export_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "instances", "name"}, "export"))
 
-	pattern_SQLService_AdminExecute_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "instances", "name"}, "adminExecute"))
+	pattern_SQLService_AdminExecute_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"v1"}, "adminExecute"))
 )
 
 var (
@@ -524,5 +481,5 @@ var (
 
 	forward_SQLService_Export_0 = runtime.ForwardResponseMessage
 
-	forward_SQLService_AdminExecute_0 = runtime.ForwardResponseMessage
+	forward_SQLService_AdminExecute_0 = runtime.ForwardResponseStream
 )

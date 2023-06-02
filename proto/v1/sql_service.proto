@@ -28,9 +28,9 @@ service SQLService {
       body: "*"
     };
   }
-  rpc AdminExecute(AdminExecuteRequest) returns (AdminExecuteResponse) {
+  rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=instances/*}:adminExecute"
+      post: "/v1:adminExecute"
       body: "*"
     };
   }
@@ -39,7 +39,7 @@ service SQLService {
 message AdminExecuteRequest {
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1;
 
   // The connection database name to execute the query against.
   // For PostgreSQL, it's required.

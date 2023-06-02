@@ -32,7 +32,7 @@ type SQLServiceClient interface {
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
-	AdminExecute(ctx context.Context, in *AdminExecuteRequest, opts ...grpc.CallOption) (*AdminExecuteResponse, error)
+	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (SQLService_AdminExecuteClient, error)
 }
 
 type sQLServiceClient struct {
@@ -70,13 +70,35 @@ func (c *sQLServiceClient) Export(ctx context.Context, in *ExportRequest, opts .
 	return out, nil
 }
 
-func (c *sQLServiceClient) AdminExecute(ctx context.Context, in *AdminExecuteRequest, opts ...grpc.CallOption) (*AdminExecuteResponse, error) {
-	out := new(AdminExecuteResponse)
-	err := c.cc.Invoke(ctx, SQLService_AdminExecute_FullMethodName, in, out, opts...)
+func (c *sQLServiceClient) AdminExecute(ctx context.Context, opts ...grpc.CallOption) (SQLService_AdminExecuteClient, error) {
+	stream, err := c.cc.NewStream(ctx, &SQLService_ServiceDesc.Streams[0], SQLService_AdminExecute_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &sQLServiceAdminExecuteClient{stream}
+	return x, nil
+}
+
+type SQLService_AdminExecuteClient interface {
+	Send(*AdminExecuteRequest) error
+	Recv() (*AdminExecuteResponse, error)
+	grpc.ClientStream
+}
+
+type sQLServiceAdminExecuteClient struct {
+	grpc.ClientStream
+}
+
+func (x *sQLServiceAdminExecuteClient) Send(m *AdminExecuteRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *sQLServiceAdminExecuteClient) Recv() (*AdminExecuteResponse, error) {
+	m := new(AdminExecuteResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // SQLServiceServer is the server API for SQLService service.
@@ -86,7 +108,7 @@ type SQLServiceServer interface {
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
-	AdminExecute(context.Context, *AdminExecuteRequest) (*AdminExecuteResponse, error)
+	AdminExecute(SQLService_AdminExecuteServer) error
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -103,8 +125,8 @@ func (UnimplementedSQLServiceServer) Query(context.Context, *QueryRequest) (*Que
 func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
 }
-func (UnimplementedSQLServiceServer) AdminExecute(context.Context, *AdminExecuteRequest) (*AdminExecuteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AdminExecute not implemented")
+func (UnimplementedSQLServiceServer) AdminExecute(SQLService_AdminExecuteServer) error {
+	return status.Errorf(codes.Unimplemented, "method AdminExecute not implemented")
 }
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 
@@ -173,22 +195,30 @@ func _SQLService_Export_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SQLService_AdminExecute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminExecuteRequest)
-	if err := dec(in); err != nil {
+func _SQLService_AdminExecute_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(SQLServiceServer).AdminExecute(&sQLServiceAdminExecuteServer{stream})
+}
+
+type SQLService_AdminExecuteServer interface {
+	Send(*AdminExecuteResponse) error
+	Recv() (*AdminExecuteRequest, error)
+	grpc.ServerStream
+}
+
+type sQLServiceAdminExecuteServer struct {
+	grpc.ServerStream
+}
+
+func (x *sQLServiceAdminExecuteServer) Send(m *AdminExecuteResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *sQLServiceAdminExecuteServer) Recv() (*AdminExecuteRequest, error) {
+	m := new(AdminExecuteRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).AdminExecute(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_AdminExecute_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).AdminExecute(ctx, req.(*AdminExecuteRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
@@ -210,11 +240,14 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "Export",
 			Handler:    _SQLService_Export_Handler,
 		},
+	},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "AdminExecute",
-			Handler:    _SQLService_AdminExecute_Handler,
+			StreamName:    "AdminExecute",
+			Handler:       _SQLService_AdminExecute_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "v1/sql_service.proto",
 }

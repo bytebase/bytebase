@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -90,6 +91,121 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 		CurrentSchema:  prettyCurrentSchema,
 		ExpectedSchema: prettyExpectedSchema,
 	}, nil
+}
+
+// AdminExecute executes the SQL statement.
+func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) error {
+	ctx := server.Context()
+	var driver db.Driver
+	var conn *sql.Conn
+	for {
+		request, err := server.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return status.Errorf(codes.Internal, "failed to receive request: %v", err)
+		}
+
+		instance, activity, err := s.preAdminExecute(ctx, request)
+		if err != nil {
+			return err
+		}
+
+		// We only need to get the driver and connection once.
+		driver, err = s.dbFactory.GetAdminDatabaseDriver(ctx, instance, request.ConnectionDatabase)
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to get database driver: %v", err)
+		}
+		defer driver.Close(ctx)
+
+		sqlDB := driver.GetDB()
+		if sqlDB != nil {
+			conn, err = sqlDB.Conn(ctx)
+			if err != nil {
+				return status.Errorf(codes.Internal, "failed to get database connection: %v", err)
+			}
+			defer conn.Close()
+		}
+
+		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request, instance)
+
+		if err := s.postAdminExecute(ctx, activity, durationNs, queryErr); err != nil {
+			return err
+		}
+
+		if queryErr != nil {
+			return status.Errorf(codes.Internal, "failed to execute statement: %v", queryErr)
+		}
+
+		if err := server.Send(&v1pb.AdminExecuteResponse{
+			Results: result,
+		}); err != nil {
+			return status.Errorf(codes.Internal, "failed to send response: %v", err)
+		}
+	}
+}
+
+func (s *SQLService) postAdminExecute(ctx context.Context, activity *api.Activity, durationNs int64, queryErr error) error {
+	var payload api.ActivitySQLEditorQueryPayload
+	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
+		return status.Errorf(codes.Internal, "failed to unmarshal activity payload: %v", err)
+	}
+
+	var newLevel *api.ActivityLevel
+	payload.DurationNs = durationNs
+	if queryErr != nil {
+		payload.Error = queryErr.Error()
+		errorLevel := api.ActivityError
+		newLevel = &errorLevel
+	}
+
+	// TODO: update the advice list
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Warn("Failed to marshal activity after executing sql statement",
+			zap.String("database_name", payload.DatabaseName),
+			zap.Int("instance_id", payload.InstanceID),
+			zap.String("statement", payload.Statement),
+			zap.Error(err))
+		return status.Errorf(codes.Internal, "Failed to marshal activity after executing sql statement: %v", err)
+	}
+
+	payloadString := string(payloadBytes)
+	if _, err := s.store.PatchActivity(ctx, &api.ActivityPatch{
+		ID:        activity.ID,
+		UpdaterID: activity.CreatorID,
+		Level:     newLevel,
+		Payload:   &payloadString,
+	}); err != nil {
+		return status.Errorf(codes.Internal, "Failed to update activity after executing sql statement: %v", err)
+	}
+
+	return nil
+}
+
+func (s *SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *sql.Conn, request *v1pb.AdminExecuteRequest, instance *store.InstanceMessage) ([]*v1pb.QueryResult, int64, error) {
+	start := time.Now().UnixNano()
+	result, err := driver.RunStatement(ctx, conn, request.Statement)
+	return result, time.Now().UnixNano() - start, err
+}
+
+func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExecuteRequest) (*store.InstanceMessage, *api.Activity, error) {
+	user, _, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	activity, err := s.createQueryActivity(ctx, user, api.ActivityInfo, instance.UID, api.ActivitySQLEditorQueryPayload{
+		Statement:              request.Statement,
+		InstanceID:             instance.UID,
+		DeprecatedInstanceName: instance.Title,
+		DatabaseID:             database.UID,
+		DatabaseName:           request.ConnectionDatabase,
+	})
+
+	return instance, activity, err
 }
 
 // Export exports the SQL query result.

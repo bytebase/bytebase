@@ -7752,7 +7752,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
-| AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) |  |
+| AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 
  
 
