@@ -1992,8 +1992,8 @@
         "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
       },
       "bb-feature-database-grouping": {
-        "title": "Sharding de bases de datos/tablas",
-        "desc": "Utilice grupos de bases de datos para administrar fácilmente la fragmentación de bases de datos/tablas."
+        "title": "Agrupación de bases de datos",
+        "desc": "Admite la agrupación de bases de datos y tablas y, al cambiar, puede seleccionar una agrupación de bases de datos y cambiar su agrupación de tablas."
       },
       "bb-feature-disallow-signup": {
         "title": "Deshabilitar el registro de autoservicio",
