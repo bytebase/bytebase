@@ -41,7 +41,6 @@ import {
   useVCSV1Store,
   useDataSourceStore,
   useSQLReviewStore,
-  useLegacyProjectStore,
   useSheetV1Store,
   useAuthStore,
   useActuatorV1Store,
@@ -1059,7 +1058,6 @@ router.beforeEach((to, from, next) => {
   const dbSchemaStore = useDBSchemaStore();
   const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
-  const projectStore = useLegacyProjectStore();
   const projectV1Store = useProjectV1Store();
   const projectWebhookV1Store = useProjectWebhookV1Store();
 
@@ -1402,11 +1400,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (projectSlug) {
-    projectStore
-      .fetchProjectById(idFromSlug(projectSlug))
-      .then(() =>
-        projectV1Store.fetchProjectByUID(String(idFromSlug(projectSlug)))
-      )
+    projectV1Store
+      .fetchProjectByUID(String(idFromSlug(projectSlug)))
       .then((project) => {
         if (!projectWebhookSlug) {
           next();

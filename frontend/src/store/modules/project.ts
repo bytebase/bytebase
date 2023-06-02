@@ -1,18 +1,11 @@
 import { defineStore } from "pinia";
-import axios from "axios";
 import {
-  empty,
-  EMPTY_ID,
-  PrincipalId,
   Project,
-  ProjectId,
   ProjectMember,
   ProjectState,
   ResourceIdentifier,
   ResourceObject,
-  RowStatus,
   unknown,
-  UNKNOWN_ID,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 
@@ -91,103 +84,6 @@ export const useLegacyProjectStore = defineStore("project_legacy", {
   actions: {
     convert(instance: ResourceObject, includedList: ResourceObject[]): Project {
       return convert(instance, includedList || []);
-    },
-
-    getProjectById(projectId: ProjectId): Project {
-      if (projectId == EMPTY_ID) {
-        return empty("PROJECT") as Project;
-      }
-
-      return this.projectById.get(projectId) || (unknown("PROJECT") as Project);
-    },
-
-    async getOrFetchProjectById(projectId: ProjectId): Promise<Project> {
-      if (projectId === EMPTY_ID) return empty("PROJECT");
-      if (projectId === UNKNOWN_ID) return unknown("PROJECT");
-      if (!this.projectById.has(projectId)) {
-        await this.fetchProjectById(projectId);
-      }
-      return this.getProjectById(projectId);
-    },
-
-    async fetchAllProjectList() {
-      const data = (await axios.get(`/api/project`)).data;
-      const projectList = data.data.map((project: ResourceObject) => {
-        return convert(project, data.included);
-      }) as Project[];
-
-      this.upsertProjectList(projectList);
-      return projectList;
-    },
-
-    async fetchProjectListByUser({
-      userId,
-      rowStatusList = [],
-    }: {
-      userId: PrincipalId;
-      rowStatusList?: RowStatus[];
-    }) {
-      const projectList: Project[] = [];
-
-      const fetchProjectList = async (rowStatus?: RowStatus) => {
-        let path = `/api/project?user=${userId}`;
-        if (rowStatus) path += `&rowstatus=${rowStatus}`;
-        const data = (await axios.get(path)).data;
-        const list: Project[] = data.data.map((project: ResourceObject) => {
-          return convert(project, data.included);
-        });
-        // projects are mutual excluded by different rowstatus
-        // so we don't need to unique them by id here
-        projectList.push(...list);
-      };
-
-      if (rowStatusList.length === 0) {
-        // if no rowStatus specified, fetch all
-        await fetchProjectList();
-      } else {
-        // otherwise, fetch different rowStatus one-by-one
-        for (const rowStatus of rowStatusList) {
-          await fetchProjectList(rowStatus);
-        }
-      }
-
-      this.upsertProjectList(projectList);
-      return projectList;
-    },
-
-    async fetchProjectById(projectId: ProjectId) {
-      const data = (await axios.get(`/api/project/${projectId}`)).data;
-      const project = convert(data.data, data.included);
-
-      this.setProjectById({
-        projectId,
-        project,
-      });
-      return project;
-    },
-
-    // sync member role from vcs
-    async syncMemberRoleFromVCS({ projectId }: { projectId: ProjectId }) {
-      await axios.post(`/api/project/${projectId}/sync-member`);
-      const updatedProject = await this.fetchProjectById(projectId);
-
-      return updatedProject;
-    },
-
-    setProjectById({
-      projectId,
-      project,
-    }: {
-      projectId: ProjectId;
-      project: Project;
-    }) {
-      this.projectById.set(projectId, project);
-    },
-
-    upsertProjectList(projectList: Project[]) {
-      for (const project of projectList) {
-        this.projectById.set(project.id, project);
-      }
     },
   },
 });
