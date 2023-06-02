@@ -4,10 +4,11 @@ export const extractSQLRowValue = (value: RowValue) => {
   const plainObject = RowValue.toJSON(value) as Record<string, any>;
   const keys = Object.keys(plainObject);
   if (keys.length === 0) {
-    console.warn("empty row value", value);
+    console.debug("empty row value", value);
+    return null;
   }
   if (keys.length > 1) {
-    console.warn("mixed type in row value", value);
+    console.debug("mixed type in row value", value);
   }
   const key = keys[0];
   return plainObject[key];
