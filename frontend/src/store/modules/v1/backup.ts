@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { computed, reactive, unref, watch } from "vue";
 
 import { databaseServiceClient } from "@/grpcweb";
-import { Backup, ListBackupRequest } from "@/types/proto/v1/database_service";
+import { Backup, ListBackupsRequest } from "@/types/proto/v1/database_service";
 import { MaybeRef } from "@/types";
 import { useAuthStore } from "../auth";
 
@@ -16,12 +16,12 @@ export const useBackupV1Store = defineStore("backup_v1", () => {
   const backupListByDatabase = (database: string) => {
     return backupListMapByDatabase.get(database) ?? [];
   };
-  const fetchBackupList = async (params: Partial<ListBackupRequest>) => {
+  const fetchBackupList = async (params: Partial<ListBackupsRequest>) => {
     const { parent } = params;
     if (!parent) {
       throw new Error('"parent" parameter is required');
     }
-    const { backups } = await databaseServiceClient.listBackup(params);
+    const { backups } = await databaseServiceClient.listBackups(params);
     upsertBackupListMap(parent, backups);
     return backups;
   };

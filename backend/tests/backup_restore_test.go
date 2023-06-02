@@ -247,7 +247,7 @@ func TestPITRTwice(t *testing.T) {
 	log.Debug("First PITR done.")
 
 	log.Debug("Wait for the first PITR auto backup to finish.")
-	resp, err := ctl.databaseServiceClient.ListBackup(ctx, &v1pb.ListBackupRequest{
+	resp, err := ctl.databaseServiceClient.ListBackups(ctx, &v1pb.ListBackupsRequest{
 		Parent: database.Name,
 	})
 	a.NoError(err)

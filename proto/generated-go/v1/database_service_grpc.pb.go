@@ -30,7 +30,7 @@ const (
 	DatabaseService_GetBackupSetting_FullMethodName     = "/bytebase.v1.DatabaseService/GetBackupSetting"
 	DatabaseService_UpdateBackupSetting_FullMethodName  = "/bytebase.v1.DatabaseService/UpdateBackupSetting"
 	DatabaseService_CreateBackup_FullMethodName         = "/bytebase.v1.DatabaseService/CreateBackup"
-	DatabaseService_ListBackup_FullMethodName           = "/bytebase.v1.DatabaseService/ListBackup"
+	DatabaseService_ListBackups_FullMethodName          = "/bytebase.v1.DatabaseService/ListBackups"
 	DatabaseService_ListSlowQueries_FullMethodName      = "/bytebase.v1.DatabaseService/ListSlowQueries"
 	DatabaseService_ListSecrets_FullMethodName          = "/bytebase.v1.DatabaseService/ListSecrets"
 	DatabaseService_UpdateSecret_FullMethodName         = "/bytebase.v1.DatabaseService/UpdateSecret"
@@ -55,7 +55,7 @@ type DatabaseServiceClient interface {
 	GetBackupSetting(ctx context.Context, in *GetBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
 	UpdateBackupSetting(ctx context.Context, in *UpdateBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
 	CreateBackup(ctx context.Context, in *CreateBackupRequest, opts ...grpc.CallOption) (*Backup, error)
-	ListBackup(ctx context.Context, in *ListBackupRequest, opts ...grpc.CallOption) (*ListBackupResponse, error)
+	ListBackups(ctx context.Context, in *ListBackupsRequest, opts ...grpc.CallOption) (*ListBackupsResponse, error)
 	ListSlowQueries(ctx context.Context, in *ListSlowQueriesRequest, opts ...grpc.CallOption) (*ListSlowQueriesResponse, error)
 	ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error)
 	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error)
@@ -163,9 +163,9 @@ func (c *databaseServiceClient) CreateBackup(ctx context.Context, in *CreateBack
 	return out, nil
 }
 
-func (c *databaseServiceClient) ListBackup(ctx context.Context, in *ListBackupRequest, opts ...grpc.CallOption) (*ListBackupResponse, error) {
-	out := new(ListBackupResponse)
-	err := c.cc.Invoke(ctx, DatabaseService_ListBackup_FullMethodName, in, out, opts...)
+func (c *databaseServiceClient) ListBackups(ctx context.Context, in *ListBackupsRequest, opts ...grpc.CallOption) (*ListBackupsResponse, error) {
+	out := new(ListBackupsResponse)
+	err := c.cc.Invoke(ctx, DatabaseService_ListBackups_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +250,7 @@ type DatabaseServiceServer interface {
 	GetBackupSetting(context.Context, *GetBackupSettingRequest) (*BackupSetting, error)
 	UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error)
 	CreateBackup(context.Context, *CreateBackupRequest) (*Backup, error)
-	ListBackup(context.Context, *ListBackupRequest) (*ListBackupResponse, error)
+	ListBackups(context.Context, *ListBackupsRequest) (*ListBackupsResponse, error)
 	ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error)
 	ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error)
 	UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error)
@@ -295,8 +295,8 @@ func (UnimplementedDatabaseServiceServer) UpdateBackupSetting(context.Context, *
 func (UnimplementedDatabaseServiceServer) CreateBackup(context.Context, *CreateBackupRequest) (*Backup, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBackup not implemented")
 }
-func (UnimplementedDatabaseServiceServer) ListBackup(context.Context, *ListBackupRequest) (*ListBackupResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListBackup not implemented")
+func (UnimplementedDatabaseServiceServer) ListBackups(context.Context, *ListBackupsRequest) (*ListBackupsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListBackups not implemented")
 }
 func (UnimplementedDatabaseServiceServer) ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSlowQueries not implemented")
@@ -512,20 +512,20 @@ func _DatabaseService_CreateBackup_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_ListBackup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListBackupRequest)
+func _DatabaseService_ListBackups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListBackupsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DatabaseServiceServer).ListBackup(ctx, in)
+		return srv.(DatabaseServiceServer).ListBackups(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DatabaseService_ListBackup_FullMethodName,
+		FullMethod: DatabaseService_ListBackups_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).ListBackup(ctx, req.(*ListBackupRequest))
+		return srv.(DatabaseServiceServer).ListBackups(ctx, req.(*ListBackupsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -704,8 +704,8 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DatabaseService_CreateBackup_Handler,
 		},
 		{
-			MethodName: "ListBackup",
-			Handler:    _DatabaseService_ListBackup_Handler,
+			MethodName: "ListBackups",
+			Handler:    _DatabaseService_ListBackups_Handler,
 		},
 		{
 			MethodName: "ListSlowQueries",

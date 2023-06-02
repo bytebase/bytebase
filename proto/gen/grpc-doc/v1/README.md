@@ -104,8 +104,8 @@
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
-    - [ListBackupRequest](#bytebase-v1-ListBackupRequest)
-    - [ListBackupResponse](#bytebase-v1-ListBackupResponse)
+    - [ListBackupsRequest](#bytebase-v1-ListBackupsRequest)
+    - [ListBackupsResponse](#bytebase-v1-ListBackupsResponse)
     - [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest)
     - [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
@@ -1947,10 +1947,10 @@ IndexMetadata is the metadata for indexes.
 
 
 
-<a name="bytebase-v1-ListBackupRequest"></a>
+<a name="bytebase-v1-ListBackupsRequest"></a>
 
-### ListBackupRequest
-ListBackupRequest is the request message for ListBackup.
+### ListBackupsRequest
+ListBackupsRequest is the request message for ListBackup.
 
 
 | Field | Type | Label | Description |
@@ -1966,9 +1966,9 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 
 
 
-<a name="bytebase-v1-ListBackupResponse"></a>
+<a name="bytebase-v1-ListBackupsResponse"></a>
 
-### ListBackupResponse
+### ListBackupsResponse
 
 
 
@@ -2461,7 +2461,7 @@ The type of the backup.
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | UpdateBackupSetting | [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | CreateBackup | [CreateBackupRequest](#bytebase-v1-CreateBackupRequest) | [Backup](#bytebase-v1-Backup) |  |
-| ListBackup | [ListBackupRequest](#bytebase-v1-ListBackupRequest) | [ListBackupResponse](#bytebase-v1-ListBackupResponse) |  |
+| ListBackups | [ListBackupsRequest](#bytebase-v1-ListBackupsRequest) | [ListBackupsResponse](#bytebase-v1-ListBackupsResponse) |  |
 | ListSlowQueries | [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest) | [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse) |  |
 | ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) |  |
 | UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
