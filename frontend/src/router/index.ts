@@ -6,36 +6,36 @@ import {
   RouteRecordRaw,
 } from "vue-router";
 import { useTitle } from "@vueuse/core";
-import { startCase } from "lodash-es";
+import { pull, startCase } from "lodash-es";
 
-import BodyLayout from "../layouts/BodyLayout.vue";
-import DashboardLayout from "../layouts/DashboardLayout.vue";
-import DatabaseLayout from "../layouts/DatabaseLayout.vue";
-import InstanceLayout from "../layouts/InstanceLayout.vue";
-import SplashLayout from "../layouts/SplashLayout.vue";
-import SQLEditorLayout from "../layouts/SQLEditorLayout.vue";
-import SheetDashboardLayout from "../layouts/SheetDashboardLayout.vue";
-import { t } from "../plugins/i18n";
+import BodyLayout from "@/layouts/BodyLayout.vue";
+import DashboardLayout from "@/layouts/DashboardLayout.vue";
+import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
+import InstanceLayout from "@/layouts/InstanceLayout.vue";
+import SplashLayout from "@/layouts/SplashLayout.vue";
+import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
+import SheetDashboardLayout from "@/layouts/SheetDashboardLayout.vue";
+import { t } from "@/plugins/i18n";
 import {
-  Database,
   DEFAULT_PROJECT_ID,
+  DEFAULT_PROJECT_V1_NAME,
   QuickActionType,
   unknownUser,
   UNKNOWN_ID,
-} from "../types";
+} from "@/types";
 import {
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
   idFromSlug,
   sheetNameFromSlug,
-  migrationHistoryIdFromSlug,
-  roleListInProjectV1,
-} from "../utils";
-import Signin from "../views/auth/Signin.vue";
-import Signup from "../views/auth/Signup.vue";
-import MultiFactor from "../views/auth/MultiFactor.vue";
-import DashboardSidebar from "../views/DashboardSidebar.vue";
-import Home from "../views/Home.vue";
+  isOwnerOfProjectV1,
+  extractChangeHistoryUID,
+} from "@/utils";
+import Signin from "@/views/auth/Signin.vue";
+import Signup from "@/views/auth/Signup.vue";
+import MultiFactor from "@/views/auth/MultiFactor.vue";
+import DashboardSidebar from "@/views/DashboardSidebar.vue";
+import Home from "@/views/Home.vue";
 import {
   hasFeature,
   useVCSV1Store,
@@ -45,7 +45,6 @@ import {
   useSheetV1Store,
   useAuthStore,
   useActuatorV1Store,
-  useLegacyDatabaseStore,
   useLegacyInstanceStore,
   useRouterStore,
   useDBSchemaStore,
@@ -53,7 +52,6 @@ import {
   useOnboardingStateStore,
   useTabStore,
   useIdentityProviderStore,
-  useSubscriptionV1Store,
   useUserStore,
   useProjectV1Store,
   useProjectWebhookV1Store,
@@ -61,9 +59,9 @@ import {
   useCurrentUserV1,
   useInstanceV1Store,
   useDatabaseV1Store,
+  useChangeHistoryStore,
 } from "@/store";
 import { useConversationStore } from "@/plugins/ai/store";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import { State } from "@/types/proto/v1/common";
 
 const HOME_MODULE = "workspace.home";
@@ -160,67 +158,29 @@ const routes: Array<RouteRecordRaw> = [
             name: HOME_MODULE,
             meta: {
               quickActionListByRole: () => {
-                const hasDBAWorkflowFeature = hasFeature(
-                  "bb.feature.dba-workflow"
-                );
-                const ownerList: QuickActionType[] = hasDBAWorkflowFeature
-                  ? [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.schema.sync",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.instance.create",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ]
-                  : [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.schema.sync",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.instance.create",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ];
-                const dbaList: QuickActionType[] = hasDBAWorkflowFeature
-                  ? [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.schema.sync",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.instance.create",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ]
-                  : [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.schema.sync",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.instance.create",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ];
-                const developerList: QuickActionType[] = hasDBAWorkflowFeature
-                  ? [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.schema.sync",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ]
-                  : [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.schema.sync",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ];
+                const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
+                  "quickaction.bb.database.schema.update",
+                  "quickaction.bb.database.data.update",
+                  "quickaction.bb.database.create",
+                  "quickaction.bb.instance.create",
+                ];
+                const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [
+                  "quickaction.bb.database.schema.update",
+                  "quickaction.bb.database.data.update",
+                  "quickaction.bb.database.create",
+                  "quickaction.bb.issue.grant.request.querier",
+                  "quickaction.bb.issue.grant.request.exporter",
+                ];
+                if (hasFeature("bb.feature.dba-workflow")) {
+                  pull(
+                    DEVELOPER_QUICK_ACTION_LIST,
+                    "quickaction.bb.database.create"
+                  );
+                }
                 return new Map([
-                  ["OWNER", ownerList],
-                  ["DBA", dbaList],
-                  ["DEVELOPER", developerList],
+                  ["OWNER", DBA_AND_OWNER_QUICK_ACTION_LIST],
+                  ["DBA", DBA_AND_OWNER_QUICK_ACTION_LIST],
+                  ["DEVELOPER", DEVELOPER_QUICK_ACTION_LIST],
                 ]);
               },
             },
@@ -395,13 +355,6 @@ const routes: Array<RouteRecordRaw> = [
                 name: "setting.workspace.project",
                 meta: {
                   title: () => t("common.projects"),
-                  quickActionListByRole: () => {
-                    return new Map([
-                      ["OWNER", []],
-                      ["DBA", []],
-                      ["DEVELOPER", []],
-                    ]);
-                  },
                 },
                 component: () => import("../views/SettingWorkspaceProject.vue"),
                 props: true,
@@ -627,21 +580,14 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: () => t("common.environments"),
               quickActionListByRole: () => {
+                const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
+                  "quickaction.bb.environment.create",
+                  "quickaction.bb.environment.reorder",
+                ];
                 return new Map([
-                  [
-                    "OWNER",
-                    [
-                      "quickaction.bb.environment.create",
-                      "quickaction.bb.environment.reorder",
-                    ],
-                  ],
-                  [
-                    "DBA",
-                    [
-                      "quickaction.bb.environment.create",
-                      "quickaction.bb.environment.reorder",
-                    ],
-                  ],
+                  ["OWNER", DBA_AND_OWNER_QUICK_ACTION_LIST],
+                  ["DBA", DBA_AND_OWNER_QUICK_ACTION_LIST],
+                  ["DEVELOPER", []],
                 ]);
               },
             },
@@ -695,103 +641,71 @@ const routes: Array<RouteRecordRaw> = [
               leftSidebar: DashboardSidebar,
             },
             meta: {
-              quickActionListByRole: (route: RouteLocationNormalized) => {
+              quickActionListByRole: (route) => {
                 const slug = route.params.projectSlug as string;
                 const project = useProjectV1Store().getProjectByUID(
                   String(idFromSlug(slug))
                 );
 
                 if (project.state === State.ACTIVE) {
-                  const actionList: string[] = [];
+                  const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
+                    "quickaction.bb.database.schema.update",
+                    "quickaction.bb.database.data.update",
+                    "quickaction.bb.database.create",
+                    "quickaction.bb.project.database.transfer",
+                    "quickaction.bb.project.database.transfer-out",
+                  ];
+                  const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [];
 
                   const currentUserV1 = useCurrentUserV1();
-                  let allowAlterSchemaOrChangeData = false;
-                  let allowCreateDB = false;
-                  let allowTransferDB = false;
-                  let allowTransferOutDB = false;
                   if (
-                    hasWorkspacePermissionV1(
-                      "bb.permission.workspace.manage-instance",
-                      currentUserV1.value.userRole
+                    project.name !== DEFAULT_PROJECT_V1_NAME &&
+                    hasPermissionInProjectV1(
+                      project.iamPolicy,
+                      currentUserV1.value,
+                      "bb.permission.project.change-database"
                     )
                   ) {
-                    allowAlterSchemaOrChangeData = true;
-                    allowCreateDB = true;
-                    allowTransferDB = true;
-                    allowTransferOutDB = true;
-                  } else {
-                    const roleList = roleListInProjectV1(
-                      project.iamPolicy,
-                      currentUserV1.value
-                    );
-                    if (roleList.length > 0) {
-                      allowAlterSchemaOrChangeData = hasPermissionInProjectV1(
-                        project.iamPolicy,
-                        currentUserV1.value,
-                        "bb.permission.project.change-database"
-                      );
-                      allowTransferDB = hasPermissionInProjectV1(
-                        project.iamPolicy,
-                        currentUserV1.value,
-                        "bb.permission.project.transfer-database"
-                      );
-                      allowTransferOutDB = hasPermissionInProjectV1(
-                        project.iamPolicy,
-                        currentUserV1.value,
-                        "bb.permission.project.transfer-database"
-                      );
-
-                      if (
-                        useSubscriptionV1Store().currentPlan ===
-                        PlanType.ENTERPRISE
-                      ) {
-                        // in ENTERPRISE edition
-                        // workspace developers are never allowed to create db
-                        // even if they are project owners
-                        allowCreateDB = false;
-                      } else {
-                        // See RBAC otherwise.
-                        // AKA yes if project owner.
-                        allowCreateDB = hasPermissionInProjectV1(
-                          project.iamPolicy,
-                          currentUserV1.value,
-                          "bb.permission.project.create-database"
-                        );
-                      }
-                    }
-                  }
-                  if (project.uid === String(DEFAULT_PROJECT_ID)) {
-                    allowAlterSchemaOrChangeData = false;
-                  }
-                  if (allowAlterSchemaOrChangeData) {
-                    actionList.push(
+                    // Default project (Unassigned databases) are not allowed
+                    // to be changed.
+                    DEVELOPER_QUICK_ACTION_LIST.push(
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.schema.sync"
+                      "quickaction.bb.database.create"
                     );
                   }
-
-                  if (allowCreateDB) {
-                    actionList.push("quickaction.bb.database.create");
-                  }
-                  if (allowTransferDB) {
-                    actionList.push("quickaction.bb.project.database.transfer");
-                  }
-                  if (allowTransferOutDB) {
-                    actionList.push(
+                  if (
+                    hasPermissionInProjectV1(
+                      project.iamPolicy,
+                      currentUserV1.value,
+                      "bb.permission.project.transfer-database"
+                    )
+                  ) {
+                    DEVELOPER_QUICK_ACTION_LIST.push(
+                      "quickaction.bb.project.database.transfer",
                       "quickaction.bb.project.database.transfer-out"
                     );
                   }
+                  if (
+                    !isOwnerOfProjectV1(project.iamPolicy, currentUserV1.value)
+                  ) {
+                    DEVELOPER_QUICK_ACTION_LIST.push(
+                      "quickaction.bb.issue.grant.request.querier",
+                      "quickaction.bb.issue.grant.request.exporter"
+                    );
+                  }
 
-                  actionList.push(
-                    "quickaction.bb.issue.grant.request.querier",
-                    "quickaction.bb.issue.grant.request.exporter"
-                  );
+                  if (hasFeature("bb.feature.dba-workflow")) {
+                    pull(
+                      DEVELOPER_QUICK_ACTION_LIST,
+                      "quickaction.bb.database.create"
+                    );
+                  }
 
                   return new Map([
-                    ["OWNER", actionList],
-                    ["DBA", actionList],
-                    ["DEVELOPER", actionList],
+                    ["OWNER", DBA_AND_OWNER_QUICK_ACTION_LIST],
+                    ["DBA", DBA_AND_OWNER_QUICK_ACTION_LIST],
+                    ["DEVELOPER", DEVELOPER_QUICK_ACTION_LIST],
                   ]);
                 }
                 return new Map();
@@ -888,57 +802,30 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: () => t("common.databases"),
               quickActionListByRole: () => {
-                const hasDBAWorkflowFeature = hasFeature(
-                  "bb.feature.dba-workflow"
-                );
-                const ownerList: QuickActionType[] = hasDBAWorkflowFeature
-                  ? [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ]
-                  : [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ];
-                const dbaList: QuickActionType[] = hasDBAWorkflowFeature
-                  ? [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ]
-                  : [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ];
-                const developerList: QuickActionType[] = hasDBAWorkflowFeature
-                  ? [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ]
-                  : [
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter",
-                    ];
+                const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
+                  "quickaction.bb.database.schema.update",
+                  "quickaction.bb.database.data.update",
+                  "quickaction.bb.database.create",
+                ];
+                const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [
+                  "quickaction.bb.database.schema.update",
+                  "quickaction.bb.database.data.update",
+                  "quickaction.bb.database.create",
+                  "quickaction.bb.issue.grant.request.querier",
+                  "quickaction.bb.issue.grant.request.exporter",
+                ];
+
+                if (hasFeature("bb.feature.dba-workflow")) {
+                  pull(
+                    DEVELOPER_QUICK_ACTION_LIST,
+                    "quickaction.bb.database.create"
+                  );
+                }
+
                 return new Map([
-                  ["OWNER", ownerList],
-                  ["DBA", dbaList],
-                  ["DEVELOPER", developerList],
+                  ["OWNER", DBA_AND_OWNER_QUICK_ACTION_LIST],
+                  ["DBA", DBA_AND_OWNER_QUICK_ACTION_LIST],
+                  ["DEVELOPER", DEVELOPER_QUICK_ACTION_LIST],
                 ]);
               },
             },
@@ -991,26 +878,29 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import("../views/TableDetail.vue"),
                 props: true,
               },
-              {
-                path: "history/:migrationHistorySlug",
-                name: "workspace.database.history.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.migrationHistorySlug as string;
-                    const migrationHistory =
-                      useLegacyInstanceStore().getMigrationHistoryById(
-                        migrationHistoryIdFromSlug(slug)
-                      );
-                    return migrationHistory?.version ?? "";
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/MigrationHistoryDetail.vue"),
-                props: (to) => ({
-                  key: to.fullPath, // force refresh the component when slug changed
-                }),
-              },
             ],
+          },
+          {
+            path: "instances/:instance/databases/:database/changeHistories/:changeHistorySlug",
+            name: "workspace.database.history.detail",
+            meta: {
+              title: (route) => {
+                const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
+                const uid = extractChangeHistoryUID(
+                  route.params.changeHistorySlug as string
+                );
+                const name = `${parent}/changeHistories/${uid}`;
+                const history =
+                  useChangeHistoryStore().getChangeHistoryByName(name);
+
+                return history?.version ?? "";
+              },
+            },
+            components: {
+              content: () => import("../views/ChangeHistoryDetail.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true, leftSidebar: true },
           },
           {
             path: "instance/:instanceSlug",
@@ -1166,7 +1056,6 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
   const authStore = useAuthStore();
-  const databaseStore = useLegacyDatabaseStore();
   const dbSchemaStore = useDBSchemaStore();
   const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
@@ -1438,6 +1327,28 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
+  if (to.name === "workspace.database.history.detail") {
+    const parent = `instances/${to.params.instance}/databases/${to.params.database}`;
+    const uid = extractChangeHistoryUID(to.params.changeHistorySlug as string);
+    Promise.all([
+      useDatabaseV1Store().getOrFetchDatabaseByName(parent),
+      useChangeHistoryStore().fetchChangeHistory({
+        name: `${parent}/changeHistories/${uid}`,
+      }),
+    ])
+      .then(() => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
+    return;
+  }
+
   const routerSlug = routerStore.routeSlug(to);
   const principalId = routerSlug.principalId;
   const environmentSlug = routerSlug.environmentSlug;
@@ -1447,7 +1358,6 @@ router.beforeEach((to, from, next) => {
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
   const dataSourceSlug = routerSlug.dataSourceSlug;
-  const migrationHistorySlug = routerSlug.migrationHistorySlug;
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
@@ -1541,35 +1451,17 @@ router.beforeEach((to, from, next) => {
     }
     useDatabaseV1Store()
       .fetchDatabaseByUID(String(idFromSlug(databaseSlug)))
-      .then(() => databaseStore.fetchDatabaseById(idFromSlug(databaseSlug)))
-      .then((database: Database) => {
+      .then((database) => {
         dbSchemaStore
-          .getOrFetchDatabaseMetadataById(database.id, true)
+          .getOrFetchDatabaseMetadataById(Number(database.uid), true)
           .then(() => {
-            if (!dataSourceSlug && !migrationHistorySlug) {
+            if (!dataSourceSlug) {
               next();
             } else if (dataSourceSlug) {
               useDataSourceStore()
                 .fetchDataSourceById({
                   dataSourceId: idFromSlug(dataSourceSlug),
-                  databaseId: database.id,
-                })
-                .then(() => {
-                  next();
-                })
-                .catch((error) => {
-                  next({
-                    name: "error.404",
-                    replace: false,
-                  });
-                  throw error;
-                });
-            } else if (migrationHistorySlug) {
-              instanceStore
-                .fetchMigrationHistoryById({
-                  instanceId: database.instance.id,
-                  migrationHistoryId:
-                    migrationHistoryIdFromSlug(migrationHistorySlug),
+                  databaseId: Number(database.uid),
                 })
                 .then(() => {
                   next();
@@ -1595,13 +1487,9 @@ router.beforeEach((to, from, next) => {
   }
 
   if (instanceSlug) {
-    instanceStore
-      .fetchInstanceById(idFromSlug(instanceSlug))
-      .then(() =>
-        useInstanceV1Store().getOrFetchInstanceByUID(
-          String(idFromSlug(instanceSlug))
-        )
-      )
+    instanceStore;
+    useInstanceV1Store()
+      .getOrFetchInstanceByUID(String(idFromSlug(instanceSlug)))
       .then(() => {
         next();
       })

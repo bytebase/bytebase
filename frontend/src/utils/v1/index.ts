@@ -13,3 +13,5 @@ export * from "./instance";
 export * from "./sqlEditor";
 export * from "./sheet";
 export * from "./vcs";
+export * from "./review";
+export * from "./changeHistory";

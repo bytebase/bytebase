@@ -6,7 +6,7 @@ option go_package = "generated-go/store";
 
 message PushEvent {
   VcsType vcs_type = 1;
-  string base_directory = 2;
+  string base_dir = 2;
   string ref = 3;
   string before = 4;
   string after = 5;

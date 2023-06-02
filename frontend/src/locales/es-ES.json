@@ -799,7 +799,9 @@
     "transfer-in-db-alert": "¿Estás seguro de transferir \"{dbName}\" a nuestro proyecto?",
     "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en bases de datos no asignadas.",
     "transfer-out-db": "Transferir base de datos",
-    "transfer-out-db-title": "Transferir la base de datos"
+    "transfer-out-db-title": "Transferir la base de datos",
+    "request-export": "Solicitar exportación",
+    "request-query": "Solicitar consulta"
   },
   "create-db": {
     "new-database-name": "Nuevo nombre de la base de datos",

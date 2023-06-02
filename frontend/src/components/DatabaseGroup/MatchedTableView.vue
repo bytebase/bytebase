@@ -1,14 +1,20 @@
 <template>
-  <p class="text-lg mb-2">Tables</p>
-  <div class="w-full border min-h-[20rem] max-h-[24rem] overflow-y-auto">
+  <div class="mb-2 flex flex-row items-center">
+    <span class="text-lg mr-2">Tables</span>
+    <BBLoader v-show="state.isRequesting" class="opacity-60" />
+  </div>
+  <div
+    class="w-full border rounded min-h-[20rem] max-h-[24rem] overflow-y-auto"
+  >
     <div
-      class="w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b"
+      class="sticky top-0 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b cursor-pointer"
+      @click="state.showMatchedTableList = !state.showMatchedTableList"
     >
       <div>
         <span>Matched table</span>
         <span class="ml-1 text-gray-400">({{ matchedTableList.length }})</span>
       </div>
-      <button @click="state.showMatchedTableList = !state.showMatchedTableList">
+      <button class="opacity-60">
         <heroicons-outline:chevron-right
           v-if="!state.showMatchedTableList"
           class="w-5 h-auto"
@@ -29,8 +35,8 @@
       </div>
     </div>
     <div
-      class="w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b"
-      :class="[state.showMatchedTableList && 'border-t']"
+      class="sticky top-8 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-y cursor-pointer"
+      @click="state.showUnmatchedTableList = !state.showUnmatchedTableList"
     >
       <div>
         <span>Unmatched table</span>
@@ -38,9 +44,7 @@
           >({{ unmatchedTableList.length }})</span
         >
       </div>
-      <button
-        @click="state.showUnmatchedTableList = !state.showUnmatchedTableList"
-      >
+      <button class="opacity-60">
         <heroicons-outline:chevron-right
           v-if="!state.showUnmatchedTableList"
           class="w-5 h-auto"
@@ -64,21 +68,25 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch, reactive } from "vue";
+import { ref, watch, reactive } from "vue";
 import { ConditionGroupExpr, convertToCELString } from "@/plugins/cel";
 import { ComposedProject } from "@/types";
 import { DatabaseView } from "../v2";
 import {
   SchemaGroup,
-  SchemaGroupView,
   SchemaGroup_Table,
 } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
 import { Expr } from "@/types/proto/google/type/expr";
 import { useDebounceFn } from "@vueuse/core";
-import { schemaGroupNamePrefix } from "@/store/modules/v1/common";
+import {
+  databaseGroupNamePrefix,
+  schemaGroupNamePrefix,
+} from "@/store/modules/v1/common";
+import BBLoader from "@/bbkit/BBLoader.vue";
 
 interface LocalState {
+  isRequesting: boolean;
   showMatchedTableList: boolean;
   showUnmatchedTableList: boolean;
 }
@@ -91,25 +99,23 @@ const props = defineProps<{
 }>();
 
 const state = reactive<LocalState>({
+  isRequesting: false,
   showMatchedTableList: true,
   showUnmatchedTableList: false,
 });
 const matchedTableList = ref<SchemaGroup_Table[]>([]);
 const unmatchedTableList = ref<SchemaGroup_Table[]>([]);
 
-const isCreating = computed(() => props.schemaGroup === undefined);
-
 const updateMatchingState = useDebounceFn(async () => {
-  const tempMatchedTableList: SchemaGroup_Table[] = [];
-  const tempUnmatchedTableList: SchemaGroup_Table[] = [];
-
-  if (isCreating.value) {
+  state.isRequesting = true;
+  try {
     const celString = convertToCELString(props.expr);
     const validateOnlyResourceId = "creating-schema-group";
+    const databaseGroupName = `${props.project.name}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
     const result = await projectServiceClient.createSchemaGroup({
-      parent: props.databaseGroupName,
+      parent: databaseGroupName,
       schemaGroup: {
-        name: `${props.databaseGroupName}/${schemaGroupNamePrefix}/${validateOnlyResourceId}`,
+        name: `${databaseGroupName}/${schemaGroupNamePrefix}${validateOnlyResourceId}`,
         tablePlaceholder: validateOnlyResourceId,
         tableExpr: Expr.fromJSON({
           expression: celString,
@@ -118,18 +124,13 @@ const updateMatchingState = useDebounceFn(async () => {
       schemaGroupId: validateOnlyResourceId,
       validateOnly: true,
     });
-    tempMatchedTableList.push(...result.matchedTables);
-    tempUnmatchedTableList.push(...result.unmatchedTables);
-  } else {
-    const result = await projectServiceClient.getSchemaGroup({
-      name: props.schemaGroup!.name,
-      view: SchemaGroupView.SCHEMA_GROUP_VIEW_FULL,
-    });
-    tempMatchedTableList.push(...result.matchedTables);
-    tempUnmatchedTableList.push(...result.unmatchedTables);
+    matchedTableList.value = result.matchedTables;
+    unmatchedTableList.value = result.unmatchedTables;
+  } catch (error) {
+    console.error(error);
+    // do nothing else.
   }
-  matchedTableList.value = tempMatchedTableList;
-  unmatchedTableList.value = tempUnmatchedTableList;
+  state.isRequesting = false;
 }, 500);
 
 watch(() => props, updateMatchingState, {

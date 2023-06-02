@@ -51,7 +51,7 @@ export function vcsTypeToJSON(object: VcsType): string {
 
 export interface PushEvent {
   vcsType: VcsType;
-  baseDirectory: string;
+  baseDir: string;
   ref: string;
   before: string;
   after: string;
@@ -89,7 +89,7 @@ export interface FileCommit {
 function createBasePushEvent(): PushEvent {
   return {
     vcsType: 0,
-    baseDirectory: "",
+    baseDir: "",
     ref: "",
     before: "",
     after: "",
@@ -107,8 +107,8 @@ export const PushEvent = {
     if (message.vcsType !== 0) {
       writer.uint32(8).int32(message.vcsType);
     }
-    if (message.baseDirectory !== "") {
-      writer.uint32(18).string(message.baseDirectory);
+    if (message.baseDir !== "") {
+      writer.uint32(18).string(message.baseDir);
     }
     if (message.ref !== "") {
       writer.uint32(26).string(message.ref);
@@ -159,7 +159,7 @@ export const PushEvent = {
             break;
           }
 
-          message.baseDirectory = reader.string();
+          message.baseDir = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -236,7 +236,7 @@ export const PushEvent = {
   fromJSON(object: any): PushEvent {
     return {
       vcsType: isSet(object.vcsType) ? vcsTypeFromJSON(object.vcsType) : 0,
-      baseDirectory: isSet(object.baseDirectory) ? String(object.baseDirectory) : "",
+      baseDir: isSet(object.baseDir) ? String(object.baseDir) : "",
       ref: isSet(object.ref) ? String(object.ref) : "",
       before: isSet(object.before) ? String(object.before) : "",
       after: isSet(object.after) ? String(object.after) : "",
@@ -252,7 +252,7 @@ export const PushEvent = {
   toJSON(message: PushEvent): unknown {
     const obj: any = {};
     message.vcsType !== undefined && (obj.vcsType = vcsTypeToJSON(message.vcsType));
-    message.baseDirectory !== undefined && (obj.baseDirectory = message.baseDirectory);
+    message.baseDir !== undefined && (obj.baseDir = message.baseDir);
     message.ref !== undefined && (obj.ref = message.ref);
     message.before !== undefined && (obj.before = message.before);
     message.after !== undefined && (obj.after = message.after);
@@ -277,7 +277,7 @@ export const PushEvent = {
   fromPartial(object: DeepPartial<PushEvent>): PushEvent {
     const message = createBasePushEvent();
     message.vcsType = object.vcsType ?? 0;
-    message.baseDirectory = object.baseDirectory ?? "";
+    message.baseDir = object.baseDir ?? "";
     message.ref = object.ref ?? "";
     message.before = object.before ?? "";
     message.after = object.after ?? "";

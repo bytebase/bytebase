@@ -1,8 +1,14 @@
 <template>
-  <p class="text-lg mb-2">Databases</p>
-  <div class="w-full border min-h-[20rem] max-h-[24rem] overflow-y-auto">
+  <div class="mb-2 flex flex-row items-center">
+    <span class="text-lg mr-2">Databases</span>
+    <BBLoader v-show="state.isRequesting" class="opacity-60" />
+  </div>
+  <div
+    class="w-full border rounded min-h-[20rem] max-h-[24rem] overflow-y-auto"
+  >
     <div
-      class="w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b"
+      class="sticky top-0 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b cursor-pointer"
+      @click="state.showMatchedDatabaseList = !state.showMatchedDatabaseList"
     >
       <div>
         <span>Matched database</span>
@@ -10,9 +16,7 @@
           >({{ matchedDatabaseList.length }})</span
         >
       </div>
-      <button
-        @click="state.showMatchedDatabaseList = !state.showMatchedDatabaseList"
-      >
+      <button class="opacity-60">
         <heroicons-outline:chevron-right
           v-if="!state.showMatchedDatabaseList"
           class="w-5 h-auto"
@@ -29,15 +33,19 @@
         <span class="text-sm">{{ database.databaseName }}</span>
         <div class="flex flex-row justify-end items-center">
           <InstanceV1EngineIcon :instance="database.instanceEntity" />
-          <span class="ml-1 text-sm text-gray-400">{{
-            database.instanceEntity.title
-          }}</span>
+          <span class="ml-1 text-sm text-gray-400"
+            >{{ database.instanceEntity.title }} ({{
+              database.instanceEntity.environmentEntity.title
+            }})</span
+          >
         </div>
       </div>
     </div>
     <div
-      class="w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b"
-      :class="[state.showMatchedDatabaseList && 'border-t']"
+      class="sticky top-8 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-y cursor-pointer"
+      @click="
+        state.showUnmatchedDatabaseList = !state.showUnmatchedDatabaseList
+      "
     >
       <div>
         <span>Unmatched database</span>
@@ -45,11 +53,7 @@
           >({{ unmatchedDatabaseList.length }})</span
         >
       </div>
-      <button
-        @click="
-          state.showUnmatchedDatabaseList = !state.showUnmatchedDatabaseList
-        "
-      >
+      <button class="opacity-60">
         <heroicons-outline:chevron-right
           v-if="!state.showUnmatchedDatabaseList"
           class="w-5 h-auto"
@@ -66,9 +70,11 @@
         <span class="text-sm">{{ database.databaseName }}</span>
         <div class="flex flex-row justify-end items-center">
           <InstanceV1EngineIcon :instance="database.instanceEntity" />
-          <span class="ml-1 text-sm text-gray-400">{{
-            database.instanceEntity.title
-          }}</span>
+          <span class="ml-1 text-sm text-gray-400"
+            >{{ database.instanceEntity.title }} ({{
+              database.instanceEntity.environmentEntity.title
+            }})</span
+          >
         </div>
       </div>
     </div>
@@ -89,8 +95,10 @@ import { projectServiceClient } from "@/grpcweb";
 import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import { Expr } from "@/types/proto/google/type/expr";
 import { useDebounceFn } from "@vueuse/core";
+import BBLoader from "@/bbkit/BBLoader.vue";
 
 interface LocalState {
+  isRequesting: boolean;
   showMatchedDatabaseList: boolean;
   showUnmatchedDatabaseList: boolean;
 }
@@ -105,6 +113,7 @@ const props = defineProps<{
 const environmentStore = useEnvironmentV1Store();
 const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
+  isRequesting: false,
   showMatchedDatabaseList: true,
   showUnmatchedDatabaseList: false,
 });
@@ -114,6 +123,7 @@ const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
 const isCreating = computed(() => props.databaseGroup === undefined);
 
 const updateMatchingState = useDebounceFn(async () => {
+  state.isRequesting = true;
   const matchedDatabaseNameList: string[] = [];
   const unmatchedDatabaseNameList: string[] = [];
 
@@ -171,6 +181,7 @@ const updateMatchingState = useDebounceFn(async () => {
       unmatchedDatabaseList.value.push(database);
     }
   }
+  state.isRequesting = false;
 }, 500);
 
 watch(() => props, updateMatchingState, {

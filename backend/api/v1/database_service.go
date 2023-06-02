@@ -731,12 +731,81 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		Schema:            h.Schema,
 		PrevSchema:        h.SchemaPrev,
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
+		PushEvent:         convertToPushEvent(h.Payload.GetPushEvent()),
 		Review:            "",
 	}
 	if h.IssueUID != nil {
 		v1pbHistory.Review = fmt.Sprintf("%s%s/%s%d", projectNamePrefix, h.IssueProjectID, reviewPrefix, *h.IssueUID)
 	}
 	return v1pbHistory, nil
+}
+
+func convertToPushEvent(e *storepb.PushEvent) *v1pb.PushEvent {
+	if e == nil {
+		return nil
+	}
+	return &v1pb.PushEvent{
+		VcsType:            convertToVcsType(e.VcsType),
+		BaseDir:            e.BaseDir,
+		Ref:                e.Ref,
+		Before:             e.Before,
+		After:              e.After,
+		RepositoryId:       e.RepositoryId,
+		RepositoryUrl:      e.RepositoryUrl,
+		RepositoryFullPath: e.RepositoryFullPath,
+		AuthorName:         e.AuthorName,
+		Commits:            convertToCommits(e.Commits),
+		FileCommit:         convertToFileCommit(e.FileCommit),
+	}
+}
+
+func convertToVcsType(t storepb.VcsType) v1pb.VcsType {
+	switch t {
+	case storepb.VcsType_GITLAB:
+		return v1pb.VcsType_GITLAB
+	case storepb.VcsType_GITHUB:
+		return v1pb.VcsType_GITHUB
+	case storepb.VcsType_BITBUCKET:
+		return v1pb.VcsType_BITBUCKET
+	case storepb.VcsType_VCS_TYPE_UNSPECIFIED:
+		return v1pb.VcsType_VCS_TYPE_UNSPECIFIED
+	default:
+		return v1pb.VcsType_VCS_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToCommits(commits []*storepb.Commit) []*v1pb.Commit {
+	var converted []*v1pb.Commit
+	for _, c := range commits {
+		converted = append(converted, &v1pb.Commit{
+			Id:           c.Id,
+			Title:        c.Title,
+			Message:      c.Message,
+			CreatedTime:  timestamppb.New(time.Unix(c.CreatedTs, 0)),
+			Url:          c.Url,
+			AuthorName:   c.AuthorName,
+			AuthorEmail:  c.AuthorEmail,
+			AddedList:    c.AddedList,
+			ModifiedList: c.ModifiedList,
+		})
+	}
+	return converted
+}
+
+func convertToFileCommit(c *storepb.FileCommit) *v1pb.FileCommit {
+	if c == nil {
+		return nil
+	}
+	return &v1pb.FileCommit{
+		Id:          c.Id,
+		Title:       c.Title,
+		Message:     c.Message,
+		CreatedTime: timestamppb.New(time.Unix(c.CreatedTs, 0)),
+		Url:         c.Url,
+		AuthorName:  c.AuthorName,
+		AuthorEmail: c.AuthorEmail,
+		Added:       c.Added,
+	}
 }
 
 func convertToChangeHistorySource(source db.MigrationSource) v1pb.ChangeHistory_Source {
