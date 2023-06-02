@@ -924,6 +924,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	// databaseToMigrationList is the mapping from database ID to migration detail.
 	aggregatedMatrix := make([][]*store.DatabaseMessage, len(deploySchedule.Deployments))
 	databaseToMigrationList := make(map[int][]*api.MigrationDetail)
+	var schemaGroups []*store.SchemaGroupMessage
 
 	allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 	if err != nil {
@@ -938,6 +939,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		migrationDetail := c.DetailList[0]
 		var matrix [][]*store.DatabaseMessage
 		if migrationDetail.DatabaseGroupName != "" {
+			if len(migrationDetail.SchemaGroupNames) == 0 {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Missing schema groups when specifying database group")
+			}
 			// Deploy to given database group.
 			parts := strings.Split(migrationDetail.DatabaseGroupName, "/")
 			if len(parts) != 4 {
@@ -954,7 +958,27 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if databaseGroup == nil {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid database group name")
 			}
-			// TODO(zp): get matching databases.
+			for _, schemaGroupName := range migrationDetail.SchemaGroupNames {
+				parts := strings.Split(schemaGroupName, "/")
+				if len(parts) != 6 {
+					return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid schema group name")
+				}
+				schemaGroupProjectResourceID, schemaGroupDatabaseGroupResourceID, schemaGroupResourceID := parts[1], parts[3], parts[5]
+				if schemaGroupProjectResourceID != projectResourceID || schemaGroupDatabaseGroupResourceID != databaseGroupResourceID {
+					return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid schema group name")
+				}
+				schemaGroup, err := s.store.GetSchemaGroup(ctx, &store.FindSchemaGroupMessage{
+					DatabaseGroupUID: &databaseGroup.UID,
+					ResourceID:       &schemaGroupResourceID,
+				})
+				if err != nil {
+					return nil, err
+				}
+				if schemaGroup == nil {
+					return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid schema group name")
+				}
+				schemaGroups = append(schemaGroups, schemaGroup)
+			}
 			matches, _, err := getMatchedAndUnmatchedDatabases(ctx, databaseGroup, allDatabases)
 			if err != nil {
 				return nil, err
@@ -1070,6 +1094,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	create := &api.PipelineCreate{
 		Name: "Change database pipeline",
 	}
+
 	for i, databaseList := range aggregatedMatrix {
 		// Skip the stage if the stage includes no database.
 		if len(databaseList) == 0 {
@@ -1098,12 +1123,65 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			for i := 0; i < len(migrationDetailList)-1; i++ {
 				taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 			}
-			for _, migrationDetail := range migrationDetailList {
-				taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
+			if len(schemaGroups) > 0 && !issueCreate.ValidateOnly {
+				dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 				if err != nil {
-					return nil, err
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database schema").SetInternal(err)
 				}
-				taskCreateList = append(taskCreateList, taskCreate)
+				for migrationDetailIdx, migrationDetail := range migrationDetailList {
+					originalSheet, err := s.store.GetSheetV2(ctx, &api.SheetFind{ID: &migrationDetail.SheetID}, api.SystemBotID)
+					if err != nil {
+						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get sheet").SetInternal(err)
+					}
+					for i := 0; i < len(schemaGroups)-1; i++ {
+						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + migrationDetailIdx*len(schemaGroups) + i, ToIndex: len(taskCreateList) + migrationDetailIdx*len(schemaGroups) + i + 1})
+					}
+					for _, schemaGroup := range schemaGroups {
+						matches, _, err := getMatchesAndUnmatchedTables(ctx, dbSchema, schemaGroup)
+						if err != nil {
+							return nil, err
+						}
+						if len(matches) == 0 {
+							continue
+						}
+						for _, match := range matches {
+							newStatement := strings.ReplaceAll(originalSheet.Statement, schemaGroup.Placeholder, match)
+							newSheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
+								ProjectUID: originalSheet.ProjectUID,
+								DatabaseID: &database.UID,
+								CreatorID:  originalSheet.CreatorID,
+								Statement:  newStatement,
+								Name:       originalSheet.Name,
+								Visibility: originalSheet.Visibility,
+								Source:     originalSheet.Source,
+								Type:       originalSheet.Type,
+								Payload:    originalSheet.Payload,
+							})
+							if err != nil {
+								return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet").SetInternal(err)
+							}
+							// Replace the origin sheet id
+							newMigrationDetail := *migrationDetail
+							newMigrationDetail.SheetID = newSheet.UID
+							taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersion(&newMigrationDetail))
+							if err != nil {
+								return nil, err
+							}
+							taskCreateList = append(taskCreateList, taskCreate)
+						}
+					}
+				}
+			} else {
+				for i := 0; i < len(migrationDetailList)-1; i++ {
+					taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+				}
+				for _, migrationDetail := range migrationDetailList {
+					taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
+					if err != nil {
+						return nil, err
+					}
+					taskCreateList = append(taskCreateList, taskCreate)
+				}
 			}
 		}
 
@@ -1657,4 +1735,49 @@ func getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.D
 		}
 	}
 	return matches, unmatches, nil
+}
+
+func getMatchesAndUnmatchedTables(ctx context.Context, dbSchema *store.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
+	e, err := cel.NewEnv(
+		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+	)
+	if err != nil {
+		return nil, nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(schemaGroup.Expression.Expression)
+	if issues != nil && issues.Err() != nil {
+		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	var matched []string
+	var unmatched []string
+
+	for _, schema := range dbSchema.Metadata.Schemas {
+		for _, table := range schema.Tables {
+			res, _, err := prog.ContextEval(ctx, map[string]any{
+				"resource": map[string]any{
+					"table_name": table.Name,
+				},
+			})
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, err.Error())
+			}
+
+			val, err := res.ConvertToNative(reflect.TypeOf(false))
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "expect bool result")
+			}
+
+			if boolVal, ok := val.(bool); ok && boolVal {
+				matched = append(matched, table.Name)
+			} else {
+				unmatched = append(unmatched, table.Name)
+			}
+		}
+	}
+	return matched, unmatched, nil
 }
