@@ -240,7 +240,7 @@ func (ctl *controller) waitBackup(ctx context.Context, databaseName, backupName 
 
 	log.Debug("Waiting for backup.", zap.String("id", backupName))
 	for range ticker.C {
-		resp, err := ctl.databaseServiceClient.ListBackup(ctx, &v1pb.ListBackupRequest{Parent: databaseName})
+		resp, err := ctl.databaseServiceClient.ListsBackup(ctx, &v1pb.ListBackupsRequest{Parent: databaseName})
 		if err != nil {
 			return err
 		}
@@ -273,7 +273,7 @@ func (ctl *controller) waitBackupArchived(ctx context.Context, databaseName, bac
 
 	log.Debug("Waiting for backup.", zap.String("id", backupName))
 	for range ticker.C {
-		resp, err := ctl.databaseServiceClient.ListBackup(ctx, &v1pb.ListBackupRequest{Parent: databaseName})
+		resp, err := ctl.databaseServiceClient.ListBackups(ctx, &v1pb.ListBackupsRequest{Parent: databaseName})
 		if err != nil {
 			return err
 		}
