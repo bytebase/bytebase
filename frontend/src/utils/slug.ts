@@ -6,17 +6,18 @@ import {
   Instance,
   IssueId,
   Project,
-  VCS,
   SQLReviewPolicy,
   UNKNOWN_ID,
 } from "../types";
 import { IdType } from "../types/id";
 import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
 import { Project as ProjectV1 } from "@/types/proto/v1/project_service";
+import { ExternalVersionControl as VCSV1 } from "@/types/proto/v1/externalvs_service";
 import {
   getProjectAndSheetId,
   projectNamePrefix,
   sheetNamePrefix,
+  getVCSUid,
 } from "@/store/modules/v1/common";
 
 export function idFromSlug(slug: string): IdType {
@@ -81,8 +82,8 @@ export function fullDatabasePath(database: Database): string {
   return `/db/${databaseSlug(database)}`;
 }
 
-export function vcsSlug(vcs: VCS): string {
-  return [slug(vcs.name), vcs.id].join("-");
+export function vcsSlugV1(vcs: VCSV1): string {
+  return [slug(vcs.title), getVCSUid(vcs.name)].join("-");
 }
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {

@@ -82,7 +82,7 @@
     class="mt-4"
     :allow-edit="allowEdit"
     :vcs-type="vcs.type"
-    :vcs-name="vcs.name"
+    :vcs-name="vcs.title"
     :repository-info="repositoryInfo"
     :repository-config="state.repositoryConfig"
     :project="project"
@@ -112,7 +112,7 @@
     </div>
   </div>
   <BBModal
-    v-if="state.showSetupSQLReviewCIModal"
+    v-if="supportSQLReviewCI && state.showSetupSQLReviewCIModal"
     class="relative overflow-hidden"
     :title="$t('repository.sql-review-ci-setup')"
     @close="state.showSetupSQLReviewCIModal = false"
@@ -121,9 +121,10 @@
       <div class="whitespace-pre-wrap">
         {{
           $t("repository.sql-review-ci-setup-modal", {
-            pr: vcs.type.startsWith("GITLAB")
-              ? $t("repository.merge-request")
-              : $t("repository.pull-request"),
+            pr:
+              vcs.type === ExternalVersionControl_Type.GITLAB
+                ? $t("repository.merge-request")
+                : $t("repository.pull-request"),
           })
         }}
       </div>
@@ -136,9 +137,10 @@
         >
           {{
             $t("repository.sql-review-ci-setup-pr", {
-              pr: vcs.type.startsWith("GITLAB")
-                ? $t("repository.merge-request")
-                : $t("repository.pull-request"),
+              pr:
+                vcs.type === ExternalVersionControl_Type.GITLAB
+                  ? $t("repository.merge-request")
+                  : $t("repository.pull-request"),
             })
           }}
         </a>
@@ -146,7 +148,7 @@
     </div>
   </BBModal>
   <BBAlert
-    v-if="state.showSetupSQLReviewCIFailureModal"
+    v-if="supportSQLReviewCI && state.showSetupSQLReviewCIFailureModal"
     :style="'CRITICAL'"
     :ok-text="$t('common.retry')"
     :title="$t('repository.sql-review-ci-setup-failed')"
@@ -164,7 +166,7 @@
   >
   </BBAlert>
   <BBModal
-    v-if="state.showLoadingSQLReviewPRModal"
+    v-if="supportSQLReviewCI && state.showLoadingSQLReviewPRModal"
     class="relative overflow-hidden"
     :show-close="false"
     :esc-closable="false"
@@ -176,15 +178,16 @@
       <BBSpin class="mt-1" />
       {{
         $t("repository.sql-review-ci-loading-modal", {
-          pr: vcs.type.startsWith("GITLAB")
-            ? $t("repository.merge-request")
-            : $t("repository.pull-request"),
+          pr:
+            vcs.type === ExternalVersionControl_Type.GITLAB
+              ? $t("repository.merge-request")
+              : $t("repository.pull-request"),
         })
       }}
     </div>
   </BBModal>
   <BBModal
-    v-if="state.showRestoreSQLReviewCIModal"
+    v-if="supportSQLReviewCI && state.showRestoreSQLReviewCIModal"
     class="relative overflow-hidden"
     :title="$t('repository.sql-review-ci-remove')"
     @close="onSQLReviewCIModalClose"
@@ -193,7 +196,11 @@
       <div class="whitespace-pre-wrap">
         <i18n-t keypath="repository.sql-review-ci-restore-modal">
           <template #vcs>
-            {{ vcs.type.startsWith("GITLAB") ? "GitLab CI" : "GitHub Action" }}
+            {{
+              vcs.type === ExternalVersionControl_Type.GITLAB
+                ? "GitLab CI"
+                : "GitHub Action"
+            }}
           </template>
           <template #repository>
             <a class="normal-link" :href="repository.webUrl" target="_blank">{{
@@ -215,7 +222,7 @@
     </div>
   </BBModal>
   <BBModal
-    v-if="state.showDisableSQLReviewCIModal"
+    v-if="supportSQLReviewCI && state.showDisableSQLReviewCIModal"
     class="relative overflow-hidden"
     :title="$t('repository.sql-review-ci-remove')"
     @close="state.showDisableSQLReviewCIModal = false"
@@ -224,7 +231,11 @@
       <div class="whitespace-pre-wrap">
         <i18n-t keypath="repository.sql-review-ci-remove-modal">
           <template #vcs>
-            {{ vcs.type.startsWith("GITLAB") ? "GitLab CI" : "GitHub Action" }}
+            {{
+              vcs.type === ExternalVersionControl_Type.GITLAB
+                ? "GitLab CI"
+                : "GitHub Action"
+            }}
           </template>
           <template #repository>
             <a class="normal-link" :href="repository.webUrl" target="_blank">{{
@@ -255,7 +266,7 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive, watch } from "vue";
 import isEmpty from "lodash-es/isEmpty";
-import { VCS, ExternalRepositoryInfo, RepositoryConfig } from "../types";
+import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 import { useI18n } from "vue-i18n";
 import {
   hasFeature,
@@ -269,7 +280,11 @@ import {
   Workflow,
 } from "@/types/proto/v1/project_service";
 import { cloneDeep } from "lodash-es";
-import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
+import {
+  ProjectGitOpsInfo,
+  ExternalVersionControl,
+  ExternalVersionControl_Type,
+} from "@/types/proto/v1/externalvs_service";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -294,7 +309,7 @@ const props = defineProps({
   },
   vcs: {
     required: true,
-    type: Object as PropType<VCS>,
+    type: Object as PropType<ExternalVersionControl>,
   },
   allowEdit: {
     default: true,
@@ -356,6 +371,14 @@ const isProjectSchemaChangeTypeDDL = computed(() => {
 
 const isProjectSchemaChangeTypeSDL = computed(() => {
   return state.schemaChangeType === SchemaChange.SDL;
+});
+
+const supportSQLReviewCI = computed(() => {
+  const { type } = props.vcs;
+  return (
+    type == ExternalVersionControl_Type.GITHUB ||
+    type === ExternalVersionControl_Type.GITLAB
+  );
 });
 
 const allowUpdate = computed(() => {

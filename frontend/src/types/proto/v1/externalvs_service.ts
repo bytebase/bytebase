@@ -120,12 +120,12 @@ export interface ExternalVersionControl {
 
 export enum ExternalVersionControl_Type {
   TYPE_UNSPECIFIED = 0,
-  /** TYPE_GITHUB - GitHub type. Using for GitHub community edition(ce). */
-  TYPE_GITHUB = 1,
-  /** TYPE_GITLAB - GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). */
-  TYPE_GITLAB = 2,
-  /** TYPE_BITBUCKET - BitBucket type. Using for BitBucket cloud or BitBucket server. */
-  TYPE_BITBUCKET = 3,
+  /** GITHUB - GitHub type. Using for GitHub community edition(ce). */
+  GITHUB = 1,
+  /** GITLAB - GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). */
+  GITLAB = 2,
+  /** BITBUCKET - BitBucket type. Using for BitBucket cloud or BitBucket server. */
+  BITBUCKET = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -135,14 +135,14 @@ export function externalVersionControl_TypeFromJSON(object: any): ExternalVersio
     case "TYPE_UNSPECIFIED":
       return ExternalVersionControl_Type.TYPE_UNSPECIFIED;
     case 1:
-    case "TYPE_GITHUB":
-      return ExternalVersionControl_Type.TYPE_GITHUB;
+    case "GITHUB":
+      return ExternalVersionControl_Type.GITHUB;
     case 2:
-    case "TYPE_GITLAB":
-      return ExternalVersionControl_Type.TYPE_GITLAB;
+    case "GITLAB":
+      return ExternalVersionControl_Type.GITLAB;
     case 3:
-    case "TYPE_BITBUCKET":
-      return ExternalVersionControl_Type.TYPE_BITBUCKET;
+    case "BITBUCKET":
+      return ExternalVersionControl_Type.BITBUCKET;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -154,12 +154,12 @@ export function externalVersionControl_TypeToJSON(object: ExternalVersionControl
   switch (object) {
     case ExternalVersionControl_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case ExternalVersionControl_Type.TYPE_GITHUB:
-      return "TYPE_GITHUB";
-    case ExternalVersionControl_Type.TYPE_GITLAB:
-      return "TYPE_GITLAB";
-    case ExternalVersionControl_Type.TYPE_BITBUCKET:
-      return "TYPE_BITBUCKET";
+    case ExternalVersionControl_Type.GITHUB:
+      return "GITHUB";
+    case ExternalVersionControl_Type.GITLAB:
+      return "GITLAB";
+    case ExternalVersionControl_Type.BITBUCKET:
+      return "BITBUCKET";
     case ExternalVersionControl_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

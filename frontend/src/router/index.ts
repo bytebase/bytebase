@@ -38,7 +38,7 @@ import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import Home from "@/views/Home.vue";
 import {
   hasFeature,
-  useVCSStore,
+  useVCSV1Store,
   useDataSourceStore,
   useSQLReviewStore,
   useLegacyProjectStore,
@@ -471,7 +471,9 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.vcsSlug as string;
-                    return useVCSStore().getVCSById(idFromSlug(slug)).name;
+                    return (
+                      useVCSV1Store().getVCSByUid(idFromSlug(slug))?.title ?? ""
+                    );
                   },
                 },
                 component: () =>
@@ -1502,8 +1504,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (vcsSlug) {
-    useVCSStore()
-      .fetchVCSById(idFromSlug(vcsSlug))
+    useVCSV1Store()
+      .fetchVCSByUid(idFromSlug(vcsSlug))
       .then(() => {
         next();
       })

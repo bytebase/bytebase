@@ -4,17 +4,17 @@
   >
     <div class="flex py-2 px-4 justify-between">
       <div class="flex flex-row space-x-2 items-center">
-        <template v-if="vcs.type.startsWith('GITLAB')">
+        <template v-if="vcs.type === ExternalVersionControl_Type.GITLAB">
           <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
-        <template v-if="vcs.type.startsWith('GITHUB')">
+        <template v-if="vcs.type === ExternalVersionControl_Type.GITHUB">
           <img class="h-6 w-auto" src="../assets/github-logo.svg" />
         </template>
-        <template v-if="vcs.type.startsWith('BITBUCKET')">
+        <template v-if="vcs.type === ExternalVersionControl_Type.BITBUCKET">
           <img class="h-6 w-auto" src="../assets/bitbucket-logo.svg" />
         </template>
         <h3 class="text-lg leading-6 font-medium text-main">
-          {{ vcs.name }}
+          {{ vcs.title }}
         </h3>
       </div>
       <button
@@ -32,7 +32,7 @@
             {{ $t("common.instance") }} URL
           </dt>
           <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ vcs.instanceUrl }}
+            {{ vcs.url }}
           </dd>
         </div>
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
@@ -48,43 +48,30 @@
   </div>
 </template>
 
-<script lang="ts">
-import { reactive, PropType, defineComponent } from "vue";
+<script lang="ts" setup>
+import { PropType } from "vue";
 import { useRouter } from "vue-router";
-import { VCS, redirectUrl } from "../types";
-import { vcsSlug } from "../utils";
+import { vcsSlugV1 } from "../utils";
+import {
+  ExternalVersionControl,
+  ExternalVersionControl_Type,
+} from "@/types/proto/v1/externalvs_service";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
-
-export default defineComponent({
-  name: "VCSCard",
-  components: {},
-  props: {
-    vcs: {
-      required: true,
-      type: Object as PropType<VCS>,
-    },
-  },
-  setup(props) {
-    const router = useRouter();
-
-    const state = reactive<LocalState>({});
-
-    const editVCS = () => {
-      router.push({
-        name: "setting.workspace.gitops.detail",
-        params: {
-          vcsSlug: vcsSlug(props.vcs),
-        },
-      });
-    };
-
-    return {
-      state,
-      redirectUrl,
-      editVCS,
-    };
+const props = defineProps({
+  vcs: {
+    required: true,
+    type: Object as PropType<ExternalVersionControl>,
   },
 });
+
+const router = useRouter();
+
+const editVCS = () => {
+  router.push({
+    name: "setting.workspace.gitops.detail",
+    params: {
+      vcsSlug: vcsSlugV1(props.vcs),
+    },
+  });
+};
 </script>

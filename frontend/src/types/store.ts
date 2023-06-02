@@ -23,7 +23,6 @@ import { IssueSubscriber } from "./issueSubscriber";
 import { Notification } from "./notification";
 import { Principal } from "./principal";
 import { Project } from "./project";
-import { Repository } from "./repository";
 import { VCS } from "./vcs";
 import { Label } from "./label";
 import type { AuditLog } from "@/types/auditLog";
@@ -111,12 +110,6 @@ export interface BackupSettingState {
 
 export interface VCSState {
   vcsById: Map<VCSId, VCS>;
-}
-
-export interface RepositoryState {
-  // repositoryListByVCSId are used in workspace GitOps panel, while repositoryByProjectId are used in project GitOps panel.
-  // Because they are used separately, so we don't need to worry about repository inconsistency issue between them.
-  repositoryListByVCSId: Map<VCSId, Repository[]>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

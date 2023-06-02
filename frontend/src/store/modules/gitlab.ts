@@ -1,6 +1,11 @@
 import { defineStore } from "pinia";
 import axios from "axios";
-import { ExternalRepositoryInfo, VCS, OAuthConfig, OAuthToken } from "@/types";
+import {
+  ExternalRepositoryInfo,
+  VCSId,
+  OAuthConfig,
+  OAuthToken,
+} from "@/types";
 
 function convertGitLabProject(project: any): ExternalRepositoryInfo {
   const attributes = project.attributes;
@@ -41,14 +46,14 @@ export const useGitlabStore = defineStore("gitlab", {
 
     // TODO(zilong): here we still store the access token at the frontend, we may move this to the backend
     async fetchProjectList({
-      vcs,
+      vcsId,
       token,
     }: {
-      vcs: VCS;
+      vcsId: VCSId;
       token: OAuthToken;
     }): Promise<ExternalRepositoryInfo[]> {
       const data = (
-        await axios.get(`/api/vcs/${vcs.id}/external-repository`, {
+        await axios.get(`/api/vcs/${vcsId}/external-repository`, {
           headers: {
             accessToken: token.accessToken,
             refreshToken: token.refreshToken,

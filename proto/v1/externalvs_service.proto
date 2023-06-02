@@ -144,11 +144,11 @@ message ExternalVersionControl {
   enum Type {
     TYPE_UNSPECIFIED = 0;
     // GitHub type. Using for GitHub community edition(ce).
-    TYPE_GITHUB = 1;
+    GITHUB = 1;
     // GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee).
-    TYPE_GITLAB = 2;
+    GITLAB = 2;
     // BitBucket type. Using for BitBucket cloud or BitBucket server.
-    TYPE_BITBUCKET = 3;
+    BITBUCKET = 3;
   }
 
   Type type = 3 [(google.api.field_behavior) = REQUIRED];
