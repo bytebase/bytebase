@@ -11,6 +11,7 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "v1/common.proto";
+import "v1/vcs.proto";
 
 option go_package = "generated-go/v1";
 
@@ -837,7 +838,7 @@ message ChangeHistory {
   // Format: projects/{project}/reviews/{review}
   string review = 17;
 
-  // FIXME: vcs push event to be done.
+  PushEvent push_event = 18;
 }
 
 enum ChangeHistoryView {

@@ -1,15 +1,18 @@
 <template>
   <div class="w-full">
     <div class="w-full flex flex-row justify-between items-center">
-      <span>Database groups</span>
+      <span>{{ $t("database-group.self") }}</span>
       <div class="flex flex-row gap-x-2">
-        <NButton @click="handleCreateSchemaGroup">New table group</NButton>
-        <NButton @click="handleCreateDatabaseGroup">New database group</NButton>
+        <NButton @click="handleCreateDatabaseGroup">
+          <span class="mr-1">{{ $t("database-group.create") }}</span>
+          <FeatureBadge feature="bb.feature.sharding" />
+        </NButton>
       </div>
     </div>
     <div class="mt-4">
       <DatabaseGroupTable
         :database-group-list="databaseGroupList"
+        :show-edit="true"
         @edit="handleConfigureDatabaseGroup"
       />
     </div>
@@ -22,19 +25,27 @@
     :database-group="state.editingDatabaseGroup"
     @close="state.showDatabaseGroupPanel = false"
   />
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.sharding"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
-import { useDBGroupStore } from "@/store";
+import { hasFeature, useDBGroupStore } from "@/store";
 import { ComposedProject } from "@/types";
 import DatabaseGroupTable from "./DatabaseGroupTable.vue";
 import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { ResourceType } from "./common/ExprEditor/context";
+import FeatureBadge from "../FeatureBadge.vue";
 
 interface LocalState {
+  showFeatureModal: boolean;
   showDatabaseGroupPanel: boolean;
   resourceType: ResourceType;
   editingDatabaseGroup?: DatabaseGroup;
@@ -46,6 +57,7 @@ const props = defineProps<{
 
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
+  showFeatureModal: false,
   showDatabaseGroupPanel: false,
   resourceType: "DATABASE_GROUP",
 });
@@ -59,6 +71,11 @@ onMounted(async () => {
 });
 
 const handleCreateDatabaseGroup = () => {
+  if (!hasFeature("bb.feature.sharding")) {
+    state.showFeatureModal = true;
+    return;
+  }
+
   state.resourceType = "DATABASE_GROUP";
   state.editingDatabaseGroup = undefined;
   state.showDatabaseGroupPanel = true;
@@ -66,12 +83,6 @@ const handleCreateDatabaseGroup = () => {
 
 const handleConfigureDatabaseGroup = (databaseGroup: DatabaseGroup) => {
   state.editingDatabaseGroup = cloneDeep(databaseGroup);
-  state.showDatabaseGroupPanel = true;
-};
-
-const handleCreateSchemaGroup = () => {
-  state.resourceType = "SCHEMA_GROUP";
-  state.editingDatabaseGroup = undefined;
   state.showDatabaseGroupPanel = true;
 };
 </script>

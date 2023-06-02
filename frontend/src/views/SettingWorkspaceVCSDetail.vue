@@ -2,7 +2,7 @@
   <div class="mt-4 space-y-4">
     <div class="flex justify-end">
       <div
-        v-if="vcs.uiType == 'GITLAB_SELF_HOST'"
+        v-if="vcsUIType == 'GITLAB_SELF_HOST'"
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">
@@ -11,21 +11,21 @@
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
       <div
-        v-else-if="vcs.uiType == 'GITLAB_COM'"
+        v-else-if="vcsUIType == 'GITLAB_COM'"
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">GitLab.com</div>
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
       <div
-        v-else-if="vcs.uiType == 'GITHUB_COM'"
+        v-else-if="vcsUIType == 'GITHUB_COM'"
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">GitHub.com</div>
         <img class="h-6 w-auto" src="../assets/github-logo.svg" />
       </div>
       <div
-        v-else-if="vcs.uiType == 'BITBUCKET_ORG'"
+        v-else-if="vcsUIType == 'BITBUCKET_ORG'"
         class="flex flex-row items-center space-x-2"
       >
         <div class="textlabel whitespace-nowrap">Bitbucket.org</div>
@@ -43,7 +43,7 @@
         type="text"
         class="textfield mt-1 w-full"
         disabled="true"
-        :value="vcs.instanceUrl"
+        :value="vcs?.url"
       />
     </div>
 
@@ -58,7 +58,7 @@
       </p>
       <input
         id="name"
-        v-model="state.name"
+        v-model="state.title"
         name="name"
         type="text"
         class="textfield mt-1 w-full"
@@ -70,7 +70,7 @@
         {{ $t("common.application") }} ID
       </label>
       <p class="mt-1 textinfolabel">
-        <template v-if="vcs.uiType == 'GITLAB_SELF_HOST'">
+        <template v-if="vcsUIType == 'GITLAB_SELF_HOST'">
           {{
             $t(
               "gitops.setting.git-provider.gitlab-self-host-application-id-label"
@@ -80,7 +80,7 @@
             $t("gitops.setting.git-provider.view-in-gitlab")
           }}</a>
         </template>
-        <template v-else-if="vcs.uiType == 'GITLAB_COM'">
+        <template v-else-if="vcsUIType == 'GITLAB_COM'">
           {{
             $t("gitops.setting.git-provider.gitlab-com-application-id-label")
           }}
@@ -88,7 +88,7 @@
             $t("gitops.setting.git-provider.view-in-gitlab")
           }}</a>
         </template>
-        <template v-else-if="vcs.uiType == 'GITHUB_COM'">
+        <template v-else-if="vcsUIType == 'GITHUB_COM'">
           {{ $t("gitops.setting.git-provider.github-application-id-label") }}
         </template>
       </p>
@@ -104,13 +104,13 @@
     <div>
       <label for="secret" class="textlabel"> Secret </label>
       <p class="mt-1 textinfolabel">
-        <template v-if="vcs.uiType == 'GITLAB_SELF_HOST'">
+        <template v-if="vcsUIType == 'GITLAB_SELF_HOST'">
           {{ $t("gitops.setting.git-provider.gitlab-self-host-secret-label") }}
         </template>
-        <template v-else-if="vcs.uiType == 'GITLAB_COM'">
+        <template v-else-if="vcsUIType == 'GITLAB_COM'">
           {{ $t("gitops.setting.git-provider.gitlab-com-secret-label") }}
         </template>
-        <template v-else-if="vcs.uiType == 'GITHUB_COM'">
+        <template v-else-if="vcsUIType == 'GITHUB_COM'">
           {{ $t("gitops.setting.git-provider.secret-label-github") }}
         </template>
       </p>
@@ -132,7 +132,7 @@
           :ok-text="$t('common.delete')"
           :confirm-title="
             $t('gitops.setting.git-provider.delete-confirm', {
-              name: vcs.name,
+              name: vcs?.title,
             })
           "
           :require-confirm="true"
@@ -174,241 +174,241 @@
   </div>
 </template>
 
-<script lang="ts">
-import {
-  reactive,
-  computed,
-  watchEffect,
-  onMounted,
-  onUnmounted,
-  defineComponent,
-} from "vue";
+<script lang="ts" setup>
+import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import RepositoryTable from "../components/RepositoryTable.vue";
 import isEmpty from "lodash-es/isEmpty";
-import { idFromSlug } from "../utils";
+import { idFromSlug, getVCSUIType } from "../utils";
 import {
-  VCS,
-  VCSPatch,
   openWindowForOAuth,
   OAuthWindowEventPayload,
   OAuthToken,
+  VCSUIType,
 } from "../types";
 import {
   pushNotification,
   useOAuthStore,
-  useRepositoryStore,
-  useVCSStore,
+  useRepositoryV1Store,
+  useVCSV1Store,
 } from "@/store";
+import {
+  ExternalVersionControl,
+  ExternalVersionControl_Type,
+} from "@/types/proto/v1/externalvs_service";
 
 interface LocalState {
-  name: string;
+  title: string;
   applicationId: string;
   secret: string;
   oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
-export default defineComponent({
-  name: "SettingWorkspaceVCSDetail",
-  components: { RepositoryTable },
-  props: {
-    vcsSlug: {
-      required: true,
-      type: String,
-    },
+const props = defineProps({
+  vcsSlug: {
+    required: true,
+    type: String,
   },
-  setup(props) {
-    const vcsStore = useVCSStore();
-    const repositoryStore = useRepositoryStore();
-    const router = useRouter();
+});
 
-    const vcs = computed((): VCS => {
-      return vcsStore.getVCSById(idFromSlug(props.vcsSlug));
-    });
+const vcsV1Store = useVCSV1Store();
+const repositoryV1Store = useRepositoryV1Store();
+const router = useRouter();
 
-    const state = reactive<LocalState>({
-      name: vcs.value.name,
-      applicationId: vcs.value.applicationId,
-      secret: "",
-    });
+const vcs = computed((): ExternalVersionControl | undefined => {
+  return vcsV1Store.getVCSByUid(idFromSlug(props.vcsSlug));
+});
 
-    onMounted(() => {
-      window.addEventListener("bb.oauth.register-vcs", eventListener, false);
-    });
+const vcsUIType = computed((): VCSUIType => {
+  if (vcs.value) {
+    return getVCSUIType(vcs.value);
+  }
+  return "GITLAB_SELF_HOST";
+});
 
-    onUnmounted(() => {
-      window.removeEventListener("bb.oauth.register-vcs", eventListener);
-    });
+const state = reactive<LocalState>({
+  title: vcs.value?.title ?? "",
+  applicationId: vcs.value?.applicationId ?? "",
+  secret: "",
+});
 
-    const eventListener = (event: Event) => {
-      const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
-      if (isEmpty(payload.error)) {
-        if (
-          vcs.value.type == "GITLAB" ||
-          vcs.value.type == "GITHUB" ||
-          vcs.value.type == "BITBUCKET"
-        ) {
-          useOAuthStore()
-            .exchangeVCSTokenWithID({
-              code: payload.code,
-              vcsId: idFromSlug(props.vcsSlug),
-              clientId: state.applicationId,
-              clientSecret: state.secret,
-            })
-            .then((token: OAuthToken) => {
-              state.oAuthResultCallback!(token);
-            })
-            .catch(() => {
-              state.oAuthResultCallback!(undefined);
-            });
-        }
-      } else {
-        state.oAuthResultCallback!(undefined);
-      }
-    };
+onMounted(() => {
+  window.addEventListener("bb.oauth.register-vcs", eventListener, false);
+});
 
-    const prepareRepositoryList = () => {
-      repositoryStore.fetchRepositoryListByVCSId(vcs.value.id);
-    };
+onUnmounted(() => {
+  window.removeEventListener("bb.oauth.register-vcs", eventListener);
+});
 
-    watchEffect(prepareRepositoryList);
+const eventListener = (event: Event) => {
+  const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
+  if (isEmpty(payload.error)) {
+    if (
+      vcs.value?.type === ExternalVersionControl_Type.GITLAB ||
+      vcs.value?.type === ExternalVersionControl_Type.GITHUB ||
+      vcs.value?.type === ExternalVersionControl_Type.BITBUCKET
+    ) {
+      useOAuthStore()
+        .exchangeVCSTokenWithID({
+          code: payload.code,
+          vcsId: idFromSlug(props.vcsSlug),
+          clientId: state.applicationId,
+          clientSecret: state.secret,
+        })
+        .then((token: OAuthToken) => {
+          state.oAuthResultCallback!(token);
+        })
+        .catch(() => {
+          state.oAuthResultCallback!(undefined);
+        });
+    }
+  } else {
+    state.oAuthResultCallback!(undefined);
+  }
+};
 
-    const adminApplicationUrl = computed(() => {
-      if (vcs.value.uiType == "GITLAB_SELF_HOST") {
-        return `${vcs.value.instanceUrl}/admin/applications`;
-      } else if (vcs.value.uiType == "GITLAB_COM") {
-        return "https://gitlab.com/-/profile/applications";
-      }
-      return "";
-    });
+watchEffect(async () => {
+  if (vcs.value) {
+    await repositoryV1Store.fetchRepositoryListByVCS(vcs.value.name);
+  }
+});
 
-    const repositoryList = computed(() =>
-      repositoryStore.getRepositoryListByVCSId(vcs.value.id)
+const adminApplicationUrl = computed(() => {
+  if (vcsUIType.value == "GITLAB_SELF_HOST") {
+    return `${vcs.value?.url}/admin/applications`;
+  } else if (vcsUIType.value == "GITLAB_COM") {
+    return "https://gitlab.com/-/profile/applications";
+  }
+  return "";
+});
+
+const repositoryList = computed(() =>
+  repositoryV1Store.getRepositoryListByVCS(vcs.value?.name ?? "")
+);
+
+const allowUpdate = computed(() => {
+  return (
+    state.title != vcs.value?.title ||
+    state.applicationId != vcs.value?.applicationId ||
+    !isEmpty(state.secret)
+  );
+});
+
+const doUpdate = () => {
+  if (!vcs.value) {
+    return;
+  }
+
+  if (
+    state.applicationId != vcs.value.applicationId ||
+    !isEmpty(state.secret)
+  ) {
+    let authorizeUrl = `${vcs.value.url}/oauth/authorize`;
+    if (vcs.value.type === ExternalVersionControl_Type.GITHUB) {
+      authorizeUrl = `https://github.com/login/oauth/authorize`;
+    } else if (vcs.value.type === ExternalVersionControl_Type.BITBUCKET) {
+      authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
+    }
+    const newWindow = openWindowForOAuth(
+      authorizeUrl,
+      state.applicationId,
+      "bb.oauth.register-vcs",
+      vcs.value.type
     );
-
-    const allowUpdate = computed(() => {
-      return (
-        state.name != vcs.value.name ||
-        state.applicationId != vcs.value.applicationId ||
-        !isEmpty(state.secret)
-      );
-    });
-
-    const doUpdate = () => {
-      if (
-        state.applicationId != vcs.value.applicationId ||
-        !isEmpty(state.secret)
-      ) {
-        let authorizeUrl = `${vcs.value.instanceUrl}/oauth/authorize`;
-        if (vcs.value.type == "GITHUB") {
-          authorizeUrl = `https://github.com/login/oauth/authorize`;
-        } else if (vcs.value.type == "BITBUCKET") {
-          authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
+    if (newWindow) {
+      state.oAuthResultCallback = (token: OAuthToken | undefined) => {
+        if (!vcs.value) {
+          return;
         }
-        const newWindow = openWindowForOAuth(
-          authorizeUrl,
-          state.applicationId,
-          "bb.oauth.register-vcs",
-          vcs.value.type
-        );
-        if (newWindow) {
-          state.oAuthResultCallback = (token: OAuthToken | undefined) => {
-            if (token) {
-              const vcsPatch: VCSPatch = {};
-              if (state.name != vcs.value.name) {
-                vcsPatch.name = state.name;
-              }
-              if (state.applicationId != vcs.value.applicationId) {
-                vcsPatch.applicationId = state.applicationId;
-              }
-              if (!isEmpty(state.secret)) {
-                vcsPatch.secret = state.secret;
-              }
-              vcsStore
-                .patchVCS({
-                  vcsId: vcs.value.id,
-                  vcsPatch,
-                })
-                .then((vcs: VCS) => {
-                  pushNotification({
-                    module: "bytebase",
-                    style: "SUCCESS",
-                    title: `Successfully updated '${vcs.name}'`,
-                  });
-                });
-            } else {
-              // If the application ID mismatches, the OAuth workflow will stop early.
-              // So the only possibility to reach here is we have a matching application ID, while
-              // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
-              let description = "";
-              if (vcs.value.type == "GITLAB") {
-                description =
-                  "Please make sure Secret matches the one from your GitLab instance Application.";
-              } else if (vcs.value.type == "GITHUB") {
-                description =
-                  "Please make sure Client secret matches the one from your GitHub.com Application.";
-              } else if (vcs.value.type == "BITBUCKET") {
-                description =
-                  "Please make sure Secret matches the one from your Bitbucket.org consumer.";
+        if (token) {
+          const vcsPatch: Partial<ExternalVersionControl> = {
+            name: vcs.value.name,
+          };
+          if (state.title != vcs.value.title) {
+            vcsPatch.title = state.title;
+          }
+          if (state.applicationId != vcs.value.applicationId) {
+            vcsPatch.applicationId = state.applicationId;
+          }
+          if (!isEmpty(state.secret)) {
+            vcsPatch.secret = state.secret;
+          }
+          vcsV1Store
+            .updateVCS(vcsPatch)
+            .then((vcs: ExternalVersionControl | undefined) => {
+              if (!vcs) {
+                return;
               }
               pushNotification({
                 module: "bytebase",
-                style: "CRITICAL",
-                title: `Failed to update '${vcs.value.name}'`,
-                description: description,
+                style: "SUCCESS",
+                title: `Successfully updated '${vcs.title}'`,
               });
-            }
-          };
-        }
-      } else if (state.name != vcs.value.name) {
-        const vcsPatch: VCSPatch = {
-          name: state.name,
-        };
-        vcsStore
-          .patchVCS({
-            vcsId: vcs.value.id,
-            vcsPatch,
-          })
-          .then((updatedVCS: VCS) => {
-            pushNotification({
-              module: "bytebase",
-              style: "SUCCESS",
-              title: `Successfully updated '${updatedVCS.name}'`,
             });
+        } else {
+          // If the application ID mismatches, the OAuth workflow will stop early.
+          // So the only possibility to reach here is we have a matching application ID, while
+          // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
+          let description = "";
+          if (vcs.value.type == ExternalVersionControl_Type.GITLAB) {
+            description =
+              "Please make sure Secret matches the one from your GitLab instance Application.";
+          } else if (vcs.value.type == ExternalVersionControl_Type.GITHUB) {
+            description =
+              "Please make sure Client secret matches the one from your GitHub.com Application.";
+          } else if (vcs.value.type == ExternalVersionControl_Type.BITBUCKET) {
+            description =
+              "Please make sure Secret matches the one from your Bitbucket.org consumer.";
+          }
+          pushNotification({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: `Failed to update '${vcs.value.title}'`,
+            description: description,
           });
-      }
+        }
+      };
+    }
+  } else if (state.title != vcs.value.title) {
+    const vcsPatch: Partial<ExternalVersionControl> = {
+      name: vcs.value.name,
+      title: state.title,
     };
-
-    const cancel = () => {
-      router.push({
-        name: "setting.workspace.gitops",
-      });
-    };
-
-    const deleteVCS = () => {
-      const name = vcs.value.name;
-      vcsStore.deleteVCSById(vcs.value.id).then(() => {
+    vcsV1Store
+      .updateVCS(vcsPatch)
+      .then((updatedVCS: ExternalVersionControl | undefined) => {
+        if (!updatedVCS) {
+          return;
+        }
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
-          title: `Successfully deleted '${name}'`,
-        });
-        router.push({
-          name: "setting.workspace.gitops",
+          title: `Successfully updated '${updatedVCS.title}'`,
         });
       });
-    };
+  }
+};
 
-    return {
-      state,
-      vcs,
-      repositoryList,
-      adminApplicationUrl,
-      allowUpdate,
-      doUpdate,
-      cancel,
-      deleteVCS,
-    };
-  },
-});
+const cancel = () => {
+  router.push({
+    name: "setting.workspace.gitops",
+  });
+};
+
+const deleteVCS = () => {
+  if (!vcs.value) {
+    return;
+  }
+  const title = vcs.value.title;
+  vcsV1Store.deleteVCS(vcs.value.name).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: `Successfully deleted '${title}'`,
+    });
+    router.push({
+      name: "setting.workspace.gitops",
+    });
+  });
+};
 </script>

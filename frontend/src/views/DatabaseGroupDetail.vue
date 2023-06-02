@@ -6,7 +6,6 @@
     v-bind="$attrs"
   >
     <main class="flex-1 relative overflow-y-auto">
-      <!-- Highlight Panel -->
       <div
         class="px-4 space-y-2 lg:space-y-0 lg:flex lg:items-center lg:justify-between"
       >
@@ -49,20 +48,16 @@
         <div
           class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
         >
-          <button
-            type="button"
-            class="btn-normal"
-            @click.prevent="handleEditDatabaseGroup"
+          <NButton @click="handleEditDatabaseGroup">{{
+            $t("common.configure")
+          }}</NButton>
+          <NButton
+            @click="createMigration('bb.issue.database.schema.update')"
+            >{{ $t("database.alter-schema") }}</NButton
           >
-            Configure
-          </button>
-          <button
-            type="button"
-            class="btn-normal"
-            @click.prevent="createMigration('bb.issue.database.schema.update')"
-          >
-            Alter Schema
-          </button>
+          <NButton @click="createMigration('bb.issue.database.data.update')">{{
+            $t("database.change-data")
+          }}</NButton>
         </div>
       </div>
 
@@ -70,7 +65,9 @@
 
       <div class="w-full px-3 max-w-5xl grid grid-cols-5 gap-x-6">
         <div class="col-span-3">
-          <p class="pl-1 text-lg mb-2">Condition</p>
+          <p class="pl-1 text-lg mb-2">
+            {{ $t("database-group.condition.self") }}
+          </p>
           <ExprEditor
             :expr="state.expr!"
             :allow-admin="false"
@@ -78,7 +75,6 @@
           />
         </div>
         <div class="col-span-2">
-          <p class="text-lg mb-2">Databases</p>
           <MatchedDatabaseView
             :project="project"
             :environment-id="state.environment?.name || ''"
@@ -91,15 +87,11 @@
       <hr class="mt-8 my-4" />
       <div class="w-full max-w-5xl px-4">
         <div class="w-full flex flex-row justify-between items-center">
-          <p class="my-4">Table group</p>
+          <p class="my-4">{{ $t("database-group.table-group.self") }}</p>
           <div>
-            <button
-              type="button"
-              class="btn-normal"
-              @click.prevent="handleCreateSchemaGroup"
-            >
-              New table group
-            </button>
+            <NButton @click.prevent="handleCreateSchemaGroup">
+              {{ $t("database-group.table-group.create") }}
+            </NButton>
           </div>
         </div>
         <SchemaGroupTable
@@ -139,9 +131,10 @@ import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
-import dayjs from "dayjs";
 import { useRouter } from "vue-router";
 import { ComposedDatabaseGroup } from "@/types";
+import { generateIssueRoute } from "@/utils/databaseGroup/issue";
+import { NButton } from "naive-ui";
 
 interface LocalState {
   isLoaded: boolean;
@@ -218,39 +211,11 @@ const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
   editState.showConfigurePanel = true;
 };
 
-const createMigration = async (
+const createMigration = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
-  const issueNameParts: string[] = [];
-  issueNameParts.push(`[${databaseGroup.value.databaseGroupName}]`);
-  issueNameParts.push(
-    type === "bb.issue.database.schema.update" ? `Alter schema` : `Change data`
-  );
-  const datetime = dayjs().format("@MM-DD HH:mm");
-  const tz = "UTC" + dayjs().format("ZZ");
-  issueNameParts.push(`${datetime} ${tz}`);
-  const schemaGroupList =
-    await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(
-      databaseGroup.value.name
-    );
-
-  const query: Record<string, any> = {
-    template: type,
-    mode: "tenant",
-    name: issueNameParts.join(" "),
-    project: project.value.uid,
-    databaseGroupName: databaseGroup.value.name,
-    // TODO(steven): support select schema group.
-    schemaGroupNames: schemaGroupList.map((s) => s.name).join(","),
-  };
-
-  router.push({
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query,
-  });
+  const issueRoute = generateIssueRoute(type, databaseGroup.value);
+  router.push(issueRoute);
 };
 
 watch(

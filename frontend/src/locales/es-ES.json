@@ -250,7 +250,8 @@
       "months": "{months} meses",
       "years": "{years} años"
     },
-    "expiration": "Expiración"
+    "expiration": "Expiración",
+    "configure": "Configure"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -764,6 +765,7 @@
       "expire-days": "días de caducidad",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
+      "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
       "customize": "personalice",
       "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez."
@@ -798,7 +800,9 @@
     "transfer-in-db-alert": "¿Estás seguro de transferir \"{dbName}\" a nuestro proyecto?",
     "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan primero en bases de datos no asignadas.",
     "transfer-out-db": "Transferir base de datos",
-    "transfer-out-db-title": "Transferir la base de datos"
+    "transfer-out-db-title": "Transferir la base de datos",
+    "request-export": "Solicitar exportación",
+    "request-query": "Solicitar consulta"
   },
   "create-db": {
     "new-database-name": "Nuevo nombre de la base de datos",
@@ -1987,6 +1991,10 @@
         "title": "Secretos Encriptados",
         "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
       },
+      "bb-feature-sharding": {
+        "title": "Sharding de bases de datos/tablas",
+        "desc": "Utilice grupos de bases de datos para administrar fácilmente la fragmentación de bases de datos/tablas."
+      },
       "bb-feature-disallow-signup": {
         "title": "Deshabilitar el registro de autoservicio",
         "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el propietario del espacio de trabajo."
@@ -2494,9 +2502,24 @@
     "select-role": "Seleccionar rol"
   },
   "database-group": {
+    "self": "Grupo de bases de datos",
+    "create": "Crear grupo de bases de datos",
+    "edit": "Editar grupo de bases de datos",
+    "matched-database": "Base de datos coincidente",
+    "unmatched-database": "Base de datos no coincidente",
+    "matched-table": "Tabla coincidente",
+    "unmatched-table": "Tabla no coincidente",
+    "table-group": {
+      "self": "Grupo de tablas",
+      "create": "Crear grupo de tablas",
+      "edit": "Editar grupo de tablas"
+    },
     "factor": {
-      "resource_database_name": "nombre de la base de datos",
-      "resource_table_name": "nombre de la tabla"
+      "resource_database_name": "Nombre de la base de datos",
+      "resource_table_name": "Nombre de la tabla"
+    },
+    "condition": {
+      "self": "Condición"
     }
   }
 }

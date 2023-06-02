@@ -1,4 +1,5 @@
 import { VCSId } from "./id";
+import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 
 // Backend uses the same ENUM for GitLab/GitHub SaaS and self-hosted. Because they are based on the
 // same codebase.
@@ -12,7 +13,7 @@ export type VCSUIType =
   | "BITBUCKET_ORG";
 
 export interface VCSConfig {
-  type: VCSType;
+  type: ExternalVersionControl_Type;
   uiType: VCSUIType;
   name: string;
   instanceUrl: string;
@@ -31,22 +32,6 @@ export type VCS = {
   apiUrl: string;
   applicationId: string;
   secret: string;
-};
-
-export type VCSCreate = {
-  // Domain specific fields
-  name: string;
-  type: VCSType;
-  instanceUrl: string;
-  applicationId: string;
-  secret: string;
-};
-
-export type VCSPatch = {
-  // Domain specific fields
-  name?: string;
-  applicationId?: string;
-  secret?: string;
 };
 
 export type VCSTokenCreate = {
@@ -88,14 +73,14 @@ export type VCSPushEvent = {
 };
 
 export function isValidVCSApplicationIdOrSecret(
-  vcsType: VCSType,
+  vcsType: ExternalVersionControl_Type,
   str: string
 ): boolean {
-  if (vcsType == "GITLAB") {
+  if (vcsType == ExternalVersionControl_Type.GITLAB) {
     return /^[a-zA-Z0-9_]{64}$/.test(str);
-  } else if (vcsType == "GITHUB") {
+  } else if (vcsType == ExternalVersionControl_Type.GITHUB) {
     return /^[a-zA-Z0-9_]{20}$|^[a-zA-Z0-9_]{40}$/.test(str);
-  } else if (vcsType == "BITBUCKET") {
+  } else if (vcsType == ExternalVersionControl_Type.BITBUCKET) {
     return /^[a-zA-Z0-9_]{18}$|^[a-zA-Z0-9_]{32}$/.test(str);
   }
   return false;

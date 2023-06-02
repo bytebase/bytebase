@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message PushEvent {
+  VcsType vcs_type = 1;
+  string base_dir = 2;
+  string ref = 3;
+  string before = 4;
+  string after = 5;
+  string repository_id = 6;
+  string repository_url = 7;
+  string repository_full_path = 8;
+  string author_name = 9;
+  repeated Commit commits = 10;
+  FileCommit file_commit = 11;
+}
+
+message Commit {
+  string id = 1;
+  string title = 2;
+  string message = 3;
+  int64 created_ts = 4;
+  string url = 5;
+  string author_name = 6;
+  string author_email = 7;
+  repeated string added_list = 8;
+  repeated string modified_list = 9;
+}
+
+message FileCommit {
+  string id = 1;
+  string title = 2;
+  string message = 3;
+  int64 created_ts = 4;
+  string url = 5;
+  string author_name = 6;
+  string author_email = 7;
+  string added = 8;
+}
+
+enum VcsType {
+  VCS_TYPE_UNSPECIFIED = 0;
+  GITLAB = 1;
+  GITHUB = 2;
+  BITBUCKET = 3;
+}

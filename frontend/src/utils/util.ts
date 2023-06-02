@@ -5,6 +5,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
 import { escapeRegExp, round } from "lodash-es";
 import semver from "semver";
+import type { Duration } from "@/types/proto/google/protobuf/duration";
 
 dayjs.extend(dayOfYear);
 dayjs.extend(duration);
@@ -37,6 +38,19 @@ export function humanizeDuration(seconds: number): string {
   if (seconds <= 1) return "Less than 1s";
   return `${seconds}s`;
 }
+
+export const humanizeDurationV1 = (
+  duration: Duration | undefined,
+  brief = true
+) => {
+  if (!duration) return "-";
+  const { seconds, nanos } = duration;
+  const total = seconds + nanos / 1e9;
+  if (brief && total <= 1) {
+    return "Less than 1s";
+  }
+  return total.toFixed(2) + "s";
+};
 
 export function bytesToString(size: number): string {
   const unitList = ["B", "KB", "MB", "GB", "TB"];

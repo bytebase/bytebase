@@ -35,6 +35,8 @@ type Store struct {
 	idpCache                       sync.Map // map[string]*IdentityProvider
 	projectIDDeploymentConfigCache sync.Map // map[int]*DeploymentConfigMessage
 	risksCache                     sync.Map // []*RiskMessage, use 0 as the key
+	databaseGroupCache             sync.Map // map[string]*DatabaseGroupMessage
+	schemaGroupCache               sync.Map // map[string]*SchemaGroupMessage
 	// sheetStatementCache caches the statement of a sheet.
 	sheetStatementCache cache.Cache[int, string]
 }
@@ -62,4 +64,12 @@ func getPolicyCacheKey(resourceType api.PolicyResourceType, resourceUID int, pol
 
 func getDatabaseCacheKey(instanceID, databaseName string) string {
 	return fmt.Sprintf("%s/%s", instanceID, databaseName)
+}
+
+func getDatabaseGroupCacheKey(projectUID int, databaseGroupResourceID string) string {
+	return fmt.Sprintf("%d/%s", projectUID, databaseGroupResourceID)
+}
+
+func getSchemaGroupCacheKey(databaseGroupUID int64, schemaGroupResourceID string) string {
+	return fmt.Sprintf("%d/%s", databaseGroupUID, schemaGroupResourceID)
 }

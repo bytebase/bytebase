@@ -21,6 +21,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
@@ -44,13 +45,15 @@ type ProjectService struct {
 	v1pb.UnimplementedProjectServiceServer
 	store           *store.Store
 	activityManager *activity.Manager
+	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewProjectService creates a new ProjectService.
-func NewProjectService(store *store.Store, activityManager *activity.Manager) *ProjectService {
+func NewProjectService(store *store.Store, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService) *ProjectService {
 	return &ProjectService{
 		store:           store,
 		activityManager: activityManager,
+		licenseService:  licenseService,
 	}
 }
 
@@ -399,7 +402,7 @@ func (s *ProjectService) SetProjectGitOpsInfo(ctx context.Context, request *v1pb
 		case "sheet_path_template":
 			patch.SheetPathTemplate = &request.ProjectGitopsInfo.SheetPathTemplate
 		case "enable_sql_review_ci":
-			return nil, status.Errorf(codes.InvalidArgument, "enable_sql_review_ci is not allowed to set")
+			patch.EnableSQLReviewCI = &request.ProjectGitopsInfo.EnableSqlReviewCi
 		}
 	}
 
@@ -459,32 +462,89 @@ func (s *ProjectService) SetProjectGitOpsInfo(ctx context.Context, request *v1pb
 	return convertToProjectGitOpsInfo(request.Project, updatedRepo), nil
 }
 
-// SetProjectSQLReviewCI sets the SQL review CI for a project.
-func (s *ProjectService) SetProjectSQLReviewCI(ctx context.Context, request *v1pb.SetupSQLReviewCIRequest) (*v1pb.SetupSQLReviewCIResponse, error) {
+// SetupProjectSQLReviewCI sets the SQL review CI for a project.
+func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v1pb.SetupSQLReviewCIRequest) (*v1pb.SetupSQLReviewCIResponse, error) {
 	repo, err := s.findProjectRepository(ctx, request.Project)
 	if err != nil {
 		return nil, err
 	}
 
-	response := &v1pb.SetupSQLReviewCIResponse{}
-	if request.EnableSqlReviewCi && !repo.EnableSQLReviewCI {
-		pullRequest, err := s.setupVCSSQLReviewCI(ctx, repo)
-		if err != nil {
-			return nil, err
-		}
-		response.PullRequestUrl = pullRequest.URL
+	pullRequest, err := s.setupVCSSQLReviewCI(ctx, repo)
+	if err != nil {
+		return nil, err
+	}
+	response := &v1pb.SetupSQLReviewCIResponse{
+		PullRequestUrl: pullRequest.URL,
 	}
 
+	enableSQLReviewCi := true
 	repoPatch := &api.RepositoryPatch{
 		ID:                &repo.ID,
 		UpdaterID:         ctx.Value(common.PrincipalIDContextKey).(int),
-		EnableSQLReviewCI: &request.EnableSqlReviewCi,
+		EnableSQLReviewCI: &enableSQLReviewCi,
 	}
 	if _, err := s.store.PatchRepository(ctx, repoPatch); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to patch repository with error: %v", err.Error())
 	}
 
 	return response, nil
+}
+
+// DeleteProjectGitOpsInfo deletes the GitOps info for a project.
+func (s *ProjectService) DeleteProjectGitOpsInfo(ctx context.Context, request *v1pb.DeleteProjectGitOpsInfoRequest) (*emptypb.Empty, error) {
+	repo, err := s.findProjectRepository(ctx, request.Project)
+	if err != nil {
+		return nil, err
+	}
+
+	vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
+	}
+	if vcs == nil {
+		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSID)
+	}
+
+	// TODO: migrate to v1 store.
+	repositoryDelete := &api.RepositoryDelete{
+		ProjectResourceID: repo.Project.ResourceID,
+		DeleterID:         ctx.Value(common.PrincipalIDContextKey).(int),
+	}
+	if err := s.store.DeleteRepository(ctx, repositoryDelete); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete repository with error: %v", err.Error())
+	}
+
+	// We use one webhook in one repo for at least one Bytebase project, so we only delete the webhook if this project is the last one using this webhook.
+	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{
+		WebURL: &repo.WebURL,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, `failed to list repository for web url "%s" with error: %v`, repo.WebURL, err.Error())
+	}
+	if len(repos) == 0 {
+		// Delete the webhook after we successfully delete the repository.
+		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
+		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
+		if err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
+			ctx,
+			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
+			common.OauthContext{
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    refreshTokenNoop(),
+			},
+			vcs.InstanceURL,
+			repo.ExternalID,
+			repo.ExternalWebhookID,
+		); err != nil {
+			// Despite the error here, we have deleted the repository in the database, we still return success.
+			log.Error("failed to delete webhook for project", zap.String("project", request.Project), zap.Int("repo", repo.ID), zap.Error(err))
+		}
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 // CreateIAMPolicyUpdateActivity creates project IAM policy change activities.
@@ -728,12 +788,30 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
+	vcsID, err := strconv.ParseInt(request.ProjectGitopsInfo.VcsUid, 10, 64)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs id: %s", request.ProjectGitopsInfo.VcsUid)
+	}
+
 	// TODO: migrate to v1 store.
 	repositoryCreate := &api.RepositoryCreate{
-		ProjectID:         project.UID,
-		ProjectResourceID: project.ResourceID,
-		CreatorID:         ctx.Value(common.PrincipalIDContextKey).(int),
-		WebhookURLHost:    setting.ExternalUrl,
+		ProjectID:          project.UID,
+		ProjectResourceID:  project.ResourceID,
+		CreatorID:          ctx.Value(common.PrincipalIDContextKey).(int),
+		WebhookURLHost:     setting.ExternalUrl,
+		VCSID:              int(vcsID),
+		Name:               request.ProjectGitopsInfo.Title,
+		FullPath:           request.ProjectGitopsInfo.FullPath,
+		WebURL:             request.ProjectGitopsInfo.WebUrl,
+		BranchFilter:       request.ProjectGitopsInfo.BranchFilter,
+		BaseDirectory:      request.ProjectGitopsInfo.BaseDirectory,
+		FilePathTemplate:   request.ProjectGitopsInfo.FilePathTemplate,
+		SchemaPathTemplate: request.ProjectGitopsInfo.SchemaPathTemplate,
+		SheetPathTemplate:  request.ProjectGitopsInfo.SheetPathTemplate,
+		ExternalID:         request.ProjectGitopsInfo.ExternalId,
+		AccessToken:        request.ProjectGitopsInfo.AccessToken,
+		RefreshToken:       request.ProjectGitopsInfo.RefreshToken,
+		ExpiresTs:          request.ProjectGitopsInfo.ExpiresTime.Seconds,
 	}
 
 	if repositoryCreate.BranchFilter == "" {
@@ -1231,6 +1309,9 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 
 // CreateDatabaseGroup creates a database group.
 func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	}
 	projectResourceID, err := getProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1278,6 +1359,9 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 
 // UpdateDatabaseGroup updates a database group.
 func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.UpdateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	}
 	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1462,6 +1546,9 @@ func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.Get
 
 // CreateSchemaGroup creates a database group.
 func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.CreateSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	}
 	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1518,6 +1605,9 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 
 // UpdateSchemaGroup updates a schema group.
 func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.UpdateSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	}
 	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.SchemaGroup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -2531,6 +2621,7 @@ func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
 func convertToProjectGitOpsInfo(parent string, repository *api.Repository) *v1pb.ProjectGitOpsInfo {
 	return &v1pb.ProjectGitOpsInfo{
 		Name:               fmt.Sprintf("%s/gitOpsInfo", parent),
+		VcsUid:             fmt.Sprintf("%d", repository.VCSID),
 		Title:              repository.Name,
 		FullPath:           repository.FullPath,
 		WebUrl:             repository.WebURL,
@@ -2541,6 +2632,7 @@ func convertToProjectGitOpsInfo(parent string, repository *api.Repository) *v1pb
 		SheetPathTemplate:  repository.SheetPathTemplate,
 		EnableSqlReviewCi:  repository.EnableSQLReviewCI,
 		WebhookEndpointId:  repository.WebhookEndpointID,
+		ExternalId:         repository.ExternalID,
 	}
 }
 

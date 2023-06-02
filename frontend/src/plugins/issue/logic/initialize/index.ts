@@ -113,11 +113,11 @@ const buildNewIssue = async (
 const prepareDatabaseListForIssueCreation = async (query: LocationQuery) => {
   const databaseStore = useDatabaseV1Store();
   // For preparing the database if user visits creating issue url directly.
-  // It's horrible to fetchDatabaseById one-by-one when query.databaseList
+  // It's horrible to fetchDatabaseByUID one-by-one when query.databaseList
   // is big (100+ sometimes)
   // So we are fetching databaseList by project since that's better cached.
   if (query.project) {
-    // If we found query.project, we can directly fetchDatabaseListByProjectId
+    // If we found query.project, we can directly search database list by project
     const projectId = query.project as string;
     const project = await useProjectV1Store().getOrFetchProjectByUID(projectId);
     await databaseStore.searchDatabaseList({

@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -181,8 +182,26 @@ func (s *ExternalVersionControlService) SearchExternalVersionControlProjects(ctx
 }
 
 // ListProjectGitOpsInfo lists GitOps info of a project.
-func (*ExternalVersionControlService) ListProjectGitOpsInfo(context.Context, *v1pb.ListProjectGitOpsInfoRequest) (*v1pb.ListProjectGitOpsInfoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListProjectGitOpsInfo not implemented")
+func (s *ExternalVersionControlService) ListProjectGitOpsInfo(ctx context.Context, request *v1pb.ListProjectGitOpsInfoRequest) (*v1pb.ListProjectGitOpsInfoResponse, error) {
+	externalVersionControlUID, err := getExternalVersionControlID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	repositoryFind := &api.RepositoryFind{
+		VCSID: &externalVersionControlUID,
+	}
+	repoList, err := s.store.FindRepository(ctx, repositoryFind)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch external repository list: %v", err)
+	}
+
+	resp := &v1pb.ListProjectGitOpsInfoResponse{}
+	for _, repo := range repoList {
+		resp.ProjectGitopsInfo = append(resp.ProjectGitopsInfo, convertToProjectGitOpsInfo(fmt.Sprintf("%s%s", projectNamePrefix, repo.Project.ResourceID), repo))
+	}
+
+	return resp, nil
 }
 
 func convertToExternalVersionControls(externalVersionControls []*store.ExternalVersionControlMessage) []*v1pb.ExternalVersionControl {
@@ -197,15 +216,15 @@ func convertToExternalVersionControl(externalVersionControl *store.ExternalVersi
 	tp := v1pb.ExternalVersionControl_TYPE_UNSPECIFIED
 	switch externalVersionControl.Type {
 	case vcs.GitHub:
-		tp = v1pb.ExternalVersionControl_TYPE_GITHUB
+		tp = v1pb.ExternalVersionControl_GITHUB
 	case vcs.GitLab:
-		tp = v1pb.ExternalVersionControl_TYPE_GITLAB
+		tp = v1pb.ExternalVersionControl_GITLAB
 	case vcs.Bitbucket:
-		tp = v1pb.ExternalVersionControl_TYPE_BITBUCKET
+		tp = v1pb.ExternalVersionControl_BITBUCKET
 	}
 
 	return &v1pb.ExternalVersionControl{
-		Name:          fmt.Sprintf("%s/%d", externalVersionControlPrefix, externalVersionControl.ID),
+		Name:          fmt.Sprintf("%s%d", externalVersionControlPrefix, externalVersionControl.ID),
 		Title:         externalVersionControl.Name,
 		Type:          tp,
 		Url:           externalVersionControl.InstanceURL,
@@ -249,11 +268,11 @@ func checkAndConvertToStoreVersionControl(externalVersionControl *v1pb.ExternalV
 
 func convertExternalVersionControlTypeToVCSType(tp v1pb.ExternalVersionControl_Type) (vcs.Type, error) {
 	switch tp {
-	case v1pb.ExternalVersionControl_TYPE_GITHUB:
+	case v1pb.ExternalVersionControl_GITHUB:
 		return vcs.GitHub, nil
-	case v1pb.ExternalVersionControl_TYPE_GITLAB:
+	case v1pb.ExternalVersionControl_GITLAB:
 		return vcs.GitLab, nil
-	case v1pb.ExternalVersionControl_TYPE_BITBUCKET:
+	case v1pb.ExternalVersionControl_BITBUCKET:
 		return vcs.Bitbucket, nil
 	}
 	return "", errors.Errorf("unknown external version control type: %v", tp)

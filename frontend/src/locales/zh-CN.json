@@ -248,7 +248,8 @@
       "months": "{months} 月",
       "years": "{years} 年"
     },
-    "expiration": "过期时间"
+    "expiration": "过期时间",
+    "configure": "配置"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -768,6 +769,7 @@
       "expire-days": "过期天数",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",
+      "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "manually-select": "手动选择",
       "customize": "自定义",
       "data-export-attention": "数据将被导出到一个文件并自动下载。而且您只能完成一次导出操作。"
@@ -804,7 +806,7 @@
     "transfer-out-db": "转出数据库",
     "transfer-out-db-title": "转出数据库",
     "request-query": "申请查询权限",
-    "export-data": "导出数据"
+    "request-export": "申请导出数据"
   },
   "create-db": {
     "new-database-name": "新数据库名称",
@@ -2002,6 +2004,10 @@
         "title": "保密变量",
         "desc": "存储数据库的保密变量，并在工单的 SQL 中使用它们。"
       },
+      "bb-feature-sharding": {
+        "title": "数据库/表分组",
+        "desc": "利用数据库组轻松管理数据库/表分片。"
+      },
       "bb-feature-disallow-signup": {
         "title": "禁用自助注册",
         "desc": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
@@ -2510,9 +2516,24 @@
     "select-role": "选择角色"
   },
   "database-group": {
+    "self": "数据库分组",
+    "create": "新建数据库分组",
+    "edit": "编辑数据库分组",
+    "matched-database": "相匹配的数据库",
+    "unmatched-database": "不匹配的数据库",
+    "matched-table": "相匹配的表",
+    "unmatched-table": "不匹配的表",
+    "table-group": {
+      "self": "表分组",
+      "create": "新建表分组",
+      "edit": "编辑表分组"
+    },
     "factor": {
       "resource_database_name": "数据库名",
       "resource_table_name": "表名"
+    },
+    "condition": {
+      "self": "条件"
     }
   }
 }

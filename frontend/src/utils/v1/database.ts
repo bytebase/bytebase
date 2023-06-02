@@ -1,11 +1,7 @@
 import { orderBy } from "lodash-es";
 import slug from "slug";
 
-import {
-  ComposedDatabase,
-  unknownEnvironment,
-  UNKNOWN_INSTANCE_NAME,
-} from "@/types";
+import { ComposedDatabase, unknownEnvironment, UNKNOWN_ID } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
 import { User } from "@/types/proto/v1/auth_service";
@@ -16,7 +12,8 @@ import {
 } from "@/store";
 import { hasWorkspacePermissionV1 } from "../role";
 import { Engine, State } from "@/types/proto/v1/common";
-import { semverCompare } from "../util";
+import { isDev, semverCompare } from "../util";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 
 export const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");
@@ -25,14 +22,14 @@ export const databaseV1Slug = (db: ComposedDatabase) => {
 export const extractDatabaseResourceName = (
   resource: string
 ): {
-  instance: string /** Format: instances/{instance} */;
+  instance: string;
   database: string;
 } => {
   const pattern =
-    /^(?<instance>instances\/[^/]+)\/databases\/(?<database>[^/]+)$/;
+    /(?:^|\/)instances\/(?<instance>[^/]+)\/databases\/(?<database>[^/]+)(?:$|\/)/;
   const matches = resource.match(pattern);
   if (matches) {
-    const { instance = UNKNOWN_INSTANCE_NAME, database = "" } =
+    const { instance = String(UNKNOWN_ID), database = "" } =
       matches.groups ?? {};
     return {
       instance,
@@ -40,7 +37,7 @@ export const extractDatabaseResourceName = (
     };
   }
   return {
-    instance: UNKNOWN_INSTANCE_NAME,
+    instance: String(UNKNOWN_ID),
     database: "",
   };
 };
@@ -193,4 +190,35 @@ export function allowGhostMigrationV1(
       )
     );
   });
+}
+
+export function allowDatabaseV1Access(
+  database: ComposedDatabase,
+  user: User,
+  type: DataSourceType
+): boolean {
+  // "ADMIN" data source should only be used by the system, thus it shouldn't
+  // touch this method at all. If it touches somehow, we will reject it and
+  // log a warning
+  if (type === DataSourceType.ADMIN) {
+    if (isDev()) {
+      console.trace(
+        "Should not check database access against ADMIN connection"
+      );
+    } else {
+      console.warn("Should not check database access against ADMIN connection");
+    }
+    return false;
+  }
+
+  if (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-instance",
+      user.userRole
+    )
+  ) {
+    return true;
+  }
+
+  return false;
 }

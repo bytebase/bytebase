@@ -157,7 +157,7 @@
         <DatabaseOverviewPanel :database="database" />
       </template>
       <template v-if="selectedTabItem?.hash === 'change-history'">
-        <DatabaseMigrationHistoryPanel
+        <DatabaseChangeHistoryPanel
           :database="database"
           :allow-edit="allowEdit"
         />
@@ -250,7 +250,7 @@ import { useI18n } from "vue-i18n";
 import { startCase } from "lodash-es";
 
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
-import DatabaseMigrationHistoryPanel from "@/components/DatabaseMigrationHistoryPanel.vue";
+import DatabaseChangeHistoryPanel from "@/components/DatabaseChangeHistoryPanel.vue";
 import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
 import {
@@ -289,7 +289,7 @@ import {
   useDatabaseV1Store,
   useDBSchemaStore,
   useGracefulRequest,
-  useSQLStore,
+  useLegacySQLStore,
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -328,7 +328,7 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaStore();
-const sqlStore = useSQLStore();
+const sqlStore = useLegacySQLStore();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
 const databaseTabItemList = computed((): DatabaseTabItem[] => {
