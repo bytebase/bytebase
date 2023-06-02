@@ -2004,9 +2004,9 @@
         "title": "保密变量",
         "desc": "存储数据库的保密变量，并在工单的 SQL 中使用它们。"
       },
-      "bb-feature-sharding": {
+      "bb-feature-database-grouping": {
         "title": "数据库/表分组",
-        "desc": "利用数据库组轻松管理数据库/表分片。"
+        "desc": "支持对数据库和表进行分组，变更时可选择数据库分组，对其表分组进行变更。"
       },
       "bb-feature-disallow-signup": {
         "title": "禁用自助注册",

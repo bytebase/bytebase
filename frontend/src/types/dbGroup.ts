@@ -1,3 +1,4 @@
+import { ConditionGroupExpr } from "@/plugins/cel";
 import { Environment } from "./proto/v1/environment_service";
 import {
   DatabaseGroup,
@@ -11,6 +12,7 @@ export interface ComposedDatabaseGroup extends DatabaseGroup {
   project: Project;
   environmentName: string;
   environment: Environment;
+  simpleExpr: ConditionGroupExpr;
 }
 
 export interface ComposedSchemaGroup extends SchemaGroup {

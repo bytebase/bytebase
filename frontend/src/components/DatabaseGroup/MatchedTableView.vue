@@ -10,7 +10,7 @@
       class="sticky top-0 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b cursor-pointer"
       @click="state.showMatchedTableList = !state.showMatchedTableList"
     >
-      <div>
+      <div class="text-sm font-medium">
         <span>{{ $t("database-group.matched-table") }}</span>
         <span class="ml-1 text-gray-400">({{ matchedTableList.length }})</span>
       </div>
@@ -38,7 +38,7 @@
       class="sticky top-8 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-y cursor-pointer"
       @click="state.showUnmatchedTableList = !state.showUnmatchedTableList"
     >
-      <div>
+      <div class="text-sm font-medium">
         <span>{{ $t("database-group.unmatched-table") }}</span>
         <span class="ml-1 text-gray-400"
           >({{ unmatchedTableList.length }})</span
@@ -127,6 +127,8 @@ const updateMatchingState = useDebounceFn(async () => {
     matchedTableList.value = result.matchedTables;
     unmatchedTableList.value = result.unmatchedTables;
   } catch (error) {
+    matchedTableList.value = [];
+    unmatchedTableList.value = [];
     console.error(error);
     // do nothing else.
   }
