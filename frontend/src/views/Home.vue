@@ -119,7 +119,10 @@
     </PagedIssueTable>
   </div>
   <div class="w-full flex justify-end mt-2 px-4">
-    <router-link to="/issue?status=closed" class="normal-link">
+    <router-link
+      :to="`/issue?status=closed&user=${currentUserUID}`"
+      class="normal-link"
+    >
       {{ $t("project.overview.view-all-closed") }}
     </router-link>
   </div>
