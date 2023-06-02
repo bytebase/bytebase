@@ -2225,6 +2225,16 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
+var iamPolicyCELAttributes = []cel.EnvOption{
+	cel.Variable("request.time", cel.TimestampType),
+	cel.Variable("request.statement", cel.StringType),
+	cel.Variable("request.row_limit", cel.IntType),
+	cel.Variable("request.export_format", cel.StringType),
+	cel.Variable("resource.database", cel.StringType),
+	cel.Variable("resource.schema", cel.StringType),
+	cel.Variable("resource.table", cel.StringType),
+}
+
 func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) (*v1pb.IamPolicy, error) {
 	var bindings []*v1pb.Binding
 
@@ -2239,7 +2249,7 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) (*v1pb.IamPolicy, err
 			Condition: binding.Condition,
 		}
 		if binding.Condition.Expression != "" {
-			e, err := cel.NewEnv(queryAttributes...)
+			e, err := cel.NewEnv(iamPolicyCELAttributes...)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to create cel environment")
 			}
