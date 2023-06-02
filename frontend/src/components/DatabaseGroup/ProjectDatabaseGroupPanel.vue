@@ -1,10 +1,10 @@
 <template>
   <div class="w-full">
     <div class="w-full flex flex-row justify-between items-center">
-      <span>Database groups</span>
+      <span>{{ $t("database-group.self") }}</span>
       <div class="flex flex-row gap-x-2">
         <NButton @click="handleCreateDatabaseGroup">
-          <span class="mr-1">New database group</span>
+          <span class="mr-1">{{ $t("database-group.create") }}</span>
           <FeatureBadge feature="bb.feature.sharding" />
         </NButton>
       </div>

@@ -13,9 +13,9 @@
       </div>
       <div class="bb-grid-cell">{{ item.environment.title }}</div>
       <div v-if="props.showEdit" class="bb-grid-cell gap-x-2 justify-end">
-        <NButton size="small" @click.stop="$emit('edit', item)"
-          >Configure</NButton
-        >
+        <NButton size="small" @click.stop="$emit('edit', item)">{{
+          $t("common.configure")
+        }}</NButton>
       </div>
     </template>
   </BBGrid>

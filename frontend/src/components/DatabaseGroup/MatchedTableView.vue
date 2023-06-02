@@ -1,6 +1,6 @@
 <template>
   <div class="mb-2 flex flex-row items-center">
-    <span class="text-lg mr-2">Tables</span>
+    <span class="text-lg mr-2">{{ $t("db.tables") }}</span>
     <BBLoader v-show="state.isRequesting" class="opacity-60" />
   </div>
   <div
@@ -11,7 +11,7 @@
       @click="state.showMatchedTableList = !state.showMatchedTableList"
     >
       <div>
-        <span>Matched table</span>
+        <span>{{ $t("database-group.matched-table") }}</span>
         <span class="ml-1 text-gray-400">({{ matchedTableList.length }})</span>
       </div>
       <button class="opacity-60">
@@ -39,7 +39,7 @@
       @click="state.showUnmatchedTableList = !state.showUnmatchedTableList"
     >
       <div>
-        <span>Unmatched table</span>
+        <span>{{ $t("database-group.unmatched-table") }}</span>
         <span class="ml-1 text-gray-400"
           >({{ unmatchedTableList.length }})</span
         >

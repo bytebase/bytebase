@@ -6,7 +6,6 @@
     v-bind="$attrs"
   >
     <main class="flex-1 relative overflow-y-auto">
-      <!-- Highlight Panel -->
       <div
         class="px-4 space-y-2 lg:space-y-0 lg:flex lg:items-center lg:justify-between"
       >
@@ -49,27 +48,16 @@
         <div
           class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
         >
-          <button
-            type="button"
-            class="btn-normal"
-            @click.prevent="handleEditDatabaseGroup"
+          <NButton @click="handleEditDatabaseGroup">{{
+            $t("common.configure")
+          }}</NButton>
+          <NButton
+            @click="createMigration('bb.issue.database.schema.update')"
+            >{{ $t("database.alter-schema") }}</NButton
           >
-            Configure
-          </button>
-          <button
-            type="button"
-            class="btn-normal"
-            @click.prevent="createMigration('bb.issue.database.schema.update')"
-          >
-            Alter Schema
-          </button>
-          <button
-            type="button"
-            class="btn-normal"
-            @click.prevent="createMigration('bb.issue.database.data.update')"
-          >
-            Change Data
-          </button>
+          <NButton @click="createMigration('bb.issue.database.data.update')">{{
+            $t("database.change-data")
+          }}</NButton>
         </div>
       </div>
 
@@ -77,7 +65,9 @@
 
       <div class="w-full px-3 max-w-5xl grid grid-cols-5 gap-x-6">
         <div class="col-span-3">
-          <p class="pl-1 text-lg mb-2">Condition</p>
+          <p class="pl-1 text-lg mb-2">
+            {{ $t("database-group.condition.self") }}
+          </p>
           <ExprEditor
             :expr="state.expr!"
             :allow-admin="false"
@@ -97,10 +87,10 @@
       <hr class="mt-8 my-4" />
       <div class="w-full max-w-5xl px-4">
         <div class="w-full flex flex-row justify-between items-center">
-          <p class="my-4">Table group</p>
+          <p class="my-4">{{ $t("database-group.table-group.self") }}</p>
           <div>
             <NButton @click.prevent="handleCreateSchemaGroup">
-              New table group
+              {{ $t("database-group.table-group.create") }}
             </NButton>
           </div>
         </div>
