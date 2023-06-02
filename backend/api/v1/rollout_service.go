@@ -971,7 +971,9 @@ func validateSteps(_ []*v1pb.Plan_Step) error {
 
 func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Plan_Step, project *store.ProjectMessage) (*api.PipelineCreate, error) {
 	// FIXME: handle deploymentConfig
-	pipelineCreate := &api.PipelineCreate{}
+	pipelineCreate := &api.PipelineCreate{
+		Name: "Rollout Pipeline",
+	}
 	for _, step := range steps {
 		stageCreate := api.StageCreate{}
 
@@ -1007,6 +1009,7 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 			return nil, errors.Wrap(err, "failed to get environment")
 		}
 		stageCreate.EnvironmentID = environment.UID
+		stageCreate.Name = fmt.Sprintf("%s Stage", environment.Title)
 
 		pipelineCreate.StageList = append(pipelineCreate.StageList, stageCreate)
 	}
