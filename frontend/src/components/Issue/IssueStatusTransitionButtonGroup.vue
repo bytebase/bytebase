@@ -267,7 +267,6 @@ const {
   getApplicableTaskStatusTransitionList,
 } = useIssueTransitionLogic(issue as Ref<Issue>);
 
-// TODO(steven): figure out how to show the dropdown for grant request issue.
 const issueStatusTransitionDropdownOptions = computed(() => {
   return applicableIssueStatusTransitionList.value.map<ExtraActionOption>(
     (transition) => {

@@ -36,6 +36,7 @@ const composeDatabaseGroup = async (
     project: project,
     environmentName: convertResult.environmentId ?? "",
     environment: environment,
+    simpleExpr: convertResult.conditionGroupExpr,
   };
 };
 

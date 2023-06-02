@@ -2008,9 +2008,9 @@
         "title": "Encrypted Secrets",
         "desc": "Store your secrets of database and use them in your issue SQL scripts."
       },
-      "bb-feature-sharding": {
+      "bb-feature-database-grouping": {
         "title": "Database/schema group",
-        "desc": "Easy to manage database/table sharding with database groups."
+        "desc": "Easy to manage database/table with database groups."
       },
       "bb-feature-disallow-signup": {
         "title": "Disable self-service signup",
