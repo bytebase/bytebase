@@ -252,8 +252,9 @@ export const useInstanceV1List = (showDeleted: MaybeRef<boolean> = false) => {
 const composeInstance = async (instance: Instance) => {
   const composed = instance as ComposedInstance;
   const environmentEntity =
-    useEnvironmentV1Store().getEnvironmentByName(instance.environment) ??
-    unknownEnvironment();
+    (await useEnvironmentV1Store().getOrFetchEnvironmentByName(
+      instance.environment
+    )) ?? unknownEnvironment();
   composed.environmentEntity = environmentEntity;
   return composed;
 };
