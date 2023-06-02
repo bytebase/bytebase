@@ -98,6 +98,16 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 	ctx := server.Context()
 	var driver db.Driver
 	var conn *sql.Conn
+	defer func() {
+		if conn != nil {
+			if err := conn.Close(); err != nil {
+				log.Warn("failed to close connection", zap.Error(err))
+			}
+		}
+		if driver != nil {
+			driver.Close(ctx)
+		}
+	}()
 	for {
 		request, err := server.Recv()
 		if err != nil {
@@ -118,7 +128,6 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 			}
-			defer driver.Close(ctx)
 
 			sqlDB := driver.GetDB()
 			if sqlDB != nil {
@@ -126,11 +135,10 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 				if err != nil {
 					return status.Errorf(codes.Internal, "failed to get database connection: %v", err)
 				}
-				defer conn.Close()
 			}
 		}
 
-		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request, instance)
+		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request)
 
 		if err := s.postAdminExecute(ctx, activity, durationNs, queryErr); err != nil {
 			return err
@@ -187,7 +195,7 @@ func (s *SQLService) postAdminExecute(ctx context.Context, activity *api.Activit
 	return nil
 }
 
-func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *sql.Conn, request *v1pb.AdminExecuteRequest, instance *store.InstanceMessage) ([]*v1pb.QueryResult, int64, error) {
+func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *sql.Conn, request *v1pb.AdminExecuteRequest) ([]*v1pb.QueryResult, int64, error) {
 	start := time.Now().UnixNano()
 	result, err := driver.RunStatement(ctx, conn, request.Statement)
 	return result, time.Now().UnixNano() - start, err
