@@ -12,6 +12,7 @@ export * from "./setting";
 export * from "./instance";
 export * from "./subscription";
 export * from "./actuator";
+export * from "./sql";
 export * from "./repository";
 export * from "./vcs";
 export * from "./changeHistory";

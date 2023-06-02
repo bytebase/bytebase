@@ -46,7 +46,7 @@ export function convert(resultSet: ResourceObject): SQLResultSet {
   };
 }
 
-export const useSQLStore = defineStore("sql", {
+export const useLegacySQLStore = defineStore("legacy_sql", {
   actions: {
     convert(resultSet: ResourceObject): SQLResultSet {
       return convert(resultSet);

@@ -1,3 +1,4 @@
 import ResultView from "./ResultView.vue";
+import ResultViewV1 from "./ResultViewV1.vue";
 
-export default ResultView;
+export { ResultView, ResultViewV1 };

@@ -50,7 +50,11 @@ import {
   PresetRoleType,
   UNKNOWN_ID,
 } from "@/types";
-import { pushNotification, useDatabaseV1Store, useSQLStore } from "@/store";
+import {
+  pushNotification,
+  useDatabaseV1Store,
+  useLegacySQLStore,
+} from "@/store";
 import { BBSpin } from "@/bbkit";
 import { convertFromCEL } from "@/utils/issue/cel";
 
@@ -124,7 +128,7 @@ const handleExport = async () => {
   }
 
   state.isRequesting = true;
-  const queryResult = await useSQLStore().query(exportContext.value);
+  const queryResult = await useLegacySQLStore().query(exportContext.value);
   if (queryResult.error) {
     pushNotification({
       module: "bytebase",

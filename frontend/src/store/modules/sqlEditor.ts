@@ -9,9 +9,10 @@ import {
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { useActivityStore } from "./activity";
-import { useSQLStore } from "./sql";
+import { useLegacySQLStore } from "./sql";
 import { useTabStore } from "./tab";
 import { useDatabaseV1Store } from "./v1/database";
+import { useInstanceV1Store, useSQLStore } from "./v1";
 
 // set the limit to 10000 temporarily to avoid the query timeout and page crash
 export const RESULT_ROWS_LIMIT = 1000;
@@ -44,21 +45,22 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
       const databaseName =
         database.uid === String(UNKNOWN_ID) ? "" : database.databaseName;
-      const queryResult = await useSQLStore().query({
-        instanceId: Number(instanceId),
-        databaseName,
-        statement: statement,
+      const instance = useInstanceV1Store().getInstanceByUID(instanceId);
+      const response = await useSQLStore().queryReadonly({
+        name: instance.name,
+        connectionDatabase: databaseName,
+        statement,
         limit: RESULT_ROWS_LIMIT,
       });
 
-      return queryResult;
+      return response;
     },
     async executeAdminQuery({ statement }: Pick<QueryInfo, "statement">) {
       const { instanceId, databaseId } = useTabStore().currentTab.connection;
       const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
       const databaseName =
         database.uid === String(UNKNOWN_ID) ? "" : database.databaseName;
-      const queryResult = await useSQLStore().adminQuery({
+      const queryResult = await useLegacySQLStore().adminQuery({
         instanceId: Number(instanceId),
         databaseName,
         statement: statement,
