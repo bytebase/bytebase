@@ -44,19 +44,28 @@ type UpdateDatabaseGroupMessage struct {
 // DeleteDatabaseGroup deletes a database group.
 func (s *Store) DeleteDatabaseGroup(ctx context.Context, databaseGroupUID int64) error {
 	query := `
-	DELETE FROM db_group WHERE id = $1;
+	DELETE
+		FROM db_group
+	WHERE id = $1
+	RETURNING project_id, resource_id;
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, query, databaseGroupUID); err != nil {
-		return errors.Wrapf(err, "failed to exec")
+	var projectUID int
+	var resourceID string
+	if err := tx.QueryRowContext(ctx, query, databaseGroupUID).Scan(
+		&projectUID,
+		&resourceID,
+	); err != nil {
+		return errors.Wrapf(err, "failed to scan")
 	}
 	if err := tx.Commit(); err != nil {
 		return errors.Wrapf(err, "failed to commit transaction")
 	}
+	s.databaseGroupCache.Delete(getDatabaseGroupCacheKey(projectUID, resourceID))
 	return nil
 }
 
@@ -76,12 +85,20 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
+	for _, databaseGroup := range databaseGroups {
+		s.databaseGroupCache.Store(getDatabaseGroupCacheKey(databaseGroup.ProjectUID, databaseGroup.ResourceID), databaseGroup)
+	}
 
 	return databaseGroups, nil
 }
 
 // GetDatabaseGroup gets a database group.
 func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
+	if find.ProjectUID != nil && find.ResourceID != nil {
+		if databaseGroup, ok := s.databaseGroupCache.Load(getDatabaseGroupCacheKey(*find.ProjectUID, *find.ResourceID)); ok {
+			return databaseGroup.(*DatabaseGroupMessage), nil
+		}
+	}
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
@@ -103,6 +120,7 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 	if len(databaseGroups) > 1 {
 		return nil, errors.Errorf("found multiple database groups")
 	}
+	s.databaseGroupCache.Store(getDatabaseGroupCacheKey(databaseGroups[0].ProjectUID, databaseGroups[0].ResourceID), databaseGroups[0])
 	return databaseGroups[0], nil
 }
 
@@ -215,6 +233,7 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 		return nil, errors.Wrapf(err, "failed to unmarshal expression")
 	}
 	updatedDatabaseGroup.Expression = &expression
+	s.databaseGroupCache.Store(getDatabaseGroupCacheKey(updatedDatabaseGroup.ProjectUID, updatedDatabaseGroup.ResourceID), &updatedDatabaseGroup)
 	return &updatedDatabaseGroup, nil
 }
 
@@ -274,6 +293,7 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 		return nil, errors.Wrapf(err, "failed to unmarshal expression")
 	}
 	insertedDatabaseGroup.Expression = &expression
+	s.databaseGroupCache.Store(getDatabaseGroupCacheKey(insertedDatabaseGroup.ProjectUID, insertedDatabaseGroup.ResourceID), &insertedDatabaseGroup)
 	return &insertedDatabaseGroup, nil
 }
 
@@ -310,19 +330,28 @@ type UpdateSchemaGroupMessage struct {
 // DeleteSchemaGroup deletes a schema group.
 func (s *Store) DeleteSchemaGroup(ctx context.Context, schemaGroupUID int64) error {
 	query := `
-	DELETE FROM schema_group WHERE id = $1;
+	DELETE
+		FROM schema_group
+	WHERE id = $1
+	RETURNING db_group_id, resource_id;
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, query, schemaGroupUID); err != nil {
-		return errors.Wrapf(err, "failed to exec")
+	var databaseGroupUID int64
+	var resourceID string
+	if err := tx.QueryRowContext(ctx, query, schemaGroupUID).Scan(
+		&databaseGroupUID,
+		&resourceID,
+	); err != nil {
+		return errors.Wrapf(err, "failed to scan")
 	}
 	if err := tx.Commit(); err != nil {
 		return errors.Wrapf(err, "failed to commit transaction")
 	}
+	s.schemaGroupCache.Delete(getSchemaGroupCacheKey(databaseGroupUID, resourceID))
 	return nil
 }
 
@@ -342,12 +371,19 @@ func (s *Store) ListSchemaGroups(ctx context.Context, find *FindSchemaGroupMessa
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-
+	for _, schemaGroup := range schemaGroups {
+		s.schemaGroupCache.Store(getSchemaGroupCacheKey(schemaGroup.DatabaseGroupUID, schemaGroup.ResourceID), schemaGroup)
+	}
 	return schemaGroups, nil
 }
 
 // GetSchemaGroup gets a schema group.
 func (s *Store) GetSchemaGroup(ctx context.Context, find *FindSchemaGroupMessage) (*SchemaGroupMessage, error) {
+	if find.DatabaseGroupUID != nil && find.ResourceID != nil {
+		if schemaGroup, ok := s.schemaGroupCache.Load(getSchemaGroupCacheKey(*find.DatabaseGroupUID, *find.ResourceID)); ok {
+			return schemaGroup.(*SchemaGroupMessage), nil
+		}
+	}
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
@@ -369,6 +405,7 @@ func (s *Store) GetSchemaGroup(ctx context.Context, find *FindSchemaGroupMessage
 	if len(schemaGroups) > 1 {
 		return nil, errors.Errorf("found multiple schema groups")
 	}
+	s.schemaGroupCache.Store(getSchemaGroupCacheKey(schemaGroups[0].DatabaseGroupUID, schemaGroups[0].ResourceID), schemaGroups[0])
 	return schemaGroups[0], nil
 }
 
@@ -483,6 +520,7 @@ func (s *Store) UpdateSchemaGroup(ctx context.Context, updaterPrincipalID int, s
 		return nil, errors.Wrapf(err, "failed to unmarshal expression")
 	}
 	updatedSchemaGroup.Expression = &expression
+	s.schemaGroupCache.Store(getSchemaGroupCacheKey(updatedSchemaGroup.DatabaseGroupUID, updatedSchemaGroup.ResourceID), &updatedSchemaGroup)
 	return &updatedSchemaGroup, nil
 }
 
@@ -542,5 +580,6 @@ func (s *Store) CreateSchemaGroup(ctx context.Context, creatorPrincipalID int, s
 		return nil, errors.Wrapf(err, "failed to unmarshal expression")
 	}
 	insertedSchemaGroup.Expression = &expression
+	s.schemaGroupCache.Store(getSchemaGroupCacheKey(insertedSchemaGroup.DatabaseGroupUID, insertedSchemaGroup.ResourceID), &insertedSchemaGroup)
 	return &insertedSchemaGroup, nil
 }
