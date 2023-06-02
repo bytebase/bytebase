@@ -5,13 +5,17 @@
 </template>
 
 <script lang="ts" setup>
-import axios from "axios";
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useCurrentUserV1, useOnboardingGuideStore } from "@/store";
 import { UNKNOWN_USER_NAME } from "@/types";
-import { extractUserUID, isDev, isOwner } from "@/utils";
+import { isDev, isOwner } from "@/utils";
 import CreateDatabaseGuide from "./OnboardingGuides/CreateDatabaseGuide.vue";
+import {
+  databaseServiceClient,
+  instanceServiceClient,
+  projectServiceClient,
+} from "@/grpcweb";
 
 const currentUserV1 = useCurrentUserV1();
 const guideStore = useOnboardingGuideStore();
@@ -41,18 +45,16 @@ const checkShouldShowCreateDatabaseGuide = async () => {
   // Show create database guide when user is owner and no data at all.
   if (isOwner(currentUserV1.value.userRole)) {
     // Fetch data directly instead of useStore to prevent data from being cached in store.
-    const { data: instanceList } = (await axios.get(`/api/instance`)).data;
-    const { data: projectList } = (
-      await axios.get(
-        `/api/project?user=${extractUserUID(currentUserV1.value.name)}`
-      )
-    ).data;
-    const { data: databaseList } = (await axios.get(`/api/database`)).data;
+    const { instances } = await instanceServiceClient.listInstances({});
+    const { projects } = await projectServiceClient.searchProjects({});
+    const { databases } = await databaseServiceClient.searchDatabases({
+      parent: "instances/-",
+    });
     if (
-      instanceList.length === 0 &&
+      instances.length === 0 &&
       // We have a default project so the length should be 1 not 0.
-      projectList.length === 1 &&
-      databaseList.length === 0
+      projects.length === 1 &&
+      databases.length === 0
     ) {
       return true;
     }
