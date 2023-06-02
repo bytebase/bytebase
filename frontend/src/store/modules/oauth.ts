@@ -67,7 +67,7 @@ export const useOAuthStore = defineStore("oauth", {
           data: {
             type: "exchangeToken",
             attributes: {
-              // TODO:
+              // TODO(ed): change vcs type
               vcsType: externalVersionControl_TypeToJSON(vcsType),
               instanceUrl,
               clientId,
