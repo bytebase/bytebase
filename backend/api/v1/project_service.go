@@ -21,6 +21,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
@@ -44,13 +45,15 @@ type ProjectService struct {
 	v1pb.UnimplementedProjectServiceServer
 	store           *store.Store
 	activityManager *activity.Manager
+	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewProjectService creates a new ProjectService.
-func NewProjectService(store *store.Store, activityManager *activity.Manager) *ProjectService {
+func NewProjectService(store *store.Store, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService) *ProjectService {
 	return &ProjectService{
 		store:           store,
 		activityManager: activityManager,
+		licenseService:  licenseService,
 	}
 }
 
@@ -1306,6 +1309,9 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 
 // CreateDatabaseGroup creates a database group.
 func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	}
 	projectResourceID, err := getProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1353,6 +1359,9 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 
 // UpdateDatabaseGroup updates a database group.
 func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.UpdateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	}
 	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.DatabaseGroup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1537,6 +1546,9 @@ func (s *ProjectService) GetDatabaseGroup(ctx context.Context, request *v1pb.Get
 
 // CreateSchemaGroup creates a database group.
 func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.CreateSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	}
 	projectResourceID, databaseGroupResourceID, err := getProjectIDDatabaseGroupID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1593,6 +1605,9 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 
 // UpdateSchemaGroup updates a schema group.
 func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.UpdateSchemaGroupRequest) (*v1pb.SchemaGroup, error) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
+		return nil, status.Errorf(codes.PermissionDenied, api.FeatureSharding.AccessErrorMessage())
+	}
 	projectResourceID, databaseGroupResourceID, schemaGroupResourceID, err := getProjectIDDatabaseGroupIDSchemaGroupID(request.SchemaGroup.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())

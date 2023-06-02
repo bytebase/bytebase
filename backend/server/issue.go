@@ -939,6 +939,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		migrationDetail := c.DetailList[0]
 		var matrix [][]*store.DatabaseMessage
 		if migrationDetail.DatabaseGroupName != "" {
+			if !s.licenseService.IsFeatureEnabled(api.FeatureSharding) {
+				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureSharding.AccessErrorMessage())
+			}
 			if len(migrationDetail.SchemaGroupNames) == 0 {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Missing schema groups when specifying database group")
 			}
