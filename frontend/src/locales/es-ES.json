@@ -250,7 +250,8 @@
       "months": "{months} meses",
       "years": "{years} años"
     },
-    "expiration": "Expiración"
+    "expiration": "Expiración",
+    "configure": "Configure"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1990,6 +1991,10 @@
         "title": "Secretos Encriptados",
         "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
       },
+      "bb-feature-sharding": {
+        "title": "Sharding de bases de datos/tablas",
+        "desc": "Utilice grupos de bases de datos para administrar fácilmente la fragmentación de bases de datos/tablas."
+      },
       "bb-feature-disallow-signup": {
         "title": "Deshabilitar el registro de autoservicio",
         "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el propietario del espacio de trabajo."
@@ -2497,9 +2502,24 @@
     "select-role": "Seleccionar rol"
   },
   "database-group": {
+    "self": "Grupo de bases de datos",
+    "create": "Crear grupo de bases de datos",
+    "edit": "Editar grupo de bases de datos",
+    "matched-database": "Base de datos coincidente",
+    "unmatched-database": "Base de datos no coincidente",
+    "matched-table": "Tabla coincidente",
+    "unmatched-table": "Tabla no coincidente",
+    "table-group": {
+      "self": "Grupo de tablas",
+      "create": "Crear grupo de tablas",
+      "edit": "Editar grupo de tablas"
+    },
     "factor": {
-      "resource_database_name": "nombre de la base de datos",
-      "resource_table_name": "nombre de la tabla"
+      "resource_database_name": "Nombre de la base de datos",
+      "resource_table_name": "Nombre de la tabla"
+    },
+    "condition": {
+      "self": "Condición"
     }
   }
 }
