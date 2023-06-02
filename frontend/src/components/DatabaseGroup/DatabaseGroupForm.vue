@@ -90,11 +90,8 @@ import ExprEditor from "./common/ExprEditor";
 import { ResourceType } from "./common/ExprEditor/context";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { ComposedProject, ResourceId, ValidatedMessage } from "@/types";
-import {
-  convertCELStringToExpr,
-  convertDatabaseGroupExprFromCEL,
-} from "@/utils/databaseGroup/cel";
-import { useDBGroupStore, useEnvironmentV1Store } from "@/store";
+import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
+import { useDBGroupStore } from "@/store";
 import { getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "../EnvironmentSelect.vue";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
@@ -123,7 +120,6 @@ type LocalState = {
 };
 
 const { t } = useI18n();
-const environmentStore = useEnvironmentV1Store();
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   resourceId: "",
@@ -150,20 +146,19 @@ onMounted(async () => {
   }
 
   if (props.resourceType === "DATABASE_GROUP") {
-    const expression =
-      (databaseGroup as DatabaseGroup).databaseExpr?.expression ?? "";
     const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
       databaseGroup.name
     );
     state.resourceId = databaseGroupName;
-    const convertResult = await convertDatabaseGroupExprFromCEL(expression);
-    if (convertResult.environmentId) {
-      const environment = environmentStore.getEnvironmentByName(
-        convertResult.environmentId
-      );
-      state.environmentId = environment?.uid;
+    const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+      databaseGroup.name
+    );
+    if (composedDatabaseGroup.environment) {
+      state.environmentId = composedDatabaseGroup.environment.uid;
     }
-    state.expr = convertResult.conditionGroupExpr;
+    if (composedDatabaseGroup.simpleExpr) {
+      state.expr = composedDatabaseGroup.simpleExpr;
+    }
   } else {
     const schemaGroup = databaseGroup as SchemaGroup;
     const expression = schemaGroup.tableExpr?.expression ?? "";
@@ -178,14 +173,8 @@ onMounted(async () => {
     const relatedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
       `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`
     );
-    const convertResult = await convertDatabaseGroupExprFromCEL(
-      relatedDatabaseGroup.databaseExpr?.expression ?? ""
-    );
-    if (convertResult.environmentId) {
-      const environment = environmentStore.getEnvironmentByName(
-        convertResult.environmentId
-      );
-      state.environmentId = environment?.uid;
+    if (relatedDatabaseGroup.environment) {
+      state.environmentId = relatedDatabaseGroup.environment.uid;
     }
   }
 });
