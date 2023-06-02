@@ -250,7 +250,6 @@ import InstanceRoleSelect from "./InstanceRoleSelect.vue";
 import {
   IssueCreate,
   SYSTEM_BOT_ID,
-  Backup,
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
   CreateDatabaseContext,
@@ -262,6 +261,7 @@ import {
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import {
+  extractDatabaseResourceName,
   extractEnvironmentResourceName,
   hasWorkspacePermissionV1,
   instanceV1HasCollationAndCharacterSet,
@@ -271,6 +271,7 @@ import {
 import {
   hasFeature,
   useCurrentUserV1,
+  useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useIssueStore,
@@ -280,6 +281,7 @@ import { UserRole } from "@/types/proto/v1/auth_service";
 import { Engine } from "@/types/proto/v1/common";
 import { InstanceV1EngineIcon } from "./v2";
 import { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import { Backup } from "@/types/proto/v1/database_service";
 
 interface LocalState {
   projectId?: string;
@@ -534,9 +536,15 @@ const create = async () => {
   if (props.backup) {
     // If props.backup is specified, we create a PITR issue
     // with createDatabaseContext
+    const { instance, database } = extractDatabaseResourceName(
+      props.backup.name
+    );
+    const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
+      `instances/${instance}/databases/${database}`
+    );
     const createContext: PITRContext = {
-      databaseId: props.backup.databaseId,
-      backupId: props.backup.id,
+      databaseId: Number(db.uid),
+      backupId: Number(props.backup.uid),
       createDatabaseContext,
     };
     newIssue = {
