@@ -369,6 +369,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
+		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
@@ -407,6 +408,7 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
+		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
@@ -453,6 +455,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
+		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
@@ -527,6 +530,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
+		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
@@ -599,6 +603,7 @@ func convertToTaskFromDatabaseBackUp(ctx context.Context, s *store.Store, projec
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
+		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseBackup_{
@@ -634,6 +639,7 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
+		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
@@ -710,6 +716,7 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 		Title:          task.Name,
 		SpecId:         payload.SpecID,
 		Type:           convertToTaskType(task.Type),
+		Status:         convertToTaskStatus(task.Status, payload.Skipped),
 		BlockedByTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
@@ -964,7 +971,9 @@ func validateSteps(_ []*v1pb.Plan_Step) error {
 
 func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Plan_Step, project *store.ProjectMessage) (*api.PipelineCreate, error) {
 	// FIXME: handle deploymentConfig
-	pipelineCreate := &api.PipelineCreate{}
+	pipelineCreate := &api.PipelineCreate{
+		Name: "Rollout Pipeline",
+	}
 	for _, step := range steps {
 		stageCreate := api.StageCreate{}
 
@@ -1000,6 +1009,7 @@ func (s *RolloutService) getPipelineCreate(ctx context.Context, steps []*v1pb.Pl
 			return nil, errors.Wrap(err, "failed to get environment")
 		}
 		stageCreate.EnvironmentID = environment.UID
+		stageCreate.Name = fmt.Sprintf("%s Stage", environment.Title)
 
 		pipelineCreate.StageList = append(pipelineCreate.StageList, stageCreate)
 	}

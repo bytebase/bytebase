@@ -173,7 +173,7 @@ import {
   parseScheduleFromBackupSetting,
   BackupSettingEdit,
 } from "./utils";
-import { pushNotification, useBackupStore } from "@/store";
+import { pushNotification, useLegacyBackupStore } from "@/store";
 import {
   BackupPlanSchedule,
   backupPlanScheduleToJSON,
@@ -217,7 +217,7 @@ const state = reactive<LocalState>({
   loading: false,
 });
 
-const backupStore = useBackupStore();
+const backupStore = useLegacyBackupStore();
 const { t } = useI18n();
 
 const allowDisableAutoBackup = computed(() => {

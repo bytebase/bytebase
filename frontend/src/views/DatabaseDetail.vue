@@ -289,7 +289,7 @@ import {
   useDatabaseV1Store,
   useDBSchemaStore,
   useGracefulRequest,
-  useSQLStore,
+  useLegacySQLStore,
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -328,7 +328,7 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaStore();
-const sqlStore = useSQLStore();
+const sqlStore = useLegacySQLStore();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
 const databaseTabItemList = computed((): DatabaseTabItem[] => {

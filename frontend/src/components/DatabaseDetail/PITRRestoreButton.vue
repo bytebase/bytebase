@@ -278,9 +278,11 @@ const earliest = computed((): number => {
   if (!pitrAvailable.value) {
     return Infinity;
   }
-  const timestamps = doneBackupList.value.map((backup) => backup.createdTs);
+  const timestamps = doneBackupList.value.map(
+    (backup) => backup.createTime?.getTime() ?? 0
+  );
   const earliestAllowedRestoreTS = Math.min(...timestamps);
-  return earliestAllowedRestoreTS * 1000;
+  return earliestAllowedRestoreTS;
 });
 
 // Returns error message (string) if error occurs.
