@@ -7,6 +7,29 @@ import { Engine, engineFromJSON, engineToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
+export interface AdminExecuteRequest {
+  /**
+   * The name is the instance name to execute the query against.
+   * Format: instances/{instance}
+   */
+  name: string;
+  /**
+   * The connection database name to execute the query against.
+   * For PostgreSQL, it's required.
+   * For other database engines, it's optional. Use empty string to execute against without specifying a database.
+   */
+  connectionDatabase: string;
+  /** The SQL statement to execute. */
+  statement: string;
+  /** The maximum number of rows to return. */
+  limit: number;
+}
+
+export interface AdminExecuteResponse {
+  /** The query results. */
+  results: QueryResult[];
+}
+
 export interface ExportRequest {
   /**
    * The name is the instance name to execute the query against.
@@ -212,6 +235,163 @@ export interface PrettyResponse {
   /** The expected SDL schema after normalizing. */
   expectedSchema: string;
 }
+
+function createBaseAdminExecuteRequest(): AdminExecuteRequest {
+  return { name: "", connectionDatabase: "", statement: "", limit: 0 };
+}
+
+export const AdminExecuteRequest = {
+  encode(message: AdminExecuteRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.connectionDatabase !== "") {
+      writer.uint32(18).string(message.connectionDatabase);
+    }
+    if (message.statement !== "") {
+      writer.uint32(26).string(message.statement);
+    }
+    if (message.limit !== 0) {
+      writer.uint32(32).int32(message.limit);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AdminExecuteRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAdminExecuteRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.connectionDatabase = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.limit = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AdminExecuteRequest {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      connectionDatabase: isSet(object.connectionDatabase) ? String(object.connectionDatabase) : "",
+      statement: isSet(object.statement) ? String(object.statement) : "",
+      limit: isSet(object.limit) ? Number(object.limit) : 0,
+    };
+  },
+
+  toJSON(message: AdminExecuteRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.connectionDatabase !== undefined && (obj.connectionDatabase = message.connectionDatabase);
+    message.statement !== undefined && (obj.statement = message.statement);
+    message.limit !== undefined && (obj.limit = Math.round(message.limit));
+    return obj;
+  },
+
+  create(base?: DeepPartial<AdminExecuteRequest>): AdminExecuteRequest {
+    return AdminExecuteRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<AdminExecuteRequest>): AdminExecuteRequest {
+    const message = createBaseAdminExecuteRequest();
+    message.name = object.name ?? "";
+    message.connectionDatabase = object.connectionDatabase ?? "";
+    message.statement = object.statement ?? "";
+    message.limit = object.limit ?? 0;
+    return message;
+  },
+};
+
+function createBaseAdminExecuteResponse(): AdminExecuteResponse {
+  return { results: [] };
+}
+
+export const AdminExecuteResponse = {
+  encode(message: AdminExecuteResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.results) {
+      QueryResult.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AdminExecuteResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAdminExecuteResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.results.push(QueryResult.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AdminExecuteResponse {
+    return { results: Array.isArray(object?.results) ? object.results.map((e: any) => QueryResult.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: AdminExecuteResponse): unknown {
+    const obj: any = {};
+    if (message.results) {
+      obj.results = message.results.map((e) => e ? QueryResult.toJSON(e) : undefined);
+    } else {
+      obj.results = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AdminExecuteResponse>): AdminExecuteResponse {
+    return AdminExecuteResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<AdminExecuteResponse>): AdminExecuteResponse {
+    const message = createBaseAdminExecuteResponse();
+    message.results = object.results?.map((e) => QueryResult.fromPartial(e)) || [];
+    return message;
+  },
+};
 
 function createBaseExportRequest(): ExportRequest {
   return { name: "", connectionDatabase: "", statement: "", limit: 0, format: 0 };
@@ -1352,6 +1532,43 @@ export const SQLServiceDefinition = {
         },
       },
     },
+    adminExecute: {
+      name: "AdminExecute",
+      requestType: AdminExecuteRequest,
+      requestStream: true,
+      responseType: AdminExecuteResponse,
+      responseStream: true,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              21,
+              58,
+              1,
+              42,
+              34,
+              16,
+              47,
+              118,
+              49,
+              58,
+              97,
+              100,
+              109,
+              105,
+              110,
+              69,
+              120,
+              101,
+              99,
+              117,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -1359,12 +1576,20 @@ export interface SQLServiceImplementation<CallContextExt = {}> {
   pretty(request: PrettyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<PrettyResponse>>;
   query(request: QueryRequest, context: CallContext & CallContextExt): Promise<DeepPartial<QueryResponse>>;
   export(request: ExportRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ExportResponse>>;
+  adminExecute(
+    request: AsyncIterable<AdminExecuteRequest>,
+    context: CallContext & CallContextExt,
+  ): ServerStreamingMethodResult<DeepPartial<AdminExecuteResponse>>;
 }
 
 export interface SQLServiceClient<CallOptionsExt = {}> {
   pretty(request: DeepPartial<PrettyRequest>, options?: CallOptions & CallOptionsExt): Promise<PrettyResponse>;
   query(request: DeepPartial<QueryRequest>, options?: CallOptions & CallOptionsExt): Promise<QueryResponse>;
   export(request: DeepPartial<ExportRequest>, options?: CallOptions & CallOptionsExt): Promise<ExportResponse>;
+  adminExecute(
+    request: AsyncIterable<DeepPartial<AdminExecuteRequest>>,
+    options?: CallOptions & CallOptionsExt,
+  ): AsyncIterable<AdminExecuteResponse>;
 }
 
 declare var self: any | undefined;
@@ -1435,3 +1660,5 @@ if (_m0.util.Long !== Long) {
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
 }
+
+export type ServerStreamingMethodResult<Response> = { [Symbol.asyncIterator](): AsyncIterator<Response, void> };
