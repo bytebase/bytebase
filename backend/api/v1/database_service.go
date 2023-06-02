@@ -448,7 +448,7 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 	return convertToBackupSetting(backupSetting, instance.ResourceID, database.DatabaseName)
 }
 
-// ListBackup lists the backups of a database.
+// ListBackups lists the backups of a database.
 func (s *DatabaseService) ListBackups(ctx context.Context, request *v1pb.ListBackupsRequest) (*v1pb.ListBackupsResponse, error) {
 	instanceID, databaseName, err := getInstanceDatabaseID(request.Parent)
 	if err != nil {
