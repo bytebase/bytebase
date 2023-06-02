@@ -235,7 +235,7 @@ const batchComposeDatabase = async (databaseList: Database[]) => {
   const distinctProjectList = uniq(databaseList.map((db) => db.project));
   const distinctInstanceList = uniq(
     databaseList
-      .map((db) => extractDatabaseResourceName(db.name).instance)
+      .map((db) => `instances/${extractDatabaseResourceName(db.name).instance}`)
       .filter((instance) => instance !== UNKNOWN_INSTANCE_NAME)
   );
   await Promise.all(
@@ -253,7 +253,7 @@ const batchComposeDatabase = async (databaseList: Database[]) => {
     const extractedResourceNames = extractDatabaseResourceName(db.name);
 
     composed.databaseName = extractedResourceNames.database;
-    composed.instance = extractedResourceNames.instance;
+    composed.instance = `instances/${extractedResourceNames.instance}`;
     const instanceEntity =
       composed.instance === UNKNOWN_INSTANCE_NAME
         ? unknownInstance()

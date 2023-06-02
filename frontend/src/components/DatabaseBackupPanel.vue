@@ -171,26 +171,29 @@ import {
   PropType,
   onBeforeMount,
 } from "vue";
-import { cloneDeep, isEqual } from "lodash-es";
+import { isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
 import {
-  Backup,
-  BackupCreate,
   BackupSetting,
-  BackupSettingUpsert,
   ComposedDatabase,
   NORMAL_POLL_INTERVAL,
   POLL_JITTER,
   MINIMUM_POLL_INTERVAL,
   UNKNOWN_ID,
+  BackupSettingUpsert,
 } from "@/types";
-import BackupTable from "@/components/BackupTable.vue";
 import DatabaseBackupCreateForm from "@/components/DatabaseBackupCreateForm.vue";
 import PITRRestoreButton from "@/components/DatabaseDetail/PITRRestoreButton.vue";
-import { pushNotification, useBackupStore } from "@/store";
+import {
+  pushNotification,
+  useLegacyBackupStore,
+  useBackupV1Store,
+  useGracefulRequest,
+} from "@/store";
 import {
   DatabaseBackupSettingForm,
+  BackupTable,
   levelOfSchedule,
   localFromUTC,
   parseScheduleFromBackupSetting,
@@ -204,6 +207,11 @@ import {
   BackupPlanSchedule,
 } from "@/types/proto/v1/org_policy_service";
 import { instanceV1HasBackupRestore } from "@/utils";
+import {
+  Backup,
+  Backup_BackupState,
+  Backup_BackupType,
+} from "@/types/proto/v1/database_service";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -233,7 +241,8 @@ const props = defineProps({
   },
 });
 
-const backupStore = useBackupStore();
+const legacyBackupStore = useLegacyBackupStore();
+const backupStore = useBackupV1Store();
 const policyV1Store = usePolicyV1Store();
 const { t } = useI18n();
 
@@ -256,7 +265,9 @@ onUnmounted(() => {
 });
 
 const prepareBackupList = () => {
-  backupStore.fetchBackupListByDatabaseId(Number(props.database.uid));
+  backupStore.fetchBackupList({
+    parent: props.database.name,
+  });
 };
 
 watchEffect(prepareBackupList);
@@ -287,17 +298,21 @@ const disableBackupButton = computed(() => {
 
 // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
 const backupList = computed(() => {
-  const list = cloneDeep(
-    backupStore.backupListByDatabaseId(Number(props.database.uid))
-  );
-  return list.sort((a: Backup, b: Backup) => {
-    if (a.status == "PENDING_CREATE" && b.status != "PENDING_CREATE") {
+  const list = [...backupStore.backupListByDatabase(props.database.name)];
+  return list.sort((a, b) => {
+    if (
+      a.state === Backup_BackupState.PENDING_CREATE &&
+      b.state !== Backup_BackupState.PENDING_CREATE
+    ) {
       return -1;
-    } else if (a.status != "PENDING_CREATE" && b.status == "PENDING_CREATE") {
+    } else if (
+      a.state !== Backup_BackupState.PENDING_CREATE &&
+      b.state === Backup_BackupState.PENDING_CREATE
+    ) {
       return 1;
     }
 
-    return b.createdTs - a.createdTs;
+    return (b.createTime?.getTime() ?? 0) - (a.createTime?.getTime() ?? 0);
   });
 });
 
@@ -372,18 +387,22 @@ const urlChanged = computed(() => {
   return !isEqual(state.autoBackupHookUrl, state.autoBackupUpdatedHookUrl);
 });
 
-const createBackup = (backupName: string) => {
+const createBackup = async (backupName: string) => {
   // Create backup
-  const newBackup: BackupCreate = {
-    databaseId: Number(props.database.uid),
-    name: backupName,
-    type: "MANUAL",
-  };
-  backupStore.createBackup({
-    databaseId: Number(props.database.uid),
-    newBackup: newBackup,
+
+  useGracefulRequest(async () => {
+    const parent = props.database.name;
+    const backupCreate = Backup.fromJSON({
+      name: `${parent}/backups/${backupName}`,
+      backupType: Backup_BackupType.MANUAL,
+    });
+    await backupStore.createBackup(
+      backupCreate,
+      parent,
+      true /* refreshList */
+    );
+    pollBackups(MINIMUM_POLL_INTERVAL);
   });
-  pollBackups(MINIMUM_POLL_INTERVAL);
 };
 
 // pollBackups invalidates the current timer and schedule a new timer in <<interval>> microseconds
@@ -393,15 +412,13 @@ const pollBackups = (interval: number) => {
   }
   state.pollBackupsTimer = setTimeout(() => {
     backupStore
-      .fetchBackupListByDatabaseId(Number(props.database.uid))
-      .then((backups: Backup[]) => {
-        let pending = false;
-        for (const idx in backups) {
-          if (backups[idx].status.includes("PENDING")) {
-            pending = true;
-            continue;
-          }
-        }
+      .fetchBackupList({
+        parent: props.database.name,
+      })
+      .then((backups) => {
+        const pending = backups.some(
+          (backup) => backup.state === Backup_BackupState.PENDING_CREATE
+        );
         if (pending) {
           pollBackups(Math.min(interval * 2, NORMAL_POLL_INTERVAL));
         }
@@ -410,7 +427,7 @@ const pollBackups = (interval: number) => {
 };
 
 const prepareBackupSetting = () => {
-  backupStore
+  legacyBackupStore
     .fetchBackupSettingByDatabaseId(Number(props.database.uid))
     .then((backupSetting: BackupSetting) => {
       // UNKNOWN_ID means database does not have backup setting and we should NOT overwrite the default setting.
@@ -431,7 +448,7 @@ const updateBackupHookUrl = () => {
     retentionPeriodTs: state.autoBackupRetentionPeriodTs,
     hookUrl: state.autoBackupUpdatedHookUrl,
   };
-  backupStore
+  legacyBackupStore
     .upsertBackupSetting({
       newBackupSetting: newBackupSetting,
     })

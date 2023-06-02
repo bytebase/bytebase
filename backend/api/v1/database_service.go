@@ -1370,7 +1370,7 @@ func convertToBackup(backup *store.BackupMessage, instanceID string, databaseNam
 		backupType = v1pb.Backup_PITR
 	}
 	return &v1pb.Backup{
-		Name:       fmt.Sprintf("%s%s/%s%s/%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backup.Name),
+		Name:       fmt.Sprintf("%s%s/%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName, backupPrefix, backup.Name),
 		CreateTime: createTime,
 		UpdateTime: updateTime,
 		State:      backupState,

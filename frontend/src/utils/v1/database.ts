@@ -1,11 +1,7 @@
 import { orderBy } from "lodash-es";
 import slug from "slug";
 
-import {
-  ComposedDatabase,
-  unknownEnvironment,
-  UNKNOWN_INSTANCE_NAME,
-} from "@/types";
+import { ComposedDatabase, unknownEnvironment, UNKNOWN_ID } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
 import { User } from "@/types/proto/v1/auth_service";
@@ -26,14 +22,14 @@ export const databaseV1Slug = (db: ComposedDatabase) => {
 export const extractDatabaseResourceName = (
   resource: string
 ): {
-  instance: string /** Format: instances/{instance} */;
+  instance: string;
   database: string;
 } => {
   const pattern =
-    /(?:^|\/)(?<instance>instances\/[^/]+)\/databases\/(?<database>[^/]+)(?:$|\/)/;
+    /(?:^|\/)instances\/(?<instance>[^/]+)\/databases\/(?<database>[^/]+)(?:$|\/)/;
   const matches = resource.match(pattern);
   if (matches) {
-    const { instance = UNKNOWN_INSTANCE_NAME, database = "" } =
+    const { instance = String(UNKNOWN_ID), database = "" } =
       matches.groups ?? {};
     return {
       instance,
@@ -41,7 +37,7 @@ export const extractDatabaseResourceName = (
     };
   }
   return {
-    instance: UNKNOWN_INSTANCE_NAME,
+    instance: String(UNKNOWN_ID),
     database: "",
   };
 };
