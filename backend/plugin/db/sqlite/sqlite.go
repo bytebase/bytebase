@@ -161,3 +161,8 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	return nil, errors.New("not implemented")
 }
+
+// RunStatement runs a SQL statement.
+func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
+	return nil, errors.New("not implemented")
+}

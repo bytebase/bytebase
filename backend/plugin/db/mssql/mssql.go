@@ -170,3 +170,8 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 
 	return util.Query2(ctx, db.MSSQL, conn, statement, queryContext)
 }
+
+// RunStatement runs a SQL statement.
+func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	return util.RunStatement(ctx, parser.MSSQL, conn, statement)
+}
