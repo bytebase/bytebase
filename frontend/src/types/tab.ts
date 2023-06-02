@@ -1,4 +1,5 @@
-import { Advice, SQLResultSet } from "../types";
+import { SQLResultSet } from "../types";
+import { SQLResultSetV1 } from "./v1/sql";
 
 export type ExecuteConfig = {
   databaseType: string;
@@ -38,7 +39,7 @@ export interface TabInfo {
   isExecutingSQL: boolean;
   queryResult?: SQLResultSet;
   sheetName?: string;
-  adviceList?: Advice[];
+  sqlResultSet?: SQLResultSetV1;
 }
 
 export type CoreTabInfo = Pick<TabInfo, "connection" | "sheetName" | "mode">;
