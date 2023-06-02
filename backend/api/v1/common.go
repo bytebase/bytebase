@@ -179,7 +179,7 @@ func getInstanceDatabaseIDSecretName(name string) (string, string, string, error
 }
 
 func getInstanceDatabaseIDBackupName(name string) (string, string, string, error) {
-	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseIDPrefix, backupPrefix)
+	tokens, err := getNameParentTokens(name, instanceNamePrefix, databaseIDPrefix, backupPrefix)
 	if err != nil {
 		return "", "", "", err
 	}
