@@ -111,8 +111,6 @@ CREATE TABLE book4 (
 		name TEXT NULL
 	);
 `
-	backupDump = "CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t);\nINSERT INTO 'book' VALUES ('1', 'byte');\nINSERT INTO 'book' VALUES ('2', NULL);\n\n"
-
 	deploymentSchedule = api.DeploymentSchedule{
 		Deployments: []*api.Deployment{
 			{

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
@@ -25,42 +24,6 @@ func (ctl *controller) createProject(ctx context.Context) (*v1pb.Project, error)
 		},
 		ProjectId: projectID,
 	})
-}
-
-// getProjects gets the projects.
-func (ctl *controller) getProjects() ([]*api.Project, error) {
-	body, err := ctl.get("/project", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var projects []*api.Project
-	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Project)))
-	if err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal get project response")
-	}
-	for _, p := range ps {
-		project, ok := p.(*api.Project)
-		if !ok {
-			return nil, errors.Errorf("fail to convert project")
-		}
-		projects = append(projects, project)
-	}
-	return projects, nil
-}
-
-// createSQLReviewCI set up the SQL review CI.
-func (ctl *controller) createSQLReviewCI(projectID, repositoryID int) (*api.SQLReviewCISetup, error) {
-	body, err := ctl.post(fmt.Sprintf("/project/%d/repository/%d/sql-review-ci", projectID, repositoryID), new(bytes.Buffer))
-	if err != nil {
-		return nil, err
-	}
-
-	sqlReviewCISetup := new(api.SQLReviewCISetup)
-	if err = jsonapi.UnmarshalPayload(body, sqlReviewCISetup); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal SQL reivew CI response")
-	}
-	return sqlReviewCISetup, nil
 }
 
 // upsertDeploymentConfig upserts the deployment configuration for a project.

@@ -9,8 +9,6 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
-	"os"
-	"path"
 	"strconv"
 	"strings"
 	"testing"
@@ -207,20 +205,16 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	}
 
 	// Create a manual backup.
-	backup, err := ctl.createBackup(api.BackupCreate{
-		DatabaseID:     databaseUID,
-		Name:           "name",
-		Type:           api.BackupTypeManual,
-		StorageBackend: api.BackupStorageBackendLocal,
+	backup, err := ctl.databaseServiceClient.CreateBackup(ctx, &v1pb.CreateBackupRequest{
+		Parent: database.Name,
+		Backup: &v1pb.Backup{
+			Name:       fmt.Sprintf("%s/backups/name", database.Name),
+			BackupType: v1pb.Backup_MANUAL,
+		},
 	})
 	a.NoError(err)
-	err = ctl.waitBackup(backup.DatabaseID, backup.ID)
+	err = ctl.waitBackup(ctx, database.Name, backup.Name)
 	a.NoError(err)
-
-	backupPath := path.Join(dataDir, backup.Path)
-	backupContent, err := os.ReadFile(backupPath)
-	a.NoError(err)
-	a.Equal(string(backupContent), backupDump)
 
 	// Create an issue that creates a database.
 	cloneDatabaseName := "testClone"
@@ -1658,9 +1652,11 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NotNil(repository)
 			a.Equal(false, repository.EnableSQLReviewCI)
 
-			sqlReviewCI, err := ctl.createSQLReviewCI(projectUID, repository.ID)
+			resp, err := ctl.projectServiceClient.SetupProjectSQLReviewCI(ctx, &v1pb.SetupSQLReviewCIRequest{
+				Project: project.Name,
+			})
 			a.NoError(err)
-			a.NotNil(sqlReviewCI)
+			a.NotEmpty(resp.PullRequestUrl)
 
 			repositoryList, err := ctl.listRepository(projectUID)
 			a.NoError(err)

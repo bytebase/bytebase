@@ -14,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller, dataDir string, readOnly bool) {
@@ -24,12 +25,13 @@ func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller
 	})
 	a.NoError(err)
 
-	projects, err := ctl.getProjects()
+	resp, err := ctl.projectServiceClient.ListProjects(ctx, &v1pb.ListProjectsRequest{})
 	a.NoError(err)
+	projects := resp.Projects
 
 	// Default.
 	a.Equal(1, len(projects))
-	a.Equal("Default", projects[0].Name)
+	a.Equal("Default", projects[0].Title)
 
 	err = ctl.Close(ctx)
 	a.NoError(err)

@@ -17,28 +17,6 @@ import (
 )
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
-	g.GET("/instance/:instanceID", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("instanceID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
-		}
-
-		instance, err := s.store.GetInstanceByID(ctx, id)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
-		}
-		if instance == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance ID response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
 	g.GET("/instance/:instanceID/migration/history/:historyID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		instanceID, err := strconv.Atoi(c.Param("instanceID"))
