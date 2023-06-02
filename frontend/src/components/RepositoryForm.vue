@@ -6,13 +6,13 @@
         <label for="gitprovider" class="textlabel">
           {{ $t("repository.git-provider") }}
         </label>
-        <template v-if="vcsType.startsWith('GITLAB')">
+        <template v-if="vcsType === ExternalVersionControl_Type.GITLAB">
           <img class="h-4 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
-        <template v-if="vcsType.startsWith('GITHUB')">
+        <template v-if="vcsType === ExternalVersionControl_Type.GITHUB">
           <img class="h-4 w-auto" src="../assets/github-logo.svg" />
         </template>
-        <template v-if="vcsType.startsWith('BITBUCKET')">
+        <template v-if="vcsType === ExternalVersionControl_Type.BITBUCKET">
           <img class="h-4 w-auto" src="../assets/bitbucket-logo.svg" />
         </template>
       </div>
@@ -294,9 +294,10 @@
       <div class="mt-1 textinfolabel">
         {{
           $t("repository.sql-review-ci-description", {
-            pr: vcsType.startsWith("GITLAB")
-              ? $t("repository.merge-request")
-              : $t("repository.pull-request"),
+            pr:
+              vcsType === ExternalVersionControl_Type.GITLAB
+                ? $t("repository.merge-request")
+                : $t("repository.pull-request"),
             pathTemplate:
               schemaChangeType == SchemaChange.DDL
                 ? $t("repository.file-path-template")
@@ -327,7 +328,7 @@
 <script lang="ts" setup>
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { ExternalRepositoryInfo, RepositoryConfig, VCSType } from "@/types";
+import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import { hasFeature, useSubscriptionV1Store } from "@/store";
 import {
   Project,
@@ -335,6 +336,7 @@ import {
   SchemaChange,
   schemaChangeToJSON,
 } from "@/types/proto/v1/project_service";
+import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -363,7 +365,7 @@ const props = defineProps({
   },
   vcsType: {
     required: true,
-    type: String as PropType<VCSType>,
+    type: Object as PropType<ExternalVersionControl_Type>,
   },
   vcsName: {
     required: true,
@@ -406,11 +408,12 @@ const isProjectSchemaChangeTypeSDL = computed(() => {
 });
 const canEnableSQLReview = computed(() => {
   return (
-    props.vcsType.startsWith("GITLAB") || props.vcsType.startsWith("GITHUB")
+    props.vcsType == ExternalVersionControl_Type.GITHUB ||
+    props.vcsType === ExternalVersionControl_Type.GITLAB
   );
 });
 const enableSQLReviewTitle = computed(() => {
-  return props.vcsType.startsWith("GITLAB")
+  return props.vcsType === ExternalVersionControl_Type.GITLAB
     ? t("repository.sql-review-ci-enable-gitlab")
     : t("repository.sql-review-ci-enable-github");
 });

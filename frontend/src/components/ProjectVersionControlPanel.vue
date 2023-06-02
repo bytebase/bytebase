@@ -89,8 +89,9 @@
 import { reactive, watchEffect, watch } from "vue";
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useRepositoryV1Store, useVCSStore } from "@/store";
+import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
 import { Project, Workflow } from "@/types/proto/v1/project_service";
+import { ExternalVersionControl } from "@/types/proto/v1/externalvs_service";
 
 interface LocalState {
   workflowType: Workflow;
@@ -112,7 +113,7 @@ const props = defineProps({
 const { t } = useI18n();
 
 const repositoryV1Store = useRepositoryV1Store();
-const vcsStore = useVCSStore();
+const vcsV1Store = useVCSV1Store();
 
 const state = reactive<LocalState>({
   workflowType: props.project.workflow,
@@ -120,14 +121,13 @@ const state = reactive<LocalState>({
   showWizardForChange: false,
 });
 
-watchEffect(() => {
-  repositoryV1Store
-    .getOrFetchRepositoryByProject(props.project.name)
-    .then((repo) => {
-      if (repo) {
-        return vcsStore.fetchVCSById(repo.vcsUid);
-      }
-    });
+watchEffect(async () => {
+  const repo = await repositoryV1Store.getOrFetchRepositoryByProject(
+    props.project.name
+  );
+  if (repo) {
+    await vcsV1Store.fetchVCSByUid(repo.vcsUid);
+  }
 });
 
 watch(
@@ -142,7 +142,10 @@ const repository = computed(() => {
 });
 
 const vcs = computed(() => {
-  return vcsStore.getVCSById(repository.value?.vcsUid ?? "");
+  return (
+    vcsV1Store.getVCSByUid(repository.value?.vcsUid ?? "") ??
+    ({} as ExternalVersionControl)
+  );
 });
 
 const enterWizard = (create: boolean) => {
