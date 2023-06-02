@@ -216,15 +216,15 @@ func convertToExternalVersionControl(externalVersionControl *store.ExternalVersi
 	tp := v1pb.ExternalVersionControl_TYPE_UNSPECIFIED
 	switch externalVersionControl.Type {
 	case vcs.GitHub:
-		tp = v1pb.ExternalVersionControl_TYPE_GITHUB
+		tp = v1pb.ExternalVersionControl_GITHUB
 	case vcs.GitLab:
-		tp = v1pb.ExternalVersionControl_TYPE_GITLAB
+		tp = v1pb.ExternalVersionControl_GITLAB
 	case vcs.Bitbucket:
-		tp = v1pb.ExternalVersionControl_TYPE_BITBUCKET
+		tp = v1pb.ExternalVersionControl_BITBUCKET
 	}
 
 	return &v1pb.ExternalVersionControl{
-		Name:          fmt.Sprintf("%s/%d", externalVersionControlPrefix, externalVersionControl.ID),
+		Name:          fmt.Sprintf("%s%d", externalVersionControlPrefix, externalVersionControl.ID),
 		Title:         externalVersionControl.Name,
 		Type:          tp,
 		Url:           externalVersionControl.InstanceURL,
@@ -268,11 +268,11 @@ func checkAndConvertToStoreVersionControl(externalVersionControl *v1pb.ExternalV
 
 func convertExternalVersionControlTypeToVCSType(tp v1pb.ExternalVersionControl_Type) (vcs.Type, error) {
 	switch tp {
-	case v1pb.ExternalVersionControl_TYPE_GITHUB:
+	case v1pb.ExternalVersionControl_GITHUB:
 		return vcs.GitHub, nil
-	case v1pb.ExternalVersionControl_TYPE_GITLAB:
+	case v1pb.ExternalVersionControl_GITLAB:
 		return vcs.GitLab, nil
-	case v1pb.ExternalVersionControl_TYPE_BITBUCKET:
+	case v1pb.ExternalVersionControl_BITBUCKET:
 		return vcs.Bitbucket, nil
 	}
 	return "", errors.Errorf("unknown external version control type: %v", tp)
