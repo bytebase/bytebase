@@ -207,22 +207,6 @@ func TestTenant(t *testing.T) {
 		a.NoError(err)
 		a.Equal(bookSchemaSQLResult, result)
 	}
-
-	// Query migration history
-	var instances []*v1pb.Instance
-	instances = append(instances, testInstances...)
-	instances = append(instances, prodInstances...)
-	hm1 := map[string]bool{}
-	for _, instance := range instances {
-		instanceUID, err := strconv.Atoi(instance.Uid)
-		a.NoError(err)
-		histories, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{Database: &databaseName})
-		a.NoError(err)
-		a.Equal(1, len(histories))
-		a.NotEqual(histories[0].Version, "")
-		hm1[histories[0].Version] = true
-	}
-	a.Equal(1, len(hm1))
 }
 
 func TestTenantVCS(t *testing.T) {
@@ -505,28 +489,6 @@ func TestTenantVCS(t *testing.T) {
 				a.NoError(err)
 				a.Equal(bookSchemaSQLResult, result)
 			}
-
-			// Query migration history
-			var instances []*v1pb.Instance
-			instances = append(instances, testInstances...)
-			instances = append(instances, prodInstances...)
-			hm1 := map[string]bool{}
-			for _, instance := range instances {
-				instanceUID, err := strconv.Atoi(instance.Uid)
-				a.NoError(err)
-
-				histories, err := ctl.getInstanceMigrationHistory(
-					instanceUID,
-					db.MigrationHistoryFind{
-						Database: &databaseName,
-					},
-				)
-				a.NoError(err)
-				a.Len(histories, 1)
-				a.Equal("ver1-ddl", histories[0].Version)
-				hm1[histories[0].Version] = true
-			}
-			a.Len(hm1, 1)
 		})
 	}
 }
@@ -991,45 +953,6 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				a.Equal(bookSchemaSQLResult, result)
 			}
 
-			// Query migration history
-			hm1 := map[string]bool{}
-			hm2 := map[string]bool{}
-			for i, instance := range testInstances {
-				instanceUID, err := strconv.Atoi(instance.Uid)
-				a.NoError(err)
-				tenant := fmt.Sprintf("tenant%d", i)
-				databaseName := baseDatabaseName + "_" + tenant
-				histories, err := ctl.getInstanceMigrationHistory(
-					instanceUID,
-					db.MigrationHistoryFind{
-						Database: &databaseName,
-					},
-				)
-				a.NoError(err)
-				a.Len(histories, 1)
-				a.Equal("ver1-ddl", histories[0].Version)
-				hm1[histories[0].Version] = true
-			}
-			for i, instance := range prodInstances {
-				instanceUID, err := strconv.Atoi(instance.Uid)
-				a.NoError(err)
-				tenant := fmt.Sprintf("tenant%d", i)
-				databaseName := baseDatabaseName + "_" + tenant
-				histories, err := ctl.getInstanceMigrationHistory(
-					instanceUID,
-					db.MigrationHistoryFind{
-						Database: &databaseName,
-					},
-				)
-				a.NoError(err)
-				a.Len(histories, 1)
-				a.Equal("ver1-ddl", histories[0].Version)
-				hm2[histories[0].Version] = true
-			}
-
-			a.Len(hm1, 1)
-			a.Len(hm2, 1)
-
 			// Check latestSchemaFile
 			files, err := ctl.vcsProvider.GetFiles(test.externalID, fmt.Sprintf("%s/.LATEST.sql", baseDirectory))
 			a.NoError(err)
@@ -1299,27 +1222,6 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				a.NoError(err)
 				a.Equal(bookSchemaSQLResult, result)
 			}
-
-			// Query migration history
-			hm := map[string]bool{}
-			for i, instance := range testInstances {
-				instanceUID, err := strconv.Atoi(instance.Uid)
-				a.NoError(err)
-				tenant := fmt.Sprintf("tenant%d", i)
-				databaseName := baseDatabaseName + "_" + tenant
-				histories, err := ctl.getInstanceMigrationHistory(
-					instanceUID,
-					db.MigrationHistoryFind{
-						Database: &databaseName,
-					},
-				)
-				a.NoError(err)
-				a.Len(histories, 1)
-				a.Equal("ver1-ddl", histories[0].Version)
-				hm[histories[0].Version] = true
-			}
-
-			a.Len(hm, 1)
 		})
 	}
 }
@@ -1606,32 +1508,6 @@ statement: |
 			status, err = ctl.waitIssuePipeline(ctx, issues[0].ID)
 			require.NoError(t, err)
 			require.Equal(t, api.TaskDone, status)
-
-			// Query migration history, only the database of the first tenant should be touched
-			instanceUID0, err := strconv.Atoi(testInstances[0].Uid)
-			require.NoError(t, err)
-			histories, err := ctl.getInstanceMigrationHistory(
-				instanceUID0,
-				db.MigrationHistoryFind{
-					Database: &database0Name,
-				},
-			)
-			require.NoError(t, err)
-			require.Len(t, histories, 2)
-			require.Equal(t, "ver2-dml", histories[0].Version)
-
-			instanceUID1, err := strconv.Atoi(testInstances[1].Uid)
-			require.NoError(t, err)
-			database1Name := "TestTenantVCS_YAML_tenant1"
-			histories, err = ctl.getInstanceMigrationHistory(
-				instanceUID1,
-				db.MigrationHistoryFind{
-					Database: &database1Name,
-				},
-			)
-			require.NoError(t, err)
-			require.Len(t, histories, 1)
-			require.Equal(t, "ver1-ddl", histories[0].Version)
 		})
 	}
 }

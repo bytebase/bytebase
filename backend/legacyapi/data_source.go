@@ -87,32 +87,3 @@ type DataSource struct {
 	Options  DataSourceOptions `jsonapi:"attr,options"`
 	Database string            `jsonapi:"attr,database"`
 }
-
-// DataSourceCreate is the API message for creating a data source.
-type DataSourceCreate struct {
-	Name     string            `jsonapi:"attr,name"`
-	Type     DataSourceType    `jsonapi:"attr,type"`
-	Username string            `jsonapi:"attr,username"`
-	Password string            `jsonapi:"attr,password"`
-	SslCa    string            `jsonapi:"attr,sslCa"`
-	SslCert  string            `jsonapi:"attr,sslCert"`
-	SslKey   string            `jsonapi:"attr,sslKey"`
-	Host     string            `jsonapi:"attr,host"`
-	Port     string            `jsonapi:"attr,port"`
-	Options  DataSourceOptions `jsonapi:"attr,options"`
-	Database string            `jsonapi:"attr,database"`
-}
-
-// DataSourcePatch is the API message for data source.
-type DataSourcePatch struct {
-	Username         *string            `jsonapi:"attr,username"`
-	Password         *string            `jsonapi:"attr,password"`
-	UseEmptyPassword *bool              `jsonapi:"attr,useEmptyPassword"`
-	SslCa            *string            `jsonapi:"attr,sslCa"`
-	SslCert          *string            `jsonapi:"attr,sslCert"`
-	SslKey           *string            `jsonapi:"attr,sslKey"`
-	Host             *string            `jsonapi:"attr,host"`
-	Port             *string            `jsonapi:"attr,port"`
-	Options          *DataSourceOptions `jsonapi:"attr,options"`
-	Database         *string            `jsonapi:"attr,database"`
-}

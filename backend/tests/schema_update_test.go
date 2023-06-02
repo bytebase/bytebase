@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -71,8 +72,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
 		},
 	})
-	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
 	// Create an issue that creates a database.
@@ -169,38 +168,39 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Get migration history.
-	histories, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{})
+	resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+		Parent: database.Name,
+	})
 	a.NoError(err)
-	wantHistories := []api.MigrationHistory{
+	histories := resp.ChangeHistories
+	wantHistories := []*v1pb.ChangeHistory{
 		{
-			Database:   databaseName,
-			Source:     db.UI,
-			Type:       db.Data,
-			Status:     db.Done,
+			Source:     v1pb.ChangeHistory_UI,
+			Type:       v1pb.ChangeHistory_DATA,
+			Status:     v1pb.ChangeHistory_DONE,
 			Schema:     dumpedSchema,
-			SchemaPrev: dumpedSchema,
+			PrevSchema: dumpedSchema,
 		},
 		{
-			Database:   databaseName,
-			Source:     db.UI,
-			Type:       db.Migrate,
-			Status:     db.Done,
+			Source:     v1pb.ChangeHistory_UI,
+			Type:       v1pb.ChangeHistory_MIGRATE,
+			Status:     v1pb.ChangeHistory_DONE,
 			Schema:     dumpedSchema,
-			SchemaPrev: "",
+			PrevSchema: "",
 		},
 	}
 	a.Equal(len(wantHistories), len(histories))
 	for i, history := range histories {
-		got := api.MigrationHistory{
-			Database:   history.Database,
+		got := &v1pb.ChangeHistory{
 			Source:     history.Source,
 			Type:       history.Type,
 			Status:     history.Status,
 			Schema:     history.Schema,
-			SchemaPrev: history.SchemaPrev,
+			PrevSchema: history.PrevSchema,
 		}
 		want := wantHistories[i]
-		a.Equal(want, got)
+		proto.Equal(got, want)
+		a.True(proto.Equal(got, want))
 		a.NotEqual(history.Version, "")
 	}
 
@@ -220,36 +220,40 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	cloneDatabaseName := "testClone"
 	err = ctl.cloneDatabaseFromBackup(ctx, projectUID, instance, cloneDatabaseName, backup, nil /* labelMap */)
 	a.NoError(err)
+	cloneDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, cloneDatabaseName)})
+	a.NoError(err)
 
 	// Query clone database book table data.
 	result, err = ctl.query(instance, cloneDatabaseName, bookDataQuery)
 	a.NoError(err)
 	a.Equal(bookDataSQLResult, result)
 	// Query clone migration history.
-	histories, err = ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{Database: &cloneDatabaseName})
+	resp, err = ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+		Parent: cloneDatabase.Name,
+	})
 	a.NoError(err)
-	wantCloneHistories := []api.MigrationHistory{
+	histories = resp.ChangeHistories
+	wantCloneHistories := []*v1pb.ChangeHistory{
 		{
-			Database:   cloneDatabaseName,
-			Source:     db.UI,
-			Type:       db.Branch,
-			Status:     db.Done,
+			Source:     v1pb.ChangeHistory_UI,
+			Type:       v1pb.ChangeHistory_BRANCH,
+			Status:     v1pb.ChangeHistory_DONE,
 			Schema:     dumpedSchema,
-			SchemaPrev: dumpedSchema,
+			PrevSchema: dumpedSchema,
 		},
 	}
 	a.Equal(len(wantCloneHistories), len(histories))
 	for i, history := range histories {
-		got := api.MigrationHistory{
-			Database:   history.Database,
+		got := &v1pb.ChangeHistory{
 			Source:     history.Source,
 			Type:       history.Type,
 			Status:     history.Status,
 			Schema:     history.Schema,
-			SchemaPrev: history.SchemaPrev,
+			PrevSchema: history.PrevSchema,
 		}
 		want := wantCloneHistories[i]
-		a.Equal(want, got)
+		proto.Equal(got, want)
+		a.True(proto.Equal(got, want))
 	}
 
 	_, err = ctl.sheetServiceClient.SearchSheets(ctx, &v1pb.SearchSheetsRequest{
@@ -480,8 +484,6 @@ func TestVCS(t *testing.T) {
 				},
 			})
 			a.NoError(err)
-			instanceUID, err := strconv.Atoi(instance.Uid)
-			a.NoError(err)
 
 			// Create an issue that creates a database.
 			databaseName := "testVCSSchemaUpdate"
@@ -666,70 +668,63 @@ func TestVCS(t *testing.T) {
 			a.Equal(dumpedSchema4, files[latestFileName])
 
 			// Get migration history.
-			histories, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{})
+			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+				Parent: database.Name,
+			})
 			a.NoError(err)
-
-			var historiesDeref []api.MigrationHistory
-			for _, history := range histories {
-				historiesDeref = append(historiesDeref, *history)
-			}
-
-			wantHistories := []api.MigrationHistory{
+			histories := resp.ChangeHistories
+			wantHistories := []*v1pb.ChangeHistory{
 				{
-					Database:   databaseName,
-					Source:     db.UI,
-					Type:       db.Migrate,
-					Status:     db.Done,
+					Source:     v1pb.ChangeHistory_UI,
+					Type:       v1pb.ChangeHistory_MIGRATE,
+					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     dumpedSchema4,
-					SchemaPrev: dumpedSchema3,
+					PrevSchema: dumpedSchema3,
 				},
 				{
-					Database:   databaseName,
-					Source:     db.VCS,
-					Type:       db.Data,
-					Status:     db.Done,
+					Source:     v1pb.ChangeHistory_VCS,
+					Type:       v1pb.ChangeHistory_DATA,
+					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     dumpedSchema3,
-					SchemaPrev: dumpedSchema3,
+					PrevSchema: dumpedSchema3,
 				},
 				{
-					Database:   databaseName,
-					Source:     db.VCS,
-					Type:       db.Migrate,
-					Status:     db.Done,
+					Source:     v1pb.ChangeHistory_VCS,
+					Type:       v1pb.ChangeHistory_MIGRATE,
+					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     dumpedSchema3,
-					SchemaPrev: dumpedSchema2,
+					PrevSchema: dumpedSchema2,
 				},
 				{
-					Database:   databaseName,
-					Source:     db.VCS,
-					Type:       db.Migrate,
-					Status:     db.Done,
+					Source:     v1pb.ChangeHistory_VCS,
+					Type:       v1pb.ChangeHistory_MIGRATE,
+					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     dumpedSchema2,
-					SchemaPrev: dumpedSchema,
+					PrevSchema: dumpedSchema,
 				},
 				{
-					Database:   databaseName,
-					Source:     db.VCS,
-					Type:       db.Migrate,
-					Status:     db.Done,
+					Source:     v1pb.ChangeHistory_VCS,
+					Type:       v1pb.ChangeHistory_MIGRATE,
+					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     dumpedSchema,
-					SchemaPrev: "",
+					PrevSchema: "",
 				},
 			}
 			a.Equal(len(wantHistories), len(histories))
-
 			for i, history := range histories {
-				got := api.MigrationHistory{
-					Database:   history.Database,
+				got := &v1pb.ChangeHistory{
 					Source:     history.Source,
 					Type:       history.Type,
 					Status:     history.Status,
 					Schema:     history.Schema,
-					SchemaPrev: history.SchemaPrev,
+					PrevSchema: history.PrevSchema,
 				}
-				a.Equalf(wantHistories[i], got, "got histories %+v", historiesDeref)
-				a.NotEmpty(history.Version)
+				want := wantHistories[i]
+				proto.Equal(got, want)
+				a.True(proto.Equal(got, want))
+				a.NotEqual(history.Version, "")
 			}
+
 			a.Equal("ver4-dml", histories[1].Version)
 			a.Equal("ver3-ddl", histories[2].Version)
 			a.Equal("ver2-ddl", histories[3].Version)
@@ -914,11 +909,12 @@ func TestVCS_SDL(t *testing.T) {
 				},
 			})
 			a.NoError(err)
-			instanceUID, err := strconv.Atoi(instance.Uid)
-			a.NoError(err)
 
 			// Create an issue that creates a database
 			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil /* labelMap */)
+			a.NoError(err)
+
+			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})
 			a.NoError(err)
 
 			// Simulate Git commits for schema update to create a new table "users".
@@ -1073,47 +1069,47 @@ ALTER TABLE ONLY public.users
 
 `
 
-			histories, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{})
+			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+				Parent: database.Name,
+			})
 			a.NoError(err)
-			wantHistories := []api.MigrationHistory{
+			histories := resp.ChangeHistories
+			wantHistories := []*v1pb.ChangeHistory{
 				{
-					Database:   databaseName,
-					Source:     db.VCS,
-					Type:       db.Data,
-					Status:     db.Done,
+					Source:     v1pb.ChangeHistory_VCS,
+					Type:       v1pb.ChangeHistory_DATA,
+					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     updatedSchema,
-					SchemaPrev: updatedSchema,
+					PrevSchema: updatedSchema,
 				},
 				{
-					Database:   databaseName,
-					Source:     db.VCS,
-					Type:       db.MigrateSDL,
-					Status:     db.Done,
+					Source:     v1pb.ChangeHistory_VCS,
+					Type:       v1pb.ChangeHistory_MIGRATE_SDL,
+					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     updatedSchema,
-					SchemaPrev: initialSchema,
+					PrevSchema: initialSchema,
 				},
 				{
-					Database:   databaseName,
-					Source:     db.UI,
-					Type:       db.Migrate,
-					Status:     db.Done,
+					Source:     v1pb.ChangeHistory_UI,
+					Type:       v1pb.ChangeHistory_MIGRATE,
+					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     initialSchema,
-					SchemaPrev: "",
+					PrevSchema: "",
 				},
 			}
 			a.Equal(len(wantHistories), len(histories))
-
 			for i, history := range histories {
-				got := api.MigrationHistory{
-					Database:   history.Database,
+				got := &v1pb.ChangeHistory{
 					Source:     history.Source,
 					Type:       history.Type,
 					Status:     history.Status,
 					Schema:     history.Schema,
-					SchemaPrev: history.SchemaPrev,
+					PrevSchema: history.PrevSchema,
 				}
-				a.Equal(wantHistories[i], got, i)
-				a.NotEmpty(history.Version)
+				want := wantHistories[i]
+				proto.Equal(got, want)
+				a.True(proto.Equal(got, want))
+				a.NotEqual(history.Version, "")
 			}
 		})
 	}
@@ -2502,11 +2498,12 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 				},
 			})
 			a.NoError(err)
-			instanceUID, err := strconv.Atoi(instance.Uid)
-			a.NoError(err)
 
 			// Create an issue that creates a database
 			err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil /* labelMap */)
+			a.NoError(err)
+
+			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})
 			a.NoError(err)
 
 			// Simulate Git commits for schema update to create a new table "users".
@@ -2624,46 +2621,50 @@ WHERE table_schema = '%s';
 				"  PRIMARY KEY (`id`)\n" +
 				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n"
 
-			histories, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{})
+			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+				Parent: database.Name,
+			})
 			a.NoError(err)
-			wantHistories := []api.MigrationHistory{
+			histories := resp.ChangeHistories
+			wantHistories := []*v1pb.ChangeHistory{
 				{
-					Database:   databaseName,
-					Source:     db.VCS,
-					Type:       db.Data,
-					Status:     db.Done,
+					Source:     v1pb.ChangeHistory_VCS,
+					Type:       v1pb.ChangeHistory_DATA,
+					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     updatedSchema,
-					SchemaPrev: updatedSchema,
+					PrevSchema: updatedSchema,
 				},
 				{
-					Database:   databaseName,
-					Source:     db.VCS,
-					Type:       db.MigrateSDL,
-					Status:     db.Done,
+					Source:     v1pb.ChangeHistory_VCS,
+					Type:       v1pb.ChangeHistory_MIGRATE_SDL,
+					Status:     v1pb.ChangeHistory_DONE,
 					Schema:     updatedSchema,
-					SchemaPrev: initialSchema,
+					PrevSchema: initialSchema,
 				},
 			}
 			a.Equal(len(wantHistories), len(histories))
-
 			for i, history := range histories {
-				got := api.MigrationHistory{
-					Database:   history.Database,
+				got := &v1pb.ChangeHistory{
 					Source:     history.Source,
 					Type:       history.Type,
 					Status:     history.Status,
 					Schema:     history.Schema,
-					SchemaPrev: history.SchemaPrev,
+					PrevSchema: history.PrevSchema,
 				}
-				a.Equal(wantHistories[i], got, i)
-				a.NotEmpty(history.Version)
+				want := wantHistories[i]
+				proto.Equal(got, want)
+				a.True(proto.Equal(got, want))
+				a.NotEqual(history.Version, "")
 			}
 
 			// Test SDL format.
-			sdlHistory, err := ctl.getInstanceSDLMigrationHistory(instanceUID, histories[1].ID)
+			sdlHistory, err := ctl.databaseServiceClient.GetChangeHistory(ctx, &v1pb.GetChangeHistoryRequest{
+				Name:      histories[1].Name,
+				SdlFormat: true,
+			})
 			a.NoError(err)
 			a.Equal(updatedSDL, sdlHistory.Schema)
-			a.Equal(initialSDL, sdlHistory.SchemaPrev)
+			a.Equal(initialSDL, sdlHistory.PrevSchema)
 		})
 	}
 }
