@@ -36,7 +36,7 @@
                     name="database-tab"
                     @update:checked="state.databaseSelectedTab = 'DATABASE'"
                   >
-                    Database
+                    {{ $t("common.database") }}
                   </NRadio>
                   <NRadio
                     :checked="state.databaseSelectedTab === 'DATABASE_GROUP'"
@@ -45,7 +45,7 @@
                     @update:checked="handleDatabaseGroupTabSelect"
                   >
                     <div class="flex flex-row items-center">
-                      <span class="mr-1">Database group</span>
+                      <span class="mr-1">{{ $t("database-group.self") }}</span>
                       <FeatureBadge feature="bb.feature.sharding" />
                     </div>
                   </NRadio>
@@ -170,7 +170,7 @@
                 name="database-tab"
                 @update:checked="state.databaseSelectedTab = 'DATABASE'"
               >
-                Database
+                {{ $t("common.database") }}
               </NRadio>
               <NRadio
                 :checked="state.databaseSelectedTab === 'DATABASE_GROUP'"
@@ -179,7 +179,7 @@
                 @update:checked="handleDatabaseGroupTabSelect"
               >
                 <div class="flex flex-row items-center">
-                  <span class="mr-1">Database group</span>
+                  <span class="mr-1">{{ $t("database-group.self") }}</span>
                   <FeatureBadge feature="bb.feature.sharding" />
                 </div>
               </NRadio>

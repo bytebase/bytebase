@@ -250,7 +250,8 @@
       "months": "{months} months",
       "years": "{years} year"
     },
-    "expiration": "Expiration"
+    "expiration": "Expiration",
+    "configure": "Configure"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2523,9 +2524,24 @@
     "select-role": "Select role"
   },
   "database-group": {
+    "self": "Database group",
+    "create": "New database group",
+    "edit": "Edit database group",
+    "matched-database": "Matched database",
+    "unmatched-database": "Unmatched database",
+    "matched-table": "Matched table",
+    "unmatched-table": "Unmatched table",
+    "table-group": {
+      "self": "Table group",
+      "create": "New table group",
+      "edit": "Edit table group"
+    },
     "factor": {
       "resource_database_name": "Database name",
       "resource_table_name": "Table name"
+    },
+    "condition": {
+      "self": "Condition"
     }
   }
 }

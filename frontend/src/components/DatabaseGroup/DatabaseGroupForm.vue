@@ -2,7 +2,7 @@
   <div class="w-full">
     <div class="w-full grid grid-cols-3 gap-x-6 pb-6 mb-4 border-b">
       <div>
-        <p class="text-lg mb-2">Name</p>
+        <p class="text-lg mb-2">{{ $t("common.name") }}</p>
         <ResourceIdInput
           ref="resourceIdInput"
           :value="state.resourceId"
@@ -12,7 +12,7 @@
         />
       </div>
       <div>
-        <p class="text-lg mb-2">Environment</p>
+        <p class="text-lg mb-2">{{ $t("common.environment") }}</p>
         <EnvironmentSelect
           :disabled="!isCreating"
           :selected-id="state.environmentId"
@@ -24,7 +24,7 @@
         />
       </div>
       <div v-if="resourceType === 'DATABASE_GROUP'">
-        <p class="text-lg mb-2">Project</p>
+        <p class="text-lg mb-2">{{ $t("common.project") }}</p>
         <input
           required
           type="text"
@@ -35,7 +35,7 @@
         />
       </div>
       <div v-if="resourceType === 'SCHEMA_GROUP'">
-        <p class="text-lg mb-2">Database group</p>
+        <p class="text-lg mb-2">{{ $t("database-group.self") }}</p>
         <DatabaseGroupSelect
           :disabled="!isCreating"
           :project-id="project.name"
@@ -51,7 +51,9 @@
     </div>
     <div class="w-full grid grid-cols-5 gap-x-6">
       <div class="col-span-3">
-        <p class="pl-1 text-lg mb-2">Condition</p>
+        <p class="pl-1 text-lg mb-2">
+          {{ $t("database-group.condition.self") }}
+        </p>
         <ExprEditor
           :expr="state.expr"
           :allow-admin="true"

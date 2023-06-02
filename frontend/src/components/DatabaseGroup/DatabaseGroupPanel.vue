@@ -76,9 +76,13 @@ const isCreating = computed(() => props.databaseGroup === undefined);
 
 const title = computed(() => {
   if (props.resourceType === "DATABASE_GROUP") {
-    return isCreating.value ? "Create database group" : "Edit database group";
+    return isCreating.value
+      ? t("database-group.create")
+      : t("database-group.edit");
   } else if (props.resourceType === "SCHEMA_GROUP") {
-    return isCreating.value ? "Create table group" : "Edit table group";
+    return isCreating.value
+      ? t("database-group.table-group.create")
+      : t("database-group.table-group.edit");
   } else {
     throw new Error("Unknown resource type");
   }
