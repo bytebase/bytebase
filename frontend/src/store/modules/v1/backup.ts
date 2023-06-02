@@ -30,16 +30,6 @@ export const useBackupV1Store = defineStore("backup_v1", () => {
     parent: string,
     refreshList = true
   ) => {
-    console.log(
-      JSON.stringify(
-        {
-          parent,
-          backup,
-        },
-        null,
-        "  "
-      )
-    );
     const created = await databaseServiceClient.createBackup({
       parent,
       backup,
