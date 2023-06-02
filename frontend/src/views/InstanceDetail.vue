@@ -131,7 +131,7 @@ import {
   featureToRef,
   pushNotification,
   useSubscriptionV1Store,
-  useSQLStore,
+  useLegacySQLStore,
   useDBSchemaStore,
   useCurrentUserV1,
   useInstanceV1Store,
@@ -160,7 +160,7 @@ const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();
-const sqlStore = useSQLStore();
+const sqlStore = useLegacySQLStore();
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
