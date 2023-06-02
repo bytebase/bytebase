@@ -328,7 +328,7 @@
 <script lang="ts" setup>
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { ExternalRepositoryInfo, RepositoryConfig, VCSType } from "@/types";
+import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import { hasFeature, useSubscriptionV1Store } from "@/store";
 import {
   Project,
