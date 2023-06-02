@@ -294,3 +294,8 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL par
 
 	return util.Query2(ctx, db.Snowflake, conn, statement, queryContext)
 }
+
+// RunStatement runs a SQL statement in a given connection.
+func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	return util.RunStatement(ctx, parser.Snowflake, conn, statement)
+}
