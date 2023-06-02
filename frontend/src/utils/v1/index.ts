@@ -2,6 +2,7 @@ export * from "./common";
 export * from "./environment";
 export * from "./instance";
 export * from "./database";
+export * from "./backup";
 export * from "./databaseLabel";
 export * from "./project";
 export * from "./projectWebhook";

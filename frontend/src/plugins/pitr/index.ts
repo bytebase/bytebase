@@ -6,7 +6,7 @@ import {
   PITRContext,
 } from "@/types";
 import {
-  useBackupListByDatabaseId,
+  useBackupListByDatabaseName,
   useChangeHistoryStore,
   useCurrentUserV1,
   useIssueStore,
@@ -16,6 +16,7 @@ import { extractUserUID, semverCompare } from "@/utils";
 import { Instance } from "@/types/proto/v1/instance_service";
 import { Engine } from "@/types/proto/v1/common";
 import { head } from "lodash-es";
+import { Backup_BackupState } from "@/types/proto/v1/database_service";
 
 export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
@@ -32,11 +33,13 @@ export const usePITRLogic = (database: Ref<ComposedDatabase>) => {
   const currentUserV1 = useCurrentUserV1();
   const changeHistoryStore = useChangeHistoryStore();
 
-  const backupList = useBackupListByDatabaseId(
-    computed(() => Number(database.value.uid))
+  const backupList = useBackupListByDatabaseName(
+    computed(() => database.value.name)
   );
   const doneBackupList = computed(() =>
-    backupList.value.filter((backup) => backup.status === "DONE")
+    backupList.value.filter(
+      (backup) => backup.state === Backup_BackupState.DONE
+    )
   );
 
   const pitrAvailable = computed((): { result: boolean; message: string } => {
