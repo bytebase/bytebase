@@ -101,7 +101,7 @@ func (s *Syncer) syncAllInstances(ctx context.Context) {
 	instanceWG.Wait()
 }
 
-func (s *Syncer) syncAllDatabases(ctx context.Context, instance *api.Instance) {
+func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceMessage) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)

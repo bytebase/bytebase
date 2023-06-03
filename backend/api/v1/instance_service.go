@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -12,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -21,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
+	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -34,10 +37,11 @@ type InstanceService struct {
 	secret         string
 	stateCfg       *state.State
 	dbFactory      *dbfactory.DBFactory
+	schemaSyncer   *schemasync.Syncer
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State, dbFactory *dbfactory.DBFactory) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer) *InstanceService {
 	return &InstanceService{
 		store:          store,
 		licenseService: licenseService,
@@ -45,6 +49,7 @@ func NewInstanceService(store *store.Store, licenseService enterpriseAPI.License
 		secret:         secret,
 		stateCfg:       stateCfg,
 		dbFactory:      dbFactory,
+		schemaSyncer:   schemaSyncer,
 	}
 }
 
@@ -122,6 +127,18 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	if err == nil {
+		defer driver.Close(ctx)
+		if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.String("instance", instance.ResourceID),
+				zap.Error(err))
+		}
+		// Sync all databases in the instance asynchronously.
+		s.stateCfg.InstanceDatabaseSyncChan <- instance
+	}
+
 	s.metricReporter.Report(ctx, &metric.Metric{
 		Name:  metricAPI.InstanceCreateMetricName,
 		Value: 1,
@@ -130,7 +147,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		},
 	})
 
-	// TODO(d): sync instance databases.
 	return convertToInstance(instance), nil
 }
 
