@@ -214,7 +214,7 @@ func TestTenantVCS(t *testing.T) {
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
-		vcsType             vcs.Type
+		vcsType             v1pb.ExternalVersionControl_Type
 		externalID          string
 		repositoryFullPath  string
 		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
@@ -222,7 +222,7 @@ func TestTenantVCS(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLab,
+			vcsType:            v1pb.ExternalVersionControl_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
@@ -246,7 +246,7 @@ func TestTenantVCS(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHub,
+			vcsType:            v1pb.ExternalVersionControl_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
@@ -302,16 +302,16 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS.
-			apiVCS, err := ctl.createVCS(
-				api.VCSCreate{
-					Name:          t.Name(),
+			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
+				ExternalVersionControl: &v1pb.ExternalVersionControl{
+					Title:         t.Name(),
 					Type:          test.vcsType,
-					InstanceURL:   ctl.vcsURL,
-					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
-					ApplicationID: "testApplicationID",
+					Url:           ctl.vcsURL,
+					ApiUrl:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationId: "testApplicationID",
 					Secret:        "testApplicationSecret",
 				},
-			)
+			})
 			a.NoError(err)
 
 			// Create a project.
@@ -336,22 +336,23 @@ func TestTenantVCS(t *testing.T) {
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
 
-			_, err = ctl.createRepository(
-				api.RepositoryCreate{
-					VCSID:              apiVCS.ID,
-					ProjectID:          projectUID,
-					Name:               "Test Repository",
+			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
+				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
+					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
-					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
 					FilePathTemplate:   "{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 					SchemaPathTemplate: ".LATEST.sql",
-					ExternalID:         test.externalID,
+					ExternalId:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
 				},
-			)
+				AllowMissing: true,
+			})
 			a.NoError(err)
 
 			// Provision instances.
@@ -669,7 +670,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
-		vcsType             vcs.Type
+		vcsType             v1pb.ExternalVersionControl_Type
 		externalID          string
 		repositoryFullPath  string
 		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
@@ -677,7 +678,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLab,
+			vcsType:            v1pb.ExternalVersionControl_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
@@ -701,7 +702,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHub,
+			vcsType:            v1pb.ExternalVersionControl_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
@@ -757,16 +758,16 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS.
-			apiVCS, err := ctl.createVCS(
-				api.VCSCreate{
-					Name:          t.Name(),
+			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
+				ExternalVersionControl: &v1pb.ExternalVersionControl{
+					Title:         t.Name(),
 					Type:          test.vcsType,
-					InstanceURL:   ctl.vcsURL,
-					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
-					ApplicationID: "testApplicationID",
+					Url:           ctl.vcsURL,
+					ApiUrl:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationId: "testApplicationID",
 					Secret:        "testApplicationSecret",
 				},
-			)
+			})
 			a.NoError(err)
 
 			// Create a project.
@@ -792,22 +793,23 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
 
-			_, err = ctl.createRepository(
-				api.RepositoryCreate{
-					VCSID:              apiVCS.ID,
-					ProjectID:          projectUID,
-					Name:               "Test Repository",
+			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
+				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
+					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
-					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
 					FilePathTemplate:   "{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 					SchemaPathTemplate: ".LATEST.sql",
-					ExternalID:         test.externalID,
+					ExternalId:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
 				},
-			)
+				AllowMissing: true,
+			})
 			a.NoError(err)
 
 			// Provision instances.
@@ -969,7 +971,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
-		vcsType             vcs.Type
+		vcsType             v1pb.ExternalVersionControl_Type
 		externalID          string
 		repositoryFullPath  string
 		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
@@ -977,7 +979,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLab,
+			vcsType:            v1pb.ExternalVersionControl_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
@@ -1001,7 +1003,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHub,
+			vcsType:            v1pb.ExternalVersionControl_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
@@ -1057,16 +1059,16 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS.
-			apiVCS, err := ctl.createVCS(
-				api.VCSCreate{
-					Name:          t.Name(),
+			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
+				ExternalVersionControl: &v1pb.ExternalVersionControl{
+					Title:         t.Name(),
 					Type:          test.vcsType,
-					InstanceURL:   ctl.vcsURL,
-					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
-					ApplicationID: "testApplicationID",
+					Url:           ctl.vcsURL,
+					ApiUrl:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationId: "testApplicationID",
 					Secret:        "testApplicationSecret",
 				},
-			)
+			})
 			a.NoError(err)
 
 			// Create a tenant project with empty database name template.
@@ -1091,22 +1093,23 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
 
-			_, err = ctl.createRepository(
-				api.RepositoryCreate{
-					VCSID:              apiVCS.ID,
-					ProjectID:          projectUID,
-					Name:               "Test Repository",
+			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
+				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
+					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
-					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
 					FilePathTemplate:   "{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 					SchemaPathTemplate: ".LATEST.sql",
-					ExternalID:         test.externalID,
+					ExternalId:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
 				},
-			)
+				AllowMissing: true,
+			})
 			a.NoError(err)
 
 			// Provision instances.
@@ -1229,10 +1232,12 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 // TestTenantVCS_YAML tests the behavior when use a YAML file to do DML in a
 // tenant project.
 func TestTenantVCS_YAML(t *testing.T) {
+	a := require.New(t)
+
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
-		vcsType             vcs.Type
+		vcsType             v1pb.ExternalVersionControl_Type
 		externalID          string
 		repositoryFullPath  string
 		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) any
@@ -1240,7 +1245,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLab,
+			vcsType:            v1pb.ExternalVersionControl_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/dataUpdate",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
@@ -1264,7 +1269,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHub,
+			vcsType:            v1pb.ExternalVersionControl_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) any {
@@ -1310,26 +1315,26 @@ func TestTenantVCS_YAML(t *testing.T) {
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
-			require.NoError(t, err)
+			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
 
 			err = ctl.setLicense()
-			require.NoError(t, err)
+			a.NoError(err)
 
 			// Create a VCS.
-			apiVCS, err := ctl.createVCS(
-				api.VCSCreate{
-					Name:          t.Name(),
+			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
+				ExternalVersionControl: &v1pb.ExternalVersionControl{
+					Title:         t.Name(),
 					Type:          test.vcsType,
-					InstanceURL:   ctl.vcsURL,
-					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
-					ApplicationID: "testApplicationID",
+					Url:           ctl.vcsURL,
+					ApiUrl:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationId: "testApplicationID",
 					Secret:        "testApplicationSecret",
 				},
-			)
-			require.NoError(t, err)
+			})
+			a.NoError(err)
 
 			// Create a tenant project with empty database name template.
 			projectID := generateRandomString("project", 10)
@@ -1343,34 +1348,35 @@ func TestTenantVCS_YAML(t *testing.T) {
 				},
 				ProjectId: projectID,
 			})
-			require.NoError(t, err)
+			a.NoError(err)
 			projectUID, err := strconv.Atoi(project.Uid)
-			require.NoError(t, err)
+			a.NoError(err)
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
 
 			// Create the branch
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
-			require.NoError(t, err)
+			a.NoError(err)
 
-			_, err = ctl.createRepository(
-				api.RepositoryCreate{
-					VCSID:              apiVCS.ID,
-					ProjectID:          projectUID,
-					Name:               "Test Repository",
+			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
+				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
+					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
-					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
 					FilePathTemplate:   "{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 					SchemaPathTemplate: ".LATEST.sql",
-					ExternalID:         test.externalID,
+					ExternalId:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
 				},
-			)
-			require.NoError(t, err)
+				AllowMissing: true,
+			})
+			a.NoError(err)
 
 			// Provision instances.
 			instanceRootDir := t.TempDir()
@@ -1379,11 +1385,11 @@ func TestTenantVCS_YAML(t *testing.T) {
 			var testInstanceDirs []string
 			for i := 0; i < testTenantNumber; i++ {
 				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", testInstanceName, i))
-				require.NoError(t, err)
+				a.NoError(err)
 				testInstanceDirs = append(testInstanceDirs, instanceDir)
 			}
 			testEnvironment, _, err := ctl.getEnvironment(ctx, "test")
-			require.NoError(t, err)
+			a.NoError(err)
 
 			// Add the provisioned instances.
 			var testInstances []*v1pb.Instance
@@ -1397,7 +1403,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
 					},
 				})
-				require.NoError(t, err)
+				a.NoError(err)
 				testInstances = append(testInstances, instance)
 			}
 
@@ -1425,7 +1431,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 					},
 				},
 			)
-			require.NoError(t, err)
+			a.NoError(err)
 
 			// Create issues that create databases.
 			const baseDatabaseName = "TestTenantVCS_YAML"
@@ -1433,7 +1439,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
 				err := ctl.createDatabase(ctx, projectUID, testInstance, databaseName, "", nil /* labelMap */)
-				require.NoError(t, err)
+				a.NoError(err)
 			}
 
 			// Getting databases for each environment.
@@ -1441,7 +1447,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 				Parent: "instances/-",
 				Filter: fmt.Sprintf(`project == "%s"`, project.Name),
 			})
-			require.NoError(t, err)
+			a.NoError(err)
 			databases := resp.Databases
 
 			var testDatabases []*v1pb.Database
@@ -1453,28 +1459,28 @@ func TestTenantVCS_YAML(t *testing.T) {
 					}
 				}
 			}
-			require.Equal(t, testTenantNumber, len(testDatabases))
+			a.Equal(testTenantNumber, len(testDatabases))
 
 			// Simulate Git commits for schema update.
 			gitFile1 := baseDirectory + "/ver1##migrate##create_a_test_table.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile1: migrationStatement})
-			require.NoError(t, err)
+			a.NoError(err)
 			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
 				{Path: gitFile1, Type: vcs.FileDiffTypeAdded},
 			})
-			require.NoError(t, err)
+			a.NoError(err)
 			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile1, "1", "2"))
-			require.NoError(t, err)
+			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
-			require.NoError(t, err)
+			a.NoError(err)
 
 			// Get schema update issues.
 			issues, err := ctl.getIssues(&projectUID, api.IssueOpen)
-			require.NoError(t, err)
-			require.Len(t, issues, 1)
+			a.NoError(err)
+			a.Len(issues, 1)
 			status, err := ctl.waitIssuePipeline(ctx, issues[0].ID)
-			require.NoError(t, err)
-			require.Equal(t, api.TaskDone, status)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
 
 			// Simulate Git commits for data update.
 			database0Name := "TestTenantVCS_YAML_tenant0"
@@ -1492,22 +1498,22 @@ statement: |
 					),
 				},
 			)
-			require.NoError(t, err)
+			a.NoError(err)
 			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "2", "3", []vcs.FileDiff{
 				{Path: gitFile2, Type: vcs.FileDiffTypeAdded},
 			})
-			require.NoError(t, err)
+			a.NoError(err)
 			payload, err = json.Marshal(test.newWebhookPushEvent(gitFile2, "2", "3"))
-			require.NoError(t, err)
+			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
-			require.NoError(t, err)
+			a.NoError(err)
 
 			// Get data update issues.
 			issues, err = ctl.getIssues(&projectUID, api.IssueOpen)
-			require.NoError(t, err)
+			a.NoError(err)
 			status, err = ctl.waitIssuePipeline(ctx, issues[0].ID)
-			require.NoError(t, err)
-			require.Equal(t, api.TaskDone, status)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
 		})
 	}
 }

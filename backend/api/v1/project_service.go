@@ -542,6 +542,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 
 	// TODO: migrate to v1 store.
 	repositoryDelete := &api.RepositoryDelete{
+		ProjectID:         repo.Project.ID,
 		ProjectResourceID: repo.Project.ResourceID,
 		DeleterID:         ctx.Value(common.PrincipalIDContextKey).(int),
 	}
@@ -851,7 +852,9 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		ExternalID:         request.ProjectGitopsInfo.ExternalId,
 		AccessToken:        request.ProjectGitopsInfo.AccessToken,
 		RefreshToken:       request.ProjectGitopsInfo.RefreshToken,
-		ExpiresTs:          request.ProjectGitopsInfo.ExpiresTime.Seconds,
+	}
+	if request.ProjectGitopsInfo.ExpiresTime != nil {
+		repositoryCreate.ExpiresTs = request.ProjectGitopsInfo.ExpiresTime.AsTime().Unix()
 	}
 
 	if repositoryCreate.BranchFilter == "" {
