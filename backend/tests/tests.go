@@ -4,6 +4,7 @@ package tests
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"io"
 	"net/http"
@@ -56,10 +57,12 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);`
-	bookTableQuery      = "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';"
-	bookSchemaSQLResult = `[["type","name","tbl_name","rootpage","sql"],["TEXT","TEXT","TEXT","INT","TEXT"],[["table","book","book",2,"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t)"]],[false,false,false,false,false]]`
-	bookDataQuery       = `SELECT * FROM book;`
-	bookDataSQLResult   = `[["id","name"],["INTEGER","TEXT"],[[1,"byte"],[2,null]],[false,false]]`
+
+	//go:embed test-data/book_schema.result
+	wantBookSchema string
+
+	//go:embed test-data/book_3_schema.result
+	want3BookSchema string
 
 	dataUpdateStatementWrong = "INSERT INTO book(name) xxx"
 	dataUpdateStatement      = `
@@ -168,6 +171,7 @@ type controller struct {
 	databaseServiceClient    v1pb.DatabaseServiceClient
 	sheetServiceClient       v1pb.SheetServiceClient
 	evcsClient               v1pb.ExternalVersionControlServiceClient
+	sqlServiceClient         v1pb.SQLServiceClient
 
 	cookie             string
 	grpcMDAccessToken  string
@@ -438,6 +442,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.databaseServiceClient = v1pb.NewDatabaseServiceClient(ctl.grpcConn)
 	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
 	ctl.evcsClient = v1pb.NewExternalVersionControlServiceClient(ctl.grpcConn)
+	ctl.sqlServiceClient = v1pb.NewSQLServiceClient(ctl.grpcConn)
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
