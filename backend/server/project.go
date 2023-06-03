@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
@@ -22,114 +21,6 @@ import (
 )
 
 func (s *Server) registerProjectRoutes(g *echo.Group) {
-	g.PATCH("/project/:id/deployment", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		projectID, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
-		}
-
-		deploymentConfigUpsert := &api.DeploymentConfigUpsert{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, deploymentConfigUpsert); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed set deployment configuration request").SetInternal(err)
-		}
-
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
-		}
-		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
-		}
-
-		apiDeploymentConfig, err := api.ValidateAndGetDeploymentSchedule(deploymentConfigUpsert.Payload)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to validate deployment configuration: %v", err))
-		}
-
-		// Remove this when we migrate to V1 API.
-		//
-		// Convert to store message.
-		var schedule store.Schedule
-		for _, d := range apiDeploymentConfig.Deployments {
-			var labelSelector store.LabelSelector
-			for _, spec := range d.Spec.Selector.MatchExpressions {
-				operatorTp := store.InOperatorType
-				switch spec.Operator {
-				case api.InOperatorType:
-					operatorTp = store.InOperatorType
-				case api.ExistsOperatorType:
-					operatorTp = store.ExistsOperatorType
-				}
-				labelSelector.MatchExpressions = append(labelSelector.MatchExpressions, &store.LabelSelectorRequirement{
-					Key:      spec.Key,
-					Operator: operatorTp,
-					Values:   spec.Values,
-				})
-			}
-			schedule.Deployments = append(schedule.Deployments, &store.Deployment{
-				Name: d.Name,
-				Spec: &store.DeploymentSpec{
-					Selector: &labelSelector,
-				},
-			})
-		}
-		storeDeploymentConfig := &store.DeploymentConfigMessage{
-			Name:     deploymentConfigUpsert.Name,
-			Schedule: &schedule,
-		}
-
-		newStoreDeploymentConfig, err := s.store.UpsertDeploymentConfigV2(ctx, projectID, c.Get(getPrincipalIDContextKey()).(int), storeDeploymentConfig)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set deployment configuration").SetInternal(err)
-		}
-		newAPIDeploymentConfig, err := newStoreDeploymentConfig.ToAPIDeploymentConfig()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert deployment configuration").SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, newAPIDeploymentConfig); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal set deployment configuration response").SetInternal(err)
-		}
-		return nil
-	})
-
-	g.GET("/project/:id/deployment", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		projectID, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
-		}
-
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
-		}
-		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
-		}
-		if project.Deleted {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project %d is deleted", projectID))
-		}
-
-		// DeploymentConfig is never nil.
-		deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, projectID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get deployment configuration for project id: %d", projectID)).SetInternal(err)
-		}
-		apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert deployment config to api deployment config").SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, apiDeploymentConfig); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get deployment configuration response: %v", projectID)).SetInternal(err)
-		}
-		return nil
-	})
-
 	g.POST("/project/:projectID/sync-sheet", func(c echo.Context) error {
 		// TODO(tianzhou): uncomment this after adding the test harness to using Enterprise version.
 		// if !s.licenseService.IsFeatureEnabled(api.FeatureVCSSheetSync) {
