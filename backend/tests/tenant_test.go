@@ -198,14 +198,14 @@ func TestTenant(t *testing.T) {
 
 	// Query schema.
 	for _, testInstance := range testInstances {
-		result, err := ctl.query(testInstance, databaseName, bookTableQuery)
+		dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName)})
 		a.NoError(err)
-		a.Equal(bookSchemaSQLResult, result)
+		a.Equal(wantBookSchema, dbMetadata.Schema)
 	}
 	for _, prodInstance := range prodInstances {
-		result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
+		dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Name, databaseName)})
 		a.NoError(err)
-		a.Equal(bookSchemaSQLResult, result)
+		a.Equal(wantBookSchema, dbMetadata.Schema)
 	}
 }
 
@@ -481,14 +481,14 @@ func TestTenantVCS(t *testing.T) {
 
 			// Query schema.
 			for _, testInstance := range testInstances {
-				result, err := ctl.query(testInstance, databaseName, bookTableQuery)
+				dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName)})
 				a.NoError(err)
-				a.Equal(bookSchemaSQLResult, result)
+				a.Equal(wantBookSchema, dbMetadata.Schema)
 			}
 			for _, prodInstance := range prodInstances {
-				result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
+				dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Name, databaseName)})
 				a.NoError(err)
-				a.Equal(bookSchemaSQLResult, result)
+				a.Equal(wantBookSchema, dbMetadata.Schema)
 			}
 		})
 	}
@@ -654,15 +654,15 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	// Query schema.
 	for i := 0; i < testTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		result, err := ctl.query(testInstance, databaseName, bookTableQuery)
+		dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName)})
 		a.NoError(err)
-		a.Equal(bookSchemaSQLResult, result)
+		a.Equal(wantBookSchema, dbMetadata.Schema)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
+		dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Name, databaseName)})
 		a.NoError(err)
-		a.Equal(bookSchemaSQLResult, result)
+		a.Equal(wantBookSchema, dbMetadata.Schema)
 	}
 }
 
@@ -943,16 +943,16 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				result, err := ctl.query(testInstance, databaseName, bookTableQuery)
+				dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName)})
 				a.NoError(err)
-				a.Equal(bookSchemaSQLResult, result)
+				a.Equal(wantBookSchema, dbMetadata.Schema)
 			}
 			for i, prodInstance := range prodInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
+				dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Name, databaseName)})
 				a.NoError(err)
-				a.Equal(bookSchemaSQLResult, result)
+				a.Equal(wantBookSchema, dbMetadata.Schema)
 			}
 
 			// Check latestSchemaFile
@@ -1221,9 +1221,9 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				result, err := ctl.query(testInstance, databaseName, bookTableQuery)
+				dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName)})
 				a.NoError(err)
-				a.Equal(bookSchemaSQLResult, result)
+				a.Equal(wantBookSchema, dbMetadata.Schema)
 			}
 		})
 	}

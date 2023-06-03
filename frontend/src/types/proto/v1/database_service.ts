@@ -176,7 +176,7 @@ export interface BatchUpdateDatabasesResponse {
 export interface GetDatabaseMetadataRequest {
   /**
    * The name of the database to retrieve metadata.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}/metadata
    */
   name: string;
 }
@@ -184,7 +184,7 @@ export interface GetDatabaseMetadataRequest {
 export interface GetDatabaseSchemaRequest {
   /**
    * The name of the database to retrieve schema.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}/schema
    */
   name: string;
   /** Format the schema dump into SDL format. */

@@ -125,9 +125,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Query schema.
-	result, err := ctl.query(instance, databaseName, bookTableQuery)
+	dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 	a.NoError(err)
-	a.Equal(bookSchemaSQLResult, result)
+	a.Equal(wantBookSchema, dbMetadata.Schema)
 
 	sheet, err = ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: project.Name,
@@ -224,9 +224,10 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 
 	// Query clone database book table data.
-	result, err = ctl.query(instance, cloneDatabaseName, bookDataQuery)
+	result, err := ctl.query(instance, cloneDatabaseName, bookDataQuery)
 	a.NoError(err)
 	a.Equal(bookDataSQLResult, result)
+
 	// Query clone migration history.
 	resp, err = ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 		Parent: cloneDatabase.Name,
@@ -551,9 +552,9 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Query schema.
-			result, err := ctl.query(instance, databaseName, bookTableQuery)
+			dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 			a.NoError(err)
-			a.Equal(bookSchemaSQLResult, result)
+			a.Equal(want3BookSchema, dbMetadata.Schema)
 
 			// Simulate Git commits for failed data update.
 			gitFile4 := "bbtest/prod/testVCSSchemaUpdate##ver4##data##insert_data.sql"
@@ -2315,9 +2316,9 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Query schema.
-	result, err := ctl.query(instance, databaseName, bookTableQuery)
+	dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 	a.NoError(err)
-	a.NotEqual(bookSchemaSQLResult, result)
+	a.Equal("", dbMetadata.Schema)
 }
 
 func TestVCS_SDL_MySQL(t *testing.T) {

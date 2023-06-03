@@ -866,7 +866,7 @@ type GetDatabaseMetadataRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the database to retrieve metadata.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}/metadata
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -915,7 +915,7 @@ type GetDatabaseSchemaRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the database to retrieve schema.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database}/schema
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Format the schema dump into SDL format.
 	SdlFormat bool `protobuf:"varint,2,opt,name=sdl_format,json=sdlFormat,proto3" json:"sdl_format,omitempty"`
