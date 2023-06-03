@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -33,6 +34,29 @@ import (
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+)
+
+var (
+	bookDataQuery     = `SELECT * FROM book;`
+	bookDataSQLResult = &v1pb.QueryResult{
+		ColumnNames:     []string{"id", "name"},
+		ColumnTypeNames: []string{"INTEGER", "TEXT"},
+		Masked:          []bool{false, false},
+		Rows: []*v1pb.QueryRow{
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "byte"}},
+				},
+			},
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 2}},
+					{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}},
+				},
+			},
+		},
+	}
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {
@@ -125,9 +149,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Query schema.
-	result, err := ctl.query(instance, databaseName, bookTableQuery)
+	dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 	a.NoError(err)
-	a.Equal(bookSchemaSQLResult, result)
+	a.Equal(wantBookSchema, dbMetadata.Schema)
 
 	sheet, err = ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: project.Name,
@@ -199,7 +223,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			PrevSchema: history.PrevSchema,
 		}
 		want := wantHistories[i]
-		proto.Equal(got, want)
 		a.True(proto.Equal(got, want))
 		a.NotEqual(history.Version, "")
 	}
@@ -224,9 +247,14 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 
 	// Query clone database book table data.
-	result, err = ctl.query(instance, cloneDatabaseName, bookDataQuery)
+	queryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
+		Name: instance.Name, ConnectionDatabase: cloneDatabaseName, Statement: bookDataQuery,
+	})
 	a.NoError(err)
-	a.Equal(bookDataSQLResult, result)
+	a.Equal(1, len(queryResp.Results))
+	diff := cmp.Diff(bookDataSQLResult, queryResp.Results[0], protocmp.Transform())
+	a.Equal("", diff)
+
 	// Query clone migration history.
 	resp, err = ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 		Parent: cloneDatabase.Name,
@@ -252,7 +280,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			PrevSchema: history.PrevSchema,
 		}
 		want := wantCloneHistories[i]
-		proto.Equal(got, want)
 		a.True(proto.Equal(got, want))
 	}
 
@@ -551,9 +578,9 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Query schema.
-			result, err := ctl.query(instance, databaseName, bookTableQuery)
+			dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 			a.NoError(err)
-			a.Equal(bookSchemaSQLResult, result)
+			a.Equal(want3BookSchema, dbMetadata.Schema)
 
 			// Simulate Git commits for failed data update.
 			gitFile4 := "bbtest/prod/testVCSSchemaUpdate##ver4##data##insert_data.sql"
@@ -721,7 +748,6 @@ func TestVCS(t *testing.T) {
 					PrevSchema: history.PrevSchema,
 				}
 				want := wantHistories[i]
-				proto.Equal(got, want)
 				a.True(proto.Equal(got, want))
 				a.NotEqual(history.Version, "")
 			}
@@ -734,7 +760,7 @@ func TestVCS(t *testing.T) {
 	}
 }
 
-func TestVCS_SDL(t *testing.T) {
+func TestVCS_SDL_POSTGRES(t *testing.T) {
 	// TODO(rebelice): remove skip when support PostgreSQL SDL.
 	t.Skip()
 	tests := []struct {
@@ -990,17 +1016,6 @@ func TestVCS_SDL(t *testing.T) {
 			)
 			a.NoError(err)
 
-			// Query list of tables
-			result, err := ctl.query(instance, databaseName, `
-SELECT table_name 
-    FROM information_schema.tables 
-WHERE table_type = 'BASE TABLE' 
-    AND table_schema NOT IN 
-        ('pg_catalog', 'information_schema');
-`)
-			a.NoError(err)
-			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]],[false]]`, result)
-
 			// Get migration history
 			const initialSchema = `
 SET statement_timeout = 0;
@@ -1071,6 +1086,11 @@ ALTER TABLE ONLY public.users
 
 `
 
+			// Query list of tables
+			dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
+			a.NoError(err)
+			a.Equal(updatedSchema, dbMetadata.Schema)
+
 			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 				Parent: database.Name,
 			})
@@ -1109,7 +1129,6 @@ ALTER TABLE ONLY public.users
 					PrevSchema: history.PrevSchema,
 				}
 				want := wantHistories[i]
-				proto.Equal(got, want)
 				a.True(proto.Equal(got, want))
 				a.NotEqual(history.Version, "")
 			}
@@ -2315,9 +2334,9 @@ func TestMarkTaskAsDone(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Query schema.
-	result, err := ctl.query(instance, databaseName, bookTableQuery)
+	dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 	a.NoError(err)
-	a.NotEqual(bookSchemaSQLResult, result)
+	a.Equal("", dbMetadata.Schema)
 }
 
 func TestVCS_SDL_MySQL(t *testing.T) {
@@ -2583,15 +2602,6 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			)
 			a.NoError(err)
 
-			// Query list of tables
-			result, err := ctl.query(instance, databaseName, fmt.Sprintf(`
-SELECT table_name 
-    FROM information_schema.tables 
-WHERE table_schema = '%s'; 
-`, databaseName))
-			a.NoError(err)
-			a.Equal(`[["TABLE_NAME"],["VARCHAR"],[["projects"],["users"]],[false]]`, result)
-
 			// Get migration history
 			const initialSchema = "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
 				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
@@ -2627,6 +2637,11 @@ WHERE table_schema = '%s';
 				"  PRIMARY KEY (`id`)\n" +
 				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n"
 
+			// Query list of tables
+			dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
+			a.NoError(err)
+			a.Equal(updatedSchema, dbMetadata.Schema)
+
 			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 				Parent: database.Name,
 			})
@@ -2658,7 +2673,6 @@ WHERE table_schema = '%s';
 					PrevSchema: history.PrevSchema,
 				}
 				want := wantHistories[i]
-				proto.Equal(got, want)
 				a.True(proto.Equal(got, want))
 				a.NotEqual(history.Version, "")
 			}

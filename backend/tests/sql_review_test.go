@@ -17,8 +17,10 @@ import (
 
 	// Import pg driver.
 	// init() in pgx will register it's pgx driver.
+	"github.com/google/go-cmp/cmp"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"gopkg.in/yaml.v3"
 
@@ -31,15 +33,17 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var noSQLReviewPolicy = []api.TaskCheckResult{
-	{
-		Status:    api.TaskCheckStatusSuccess,
-		Namespace: api.AdvisorNamespace,
-		Code:      common.Ok.Int(),
-		Title:     "Empty SQL review policy or disabled",
-		Content:   "",
-	},
-}
+var (
+	noSQLReviewPolicy = []api.TaskCheckResult{
+		{
+			Status:    api.TaskCheckStatusSuccess,
+			Namespace: api.AdvisorNamespace,
+			Code:      common.Ok.Int(),
+			Title:     "Empty SQL review policy or disabled",
+			Content:   "",
+		},
+	}
+)
 
 type test struct {
 	Statement string
@@ -257,6 +261,18 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			SELECT 8 AS id, 'h' AS name WHERE 1=1 UNION ALL
 			SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL
 			SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table`
+		wantQueryResult = &v1pb.QueryResult{
+			ColumnNames:     []string{"count(*)"},
+			ColumnTypeNames: []string{"BIGINT"},
+			Masked:          []bool{false},
+			Rows: []*v1pb.QueryRow{
+				{
+					Values: []*v1pb.RowValue{
+						{Kind: &v1pb.RowValue_StringValue{StringValue: "4"}},
+					},
+				},
+			},
+		}
 	)
 
 	t.Parallel()
@@ -393,13 +409,23 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	}
 	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
-	origin, err := ctl.query(instance, databaseName, countSQL)
+	originQueryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
+		Name: instance.Name, ConnectionDatabase: databaseName, Statement: countSQL,
+	})
 	a.NoError(err)
-	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]],[false]]", origin)
+	a.Equal(1, len(originQueryResp.Results))
+	diff := cmp.Diff(wantQueryResult, originQueryResp.Results[0], protocmp.Transform())
+	a.Equal("", diff)
+
 	createIssueAndReturnSQLReviewResult(ctx, a, ctl, databaseUID, projectUID, project.Name, dmlSQL, false /* wait */)
-	finial, err := ctl.query(instance, databaseName, countSQL)
+
+	finalQueryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
+		Name: instance.Name, ConnectionDatabase: databaseName, Statement: countSQL,
+	})
 	a.NoError(err)
-	a.Equal(origin, finial)
+	a.Equal(1, len(finalQueryResp.Results))
+	diff = cmp.Diff(wantQueryResult, finalQueryResp.Results[0], protocmp.Transform())
+	a.Equal("", diff)
 
 	// disable the SQL review policy
 	policy.Enforce = false
