@@ -39,6 +39,7 @@ run:
     - mysql
   skip-dirs:
     - proto/generated-go
+    - frontend
 
 linters-settings:
   goimports:
