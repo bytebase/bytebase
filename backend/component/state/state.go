@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // InstanceMaximumConnectionNumber is the maximum number of connections outstanding per instance.
@@ -13,7 +14,7 @@ const InstanceMaximumConnectionNumber = 20
 // State is the state for all in-memory states within the server.
 type State struct {
 	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
-	InstanceDatabaseSyncChan chan *api.Instance
+	InstanceDatabaseSyncChan chan *store.InstanceMessage
 	// InstanceSlowQuerySyncChan is the channel for synchronizing slow query logs for instances.
 	InstanceSlowQuerySyncChan chan *api.Instance
 
