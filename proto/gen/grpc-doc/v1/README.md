@@ -276,7 +276,6 @@
     - [DatabaseGroup](#bytebase-v1-DatabaseGroup)
     - [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database)
     - [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest)
-    - [DeleteProjectGitOpsInfoRequest](#bytebase-v1-DeleteProjectGitOpsInfoRequest)
     - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
     - [DeleteSchemaGroupRequest](#bytebase-v1-DeleteSchemaGroupRequest)
     - [DeploymentConfig](#bytebase-v1-DeploymentConfig)
@@ -305,14 +304,15 @@
     - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
-    - [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest)
     - [SetupSQLReviewCIRequest](#bytebase-v1-SetupSQLReviewCIRequest)
     - [SetupSQLReviewCIResponse](#bytebase-v1-SetupSQLReviewCIResponse)
     - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
     - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
+    - [UnsetProjectGitOpsInfoRequest](#bytebase-v1-UnsetProjectGitOpsInfoRequest)
     - [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest)
     - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
+    - [UpdateProjectGitOpsInfoRequest](#bytebase-v1-UpdateProjectGitOpsInfoRequest)
     - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
     - [UpdateSchemaGroupRequest](#bytebase-v1-UpdateSchemaGroupRequest)
     - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
@@ -4475,21 +4475,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="bytebase-v1-DeleteProjectGitOpsInfoRequest"></a>
-
-### DeleteProjectGitOpsInfoRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
-
-
-
-
-
-
 <a name="bytebase-v1-DeleteProjectRequest"></a>
 
 ### DeleteProjectRequest
@@ -4607,7 +4592,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
+| name | [string](#string) |  | The name of the GitOps info. Format: projects/{project}/gitOpsInfo |
 
 
 
@@ -4958,24 +4943,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 
 
 
-<a name="bytebase-v1-SetProjectGitOpsInfoRequest"></a>
-
-### SetProjectGitOpsInfoRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
-| project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  | The binding for the project and external version control. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
-| allow_missing | [bool](#bool) |  | If true, the gitops will be created if it does not exist. |
-
-
-
-
-
-
 <a name="bytebase-v1-SetupSQLReviewCIRequest"></a>
 
 ### SetupSQLReviewCIRequest
@@ -4984,7 +4951,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
+| name | [string](#string) |  | The name of the GitOps info. Format: projects/{project}/gitOpsInfo |
 
 
 
@@ -5052,6 +5019,21 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 
 
 
+<a name="bytebase-v1-UnsetProjectGitOpsInfoRequest"></a>
+
+### UnsetProjectGitOpsInfoRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the GitOps info. Format: projects/{project}/gitOpsInfo |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateDatabaseGroupRequest"></a>
 
 ### UpdateDatabaseGroupRequest
@@ -5079,6 +5061,23 @@ The database group&#39;s `name` field is used to identify the database group to 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | config | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateProjectGitOpsInfoRequest"></a>
+
+### UpdateProjectGitOpsInfoRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  | The binding for the project and external version control. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
+| allow_missing | [bool](#bool) |  | If true, the gitops will be created if it does not exist. |
 
 
 
@@ -5344,8 +5343,8 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
-| SetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
-| DeleteProjectGitOpsInfo | [DeleteProjectGitOpsInfoRequest](#bytebase-v1-DeleteProjectGitOpsInfoRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| UpdateProjectGitOpsInfo | [UpdateProjectGitOpsInfoRequest](#bytebase-v1-UpdateProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
+| UnsetProjectGitOpsInfo | [UnsetProjectGitOpsInfoRequest](#bytebase-v1-UnsetProjectGitOpsInfoRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | SetupProjectSQLReviewCI | [SetupSQLReviewCIRequest](#bytebase-v1-SetupSQLReviewCIRequest) | [SetupSQLReviewCIResponse](#bytebase-v1-SetupSQLReviewCIResponse) |  |
 | GetProjectGitOpsInfo | [GetProjectGitOpsInfoRequest](#bytebase-v1-GetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
 | ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) |  |

@@ -1027,8 +1027,8 @@ func local_request_ProjectService_TestWebhook_0(ctx context.Context, marshaler r
 
 }
 
-func request_ProjectService_SetProjectGitOpsInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq SetProjectGitOpsInfoRequest
+func request_ProjectService_UpdateProjectGitOpsInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpdateProjectGitOpsInfoRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -1046,23 +1046,23 @@ func request_ProjectService_SetProjectGitOpsInfo_0(ctx context.Context, marshale
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["project_gitops_info.name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_gitops_info.name")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "project_gitops_info.name", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_gitops_info.name", err)
 	}
 
-	msg, err := client.SetProjectGitOpsInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.UpdateProjectGitOpsInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_ProjectService_SetProjectGitOpsInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq SetProjectGitOpsInfoRequest
+func local_request_ProjectService_UpdateProjectGitOpsInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpdateProjectGitOpsInfoRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -1080,23 +1080,23 @@ func local_request_ProjectService_SetProjectGitOpsInfo_0(ctx context.Context, ma
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["project_gitops_info.name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_gitops_info.name")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "project_gitops_info.name", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_gitops_info.name", err)
 	}
 
-	msg, err := server.SetProjectGitOpsInfo(ctx, &protoReq)
+	msg, err := server.UpdateProjectGitOpsInfo(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_ProjectService_DeleteProjectGitOpsInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeleteProjectGitOpsInfoRequest
+func request_ProjectService_UnsetProjectGitOpsInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UnsetProjectGitOpsInfoRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -1106,23 +1106,23 @@ func request_ProjectService_DeleteProjectGitOpsInfo_0(ctx context.Context, marsh
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	protoReq.Name, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
-	msg, err := client.DeleteProjectGitOpsInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.UnsetProjectGitOpsInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_ProjectService_DeleteProjectGitOpsInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeleteProjectGitOpsInfoRequest
+func local_request_ProjectService_UnsetProjectGitOpsInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UnsetProjectGitOpsInfoRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -1132,17 +1132,17 @@ func local_request_ProjectService_DeleteProjectGitOpsInfo_0(ctx context.Context,
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	protoReq.Name, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
-	msg, err := server.DeleteProjectGitOpsInfo(ctx, &protoReq)
+	msg, err := server.UnsetProjectGitOpsInfo(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -1166,14 +1166,14 @@ func request_ProjectService_SetupProjectSQLReviewCI_0(ctx context.Context, marsh
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	protoReq.Name, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
 	msg, err := client.SetupProjectSQLReviewCI(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1200,14 +1200,14 @@ func local_request_ProjectService_SetupProjectSQLReviewCI_0(ctx context.Context,
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	protoReq.Name, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
 	msg, err := server.SetupProjectSQLReviewCI(ctx, &protoReq)
@@ -1226,14 +1226,14 @@ func request_ProjectService_GetProjectGitOpsInfo_0(ctx context.Context, marshale
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	protoReq.Name, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
 	msg, err := client.GetProjectGitOpsInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1252,14 +1252,14 @@ func local_request_ProjectService_GetProjectGitOpsInfo_0(ctx context.Context, ma
 		_   = err
 	)
 
-	val, ok = pathParams["project"]
+	val, ok = pathParams["name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
 
-	protoReq.Project, err = runtime.String(val)
+	protoReq.Name, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
 	msg, err := server.GetProjectGitOpsInfo(ctx, &protoReq)
@@ -2429,7 +2429,7 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("PUT", pattern_ProjectService_SetProjectGitOpsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_ProjectService_UpdateProjectGitOpsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -2437,12 +2437,12 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/SetProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{project=projects/*}/gitOpsInfo"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/UpdateProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{project_gitops_info.name=projects/*/gitOpsInfo}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ProjectService_SetProjectGitOpsInfo_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ProjectService_UpdateProjectGitOpsInfo_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -2450,11 +2450,11 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 			return
 		}
 
-		forward_ProjectService_SetProjectGitOpsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ProjectService_UpdateProjectGitOpsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_ProjectService_DeleteProjectGitOpsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_ProjectService_UnsetProjectGitOpsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -2462,12 +2462,12 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/DeleteProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{project=projects/*}/gitOpsInfo"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/UnsetProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{name=projects/*/gitOpsInfo}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ProjectService_DeleteProjectGitOpsInfo_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ProjectService_UnsetProjectGitOpsInfo_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -2475,7 +2475,7 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 			return
 		}
 
-		forward_ProjectService_DeleteProjectGitOpsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ProjectService_UnsetProjectGitOpsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -2487,7 +2487,7 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/SetupProjectSQLReviewCI", runtime.WithHTTPPathPattern("/v1/{project=projects/*}/gitOpsInfo:setupSQLReviewCI"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/SetupProjectSQLReviewCI", runtime.WithHTTPPathPattern("/v1/{name=projects/*/gitOpsInfo}:setupSQLReviewCI"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2512,7 +2512,7 @@ func RegisterProjectServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{project=projects/*}/gitOpsInfo"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{name=projects/*/gitOpsInfo}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3172,47 +3172,47 @@ func RegisterProjectServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 
 	})
 
-	mux.Handle("PUT", pattern_ProjectService_SetProjectGitOpsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_ProjectService_UpdateProjectGitOpsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/SetProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{project=projects/*}/gitOpsInfo"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/UpdateProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{project_gitops_info.name=projects/*/gitOpsInfo}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ProjectService_SetProjectGitOpsInfo_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ProjectService_UpdateProjectGitOpsInfo_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ProjectService_SetProjectGitOpsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ProjectService_UpdateProjectGitOpsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_ProjectService_DeleteProjectGitOpsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_ProjectService_UnsetProjectGitOpsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/DeleteProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{project=projects/*}/gitOpsInfo"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/UnsetProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{name=projects/*/gitOpsInfo}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ProjectService_DeleteProjectGitOpsInfo_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ProjectService_UnsetProjectGitOpsInfo_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ProjectService_DeleteProjectGitOpsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ProjectService_UnsetProjectGitOpsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -3222,7 +3222,7 @@ func RegisterProjectServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/SetupProjectSQLReviewCI", runtime.WithHTTPPathPattern("/v1/{project=projects/*}/gitOpsInfo:setupSQLReviewCI"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/SetupProjectSQLReviewCI", runtime.WithHTTPPathPattern("/v1/{name=projects/*/gitOpsInfo}:setupSQLReviewCI"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3244,7 +3244,7 @@ func RegisterProjectServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{project=projects/*}/gitOpsInfo"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ProjectService/GetProjectGitOpsInfo", runtime.WithHTTPPathPattern("/v1/{name=projects/*/gitOpsInfo}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -3516,13 +3516,13 @@ var (
 
 	pattern_ProjectService_TestWebhook_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "project"}, "testWebhook"))
 
-	pattern_ProjectService_SetProjectGitOpsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "project", "gitOpsInfo"}, ""))
+	pattern_ProjectService_UpdateProjectGitOpsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 4, 3, 5, 3}, []string{"v1", "projects", "gitOpsInfo", "project_gitops_info.name"}, ""))
 
-	pattern_ProjectService_DeleteProjectGitOpsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "project", "gitOpsInfo"}, ""))
+	pattern_ProjectService_UnsetProjectGitOpsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 4, 3, 5, 3}, []string{"v1", "projects", "gitOpsInfo", "name"}, ""))
 
-	pattern_ProjectService_SetupProjectSQLReviewCI_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "project", "gitOpsInfo"}, "setupSQLReviewCI"))
+	pattern_ProjectService_SetupProjectSQLReviewCI_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 4, 3, 5, 3}, []string{"v1", "projects", "gitOpsInfo", "name"}, "setupSQLReviewCI"))
 
-	pattern_ProjectService_GetProjectGitOpsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "project", "gitOpsInfo"}, ""))
+	pattern_ProjectService_GetProjectGitOpsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 4, 3, 5, 3}, []string{"v1", "projects", "gitOpsInfo", "name"}, ""))
 
 	pattern_ProjectService_ListDatabaseGroups_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "databaseGroups"}, ""))
 
@@ -3578,9 +3578,9 @@ var (
 
 	forward_ProjectService_TestWebhook_0 = runtime.ForwardResponseMessage
 
-	forward_ProjectService_SetProjectGitOpsInfo_0 = runtime.ForwardResponseMessage
+	forward_ProjectService_UpdateProjectGitOpsInfo_0 = runtime.ForwardResponseMessage
 
-	forward_ProjectService_DeleteProjectGitOpsInfo_0 = runtime.ForwardResponseMessage
+	forward_ProjectService_UnsetProjectGitOpsInfo_0 = runtime.ForwardResponseMessage
 
 	forward_ProjectService_SetupProjectSQLReviewCI_0 = runtime.ForwardResponseMessage
 
