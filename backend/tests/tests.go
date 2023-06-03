@@ -167,6 +167,7 @@ type controller struct {
 	instanceServiceClient    v1pb.InstanceServiceClient
 	databaseServiceClient    v1pb.DatabaseServiceClient
 	sheetServiceClient       v1pb.SheetServiceClient
+	evcsClient               v1pb.ExternalVersionControlServiceClient
 
 	cookie             string
 	grpcMDAccessToken  string
@@ -436,6 +437,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.instanceServiceClient = v1pb.NewInstanceServiceClient(ctl.grpcConn)
 	ctl.databaseServiceClient = v1pb.NewDatabaseServiceClient(ctl.grpcConn)
 	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
+	ctl.evcsClient = v1pb.NewExternalVersionControlServiceClient(ctl.grpcConn)
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
@@ -616,13 +618,6 @@ func (ctl *controller) patchOpenAPI(shortURL string, body io.Reader) (io.ReadClo
 	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
 	return ctl.request("PATCH", url, body, nil, map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", strings.ReplaceAll(ctl.cookie, "access-token=", "")),
-	})
-}
-
-func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	return ctl.request("DELETE", url, body, nil, map[string]string{
-		"Cookie": ctl.cookie,
 	})
 }
 

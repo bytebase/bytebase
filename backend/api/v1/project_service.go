@@ -398,6 +398,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		return s.createProjectGitOpsInfo(ctx, request, project)
 	}
 
+	fmt.Printf("Barny1: %v\n", repo)
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set to update gitops")
 	}
@@ -540,8 +541,10 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSID)
 	}
 
+	fmt.Println("Barny1: ", repo.Project.ResourceID)
 	// TODO: migrate to v1 store.
 	repositoryDelete := &api.RepositoryDelete{
+		ProjectID:         repo.Project.ID,
 		ProjectResourceID: repo.Project.ResourceID,
 		DeleterID:         ctx.Value(common.PrincipalIDContextKey).(int),
 	}
@@ -851,7 +854,9 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		ExternalID:         request.ProjectGitopsInfo.ExternalId,
 		AccessToken:        request.ProjectGitopsInfo.AccessToken,
 		RefreshToken:       request.ProjectGitopsInfo.RefreshToken,
-		ExpiresTs:          request.ProjectGitopsInfo.ExpiresTime.Seconds,
+	}
+	if request.ProjectGitopsInfo.ExpiresTime != nil {
+		repositoryCreate.ExpiresTs = request.ProjectGitopsInfo.ExpiresTime.AsTime().Unix()
 	}
 
 	if repositoryCreate.BranchFilter == "" {
