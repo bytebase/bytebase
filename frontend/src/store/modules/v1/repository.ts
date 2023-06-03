@@ -19,7 +19,7 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
   ): Promise<ProjectGitOpsInfo | undefined> => {
     try {
       const gitopsInfo = await projectServiceClient.getProjectGitOpsInfo({
-        name: "${project}/gitOpsInfo",
+        name: project + "/gitOpsInfo",
       });
 
       repositoryMapByProject.set(project, gitopsInfo);
@@ -47,7 +47,7 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     project: string,
     gitopsInfo: Partial<ProjectGitOpsInfo>
   ): Promise<ProjectGitOpsInfo> => {
-    gitopsInfo.name = "${project}/gitOpsInfo";
+    gitopsInfo.name = project + "/gitOpsInfo";
     const repo = await getOrFetchRepositoryByProject(project);
     let gitops: ProjectGitOpsInfo;
 
@@ -74,13 +74,13 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
 
   const deleteRepository = async (project: string) => {
     await projectServiceClient.unsetProjectGitOpsInfo({
-      name: "${project}/gitOpsInfo",
+      name: project + "/gitOpsInfo",
     });
   };
 
   const setupSQLReviewCI = async (project: string): Promise<string> => {
     const resp = await projectServiceClient.setupProjectSQLReviewCI({
-      name: "${project}/gitOpsInfo",
+      name: project + "/gitOpsInfo",
     });
     return resp.pullRequestUrl;
   };
