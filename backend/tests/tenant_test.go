@@ -110,12 +110,12 @@ func TestTenant(t *testing.T) {
 	}
 
 	// Create deployment configuration.
-	_, err = ctl.upsertDeploymentConfig(
-		api.DeploymentConfigUpsert{
-			ProjectID: projectUID,
+	_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
+		Config: &v1pb.DeploymentConfig{
+			Name:     fmt.Sprintf("%s/deploymentConfig", project.Name),
+			Schedule: deploySchedule,
 		},
-		deploymentSchedule,
-	)
+	})
 	a.NoError(err)
 
 	// Create issues that create databases.
@@ -406,12 +406,12 @@ func TestTenantVCS(t *testing.T) {
 			}
 
 			// Create deployment configuration.
-			_, err = ctl.upsertDeploymentConfig(
-				api.DeploymentConfigUpsert{
-					ProjectID: projectUID,
+			_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
+				Config: &v1pb.DeploymentConfig{
+					Name:     fmt.Sprintf("%s/deploymentConfig", project.Name),
+					Schedule: deploySchedule,
 				},
-				deploymentSchedule,
-			)
+			})
 			a.NoError(err)
 
 			// Create issues that create databases.
@@ -562,12 +562,12 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.NoError(err)
 
 	// Create deployment configuration.
-	_, err = ctl.upsertDeploymentConfig(
-		api.DeploymentConfigUpsert{
-			ProjectID: projectUID,
+	_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
+		Config: &v1pb.DeploymentConfig{
+			Name:     fmt.Sprintf("%s/deploymentConfig", project.Name),
+			Schedule: deploySchedule,
 		},
-		deploymentSchedule,
-	)
+	})
 	a.NoError(err)
 
 	// Create issues that create databases.
@@ -863,12 +863,12 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			}
 
 			// Create deployment configuration.
-			_, err = ctl.upsertDeploymentConfig(
-				api.DeploymentConfigUpsert{
-					ProjectID: projectUID,
+			_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
+				Config: &v1pb.DeploymentConfig{
+					Name:     fmt.Sprintf("%s/deploymentConfig", project.Name),
+					Schedule: deploySchedule,
 				},
-				deploymentSchedule,
-			)
+			})
 			a.NoError(err)
 
 			// Create issues that create databases.
@@ -1142,21 +1142,21 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			}
 
 			// Create deployment configuration.
-			_, err = ctl.upsertDeploymentConfig(
-				api.DeploymentConfigUpsert{
-					ProjectID: projectUID,
-				},
-				api.DeploymentSchedule{
-					Deployments: []*api.Deployment{
-						{
-							Name: "Test stage",
-							Spec: &api.DeploymentSpec{
-								Selector: &api.LabelSelector{
-									MatchExpressions: []*api.LabelSelectorRequirement{
-										{
-											Key:      api.EnvironmentLabelKey,
-											Operator: api.InOperatorType,
-											Values:   []string{"test"},
+			_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
+				Config: &v1pb.DeploymentConfig{
+					Name: fmt.Sprintf("%s/deploymentConfig", project.Name),
+					Schedule: &v1pb.Schedule{
+						Deployments: []*v1pb.ScheduleDeployment{
+							{
+								Title: "Test stage",
+								Spec: &v1pb.DeploymentSpec{
+									LabelSelector: &v1pb.LabelSelector{
+										MatchExpressions: []*v1pb.LabelSelectorRequirement{
+											{
+												Key:      api.EnvironmentLabelKey,
+												Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
+												Values:   []string{"test"},
+											},
 										},
 									},
 								},
@@ -1164,7 +1164,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 						},
 					},
 				},
-			)
+			})
 			a.NoError(err)
 
 			// Create issues that create databases.
@@ -1408,21 +1408,21 @@ func TestTenantVCS_YAML(t *testing.T) {
 			}
 
 			// Create deployment configuration.
-			_, err = ctl.upsertDeploymentConfig(
-				api.DeploymentConfigUpsert{
-					ProjectID: projectUID,
-				},
-				api.DeploymentSchedule{
-					Deployments: []*api.Deployment{
-						{
-							Name: "Test stage",
-							Spec: &api.DeploymentSpec{
-								Selector: &api.LabelSelector{
-									MatchExpressions: []*api.LabelSelectorRequirement{
-										{
-											Key:      api.EnvironmentLabelKey,
-											Operator: api.InOperatorType,
-											Values:   []string{"test"},
+			_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
+				Config: &v1pb.DeploymentConfig{
+					Name: fmt.Sprintf("%s/deploymentConfig", project.Name),
+					Schedule: &v1pb.Schedule{
+						Deployments: []*v1pb.ScheduleDeployment{
+							{
+								Title: "Test stage",
+								Spec: &v1pb.DeploymentSpec{
+									LabelSelector: &v1pb.LabelSelector{
+										MatchExpressions: []*v1pb.LabelSelectorRequirement{
+											{
+												Key:      api.EnvironmentLabelKey,
+												Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
+												Values:   []string{"test"},
+											},
 										},
 									},
 								},
@@ -1430,7 +1430,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 						},
 					},
 				},
-			)
+			})
 			a.NoError(err)
 
 			// Create issues that create databases.

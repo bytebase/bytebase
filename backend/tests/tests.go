@@ -111,39 +111,39 @@ CREATE TABLE book4 (
 		name TEXT NULL
 	);
 `
-	deploymentSchedule = api.DeploymentSchedule{
-		Deployments: []*api.Deployment{
+	deploySchedule = &v1pb.Schedule{
+		Deployments: []*v1pb.ScheduleDeployment{
 			{
-				Name: "Test stage",
-				Spec: &api.DeploymentSpec{
-					Selector: &api.LabelSelector{
-						MatchExpressions: []*api.LabelSelectorRequirement{
+				Title: "Test stage",
+				Spec: &v1pb.DeploymentSpec{
+					LabelSelector: &v1pb.LabelSelector{
+						MatchExpressions: []*v1pb.LabelSelectorRequirement{
 							{
 								Key:      api.EnvironmentLabelKey,
-								Operator: api.InOperatorType,
+								Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
 								Values:   []string{"test"},
 							},
 							{
 								Key:      api.TenantLabelKey,
-								Operator: api.ExistsOperatorType,
+								Operator: v1pb.OperatorType_OPERATOR_TYPE_EXISTS,
 							},
 						},
 					},
 				},
 			},
 			{
-				Name: "Prod stage",
-				Spec: &api.DeploymentSpec{
-					Selector: &api.LabelSelector{
-						MatchExpressions: []*api.LabelSelectorRequirement{
+				Title: "Prod stage",
+				Spec: &v1pb.DeploymentSpec{
+					LabelSelector: &v1pb.LabelSelector{
+						MatchExpressions: []*v1pb.LabelSelectorRequirement{
 							{
 								Key:      api.EnvironmentLabelKey,
-								Operator: api.InOperatorType,
+								Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
 								Values:   []string{"prod"},
 							},
 							{
 								Key:      api.TenantLabelKey,
-								Operator: api.ExistsOperatorType,
+								Operator: v1pb.OperatorType_OPERATOR_TYPE_EXISTS,
 							},
 						},
 					},
