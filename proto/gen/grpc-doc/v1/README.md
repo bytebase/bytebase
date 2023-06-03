@@ -1888,7 +1888,7 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
 
 
 
@@ -1918,7 +1918,7 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database}/schema |
 | sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
 
 
