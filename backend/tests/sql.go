@@ -17,46 +17,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// executeSQL executes a SQL query on the database.
-func (ctl *controller) executeSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet, error) {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &sqlExecute); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal sqlExecute")
-	}
-
-	body, err := ctl.post("/sql/execute", buf)
-	if err != nil {
-		return nil, err
-	}
-
-	sqlResultSet := new(api.SQLResultSet)
-	if err = jsonapi.UnmarshalPayload(body, sqlResultSet); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal sqlResultSet response")
-	}
-	return sqlResultSet, nil
-}
-
-func (ctl *controller) query(instance *v1pb.Instance, databaseName, query string) (string, error) {
-	instanceUID, err := strconv.Atoi(instance.Uid)
-	if err != nil {
-		return "", err
-	}
-	sqlResultSet, err := ctl.executeSQL(api.SQLExecute{
-		InstanceID:   instanceUID,
-		DatabaseName: databaseName,
-		Statement:    query,
-		Readonly:     true,
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "failed to execute SQL")
-	}
-	if sqlResultSet.Error != "" {
-		return "", errors.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
-	}
-	// TODO(zp): optimize here
-	return sqlResultSet.SingleSQLResultList[0].Data, nil
-}
-
 // adminExecuteSQL executes a SQL query on the database.
 func (ctl *controller) adminExecuteSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet, error) {
 	buf := new(bytes.Buffer)

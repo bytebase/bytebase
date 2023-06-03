@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -33,6 +34,29 @@ import (
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+)
+
+var (
+	bookDataQuery     = `SELECT * FROM book;`
+	bookDataSQLResult = &v1pb.QueryResult{
+		ColumnNames:     []string{"id", "name"},
+		ColumnTypeNames: []string{"INTEGER", "TEXT"},
+		Masked:          []bool{false, false},
+		Rows: []*v1pb.QueryRow{
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "byte"}},
+				},
+			},
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 2}},
+					{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}},
+				},
+			},
+		},
+	}
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {
@@ -199,7 +223,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			PrevSchema: history.PrevSchema,
 		}
 		want := wantHistories[i]
-		proto.Equal(got, want)
 		a.True(proto.Equal(got, want))
 		a.NotEqual(history.Version, "")
 	}
@@ -224,9 +247,13 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 
 	// Query clone database book table data.
-	result, err := ctl.query(instance, cloneDatabaseName, bookDataQuery)
+	queryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
+		Name: instance.Name, ConnectionDatabase: cloneDatabaseName, Statement: bookDataQuery,
+	})
 	a.NoError(err)
-	a.Equal(bookDataSQLResult, result)
+	a.Equal(1, len(queryResp.Results))
+	diff := cmp.Diff(bookDataSQLResult, queryResp.Results[0], protocmp.Transform())
+	a.Equal("", diff)
 
 	// Query clone migration history.
 	resp, err = ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
@@ -253,7 +280,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			PrevSchema: history.PrevSchema,
 		}
 		want := wantCloneHistories[i]
-		proto.Equal(got, want)
 		a.True(proto.Equal(got, want))
 	}
 
@@ -722,7 +748,6 @@ func TestVCS(t *testing.T) {
 					PrevSchema: history.PrevSchema,
 				}
 				want := wantHistories[i]
-				proto.Equal(got, want)
 				a.True(proto.Equal(got, want))
 				a.NotEqual(history.Version, "")
 			}
@@ -1104,7 +1129,6 @@ ALTER TABLE ONLY public.users
 					PrevSchema: history.PrevSchema,
 				}
 				want := wantHistories[i]
-				proto.Equal(got, want)
 				a.True(proto.Equal(got, want))
 				a.NotEqual(history.Version, "")
 			}
@@ -2649,7 +2673,6 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 					PrevSchema: history.PrevSchema,
 				}
 				want := wantHistories[i]
-				proto.Equal(got, want)
 				a.True(proto.Equal(got, want))
 				a.NotEqual(history.Version, "")
 			}

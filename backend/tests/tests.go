@@ -64,9 +64,6 @@ var (
 	//go:embed test-data/book_3_schema.result
 	want3BookSchema string
 
-	bookDataQuery     = `SELECT * FROM book;`
-	bookDataSQLResult = `[["id","name"],["INTEGER","TEXT"],[[1,"byte"],[2,null]],[false,false]]`
-
 	dataUpdateStatementWrong = "INSERT INTO book(name) xxx"
 	dataUpdateStatement      = `
 	INSERT INTO book(name) VALUES

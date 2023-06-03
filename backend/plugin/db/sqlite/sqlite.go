@@ -158,8 +158,13 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 }
 
 // QueryConn2 queries a SQL statement in a given connection.
-func (*Driver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, errors.New("not implemented")
+func (*Driver) QueryConn2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	result, err := util.Query2(ctx, db.SQLite, conn, statement, queryContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return []*v1pb.QueryResult{result}, nil
 }
 
 // RunStatement runs a SQL statement.
