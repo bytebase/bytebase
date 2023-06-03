@@ -131,6 +131,12 @@ func (s *Store) PatchRepository(ctx context.Context, patch *api.RepositoryPatch)
 
 // DeleteRepository deletes an existing repository by ID.
 func (s *Store) DeleteRepository(ctx context.Context, delete *api.RepositoryDelete) error {
+	if delete.ProjectID == 0 {
+		return errors.Errorf("project ID must be set")
+	}
+	if delete.ProjectResourceID == "" {
+		return errors.Errorf("project resource ID must be set")
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
