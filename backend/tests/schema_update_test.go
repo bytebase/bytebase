@@ -735,7 +735,7 @@ func TestVCS(t *testing.T) {
 	}
 }
 
-func TestVCS_SDL(t *testing.T) {
+func TestVCS_SDL_POSTGRES(t *testing.T) {
 	// TODO(rebelice): remove skip when support PostgreSQL SDL.
 	t.Skip()
 	tests := []struct {
@@ -991,17 +991,6 @@ func TestVCS_SDL(t *testing.T) {
 			)
 			a.NoError(err)
 
-			// Query list of tables
-			result, err := ctl.query(instance, databaseName, `
-SELECT table_name 
-    FROM information_schema.tables 
-WHERE table_type = 'BASE TABLE' 
-    AND table_schema NOT IN 
-        ('pg_catalog', 'information_schema');
-`)
-			a.NoError(err)
-			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]],[false]]`, result)
-
 			// Get migration history
 			const initialSchema = `
 SET statement_timeout = 0;
@@ -1071,6 +1060,11 @@ ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
 `
+
+			// Query list of tables
+			dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
+			a.NoError(err)
+			a.Equal(updatedSchema, dbMetadata.Schema)
 
 			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 				Parent: database.Name,
@@ -2584,15 +2578,6 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			)
 			a.NoError(err)
 
-			// Query list of tables
-			result, err := ctl.query(instance, databaseName, fmt.Sprintf(`
-SELECT table_name 
-    FROM information_schema.tables 
-WHERE table_schema = '%s'; 
-`, databaseName))
-			a.NoError(err)
-			a.Equal(`[["TABLE_NAME"],["VARCHAR"],[["projects"],["users"]],[false]]`, result)
-
 			// Get migration history
 			const initialSchema = "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
 				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
@@ -2627,6 +2612,11 @@ WHERE table_schema = '%s';
 				"  `id` INT NOT NULL,\n" +
 				"  PRIMARY KEY (`id`)\n" +
 				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n"
+
+			// Query list of tables
+			dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
+			a.NoError(err)
+			a.Equal(updatedSchema, dbMetadata.Schema)
 
 			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 				Parent: database.Name,
