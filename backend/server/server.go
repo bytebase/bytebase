@@ -318,7 +318,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	s.stateCfg = &state.State{
-		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
+		InstanceDatabaseSyncChan:       make(chan *store.InstanceMessage, 100),
 		InstanceSlowQuerySyncChan:      make(chan *api.Instance, 100),
 		InstanceOutstandingConnections: make(map[int]int),
 	}
@@ -566,7 +566,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.MetricReporter,
 		s.secret,
 		s.stateCfg,
-		s.dbFactory))
+		s.dbFactory,
+		s.SchemaSyncer))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store, s.ActivityManager, s.licenseService))
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner, s.licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
