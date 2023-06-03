@@ -54,15 +54,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if instance == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", *sync.InstanceID))
 			}
-			composedInstance, err := s.store.GetInstanceByID(ctx, *sync.InstanceID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %d", *sync.InstanceID)).SetInternal(err)
-			}
 			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 				resultSet.Error = err.Error()
 			}
 			// Sync all databases in the instance asynchronously.
-			s.stateCfg.InstanceDatabaseSyncChan <- composedInstance
+			s.stateCfg.InstanceDatabaseSyncChan <- instance
 		}
 		if sync.DatabaseID != nil {
 			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: sync.DatabaseID})
