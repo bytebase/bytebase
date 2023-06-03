@@ -114,27 +114,27 @@ service ProjectService {
     };
   }
 
-  rpc SetProjectGitOpsInfo(SetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
+  rpc UpdateProjectGitOpsInfo(UpdateProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
     option (google.api.http) = {
-      put: "/v1/{project=projects/*}/gitOpsInfo"
+      post: "/v1/{project_gitops_info.name=projects/*/gitOpsInfo}"
       body: "*"
     };
   }
 
-  rpc DeleteProjectGitOpsInfo(DeleteProjectGitOpsInfoRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{project=projects/*}/gitOpsInfo"};
+  rpc UnsetProjectGitOpsInfo(UnsetProjectGitOpsInfoRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=projects/*/gitOpsInfo}"};
     option (google.api.method_signature) = "name";
   }
 
   rpc SetupProjectSQLReviewCI(SetupSQLReviewCIRequest) returns (SetupSQLReviewCIResponse) {
     option (google.api.http) = {
-      patch: "/v1/{project=projects/*}/gitOpsInfo:setupSQLReviewCI"
+      patch: "/v1/{name=projects/*/gitOpsInfo}:setupSQLReviewCI"
       body: "*"
     };
   }
 
   rpc GetProjectGitOpsInfo(GetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
-    option (google.api.http) = {get: "/v1/{project=projects/*}/gitOpsInfo"};
+    option (google.api.http) = {get: "/v1/{name=projects/*/gitOpsInfo}"};
   }
 
   rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
@@ -338,11 +338,7 @@ message UpdateDeploymentConfigRequest {
   DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message SetProjectGitOpsInfoRequest {
-  // The name of the project.
-  // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
-
+message UpdateProjectGitOpsInfoRequest {
   // The binding for the project and external version control.
   ProjectGitOpsInfo project_gitops_info = 2 [(google.api.field_behavior) = REQUIRED];
 
@@ -353,22 +349,22 @@ message SetProjectGitOpsInfoRequest {
   bool allow_missing = 4;
 }
 
-message DeleteProjectGitOpsInfoRequest {
-  // The name of the project.
-  // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
+message UnsetProjectGitOpsInfoRequest {
+  // The name of the GitOps info.
+  // Format: projects/{project}/gitOpsInfo
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetProjectGitOpsInfoRequest {
-  // The name of the project.
-  // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
+  // The name of the GitOps info.
+  // Format: projects/{project}/gitOpsInfo
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message SetupSQLReviewCIRequest {
-  // The name of the project.
-  // Format: projects/{project}
-  string project = 1 [(google.api.field_behavior) = REQUIRED];
+  // The name of the GitOps info.
+  // Format: projects/{project}/gitOpsInfo
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message SetupSQLReviewCIResponse {

@@ -1649,7 +1649,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.Equal(false, repository.EnableSQLReviewCI)
 
 			resp, err := ctl.projectServiceClient.SetupProjectSQLReviewCI(ctx, &v1pb.SetupSQLReviewCIRequest{
-				Project: project.Name,
+				Name: fmt.Sprintf("%s/gitOpsInfo", project.Name),
 			})
 			a.NoError(err)
 			a.NotEmpty(resp.PullRequestUrl)

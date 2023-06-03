@@ -356,21 +356,32 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 
 // GetProjectGitOpsInfo gets the GitOps info for a project.
 func (s *ProjectService) GetProjectGitOpsInfo(ctx context.Context, request *v1pb.GetProjectGitOpsInfoRequest) (*v1pb.ProjectGitOpsInfo, error) {
-	repo, err := s.findProjectRepository(ctx, request.Project)
+	projectName, err := trimSuffix(request.Name, gitOpsInfoSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	repo, err := s.findProjectRepository(ctx, projectName)
 	if err != nil {
 		return nil, err
 	}
-	return convertToProjectGitOpsInfo(request.Project, repo), nil
+	return convertToProjectGitOpsInfo(projectName, repo), nil
 }
 
-// SetProjectGitOpsInfo upserts the GitOps info for a project.
-func (s *ProjectService) SetProjectGitOpsInfo(ctx context.Context, request *v1pb.SetProjectGitOpsInfoRequest) (*v1pb.ProjectGitOpsInfo, error) {
-	project, err := s.getProjectMessage(ctx, request.Project)
+// UpdateProjectGitOpsInfo upserts the GitOps info for a project.
+func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v1pb.UpdateProjectGitOpsInfoRequest) (*v1pb.ProjectGitOpsInfo, error) {
+	if request.ProjectGitopsInfo == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "project gitops info is missing")
+	}
+	projectName, err := trimSuffix(request.ProjectGitopsInfo.Name, gitOpsInfoSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.getProjectMessage(ctx, projectName)
 	if err != nil {
 		return nil, err
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Project)
+		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectName)
 	}
 
 	repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{
@@ -473,12 +484,17 @@ func (s *ProjectService) SetProjectGitOpsInfo(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.Internal, "failed to update repository with error: %v", err.Error())
 	}
 
-	return convertToProjectGitOpsInfo(request.Project, updatedRepo), nil
+	return convertToProjectGitOpsInfo(projectName, updatedRepo), nil
 }
 
 // SetupProjectSQLReviewCI sets the SQL review CI for a project.
 func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v1pb.SetupSQLReviewCIRequest) (*v1pb.SetupSQLReviewCIResponse, error) {
-	repo, err := s.findProjectRepository(ctx, request.Project)
+	projectName, err := trimSuffix(request.Name, gitOpsInfoSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	repo, err := s.findProjectRepository(ctx, projectName)
 	if err != nil {
 		return nil, err
 	}
@@ -504,9 +520,14 @@ func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v
 	return response, nil
 }
 
-// DeleteProjectGitOpsInfo deletes the GitOps info for a project.
-func (s *ProjectService) DeleteProjectGitOpsInfo(ctx context.Context, request *v1pb.DeleteProjectGitOpsInfoRequest) (*emptypb.Empty, error) {
-	repo, err := s.findProjectRepository(ctx, request.Project)
+// UnsetProjectGitOpsInfo deletes the GitOps info for a project.
+func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1pb.UnsetProjectGitOpsInfoRequest) (*emptypb.Empty, error) {
+	projectName, err := trimSuffix(request.Name, gitOpsInfoSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	repo, err := s.findProjectRepository(ctx, projectName)
 	if err != nil {
 		return nil, err
 	}
@@ -554,7 +575,7 @@ func (s *ProjectService) DeleteProjectGitOpsInfo(ctx context.Context, request *v
 			repo.ExternalWebhookID,
 		); err != nil {
 			// Despite the error here, we have deleted the repository in the database, we still return success.
-			log.Error("failed to delete webhook for project", zap.String("project", request.Project), zap.Int("repo", repo.ID), zap.Error(err))
+			log.Error("failed to delete webhook for project", zap.String("project", projectName), zap.Int("repo", repo.ID), zap.Error(err))
 		}
 	}
 
@@ -793,7 +814,12 @@ func (s *ProjectService) findProjectRepository(ctx context.Context, projectName 
 	return repo, nil
 }
 
-func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v1pb.SetProjectGitOpsInfoRequest, project *store.ProjectMessage) (*v1pb.ProjectGitOpsInfo, error) {
+func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v1pb.UpdateProjectGitOpsInfoRequest, project *store.ProjectMessage) (*v1pb.ProjectGitOpsInfo, error) {
+	projectName, err := trimSuffix(request.ProjectGitopsInfo.Name, gitOpsInfoSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
@@ -922,7 +948,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, "failed to link project repository with error: %v", err.Error())
 	}
 
-	return convertToProjectGitOpsInfo(request.Project, repository), nil
+	return convertToProjectGitOpsInfo(projectName, repository), nil
 }
 
 func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) (*vcsPlugin.PullRequest, error) {
