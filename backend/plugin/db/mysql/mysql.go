@@ -25,6 +25,8 @@ import (
 var (
 	baseTableType = "BASE TABLE"
 	viewTableType = "VIEW"
+	// Sequence is available to TiDB only.
+	sequenceTableType = "SEQUENCE"
 
 	_ db.Driver = (*Driver)(nil)
 )

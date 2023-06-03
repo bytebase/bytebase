@@ -46,6 +46,11 @@ const (
 		"-- View structure for `%s`\n" +
 		"--\n" +
 		"%s;\n"
+	sequenceStmtFmt = "" +
+		"--\n" +
+		"-- Sequence structure for `%s`\n" +
+		"--\n" +
+		"%s;\n"
 	tempViewStmtFmt = "" +
 		"--\n" +
 		"-- Temporary view structure for `%s`\n" +
@@ -268,7 +273,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, dbType db.Type, database string, 
 		}
 		// Construct tables.
 		for _, tbl := range tables {
-			if tbl.TableType != baseTableType {
+			if tbl.TableType == viewTableType {
 				continue
 			}
 			if schemaOnly {
@@ -277,7 +282,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, dbType db.Type, database string, 
 			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
 				return err
 			}
-			if !schemaOnly {
+			if !schemaOnly && tbl.TableType == baseTableType {
 				// Include db prefix if dumping multiple databases.
 				includeDbPrefix := len(dumpableDbNames) > 1
 				if err := exportTableData(txn, dbName, tbl.Name, includeDbPrefix, out); err != nil {
@@ -534,6 +539,16 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 			return "", err
 		}
 		return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
+	case sequenceTableType:
+		query := fmt.Sprintf("SHOW CREATE SEQUENCE `%s`.`%s`;", dbName, tblName)
+		var stmt, unused string
+		if err := txn.QueryRow(query).Scan(&unused, &stmt); err != nil {
+			if err == sql.ErrNoRows {
+				return "", common.FormatDBErrorEmptyRowWithQuery(query)
+			}
+			return "", err
+		}
+		return fmt.Sprintf(sequenceStmtFmt, tblName, stmt), nil
 	default:
 		return "", errors.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
 	}
