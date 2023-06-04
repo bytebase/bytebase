@@ -58,6 +58,12 @@
 
 <br />
 
+<p align="center" >
+  <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/change-query-secure-govern.webp" />
+</p>
+
+<br />
+
 <p align="center">🪜</p>
 <h1 align="center">Change</h1>
 <p align="center">
@@ -70,18 +76,6 @@
 
 <br />
 
-<p align="center">🔒</p>
-<h1 align="center">Secure</h1>
-<p align="center">
-  Want to avoid data leakage, change outage and detect malicious behavior but don't know how?
-</p>
-
-|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |                                                                                                        |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| <b>Centralize Change, Query and Admin Tasks</b><br />A single place to perform different tasks on different databases, thus enforce policy and monitor activity accordingly. <br /><br /><b>RBAC</b><br />[Two-level RBAC model](https://www.bytebase.com/docs/concepts/roles-and-permissions) mapping to the organization wide privileges and application team privileges respectively.<br /><br /><b>Anomaly Center and Audit Logging</b><br /> Capture all database [anomalies](https://www.bytebase.com/docs/anomaly-detection/anomaly-center), user actions and system events and present them in a holistic view. | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/anomaly-center.webp" /> |
-
-<br />
-
 <p align="center">🔮</p>
 <h1 align="center">Query</h1>
 <p align="center">
@@ -91,6 +85,18 @@
 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |                                                                                                    |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | <b>All-in-one SQL Editor</b><br />Web-based IDE specifically for performing SQL specific tasks.<br /><br/><b>Data Anonymization</b><br />State-of-the-art [column level anonymization](https://www.bytebase.com/docs/sql-editor/anonymize-data) engine to cover complex situations like subquery, CTE.<br /><br /><b>Database Access Control</b><br />Organization level policy to centralize the [database access control](https://www.bytebase.com/docs/security/database-access-control). | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp" /> |
+
+<br />
+
+<p align="center">🔒</p>
+<h1 align="center">Secure</h1>
+<p align="center">
+  Want to avoid data leakage, change outage and detect malicious behavior but don't know how?
+</p>
+
+|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| <b>Centralize Change, Query and Admin Tasks</b><br />A single place to perform different tasks on different databases, thus enforce policy and monitor activity accordingly. <br /><br /><b>RBAC</b><br />[Two-level RBAC model](https://www.bytebase.com/docs/concepts/roles-and-permissions) mapping to the organization wide privileges and application team privileges respectively.<br /><br /><b>Anomaly Center and Audit Logging</b><br /> Capture all database [anomalies](https://www.bytebase.com/docs/anomaly-detection/anomaly-center), user actions and system events and present them in a holistic view. | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/anomaly-center.webp" /> |
 
 <br />
 
