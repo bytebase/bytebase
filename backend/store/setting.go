@@ -350,7 +350,7 @@ func (s *Store) BackfillWorkspaceApprovalSetting(ctx context.Context) error {
 		if rule.Condition != nil && rule.Condition.Expression != "" {
 			continue
 		}
-		condition, err := common.ConvertParsedRisk(rule.Expression)
+		condition, err := common.ConvertParsedApproval(rule.Expression)
 		if err != nil {
 			return err
 		}

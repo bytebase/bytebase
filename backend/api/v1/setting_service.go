@@ -23,7 +23,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
-	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -172,7 +171,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.PermissionDenied, api.FeatureCustomApproval.AccessErrorMessage())
 		}
 
-		e, err := cel.NewEnv(approval.ApprovalFactors...)
+		e, err := cel.NewEnv(common.ApprovalFactors...)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create cel env: %v", err)
 		}
@@ -186,7 +185,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 					return nil, status.Errorf(codes.InvalidArgument, "invalid cel expression: %v, issues: %v", rule.Expression.String(), issues.Err())
 				}
 				// Make sure condition is always set till frontend is migrated.
-				ex, err := common.ConvertParsedRisk(rule.Expression)
+				ex, err := common.ConvertParsedApproval(rule.Expression)
 				if err != nil {
 					return nil, err
 				}
