@@ -73,6 +73,13 @@ func Get(ctx context.Context, client *http.Client, url string, token *string, to
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodGet, url, token, nil))
 }
 
+// GetWithHeader makes a HTTP GET request to the given URL using the token and
+// additional header. It refreshes token and retries the request in the case of
+// the token has expired.
+func GetWithHeader(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher, header map[string]string) (code int, _ http.Header, respBody string, err error) {
+	return retry(ctx, client, token, tokenRefresher, requesterWithHeader(ctx, client, http.MethodGet, url, token, nil, header))
+}
+
 // Put makes a HTTP PUT request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Put(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
