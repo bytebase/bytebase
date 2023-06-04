@@ -13,7 +13,7 @@
       >
         <template #link>
           <LearnMoreLink
-            url="https://www.bytebase.com/docs/administration/database-access-control"
+            url="https://www.bytebase.com/docs/security/database-access-control"
           />
         </template>
       </i18n-t>

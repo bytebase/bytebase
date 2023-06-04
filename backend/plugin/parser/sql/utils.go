@@ -26,6 +26,86 @@ type SingleSQL struct {
 	Empty bool
 }
 
+// SchemaResource is the resource of the schema.
+type SchemaResource struct {
+	Database string
+	Schema   string
+	Table    string
+}
+
+// String implements fmt.Stringer interface.
+func (r SchemaResource) String() string {
+	return fmt.Sprintf("%s.%s.%s", r.Database, r.Schema, r.Table)
+}
+
+// Pretty returns the pretty string of the resource.
+func (r SchemaResource) Pretty() string {
+	list := make([]string, 0, 3)
+	if r.Database != "" {
+		list = append(list, r.Database)
+	}
+	if r.Schema != "" {
+		list = append(list, r.Schema)
+	}
+	if r.Table != "" {
+		list = append(list, r.Table)
+	}
+	return strings.Join(list, ".")
+}
+
+// ExtractResourceList extracts the resource list from the SQL.
+func ExtractResourceList(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+	switch engineType {
+	case MySQL, TiDB, MariaDB, OceanBase:
+		return extractMySQLResourceList(currentDatabase, sql)
+	case Oracle:
+		// The resource list for Oracle may contains table, view and temporary table.
+		return extractOracleResourceList(currentDatabase, currentSchema, sql)
+	default:
+		if currentDatabase == "" {
+			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
+		}
+
+		return []SchemaResource{{Database: currentDatabase}}, nil
+	}
+}
+
+func extractMySQLResourceList(currentDatabase string, sql string) ([]SchemaResource, error) {
+	nodes, err := ParseMySQL(sql, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	resourceMap := make(map[string]SchemaResource)
+
+	for _, node := range nodes {
+		tableList := ExtractMySQLTableList(node, false /* asName */)
+		for _, table := range tableList {
+			resource := SchemaResource{
+				Database: table.Schema.O,
+				Schema:   "",
+				Table:    table.Name.O,
+			}
+			if resource.Database == "" {
+				resource.Database = currentDatabase
+			}
+			if _, ok := resourceMap[resource.String()]; !ok {
+				resourceMap[resource.String()] = resource
+			}
+		}
+	}
+
+	resourceList := make([]SchemaResource, 0, len(resourceMap))
+	for _, resource := range resourceMap {
+		resourceList = append(resourceList, resource)
+	}
+	sort.Slice(resourceList, func(i, j int) bool {
+		return resourceList[i].String() < resourceList[j].String()
+	})
+
+	return resourceList, nil
+}
+
 // GetSQLFingerprint returns the fingerprint of the SQL.
 func GetSQLFingerprint(engineType EngineType, sql string) (string, error) {
 	switch engineType {

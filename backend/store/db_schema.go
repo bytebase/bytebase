@@ -18,6 +18,21 @@ type DBSchema struct {
 	Schema   []byte
 }
 
+// TableExists checks if the table exists.
+func (s *DBSchema) TableExists(schemaName string, tableName string) bool {
+	for _, schema := range s.Metadata.Schemas {
+		if schema.Name != schemaName {
+			continue
+		}
+		for _, table := range schema.Tables {
+			if table.Name == tableName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // CompactText returns the compact text representation of the database schema.
 func (s *DBSchema) CompactText() (string, error) {
 	if s.Metadata == nil {
