@@ -1179,11 +1179,6 @@ func (s *SQLService) checkQueryRights(
 		return nil
 	}
 
-	// TODO(rebelice): implement table-level query permission check.
-	// databases, err := getDatabasesFromQuery(instance.Engine, databaseName, statement)
-	// if err != nil {
-	// 	return err
-	// }
 	resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), databaseName, statement, instance)
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
@@ -1220,27 +1215,7 @@ func (s *SQLService) checkQueryRights(
 		return err
 	}
 
-	// TODO(rebelice): perfect matching condition expression.
 	var conditionExpression string
-	// for _, database := range databaseMessages {
-	// 	databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)
-	// 	attributes := map[string]any{
-	// 		"request.time":          time.Now(),
-	// 		"resource.database":     databaseResourceURL,
-	// 		"request.statement":     base64.StdEncoding.EncodeToString([]byte(statement)),
-	// 		"request.row_limit":     limit,
-	// 		"request.export_format": "QUERY",
-	// 	}
-
-	// 	ok, expression, err := s.hasDatabaseAccessRights(ctx, user.ID, projectPolicy, database, environment, attributes, isExport)
-	// 	if err != nil {
-	// 		return status.Errorf(codes.Internal, "failed to check access control for database: %q", database.DatabaseName)
-	// 	}
-	// 	if !ok {
-	// 		return status.Errorf(codes.PermissionDenied, "permission denied to access database: %q", database.DatabaseName)
-	// 	}
-	// 	conditionExpression = expression
-	// }
 	isExport := exportFormat != v1pb.ExportRequest_FORMAT_UNSPECIFIED
 	for _, resource := range resourceList {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
