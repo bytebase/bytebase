@@ -29,7 +29,7 @@
               <div class="whitespace-nowrap">
                 <span>{{ $t("issue.sdl.left-schema-may-change") }}</span>
                 <LearnMoreLink
-                  url="https://www.bytebase.com/docs/change-database/state-based-migration?source=console#caveats"
+                  url="https://www.bytebase.com/docs/change-database/state-based-migration/#caveats?source=console"
                   color="light"
                   class="ml-1"
                 />
