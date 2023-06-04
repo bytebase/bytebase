@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
@@ -637,4 +638,84 @@ func IsOracleKeyword(text string) bool {
 	}
 
 	return oracleKeywords[strings.ToUpper(text)] || oracleReservedWords[strings.ToUpper(text)]
+}
+
+func extractOracleResourceList(currentDatabase string, currentSchema string, statement string) ([]SchemaResource, error) {
+	tree, err := ParsePLSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	l := &resourceExtractListener{
+		currentDatabase: currentDatabase,
+		currentSchema:   currentSchema,
+		resourceMap:     make(map[string]SchemaResource),
+	}
+
+	var result []SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	for _, resource := range l.resourceMap {
+		result = append(result, resource)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return result, nil
+}
+
+type resourceExtractListener struct {
+	*parser.BasePlSqlParserListener
+
+	currentDatabase string
+	currentSchema   string
+	resourceMap     map[string]SchemaResource
+}
+
+func (l *resourceExtractListener) EnterTableview_name(ctx *parser.Tableview_nameContext) {
+	if ctx.Identifier() == nil {
+		return
+	}
+
+	result := []string{normalizeIdentifierContext(ctx.Identifier())}
+	if ctx.Id_expression() != nil {
+		result = append(result, normalizeIDExpression(ctx.Id_expression()))
+	}
+	if len(result) == 1 {
+		result = []string{l.currentSchema, result[0]}
+	}
+
+	resource := SchemaResource{
+		Database: l.currentDatabase,
+		Schema:   result[0],
+		Table:    result[1],
+	}
+	l.resourceMap[resource.String()] = resource
+}
+
+func normalizeIdentifierContext(identifier parser.IIdentifierContext) string {
+	if identifier == nil {
+		return ""
+	}
+
+	return normalizeIDExpression(identifier.Id_expression())
+}
+
+func normalizeIDExpression(idExpression parser.IId_expressionContext) string {
+	if idExpression == nil {
+		return ""
+	}
+
+	regularID := idExpression.Regular_id()
+	if regularID != nil {
+		return strings.ToUpper(regularID.GetText())
+	}
+
+	delimitedID := idExpression.DELIMITED_ID()
+	if delimitedID != nil {
+		return strings.Trim(delimitedID.GetText(), "\"")
+	}
+
+	return ""
 }
