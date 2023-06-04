@@ -41,6 +41,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -456,7 +457,7 @@ func (s *SQLService) preExport(ctx context.Context, request *v1pb.ExportRequest)
 		return nil, nil, nil, err
 	}
 
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, request.Statement, request.Limit, user, environment, instance, true /* isExport */); err != nil {
+	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, request.Statement, request.Limit, user, environment, instance, request.Format); err != nil {
 		return nil, nil, nil, err
 	}
 
@@ -679,7 +680,7 @@ func (s *SQLService) preQuery(ctx context.Context, request *v1pb.QueryRequest) (
 	}
 
 	// Check if the user has permission to execute the query.
-	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, request.Statement, request.Limit, user, environment, instance, false /* isExport */); err != nil {
+	if err := s.checkQueryRights(ctx, request.ConnectionDatabase, request.Statement, request.Limit, user, environment, instance, v1pb.ExportRequest_FORMAT_UNSPECIFIED); err != nil {
 		return nil, advisor.Success, nil, nil, nil, err
 	}
 
@@ -1111,6 +1112,58 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 	return nil
 }
 
+func (s *SQLService) extractResourceList(ctx context.Context, engine parser.EngineType, databaseName string, statement string, instance *store.InstanceMessage) ([]parser.SchemaResource, error) {
+	switch engine {
+	case parser.Oracle:
+		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		// If there are no read-only data source, fall back to admin data source.
+		if dataSource == nil {
+			dataSource = adminDataSource
+		}
+		if dataSource == nil {
+			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
+		}
+		list, err := parser.ExtractResourceList(engine, databaseName, dataSource.Username, statement)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+		}
+
+		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		if err != nil {
+			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+				// If database not found, skip.
+				return nil, nil
+			}
+			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+
+		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+		}
+
+		var result []parser.SchemaResource
+		for _, resource := range list {
+			if resource.Database != dbSchema.Metadata.Name {
+				// Should not happen.
+				continue
+			}
+
+			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+				// If table not found, skip.
+				continue
+			}
+
+			result = append(result, resource)
+		}
+
+		return result, nil
+	default:
+		return parser.ExtractResourceList(engine, databaseName, "", statement)
+	}
+}
+
 func (s *SQLService) checkQueryRights(
 	ctx context.Context,
 	databaseName string,
@@ -1119,22 +1172,27 @@ func (s *SQLService) checkQueryRights(
 	user *store.UserMessage,
 	environment *store.EnvironmentMessage,
 	instance *store.InstanceMessage,
-	isExport bool,
+	exportFormat v1pb.ExportRequest_Format,
 ) error {
 	// Owner and DBA have all rights.
 	if user.Role == api.Owner || user.Role == api.DBA {
 		return nil
 	}
 
-	// TODO(rebelice): implement table-level query permission check.
-	databases, err := getDatabasesFromQuery(instance.Engine, databaseName, statement)
+	resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), databaseName, statement, instance)
 	if err != nil {
-		return err
+		return status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
+	}
+
+	databaseMap := make(map[string]bool)
+	for _, resource := range resourceList {
+		databaseMap[resource.Database] = true
 	}
 
 	var project *store.ProjectMessage
-	var databaseMessages []*store.DatabaseMessage
-	for _, database := range databases {
+	// var databaseMessages []*store.DatabaseMessage
+	databaseMessageMap := make(map[string]*store.DatabaseMessage)
+	for database := range databaseMap {
 		projectMessage, databaseMessage, err := s.getProjectAndDatabaseMessage(ctx, instance, database)
 		if err != nil {
 			return err
@@ -1145,7 +1203,7 @@ func (s *SQLService) checkQueryRights(
 		if project.UID != projectMessage.UID {
 			return status.Errorf(codes.InvalidArgument, "allow querying databases within the same project only")
 		}
-		databaseMessages = append(databaseMessages, databaseMessage)
+		databaseMessageMap[database] = databaseMessage
 	}
 
 	if project == nil {
@@ -1157,24 +1215,36 @@ func (s *SQLService) checkQueryRights(
 		return err
 	}
 
-	// TODO(rebelice): perfect matching condition expression.
 	var conditionExpression string
-	for _, database := range databaseMessages {
-		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)
+	isExport := exportFormat != v1pb.ExportRequest_FORMAT_UNSPECIFIED
+	for _, resource := range resourceList {
+		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
 		attributes := map[string]any{
-			"request.time":          time.Now(),
-			"resource.database":     databaseResourceURL,
-			"request.statement":     base64.StdEncoding.EncodeToString([]byte(statement)),
-			"request.row_limit":     limit,
-			"request.export_format": "QUERY",
+			"request.time":      time.Now(),
+			"resource.database": databaseResourceURL,
+			"resource.schema":   resource.Schema,
+			"resource.table":    resource.Table,
+			"request.statement": base64.StdEncoding.EncodeToString([]byte(statement)),
+			"request.row_limit": limit,
 		}
 
-		ok, expression, err := s.hasDatabaseAccessRights(ctx, user.ID, projectPolicy, database, environment, attributes, isExport)
+		switch exportFormat {
+		case v1pb.ExportRequest_FORMAT_UNSPECIFIED:
+			attributes["request.export_format"] = "QUERY"
+		case v1pb.ExportRequest_CSV:
+			attributes["request.export_format"] = "CSV"
+		case v1pb.ExportRequest_JSON:
+			attributes["request.export_format"] = "JSON"
+		default:
+			return status.Errorf(codes.InvalidArgument, "invalid export format: %v", exportFormat)
+		}
+
+		ok, expression, err := s.hasDatabaseAccessRights(ctx, user.ID, projectPolicy, databaseMessageMap[resource.Database], environment, attributes, isExport)
 		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check access control for database: %q", database.DatabaseName)
+			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
 		if !ok {
-			return status.Errorf(codes.PermissionDenied, "permission denied to access database: %q", database.DatabaseName)
+			return status.Errorf(codes.PermissionDenied, "permission denied to access resource: %q", resource.Pretty())
 		}
 		conditionExpression = expression
 	}
@@ -1333,21 +1403,6 @@ func (s *SQLService) getProjectAndDatabaseMessage(ctx context.Context, instance 
 		return nil, nil, err
 	}
 	return project, databaseMessage, nil
-}
-
-func getDatabasesFromQuery(engine db.Type, databaseName, statement string) ([]string, error) {
-	if engine == db.MySQL || engine == db.TiDB || engine == db.MariaDB || engine == db.OceanBase {
-		databases, err := parser.ExtractDatabaseList(parser.MySQL, statement)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to extract database list from query: %s", err.Error())
-		}
-
-		return databases, nil
-	}
-	if databaseName == "" {
-		return nil, status.Error(codes.InvalidArgument, "database name is required")
-	}
-	return []string{databaseName}, nil
 }
 
 func (s *SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
