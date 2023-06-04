@@ -32,12 +32,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// ApprovalFactors are the variables when finding the approval template.
-var ApprovalFactors = []cel.EnvOption{
-	cel.Variable("level", cel.IntType),
-	cel.Variable("source", cel.IntType),
-}
-
 var issueTypeToRiskSource = map[api.IssueType]store.RiskSource{
 	// RiskSourceDatabaseSchemaUpdate
 	api.IssueDatabaseSchemaUpdate:      store.RiskSourceDatabaseSchemaUpdate,
@@ -274,7 +268,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 }
 
 func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int64, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
-	e, err := cel.NewEnv(ApprovalFactors...)
+	e, err := cel.NewEnv(common.ApprovalFactors...)
 	if err != nil {
 		return nil, err
 	}
