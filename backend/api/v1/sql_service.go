@@ -41,6 +41,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -1111,6 +1112,58 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 	return nil
 }
 
+func (s *SQLService) extractResourceList(ctx context.Context, engine parser.EngineType, databaseName string, statement string, instance *store.InstanceMessage) ([]parser.SchemaResource, error) {
+	switch engine {
+	case parser.Oracle:
+		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		// If there are no read-only data source, fall back to admin data source.
+		if dataSource == nil {
+			dataSource = adminDataSource
+		}
+		if dataSource == nil {
+			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
+		}
+		list, err := parser.ExtractResourceList(engine, databaseName, dataSource.Username, statement)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+		}
+
+		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		if err != nil {
+			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+				// If database not found, skip.
+				return nil, nil
+			}
+			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+
+		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+		}
+
+		var result []parser.SchemaResource
+		for _, resource := range list {
+			if resource.Database != dbSchema.Metadata.Name {
+				// Should not happen.
+				continue
+			}
+
+			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+				// If table not found, skip.
+				continue
+			}
+
+			result = append(result, resource)
+		}
+
+		return result, nil
+	default:
+		return parser.ExtractResourceList(engine, databaseName, "", statement)
+	}
+}
+
 func (s *SQLService) checkQueryRights(
 	ctx context.Context,
 	databaseName string,
@@ -1131,7 +1184,7 @@ func (s *SQLService) checkQueryRights(
 	// if err != nil {
 	// 	return err
 	// }
-	resourceList, err := parser.ExtractResourceList(convertToParserEngine(instance.Engine), databaseName, statement)
+	resourceList, err := s.extractResourceList(ctx, convertToParserEngine(instance.Engine), databaseName, statement, instance)
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
 	}

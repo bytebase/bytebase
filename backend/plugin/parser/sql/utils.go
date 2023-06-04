@@ -54,10 +54,13 @@ func (r SchemaResource) Pretty() string {
 }
 
 // ExtractResourceList extracts the resource list from the SQL.
-func ExtractResourceList(engineType EngineType, currentDatabase string, sql string) ([]SchemaResource, error) {
+func ExtractResourceList(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
 	switch engineType {
 	case MySQL, TiDB, MariaDB, OceanBase:
 		return extractMySQLResourceList(currentDatabase, sql)
+	case Oracle:
+		// The resource list for Oracle may contains table, view and temporary table.
+		return extractOracleResourceList(currentDatabase, currentSchema, sql)
 	default:
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
