@@ -84,7 +84,7 @@
         {{ $t("project.settings.schema-change-type") }}
         <span class="text-red-600">*</span>
         <LearnMoreLink
-          url="https://www.bytebase.com/docs/change-database/state-based-migration/overview?source=console"
+          url="https://www.bytebase.com/docs/change-database/state-based-migration?source=console"
           class="ml-1"
         />
       </div>
