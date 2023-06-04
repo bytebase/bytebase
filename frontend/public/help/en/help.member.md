@@ -8,4 +8,4 @@ You can add new members, update their roles and deactivate a member at the works
 
 #### Learn more
 
-- [Manage Workspace Members](https://www.bytebase.com/docs/get-started/configure-workspace/manage-members)
+- [Manage Workspace Members](https://www.bytebase.com/docs/get-started/step-by-step/manage-members)

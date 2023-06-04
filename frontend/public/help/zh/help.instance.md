@@ -9,5 +9,5 @@ RDS 实例，也可能是您私有化部署的 MySQL 实例。
 
 #### 了解更多
 
-- [添加实例](https://www.bytebase.com/docs/get-started/configure-workspace/add-an-instance)
-- [添加一个 MySQL 测试实例](https://www.bytebase.com/docs/get-started/configure-workspace/add-a-mysql-instance-for-testing)
+- [添加实例](https://www.bytebase.com/docs/get-started/step-by-step/add-an-instance)
+- [添加一个 MySQL 测试实例](https://www.bytebase.com/docs/tutorials/local-mysql-instance)
