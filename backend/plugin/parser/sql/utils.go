@@ -38,6 +38,7 @@ func (r SchemaResource) String() string {
 	return fmt.Sprintf("%s.%s.%s", r.Database, r.Schema, r.Table)
 }
 
+// Pretty returns the pretty string of the resource.
 func (r SchemaResource) Pretty() string {
 	list := make([]string, 0, 3)
 	if r.Database != "" {
