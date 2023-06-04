@@ -8,4 +8,4 @@ Bytebase 的用户被定义为「成员」。
 
 #### Learn more
 
-- [管理成员](https://www.bytebase.com/docs/get-started/configure-workspace/manage-members)
+- [管理成员](https://www.bytebase.com/docs/get-started/step-by-step/manage-members)

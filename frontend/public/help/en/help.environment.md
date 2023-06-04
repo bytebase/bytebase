@@ -10,4 +10,4 @@ title: What is 'Environment' ?
 
 #### Learn more
 
-- [Set up Environments](https://www.bytebase.com/docs/get-started/configure-workspace/set-up-environments)
+- [Set up Environments](https://www.bytebase.com/docs/get-started/step-by-step/set-up-environments)
