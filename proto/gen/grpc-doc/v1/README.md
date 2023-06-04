@@ -5798,6 +5798,7 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | level | [int64](#int64) |  |  |
 | expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | active | [bool](#bool) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
 
 
 
@@ -7126,6 +7127,7 @@ The data in setting value.
 | ----- | ---- | ----- | ----------- |
 | expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
 
 
 
