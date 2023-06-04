@@ -335,3 +335,43 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 
 	return settingMessages, nil
 }
+
+// BackfillWorkspaceApprovalSetting backfills the condition field in the approval setting.
+func (s *Store) BackfillWorkspaceApprovalSetting(ctx context.Context) error {
+	setting, err := s.GetWorkspaceApprovalSetting(ctx)
+	if err != nil {
+		if strings.Contains(err.Error(), "cannot find settin") {
+			return nil
+		}
+		return err
+	}
+	hasChange := false
+	for _, rule := range setting.Rules {
+		if rule.Condition != nil && rule.Condition.Expression != "" {
+			continue
+		}
+		condition, err := common.ConvertParsedRisk(rule.Expression)
+		if err != nil {
+			return err
+		}
+		rule.Condition = condition
+		hasChange = true
+	}
+	if !hasChange {
+		return nil
+	}
+
+	bytes, err := protojson.Marshal(setting)
+	if err != nil {
+		return errors.Errorf("failed to marshal setting, error: %v", err)
+	}
+	storeSettingValue := string(bytes)
+	if _, err := s.UpsertSettingV2(ctx, &SetSettingMessage{
+		Name:  api.SettingWorkspaceApproval,
+		Value: storeSettingValue,
+	}, api.SystemBotID); err != nil {
+		return err
+	}
+
+	return nil
+}

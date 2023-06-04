@@ -185,6 +185,12 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 				if issues != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid cel expression: %v, issues: %v", rule.Expression.String(), issues.Err())
 				}
+				// Make sure condition is always set till frontend is migrated.
+				ex, err := common.ConvertParsedRisk(rule.Expression)
+				if err != nil {
+					return nil, err
+				}
+				rule.Condition = ex
 			}
 			if err := validateApprovalTemplate(rule.Template); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid approval template: %v, err: %v", rule.Template, err)
@@ -478,6 +484,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			}
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
 				Expression: rule.Expression,
+				Condition:  rule.Condition,
 				Template:   template,
 			})
 		}
