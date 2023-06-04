@@ -6,4 +6,4 @@ title: 什么是「工单」 ?
 
 #### 了解更多
 
-- [运行 UI 工作流](https://www.bytebase.com/docs/get-started/work-with-a-project/run-a-ui-workflow)
+- [运行 UI 工作流](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)
