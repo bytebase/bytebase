@@ -32,21 +32,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// RiskFactors are the variables when evaluating the risk level.
-var RiskFactors = []cel.EnvOption{
-	// string factors
-	// use environment.resource_id
-	cel.Variable("environment_id", cel.StringType),
-	// use project.resource_id
-	cel.Variable("project_id", cel.StringType),
-	cel.Variable("database_name", cel.StringType),
-	cel.Variable("db_engine", cel.StringType),
-	cel.Variable("sql_type", cel.StringType),
-
-	// number factors
-	cel.Variable("affected_rows", cel.IntType),
-}
-
 // ApprovalFactors are the variables when finding the approval template.
 var ApprovalFactors = []cel.EnvOption{
 	cel.Variable("level", cel.IntType),
@@ -431,7 +416,7 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		databaseName = database.DatabaseName
 	}
 
-	e, err := cel.NewEnv(RiskFactors...)
+	e, err := cel.NewEnv(common.RiskFactors...)
 	if err != nil {
 		return 0, false, err
 	}
@@ -448,11 +433,14 @@ func getTaskRiskLevel(ctx context.Context, s *store.Store, issue *store.IssueMes
 		if risk.Source != issueTypeToRiskSource[issue.Type] {
 			continue
 		}
-		if risk.Expression == nil || risk.Expression.Expr == nil {
+		if risk.Expression == nil || risk.Expression.Expression == "" {
 			continue
 		}
 
-		ast := cel.ParsedExprToAst(risk.Expression)
+		ast, issues := e.Parse(risk.Expression.Expression)
+		if issues != nil && issues.Err() != nil {
+			return 0, false, errors.Errorf("failed to parse expression: %v", issues.Err())
+		}
 		prg, err := e.Program(ast)
 		if err != nil {
 			return 0, false, err
