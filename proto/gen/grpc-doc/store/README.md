@@ -1320,6 +1320,7 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
 
 
 
