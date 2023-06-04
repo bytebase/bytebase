@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -12,98 +11,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
-
-// EnvironmentCreate is the API message for creating an environment.
-// TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
-type EnvironmentCreate struct {
-	// Standard fields
-	CreatorID int
-
-	// Domain specific fields
-	Name  string
-	Order *int
-}
-
-// EnvironmentPatch is the API message for patching an environment.
-// TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
-type EnvironmentPatch struct {
-	ID int
-
-	// Standard fields
-	RowStatus *string
-	UpdaterID int
-
-	// Domain specific fields
-	Name  *string
-	Order *int
-}
-
-// CreateEnvironment creates an instance of Environment.
-func (s *Store) CreateEnvironment(ctx context.Context, create *EnvironmentCreate) (*api.Environment, error) {
-	if create.Order == nil {
-		return nil, errors.Errorf("order must be set in legacy CreateEnvironment")
-	}
-	environment, err := s.CreateEnvironmentV2(ctx, &EnvironmentMessage{
-		ResourceID: strings.ToLower(create.Name),
-		Title:      create.Name,
-		Order:      int32(*create.Order),
-		Protected:  false,
-	}, create.CreatorID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Environment with EnvironmentCreate[%+v]", create)
-	}
-
-	return composeEnvironment(environment), nil
-}
-
-// FindEnvironment finds a list of Environment instances.
-func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) ([]*api.Environment, error) {
-	v2Find := &FindEnvironmentMessage{ShowDeleted: true}
-	environments, err := s.ListEnvironmentV2(ctx, v2Find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Environment list with ListEnvironmentV2[%+v]", find)
-	}
-	sort.Slice(environments, func(i, j int) bool {
-		return environments[i].Order < environments[j].Order
-	})
-	var composedEnvironmentList []*api.Environment
-	for _, environment := range environments {
-		composedEnvironment := composeEnvironment(environment)
-		if find.RowStatus != nil && composedEnvironment.RowStatus != *find.RowStatus {
-			continue
-		}
-		composedEnvironmentList = append(composedEnvironmentList, composedEnvironment)
-	}
-	return composedEnvironmentList, nil
-}
-
-// PatchEnvironment patches an instance of Environment.
-func (s *Store) PatchEnvironment(ctx context.Context, patch *EnvironmentPatch) (*api.Environment, error) {
-	environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{UID: &patch.ID})
-	if err != nil {
-		return nil, err
-	}
-	v2Update := &UpdateEnvironmentMessage{
-		Name: patch.Name,
-	}
-	if patch.Order != nil {
-		order := int32(*patch.Order)
-		v2Update.Order = &order
-	}
-	if patch.RowStatus != nil {
-		deleted := false
-		if *patch.RowStatus == string(api.Archived) {
-			deleted = true
-		}
-		v2Update.Delete = &deleted
-	}
-	environment, err = s.UpdateEnvironmentV2(ctx, environment.ResourceID, v2Update, patch.UpdaterID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Environment with EnvironmentPatch[%+v]", patch)
-	}
-	composedEnvironment := composeEnvironment(environment)
-	return composedEnvironment, nil
-}
 
 // GetEnvironmentByID gets an instance of Environment by ID.
 func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environment, error) {

@@ -16,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -36,16 +35,20 @@ func NewRiskService(store *store.Store, licenseService enterpriseAPI.LicenseServ
 	}
 }
 
-func convertToRisk(risk *store.RiskMessage) *v1pb.Risk {
+func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
+	e, err := common.ConvertUnparsedRisk(risk.Expression)
+	if err != nil {
+		return nil, err
+	}
 	return &v1pb.Risk{
 		Name:       fmt.Sprintf("%s%v", riskPrefix, risk.ID),
 		Uid:        fmt.Sprintf("%v", risk.ID),
 		Source:     convertToSource(risk.Source),
 		Title:      risk.Name,
 		Level:      risk.Level,
-		Expression: risk.Expression,
+		Expression: e,
 		Active:     risk.Active,
-	}
+	}, nil
 }
 
 // ListRisks lists risks.
@@ -56,7 +59,11 @@ func (s *RiskService) ListRisks(ctx context.Context, _ *v1pb.ListRisksRequest) (
 	}
 	response := &v1pb.ListRisksResponse{}
 	for _, risk := range risks {
-		response.Risks = append(response.Risks, convertToRisk(risk))
+		r, err := convertToRisk(risk)
+		if err != nil {
+			return nil, err
+		}
+		response.Risks = append(response.Risks, r)
 	}
 	return response, nil
 }
@@ -70,17 +77,22 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRe
 		return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
 	}
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+
+	e, err := common.ConvertParsedRisk(request.Risk.Expression)
+	if err != nil {
+		return nil, err
+	}
 	risk, err := s.store.CreateRisk(ctx, &store.RiskMessage{
 		Source:     convertSource(request.Risk.Source),
 		Level:      request.Risk.Level,
 		Name:       request.Risk.Title,
 		Active:     request.Risk.Active,
-		Expression: request.Risk.Expression,
+		Expression: e,
 	}, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertToRisk(risk), nil
+	return convertToRisk(risk)
 }
 
 // UpdateRisk updates a risk.
@@ -120,7 +132,11 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 			if err := validateRiskExpression(request.Risk.Expression); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
 			}
-			patch.Expression = request.Risk.Expression
+			e, err := common.ConvertParsedRisk(request.Risk.Expression)
+			if err != nil {
+				return nil, err
+			}
+			patch.Expression = e
 		}
 	}
 
@@ -129,7 +145,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToRisk(risk), nil
+	return convertToRisk(risk)
 }
 
 // DeleteRisk deletes a risk.
@@ -191,7 +207,7 @@ func validateRiskExpression(expression *v1alpha1.ParsedExpr) error {
 	if expression == nil || expression.Expr == nil {
 		return nil
 	}
-	e, err := cel.NewEnv(approval.RiskFactors...)
+	e, err := cel.NewEnv(common.RiskFactors...)
 	if err != nil {
 		return errors.Wrap(err, "failed to create cel env")
 	}

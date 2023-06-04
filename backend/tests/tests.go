@@ -4,6 +4,7 @@ package tests
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"io"
 	"net/http"
@@ -56,10 +57,12 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);`
-	bookTableQuery      = "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';"
-	bookSchemaSQLResult = `[["type","name","tbl_name","rootpage","sql"],["TEXT","TEXT","TEXT","INT","TEXT"],[["table","book","book",2,"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t)"]],[false,false,false,false,false]]`
-	bookDataQuery       = `SELECT * FROM book;`
-	bookDataSQLResult   = `[["id","name"],["INTEGER","TEXT"],[[1,"byte"],[2,null]],[false,false]]`
+
+	//go:embed test-data/book_schema.result
+	wantBookSchema string
+
+	//go:embed test-data/book_3_schema.result
+	want3BookSchema string
 
 	dataUpdateStatementWrong = "INSERT INTO book(name) xxx"
 	dataUpdateStatement      = `
@@ -111,41 +114,39 @@ CREATE TABLE book4 (
 		name TEXT NULL
 	);
 `
-	backupDump = "CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t);\nINSERT INTO 'book' VALUES ('1', 'byte');\nINSERT INTO 'book' VALUES ('2', NULL);\n\n"
-
-	deploymentSchedule = api.DeploymentSchedule{
-		Deployments: []*api.Deployment{
+	deploySchedule = &v1pb.Schedule{
+		Deployments: []*v1pb.ScheduleDeployment{
 			{
-				Name: "Test stage",
-				Spec: &api.DeploymentSpec{
-					Selector: &api.LabelSelector{
-						MatchExpressions: []*api.LabelSelectorRequirement{
+				Title: "Test stage",
+				Spec: &v1pb.DeploymentSpec{
+					LabelSelector: &v1pb.LabelSelector{
+						MatchExpressions: []*v1pb.LabelSelectorRequirement{
 							{
 								Key:      api.EnvironmentLabelKey,
-								Operator: api.InOperatorType,
+								Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
 								Values:   []string{"test"},
 							},
 							{
 								Key:      api.TenantLabelKey,
-								Operator: api.ExistsOperatorType,
+								Operator: v1pb.OperatorType_OPERATOR_TYPE_EXISTS,
 							},
 						},
 					},
 				},
 			},
 			{
-				Name: "Prod stage",
-				Spec: &api.DeploymentSpec{
-					Selector: &api.LabelSelector{
-						MatchExpressions: []*api.LabelSelectorRequirement{
+				Title: "Prod stage",
+				Spec: &v1pb.DeploymentSpec{
+					LabelSelector: &v1pb.LabelSelector{
+						MatchExpressions: []*v1pb.LabelSelectorRequirement{
 							{
 								Key:      api.EnvironmentLabelKey,
-								Operator: api.InOperatorType,
+								Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
 								Values:   []string{"prod"},
 							},
 							{
 								Key:      api.TenantLabelKey,
-								Operator: api.ExistsOperatorType,
+								Operator: v1pb.OperatorType_OPERATOR_TYPE_EXISTS,
 							},
 						},
 					},
@@ -169,6 +170,8 @@ type controller struct {
 	instanceServiceClient    v1pb.InstanceServiceClient
 	databaseServiceClient    v1pb.DatabaseServiceClient
 	sheetServiceClient       v1pb.SheetServiceClient
+	evcsClient               v1pb.ExternalVersionControlServiceClient
+	sqlServiceClient         v1pb.SQLServiceClient
 
 	cookie             string
 	grpcMDAccessToken  string
@@ -438,6 +441,8 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.instanceServiceClient = v1pb.NewInstanceServiceClient(ctl.grpcConn)
 	ctl.databaseServiceClient = v1pb.NewDatabaseServiceClient(ctl.grpcConn)
 	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
+	ctl.evcsClient = v1pb.NewExternalVersionControlServiceClient(ctl.grpcConn)
+	ctl.sqlServiceClient = v1pb.NewSQLServiceClient(ctl.grpcConn)
 
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"Authorization",
@@ -618,13 +623,6 @@ func (ctl *controller) patchOpenAPI(shortURL string, body io.Reader) (io.ReadClo
 	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
 	return ctl.request("PATCH", url, body, nil, map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", strings.ReplaceAll(ctl.cookie, "access-token=", "")),
-	})
-}
-
-func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	return ctl.request("DELETE", url, body, nil, map[string]string{
-		"Cookie": ctl.cookie,
 	})
 }
 

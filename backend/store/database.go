@@ -16,46 +16,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// FindDatabase finds a list of Database instances.
-func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
-	// We don't have caller for searching IncludeAllDatabase.
-	v2Find := &FindDatabaseMessage{}
-	if find.InstanceID != nil {
-		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{UID: find.InstanceID})
-		if err != nil {
-			return nil, err
-		}
-		v2Find.InstanceID = &instance.ResourceID
-	}
-	if find.ProjectID != nil {
-		project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: find.ProjectID})
-		if err != nil {
-			return nil, err
-		}
-		v2Find.ProjectID = &project.ResourceID
-	}
-	if find.Name != nil {
-		v2Find.DatabaseName = find.Name
-	}
-
-	databases, err := s.ListDatabases(ctx, v2Find)
-	if err != nil {
-		return nil, err
-	}
-	var databaseList []*api.Database
-	for _, database := range databases {
-		composedDatabase, err := s.composeDatabase(ctx, database)
-		if err != nil {
-			return nil, err
-		}
-		if find.SyncStatus != nil && composedDatabase.SyncStatus != *find.SyncStatus {
-			continue
-		}
-		databaseList = append(databaseList, composedDatabase)
-	}
-	return databaseList, nil
-}
-
 // GetDatabase gets an instance of Database.
 func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
 	v2Find := &FindDatabaseMessage{

@@ -315,10 +315,13 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			return nil, err
 		}
 		s.SchemaVersion = metadataVersion
+		if err := storeInstance.BackfillRiskExpression(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	s.stateCfg = &state.State{
-		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
+		InstanceDatabaseSyncChan:       make(chan *store.InstanceMessage, 100),
 		InstanceSlowQuerySyncChan:      make(chan *api.Instance, 100),
 		InstanceOutstandingConnections: make(map[int]int),
 	}
@@ -506,7 +509,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerOAuthRoutes(apiGroup)
 	s.registerProjectRoutes(apiGroup)
 	s.registerEnvironmentRoutes(apiGroup)
-	s.registerInstanceRoutes(apiGroup)
 	s.registerDatabaseRoutes(apiGroup)
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
@@ -516,7 +518,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerInboxRoutes(apiGroup)
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSQLRoutes(apiGroup)
-	s.registerVCSRoutes(apiGroup)
 	s.registerAnomalyRoutes(apiGroup)
 
 	// Register healthz endpoint.
@@ -567,7 +568,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.MetricReporter,
 		s.secret,
 		s.stateCfg,
-		s.dbFactory))
+		s.dbFactory,
+		s.SchemaSyncer))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store, s.ActivityManager, s.licenseService))
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner, s.licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))

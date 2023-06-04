@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -19,21 +18,21 @@ func TestSheetVCS(t *testing.T) {
 	tests := []struct {
 		name               string
 		vcsProviderCreator fake.VCSProviderCreator
-		vcsType            vcs.Type
+		vcsType            v1pb.ExternalVersionControl_Type
 		externalID         string
 		repositoryFullPath string
 	}{
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            vcs.GitLab,
+			vcsType:            v1pb.ExternalVersionControl_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 		},
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            vcs.GitHub,
+			vcsType:            v1pb.ExternalVersionControl_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 		},
@@ -57,16 +56,16 @@ func TestSheetVCS(t *testing.T) {
 			}()
 
 			// Create a VCS.
-			vcs, err := ctl.createVCS(
-				api.VCSCreate{
-					Name:          t.Name(),
+			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
+				ExternalVersionControl: &v1pb.ExternalVersionControl{
+					Title:         t.Name(),
 					Type:          test.vcsType,
-					InstanceURL:   ctl.vcsURL,
-					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
-					ApplicationID: "testApplicationID",
+					Url:           ctl.vcsURL,
+					ApiUrl:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationId: "testApplicationID",
 					Secret:        "testApplicationSecret",
 				},
-			)
+			})
 			a.NoError(err)
 
 			// Create a project.
@@ -82,23 +81,24 @@ func TestSheetVCS(t *testing.T) {
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
 
-			_, err = ctl.createRepository(
-				api.RepositoryCreate{
-					VCSID:              vcs.ID,
-					ProjectID:          projectUID,
-					Name:               "Test Repository",
+			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
+				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
+					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
-					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
 					FilePathTemplate:   "{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 					SchemaPathTemplate: "{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql",
 					SheetPathTemplate:  "sheet/{{NAME}}.sql",
-					ExternalID:         test.externalID,
+					ExternalId:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
 				},
-			)
+				AllowMissing: true,
+			})
 			a.NoError(err)
 
 			// Initial git files.
