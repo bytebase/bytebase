@@ -271,7 +271,7 @@ func (s *Store) BackfillRiskExpression(ctx context.Context) error {
 		id,
 		expression
 	FROM risk`
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return errors.Wrap(err, "failed to begin tx")
 	}
