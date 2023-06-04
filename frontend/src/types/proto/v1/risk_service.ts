@@ -5,6 +5,7 @@ import * as _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { Expr } from "../google/type/expr";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -70,6 +71,7 @@ export interface Risk {
   level: number;
   expression?: ParsedExpr;
   active: boolean;
+  condition?: Expr;
 }
 
 export enum Risk_Source {
@@ -447,7 +449,16 @@ export const DeleteRiskRequest = {
 };
 
 function createBaseRisk(): Risk {
-  return { name: "", uid: "", source: 0, title: "", level: 0, expression: undefined, active: false };
+  return {
+    name: "",
+    uid: "",
+    source: 0,
+    title: "",
+    level: 0,
+    expression: undefined,
+    active: false,
+    condition: undefined,
+  };
 }
 
 export const Risk = {
@@ -472,6 +483,9 @@ export const Risk = {
     }
     if (message.active === true) {
       writer.uint32(56).bool(message.active);
+    }
+    if (message.condition !== undefined) {
+      Expr.encode(message.condition, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -532,6 +546,13 @@ export const Risk = {
 
           message.active = reader.bool();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -550,6 +571,7 @@ export const Risk = {
       level: isSet(object.level) ? Number(object.level) : 0,
       expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
       active: isSet(object.active) ? Boolean(object.active) : false,
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
   },
 
@@ -563,6 +585,7 @@ export const Risk = {
     message.expression !== undefined &&
       (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
     message.active !== undefined && (obj.active = message.active);
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
     return obj;
   },
 
@@ -581,6 +604,9 @@ export const Risk = {
       ? ParsedExpr.fromPartial(object.expression)
       : undefined;
     message.active = object.active ?? false;
+    message.condition = (object.condition !== undefined && object.condition !== null)
+      ? Expr.fromPartial(object.condition)
+      : undefined;
     return message;
   },
 };

@@ -7,6 +7,7 @@ import "google/api/client.proto";
 import "google/api/expr/v1alpha1/syntax.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
+import "google/type/expr.proto";
 import "v1/review_service.proto";
 import "v1/subscription_service.proto";
 
@@ -198,6 +199,7 @@ message WorkspaceApprovalSetting {
   message Rule {
     google.api.expr.v1alpha1.ParsedExpr expression = 1;
     ApprovalTemplate template = 2;
+    google.type.Expr condition = 3;
   }
   repeated Rule rules = 1;
 }

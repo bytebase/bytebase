@@ -1,6 +1,7 @@
 /* eslint-disable */
 import * as _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
+import { Expr } from "../google/type/expr";
 import { ApprovalTemplate } from "./approval";
 
 export const protobufPackage = "bytebase.store";
@@ -38,6 +39,7 @@ export interface WorkspaceApprovalSetting {
 export interface WorkspaceApprovalSetting_Rule {
   expression?: ParsedExpr;
   template?: ApprovalTemplate;
+  condition?: Expr;
 }
 
 export interface SMTPMailDeliverySetting {
@@ -403,7 +405,7 @@ export const WorkspaceApprovalSetting = {
 };
 
 function createBaseWorkspaceApprovalSetting_Rule(): WorkspaceApprovalSetting_Rule {
-  return { expression: undefined, template: undefined };
+  return { expression: undefined, template: undefined, condition: undefined };
 }
 
 export const WorkspaceApprovalSetting_Rule = {
@@ -413,6 +415,9 @@ export const WorkspaceApprovalSetting_Rule = {
     }
     if (message.template !== undefined) {
       ApprovalTemplate.encode(message.template, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.condition !== undefined) {
+      Expr.encode(message.condition, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -438,6 +443,13 @@ export const WorkspaceApprovalSetting_Rule = {
 
           message.template = ApprovalTemplate.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.condition = Expr.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -451,6 +463,7 @@ export const WorkspaceApprovalSetting_Rule = {
     return {
       expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
       template: isSet(object.template) ? ApprovalTemplate.fromJSON(object.template) : undefined,
+      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
   },
 
@@ -460,6 +473,7 @@ export const WorkspaceApprovalSetting_Rule = {
       (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
     message.template !== undefined &&
       (obj.template = message.template ? ApprovalTemplate.toJSON(message.template) : undefined);
+    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
     return obj;
   },
 
@@ -474,6 +488,9 @@ export const WorkspaceApprovalSetting_Rule = {
       : undefined;
     message.template = (object.template !== undefined && object.template !== null)
       ? ApprovalTemplate.fromPartial(object.template)
+      : undefined;
+    message.condition = (object.condition !== undefined && object.condition !== null)
+      ? Expr.fromPartial(object.condition)
       : undefined;
     return message;
   },
