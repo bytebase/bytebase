@@ -295,6 +295,9 @@ func (s *Store) BackfillRiskExpression(ctx context.Context) error {
 		}
 		var parsedExpr v1alpha1.ParsedExpr
 		if err := protojson.Unmarshal(expressionBytes, &parsedExpr); err != nil {
+			if strings.Contains(err.Error(), "unknown field") {
+				continue
+			}
 			return errors.Wrap(err, "failed to unmarshal")
 		}
 		idExpressionMap[id] = &parsedExpr
