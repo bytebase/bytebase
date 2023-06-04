@@ -55,7 +55,7 @@
       >
         <template #production_environment>
           <a
-            href="https://www.bytebase.com/docs/administration/database-access-control"
+            href="https://www.bytebase.com/docs/security/database-access-control"
             class="normal-link lowercase"
             target="_BLANK"
           >
