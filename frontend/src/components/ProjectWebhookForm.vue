@@ -187,7 +187,7 @@
             })
           }}
           <a
-            href="https://www.bytebase.com/docs/administration/webhook-integration/project-webhook#custom?source=console"
+            href="https://www.bytebase.com/docs/change-database/webhook#custom?source=console"
             target="__blank"
             class="normal-link"
             >{{
