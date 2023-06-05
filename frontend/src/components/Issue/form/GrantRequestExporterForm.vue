@@ -72,7 +72,7 @@
       <div v-if="create">
         <NRadioGroup
           v-model:value="state.expireDays"
-          class="!grid grid-cols-4 gap-x-4 gap-y-4"
+          class="!grid grid-cols-6 gap-4"
           name="radiogroup"
         >
           <div
@@ -155,6 +155,7 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
+import { NRadioGroup, NRadio, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useIssueLogic } from "../logic";
@@ -233,10 +234,6 @@ const expireDaysOptions = computed(() => [
   {
     value: 15,
     label: t("common.date.days", { days: 15 }),
-  },
-  {
-    value: 30,
-    label: t("common.date.days", { days: 30 }),
   },
 ]);
 
