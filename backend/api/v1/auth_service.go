@@ -18,6 +18,8 @@ import (
 
 	"github.com/pquerna/otp/totp"
 
+	"github.com/nyaruka/phonenumbers"
+
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -122,8 +124,14 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 	firstEndUser := count == 0
 
+	if request.User.Phone != "" {
+		if err := validatePhone(request.User.Phone); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid phone %q, error: %v", request.User.Phone, err)
+		}
+	}
+
 	if err := validateEmail(request.User.Email); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", request.User.Email, err)
 	}
 	existingUser, err := s.store.GetUser(ctx, &store.FindUserMessage{
 		Email:       &request.User.Email,
@@ -800,6 +808,17 @@ func validateEmail(email string) error {
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
 		return err
+	}
+	return nil
+}
+
+func validatePhone(phone string) error {
+	phoneNumber, err := phonenumbers.Parse(phone, "")
+	if err != nil {
+		return err
+	}
+	if !phonenumbers.IsValidNumber(phoneNumber) {
+		return errors.New("invalid phone number")
 	}
 	return nil
 }
