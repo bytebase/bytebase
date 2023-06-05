@@ -348,6 +348,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 }
 
 func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
+	return false, nil, errors.New("haha")
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
