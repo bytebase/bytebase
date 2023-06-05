@@ -334,7 +334,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
 					return errors.Wrapf(err, "failed to unmarshal task payload")
 				}
-				if payload.VCSPushEvent != nil {
+				if payload.VCSPushEvent == nil {
 					isUICreatedInVCSProject = true
 				}
 			case api.TaskDatabaseSchemaUpdateSDL:
@@ -342,7 +342,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
 					return errors.Wrapf(err, "failed to unmarshal task payload")
 				}
-				if payload.VCSPushEvent != nil {
+				if payload.VCSPushEvent == nil {
 					isUICreatedInVCSProject = true
 				}
 			case api.TaskDatabaseSchemaUpdateGhostSync:
@@ -350,7 +350,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
 					return errors.Wrapf(err, "failed to unmarshal task payload")
 				}
-				if payload.VCSPushEvent != nil {
+				if payload.VCSPushEvent == nil {
 					isUICreatedInVCSProject = true
 				}
 			case api.TaskDatabaseDataUpdate:
@@ -358,7 +358,7 @@ func (s *Scheduler) PatchTask(ctx context.Context, task *store.TaskMessage, task
 				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
 					return errors.Wrapf(err, "failed to unmarshal task payload")
 				}
-				if payload.VCSPushEvent != nil {
+				if payload.VCSPushEvent == nil {
 					isUICreatedInVCSProject = true
 				}
 			}
