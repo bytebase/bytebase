@@ -3,12 +3,14 @@ package parser
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
 	"sort"
 	"strings"
 
+	pgquery "github.com/pganalyze/pg_query_go/v2"
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/model"
@@ -61,6 +63,9 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 	case Oracle:
 		// The resource list for Oracle may contains table, view and temporary table.
 		return extractOracleResourceList(currentDatabase, currentSchema, sql)
+	case Postgres:
+		// The resource list for Postgres may contains table, view and temporary table.
+		return extractPostgresResourceList(currentDatabase, "public", sql)
 	default:
 		if currentDatabase == "" {
 			return nil, errors.Errorf("database must be specified for engine type: %s", engineType)
@@ -68,6 +73,67 @@ func ExtractResourceList(engineType EngineType, currentDatabase string, currentS
 
 		return []SchemaResource{{Database: currentDatabase}}, nil
 	}
+}
+
+func extractPostgresResourceList(currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
+	jsonText, err := pgquery.ParseToJSON(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	var jsonData map[string]any
+
+	if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
+		return nil, err
+	}
+
+	resourceMap := make(map[string]SchemaResource)
+	list := extractRangeVarFromJSON(currentDatabase, currentSchema, jsonData)
+	for _, resource := range list {
+		resourceMap[resource.String()] = resource
+	}
+	list = []SchemaResource{}
+	for _, resource := range resourceMap {
+		list = append(list, resource)
+	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].String() < list[j].String()
+	})
+	return list, nil
+}
+
+func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonData map[string]any) []SchemaResource {
+	var result []SchemaResource
+	if jsonData["RangeVar"] != nil {
+		resource := SchemaResource{
+			Database: currentDatabase,
+			Schema:   currentSchema,
+		}
+		rangeVar := jsonData["RangeVar"].(map[string]any)
+		if rangeVar["schemaname"] != nil {
+			resource.Schema = rangeVar["schemaname"].(string)
+		}
+		if rangeVar["relname"] != nil {
+			resource.Table = rangeVar["relname"].(string)
+		}
+		result = append(result, resource)
+	}
+
+	for _, value := range jsonData {
+		switch v := value.(type) {
+		case map[string]any:
+			result = append(result, extractRangeVarFromJSON(currentDatabase, currentSchema, v)...)
+		case []any:
+			for _, item := range v {
+				if m, ok := item.(map[string]any); ok {
+					result = append(result, extractRangeVarFromJSON(currentDatabase, currentSchema, m)...)
+				}
+			}
+		}
+
+	}
+
+	return result
 }
 
 func extractMySQLResourceList(currentDatabase string, sql string) ([]SchemaResource, error) {
