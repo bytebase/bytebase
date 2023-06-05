@@ -11,6 +11,7 @@ import ProjectV1Table from "./ProjectV1Table.vue";
 import DatabaseView from "./DatabaseView.vue";
 
 export * from "./Instance";
+export * from "./User";
 export {
   DatabaseName,
   DatabaseV1Name,
