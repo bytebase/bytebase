@@ -82,10 +82,12 @@ onMounted(async () => {
     );
     databaseResourceMap.value.set(`d-${database.uid}`, {
       databaseId: database.uid,
+      databaseName: database.name,
     });
     for (const schema of databaseMetadata.schemas) {
       databaseResourceMap.value.set(`s-${database.uid}-${schema.name}`, {
         databaseId: database.uid,
+        databaseName: database.name,
         schema: schema.name,
       });
       for (const table of schema.tables) {
@@ -93,6 +95,7 @@ onMounted(async () => {
           `t-${database.uid}-${schema.name}-${table.name}`,
           {
             databaseId: database.uid,
+            databaseName: database.name,
             schema: schema.name,
             table: table.name,
           }
