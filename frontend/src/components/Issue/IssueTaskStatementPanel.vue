@@ -514,6 +514,12 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
     if (selectedTask.value) {
       updateEditorHeight();
     }
+
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: "File upload success",
+    });
   };
 
   return new Promise((resolve, reject) => {
