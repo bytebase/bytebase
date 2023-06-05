@@ -13,7 +13,7 @@
       />
     </template>
     <template v-else>
-      <template v-if="state.workflowType === Workflow.UI">
+      <template v-if="project.workflow === Workflow.UI">
         <div class="text-lg leading-6 font-medium text-main">
           {{ $t("workflow.current-workflow") }}
         </div>
