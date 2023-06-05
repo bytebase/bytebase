@@ -75,6 +75,7 @@
         "disaster-recovery-advanced-tooltip": "Respaldo de Base de Datos / restauración + Recuperación en un punto en el tiempo (PITR)",
         "sql-check": "100+ Comprobación automática de SQL",
         "schedule-change": "Cambio programado en un momento específico",
+        "database-group": "Grupo de base de datos",
         "sync-schema": "Sincronizar esquema entre bases de datos",
         "sync-schema-basic": "Básico",
         "sync-schema-basic-tooltip": "Sincronizar desde la última versión del esquema",
