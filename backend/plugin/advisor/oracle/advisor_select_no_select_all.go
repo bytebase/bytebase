@@ -2,7 +2,7 @@
 package oracle
 
 import (
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
