@@ -1075,14 +1075,9 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
-		_ = tree
-		// for _, stmt := range stmtList {
-		// 	switch stmt.(type) {
-		// 	case *tidbast.SelectStmt, *tidbast.ExplainStmt:
-		// 	default:
-		// 		return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
-		// 	}
-		// }
+		if err := parser.MySQLValidateForEditor(tree); err != nil {
+			return status.Errorf(codes.InvalidArgument, err.Error())
+		}
 	case db.TiDB:
 		stmtList, err := parser.ParseTiDB(statement, "", "")
 		if err != nil {

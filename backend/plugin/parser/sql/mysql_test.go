@@ -3,22 +3,8 @@ package parser
 import (
 	"testing"
 
-	_ "embed"
-
 	"github.com/stretchr/testify/require"
 )
-
-//go:embed test1.sql
-var test1 []byte
-
-//go:embed test2.sql
-var test2 []byte
-
-//go:embed test3.sql
-var test3 []byte
-
-//go:embed test4.sql
-var test4 []byte
 
 func TestMySQLParser(t *testing.T) {
 	tests := []struct {
@@ -82,6 +68,45 @@ func TestMySQLParser(t *testing.T) {
 			require.NoError(t, err, i)
 		} else {
 			require.EqualError(t, err, test.errorMessage)
+		}
+	}
+}
+
+func TestMySQLValidateForEditor(t *testing.T) {
+	tests := []struct {
+		statement string
+		validate  bool
+	}{
+		{
+			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
+			validate:  true,
+		},
+		{
+			statement: "CREATE TABLE t1 (c1 INT);",
+			validate:  false,
+		},
+		{
+			statement: "UPDATE t1 SET c1 = 1;",
+			validate:  false,
+		},
+		{
+			statement: "EXPLAIN SELECT * FROM t1;",
+			validate:  true,
+		},
+		{
+			statement: "EXPLAIN FORMAT=JSON DELETE FROM t1;",
+			validate:  false,
+		},
+	}
+
+	for _, test := range tests {
+		tree, err := ParseMySQL(test.statement, "", "")
+		require.NoError(t, err)
+		err = MySQLValidateForEditor(tree)
+		if test.validate {
+			require.NoError(t, err)
+		} else {
+			require.Error(t, err)
 		}
 	}
 }
