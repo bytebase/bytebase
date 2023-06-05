@@ -60,6 +60,47 @@
         {{ selectedDatabase.databaseName }}
       </div>
     </div>
+    <div class="w-full flex flex-row justify-start items-start">
+      <span class="flex w-40 items-start textlabel !leading-6">
+        {{
+          create
+            ? $t("issue.grant-request.expire-days")
+            : $t("issue.grant-request.expired-at")
+        }}
+        <RequiredStar />
+      </span>
+      <div v-if="create">
+        <NRadioGroup
+          v-model:value="state.expireDays"
+          class="!grid grid-cols-6 gap-4"
+          name="radiogroup"
+        >
+          <div
+            v-for="day in expireDaysOptions"
+            :key="day.value"
+            class="col-span-1 flex flex-row justify-start items-center"
+          >
+            <NRadio :value="day.value" :label="day.label" />
+          </div>
+          <div class="col-span-2 flex flex-row justify-start items-center">
+            <NRadio :value="-1" :label="$t('issue.grant-request.customize')" />
+            <NInputNumber
+              v-model:value="state.customDays"
+              class="!w-24 ml-2"
+              :disabled="state.expireDays !== -1"
+              :min="1"
+              :show-button="false"
+              :placeholder="''"
+            >
+              <template #suffix>{{ $t("common.date.days") }}</template>
+            </NInputNumber>
+          </div>
+        </NRadioGroup>
+      </div>
+      <div v-else>
+        {{ state.expiredAt }}
+      </div>
+    </div>
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center textlabel !leading-6">
         {{ $t("issue.grant-request.export-rows") }}
@@ -114,7 +155,9 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
+import { NRadioGroup, NRadio, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useIssueLogic } from "../logic";
 import {
   GrantRequestContext,
@@ -142,18 +185,26 @@ interface LocalState {
   environmentId?: string;
   databaseId?: string;
   selectedDatabaseResourceList: DatabaseResource[];
+  expireDays: number;
+  customDays: number;
   maxRowCount: number;
   exportFormat: "CSV" | "JSON";
   statement: string;
+  // For reviewing
+  expiredAt: string;
 }
 
+const { t } = useI18n();
 const { create, issue } = useIssueLogic();
 const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   selectedDatabaseResourceList: [],
+  expireDays: 1,
+  customDays: 7,
   maxRowCount: 1000,
   exportFormat: "CSV",
   statement: "",
+  expiredAt: "",
 });
 
 const projectId = computed(() => {
@@ -166,6 +217,25 @@ const selectedDatabase = computed(() => {
   }
   return databaseStore.getDatabaseByUID(state.databaseId);
 });
+
+const expireDaysOptions = computed(() => [
+  {
+    value: 1,
+    label: t("common.date.days", { days: 1 }),
+  },
+  {
+    value: 3,
+    label: t("common.date.days", { days: 3 }),
+  },
+  {
+    value: 7,
+    label: t("common.date.days", { days: 7 }),
+  },
+  {
+    value: 15,
+    label: t("common.date.days", { days: 15 }),
+  },
+]);
 
 const dialect = computed((): SQLDialect => {
   const db = selectedDatabase.value;
@@ -236,6 +306,8 @@ watch(
   () => [
     state.databaseId,
     state.selectedDatabaseResourceList,
+    state.expireDays,
+    state.customDays,
     state.maxRowCount,
     state.exportFormat,
     state.statement,
@@ -253,6 +325,11 @@ watch(
         ];
       } else {
         context.databaseResources = [];
+      }
+      if (state.expireDays === -1) {
+        context.expireDays = state.customDays;
+      } else {
+        context.expireDays = state.expireDays;
       }
       context.maxRowCount = state.maxRowCount;
       context.exportFormat = state.exportFormat;
@@ -285,6 +362,13 @@ watch(
         if (resource) {
           state.databaseId = String(resource.databaseId);
         }
+      }
+      if (conditionExpression.expiredTime !== undefined) {
+        state.expiredAt = new Date(
+          conditionExpression.expiredTime
+        ).toLocaleString();
+      } else {
+        state.expiredAt = "-";
       }
       if (conditionExpression.statement !== undefined) {
         state.statement = conditionExpression.statement;
