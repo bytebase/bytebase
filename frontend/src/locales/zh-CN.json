@@ -2005,8 +2005,8 @@
         "desc": "存储数据库的保密变量，并在工单的 SQL 中使用它们。"
       },
       "bb-feature-database-grouping": {
-        "title": "数据库/表分组",
-        "desc": "支持对数据库和表进行分组，变更时可选择数据库分组，对其表分组进行变更。"
+        "title": "数据库分组",
+        "desc": "数据库分组让您可以对数据库分组里的数据库进行批量操作。"
       },
       "bb-feature-disallow-signup": {
         "title": "禁用自助注册",
