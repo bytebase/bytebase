@@ -9,7 +9,7 @@ import { VCSId } from "@/types";
 export const useVCSV1Store = defineStore("vcs_v1", () => {
   const vcsMapByName = reactive(new Map<string, ExternalVersionControl>());
 
-  const listVCSProjects = async (
+  const listVCSExternalProjects = async (
     vcsName: string,
     accessToken: string,
     refreshToken: string
@@ -90,7 +90,7 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
   };
 
   return {
-    listVCSProjects,
+    listVCSExternalProjects,
     getVCSByUid,
     getVCSList,
     fetchVCSByName,

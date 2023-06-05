@@ -85,7 +85,7 @@ const prepareRepositoryList = () => {
     .then((token: OAuthToken) => {
       emit("set-token", token);
       vcsV1Store
-        .listVCSProjects(
+        .listVCSExternalProjects(
           props.config.vcs.name,
           token.accessToken,
           token.refreshToken
@@ -98,7 +98,7 @@ const prepareRepositoryList = () => {
 
 const refreshRepositoryList = () => {
   vcsV1Store
-    .listVCSProjects(
+    .listVCSExternalProjects(
       props.config.vcs.name,
       props.config.token.accessToken,
       props.config.token.refreshToken
