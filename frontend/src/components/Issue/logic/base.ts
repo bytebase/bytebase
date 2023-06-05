@@ -300,7 +300,7 @@ export const useBaseIssueLogic = (params: {
                 await databaseStore.getOrFetchDatabaseByUID(
                   String(taskItem.databaseId)
                 )
-              ).databaseName;
+              ).name;
             }
             const newSheet = await sheetV1Store.createSheet(
               project.value.name,

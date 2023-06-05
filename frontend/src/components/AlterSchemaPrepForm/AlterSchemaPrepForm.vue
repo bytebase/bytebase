@@ -311,6 +311,7 @@ import {
   ComposedDatabaseGroup,
   FeatureType,
   UNKNOWN_ID,
+  DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
 import {
   allowGhostMigrationV1,
@@ -457,7 +458,10 @@ const databaseList = computed(() => {
   } else {
     list = databaseV1Store.databaseListByUser(currentUserV1.value);
   }
-  list = list.filter((db) => (db.syncState = State.ACTIVE));
+  list = list.filter(
+    (db) =>
+      db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_V1_NAME
+  );
 
   list = list.filter((db) => {
     return filterDatabaseV1ByKeyword(db, state.searchText.trim(), [

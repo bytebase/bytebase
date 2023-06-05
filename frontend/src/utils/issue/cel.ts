@@ -4,6 +4,7 @@ import { celServiceClient } from "@/grpcweb";
 import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
 import { useDatabaseV1Store } from "@/store";
 import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 
 interface DatabaseLevelCondition {
   database: string[];
@@ -202,6 +203,7 @@ export const convertFromCEL = async (
             const databaseId = await getDatabaseIdByName(value as string);
             const databaseResource: DatabaseResource = {
               databaseId: databaseId,
+              databaseName: value as string,
             };
             conditionExpression.databaseResources!.push(databaseResource);
           }
@@ -237,6 +239,7 @@ export const convertFromCEL = async (
             const databaseId = await getDatabaseIdByName(right);
             const databaseResource: DatabaseResource = {
               databaseId: databaseId,
+              databaseName: right,
             };
             conditionExpression.databaseResources!.push(databaseResource);
           } else if (left === "resource.schema") {
@@ -266,6 +269,92 @@ export const convertFromCEL = async (
     }
   }
   await processCondition(simpleExpr);
+  return conditionExpression;
+};
+
+export const convertFromSimpleExpr = (expr: Expr): ConditionExpression => {
+  const simpleExpr = resolveCELExpr(expr);
+  const conditionExpression: ConditionExpression = {
+    databaseResources: [],
+  };
+
+  function processCondition(expr: SimpleExpr) {
+    if (expr.operator === "_&&_" || expr.operator === "_||_") {
+      for (const arg of expr.args) {
+        processCondition(arg);
+      }
+    } else if (expr.operator === "@in") {
+      const [property, values] = expr.args;
+      if (typeof property === "string" && Array.isArray(values)) {
+        if (property === "resource.database") {
+          for (const value of values) {
+            const databaseResource: DatabaseResource = {
+              databaseId: "",
+              databaseName: value as string,
+            };
+            conditionExpression.databaseResources!.push(databaseResource);
+          }
+        } else if (property === "resource.schema") {
+          const databaseResource = conditionExpression.databaseResources?.pop();
+          if (databaseResource) {
+            for (const value of values) {
+              const temp: DatabaseResource = cloneDeep(
+                databaseResource
+              ) as DatabaseResource;
+              temp.schema = value as string;
+              conditionExpression.databaseResources!.push(temp);
+            }
+          }
+        } else if (property === "resource.table") {
+          const databaseResource = conditionExpression.databaseResources?.pop();
+          if (databaseResource) {
+            for (const value of values) {
+              const temp: DatabaseResource = cloneDeep(
+                databaseResource
+              ) as DatabaseResource;
+              temp.table = value as string;
+              conditionExpression.databaseResources!.push(temp);
+            }
+          }
+        }
+      }
+    } else if (expr.operator === "_==_") {
+      const [left, right] = expr.args;
+      if (typeof left === "string") {
+        if (typeof right === "string") {
+          if (left === "resource.database") {
+            const databaseResource: DatabaseResource = {
+              databaseId: "",
+              databaseName: right,
+            };
+            conditionExpression.databaseResources!.push(databaseResource);
+          } else if (left === "resource.schema") {
+            const databaseResource = last(
+              conditionExpression.databaseResources
+            );
+            if (databaseResource) {
+              databaseResource.schema = right;
+            }
+          } else if (left === "request.statement") {
+            const statement = atob(right);
+            conditionExpression.statement = statement;
+          } else if (left === "request.export_format") {
+            conditionExpression.exportFormat = right;
+          }
+        } else if (typeof right === "number") {
+          if (left === "request.row_limit") {
+            conditionExpression.rowLimit = right;
+          }
+        }
+      }
+    } else if (expr.operator === "_<_") {
+      const [left, right] = expr.args;
+      if (left === "request.time") {
+        conditionExpression.expiredTime = (right as Date).toISOString();
+      }
+    }
+  }
+  processCondition(simpleExpr);
   return conditionExpression;
 };
 

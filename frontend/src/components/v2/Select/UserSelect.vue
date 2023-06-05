@@ -43,7 +43,7 @@ interface UserSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    multiple: boolean;
+    multiple?: boolean;
     user?: string;
     users?: string[];
     project?: string;
@@ -276,7 +276,7 @@ const resetInvalidSelection = () => {
 };
 
 watch(
-  [() => props.user, props.users, combinedUserList],
+  [() => props.user, () => props.users, combinedUserList],
   resetInvalidSelection,
   {
     immediate: true,

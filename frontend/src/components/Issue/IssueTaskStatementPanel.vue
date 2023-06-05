@@ -59,10 +59,10 @@
       <button
         v-if="shouldShowStatementEditButtonForUI"
         type="button"
-        class="btn-icon"
+        class="px-4 py-2 cursor-pointer border border-control-border rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed"
         @click.prevent="beginEdit"
       >
-        <heroicons-solid:pencil class="h-5 w-5" />
+        {{ $t("common.edit") }}
       </button>
 
       <template v-else-if="!create">
@@ -290,9 +290,19 @@ const useTempEditState = (state: LocalState) => {
     },
     { immediate: true }
   );
+
+  const reset = () => {
+    stopWatching && stopWatching();
+
+    if (!create.value) {
+      stopWatching = startWatching();
+    }
+  };
+
+  return reset;
 };
 
-useTempEditState(state);
+const resetTempEditState = useTempEditState(state);
 
 const getOrFetchSheetStatementByName = async (
   sheetName: string | undefined
@@ -449,6 +459,7 @@ const saveEdit = async () => {
   if (!selectedDatabase.value) {
     return;
   }
+  resetTempEditState();
   if (allowFormatOnSave.value && formatOnSave.value) {
     editorRef.value?.formatEditorContent();
   }
@@ -508,12 +519,19 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
     });
     state.isUploadingFile = false;
 
+    resetTempEditState();
     updateSheetId(sheetV1Store.getSheetUid(sheet.name));
     await updateStatement(statement);
     state.editing = false;
     if (selectedTask.value) {
       updateEditorHeight();
     }
+
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: "File upload success",
+    });
   };
 
   return new Promise((resolve, reject) => {

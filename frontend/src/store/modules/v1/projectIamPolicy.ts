@@ -14,6 +14,7 @@ import {
   isOwnerOfProjectV1,
   parseConditionExpressionString,
 } from "@/utils";
+import { convertFromSimpleExpr } from "@/utils/issue/cel";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -237,21 +238,20 @@ export const useCurrentUserIamPolicy = () => {
           (member) => member === `user:${currentUser.value.email}`
         )
       ) {
-        const expressionList = binding.condition?.expression.split(" && ");
-        if (expressionList && expressionList.length > 0) {
-          let hasDatabaseField = false;
-          for (const expression of expressionList) {
-            const fields = expression.split(" ");
-            if (fields[0] === "resource.database") {
-              hasDatabaseField = true;
-              for (const url of JSON.parse(fields[2])) {
-                if (url === database.name) {
-                  return true;
-                }
-              }
+        if (binding.parsedExpr?.expr) {
+          const conditionExpr = convertFromSimpleExpr(binding.parsedExpr.expr);
+          if (
+            conditionExpr.databaseResources &&
+            conditionExpr.databaseResources.length > 0
+          ) {
+            const hasDatabaseField =
+              conditionExpr.databaseResources.find(
+                (item) => item.databaseName === database.name
+              ) !== undefined;
+            if (hasDatabaseField) {
+              return true;
             }
-          }
-          if (!hasDatabaseField) {
+          } else {
             return true;
           }
         } else {
@@ -286,12 +286,22 @@ export const useCurrentUserIamPolicy = () => {
           (member) => member === `user:${currentUser.value.email}`
         )
       ) {
-        const conditionExpression = parseConditionExpressionString(
-          binding.condition?.expression || ""
-        );
-        if (conditionExpression.databases) {
-          const databaseResourceName = database.name;
-          return conditionExpression.databases.includes(databaseResourceName);
+        if (binding.parsedExpr?.expr) {
+          const conditionExpr = convertFromSimpleExpr(binding.parsedExpr.expr);
+          if (
+            conditionExpr.databaseResources &&
+            conditionExpr.databaseResources.length > 0
+          ) {
+            const hasDatabaseField =
+              conditionExpr.databaseResources.find(
+                (item) => item.databaseName === database.name
+              ) !== undefined;
+            if (hasDatabaseField) {
+              return true;
+            }
+          } else {
+            return true;
+          }
         } else {
           return true;
         }
