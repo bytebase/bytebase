@@ -4,7 +4,7 @@
       {{ $t("settings.im-integration.description") }}
       <a
         class="normal-link inline-flex items-center"
-        href="https://www.bytebase.com/docs/administration/webhook-integration/external-approval?source=console"
+        href="https://www.bytebase.com/docs/administration/external-approval?source=console"
         target="__BLANK"
       >
         {{ $t("common.learn-more") }}

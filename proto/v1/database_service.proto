@@ -534,7 +534,7 @@ message BackupSetting {
   // Default (empty): Disable automatic backup.
   string cron_schedule = 3;
 
-  // hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created.
+  // hook_url(https://www.bytebase.com/docs/disaster-recovery/backup/#post-backup-webhook) is the URL to send a notification when a backup is created.
   string hook_url = 4;
 }
 

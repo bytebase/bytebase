@@ -2346,7 +2346,7 @@ type BackupSetting struct {
 	//
 	// Default (empty): Disable automatic backup.
 	CronSchedule string `protobuf:"bytes,3,opt,name=cron_schedule,json=cronSchedule,proto3" json:"cron_schedule,omitempty"`
-	// hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created.
+	// hook_url(https://www.bytebase.com/docs/disaster-recovery/backup/#post-backup-webhook) is the URL to send a notification when a backup is created.
 	HookUrl string `protobuf:"bytes,4,opt,name=hook_url,json=hookUrl,proto3" json:"hook_url,omitempty"`
 }
 
