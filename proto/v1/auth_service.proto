@@ -191,6 +191,8 @@ message User {
 
   string email = 3;
 
+  // Should be a valid E.164 compliant phone number.
+  // Could be empty.
   string phone = 12;
 
   string title = 4;
