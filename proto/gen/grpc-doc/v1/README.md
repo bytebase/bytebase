@@ -1581,7 +1581,7 @@ BackupSetting is the setting for database backup.
 | cron_schedule | [string](#string) |  | Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups. Support hour of day, day of week. (UTC time)
 
 Default (empty): Disable automatic backup. |
-| hook_url | [string](#string) |  | hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created. |
+| hook_url | [string](#string) |  | hook_url(https://www.bytebase.com/docs/disaster-recovery/backup/#post-backup-webhook) is the URL to send a notification when a backup is created. |
 
 
 

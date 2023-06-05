@@ -58,7 +58,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       type: Webhook_Type.TYPE_CUSTOM,
       name: t("common.custom"),
       urlPrefix:
-        "https://bytebase.com/docs/administration/webhook-integration/project-webhook#custom?source=console",
+        "https://bytebase.com/docs/change-database/webhook#custom?source=console",
     },
   ];
 };
