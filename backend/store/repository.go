@@ -145,6 +145,7 @@ func (s *Store) CreateRepositoryV2(ctx context.Context, create *RepositoryMessag
 }
 
 // GetRepositoryV2 gets an instance of repository.
+// Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) GetRepositoryV2(ctx context.Context, find *FindRepositoryMessage) (*RepositoryMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -216,22 +217,6 @@ func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string
 	return tx.Commit()
 }
 
-// GetRepository gets an instance of Repository.
-func (s *Store) GetRepository(ctx context.Context, find *api.RepositoryFind) (*api.Repository, error) {
-	repositoryRaw, err := s.getRepositoryRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Repository with RepositoryFind[%+v]", find)
-	}
-	if repositoryRaw == nil {
-		return nil, nil
-	}
-	repository, err := s.composeRepository(ctx, repositoryRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Repository with repositoryRaw[%+v]", repositoryRaw)
-	}
-	return repository, nil
-}
-
 // FindRepository finds a list of Repository instances.
 func (s *Store) FindRepository(ctx context.Context, find *api.RepositoryFind) ([]*api.Repository, error) {
 	repositoryRawList, err := s.findRepositoryRaw(ctx, find)
@@ -291,29 +276,7 @@ func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind)
 	return list, nil
 }
 
-// getRepositoryRaw retrieves a single repository based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) (*repositoryRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	list, err := s.findRepositoryImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d repositories with filter %+v, expect 1", len(list), find)}
-	}
-	return list[0], nil
-}
-
-// createRepositoryImpl creates a new repository.
+// createRepositoryImplV2 creates a new repository.
 func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *RepositoryMessage, creatorID int) (*RepositoryMessage, error) {
 	// Updates the project workflow_type to "VCS"
 	// TODO(d): ideally, we should not update project fields on repository changes.
@@ -615,6 +578,10 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	if v := patch.RefreshToken; v != nil {
 		set, args = append(set, fmt.Sprintf("refresh_token = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.EnableSQLReviewCI; v != nil {
+		set, args = append(set, fmt.Sprintf("enable_sql_review_ci = $%d", len(args)+1)), append(args, *v)
+	}
+
 	where := []string{}
 	if v := patch.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
@@ -624,9 +591,6 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	}
 	if len(where) == 0 {
 		return nil, common.Errorf(common.Invalid, "missing predicate in where clause for patching repository")
-	}
-	if v := patch.EnableSQLReviewCI; v != nil {
-		set, args = append(set, fmt.Sprintf("enable_sql_review_ci = $%d", len(args)+1)), append(args, *v)
 	}
 
 	var repository RepositoryMessage

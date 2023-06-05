@@ -554,7 +554,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 	}
 
 	// We use one webhook in one repo for at least one Bytebase project, so we only delete the webhook if this project is the last one using this webhook.
-	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{
+	repos, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{
 		WebURL: &repo.WebURL,
 	})
 	if err != nil {
