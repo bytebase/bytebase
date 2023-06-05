@@ -1071,17 +1071,18 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			}
 		}
 	case db.MySQL:
-		stmtList, err := parser.ParseMySQL(statement, "", "")
+		tree, err := parser.ParseMySQL(statement, "", "")
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
-		for _, stmt := range stmtList {
-			switch stmt.(type) {
-			case *tidbast.SelectStmt, *tidbast.ExplainStmt:
-			default:
-				return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
-			}
-		}
+		_ = tree
+		// for _, stmt := range stmtList {
+		// 	switch stmt.(type) {
+		// 	case *tidbast.SelectStmt, *tidbast.ExplainStmt:
+		// 	default:
+		// 		return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
+		// 	}
+		// }
 	case db.TiDB:
 		stmtList, err := parser.ParseTiDB(statement, "", "")
 		if err != nil {

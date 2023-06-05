@@ -2,55 +2,35 @@
 package parser
 
 import (
-	"strings"
-
-	tidbparser "github.com/pingcap/tidb/parser"
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pkg/errors"
+	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/mysql-parser"
 )
 
 // ParseMySQL parses the given SQL statement and returns the AST.
-func ParseMySQL(statement string, charset string, collation string) ([]ast.StmtNode, error) {
-	p := tidbparser.New()
+func ParseMySQL(statement string, charset string, collation string) (antlr.Tree, error) {
+	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := parser.NewMySQLParser(stream)
 
-	// To support MySQL8 window function syntax.
-	// See https://github.com/bytebase/bytebase/issues/175.
-	p.EnableWindowFunc(true)
-	list, err := SplitMultiSQLAndNormalize(MySQL, statement)
-	if err != nil {
-		return nil, err
+	lexerErrorListener := &ParseErrorListener{}
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(lexerErrorListener)
+
+	parserErrorListener := &ParseErrorListener{}
+	p.RemoveErrorListeners()
+	p.AddErrorListener(parserErrorListener)
+
+	p.BuildParseTrees = true
+
+	tree := p.Query()
+
+	if lexerErrorListener.err != nil {
+		return nil, lexerErrorListener.err
 	}
 
-	var result []ast.StmtNode
-	for _, sql := range list {
-		if sql.Empty {
-			continue
-		}
-		if IsTiDBUnsupportDDLStmt(sql.Text) {
-			// skip the TiDB parser unsupported DDL statement
-			continue
-		}
-
-		nodes, _, err := p.Parse(sql.Text, charset, collation)
-		if err != nil {
-			return nil, err
-		}
-		if len(nodes) == 0 {
-			continue
-		}
-		if len(nodes) > 1 {
-			return nil, errors.Errorf("get more than one sql after split: %s", sql.Text)
-		}
-		node := nodes[0]
-		node.SetText(nil, strings.TrimSpace(node.Text()))
-		node.SetOriginTextPosition(sql.LastLine)
-		if n, ok := node.(*ast.CreateTableStmt); ok {
-			if err := SetLineForMySQLCreateTableStmt(n); err != nil {
-				return nil, err
-			}
-		}
-		result = append(result, node)
+	if parserErrorListener.err != nil {
+		return nil, parserErrorListener.err
 	}
 
-	return result, err
+	return tree, nil
 }

@@ -367,18 +367,18 @@ func (e *SyntaxError) Error() string {
 	return e.Message
 }
 
-// PLSQLErrorListener is a custom error listener for PLSQL parser.
-type PLSQLErrorListener struct {
+// ParseErrorListener is a custom error listener for PLSQL parser.
+type ParseErrorListener struct {
 	err *SyntaxError
 }
 
 // NewPLSQLErrorListener creates a new PLSQLErrorListener.
-func NewPLSQLErrorListener() *PLSQLErrorListener {
-	return &PLSQLErrorListener{}
+func NewPLSQLErrorListener() *ParseErrorListener {
+	return &ParseErrorListener{}
 }
 
 // SyntaxError returns the errors.
-func (l *PLSQLErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column int, msg string, _ antlr.RecognitionException) {
+func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column int, msg string, _ antlr.RecognitionException) {
 	if len(msg) > 1024 {
 		msg = msg[:1024]
 	}
@@ -394,17 +394,17 @@ func (l *PLSQLErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column
 }
 
 // ReportAmbiguity reports an ambiguity.
-func (*PLSQLErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, exact bool, ambigAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
+func (*ParseErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, exact bool, ambigAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
 	antlr.ConsoleErrorListenerINSTANCE.ReportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
 }
 
 // ReportAttemptingFullContext reports an attempting full context.
-func (*PLSQLErrorListener) ReportAttemptingFullContext(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, conflictingAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
+func (*ParseErrorListener) ReportAttemptingFullContext(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, conflictingAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
 	antlr.ConsoleErrorListenerINSTANCE.ReportAttemptingFullContext(recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs)
 }
 
 // ReportContextSensitivity reports a context sensitivity.
-func (*PLSQLErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex, prediction int, configs *antlr.ATNConfigSet) {
+func (*ParseErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex, prediction int, configs *antlr.ATNConfigSet) {
 	antlr.ConsoleErrorListenerINSTANCE.ReportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs)
 }
 
@@ -415,11 +415,11 @@ func ParsePLSQL(sql string) (antlr.Tree, error) {
 	p := parser.NewPlSqlParser(steam)
 	p.SetVersion12(true)
 
-	lexerErrorListener := &PLSQLErrorListener{}
+	lexerErrorListener := &ParseErrorListener{}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &PLSQLErrorListener{}
+	parserErrorListener := &ParseErrorListener{}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 

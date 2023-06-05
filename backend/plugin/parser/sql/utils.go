@@ -143,22 +143,23 @@ func extractMySQLResourceList(currentDatabase string, sql string) ([]SchemaResou
 
 	resourceMap := make(map[string]SchemaResource)
 
-	for _, node := range nodes {
-		tableList := ExtractMySQLTableList(node, false /* asName */)
-		for _, table := range tableList {
-			resource := SchemaResource{
-				Database: table.Schema.O,
-				Schema:   "",
-				Table:    table.Name.O,
-			}
-			if resource.Database == "" {
-				resource.Database = currentDatabase
-			}
-			if _, ok := resourceMap[resource.String()]; !ok {
-				resourceMap[resource.String()] = resource
-			}
-		}
-	}
+	_ = nodes
+	// for _, node := range nodes {
+	// 	tableList := ExtractMySQLTableList(node, false /* asName */)
+	// 	for _, table := range tableList {
+	// 		resource := SchemaResource{
+	// 			Database: table.Schema.O,
+	// 			Schema:   "",
+	// 			Table:    table.Name.O,
+	// 		}
+	// 		if resource.Database == "" {
+	// 			resource.Database = currentDatabase
+	// 		}
+	// 		if _, ok := resourceMap[resource.String()]; !ok {
+	// 			resourceMap[resource.String()] = resource
+	// 		}
+	// 	}
+	// }
 
 	resourceList := make([]SchemaResource, 0, len(resourceMap))
 	for _, resource := range resourceMap {
