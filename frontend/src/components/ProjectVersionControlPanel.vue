@@ -13,7 +13,7 @@
       />
     </template>
     <template v-else>
-      <template v-if="project.workflow === Workflow.UI">
+      <template v-if="state.workflowType === Workflow.UI">
         <div class="text-lg leading-6 font-medium text-main">
           {{ $t("workflow.current-workflow") }}
         </div>
@@ -59,7 +59,7 @@
             </div>
           </div>
         </div>
-        <template v-if="allowEdit && state.workflowType == Workflow.VCS">
+        <template v-if="allowEdit">
           <div class="mt-4 flex items-center justify-end">
             <button
               type="button"
@@ -72,13 +72,14 @@
           </div>
         </template>
       </template>
-      <template v-else-if="project.workflow === Workflow.VCS && repository">
+      <template v-else-if="repository">
         <RepositoryPanel
           :project="project"
           :vcs="vcs"
           :repository="repository"
           :allow-edit="allowEdit"
           @change-repository="enterWizard(false)"
+          @restore="cancelWizard"
         />
       </template>
     </template>

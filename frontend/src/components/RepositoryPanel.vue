@@ -274,11 +274,7 @@ import {
   useProjectV1Store,
   useRepositoryV1Store,
 } from "@/store";
-import {
-  Project,
-  SchemaChange,
-  Workflow,
-} from "@/types/proto/v1/project_service";
+import { Project, SchemaChange } from "@/types/proto/v1/project_service";
 import { cloneDeep } from "lodash-es";
 import {
   ProjectGitOpsInfo,
@@ -296,6 +292,7 @@ interface LocalState {
   showDisableSQLReviewCIModal: boolean;
   showRestoreSQLReviewCIModal: boolean;
   sqlReviewCIPullRequestURL: string;
+  processing: boolean;
 }
 
 const props = defineProps({
@@ -317,8 +314,9 @@ const props = defineProps({
   },
 });
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "change-repository"): void;
+  (event: "restore"): void;
 }>();
 
 const { t } = useI18n();
@@ -340,6 +338,7 @@ const state = reactive<LocalState>({
   showDisableSQLReviewCIModal: false,
   showRestoreSQLReviewCIModal: false,
   sqlReviewCIPullRequestURL: "",
+  processing: false,
 });
 
 watch(
@@ -383,6 +382,7 @@ const supportSQLReviewCI = computed(() => {
 
 const allowUpdate = computed(() => {
   return (
+    !state.processing &&
     !isEmpty(state.repositoryConfig.branchFilter) &&
     !isEmpty(state.repositoryConfig.filePathTemplate) &&
     (props.repository.branchFilter !== state.repositoryConfig.branchFilter ||
@@ -416,17 +416,21 @@ const restoreToUIWorkflowType = async (checkSQLReviewCI: boolean) => {
     state.showRestoreSQLReviewCIModal = true;
     return;
   }
-  await repositoryV1Store.deleteRepository(props.project.name);
+  if (state.processing) {
+    return;
+  }
 
-  const projectPatch = cloneDeep(props.project);
-  projectPatch.workflow = Workflow.UI;
-  await useProjectV1Store().updateProject(projectPatch, ["workflow"]);
+  state.processing = true;
+  await repositoryV1Store.deleteRepository(props.project.name);
+  state.processing = false;
 
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
     title: t("repository.restore-ui-workflow-success"),
   });
+
+  emit("restore");
 };
 
 const createSQLReviewCI = async () => {
@@ -455,6 +459,11 @@ const doUpdate = async () => {
     state.showFeatureModal = true;
     return;
   }
+
+  if (state.processing) {
+    return;
+  }
+  state.processing = true;
 
   const needSetupCI =
     !props.repository.enableSqlReviewCi &&
@@ -494,27 +503,33 @@ const doUpdate = async () => {
       state.repositoryConfig.enableSQLReviewCI;
   }
 
-  // Update project schemaChangeType field firstly.
-  if (state.schemaChangeType !== props.project.schemaChange) {
-    const projectPatch = cloneDeep(props.project);
-    projectPatch.schemaChange = state.schemaChangeType;
-    await useProjectV1Store().updateProject(projectPatch, ["schema_change"]);
+  try {
+    const disableSQLReview = disableSQLReviewCI.value;
+
+    await repositoryV1Store.upsertRepository(
+      props.project.name,
+      repositoryPatch
+    );
+    // Update project schemaChangeType field firstly.
+    if (state.schemaChangeType !== props.project.schemaChange) {
+      const projectPatch = cloneDeep(props.project);
+      projectPatch.schemaChange = state.schemaChangeType;
+      await useProjectV1Store().updateProject(projectPatch, ["schema_change"]);
+    }
+
+    if (needSetupCI) {
+      createSQLReviewCI();
+    } else if (disableSQLReview) {
+      state.showDisableSQLReviewCIModal = true;
+    }
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("repository.update-gitops-config-success"),
+    });
+  } finally {
+    state.processing = false;
   }
-
-  const disableSQLReview = disableSQLReviewCI.value;
-
-  await repositoryV1Store.upsertRepository(props.project.name, repositoryPatch);
-
-  if (needSetupCI) {
-    createSQLReviewCI();
-  } else if (disableSQLReview) {
-    state.showDisableSQLReviewCIModal = true;
-  }
-
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("repository.update-gitops-config-success"),
-  });
 };
 </script>

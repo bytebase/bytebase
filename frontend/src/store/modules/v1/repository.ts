@@ -76,6 +76,7 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     await projectServiceClient.unsetProjectGitOpsInfo({
       name: project + "/gitOpsInfo",
     });
+    repositoryMapByProject.delete(project);
   };
 
   const setupSQLReviewCI = async (project: string): Promise<string> => {

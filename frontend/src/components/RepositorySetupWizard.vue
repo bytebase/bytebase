@@ -145,7 +145,6 @@ import { useRepositoryV1Store, hasFeature, useProjectV1Store } from "@/store";
 import { getVCSUid } from "@/store/modules/v1/common";
 import {
   Project,
-  Workflow,
   TenantMode,
   SchemaChange,
 } from "@/types/proto/v1/project_service";
@@ -182,6 +181,7 @@ interface LocalState {
   showSetupSQLReviewCIFailureModal: boolean;
   showLoadingSQLReviewPRModal: boolean;
   sqlReviewCIPullRequestURL: string;
+  processing: boolean;
 }
 
 const props = defineProps({
@@ -253,13 +253,15 @@ const state = reactive<LocalState>({
   showSetupSQLReviewCIFailureModal: false,
   showLoadingSQLReviewPRModal: false,
   sqlReviewCIPullRequestURL: "",
+  processing: false,
 });
 
 const allowNext = computed((): boolean => {
   if (state.currentStep == CONFIGURE_DEPLOY_STEP) {
     return (
       !isEmpty(state.config.repositoryConfig.branchFilter.trim()) &&
-      !isEmpty(state.config.repositoryConfig.filePathTemplate.trim())
+      !isEmpty(state.config.repositoryConfig.filePathTemplate.trim()) &&
+      !state.processing
     );
   }
   return true;
@@ -300,6 +302,11 @@ const tryFinishSetup = (allowFinishCallback: () => void) => {
     return;
   }
 
+  if (state.processing) {
+    return;
+  }
+  state.processing = true;
+
   const createFunc = async () => {
     let externalId = state.config.repositoryInfo.externalId;
     if (
@@ -308,16 +315,6 @@ const tryFinishSetup = (allowFinishCallback: () => void) => {
     ) {
       externalId = state.config.repositoryInfo.fullPath;
     }
-
-    const projectPatch = cloneDeep(props.project);
-    projectPatch.workflow = Workflow.VCS;
-    const updateMask = ["workflow"];
-    // Update project schemaChangeType field.
-    if (state.config.schemaChangeType !== props.project.schemaChange) {
-      updateMask.push("schema_change");
-      projectPatch.schemaChange = state.config.schemaChangeType;
-    }
-    await useProjectV1Store().updateProject(projectPatch, updateMask);
 
     const repositoryCreate: Partial<ProjectGitOpsInfo> = {
       vcsUid: `${getVCSUid(state.config.vcs.name)}`,
@@ -340,6 +337,13 @@ const tryFinishSetup = (allowFinishCallback: () => void) => {
       repositoryCreate
     );
 
+    // Update project schemaChangeType field.
+    if (state.config.schemaChangeType !== props.project.schemaChange) {
+      const projectPatch = cloneDeep(props.project);
+      projectPatch.schemaChange = state.config.schemaChangeType;
+      await useProjectV1Store().updateProject(projectPatch, ["schema_change"]);
+    }
+
     if (state.config.repositoryConfig.enableSQLReviewCI) {
       createSQLReviewCI();
     } else {
@@ -349,15 +353,19 @@ const tryFinishSetup = (allowFinishCallback: () => void) => {
     allowFinishCallback();
   };
 
-  if (props.create) {
-    createFunc();
-  } else {
-    // It's simple to implement change behavior as delete followed by create.
-    // Though the delete can succeed while the create fails, this is rare, and
-    // even it happens, user can still configure it again.
-    repositoryV1Store.deleteRepository(props.project.name).then(() => {
+  try {
+    if (props.create) {
       createFunc();
-    });
+    } else {
+      // It's simple to implement change behavior as delete followed by create.
+      // Though the delete can succeed while the create fails, this is rare, and
+      // even it happens, user can still configure it again.
+      repositoryV1Store.deleteRepository(props.project.name).then(() => {
+        createFunc();
+      });
+    }
+  } finally {
+    state.processing = false;
   }
 };
 
