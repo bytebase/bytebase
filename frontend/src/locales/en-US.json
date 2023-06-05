@@ -2009,8 +2009,8 @@
         "desc": "Store your secrets of database and use them in your issue SQL scripts."
       },
       "bb-feature-database-grouping": {
-        "title": "Database/schema grouping",
-        "desc": "Support grouping of databases and tables. When changing, you can select database grouping and change its table grouping."
+        "title": "Database Group",
+        "desc": "Database group allows you to apply batch operations to the databases from the database group."
       },
       "bb-feature-disallow-signup": {
         "title": "Disable self-service signup",
