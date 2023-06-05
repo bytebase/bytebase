@@ -49,6 +49,33 @@ var (
 			},
 		},
 	}
+	originData = &v1pb.QueryResult{
+		ColumnNames:     []string{"id", "name", "author"},
+		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
+		Rows: []*v1pb.QueryRow{
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "bytebase"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "bber"}},
+				},
+			},
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 2}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "PostgreSQL 14 Internals"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "Egor Rogov"}},
+				},
+			},
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 3}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "Designing Data-Intensive Applications"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "Martin Kleppmann"}},
+				},
+			},
+		},
+	}
 )
 
 func TestSensitiveData(t *testing.T) {
@@ -69,7 +96,6 @@ func TestSensitiveData(t *testing.T) {
 				(3, 'Designing Data-Intensive Applications', 'Martin Kleppmann');
 		`
 		queryTable = `SELECT * FROM tech_book`
-		originData = "[[\"id\",\"name\",\"author\"],[\"INT\",\"VARCHAR\",\"VARCHAR\"],[[1,\"bytebase\",\"bber\"],[2,\"PostgreSQL 14 Internals\",\"Egor Rogov\"],[3,\"Designing Data-Intensive Applications\",\"Martin Kleppmann\"]],[false,false,false]]"
 	)
 	t.Parallel()
 	a := require.New(t)
@@ -247,10 +273,11 @@ func TestSensitiveData(t *testing.T) {
 	a.Equal("", diff)
 
 	// Query origin data.
-	singleSQLResults, err := ctl.adminQuery(instance, databaseName, queryTable)
+	singleSQLResults, err := ctl.adminQuery(ctx, instance, databaseName, queryTable)
 	a.NoError(err)
-	for _, singleSQLResult := range singleSQLResults {
-		a.Equal("", singleSQLResult.Error)
-		a.Equal(originData, singleSQLResult.Data)
-	}
+	a.Len(singleSQLResults, 1)
+	result := singleSQLResults[0]
+	a.Equal("", result.Error)
+	diff = cmp.Diff(originData, result, protocmp.Transform())
+	a.Equal("", diff)
 }
