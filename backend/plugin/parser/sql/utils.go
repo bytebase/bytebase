@@ -130,7 +130,6 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 				}
 			}
 		}
-
 	}
 
 	return result
