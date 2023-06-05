@@ -37,11 +37,13 @@ export default defineComponent({
           const cel = stringifyDatabaseResources(context.databaseResources);
           expression.push(cel);
         }
-        expression.push(
-          `request.time < timestamp("${new Date(
-            Date.now() + context.expireDays * 1000 * 60 * 60 * 24
-          ).toISOString()}")`
-        );
+        if (context.expireDays > 0) {
+          expression.push(
+            `request.time < timestamp("${new Date(
+              Date.now() + context.expireDays * 1000 * 60 * 60 * 24
+            ).toISOString()}")`
+          );
+        }
       } else if (context.role === "EXPORTER") {
         if (
           !Array.isArray(context.databaseResources) ||
@@ -55,6 +57,13 @@ export default defineComponent({
         ) {
           const cel = stringifyDatabaseResources(context.databaseResources);
           expression.push(cel);
+        }
+        if (context.expireDays > 0) {
+          expression.push(
+            `request.time < timestamp("${new Date(
+              Date.now() + context.expireDays * 1000 * 60 * 60 * 24
+            ).toISOString()}")`
+          );
         }
         expression.push(`request.statement == "${btoa(context.statement)}"`);
         expression.push(`request.row_limit == ${context.maxRowCount}`);
