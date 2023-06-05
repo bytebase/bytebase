@@ -243,6 +243,11 @@ export interface User {
   mfaSecret: string;
   /** The recovery_codes is the tempary recovery codes using in two phase verification. */
   recoveryCodes: string[];
+  /**
+   * Should be a valid E.164 compliant phone number.
+   * Could be empty.
+   */
+  phone: string;
 }
 
 function createBaseGetUserRequest(): GetUserRequest {
@@ -1213,6 +1218,7 @@ function createBaseUser(): User {
     mfaEnabled: false,
     mfaSecret: "",
     recoveryCodes: [],
+    phone: "",
   };
 }
 
@@ -1250,6 +1256,9 @@ export const User = {
     }
     for (const v of message.recoveryCodes) {
       writer.uint32(90).string(v!);
+    }
+    if (message.phone !== "") {
+      writer.uint32(98).string(message.phone);
     }
     return writer;
   },
@@ -1338,6 +1347,13 @@ export const User = {
 
           message.recoveryCodes.push(reader.string());
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.phone = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1360,6 +1376,7 @@ export const User = {
       mfaEnabled: isSet(object.mfaEnabled) ? Boolean(object.mfaEnabled) : false,
       mfaSecret: isSet(object.mfaSecret) ? String(object.mfaSecret) : "",
       recoveryCodes: Array.isArray(object?.recoveryCodes) ? object.recoveryCodes.map((e: any) => String(e)) : [],
+      phone: isSet(object.phone) ? String(object.phone) : "",
     };
   },
 
@@ -1380,6 +1397,7 @@ export const User = {
     } else {
       obj.recoveryCodes = [];
     }
+    message.phone !== undefined && (obj.phone = message.phone);
     return obj;
   },
 
@@ -1400,6 +1418,7 @@ export const User = {
     message.mfaEnabled = object.mfaEnabled ?? false;
     message.mfaSecret = object.mfaSecret ?? "";
     message.recoveryCodes = object.recoveryCodes?.map((e) => e) || [];
+    message.phone = object.phone ?? "";
     return message;
   },
 };
