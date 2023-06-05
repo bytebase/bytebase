@@ -473,7 +473,7 @@ export interface BackupSetting {
    * Default (empty): Disable automatic backup.
    */
   cronSchedule: string;
-  /** hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created. */
+  /** hook_url(https://www.bytebase.com/docs/disaster-recovery/backup/#post-backup-webhook) is the URL to send a notification when a backup is created. */
   hookUrl: string;
 }
 
