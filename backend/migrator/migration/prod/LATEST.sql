@@ -46,6 +46,7 @@ CREATE TABLE principal (
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
+    phone TEXT NOT NULL DEFAULT '',
     mfa_config JSONB NOT NULL DEFAULT '{}'
 );
 
