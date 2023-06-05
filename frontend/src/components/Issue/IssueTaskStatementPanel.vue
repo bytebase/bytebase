@@ -290,9 +290,19 @@ const useTempEditState = (state: LocalState) => {
     },
     { immediate: true }
   );
+
+  const resetTempEditState = () => {
+    stopWatching && stopWatching();
+
+    if (!create.value) {
+      stopWatching = startWatching();
+    }
+  };
+
+  return resetTempEditState;
 };
 
-useTempEditState(state);
+const resetTempEditState = useTempEditState(state);
 
 const getOrFetchSheetStatementByName = async (
   sheetName: string | undefined
@@ -449,6 +459,7 @@ const saveEdit = async () => {
   if (!selectedDatabase.value) {
     return;
   }
+  resetTempEditState();
   if (allowFormatOnSave.value && formatOnSave.value) {
     editorRef.value?.formatEditorContent();
   }
@@ -508,6 +519,7 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
     });
     state.isUploadingFile = false;
 
+    resetTempEditState();
     updateSheetId(sheetV1Store.getSheetUid(sheet.name));
     await updateStatement(statement);
     state.editing = false;
