@@ -22,7 +22,7 @@
         >
           <div class="flex items-center px-4 py-3">
             <div class="min-w-0 flex-1 flex items-center">
-              {{ repository.fullPath }}
+              {{ repository.fullpath }}
             </div>
             <div>
               <!-- Heroicon name: solid/chevron-right -->
@@ -46,12 +46,15 @@ import {
   OAuthToken,
   ProjectRepositoryConfig,
 } from "../types";
-import { useOAuthStore, useGitlabStore } from "@/store";
-import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { useOAuthStore, useVCSV1Store } from "@/store";
+import {
+  ExternalVersionControl_Type,
+  SearchExternalVersionControlProjectsResponse_Project,
+} from "@/types/proto/v1/externalvs_service";
 import { getVCSUid } from "@/store/modules/v1/common";
 
 interface LocalState {
-  repositoryList: ExternalRepositoryInfo[];
+  repositoryList: SearchExternalVersionControlProjectsResponse_Project[];
   searchText: string;
 }
 
@@ -63,7 +66,7 @@ const emit = defineEmits<{
   (event: "set-repository", payload: ExternalRepositoryInfo): void;
 }>();
 
-const gitlabStore = useGitlabStore();
+const vcsV1Store = useVCSV1Store();
 const state = reactive<LocalState>({
   repositoryList: [],
   searchText: "",
@@ -81,11 +84,12 @@ const prepareRepositoryList = () => {
     })
     .then((token: OAuthToken) => {
       emit("set-token", token);
-      gitlabStore
-        .fetchProjectList({
-          vcsId: getVCSUid(props.config.vcs.name),
-          token: token,
-        })
+      vcsV1Store
+        .listVCSExternalProjects(
+          props.config.vcs.name,
+          token.accessToken,
+          token.refreshToken
+        )
         .then((list) => {
           state.repositoryList = list;
         });
@@ -93,25 +97,26 @@ const prepareRepositoryList = () => {
 };
 
 const refreshRepositoryList = () => {
-  if (props.config.vcs.type == ExternalVersionControl_Type.GITLAB) {
-    gitlabStore
-      .fetchProjectList({
-        vcsId: getVCSUid(props.config.vcs.name),
-        token: props.config.token,
-      })
-      .then((list) => {
-        state.repositoryList = list;
-      });
-  }
+  vcsV1Store
+    .listVCSExternalProjects(
+      props.config.vcs.name,
+      props.config.token.accessToken,
+      props.config.token.refreshToken
+    )
+    .then((list) => {
+      state.repositoryList = list;
+    });
 };
 
 const repositoryList = computed(() => {
   if (state.searchText == "") {
     return state.repositoryList;
   }
-  return state.repositoryList.filter((repository: ExternalRepositoryInfo) => {
-    return repository.fullPath.toLowerCase().includes(state.searchText);
-  });
+  return state.repositoryList.filter(
+    (repository: SearchExternalVersionControlProjectsResponse_Project) => {
+      return repository.fullpath.toLowerCase().includes(state.searchText);
+    }
+  );
 });
 
 const attentionText = computed((): string => {
@@ -125,8 +130,15 @@ const attentionText = computed((): string => {
   return "";
 });
 
-const selectRepository = (repository: ExternalRepositoryInfo) => {
-  emit("set-repository", repository);
+const selectRepository = (
+  repository: SearchExternalVersionControlProjectsResponse_Project
+) => {
+  emit("set-repository", {
+    externalId: repository.id,
+    name: repository.title,
+    fullPath: repository.fullpath,
+    webUrl: repository.webUrl,
+  });
   emit("next");
 };
 
