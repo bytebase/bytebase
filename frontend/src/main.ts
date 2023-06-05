@@ -112,7 +112,7 @@ axios.interceptors.response.use(
         }
       }
 
-      if (error.response.data.message && !isSilent()) {
+      if (error.response.data?.message && !isSilent()) {
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",

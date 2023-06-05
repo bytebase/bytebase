@@ -95,22 +95,21 @@ export const isDatabaseV1Accessible = (
     useEnvironmentV1Store().getEnvironmentByName(
       database.instanceEntity.environment
     ) ?? unknownEnvironment();
-  if (environment.tier === EnvironmentTier.UNPROTECTED) {
-    return true;
+  if (environment.tier === EnvironmentTier.PROTECTED) {
+    const policy = policyList.find((policy) => {
+      const { type, resourceUid, enforce } = policy;
+      return (
+        type === PolicyType.ACCESS_CONTROL &&
+        resourceUid === `${database.uid}` &&
+        enforce
+      );
+    });
+    if (policy) {
+      // The database is in the allowed list
+      return true;
+    }
   }
 
-  const policy = policyList.find((policy) => {
-    const { type, resourceUid, enforce } = policy;
-    return (
-      type === PolicyType.ACCESS_CONTROL &&
-      resourceUid === `${database.uid}` &&
-      enforce
-    );
-  });
-  if (policy) {
-    // The database is in the allowed list
-    return true;
-  }
   const currentUserIamPolicy = useCurrentUserIamPolicy();
   if (currentUserIamPolicy.allowToQueryDatabaseV1(database)) {
     return true;

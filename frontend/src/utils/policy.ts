@@ -1,8 +1,9 @@
 import { hasFeature, useCurrentUserIamPolicy } from "@/store";
-import type { Database, Instance } from "@/types";
+import type { ComposedDatabase, Instance } from "@/types";
 import { hasWorkspacePermissionV1 } from "./role";
 import { Policy, PolicyType } from "@/types/proto/v1/org_policy_service";
 import { User } from "@/types/proto/v1/auth_service";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 
 export const isInstanceAccessible = (instance: Instance, user: User) => {
   if (!hasFeature("bb.feature.access-control")) {
@@ -32,7 +33,7 @@ export const isInstanceAccessible = (instance: Instance, user: User) => {
 };
 
 export const isDatabaseAccessible = (
-  database: Database,
+  database: ComposedDatabase,
   policyList: Policy[],
   user: User
 ) => {
@@ -48,13 +49,13 @@ export const isDatabaseAccessible = (
   }
 
   if (hasFeature("bb.feature.access-control")) {
-    const { environment } = database.instance;
-    if (environment.tier === "PROTECTED") {
+    const { environmentEntity } = database.instanceEntity;
+    if (environmentEntity.tier === EnvironmentTier.PROTECTED) {
       const policy = policyList.find((policy) => {
         const { type, resourceUid, enforce } = policy;
         return (
           type === PolicyType.ACCESS_CONTROL &&
-          resourceUid === `${database.id}` &&
+          resourceUid === `${database.uid}` &&
           enforce
         );
       });
@@ -66,7 +67,7 @@ export const isDatabaseAccessible = (
   }
 
   const currentUserIamPolicy = useCurrentUserIamPolicy();
-  if (currentUserIamPolicy.allowToQueryDatabase(database)) {
+  if (currentUserIamPolicy.allowToQueryDatabaseV1(database)) {
     return true;
   }
 
