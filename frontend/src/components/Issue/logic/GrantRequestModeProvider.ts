@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
 import { defineComponent, onMounted } from "vue";
 import { GrantRequestContext, IssueCreate } from "@/types";
@@ -39,9 +40,9 @@ export default defineComponent({
         }
         if (context.expireDays > 0) {
           expression.push(
-            `request.time < timestamp("${new Date(
-              Date.now() + context.expireDays * 1000 * 60 * 60 * 24
-            ).toISOString()}")`
+            `request.time < timestamp("${dayjs()
+              .add(context.expireDays, "days")
+              .toISOString()}")`
           );
         }
       } else if (context.role === "EXPORTER") {
@@ -60,9 +61,9 @@ export default defineComponent({
         }
         if (context.expireDays > 0) {
           expression.push(
-            `request.time < timestamp("${new Date(
-              Date.now() + context.expireDays * 1000 * 60 * 60 * 24
-            ).toISOString()}")`
+            `request.time < timestamp("${dayjs()
+              .add(context.expireDays, "days")
+              .toISOString()}")`
           );
         }
         expression.push(`request.statement == "${btoa(context.statement)}"`);
