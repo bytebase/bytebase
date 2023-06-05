@@ -112,14 +112,6 @@
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell w-36">
         <div class="flex flex-row items-center">
-          <BBAvatar :size="'SMALL'" :username="issue.creator.name" />
-          <span class="ml-2">
-            {{ issue.creator.name }}
-          </span>
-        </div>
-      </BBTableCell>
-      <BBTableCell class="hidden sm:table-cell w-36">
-        <div class="flex flex-row items-center">
           <BBAvatar
             :size="'SMALL'"
             :username="
@@ -128,6 +120,14 @@
           />
           <span class="ml-2">
             {{ issue.assignee ? issue.assignee.name : $t("common.unassigned") }}
+          </span>
+        </div>
+      </BBTableCell>
+      <BBTableCell class="hidden sm:table-cell w-36">
+        <div class="flex flex-row items-center">
+          <BBAvatar :size="'SMALL'" :username="issue.creator.name" />
+          <span class="ml-2">
+            {{ issue.creator.name }}
           </span>
         </div>
       </BBTableCell>
@@ -197,10 +197,10 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "issue.table.approver",
       },
       {
-        title: "issue.table.creator",
+        title: "issue.table.assignee",
       },
       {
-        title: "issue.table.assignee",
+        title: "issue.table.creator",
       },
     ],
   ],
@@ -226,10 +226,10 @@ const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
         title: "issue.table.approver",
       },
       {
-        title: "issue.table.creator",
+        title: "issue.table.assignee",
       },
       {
-        title: "issue.table.assignee",
+        title: "issue.table.creator",
       },
     ],
   ],
