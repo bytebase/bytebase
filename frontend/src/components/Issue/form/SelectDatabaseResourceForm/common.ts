@@ -6,6 +6,7 @@ import { Engine } from "@/types/proto/v1/common";
 
 export interface DatabaseResource {
   databaseId: string;
+  databaseName: string;
   schema?: string;
   table?: string;
 }
