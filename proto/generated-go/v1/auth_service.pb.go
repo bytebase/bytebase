@@ -369,8 +369,8 @@ type UpdateUserRequest struct {
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	// The otp_code is used to verify the user's identity by MFA.
 	OtpCode *string `protobuf:"bytes,3,opt,name=otp_code,json=otpCode,proto3,oneof" json:"otp_code,omitempty"`
-	// The regenerate_temp_mfa_secret flag means to regenerate tempary MFA secret for user.
-	// This is used for MFA setup. The tempary MFA secret and recovery codes will be returned in the response.
+	// The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
+	// This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
 	RegenerateTempMfaSecret bool `protobuf:"varint,4,opt,name=regenerate_temp_mfa_secret,json=regenerateTempMfaSecret,proto3" json:"regenerate_temp_mfa_secret,omitempty"`
 	// The regenerate_recovery_codes flag means to regenerate recovery codes for user.
 	RegenerateRecoveryCodes bool `protobuf:"varint,5,opt,name=regenerate_recovery_codes,json=regenerateRecoveryCodes,proto3" json:"regenerate_recovery_codes,omitempty"`
@@ -928,9 +928,9 @@ type User struct {
 	ServiceKey string   `protobuf:"bytes,8,opt,name=service_key,json=serviceKey,proto3" json:"service_key,omitempty"`
 	// The mfa_enabled flag means if the user has enabled MFA.
 	MfaEnabled bool `protobuf:"varint,9,opt,name=mfa_enabled,json=mfaEnabled,proto3" json:"mfa_enabled,omitempty"`
-	// The mfa_secret is the tempary secret using in two phase verification.
+	// The mfa_secret is the temporary secret using in two phase verification.
 	MfaSecret string `protobuf:"bytes,10,opt,name=mfa_secret,json=mfaSecret,proto3" json:"mfa_secret,omitempty"`
-	// The recovery_codes is the tempary recovery codes using in two phase verification.
+	// The recovery_codes is the temporary recovery codes using in two phase verification.
 	RecoveryCodes []string `protobuf:"bytes,11,rep,name=recovery_codes,json=recoveryCodes,proto3" json:"recovery_codes,omitempty"`
 	// Should be a valid E.164 compliant phone number.
 	// Could be empty.

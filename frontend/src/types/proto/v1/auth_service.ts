@@ -155,8 +155,8 @@ export interface UpdateUserRequest {
     | string
     | undefined;
   /**
-   * The regenerate_temp_mfa_secret flag means to regenerate tempary MFA secret for user.
-   * This is used for MFA setup. The tempary MFA secret and recovery codes will be returned in the response.
+   * The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
+   * This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
    */
   regenerateTempMfaSecret: boolean;
   /** The regenerate_recovery_codes flag means to regenerate recovery codes for user. */
@@ -239,9 +239,9 @@ export interface User {
   serviceKey: string;
   /** The mfa_enabled flag means if the user has enabled MFA. */
   mfaEnabled: boolean;
-  /** The mfa_secret is the tempary secret using in two phase verification. */
+  /** The mfa_secret is the temporary secret using in two phase verification. */
   mfaSecret: string;
-  /** The recovery_codes is the tempary recovery codes using in two phase verification. */
+  /** The recovery_codes is the temporary recovery codes using in two phase verification. */
   recoveryCodes: string[];
   /**
    * Should be a valid E.164 compliant phone number.
