@@ -1149,6 +1149,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
 | mfa_secret | [string](#string) |  | The mfa_secret is the tempary secret using in two phase verification. |
 | recovery_codes | [string](#string) | repeated | The recovery_codes is the tempary recovery codes using in two phase verification. |
+| phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 
 
 
