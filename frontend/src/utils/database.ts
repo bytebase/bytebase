@@ -4,6 +4,7 @@ import { keyBy } from "lodash-es";
 import type { Database, DataSourceType, Environment } from "../types";
 import { hasWorkspacePermissionV1 } from "./role";
 import { isDev, semverCompare } from "./util";
+import { Engine } from "@/types/proto/v1/common";
 
 export function allowDatabaseAccess(
   database: Database,
@@ -158,3 +159,13 @@ export function isArchivedDatabase(db: Database): boolean {
   }
   return false;
 }
+
+export const hasSchemaProperty = (databaseEngine: Engine) => {
+  return (
+    databaseEngine === Engine.POSTGRES ||
+    databaseEngine === Engine.SNOWFLAKE ||
+    databaseEngine === Engine.ORACLE ||
+    databaseEngine === Engine.MSSQL ||
+    databaseEngine === Engine.REDSHIFT
+  );
+};
