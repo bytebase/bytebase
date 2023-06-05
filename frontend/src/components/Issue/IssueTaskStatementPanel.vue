@@ -59,10 +59,10 @@
       <button
         v-if="shouldShowStatementEditButtonForUI"
         type="button"
-        class="btn-icon"
+        class="px-4 py-2 cursor-pointer border border-control-border rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed"
         @click.prevent="beginEdit"
       >
-        <heroicons-solid:pencil class="h-5 w-5" />
+        {{ $t("common.edit") }}
       </button>
 
       <template v-else-if="!create">
