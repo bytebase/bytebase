@@ -1141,7 +1141,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | name | [string](#string) |  | The name of the user. Format: users/{user}. {user} is a system-generated unique ID. |
 | state | [State](#bytebase-v1-State) |  |  |
 | email | [string](#string) |  |  |
-| phone | [string](#string) |  |  |
+| phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | title | [string](#string) |  |  |
 | user_type | [UserType](#bytebase-v1-UserType) |  |  |
 | user_role | [UserRole](#bytebase-v1-UserRole) |  | The user role will not be respected in the create user request, because the role is controlled by workspace owner. |

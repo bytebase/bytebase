@@ -231,6 +231,10 @@ export interface User {
   name: string;
   state: State;
   email: string;
+  /**
+   * Should be a valid E.164 compliant phone number.
+   * Could be empty.
+   */
   phone: string;
   title: string;
   userType: UserType;

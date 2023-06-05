@@ -917,9 +917,11 @@ type User struct {
 
 	// The name of the user.
 	// Format: users/{user}. {user} is a system-generated unique ID.
-	Name     string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	State    State    `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
-	Email    string   `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	Name  string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	State State  `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
+	Email string `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	// Should be a valid E.164 compliant phone number.
+	// Could be empty.
 	Phone    string   `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
 	Title    string   `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
 	UserType UserType `protobuf:"varint,5,opt,name=user_type,json=userType,proto3,enum=bytebase.v1.UserType" json:"user_type,omitempty"`
