@@ -116,8 +116,8 @@ message UpdateUserRequest {
   // The otp_code is used to verify the user's identity by MFA.
   optional string otp_code = 3;
 
-  // The regenerate_temp_mfa_secret flag means to regenerate tempary MFA secret for user.
-  // This is used for MFA setup. The tempary MFA secret and recovery codes will be returned in the response.
+  // The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
+  // This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
   bool regenerate_temp_mfa_secret = 4;
 
   // The regenerate_recovery_codes flag means to regenerate recovery codes for user.
@@ -205,10 +205,10 @@ message User {
   // The mfa_enabled flag means if the user has enabled MFA.
   bool mfa_enabled = 9;
 
-  // The mfa_secret is the tempary secret using in two phase verification.
+  // The mfa_secret is the temporary secret using in two phase verification.
   string mfa_secret = 10;
 
-  // The recovery_codes is the tempary recovery codes using in two phase verification.
+  // The recovery_codes is the temporary recovery codes using in two phase verification.
   repeated string recovery_codes = 11;
 
   // Should be a valid E.164 compliant phone number.
