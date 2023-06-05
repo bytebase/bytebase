@@ -231,11 +231,6 @@ export interface User {
   name: string;
   state: State;
   email: string;
-  /**
-   * Should be a valid E.164 compliant phone number.
-   * Could be empty.
-   */
-  phone: string;
   title: string;
   userType: UserType;
   /** The user role will not be respected in the create user request, because the role is controlled by workspace owner. */
@@ -248,6 +243,11 @@ export interface User {
   mfaSecret: string;
   /** The recovery_codes is the tempary recovery codes using in two phase verification. */
   recoveryCodes: string[];
+  /**
+   * Should be a valid E.164 compliant phone number.
+   * Could be empty.
+   */
+  phone: string;
 }
 
 function createBaseGetUserRequest(): GetUserRequest {
@@ -1210,7 +1210,6 @@ function createBaseUser(): User {
     name: "",
     state: 0,
     email: "",
-    phone: "",
     title: "",
     userType: 0,
     userRole: 0,
@@ -1219,6 +1218,7 @@ function createBaseUser(): User {
     mfaEnabled: false,
     mfaSecret: "",
     recoveryCodes: [],
+    phone: "",
   };
 }
 
@@ -1232,9 +1232,6 @@ export const User = {
     }
     if (message.email !== "") {
       writer.uint32(26).string(message.email);
-    }
-    if (message.phone !== "") {
-      writer.uint32(98).string(message.phone);
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -1259,6 +1256,9 @@ export const User = {
     }
     for (const v of message.recoveryCodes) {
       writer.uint32(90).string(v!);
+    }
+    if (message.phone !== "") {
+      writer.uint32(98).string(message.phone);
     }
     return writer;
   },
@@ -1290,13 +1290,6 @@ export const User = {
           }
 
           message.email = reader.string();
-          continue;
-        case 12:
-          if (tag !== 98) {
-            break;
-          }
-
-          message.phone = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -1354,6 +1347,13 @@ export const User = {
 
           message.recoveryCodes.push(reader.string());
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.phone = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1368,7 +1368,6 @@ export const User = {
       name: isSet(object.name) ? String(object.name) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : 0,
       email: isSet(object.email) ? String(object.email) : "",
-      phone: isSet(object.phone) ? String(object.phone) : "",
       title: isSet(object.title) ? String(object.title) : "",
       userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : 0,
       userRole: isSet(object.userRole) ? userRoleFromJSON(object.userRole) : 0,
@@ -1377,6 +1376,7 @@ export const User = {
       mfaEnabled: isSet(object.mfaEnabled) ? Boolean(object.mfaEnabled) : false,
       mfaSecret: isSet(object.mfaSecret) ? String(object.mfaSecret) : "",
       recoveryCodes: Array.isArray(object?.recoveryCodes) ? object.recoveryCodes.map((e: any) => String(e)) : [],
+      phone: isSet(object.phone) ? String(object.phone) : "",
     };
   },
 
@@ -1385,7 +1385,6 @@ export const User = {
     message.name !== undefined && (obj.name = message.name);
     message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.email !== undefined && (obj.email = message.email);
-    message.phone !== undefined && (obj.phone = message.phone);
     message.title !== undefined && (obj.title = message.title);
     message.userType !== undefined && (obj.userType = userTypeToJSON(message.userType));
     message.userRole !== undefined && (obj.userRole = userRoleToJSON(message.userRole));
@@ -1398,6 +1397,7 @@ export const User = {
     } else {
       obj.recoveryCodes = [];
     }
+    message.phone !== undefined && (obj.phone = message.phone);
     return obj;
   },
 
@@ -1410,7 +1410,6 @@ export const User = {
     message.name = object.name ?? "";
     message.state = object.state ?? 0;
     message.email = object.email ?? "";
-    message.phone = object.phone ?? "";
     message.title = object.title ?? "";
     message.userType = object.userType ?? 0;
     message.userRole = object.userRole ?? 0;
@@ -1419,6 +1418,7 @@ export const User = {
     message.mfaEnabled = object.mfaEnabled ?? false;
     message.mfaSecret = object.mfaSecret ?? "";
     message.recoveryCodes = object.recoveryCodes?.map((e) => e) || [];
+    message.phone = object.phone ?? "";
     return message;
   },
 };

@@ -191,10 +191,6 @@ message User {
 
   string email = 3;
 
-  // Should be a valid E.164 compliant phone number.
-  // Could be empty.
-  string phone = 12;
-
   string title = 4;
 
   UserType user_type = 5;
@@ -214,6 +210,10 @@ message User {
 
   // The recovery_codes is the tempary recovery codes using in two phase verification.
   repeated string recovery_codes = 11;
+
+  // Should be a valid E.164 compliant phone number.
+  // Could be empty.
+  string phone = 12;
 }
 
 enum UserType {

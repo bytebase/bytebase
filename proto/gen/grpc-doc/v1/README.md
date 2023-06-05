@@ -1141,7 +1141,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | name | [string](#string) |  | The name of the user. Format: users/{user}. {user} is a system-generated unique ID. |
 | state | [State](#bytebase-v1-State) |  |  |
 | email | [string](#string) |  |  |
-| phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | title | [string](#string) |  |  |
 | user_type | [UserType](#bytebase-v1-UserType) |  |  |
 | user_role | [UserRole](#bytebase-v1-UserRole) |  | The user role will not be respected in the create user request, because the role is controlled by workspace owner. |
@@ -1150,6 +1149,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
 | mfa_secret | [string](#string) |  | The mfa_secret is the tempary secret using in two phase verification. |
 | recovery_codes | [string](#string) | repeated | The recovery_codes is the tempary recovery codes using in two phase verification. |
+| phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 
 
 
