@@ -2,7 +2,7 @@ import { flatten } from "lodash-es";
 import { TransferOption, TreeOption } from "naive-ui";
 import { useDBSchemaStore } from "@/store";
 import { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { hasSchemaProperty } from "@/utils";
 
 export interface DatabaseResource {
   databaseId: string;
@@ -33,7 +33,7 @@ export const mapTreeOptions = (
       label: database.databaseName,
     };
 
-    if (database.instanceEntity.engine === Engine.POSTGRES) {
+    if (hasSchemaProperty(database.instanceEntity.engine)) {
       const schemaNodes = databaseMetadata.schemas.map(
         (schema): DatabaseTreeOption<"schema"> => {
           const schemaNode: DatabaseTreeOption<"schema"> = {

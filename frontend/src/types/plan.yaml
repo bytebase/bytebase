@@ -10,6 +10,7 @@ categoryList:
       - change-history
       - terraform-provider
       - schedule-change
+      - database-group
       - disaster-recovery
       - sync-schema
       - batch-change
@@ -225,6 +226,7 @@ planList:
         tooltip: sync-schema-advanced-tooltip
       - type: terraform-provider
       - type: schedule-change
+      - type: database-group
       # SQL Editor
       - type: auto-complete
       - type: schema-editor

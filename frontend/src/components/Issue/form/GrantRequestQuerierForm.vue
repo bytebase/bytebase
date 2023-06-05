@@ -279,14 +279,12 @@ watch(
   () => [state.expireDays, state.customDays],
   () => {
     if (create.value) {
+      const context = (issue.value as IssueCreate)
+        .createContext as GrantRequestContext;
       if (state.expireDays === -1) {
-        (
-          (issue.value as IssueCreate).createContext as GrantRequestContext
-        ).expireDays = state.customDays;
+        context.expireDays = state.customDays;
       } else {
-        (
-          (issue.value as IssueCreate).createContext as GrantRequestContext
-        ).expireDays = state.expireDays;
+        context.expireDays = state.expireDays;
       }
     }
   }
