@@ -88,6 +88,7 @@ type UpdateUserMessage struct {
 	Role         *api.Role
 	Delete       *bool
 	MFAConfig    *storepb.MFAConfig
+	Phone        *string
 }
 
 // UserMessage is the message for an user.
@@ -372,6 +373,9 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	if v := patch.PasswordHash; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("password_hash = $%d", len(principalArgs)+1)), append(principalArgs, *v)
 	}
+	if v := patch.Phone; v != nil {
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("phone = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+	}
 	if v := patch.MFAConfig; v != nil {
 		mfaConfigBytes, err := protojson.Marshal(v)
 		if err != nil {
@@ -406,7 +410,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		UPDATE principal
 		SET `+strings.Join(principalSet, ", ")+`
 		WHERE id = $%d
-		RETURNING id, email, name, type, password_hash, mfa_config
+		RETURNING id, email, name, type, password_hash, mfa_config, phone
 	`, len(principalArgs)),
 		principalArgs...,
 	).Scan(
@@ -416,6 +420,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		&user.Type,
 		&user.PasswordHash,
 		&mfaConfigBytes,
+		&user.Phone,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
