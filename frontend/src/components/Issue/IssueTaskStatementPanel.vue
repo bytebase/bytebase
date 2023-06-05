@@ -291,7 +291,7 @@ const useTempEditState = (state: LocalState) => {
     { immediate: true }
   );
 
-  const resetTempEditState = () => {
+  const reset = () => {
     stopWatching && stopWatching();
 
     if (!create.value) {
@@ -299,7 +299,7 @@ const useTempEditState = (state: LocalState) => {
     }
   };
 
-  return resetTempEditState;
+  return reset;
 };
 
 const resetTempEditState = useTempEditState(state);
