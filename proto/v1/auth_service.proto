@@ -191,6 +191,8 @@ message User {
 
   string email = 3;
 
+  string phone = 12;
+
   string title = 4;
 
   UserType user_type = 5;
