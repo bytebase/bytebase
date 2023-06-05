@@ -323,3 +323,62 @@ func TestGetMySQLFingerprint(t *testing.T) {
 		require.Equal(t, test.want, res, test.stmt)
 	}
 }
+
+func TestExtractPostgresResourceList(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      []SchemaResource
+	}{
+		{
+			statement: `SELECT * FROM t;SELECT * FROM t1;`,
+			want: []SchemaResource{
+				{
+					Database: "db",
+					Schema:   "public",
+					Table:    "t",
+				},
+				{
+					Database: "db",
+					Schema:   "public",
+					Table:    "t1",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM schema1.t1 JOIN schema2.t2 ON t1.c1 = t2.c1;",
+			want: []SchemaResource{
+				{
+					Database: "db",
+					Schema:   "schema1",
+					Table:    "t1",
+				},
+				{
+					Database: "db",
+					Schema:   "schema2",
+					Table:    "t2",
+				},
+			},
+		},
+		{
+			statement: "SELECT a > (select max(a) from t1) FROM t2;",
+			want: []SchemaResource{
+				{
+					Database: "db",
+					Schema:   "public",
+					Table:    "t1",
+				},
+				{
+					Database: "db",
+					Schema:   "public",
+					Table:    "t2",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		res, err := ExtractResourceList(Postgres, "db", "public", test.statement)
+		require.NoError(t, err)
+		require.Equal(t, test.want, res)
+	}
+}
