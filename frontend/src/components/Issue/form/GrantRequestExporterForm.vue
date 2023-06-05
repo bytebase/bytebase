@@ -244,10 +244,11 @@ watch(
     if (create.value) {
       const context = (issue.value as IssueCreate)
         .createContext as GrantRequestContext;
-      if (state.databaseId) {
+      if (selectedDatabase.value) {
         context.databaseResources = [
           {
-            databaseId: Number(state.databaseId),
+            databaseId: selectedDatabase.value.uid,
+            databaseName: selectedDatabase.value.name,
           },
         ];
       } else {
