@@ -224,7 +224,6 @@ const useSDLState = () => {
       name: `${database.name}/changeHistories/${changeHistoryId}`,
       sdlFormat: true,
     });
-    console.log(history);
     // The latestChangeHistoryId might change during fetching the
     // ChangeHistory.
     // Should give up the result.
