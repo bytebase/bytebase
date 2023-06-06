@@ -542,8 +542,18 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	s.grpcServer = grpc.NewServer(
-		grpc.ChainUnaryInterceptor(debugProvider.DebugInterceptor, authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor, recoveryUnaryInterceptor),
-		grpc.ChainStreamInterceptor(debugProvider.DebugStreamInterceptor, authProvider.AuthenticationStreamInterceptor, aclProvider.ACLStreamInterceptor, recoveryStreamInterceptor),
+		grpc.ChainUnaryInterceptor(
+			debugProvider.DebugInterceptor,
+			authProvider.AuthenticationInterceptor,
+			aclProvider.ACLInterceptor,
+			recoveryUnaryInterceptor,
+		),
+		grpc.ChainStreamInterceptor(
+			debugProvider.DebugStreamInterceptor,
+			authProvider.AuthenticationStreamInterceptor,
+			aclProvider.ACLStreamInterceptor,
+			recoveryStreamInterceptor,
+		),
 	)
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.licenseService, s.MetricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
