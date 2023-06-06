@@ -9,7 +9,7 @@ export type InstanceQuickActionType = "quickaction.bb.instance.create";
 export type UserQuickActionType = "quickaction.bb.user.manage";
 export type DatabaseQuickActionType =
   | "quickaction.bb.database.create" // Used by DBA and Owner
-  | "quickaction.bb.database.request" // Used by Developer
+  | "quickaction.bb.database.request" // Used by Developer (not yet)
   | "quickaction.bb.database.schema.update"
   | "quickaction.bb.database.data.update"
   | "quickaction.bb.database.troubleshoot";

@@ -27,15 +27,6 @@
     </div>
 
     <ProjectV1Table :project-list="filteredProjectList" />
-
-    <BBModal
-      v-if="state.showCreateModal"
-      class="relative overflow-hidden"
-      :title="$t('quick-action.create-project')"
-      @close="state.showCreateModal = false"
-    >
-      <ProjectCreate @dismiss="state.showCreateModal = false" />
-    </BBModal>
   </div>
 </template>
 
@@ -45,14 +36,12 @@ import { NCheckbox } from "naive-ui";
 
 import { DEFAULT_PROJECT_V1_NAME } from "../types";
 import { useProjectV1List } from "@/store";
-import ProjectCreate from "../components/ProjectCreate.vue";
 import { ProjectV1Table, SearchBox } from "@/components/v2";
 import { State } from "@/types/proto/v1/common";
 import { filterProjectV1ListByKeyword } from "@/utils";
 
 interface LocalState {
   searchText: string;
-  showCreateModal: boolean;
   includesArchived: boolean;
 }
 
@@ -60,7 +49,6 @@ const { projectList } = useProjectV1List(true /* showDeleted */);
 
 const state = reactive<LocalState>({
   searchText: "",
-  showCreateModal: false,
   includesArchived: false,
 });
 
