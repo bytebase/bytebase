@@ -322,15 +322,14 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 }
 
 // RefreshToken is a token refresher that stores the latest access token configuration to repository.
-func RefreshToken(ctx context.Context, store *store.Store, webURL string) common.TokenRefresher {
+func RefreshToken(ctx context.Context, s *store.Store, webURL string) common.TokenRefresher {
 	return func(token, refreshToken string, expiresTs int64) error {
-		_, err := store.PatchRepository(ctx, &api.RepositoryPatch{
+		_, err := s.PatchRepositoryV2(ctx, &store.PatchRepositoryMessage{
 			WebURL:       &webURL,
-			UpdaterID:    api.SystemBotID,
 			AccessToken:  &token,
 			ExpiresTs:    &expiresTs,
 			RefreshToken: &refreshToken,
-		})
+		}, api.SystemBotID)
 		return err
 	}
 }

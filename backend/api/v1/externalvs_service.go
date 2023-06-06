@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -188,17 +187,16 @@ func (s *ExternalVersionControlService) ListProjectGitOpsInfo(ctx context.Contex
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	repositoryFind := &api.RepositoryFind{
-		VCSID: &externalVersionControlUID,
-	}
-	repoList, err := s.store.FindRepository(ctx, repositoryFind)
+	repoList, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{
+		VCSUID: &externalVersionControlUID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to fetch external repository list: %v", err)
 	}
 
 	resp := &v1pb.ListProjectGitOpsInfoResponse{}
 	for _, repo := range repoList {
-		resp.ProjectGitopsInfo = append(resp.ProjectGitopsInfo, convertToProjectGitOpsInfo(fmt.Sprintf("%s%s", projectNamePrefix, repo.Project.ResourceID), repo))
+		resp.ProjectGitopsInfo = append(resp.ProjectGitopsInfo, convertToProjectGitOpsInfo(repo))
 	}
 
 	return resp, nil
