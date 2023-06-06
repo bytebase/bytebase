@@ -1,14 +1,12 @@
 package tests
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
 	"io"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -17,43 +15,26 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// adminExecuteSQL executes a SQL query on the database.
-func (ctl *controller) adminExecuteSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet, error) {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &sqlExecute); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal sqlExecute")
-	}
-
-	body, err := ctl.post("/sql/execute/admin", buf)
+func (ctl *controller) adminQuery(ctx context.Context, instance *v1pb.Instance, databaseName, query string) ([]*v1pb.QueryResult, error) {
+	c, err := ctl.sqlServiceClient.AdminExecute(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	sqlResultSet := new(api.SQLResultSet)
-	if err = jsonapi.UnmarshalPayload(body, sqlResultSet); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal sqlResultSet response")
+	if err := c.Send(&v1pb.AdminExecuteRequest{
+		Name:               instance.Name,
+		ConnectionDatabase: databaseName,
+		Statement:          query,
+	}); err != nil {
+		return nil, err
 	}
-	return sqlResultSet, nil
-}
-
-func (ctl *controller) adminQuery(instance *v1pb.Instance, databaseName, query string) ([]api.SingleSQLResult, error) {
-	instanceUID, err := strconv.Atoi(instance.Uid)
+	resp, err := c.Recv()
 	if err != nil {
 		return nil, err
 	}
-
-	sqlResultSet, err := ctl.adminExecuteSQL(api.SQLExecute{
-		InstanceID:   instanceUID,
-		DatabaseName: databaseName,
-		Statement:    query,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute SQL")
+	if err := c.CloseSend(); err != nil {
+		return nil, err
 	}
-	if sqlResultSet.Error != "" {
-		return nil, errors.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
-	}
-	return sqlResultSet.SingleSQLResultList, nil
+	return resp.Results, nil
 }
 
 // sqlReviewTaskCheckRunFinished will return SQL review task check result for next task.
