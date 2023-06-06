@@ -297,7 +297,7 @@ func RunStatement(ctx context.Context, engineType parser.EngineType, conn *sql.C
 			continue
 		}
 		if IsAffectedRowsStatement(singleSQL.Text) {
-			sqlResult, err := conn.ExecContext(ctx, singleSQLs[0].Text)
+			sqlResult, err := conn.ExecContext(ctx, singleSQL.Text)
 			if err != nil {
 				return nil, err
 			}

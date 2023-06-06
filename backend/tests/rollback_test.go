@@ -126,7 +126,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
@@ -340,7 +340,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
@@ -562,7 +562,7 @@ func TestRollbackCanceled(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	// Add MySQL instance to Bytebase.
