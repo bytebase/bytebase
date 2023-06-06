@@ -2535,5 +2535,8 @@
     "condition": {
       "self": "条件"
     }
+  },
+  "export-center": {
+    "self": "导出中心"
   }
 }
