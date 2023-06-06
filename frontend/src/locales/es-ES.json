@@ -2521,5 +2521,8 @@
     "condition": {
       "self": "Condición"
     }
+  },
+  "export-center": {
+    "self": "centro de exportacion"
   }
 }
