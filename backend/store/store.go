@@ -39,6 +39,7 @@ type Store struct {
 	schemaGroupCache               sync.Map // map[string]*SchemaGroupMessage
 	// sheetStatementCache caches the statement of a sheet.
 	sheetStatementCache cache.Cache[int, string]
+	vcsIDCache          sync.Map // map[string]*ExternalVersionControlMessage
 }
 
 // New creates a new instance of Store.
