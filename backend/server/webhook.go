@@ -1162,7 +1162,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.M
 	default:
 		var projectList []string
 		for _, repoInfo := range fileRepositoryList {
-			projectList = append(projectList, repoInfo.repository.ProjectResourceID)
+			projectList = append(projectList, repoInfo.project.Title)
 		}
 		return nil, fileTypeUnknown, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ", "))
 	}
