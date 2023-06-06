@@ -17,7 +17,12 @@
           />
         </NButton>
       </div>
-      <div class="bb-grid-cell">#{{ item.issueId }}</div>
+      <div
+        class="bb-grid-cell text-blue-600 hover:underline"
+        @click="gotoIssuePage(item)"
+      >
+        #{{ item.issueId }}
+      </div>
       <div class="bb-grid-cell">
         {{ item.database.databaseName }}
       </div>
@@ -54,6 +59,9 @@ import { useI18n } from "vue-i18n";
 import { ExportRecord } from "./types";
 import { BBGridColumn } from "@/bbkit";
 import ExportDataButton from "./ExportDataButton.vue";
+import { pushNotification, useIssueStore } from "@/store";
+import { UNKNOWN_ID } from "@/types";
+import { issueSlug } from "@/utils";
 
 defineProps<{
   exportRecords: ExportRecord[];
@@ -107,5 +115,19 @@ const toggleExpandRow = (item: ExportRecord) => {
   } else {
     selectedExportRecord.value = item;
   }
+};
+
+const gotoIssuePage = async (item: ExportRecord) => {
+  const issue = await useIssueStore().getOrFetchIssueById(item.issueId);
+  if (issue.id === UNKNOWN_ID) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `Issue #${issue.id} not found`,
+    });
+    return;
+  }
+
+  window.open(`/issue/${issueSlug(issue.name, issue.id)}`, "_blank");
 };
 </script>
