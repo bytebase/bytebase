@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "npm run copy-sql-review-file && vite --mode dev-local",
     "release": "export NODE_OPTIONS=--max_old_space_size=4096 && npm run copy-sql-review-file && vite build --mode release --outDir=../backend/server/dist --emptyOutDir",
+    "dev-embed": "export NODE OPTIONS=--max_old_space_size=4096 && npm run copy-sql-review-file && vite build --mode dev --outDir=../backend/server/dist --emptyOutDir",
     "dev-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode dev",
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
@@ -120,7 +121,7 @@
     "typescript": "4.8.4",
     "unplugin-icons": "0.15.2",
     "unplugin-vue-components": "0.22.9",
-    "vite": "3.2.5",
+    "vite": "3.2.7",
     "vitest": "0.24.5",
     "vscode-oniguruma": "1.6.2",
     "vscode-textmate": "7.0.4",

@@ -141,6 +141,8 @@ func (s *Store) CreateRepositoryV2(ctx context.Context, create *RepositoryMessag
 		return nil, err
 	}
 
+	s.removeProjectCache(create.ProjectResourceID)
+
 	return repository, nil
 }
 
@@ -213,6 +215,8 @@ func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string
 	if err := s.deleteRepositoryImplV2(ctx, tx, projectResourceID, deleterID); err != nil {
 		return err
 	}
+
+	s.removeProjectCache(projectResourceID)
 
 	return tx.Commit()
 }
