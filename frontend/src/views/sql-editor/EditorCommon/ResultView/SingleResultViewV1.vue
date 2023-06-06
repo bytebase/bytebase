@@ -7,7 +7,7 @@
         <NInput
           v-if="showSearchFeature"
           v-model:value="state.search"
-          class="!max-w-[8rem] sm:!max-w-xs"
+          class="!max-w-[10rem]"
           type="text"
           :placeholder="t('sql-editor.search-results')"
         >
@@ -29,12 +29,10 @@
       <div class="flex justify-between items-center gap-x-3">
         <NPagination
           v-if="showPagination"
+          :simple="true"
           :item-count="table.getCoreRowModel().rows.length"
           :page="table.getState().pagination.pageIndex + 1"
           :page-size="table.getState().pagination.pageSize"
-          :show-quick-jumper="true"
-          :show-size-picker="true"
-          :page-sizes="[20, 50, 100]"
           @update-page="handleChangePage"
           @update-page-size="(ps) => table.setPageSize(ps)"
         />
