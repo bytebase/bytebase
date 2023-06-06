@@ -273,6 +273,9 @@ const tryChangeStep = (
   newStep: number,
   allowChangeCallback: () => void
 ) => {
+  if (state.processing) {
+    return;
+  }
   state.currentStep = newStep;
   allowChangeCallback();
 };
