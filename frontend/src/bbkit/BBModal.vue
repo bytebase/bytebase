@@ -96,7 +96,7 @@ export default defineComponent({
     const { stack, id, index, active } = useModalStack();
 
     const style = computed(() => ({
-      "z-index": 40 + index.value, // "40 + " because the container in BBModalStack is z-40
+      "z-index": 4000 + index.value, // "4000 + " because the container in BBModalStack is z-4000
     }));
 
     const overrides = ref<Overrides>({

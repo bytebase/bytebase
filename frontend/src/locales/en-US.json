@@ -1161,7 +1161,7 @@
       "restore-before-last-migration": "Restore to the point before last migration",
       "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}.",
       "restore-to": "Restore",
-      "restore-to-new-db": " To new database",
+      "restore-to-new-db": "To new database",
       "restore-to-in-place": "In place"
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
