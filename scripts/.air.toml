@@ -1,4 +1,4 @@
-## This file is included in .gitignore, using `git add -f` to add it to stage.
+# Using `git update-index --assume-unchanged scripts/.air.toml` to let git untrack it.
 root = "."
 tmp_dir = ".air"
 
