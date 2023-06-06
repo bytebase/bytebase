@@ -151,7 +151,7 @@ func (s *Store) CreateExternalVersionControlV2(ctx context.Context, principalUID
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.vcsIDCache.Store(externalVersionControl.ID, externalVersionControl)
+	s.vcsIDCache.Store(externalVersionControl.ID, &externalVersionControl)
 	return &externalVersionControl, nil
 }
 
@@ -203,7 +203,7 @@ func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	s.vcsIDCache.Store(externalVersionControl.ID, externalVersionControl)
+	s.vcsIDCache.Store(externalVersionControl.ID, &externalVersionControl)
 	return &externalVersionControl, nil
 }
 
