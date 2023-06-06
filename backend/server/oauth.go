@@ -27,7 +27,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 		var instanceURL string
 		var oauthExchange *common.OAuthExchange
 		if req.ID > 0 {
-			vcs, err := s.store.GetVCSByID(c.Request().Context(), req.ID)
+			vcs, err := s.store.GetExternalVersionControlV2(c.Request().Context(), req.ID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err)
 			}

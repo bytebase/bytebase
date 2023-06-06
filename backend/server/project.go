@@ -56,7 +56,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found by project ID: %d", projectID))
 		}
 
-		vcs, err := s.store.GetVCSByID(ctx, repo.VCSUID)
+		vcs, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync sheet: %d", repo.VCSUID)).SetInternal(err)
 		}
