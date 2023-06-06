@@ -2,7 +2,7 @@
   <component :is="drawer ? DrawerContent : 'div'" v-bind="bindings">
     <div
       class="divide-y divide-block-border"
-      :class="drawer ? 'w-160' : 'w-full px-4 pb-4'"
+      :class="drawer ? 'w-[36rem]' : 'w-full px-4 pb-4'"
     >
       <div class="grid grid-cols-1 gap-x-4">
         <div class="col-span-1">
