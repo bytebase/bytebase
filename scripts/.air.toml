@@ -1,3 +1,4 @@
+## This file is included in .gitignore, using `git add -f` to add it to stage.
 root = "."
 tmp_dir = ".air"
 
