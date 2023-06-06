@@ -84,7 +84,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -499,7 +499,7 @@ func TestVCS(t *testing.T) {
 			instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), instanceName)
 			a.NoError(err)
 
-			prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
 			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -924,7 +924,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			})
 			a.NoError(err)
 
-			prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
 			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -1625,7 +1625,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			projectUID, err := strconv.Atoi(project.Uid)
 			a.NoError(err)
 
-			prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
 			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -2249,7 +2249,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	// Add an instance.
@@ -2509,7 +2509,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			})
 			a.NoError(err)
 
-			prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
 
 			// Add an instance

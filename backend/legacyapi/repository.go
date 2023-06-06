@@ -40,49 +40,6 @@ type Repository struct {
 	RefreshToken string
 }
 
-// SQLReviewCISetup is the API message for set up repository SQL review CI.
-type SQLReviewCISetup struct {
-	// PullRequestURL is the pull request URL to setup the SQL review CI.
-	// This field is used by the frontend to redirect users to the pull request.
-	// We don't need to persist it in the storage,
-	// only return this value if we need to auto-create the pull request for users.
-	PullRequestURL string `jsonapi:"attr,pullRequestURL"`
-}
-
-// RepositoryCreate is the API message for creating a repository.
-type RepositoryCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	VCSID             int `jsonapi:"attr,vcsId"`
-	ProjectID         int
-	ProjectResourceID string
-
-	// Domain specific fields
-	Name               string `jsonapi:"attr,name"`
-	FullPath           string `jsonapi:"attr,fullPath"`
-	WebURL             string `jsonapi:"attr,webUrl"`
-	BranchFilter       string `jsonapi:"attr,branchFilter"`
-	BaseDirectory      string `jsonapi:"attr,baseDirectory"`
-	FilePathTemplate   string `jsonapi:"attr,filePathTemplate"`
-	SchemaPathTemplate string `jsonapi:"attr,schemaPathTemplate"`
-	SheetPathTemplate  string `jsonapi:"attr,sheetPathTemplate"`
-	// EnableSQLReviewCI is only supported in the patch API.
-	ExternalID string `jsonapi:"attr,externalId"`
-	// Token belonged by the user linking the project to the VCS repository. We store this token together
-	// with the refresh token in the new repository record so we can use it to call VCS API on
-	// behalf of that user to perform tasks such as webhook CRUD later.
-	AccessToken        string `jsonapi:"attr,accessToken"`
-	ExpiresTs          int64  `jsonapi:"attr,expiresTs"`
-	RefreshToken       string `jsonapi:"attr,refreshToken"`
-	ExternalWebhookID  string
-	WebhookURLHost     string
-	WebhookEndpointID  string
-	WebhookSecretToken string
-}
-
 // RepositoryFind is the API message for finding repositories.
 type RepositoryFind struct {
 	ID *int
@@ -102,39 +59,4 @@ func (find *RepositoryFind) String() string {
 		return err.Error()
 	}
 	return string(str)
-}
-
-// RepositoryPatch is the API message for patching a repository.
-type RepositoryPatch struct {
-	// Predicate fields
-	ID     *int `jsonapi:"primary,repositoryPatch"`
-	WebURL *string
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
-	BranchFilter       *string `jsonapi:"attr,branchFilter"`
-	BaseDirectory      *string `jsonapi:"attr,baseDirectory"`
-	FilePathTemplate   *string `jsonapi:"attr,filePathTemplate"`
-	SchemaPathTemplate *string `jsonapi:"attr,schemaPathTemplate"`
-	SheetPathTemplate  *string `jsonapi:"attr,sheetPathTemplate"`
-	EnableSQLReviewCI  *bool   `jsonapi:"attr,enableSQLReviewCI"`
-	AccessToken        *string
-	ExpiresTs          *int64
-	RefreshToken       *string
-}
-
-// RepositoryDelete is the API message for deleting a repository.
-type RepositoryDelete struct {
-	// Related fields
-	// When deleting the repository, we need to update the corresponding project workflow type to "UI",
-	// thus we use ProjectID here.
-	ProjectID         int
-	ProjectResourceID string
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	DeleterID int
 }

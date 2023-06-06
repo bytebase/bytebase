@@ -84,18 +84,16 @@
                 :show-prefix-item="databaseChangeHistoryList(state.sourceSchema.databaseId as string).length > 0"
                 @select-item="(changeHistory: ChangeHistory) => handleSchemaVersionSelect(changeHistory)"
               >
-                <template #menuItem="{ item: migrationHistory }">
+                <template
+                  #menuItem="{ item: changeHistory }: { item: ChangeHistory }"
+                >
                   <div class="flex justify-between mr-2">
                     <NEllipsis class="pr-2" :tooltip="false">
-                      {{ migrationHistory.version }} -
-                      {{ migrationHistory.description }}
+                      {{ changeHistory.version }} -
+                      {{ changeHistory.description }}
                     </NEllipsis>
                     <span class="text-control-light">
-                      {{
-                        dayjs(migrationHistory.updatedTs * 1000).format(
-                          "YYYY-MM-DD HH:mm:ss"
-                        )
-                      }}
+                      {{ humanizeDate(changeHistory.updateTime) }}
                     </span>
                   </div>
                 </template>
@@ -406,7 +404,9 @@ watch(
         state.sourceSchema.changeHistory = head(changeHistoryList);
       } else {
         // If database has no migration history, we will use its latest schema.
-        const schema = await databaseStore.fetchDatabaseSchema(database.name);
+        const schema = await databaseStore.fetchDatabaseSchema(
+          `${database.name}/schema`
+        );
         state.sourceSchema.changeHistory = {
           name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
           uid: String(UNKNOWN_ID),

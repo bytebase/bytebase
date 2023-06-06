@@ -1,3 +1,4 @@
+# Using `git update-index --assume-unchanged scripts/.air.toml` to let git untrack it.
 root = "."
 tmp_dir = ".air"
 

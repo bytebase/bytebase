@@ -434,7 +434,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("project with resource id %q is not a VCS enabled project", projectResourceID))
 	}
 
-	repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{ProjectID: &project.UID})
+	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{ProjectResourceID: &project.ResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find repository for sync sheet: %d", project.UID))
 	}
@@ -442,12 +442,12 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("repository not found for sync sheet: %d", project.UID))
 	}
 
-	vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
+	vcs, err := s.store.GetVCSByID(ctx, repo.VCSUID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find VCS for sync sheet, VCSID: %d", repo.VCSID))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find VCS for sync sheet, VCSID: %d", repo.VCSUID))
 	}
 	if vcs == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("VCS not found for sync sheet: %d", repo.VCSID))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("VCS not found for sync sheet: %d", repo.VCSUID))
 	}
 
 	basePath := filepath.Dir(repo.SheetPathTemplate)

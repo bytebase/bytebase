@@ -135,8 +135,9 @@ const (
 	// webhookAPIPrefix is the API prefix for Bytebase webhook.
 	webhookAPIPrefix = "/hook"
 	// openAPIPrefix is the API prefix for Bytebase OpenAPI.
-	openAPIPrefix = "/v1"
-	maxStacksize  = 8 * 1024
+	openAPIPrefix          = "/v1"
+	maxStacksize           = 8 * 1024
+	gracefulShutdownPeriod = 10 * time.Second
 )
 
 // Server is the Bytebase server.
@@ -540,8 +541,20 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return status.Errorf(codes.Unknown, "error: %v", p)
 	}
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
+	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	s.grpcServer = grpc.NewServer(
-		grpc.ChainUnaryInterceptor(debugProvider.DebugInterceptor, authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor, recoveryUnaryInterceptor),
+		grpc.ChainUnaryInterceptor(
+			debugProvider.DebugInterceptor,
+			authProvider.AuthenticationInterceptor,
+			aclProvider.ACLInterceptor,
+			recoveryUnaryInterceptor,
+		),
+		grpc.ChainStreamInterceptor(
+			debugProvider.DebugStreamInterceptor,
+			authProvider.AuthenticationStreamInterceptor,
+			aclProvider.ACLStreamInterceptor,
+			recoveryStreamInterceptor,
+		),
 	)
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.licenseService, s.MetricReporter, &profile,
 		func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
@@ -891,7 +904,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		s.MetricReporter.Close()
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, gracefulShutdownPeriod)
 	defer cancel()
 
 	// Cancel the worker
@@ -906,7 +919,19 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		}
 	}
 	if s.grpcServer != nil {
-		s.grpcServer.GracefulStop()
+		stopped := make(chan struct{})
+		go func() {
+			s.grpcServer.GracefulStop()
+			close(stopped)
+		}()
+
+		t := time.NewTimer(gracefulShutdownPeriod)
+		select {
+		case <-t.C:
+			s.grpcServer.Stop()
+		case <-stopped:
+			t.Stop()
+		}
 	}
 
 	// Wait for all runners to exit.
