@@ -20,6 +20,9 @@ mysql-*.tar*
 # Air (hot reload) generated
 .air
 
+# Air config
+scripts/.air.toml
+
 # Frontend asset
 dist
 
