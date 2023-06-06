@@ -578,3 +578,149 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 
 	return list[0].UID, nil
 }
+
+// ListInstanceChangeHistoryForMigrator finds the instance change history for the migrator,
+// the users are not composed.
+func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *FindInstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
+	where, args := []string{"TRUE"}, []any{}
+	if v := find.ID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance_change_history.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.InstanceID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance_change_history.instance_id = $%d", len(args)+1)), append(args, *v)
+	} else {
+		where = append(where, "instance_change_history.instance_id is NULL AND instance_change_history.database_id is NULL")
+	}
+	if v := find.DatabaseID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance_change_history.database_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Source; v != nil {
+		where, args = append(where, fmt.Sprintf("instance_change_history.source = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Version; v != nil {
+		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, *v)
+	}
+
+	statementField := fmt.Sprintf("LEFT(instance_change_history.statement, %d)", instanceChangeHistoryTruncateLength)
+	if find.ShowFull {
+		statementField = "instance_change_history.statement"
+	}
+	schemaField := fmt.Sprintf("LEFT(instance_change_history.schema, %d)", instanceChangeHistoryTruncateLength)
+	if find.ShowFull {
+		schemaField = "instance_change_history.schema"
+	}
+	schemaPrevField := fmt.Sprintf("LEFT(instance_change_history.schema_prev, %d)", instanceChangeHistoryTruncateLength)
+	if find.ShowFull {
+		schemaPrevField = "instance_change_history.schema_prev"
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			instance_change_history.id,
+			instance_change_history.row_status,
+			instance_change_history.creator_id,
+			instance_change_history.created_ts,
+			instance_change_history.updater_id,
+			instance_change_history.updated_ts,
+			instance_change_history.instance_id,
+			instance_change_history.database_id,
+			instance_change_history.issue_id,
+			instance_change_history.release_version,
+			instance_change_history.sequence,
+			instance_change_history.source,
+			instance_change_history.type,
+			instance_change_history.status,
+			instance_change_history.version,
+			instance_change_history.description,
+			%s,
+			%s,
+			%s,
+			instance_change_history.execution_duration_ns,
+			instance_change_history.payload,
+			COALESCE(instance.resource_id, ''),
+			COALESCE(db.name, '')
+		FROM instance_change_history
+		LEFT JOIN instance on instance.id = instance_change_history.instance_id
+		LEFT JOIN db on db.id = instance_change_history.database_id
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`, statementField, schemaField, schemaPrevField)
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []*InstanceChangeHistoryMessage
+	for rows.Next() {
+		var changeHistory InstanceChangeHistoryMessage
+		var rowStatus, payload string
+		var instanceID, databaseID, issueID sql.NullInt32
+		if err := rows.Scan(
+			&changeHistory.UID,
+			&rowStatus,
+			&changeHistory.CreatorID,
+			&changeHistory.CreatedTs,
+			&changeHistory.UpdaterID,
+			&changeHistory.UpdatedTs,
+			&instanceID,
+			&databaseID,
+			&issueID,
+			&changeHistory.ReleaseVersion,
+			&changeHistory.Sequence,
+			&changeHistory.Source,
+			&changeHistory.Type,
+			&changeHistory.Status,
+			&changeHistory.Version,
+			&changeHistory.Description,
+			&changeHistory.Statement,
+			&changeHistory.Schema,
+			&changeHistory.SchemaPrev,
+			&changeHistory.ExecutionDurationNs,
+			&payload,
+			&changeHistory.InstanceID,
+			&changeHistory.DatabaseName,
+		); err != nil {
+			return nil, err
+		}
+		if instanceID.Valid {
+			n := int(instanceID.Int32)
+			changeHistory.InstanceUID = &n
+		}
+		if databaseID.Valid {
+			n := int(databaseID.Int32)
+			changeHistory.DatabaseUID = &n
+		}
+		if issueID.Valid {
+			n := int(issueID.Int32)
+			changeHistory.IssueUID = &n
+		}
+		changeHistory.Payload = &storepb.InstanceChangeHistoryPayload{}
+		if err := protojson.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
+			return nil, err
+		}
+
+		changeHistory.Deleted = convertRowStatusToDeleted(rowStatus)
+		list = append(list, &changeHistory)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
