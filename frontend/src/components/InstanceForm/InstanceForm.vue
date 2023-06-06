@@ -1,5 +1,5 @@
 <template>
-  <component :is="modal ? DrawerContent : 'div'" v-bind="bindings">
+  <component :is="drawer ? DrawerContent : 'div'" v-bind="bindings">
     <div class="space-y-6 divide-y divide-block-border">
       <div class="divide-y divide-block-border w-[850px]">
         <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
@@ -538,7 +538,7 @@
       </div>
 
       <!-- Action Button Group -->
-      <div v-if="!modal" class="pt-4">
+      <div v-if="!drawer" class="pt-4">
         <div class="w-full flex justify-between items-center">
           <div class="w-full flex justify-end items-center gap-x-4">
             <NButton
@@ -555,7 +555,7 @@
       </div>
     </div>
 
-    <template v-if="modal" #footer>
+    <template v-if="drawer" #footer>
       <div class="w-full flex justify-between items-center">
         <div class="w-full flex justify-end items-center gap-x-3">
           <NButton
@@ -661,7 +661,7 @@ const props = defineProps({
     type: Object as PropType<Instance>,
     default: undefined,
   },
-  modal: {
+  drawer: {
     type: Boolean,
     default: false,
   },
@@ -670,7 +670,7 @@ const props = defineProps({
 const emit = defineEmits(["dismiss"]);
 
 const bindings = computed(() => {
-  if (props.modal) {
+  if (props.drawer) {
     return {
       title: t("quick-action.add-instance"),
     };

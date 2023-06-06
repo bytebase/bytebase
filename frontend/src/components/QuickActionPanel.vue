@@ -220,7 +220,7 @@
     />
     <InstanceForm
       v-if="state.quickActionType === 'quickaction.bb.instance.create'"
-      :modal="true"
+      :drawer="true"
       @dismiss="state.quickActionType = undefined"
     />
     <CreateDatabasePrepPanel
