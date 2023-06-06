@@ -26,6 +26,9 @@ dist
 # Dev database
 data
 
+# Air config
+scripts/.air.toml
+
 # build folder
 bytebase-build
 
