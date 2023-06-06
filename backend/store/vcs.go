@@ -58,6 +58,8 @@ func (s *Store) GetExternalVersionControlV2(ctx context.Context, id int) (*Exter
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
+	defer tx.Rollback()
+
 	externalVersionControls, err := s.findExternalVersionControlsImplV2(ctx, tx, &findExternalVersionControlMessage{id: &id})
 	if err != nil {
 		return nil, err
@@ -82,6 +84,8 @@ func (s *Store) ListExternalVersionControls(ctx context.Context) ([]*ExternalVer
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
+	defer tx.Rollback()
+
 	externalVersionControls, err := s.findExternalVersionControlsImplV2(ctx, tx, &findExternalVersionControlMessage{})
 	if err != nil {
 		return nil, err
@@ -102,6 +106,7 @@ func (s *Store) CreateExternalVersionControlV2(ctx context.Context, principalUID
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
+	defer tx.Rollback()
 
 	query := `
 		INSERT INTO vcs (
@@ -169,6 +174,7 @@ func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
+	defer tx.Rollback()
 
 	var externalVersionControl ExternalVersionControlMessage
 	// Execute update query with RETURNING.
@@ -207,6 +213,8 @@ func (s *Store) DeleteExternalVersionControlV2(ctx context.Context, externalVers
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
+	defer tx.Rollback()
+
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, externalVersionControlUID); err != nil {
 		return err
 	}
