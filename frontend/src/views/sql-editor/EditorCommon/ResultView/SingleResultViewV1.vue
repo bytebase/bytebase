@@ -46,7 +46,6 @@
         >
           {{ $t("sql-editor.visualize-explain") }}
         </NButton>
-        <!-- In enterprise plan, we don't allow export data in SQL editor. -->
         <NDropdown
           v-if="showExportButton"
           trigger="hover"
@@ -60,6 +59,12 @@
             {{ t("common.export") }}
           </NButton>
         </NDropdown>
+        <NButton
+          v-if="showRequestExportButton"
+          @click="handleGotoRequestExportPage"
+        >
+          {{ $t("quick-action.request-export") }}
+        </NButton>
       </div>
     </div>
 
@@ -111,6 +116,7 @@ import dayjs from "dayjs";
 import {
   createExplainToken,
   extractSQLRowValue,
+  hasWorkspacePermissionV1,
   instanceV1HasStructuredQueryResult,
 } from "@/utils";
 import {
@@ -121,6 +127,7 @@ import {
   useCurrentUserIamPolicy,
   pushNotification,
   useDatabaseV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
@@ -128,7 +135,8 @@ import ErrorView from "./ErrorView.vue";
 import { useSQLResultViewContext } from "./context";
 import { Engine } from "@/types/proto/v1/common";
 import { QueryResult } from "@/types/proto/v1/sql_service";
-import { SQLResultSetV1 } from "@/types";
+import { SQLResultSetV1, UNKNOWN_ID } from "@/types";
+import { useRouter } from "vue-router";
 
 type LocalState = {
   search: string;
@@ -149,9 +157,11 @@ const state = reactive<LocalState>({
 const { dark } = useSQLResultViewContext();
 
 const { t } = useI18n();
+const router = useRouter();
 const tabStore = useTabStore();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
+const currentUserV1 = useCurrentUserV1();
 const dataTable = ref<InstanceType<typeof DataTable>>();
 
 const viewMode = computed((): ViewMode => {
@@ -176,10 +186,20 @@ const showSearchFeature = computed(() => {
   return instanceV1HasStructuredQueryResult(instance);
 });
 
-// show export button only when the subscription is not enterprise.
-// In enterprise plan, all users need to fill in the export data request issue.
 const showExportButton = computed(() => {
-  return !featureToRef("bb.feature.custom-role").value;
+  if (!featureToRef("bb.feature.custom-role").value) {
+    return true;
+  }
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-database",
+    currentUserV1.value.userRole
+  );
+});
+
+const showRequestExportButton = computed(() => {
+  return (
+    featureToRef("bb.feature.custom-role").value && !showExportButton.value
+  );
 });
 
 const allowToExportData = computed(() => {
@@ -335,6 +355,33 @@ const showPagination = computed(() => data.value.length > PAGE_SIZES[0]);
 const handleChangePage = (page: number) => {
   table.setPageIndex(page - 1);
   dataTable.value?.scrollTo(0, 0);
+};
+
+const handleGotoRequestExportPage = () => {
+  const routeInfo = {
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query: {
+      template: "bb.issue.grant.request",
+      role: "EXPORTER",
+      name: "New grant exporter request",
+    },
+  };
+
+  const currentTab = tabStore.currentTab;
+  if (String(currentTab.connection.databaseId) !== String(UNKNOWN_ID)) {
+    const database = databaseStore.getDatabaseByUID(
+      currentTab.connection.databaseId
+    );
+    (routeInfo.query as any).project = database.projectEntity.uid;
+    (routeInfo.query as any).databaseList = database.uid;
+    (routeInfo.query as any).sql =
+      currentTab.selectedStatement || currentTab.statement;
+  }
+
+  router.push(routeInfo);
 };
 
 const explainFromSQLResultSetV1 = (resultSet: SQLResultSetV1 | undefined) => {
