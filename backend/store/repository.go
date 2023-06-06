@@ -297,7 +297,6 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 	if project == nil {
 		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot found project %s", create.ProjectResourceID)}
 	}
-	s.projectCache.Delete(create.ProjectResourceID)
 
 	repository := RepositoryMessage{
 		ProjectResourceID: project.ResourceID,

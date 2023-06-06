@@ -782,7 +782,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 		}
 	}
 
-	if _, err := s.store.UpdateProjectWebhookV2(ctx, ctx.Value(common.PrincipalIDContextKey).(int), project.UID, project.ResourceID, webhook.ID, update); err != nil {
+	if _, err := s.store.UpdateProjectWebhookV2(ctx, ctx.Value(common.PrincipalIDContextKey).(int), project.ResourceID, webhook.ID, update); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -1286,7 +1286,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.Remove
 		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
 	}
 
-	if err := s.store.DeleteProjectWebhookV2(ctx, project.UID, project.ResourceID, webhook.ID); err != nil {
+	if err := s.store.DeleteProjectWebhookV2(ctx, project.ResourceID, webhook.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
