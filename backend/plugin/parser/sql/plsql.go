@@ -410,6 +410,8 @@ func (*PLSQLErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa
 
 // ParsePLSQL parses the given PLSQL.
 func ParsePLSQL(sql string) (antlr.Tree, error) {
+	// The antlr parser requires a semicolon at the end of the SQL.
+	sql = strings.TrimRight(sql, " \t\n\r\f;") + ";"
 	lexer := parser.NewPlSqlLexer(antlr.NewInputStream(sql))
 	steam := antlr.NewCommonTokenStream(lexer, 0)
 	p := parser.NewPlSqlParser(steam)
