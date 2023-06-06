@@ -25,7 +25,6 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
       repositoryMapByProject.set(project, gitopsInfo);
       return gitopsInfo;
     } catch (e) {
-      console.error(e);
       return;
     }
   };

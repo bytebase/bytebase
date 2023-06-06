@@ -59,7 +59,7 @@
             </div>
           </div>
         </div>
-        <template v-if="allowEdit">
+        <template v-if="allowEdit && state.workflowType == Workflow.VCS">
           <div class="mt-4 flex items-center justify-end">
             <button
               type="button"
@@ -72,7 +72,7 @@
           </div>
         </template>
       </template>
-      <template v-else-if="repository">
+      <template v-else-if="project.workflow === Workflow.VCS && repository">
         <RepositoryPanel
           :project="project"
           :vcs="vcs"

@@ -205,6 +205,7 @@ const { t } = useI18n();
 
 const router = useRouter();
 const repositoryV1Store = useRepositoryV1Store();
+const projectV1Store = useProjectV1Store();
 
 const stepList: BBStepTabItem[] = [
   { title: t("repository.choose-git-provider"), hideNext: true },
@@ -293,7 +294,7 @@ const createSQLReviewCI = async () => {
   }
 };
 
-const tryFinishSetup = (allowFinishCallback: () => void) => {
+const tryFinishSetup = async (allowFinishCallback: () => void) => {
   if (
     state.config.repositoryConfig.enableSQLReviewCI &&
     !hasFeature("bb.feature.vcs-sql-review")
@@ -341,7 +342,10 @@ const tryFinishSetup = (allowFinishCallback: () => void) => {
     if (state.config.schemaChangeType !== props.project.schemaChange) {
       const projectPatch = cloneDeep(props.project);
       projectPatch.schemaChange = state.config.schemaChangeType;
-      await useProjectV1Store().updateProject(projectPatch, ["schema_change"]);
+      await projectV1Store.updateProject(projectPatch, ["schema_change"]);
+    } else {
+      // refresh project
+      await projectV1Store.fetchProjectByName(props.project.name);
     }
 
     if (state.config.repositoryConfig.enableSQLReviewCI) {
@@ -354,16 +358,13 @@ const tryFinishSetup = (allowFinishCallback: () => void) => {
   };
 
   try {
-    if (props.create) {
-      createFunc();
-    } else {
+    if (!props.create) {
       // It's simple to implement change behavior as delete followed by create.
       // Though the delete can succeed while the create fails, this is rare, and
       // even it happens, user can still configure it again.
-      repositoryV1Store.deleteRepository(props.project.name).then(() => {
-        createFunc();
-      });
+      await repositoryV1Store.deleteRepository(props.project.name);
     }
+    await createFunc();
   } finally {
     state.processing = false;
   }

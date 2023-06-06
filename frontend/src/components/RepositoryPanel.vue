@@ -321,6 +321,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const repositoryV1Store = useRepositoryV1Store();
+const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   repositoryConfig: {
     baseDirectory: props.repository.baseDirectory,
@@ -419,18 +420,22 @@ const restoreToUIWorkflowType = async (checkSQLReviewCI: boolean) => {
   if (state.processing) {
     return;
   }
-
   state.processing = true;
-  await repositoryV1Store.deleteRepository(props.project.name);
-  state.processing = false;
 
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("repository.restore-ui-workflow-success"),
-  });
+  try {
+    await repositoryV1Store.deleteRepository(props.project.name);
+    await projectV1Store.fetchProjectByName(props.project.name);
 
-  emit("restore");
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("repository.restore-ui-workflow-success"),
+    });
+
+    emit("restore");
+  } finally {
+    state.processing = false;
+  }
 };
 
 const createSQLReviewCI = async () => {
@@ -514,7 +519,7 @@ const doUpdate = async () => {
     if (state.schemaChangeType !== props.project.schemaChange) {
       const projectPatch = cloneDeep(props.project);
       projectPatch.schemaChange = state.schemaChangeType;
-      await useProjectV1Store().updateProject(projectPatch, ["schema_change"]);
+      await projectV1Store.updateProject(projectPatch, ["schema_change"]);
     }
 
     if (needSetupCI) {
