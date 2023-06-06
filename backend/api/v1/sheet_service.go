@@ -442,7 +442,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("repository not found for sync sheet: %d", project.UID))
 	}
 
-	vcs, err := s.store.GetVCSByID(ctx, repo.VCSUID)
+	vcs, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find VCS for sync sheet, VCSID: %d", repo.VCSUID))
 	}

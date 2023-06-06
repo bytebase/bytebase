@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // TODO(d): fix the double underscore "__".
@@ -186,21 +187,24 @@ func TestVCSSQLReview_ConvertSQLAdviceToGitHubActionResult(t *testing.T) {
 
 func TestGetFileInfo(t *testing.T) {
 	t.Run("a SQL format DDL", func(t *testing.T) {
-		mi, fileType, repo, err := getFileInfo(
+		mi, fileType, repoInfo, err := getFileInfo(
 			vcs.DistinctFileItem{
 				FileName: "db##0001##migrate.sql",
 				ItemType: vcs.FileItemTypeAdded,
 			},
-			[]*api.Repository{
+			[]*repoInfo{
 				{
-					ID:               1,
-					Project:          &api.Project{},
-					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					repository: &store.RepositoryMessage{
+						UID:              1,
+						FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					},
+					project: &store.ProjectMessage{},
+					vcs:     &store.ExternalVersionControlMessage{},
 				},
 			},
 		)
 		require.NoError(t, err)
-		assert.Equal(t, 1, repo.ID)
+		assert.Equal(t, 1, repoInfo.repository.UID)
 		assert.Equal(t, fileTypeMigration, fileType)
 
 		want := &db.MigrationInfo{
@@ -215,21 +219,24 @@ func TestGetFileInfo(t *testing.T) {
 	})
 
 	t.Run("a SQL format DML", func(t *testing.T) {
-		mi, fileType, repo, err := getFileInfo(
+		mi, fileType, repoInfo, err := getFileInfo(
 			vcs.DistinctFileItem{
 				FileName: "db##0001##data.sql",
 				ItemType: vcs.FileItemTypeAdded,
 			},
-			[]*api.Repository{
+			[]*repoInfo{
 				{
-					ID:               1,
-					Project:          &api.Project{},
-					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					repository: &store.RepositoryMessage{
+						UID:              1,
+						FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					},
+					project: &store.ProjectMessage{},
+					vcs:     &store.ExternalVersionControlMessage{},
 				},
 			},
 		)
 		require.NoError(t, err)
-		assert.Equal(t, 1, repo.ID)
+		assert.Equal(t, 1, repoInfo.repository.UID)
 		assert.Equal(t, fileTypeMigration, fileType)
 
 		want := &db.MigrationInfo{
@@ -244,24 +251,27 @@ func TestGetFileInfo(t *testing.T) {
 	})
 
 	t.Run("a YAML format DML in a tenant project", func(t *testing.T) {
-		mi, fileType, repo, err := getFileInfo(
+		mi, fileType, repoInfo, err := getFileInfo(
 			vcs.DistinctFileItem{
 				FileName: "db##0001##data.yml",
 				ItemType: vcs.FileItemTypeAdded,
 				IsYAML:   true,
 			},
-			[]*api.Repository{
+			[]*repoInfo{
 				{
-					ID: 1,
-					Project: &api.Project{
+					repository: &store.RepositoryMessage{
+						UID:              1,
+						FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					},
+					project: &store.ProjectMessage{
 						TenantMode: api.TenantModeTenant,
 					},
-					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					vcs: &store.ExternalVersionControlMessage{},
 				},
 			},
 		)
 		require.NoError(t, err)
-		assert.Equal(t, 1, repo.ID)
+		assert.Equal(t, 1, repoInfo.repository.UID)
 		assert.Equal(t, fileTypeMigration, fileType)
 
 		want := &db.MigrationInfo{
@@ -282,13 +292,16 @@ func TestGetFileInfo(t *testing.T) {
 				ItemType: vcs.FileItemTypeAdded,
 				IsYAML:   true,
 			},
-			[]*api.Repository{
+			[]*repoInfo{
 				{
-					ID: 1,
-					Project: &api.Project{
+					repository: &store.RepositoryMessage{
+						UID:              1,
+						FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					},
+					project: &store.ProjectMessage{
 						TenantMode: api.TenantModeTenant,
 					},
-					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					vcs: &store.ExternalVersionControlMessage{},
 				},
 			},
 		)
@@ -301,12 +314,15 @@ func TestGetFileInfo(t *testing.T) {
 				FileName: "db##0001##migrate.sql",
 				ItemType: vcs.FileItemTypeAdded,
 			},
-			[]*api.Repository{
+			[]*repoInfo{
 				{
-					ID:               1,
-					Project:          &api.Project{},
-					BaseDirectory:    "bytebase",
-					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					repository: &store.RepositoryMessage{
+						UID:              1,
+						BaseDirectory:    "bytebase",
+						FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					},
+					project: &store.ProjectMessage{},
+					vcs:     &store.ExternalVersionControlMessage{},
 				},
 			},
 		)
@@ -319,19 +335,26 @@ func TestGetFileInfo(t *testing.T) {
 				FileName: "db##0001##migrate.sql",
 				ItemType: vcs.FileItemTypeAdded,
 			},
-			[]*api.Repository{
+			[]*repoInfo{
 				{
-					ID: 1,
-					Project: &api.Project{
-						Name: "project-1",
+					repository: &store.RepositoryMessage{
+						UID:              1,
+						FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
 					},
-					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
-				}, {
-					ID: 2,
-					Project: &api.Project{
-						Name: "project-2",
+					project: &store.ProjectMessage{
+						Title: "project-1",
 					},
-					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					vcs: &store.ExternalVersionControlMessage{},
+				},
+				{
+					repository: &store.RepositoryMessage{
+						UID:              2,
+						FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+					},
+					project: &store.ProjectMessage{
+						Title: "project-2",
+					},
+					vcs: &store.ExternalVersionControlMessage{},
 				},
 			},
 		)
