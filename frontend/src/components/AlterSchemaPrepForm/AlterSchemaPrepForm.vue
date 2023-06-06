@@ -1,16 +1,42 @@
 <template>
-  <div class="space-y-4 max-w-min overflow-x-hidden">
-    <div class="overflow-x-auto">
-      <div v-if="ready" class="w-[calc(100vw-8rem)] lg:w-[56rem]">
+  <DrawerContent>
+    <template #header>
+      <div class="flex flex-col gap-y-1">
+        <span>{{
+          isAlterSchema
+            ? $t("database.alter-schema")
+            : $t("database.change-data")
+        }}</span>
+        <i18n-t
+          v-if="projectId && isTenantProject"
+          class="text-sm textinfolabel"
+          tag="span"
+          keypath="deployment-config.pipeline-generated-from-deployment-config"
+        >
+          <template #deployment_config>
+            <router-link
+              :to="`/project/${projectV1Slug(state.project!)}#databases`"
+              class="underline hover:bg-link-hover"
+              active-class=""
+              exact-active-class=""
+            >
+              {{ $t("common.deployment-config") }}
+            </router-link>
+          </template>
+        </i18n-t>
+      </div>
+    </template>
+
+    <div
+      class="space-y-4 w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+    >
+      <div v-if="ready">
         <template v-if="projectId">
           <template v-if="isTenantProject">
             <!-- tenant mode project -->
             <NTabs v-model:value="state.alterType">
               <NTabPane :tab="$t('alter-schema.alter-db-group')" name="TENANT">
-                <div
-                  class="overflow-y-auto"
-                  style="max-height: calc(100vh - 360px)"
-                >
+                <div>
                   <ProjectTenantView
                     :state="state"
                     :database-list="schemaDatabaseList"
@@ -50,11 +76,7 @@
                     </div>
                   </NRadio>
                 </div>
-                <div
-                  v-if="state.databaseSelectedTab === 'DATABASE'"
-                  class="overflow-y-auto"
-                  style="max-height: calc(100vh - 400px)"
-                >
+                <div v-if="state.databaseSelectedTab === 'DATABASE'">
                   <DatabaseV1Table
                     mode="PROJECT_SHORT"
                     table-class="border"
@@ -97,11 +119,7 @@
                     :database-list="schemalessDatabaseList"
                   />
                 </div>
-                <div
-                  v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'"
-                  class="overflow-y-auto"
-                  style="max-height: calc(100vh - 340px)"
-                >
+                <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
                   <SelectSchemaGroupsTable
                     :database-group-list="databaseGroupList"
                     :selected-database-group-name="
@@ -131,10 +149,7 @@
           </template>
           <template v-else>
             <!-- standard mode project, single/multiple databases ui -->
-            <div
-              class="overflow-y-auto"
-              style="max-height: calc(100vh - 380px)"
-            >
+            <div>
               <ProjectStandardView
                 :state="state"
                 :project="state.project"
@@ -143,7 +158,7 @@
                 @select-database="selectDatabase"
               >
                 <template #header>
-                  <div class="flex items-center justify-end mx-2 mb-2">
+                  <div class="flex items-center justify-end mx-2">
                     <BBTableSearch
                       class="m-px"
                       :placeholder="$t('database.search-database')"
@@ -193,11 +208,7 @@
             </aside>
           </div>
           <!-- a simple table -->
-          <div
-            v-if="state.databaseSelectedTab === 'DATABASE'"
-            class="overflow-y-auto"
-            style="max-height: calc(100vh - 340px)"
-          >
+          <div v-if="state.databaseSelectedTab === 'DATABASE'">
             <DatabaseV1Table
               mode="ALL_SHORT"
               table-class="border"
@@ -212,11 +223,7 @@
               :database-list="schemalessDatabaseList"
             />
           </div>
-          <div
-            v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'"
-            class="overflow-y-auto"
-            style="max-height: calc(100vh - 340px)"
-          >
+          <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
             <SelectSchemaGroupsTable
               :database-group-list="databaseGroupList"
               :selected-database-group-name="state.selectedDatabaseGroupName"
@@ -230,57 +237,52 @@
       </div>
       <div
         v-if="!ready"
-        class="w-[calc(100vw-8rem)] lg:w-[56rem] h-[20rem] flex items-center justify-center"
+        class="w-full h-[20rem] flex items-center justify-center"
       >
         <BBSpin />
       </div>
     </div>
 
-    <!-- Create button group -->
-    <div
-      class="pt-4 border-t border-block-border flex items-center justify-between"
-    >
-      <div>
-        <div
-          v-if="flattenSelectedDatabaseUidList.length > 0"
-          class="textinfolabel"
-        >
-          {{
-            $t("database.selected-n-databases", {
-              n: flattenSelectedDatabaseUidList.length,
-            })
-          }}
+    <template #footer>
+      <div class="flex-1 flex items-center justify-between">
+        <div>
+          <div
+            v-if="flattenSelectedDatabaseUidList.length > 0"
+            class="textinfolabel"
+          >
+            {{
+              $t("database.selected-n-databases", {
+                n: flattenSelectedDatabaseUidList.length,
+              })
+            }}
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-x-3">
+          <NButton @click.prevent="cancel">
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton
+            v-if="showGenerateMultiDb"
+            type="primary"
+            :disabled="!allowGenerateMultiDb"
+            @click.prevent="generateMultiDb"
+          >
+            {{ $t("common.next") }}
+          </NButton>
+
+          <NButton
+            v-if="showGenerateTenant"
+            type="primary"
+            :disabled="!allowGenerateTenant"
+            @click.prevent="generateTenant"
+          >
+            {{ $t("common.next") }}
+          </NButton>
         </div>
       </div>
-
-      <div class="flex items-center justify-end">
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="cancel"
-        >
-          {{ $t("common.cancel") }}
-        </button>
-        <button
-          v-if="showGenerateMultiDb"
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!allowGenerateMultiDb"
-          @click.prevent="generateMultiDb"
-        >
-          {{ $t("common.next") }}
-        </button>
-
-        <button
-          v-if="showGenerateTenant"
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!allowGenerateTenant"
-          @click.prevent="generateTenant"
-        >
-          {{ $t("common.next") }}
-        </button>
-      </div>
-    </div>
-  </div>
+    </template>
+  </DrawerContent>
 
   <FeatureModal
     v-if="featureModalContext.feature"
@@ -302,7 +304,7 @@
 import { useEventListener } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
-import { NTabs, NTabPane, NRadio } from "naive-ui";
+import { NButton, NTabs, NTabPane, NRadio } from "naive-ui";
 import { computed, reactive, PropType, ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -319,6 +321,7 @@ import {
   instanceV1HasAlterSchema,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
+  projectV1Slug,
 } from "@/utils";
 import {
   hasFeature,
@@ -329,7 +332,7 @@ import {
   useProjectV1Store,
   useDBGroupStore,
 } from "@/store";
-import { DatabaseV1Table } from "../v2";
+import { DatabaseV1Table, DrawerContent } from "../v2";
 import { Project, TenantMode } from "@/types/proto/v1/project_service";
 import { State } from "@/types/proto/v1/common";
 import ProjectStandardView, {
@@ -400,7 +403,7 @@ const state = reactive<LocalState>({
     ? projectV1Store.getProjectByUID(props.projectId)
     : undefined,
   alterType: "MULTI_DB",
-  selectedDatabaseUidListForEnvironment: new Map(),
+  selectedDatabaseUidListForEnvironment: new Map<string, string[]>(),
   selectedDatabaseIdListForTenantMode: new Set<string>(),
   deployingTenantDatabaseList: [],
   label: "bb.environment",
