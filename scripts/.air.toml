@@ -1,6 +1,6 @@
 # Using `git update-index --assume-unchanged scripts/.air.toml` to let git untrack it.
 root = "."
-asdftmp_dir = ".air"
+tmp_dir = ".air"
 
 [build]
   bin = './.air/bytebase --port 8080 --data . --debug'
