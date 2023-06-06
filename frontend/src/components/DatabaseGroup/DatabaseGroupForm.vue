@@ -104,7 +104,6 @@ import {
   getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
 } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { useDebounceFn } from "@vueuse/core";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -179,51 +178,50 @@ onMounted(async () => {
   }
 });
 
-const validateResourceId = useDebounceFn(
-  async (resourceId: ResourceId): Promise<ValidatedMessage[]> => {
-    if (!resourceId) {
-      return [];
-    }
-
-    let request = undefined;
-    if (props.resourceType === "DATABASE_GROUP") {
-      request = dbGroupStore.getOrFetchDBGroupByName(
-        `${props.project.name}/databaseGroups/${resourceId}`
-      );
-    } else if (props.resourceType === "SCHEMA_GROUP") {
-      if (state.selectedDatabaseGroupId) {
-        request = dbGroupStore.getOrFetchSchemaGroupByName(
-          `${state.selectedDatabaseGroupId}/schemaGroups/${resourceId}`
-        );
-      }
-    }
-
-    if (!request) {
-      return [];
-    }
-
-    try {
-      const data = await request;
-      if (data) {
-        return [
-          {
-            type: "error",
-            message: t("resource-id.validation.duplicated", {
-              resource: t(`resource.${resourceIdType.value}`),
-            }),
-          },
-        ];
-      }
-    } catch (error) {
-      if (getErrorCode(error) !== Status.NOT_FOUND) {
-        throw error;
-      }
-    }
-
+const validateResourceId = async (
+  resourceId: ResourceId
+): Promise<ValidatedMessage[]> => {
+  if (!resourceId) {
     return [];
-  },
-  500
-);
+  }
+
+  let request = undefined;
+  if (props.resourceType === "DATABASE_GROUP") {
+    request = dbGroupStore.getOrFetchDBGroupByName(
+      `${props.project.name}/databaseGroups/${resourceId}`
+    );
+  } else if (props.resourceType === "SCHEMA_GROUP") {
+    if (state.selectedDatabaseGroupId) {
+      request = dbGroupStore.getOrFetchSchemaGroupByName(
+        `${state.selectedDatabaseGroupId}/schemaGroups/${resourceId}`
+      );
+    }
+  }
+
+  if (!request) {
+    return [];
+  }
+
+  try {
+    const data = await request;
+    if (data) {
+      return [
+        {
+          type: "error",
+          message: t("resource-id.validation.duplicated", {
+            resource: t(`resource.${resourceIdType.value}`),
+          }),
+        },
+      ];
+    }
+  } catch (error) {
+    if (getErrorCode(error) !== Status.NOT_FOUND) {
+      throw error;
+    }
+  }
+
+  return [];
+};
 
 defineExpose({
   getFormState: () => {
