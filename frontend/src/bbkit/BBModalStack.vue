@@ -74,7 +74,7 @@ export default defineComponent({
 
 <style scope>
 .bb-modal-mask {
-  @apply fixed inset-0 w-full h-screen flex items-center justify-center z-40;
+  @apply fixed inset-0 w-full h-screen flex items-center justify-center z-[4000];
   background-color: rgba(209, 213, 219, 0.8); /* bg-gray-300 */
 }
 </style>

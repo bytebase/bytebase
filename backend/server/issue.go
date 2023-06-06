@@ -942,9 +942,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureDatabaseGrouping.AccessErrorMessage())
 			}
-			if len(migrationDetail.SchemaGroupNames) == 0 {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Missing schema groups when specifying database group")
-			}
 			// Deploy to given database group.
 			parts := strings.Split(migrationDetail.DatabaseGroupName, "/")
 			if len(parts) != 4 {
