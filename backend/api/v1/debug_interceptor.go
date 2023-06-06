@@ -33,7 +33,7 @@ func NewDebugInterceptor(errorRecordRing *api.ErrorRecordRing) *DebugInterceptor
 func (in *DebugInterceptor) DebugInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	resp, err := handler(ctx, request)
 	if err != nil {
-		in.debugInterceptorDo(ctx, serverInfo.FullMethod, err)
+		in.debugInterceptorDo(ctx, request, serverInfo.FullMethod, err)
 	}
 
 	return resp, err
@@ -44,14 +44,17 @@ func (in *DebugInterceptor) DebugStreamInterceptor(request any, ss grpc.ServerSt
 	err := handler(request, ss)
 	ctx := ss.Context()
 	if err != nil {
-		in.debugInterceptorDo(ctx, serverInfo.FullMethod, err)
+		in.debugInterceptorDo(ctx, request, serverInfo.FullMethod, err)
 	}
 
 	return err
 }
 
-func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, fullMethod string, err error) {
+func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, request any, fullMethod string, err error) {
 	st := status.Convert(err)
+	if st.Code() == codes.Internal {
+		log.Error("Internal error intercepted", zap.String("method", fullMethod), zap.Error(err), zap.Any("request", request))
+	}
 	if st.Code() == codes.Internal && log.EnabledLevel(zap.DebugLevel) {
 		var role api.Role
 		if r, ok := ctx.Value(common.RoleContextKey).(api.Role); ok {
