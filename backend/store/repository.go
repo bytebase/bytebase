@@ -147,6 +147,9 @@ func (s *Store) DeleteRepository(ctx context.Context, delete *api.RepositoryDele
 		return err
 	}
 
+	s.projectCache.Delete(delete.ProjectResourceID)
+	s.projectIDCache.Delete(delete.ProjectID)
+
 	return tx.Commit()
 }
 
@@ -192,6 +195,9 @@ func (s *Store) createRepositoryRaw(ctx context.Context, create *api.RepositoryC
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
+
+	s.projectCache.Delete(create.ProjectResourceID)
+	s.projectIDCache.Delete(create.ProjectID)
 
 	return repository, nil
 }
