@@ -1,3 +1,4 @@
+import { head } from "lodash-es";
 import {
   GrantRequestContext,
   IssueCreate,
@@ -5,7 +6,7 @@ import {
   PresetRoleType,
 } from "@/types";
 import { extractRoleResourceName } from "@/utils";
-import { BuildNewIssueContext } from "../common";
+import { BuildNewIssueContext, findDatabaseListByQuery } from "../common";
 import { IssueCreateHelper } from "./helper";
 
 export const maybeBuildGrantRequestIssue = async (
@@ -39,6 +40,21 @@ const buildNewGrantRequestIssue = async (
   const project = route.query.project as string;
   if (project) {
     issueCreate.projectId = Number(project);
+  }
+  if (role === "EXPORTER") {
+    const createContext = issueCreate.createContext as GrantRequestContext;
+    const statement = (route.query.sql as string) || "";
+    createContext.statement = statement;
+    const databaseList = findDatabaseListByQuery(context);
+    const database = head(databaseList);
+    if (database) {
+      createContext.databaseResources = [
+        {
+          databaseId: database.uid,
+          databaseName: database.name,
+        },
+      ];
+    }
   }
   return issueCreate;
 };
