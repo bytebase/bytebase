@@ -173,7 +173,6 @@ import { extractUserUID, instanceV1Name, memberListInProjectV1 } from "@/utils";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import { convertFromCEL } from "@/utils/issue/cel";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import DatabaseSelect from "@/components/DatabaseSelect.vue";
@@ -184,7 +183,6 @@ interface LocalState {
   projectId?: string;
   environmentId?: string;
   databaseId?: string;
-  selectedDatabaseResourceList: DatabaseResource[];
   expireDays: number;
   customDays: number;
   maxRowCount: number;
@@ -198,7 +196,6 @@ const { t } = useI18n();
 const { create, issue } = useIssueLogic();
 const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
-  selectedDatabaseResourceList: [],
   expireDays: 1,
   customDays: 7,
   maxRowCount: 1000,
@@ -242,11 +239,22 @@ const dialect = computed((): SQLDialect => {
   return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
 });
 
-onMounted(() => {
+onMounted(async () => {
   if (create.value) {
     const projectId = String((issue.value as IssueCreate).projectId);
     if (projectId && projectId !== String(UNKNOWN_ID)) {
       handleProjectSelect(projectId);
+    }
+    const context = (issue.value as IssueCreate)
+      .createContext as GrantRequestContext;
+    if (context.statement) {
+      state.statement = context.statement;
+    }
+    if (context.databaseResources && context.databaseResources.length > 0) {
+      const databaseId = String(context.databaseResources[0].databaseId);
+      const database = await databaseStore.getOrFetchDatabaseByUID(databaseId);
+      state.databaseId = databaseId;
+      state.environmentId = database.instanceEntity.environmentEntity.uid;
     }
   }
 });
@@ -305,7 +313,6 @@ const handleStatementChange = (value: string) => {
 watch(
   () => [
     state.databaseId,
-    state.selectedDatabaseResourceList,
     state.expireDays,
     state.customDays,
     state.maxRowCount,
@@ -335,9 +342,6 @@ watch(
       context.exportFormat = state.exportFormat;
       context.statement = state.statement;
     }
-  },
-  {
-    immediate: true,
   }
 );
 
