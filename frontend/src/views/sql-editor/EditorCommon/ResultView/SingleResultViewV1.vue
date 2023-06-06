@@ -34,7 +34,6 @@
           :page="table.getState().pagination.pageIndex + 1"
           :page-size="table.getState().pagination.pageSize"
           @update-page="handleChangePage"
-          @update-page-size="(ps) => table.setPageSize(ps)"
         />
         <NButton
           v-if="showVisualizeButton"
