@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="h-full overflow-hidden flex flex-col">
     <BBTab
       :tab-item-list="tabItemList"
       :selected-index="state.selectedIndex"
@@ -20,6 +20,7 @@
         v-for="(env, index) in environmentList"
         :key="env.uid"
         :active="index == state.selectedIndex"
+        class="flex-1 overflow-y-scroll"
       >
         <div v-if="state.reorder" class="flex justify-center pt-5">
           <button
