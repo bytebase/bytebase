@@ -257,6 +257,19 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
+            path: "export-center",
+            name: "workspace.export-center",
+            meta: { title: () => startCase(t("export-center.self")) },
+            components: {
+              content: () => import("../views/ExportCenter/index.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
             path: "anomaly-center",
             name: "workspace.anomaly-center",
             meta: { title: () => t("anomaly-center") },
@@ -1300,6 +1313,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.inbox" ||
     to.name === "workspace.slow-query" ||
     to.name === "workspace.sync-schema" ||
+    to.name === "workspace.export-center" ||
     to.name === "workspace.anomaly-center" ||
     to.name === "workspace.project" ||
     to.name === "workspace.instance" ||
