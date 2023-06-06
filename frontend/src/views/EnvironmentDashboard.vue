@@ -46,13 +46,11 @@
       </BBTabPanel>
     </BBTab>
   </div>
-  <BBModal
-    v-if="state.showCreateModal"
-    :title="$t('environment.create')"
-    @close="state.showCreateModal = false"
-  >
+
+  <Drawer v-model:show="state.showCreateModal">
     <EnvironmentForm
       :create="true"
+      :drawer="true"
       :environment="getEnvironmentCreate()"
       :approval-policy="(DEFAULT_NEW_APPROVAL_POLICY as any)"
       :backup-policy="(DEFAULT_NEW_BACKUP_PLAN_POLICY as any)"
@@ -60,7 +58,7 @@
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
-  </BBModal>
+  </Drawer>
 
   <FeatureModal
     v-if="state.missingRequiredFeature != undefined"
@@ -84,7 +82,7 @@ import {
   defaultEnvironmentTier,
   useEnvironmentV1List,
 } from "@/store";
-import { ProductionEnvironmentV1Icon } from "@/components/v2";
+import { Drawer, ProductionEnvironmentV1Icon } from "@/components/v2";
 import {
   Environment,
   EnvironmentTier,
