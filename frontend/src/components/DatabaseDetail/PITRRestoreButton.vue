@@ -34,7 +34,7 @@
 
   <Drawer v-model:show="state.showDatabasePITRModal">
     <DrawerContent :title="$t('database.pitr.restore')">
-      <div class="w-112 flex flex-col items-center gap-4">
+      <div class="w-72 flex flex-col items-center gap-4">
         <div class="w-full textinfolabel">
           <i18n-t
             :keypath="
