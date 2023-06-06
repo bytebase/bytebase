@@ -21,6 +21,12 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       databaseId: DatabaseId,
       skipCache = false
     ): Promise<DatabaseMetadata> {
+      if (Number(databaseId) === UNKNOWN_ID) {
+        return DatabaseMetadata.fromJSON({
+          name: "<<Unknown database>>",
+        });
+      }
+
       if (!skipCache) {
         if (this.databaseMetadataById.has(databaseId)) {
           // The metadata entity is stored in local dictionary.
