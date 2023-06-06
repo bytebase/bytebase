@@ -70,7 +70,8 @@ export const findDatabaseGroupAndSchemaGroupListByQuery = (
   }
 
   const schemaGroupNames = (route.query.schemaGroupNames as string) || "";
-  const schemaGroupNameList: string[] = schemaGroupNames.split(",");
+  const schemaGroupNameList: string[] =
+    schemaGroupNames === "" ? [] : schemaGroupNames.split(",");
   return {
     databaseGroupName: databaseGroupName,
     schemaGroupNameList: schemaGroupNameList,
