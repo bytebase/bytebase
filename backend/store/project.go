@@ -145,8 +145,7 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 		return nil, err
 	}
 
-	s.projectCache.Store(project.ResourceID, project)
-	s.projectIDCache.Store(project.UID, project)
+	s.storeProjectCache(project)
 	return projects[0], nil
 }
 
@@ -168,8 +167,7 @@ func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]
 	}
 
 	for _, project := range projects {
-		s.projectCache.Store(project.ResourceID, project)
-		s.projectIDCache.Store(project.UID, project)
+		s.storeProjectCache(project)
 	}
 	return projects, nil
 }
@@ -260,8 +258,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, err
 	}
 
-	s.projectCache.Store(project.ResourceID, project)
-	s.projectIDCache.Store(project.UID, project)
+	s.storeProjectCache(project)
 	return project, nil
 }
 
@@ -282,8 +279,7 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 		return nil, err
 	}
 
-	s.projectCache.Store(project.ResourceID, project)
-	s.projectIDCache.Store(project.UID, project)
+	s.storeProjectCache(project)
 	return project, nil
 }
 
@@ -429,4 +425,16 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 	}
 
 	return projectMessages, nil
+}
+
+func (s *Store) storeProjectCache(project *ProjectMessage) {
+	s.projectCache.Store(project.ResourceID, project)
+	s.projectIDCache.Store(project.UID, project)
+}
+
+func (s *Store) removeProjectCache(resourceID string) {
+	if project, ok := s.projectCache.Load(resourceID); ok {
+		s.projectIDCache.Delete(project.(*ProjectMessage).UID)
+	}
+	s.projectCache.Delete(resourceID)
 }
