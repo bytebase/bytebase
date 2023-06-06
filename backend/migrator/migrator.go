@@ -24,7 +24,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed migration
@@ -87,10 +86,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 		return nil, err
 	}
 
-	if err := backfillHistory(ctx, storeInstance, bytebasePgDriver, databaseName); err != nil {
-		return nil, err
-	}
-
 	verBefore, err := getLatestVersion(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
@@ -114,75 +109,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 	}
 
 	return &verAfter, nil
-}
-
-func backfillHistory(ctx context.Context, storeInstance *store.Store, bytebasePgDriver *pg.Driver, databaseName string) error {
-	histories, err := storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		// Metadata database has instanceID nil;
-		InstanceID: nil,
-	})
-	if err != nil {
-		return err
-	}
-	// For new database and backfilled database, there should be histories already.
-	if len(histories) > 0 {
-		return nil
-	}
-
-	log.Info("Backfilling Bytebase metadata migration history")
-	limit := 10
-	offset := 0
-	for {
-		oldHistories, err := bytebasePgDriver.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
-			Database: &databaseName,
-			Limit:    &limit,
-			Offset:   &offset,
-		})
-		if err != nil {
-			return err
-		}
-		if len(oldHistories) == 0 {
-			break
-		}
-		offset += limit
-
-		var creates []*store.InstanceChangeHistoryMessage
-		for _, h := range oldHistories {
-			storedVersion, err := util.ToStoredVersion(h.UseSemanticVersion, h.Version, h.SemanticVersionSuffix)
-			if err != nil {
-				return err
-			}
-			changeHistory := store.InstanceChangeHistoryMessage{
-				CreatorID:           api.SystemBotID,
-				CreatedTs:           h.CreatedTs,
-				UpdaterID:           api.SystemBotID,
-				UpdatedTs:           h.UpdatedTs,
-				InstanceUID:         nil,
-				DatabaseUID:         nil,
-				IssueUID:            nil,
-				ReleaseVersion:      h.ReleaseVersion,
-				Sequence:            int64(h.Sequence),
-				Source:              h.Source,
-				Type:                h.Type,
-				Status:              h.Status,
-				Version:             storedVersion,
-				Description:         h.Description,
-				Statement:           h.Statement,
-				Schema:              h.Schema,
-				SchemaPrev:          h.SchemaPrev,
-				ExecutionDurationNs: h.ExecutionDurationNs,
-				Payload:             &storepb.InstanceChangeHistoryPayload{},
-			}
-
-			creates = append(creates, &changeHistory)
-		}
-
-		if _, err := storeInstance.CreateInstanceChangeHistory(ctx, creates...); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func hasInstanceChangeTable(ctx context.Context, metadataDriver dbdriver.Driver) (bool, error) {
