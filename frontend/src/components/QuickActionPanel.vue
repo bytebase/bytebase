@@ -49,20 +49,6 @@
         </div>
 
         <div
-          v-if="quickAction === 'quickaction.bb.database.request'"
-          class="flex flex-col items-center w-24"
-        >
-          <button class="btn-icon-primary p-3" @click.prevent="requestDatabase">
-            <heroicons-outline:database class="w-5 h-5" />
-          </button>
-          <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-          >
-            {{ $t("quick-action.request-db") }}
-          </h3>
-        </div>
-
-        <div
           v-if="quickAction === 'quickaction.bb.database.schema.update'"
           class="flex flex-col items-center w-24"
         >
