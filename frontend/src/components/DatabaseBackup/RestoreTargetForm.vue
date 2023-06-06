@@ -1,50 +1,38 @@
 <template>
-  <div class="mx-4 space-y-6 divide-y divide-block-border">
-    <div class="grid gap-y-6 gap-x-4 grid-cols-4">
-      <div class="col-span-3 col-start-2">
-        <label class="textlabel">
-          {{ $t("database.pitr.restore-to") }}
-        </label>
-        <div class="flex items-center gap-6 textlabel py-1">
-          <label class="flex items-center gap-2">
-            <input
-              type="radio"
-              :checked="state.target === 'NEW'"
-              @input="$emit('change', 'NEW')"
-            />
-            <span>{{ $t("database.pitr.restore-to-new-db") }}</span>
-          </label>
-          <label class="flex items-center">
-            <input
-              type="radio"
-              :checked="state.target === 'IN-PLACE'"
-              @input="$emit('change', 'IN-PLACE')"
-            />
-            <span class="ml-2 flex items-center">
-              {{ $t("database.pitr.restore-to-in-place") }}
-
-              <FeatureBadge
-                feature="bb.feature.pitr"
-                class="text-accent ml-1"
-              />
-            </span>
-          </label>
-        </div>
-        <div
-          v-if="state.target === 'IN-PLACE'"
-          class="flex items-center gap-2 text-error mt-2"
-        >
-          <heroicons-outline:exclamation-circle class="w-4 h-4" />
-          <span class="whitespace-nowrap text-sm">
-            {{ $t("database.pitr.will-overwrite-current-database") }}
-          </span>
-        </div>
-      </div>
+  <div class="flex flex-col gap-y-2">
+    <label class="textlabel">
+      {{ $t("database.pitr.restore-to") }}
+    </label>
+    <div class="flex items-center gap-x-6 gap-y-2 flex-wrap">
+      <NRadio
+        v-for="value in targets"
+        :key="value"
+        :checked="state.target === value"
+        @update:checked="check(value, $event)"
+      >
+        <template v-if="value === 'IN-PLACE'">
+          {{ $t("database.pitr.restore-to-in-place") }}
+        </template>
+        <template v-if="value === 'NEW'">
+          {{ $t("database.pitr.restore-to-new-db") }}
+        </template>
+      </NRadio>
+    </div>
+    <div
+      v-if="state.target === 'IN-PLACE'"
+      class="flex items-center gap-2 text-error"
+    >
+      <heroicons-outline:exclamation-circle class="w-4 h-4" />
+      <span class="whitespace-nowrap text-sm">
+        {{ $t("database.pitr.will-overwrite-current-database") }}
+      </span>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { NRadio } from "naive-ui";
+import { computed } from "vue";
 import { PropType, reactive, watch } from "vue";
 
 export type RestoreTarget = "IN-PLACE" | "NEW";
@@ -58,15 +46,29 @@ const props = defineProps({
     type: String as PropType<RestoreTarget>,
     required: true,
   },
+  first: {
+    type: String as PropType<RestoreTarget>,
+    default: "IN-PLACE",
+  },
 });
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "change", target: RestoreTarget): void;
 }>();
 
 const state = reactive<LocalState>({
   target: props.target,
 });
+
+const targets = computed((): RestoreTarget[] => {
+  return props.first === "IN-PLACE" ? ["IN-PLACE", "NEW"] : ["NEW", "IN-PLACE"];
+});
+
+const check = (value: RestoreTarget, on: boolean) => {
+  if (on) {
+    emit("change", value);
+  }
+};
 
 watch(
   () => props.target,
