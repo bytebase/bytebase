@@ -6,7 +6,7 @@ tmp_dir = ".air"
   ## Use --tags "store.db" to enable SQL query logging against our metadata db.
   cmd = """
   go build \
-  --tags "embed_frontend" \
+  --tags "" \
   -gcflags=all=\"-N -l\" \
   -ldflags " \
   -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=development' \
