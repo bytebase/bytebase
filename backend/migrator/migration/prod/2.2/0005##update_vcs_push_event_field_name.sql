@@ -15,7 +15,7 @@ WITH updates AS (
         )) AS new_payload FROM instance_change_history
     LEFT JOIN jsonb_array_elements((payload->'pushEvent'->>'commits')::jsonb) WITH ORDINALITY c(o, position) ON TRUE
 	WHERE payload->'pushEvent'->>'commits' IS NOT NULL AND jsonb_array_length(payload->'pushEvent'->'commits') > 0 AND payload->'pushEvent'->'commits'->0 ? 'ID'
-	GROUP BY id
+	GROUP BY id, payload
 )
 UPDATE instance_change_history
 SET payload = updates.new_payload
@@ -39,7 +39,7 @@ WITH updates AS (
         )) AS new_payload FROM task
     LEFT JOIN jsonb_array_elements((payload->'pushEvent'->>'commits')::jsonb) WITH ORDINALITY c(o, position) ON TRUE
 	WHERE payload->'pushEvent'->>'commits' IS NOT NULL AND jsonb_array_length(payload->'pushEvent'->'commits') > 0 AND payload->'pushEvent'->'commits'->0 ? 'ID'
-	GROUP BY id
+	GROUP BY id, payload
 )
 UPDATE task
 SET payload = updates.new_payload
@@ -63,7 +63,7 @@ WITH updates AS (
         )) AS new_payload FROM activity
     LEFT JOIN jsonb_array_elements((payload->'pushEvent'->>'commits')::jsonb) WITH ORDINALITY c(o, position) ON TRUE
 	WHERE payload->'pushEvent'->>'commits' IS NOT NULL AND jsonb_array_length(payload->'pushEvent'->'commits') > 0 AND payload->'pushEvent'->'commits'->0 ? 'ID'
-	GROUP BY id
+	GROUP BY id, payload
 )
 UPDATE activity
 SET payload = updates.new_payload
