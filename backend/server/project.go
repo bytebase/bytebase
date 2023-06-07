@@ -48,7 +48,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.Workflow, api.VCSWorkflow))
 		}
 
-		repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{ProjectID: &projectID})
+		repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{ProjectResourceID: &project.ResourceID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find relevant VCS repo, Project ID: %d", projectID)).SetInternal(err)
 		}
@@ -56,12 +56,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found by project ID: %d", projectID))
 		}
 
-		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
+		vcs, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync sheet: %d", repo.VCSID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync sheet: %d", repo.VCSUID)).SetInternal(err)
 		}
 		if vcs == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found by ID: %d", repo.VCSID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found by ID: %d", repo.VCSUID))
 		}
 
 		basePath := filepath.Dir(repo.SheetPathTemplate)

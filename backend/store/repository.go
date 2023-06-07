@@ -12,17 +12,17 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// repositoryRaw is the store model for a Repository.
-// Fields have exactly the same meanings as Repository.
-type repositoryRaw struct {
-	ID int
+// RepositoryMessage is the message for a repository.
+type RepositoryMessage struct {
+	// Output only
+	UID int
 
 	// Related fields
-	VCSID     int
-	ProjectID int
+	VCSUID            int
+	ProjectResourceID string
 
 	// Domain specific fields
-	Name               string
+	Title              string
 	FullPath           string
 	WebURL             string
 	BranchFilter       string
@@ -41,150 +41,41 @@ type repositoryRaw struct {
 	RefreshToken       string
 }
 
-// toRepository creates an instance of Repository based on the repositoryRaw.
-// This is intended to be called when we need to compose a Repository relationship.
-func (raw *repositoryRaw) toRepository() *api.Repository {
-	return &api.Repository{
-		ID: raw.ID,
-
-		VCSID:     raw.VCSID,
-		ProjectID: raw.ProjectID,
-
-		Name:               raw.Name,
-		FullPath:           raw.FullPath,
-		WebURL:             raw.WebURL,
-		BranchFilter:       raw.BranchFilter,
-		BaseDirectory:      raw.BaseDirectory,
-		FilePathTemplate:   raw.FilePathTemplate,
-		SchemaPathTemplate: raw.SchemaPathTemplate,
-		SheetPathTemplate:  raw.SheetPathTemplate,
-		EnableSQLReviewCI:  raw.EnableSQLReviewCI,
-		ExternalID:         raw.ExternalID,
-		ExternalWebhookID:  raw.ExternalWebhookID,
-		WebhookURLHost:     raw.WebhookURLHost,
-		WebhookEndpointID:  raw.WebhookEndpointID,
-		WebhookSecretToken: raw.WebhookSecretToken,
-		AccessToken:        raw.AccessToken,
-		ExpiresTs:          raw.ExpiresTs,
-		RefreshToken:       raw.RefreshToken,
-	}
+// FindRepositoryMessage is the message for finding repositories.
+type FindRepositoryMessage struct {
+	UID               *int
+	WebURL            *string
+	VCSUID            *int
+	ProjectResourceID *string
+	WebhookEndpointID *string
 }
 
-// CreateRepository creates an instance of Repository.
-func (s *Store) CreateRepository(ctx context.Context, create *api.RepositoryCreate) (*api.Repository, error) {
-	repositoryRaw, err := s.createRepositoryRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Repository with RepositoryCreate[%+v]", create)
-	}
-	repository, err := s.composeRepository(ctx, repositoryRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Repository with repositoryRaw[%+v]", repositoryRaw)
-	}
-	return repository, nil
+// PatchRepositoryMessage is the API message for patching a repository.
+type PatchRepositoryMessage struct {
+	UID    *int
+	WebURL *string
+
+	// Domain specific fields
+	BranchFilter       *string
+	BaseDirectory      *string
+	FilePathTemplate   *string
+	SchemaPathTemplate *string
+	SheetPathTemplate  *string
+	EnableSQLReviewCI  *bool
+	AccessToken        *string
+	ExpiresTs          *int64
+	RefreshToken       *string
 }
 
-// GetRepository gets an instance of Repository.
-func (s *Store) GetRepository(ctx context.Context, find *api.RepositoryFind) (*api.Repository, error) {
-	repositoryRaw, err := s.getRepositoryRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Repository with RepositoryFind[%+v]", find)
-	}
-	if repositoryRaw == nil {
-		return nil, nil
-	}
-	repository, err := s.composeRepository(ctx, repositoryRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Repository with repositoryRaw[%+v]", repositoryRaw)
-	}
-	return repository, nil
-}
-
-// FindRepository finds a list of Repository instances.
-func (s *Store) FindRepository(ctx context.Context, find *api.RepositoryFind) ([]*api.Repository, error) {
-	repositoryRawList, err := s.findRepositoryRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Repository list with RepositoryFind[%+v]", find)
-	}
-	var repositoryList []*api.Repository
-	for _, raw := range repositoryRawList {
-		repository, err := s.composeRepository(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Repository with repositoryRaw[%+v]", raw)
-		}
-		repositoryList = append(repositoryList, repository)
-	}
-	return repositoryList, nil
-}
-
-// PatchRepository patches an instance of Repository.
-func (s *Store) PatchRepository(ctx context.Context, patch *api.RepositoryPatch) (*api.Repository, error) {
-	repositoryRaw, err := s.patchRepositoryRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Repository with RepositoryPatch[%+v]", patch)
-	}
-	repository, err := s.composeRepository(ctx, repositoryRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Repository with repositoryRaw[%+v]", repositoryRaw)
-	}
-	return repository, nil
-}
-
-// DeleteRepository deletes an existing repository by ID.
-func (s *Store) DeleteRepository(ctx context.Context, delete *api.RepositoryDelete) error {
-	if delete.ProjectID == 0 {
-		return errors.Errorf("project ID must be set")
-	}
-	if delete.ProjectResourceID == "" {
-		return errors.Errorf("project resource ID must be set")
-	}
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if err := s.deleteRepositoryImpl(ctx, tx, delete); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-//
-// private functions
-//
-
-func (s *Store) composeRepository(ctx context.Context, raw *repositoryRaw) (*api.Repository, error) {
-	repository := raw.toRepository()
-
-	vcs, err := s.GetVCSByID(ctx, repository.VCSID)
-	if err != nil {
-		return nil, err
-	}
-	// We should always expect VCS to exist when ID isn't the default zero.
-	if repository.VCSID > 0 && vcs == nil {
-		return nil, errors.Errorf("VCS not found for ID: %v", repository.VCSID)
-	}
-	repository.VCS = vcs
-
-	project, err := s.GetProjectByID(ctx, repository.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	repository.Project = project
-
-	return repository, nil
-}
-
-// createRepositoryRaw creates a new repository.
-func (s *Store) createRepositoryRaw(ctx context.Context, create *api.RepositoryCreate) (*repositoryRaw, error) {
+// CreateRepositoryV2 creates the repository.
+func (s *Store) CreateRepositoryV2(ctx context.Context, create *RepositoryMessage, creatorUID int) (*RepositoryMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	repository, err := s.createRepositoryImpl(ctx, tx, create)
+	repository, err := s.createRepositoryImplV2(ctx, tx, create, creatorUID)
 	if err != nil {
 		return nil, err
 	}
@@ -193,35 +84,21 @@ func (s *Store) createRepositoryRaw(ctx context.Context, create *api.RepositoryC
 		return nil, err
 	}
 
+	s.removeProjectCache(create.ProjectResourceID)
+
 	return repository, nil
 }
 
-// findRepositoryRaw retrieves a list of repositories based on find.
-func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind) ([]*repositoryRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	list, err := s.findRepositoryImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-// getRepositoryRaw retrieves a single repository based on find.
+// GetRepositoryV2 gets an instance of repository.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) (*repositoryRaw, error) {
+func (s *Store) GetRepositoryV2(ctx context.Context, find *FindRepositoryMessage) (*RepositoryMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	list, err := s.findRepositoryImpl(ctx, tx, find)
+	list, err := s.listRepositoryImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -234,16 +111,31 @@ func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) 
 	return list[0], nil
 }
 
-// patchRepositoryRaw updates an existing repository by ID.
-// Returns ENOTFOUND if repository does not exist.
-func (s *Store) patchRepositoryRaw(ctx context.Context, patch *api.RepositoryPatch) (*repositoryRaw, error) {
+// ListRepositoryV2 lists repository.
+func (s *Store) ListRepositoryV2(ctx context.Context, find *FindRepositoryMessage) ([]*RepositoryMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	list, err := s.listRepositoryImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+// PatchRepositoryV2 patches an instance of Repository.
+func (s *Store) PatchRepositoryV2(ctx context.Context, patch *PatchRepositoryMessage, updaterID int) (*RepositoryMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	repository, err := s.patchRepositoryImpl(ctx, tx, patch)
+	repository, err := s.patchRepositoryImplV2(ctx, tx, patch, updaterID)
 	if err != nil {
 		return nil, err
 	}
@@ -255,23 +147,44 @@ func (s *Store) patchRepositoryRaw(ctx context.Context, patch *api.RepositoryPat
 	return repository, nil
 }
 
-// createRepositoryImpl creates a new repository.
-func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.RepositoryCreate) (*repositoryRaw, error) {
+// DeleteRepositoryV2 deletes an existing repository by ID.
+func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string, deleterID int) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := s.deleteRepositoryImplV2(ctx, tx, projectResourceID, deleterID); err != nil {
+		return err
+	}
+
+	s.removeProjectCache(projectResourceID)
+
+	return tx.Commit()
+}
+
+// createRepositoryImplV2 creates a new repository.
+func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *RepositoryMessage, creatorID int) (*RepositoryMessage, error) {
 	// Updates the project workflow_type to "VCS"
 	// TODO(d): ideally, we should not update project fields on repository changes.
 	workflowType := api.VCSWorkflow
 	update := &UpdateProjectMessage{
-		UpdaterID:  create.CreatorID,
+		UpdaterID:  creatorID,
 		ResourceID: create.ProjectResourceID,
 		Workflow:   &workflowType,
 	}
-	if _, err := s.updateProjectImplV2(ctx, tx, update); err != nil {
+	project, err := s.updateProjectImplV2(ctx, tx, update)
+	if err != nil {
 		return nil, err
 	}
-	s.projectCache.Delete(create.ProjectResourceID)
-	s.projectIDCache.Delete(create.ProjectID)
+	if project == nil {
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot found project %s", create.ProjectResourceID)}
+	}
 
-	var repository repositoryRaw
+	repository := RepositoryMessage{
+		ProjectResourceID: project.ResourceID,
+	}
 	// Insert row into database.
 	query := `
 		INSERT INTO repository (
@@ -298,14 +211,14 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 			refresh_token
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
-		RETURNING id, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		RETURNING id, vcs_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`
 	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.VCSID,
-		create.ProjectID,
-		create.Name,
+		creatorID,
+		creatorID,
+		create.VCSUID,
+		project.UID,
+		create.Title,
 		create.FullPath,
 		create.WebURL,
 		create.BranchFilter,
@@ -323,10 +236,9 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 		create.ExpiresTs,
 		create.RefreshToken,
 	).Scan(
-		&repository.ID,
-		&repository.VCSID,
-		&repository.ProjectID,
-		&repository.Name,
+		&repository.UID,
+		&repository.VCSUID,
+		&repository.Title,
 		&repository.FullPath,
 		&repository.WebURL,
 		&repository.BranchFilter,
@@ -352,31 +264,31 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 	return &repository, nil
 }
 
-func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.RepositoryFind) ([]*repositoryRaw, error) {
+func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindRepositoryMessage) ([]*RepositoryMessage, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []any{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("repository.id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.VCSID; v != nil {
+	if v := find.VCSUID; v != nil {
 		where, args = append(where, fmt.Sprintf("vcs_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.WebhookEndpointID; v != nil {
-		where, args = append(where, fmt.Sprintf("webhook_endpoint_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.WebURL; v != nil {
 		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.WebhookEndpointID; v != nil {
+		where, args = append(where, fmt.Sprintf("webhook_endpoint_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ProjectResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
+			repository.id AS id,
 			vcs_id,
-			project_id,
-			name,
+			project.resource_id AS project_resource_id,
+			repository.name AS name,
 			full_path,
 			web_url,
 			branch_filter,
@@ -394,6 +306,7 @@ func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.Reposito
 			expires_ts,
 			refresh_token
 		FROM repository
+		LEFT JOIN project ON project.id = repository.project_id
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
@@ -403,14 +316,14 @@ func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.Reposito
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into repoRawList.
-	var repoRawList []*repositoryRaw
+	var repoRawList []*RepositoryMessage
 	for rows.Next() {
-		var repository repositoryRaw
+		var repository RepositoryMessage
 		if err := rows.Scan(
-			&repository.ID,
-			&repository.VCSID,
-			&repository.ProjectID,
-			&repository.Name,
+			&repository.UID,
+			&repository.VCSUID,
+			&repository.ProjectResourceID,
+			&repository.Title,
 			&repository.FullPath,
 			&repository.WebURL,
 			&repository.BranchFilter,
@@ -441,9 +354,10 @@ func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.Reposito
 }
 
 // patchRepositoryImpl updates a repository by ID. Returns the new state of the repository after update.
-func (*Store) patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*repositoryRaw, error) {
+// Returns ENOTFOUND if repository does not exist.
+func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRepositoryMessage, updaterID int) (*RepositoryMessage, error) {
 	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
+	set, args := []string{"updater_id = $1"}, []any{updaterID}
 	if v := patch.BranchFilter; v != nil {
 		set, args = append(set, fmt.Sprintf("branch_filter = $%d", len(args)+1)), append(args, *v)
 	}
@@ -468,9 +382,13 @@ func (*Store) patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.Reposi
 	if v := patch.RefreshToken; v != nil {
 		set, args = append(set, fmt.Sprintf("refresh_token = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.EnableSQLReviewCI; v != nil {
+		set, args = append(set, fmt.Sprintf("enable_sql_review_ci = $%d", len(args)+1)), append(args, *v)
+	}
+
 	where := []string{}
-	if v := patch.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	if v := patch.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("repository.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.WebURL; v != nil {
 		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
@@ -478,24 +396,42 @@ func (*Store) patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.Reposi
 	if len(where) == 0 {
 		return nil, common.Errorf(common.Invalid, "missing predicate in where clause for patching repository")
 	}
-	if v := patch.EnableSQLReviewCI; v != nil {
-		set, args = append(set, fmt.Sprintf("enable_sql_review_ci = $%d", len(args)+1)), append(args, *v)
-	}
 
-	var repository repositoryRaw
+	var repository RepositoryMessage
 	// Execute update query with RETURNING.
 	if err := tx.QueryRowContext(ctx, `
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
-		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		FROM project
+		WHERE project.id = repository.project_id AND `+strings.Join(where, " AND ")+`
+		RETURNING
+			repository.id AS id,
+			vcs_id,
+			project.resource_id AS project_resource_id,
+			repository.name AS name,
+			full_path,
+			web_url,
+			branch_filter,
+			base_directory,
+			file_path_template,
+			schema_path_template,
+			sheet_path_template,
+			enable_sql_review_ci,
+			external_id,
+			external_webhook_id,
+			webhook_url_host,
+			webhook_endpoint_id,
+			webhook_secret_token,
+			access_token,
+			expires_ts,
+			refresh_token
 		`,
 		args...,
 	).Scan(
-		&repository.ID,
-		&repository.VCSID,
-		&repository.ProjectID,
-		&repository.Name,
+		&repository.UID,
+		&repository.VCSUID,
+		&repository.ProjectResourceID,
+		&repository.Title,
 		&repository.FullPath,
 		&repository.WebURL,
 		&repository.BranchFilter,
@@ -514,28 +450,32 @@ func (*Store) patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.Reposi
 		&repository.RefreshToken,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("repository ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("repository ID not found: %d", patch.UID)}
 		}
 		return nil, err
 	}
 	return &repository, nil
 }
 
-// deleteRepositoryImpl permanently deletes a repository by ID.
-func (s *Store) deleteRepositoryImpl(ctx context.Context, tx *Tx, delete *api.RepositoryDelete) error {
+// deleteRepositoryImplV2 permanently deletes a repository by ID.
+func (s *Store) deleteRepositoryImplV2(ctx context.Context, tx *Tx, projectResourceID string, deleterID int) error {
 	// Updates the project workflow_type to "UI"
 	// TODO(d): ideally, we should not update project fields on repository changes.
 	workflowType := api.UIWorkflow
 	update := &UpdateProjectMessage{
-		UpdaterID:  delete.DeleterID,
-		ResourceID: delete.ProjectResourceID,
+		UpdaterID:  deleterID,
+		ResourceID: projectResourceID,
 		Workflow:   &workflowType,
 	}
-	if _, err := s.updateProjectImplV2(ctx, tx, update); err != nil {
+	project, err := s.updateProjectImplV2(ctx, tx, update)
+	if err != nil {
 		return err
 	}
+	if project == nil {
+		return &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot found project %s", projectResourceID)}
+	}
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = $1`, delete.ProjectID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = $1`, project.UID); err != nil {
 		return err
 	}
 	return nil

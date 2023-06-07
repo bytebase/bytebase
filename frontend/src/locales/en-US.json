@@ -251,7 +251,8 @@
       "years": "{years} year"
     },
     "expiration": "Expiration",
-    "configure": "Configure"
+    "configure": "Configure",
+    "database-groups": "Database Groups"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1161,7 +1162,7 @@
       "restore-before-last-migration": "Restore to the point before last migration",
       "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}.",
       "restore-to": "Restore",
-      "restore-to-new-db": " To new database",
+      "restore-to-new-db": "To new database",
       "restore-to-in-place": "In place"
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
@@ -2009,8 +2010,8 @@
         "desc": "Store your secrets of database and use them in your issue SQL scripts."
       },
       "bb-feature-database-grouping": {
-        "title": "Database/schema grouping",
-        "desc": "Support grouping of databases and tables. When changing, you can select database grouping and change its table grouping."
+        "title": "Database Group",
+        "desc": "Database group allows you to apply batch operations to the databases from the database group."
       },
       "bb-feature-disallow-signup": {
         "title": "Disable self-service signup",
@@ -2524,7 +2525,7 @@
     "select-role": "Select role"
   },
   "database-group": {
-    "self": "Database group",
+    "self": "Database Group",
     "create": "New database group",
     "edit": "Edit database group",
     "matched-database": "Matched database",
@@ -2542,6 +2543,12 @@
     },
     "condition": {
       "self": "Condition"
+    },
+    "prev-editor": {
+      "description": "To batch change tables from the table group, you can reference that table group in SQL. Bytebase will generate a separate SQL for each table in the table group."
     }
+  },
+  "export-center": {
+    "self": "Export Center"
   }
 }

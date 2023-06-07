@@ -249,7 +249,8 @@
       "years": "{years} 年"
     },
     "expiration": "过期时间",
-    "configure": "配置"
+    "configure": "配置",
+    "database-groups": "数据库分组"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2005,8 +2006,8 @@
         "desc": "存储数据库的保密变量，并在工单的 SQL 中使用它们。"
       },
       "bb-feature-database-grouping": {
-        "title": "数据库/表分组",
-        "desc": "支持对数据库和表进行分组，变更时可选择数据库分组，对其表分组进行变更。"
+        "title": "数据库分组",
+        "desc": "数据库分组让您可以对数据库分组里的数据库进行批量操作。"
       },
       "bb-feature-disallow-signup": {
         "title": "禁用自助注册",
@@ -2188,7 +2189,9 @@
     "instance": "实例",
     "project": "项目",
     "idp": "身份提供商",
-    "role": "角色"
+    "role": "角色",
+    "database-group": "数据库分组",
+    "schema-group": "表分组"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -2534,6 +2537,12 @@
     },
     "condition": {
       "self": "条件"
+    },
+    "prev-editor": {
+      "description": "您可以在 SQL 中引用表分组来对表分组内的所有表进行批量变更。对于每一张表，Bytebase 都会生成单独的 SQL。"
     }
+  },
+  "export-center": {
+    "self": "导出中心"
   }
 }

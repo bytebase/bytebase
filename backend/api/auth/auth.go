@@ -103,6 +103,41 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 	return handler(childCtx, request)
 }
 
+// AuthenticationStreamInterceptor is the unary interceptor for gRPC API.
+func (in *APIAuthInterceptor) AuthenticationStreamInterceptor(request any, ss grpc.ServerStream, serverInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	ctx := ss.Context()
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
+	}
+	accessTokenStr, refreshTokenStr, err := getTokenFromMetadata(md)
+	if err != nil {
+		return status.Errorf(codes.Unauthenticated, err.Error())
+	}
+
+	principalID, err := in.authenticate(ctx, accessTokenStr, refreshTokenStr)
+	if err != nil {
+		if IsAuthenticationAllowed(serverInfo.FullMethod) {
+			return handler(request, ss)
+		}
+		return err
+	}
+
+	// Stores principalID into context.
+	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
+	sss := overrideStream{ServerStream: ss, childCtx: childCtx}
+	return handler(request, sss)
+}
+
+type overrideStream struct {
+	childCtx context.Context
+	grpc.ServerStream
+}
+
+func (s overrideStream) Context() context.Context {
+	return s.childCtx
+}
+
 func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, refreshTokenStr string) (int, error) {
 	if accessTokenStr == "" {
 		return 0, status.Errorf(codes.Unauthenticated, "access token not found")

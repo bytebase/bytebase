@@ -74,9 +74,9 @@ func TestTenant(t *testing.T) {
 		a.NoError(err)
 		prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 	}
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
-	testEnvironment, _, err := ctl.getEnvironment(ctx, "test")
+	testEnvironment, err := ctl.getEnvironment(ctx, "test")
 	a.NoError(err)
 
 	// Add the provisioned instances.
@@ -370,9 +370,9 @@ func TestTenantVCS(t *testing.T) {
 				a.NoError(err)
 				prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 			}
-			prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
-			testEnvironment, _, err := ctl.getEnvironment(ctx, "test")
+			testEnvironment, err := ctl.getEnvironment(ctx, "test")
 			a.NoError(err)
 
 			// Add the provisioned instances.
@@ -533,9 +533,9 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	prodInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, prodInstanceName)
 	a.NoError(err)
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
-	testEnvironment, _, err := ctl.getEnvironment(ctx, "test")
+	testEnvironment, err := ctl.getEnvironment(ctx, "test")
 	a.NoError(err)
 
 	// Add the provisioned instances.
@@ -827,9 +827,9 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				a.NoError(err)
 				prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 			}
-			prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+			prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 			a.NoError(err)
-			testEnvironment, _, err := ctl.getEnvironment(ctx, "test")
+			testEnvironment, err := ctl.getEnvironment(ctx, "test")
 			a.NoError(err)
 
 			// Add the provisioned instances.
@@ -1122,7 +1122,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				a.NoError(err)
 				testInstanceDirs = append(testInstanceDirs, instanceDir)
 			}
-			testEnvironment, _, err := ctl.getEnvironment(ctx, "test")
+			testEnvironment, err := ctl.getEnvironment(ctx, "test")
 			a.NoError(err)
 
 			// Add the provisioned instances.
@@ -1388,7 +1388,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 				a.NoError(err)
 				testInstanceDirs = append(testInstanceDirs, instanceDir)
 			}
-			testEnvironment, _, err := ctl.getEnvironment(ctx, "test")
+			testEnvironment, err := ctl.getEnvironment(ctx, "test")
 			a.NoError(err)
 
 			// Add the provisioned instances.

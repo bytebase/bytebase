@@ -26,6 +26,7 @@ const (
 	EnvironmentService_UpdateEnvironment_FullMethodName   = "/bytebase.v1.EnvironmentService/UpdateEnvironment"
 	EnvironmentService_DeleteEnvironment_FullMethodName   = "/bytebase.v1.EnvironmentService/DeleteEnvironment"
 	EnvironmentService_UndeleteEnvironment_FullMethodName = "/bytebase.v1.EnvironmentService/UndeleteEnvironment"
+	EnvironmentService_UpdateBackupSetting_FullMethodName = "/bytebase.v1.EnvironmentService/UpdateBackupSetting"
 )
 
 // EnvironmentServiceClient is the client API for EnvironmentService service.
@@ -38,6 +39,7 @@ type EnvironmentServiceClient interface {
 	UpdateEnvironment(ctx context.Context, in *UpdateEnvironmentRequest, opts ...grpc.CallOption) (*Environment, error)
 	DeleteEnvironment(ctx context.Context, in *DeleteEnvironmentRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteEnvironment(ctx context.Context, in *UndeleteEnvironmentRequest, opts ...grpc.CallOption) (*Environment, error)
+	UpdateBackupSetting(ctx context.Context, in *UpdateEnvironmentBackupSettingRequest, opts ...grpc.CallOption) (*EnvironmentBackupSetting, error)
 }
 
 type environmentServiceClient struct {
@@ -102,6 +104,15 @@ func (c *environmentServiceClient) UndeleteEnvironment(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *environmentServiceClient) UpdateBackupSetting(ctx context.Context, in *UpdateEnvironmentBackupSettingRequest, opts ...grpc.CallOption) (*EnvironmentBackupSetting, error) {
+	out := new(EnvironmentBackupSetting)
+	err := c.cc.Invoke(ctx, EnvironmentService_UpdateBackupSetting_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EnvironmentServiceServer is the server API for EnvironmentService service.
 // All implementations must embed UnimplementedEnvironmentServiceServer
 // for forward compatibility
@@ -112,6 +123,7 @@ type EnvironmentServiceServer interface {
 	UpdateEnvironment(context.Context, *UpdateEnvironmentRequest) (*Environment, error)
 	DeleteEnvironment(context.Context, *DeleteEnvironmentRequest) (*emptypb.Empty, error)
 	UndeleteEnvironment(context.Context, *UndeleteEnvironmentRequest) (*Environment, error)
+	UpdateBackupSetting(context.Context, *UpdateEnvironmentBackupSettingRequest) (*EnvironmentBackupSetting, error)
 	mustEmbedUnimplementedEnvironmentServiceServer()
 }
 
@@ -136,6 +148,9 @@ func (UnimplementedEnvironmentServiceServer) DeleteEnvironment(context.Context, 
 }
 func (UnimplementedEnvironmentServiceServer) UndeleteEnvironment(context.Context, *UndeleteEnvironmentRequest) (*Environment, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndeleteEnvironment not implemented")
+}
+func (UnimplementedEnvironmentServiceServer) UpdateBackupSetting(context.Context, *UpdateEnvironmentBackupSettingRequest) (*EnvironmentBackupSetting, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBackupSetting not implemented")
 }
 func (UnimplementedEnvironmentServiceServer) mustEmbedUnimplementedEnvironmentServiceServer() {}
 
@@ -258,6 +273,24 @@ func _EnvironmentService_UndeleteEnvironment_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EnvironmentService_UpdateBackupSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateEnvironmentBackupSettingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EnvironmentServiceServer).UpdateBackupSetting(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EnvironmentService_UpdateBackupSetting_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EnvironmentServiceServer).UpdateBackupSetting(ctx, req.(*UpdateEnvironmentBackupSettingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // EnvironmentService_ServiceDesc is the grpc.ServiceDesc for EnvironmentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -288,6 +321,10 @@ var EnvironmentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UndeleteEnvironment",
 			Handler:    _EnvironmentService_UndeleteEnvironment_Handler,
+		},
+		{
+			MethodName: "UpdateBackupSetting",
+			Handler:    _EnvironmentService_UpdateBackupSetting_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

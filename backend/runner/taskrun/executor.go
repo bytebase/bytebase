@@ -369,8 +369,8 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		log.Error("failed to find containing issue", zap.Error(err))
 	}
-	repo, err := stores.GetRepository(ctx, &api.RepositoryFind{
-		ProjectID: &project.UID,
+	repo, err := stores.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
+		ProjectResourceID: &project.ResourceID,
 	})
 	if err != nil {
 		return true, nil, errors.Errorf("failed to find linked repository for database %q", database.DatabaseName)
@@ -411,14 +411,13 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_ID}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
 
-		vcs, err := stores.GetVCSByID(ctx, repo.VCSID)
+		vcs, err := stores.GetExternalVersionControlV2(ctx, repo.VCSUID)
 		if err != nil {
 			return true, nil, errors.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, database.DatabaseName)
 		}
 		if vcs == nil {
-			return true, nil, errors.Errorf("VCS ID not found: %d", repo.VCSID)
+			return true, nil, errors.Errorf("VCS ID not found: %d", repo.VCSUID)
 		}
-		repo.VCS = vcs
 
 		bytebaseURL := ""
 		if issue != nil {
@@ -430,7 +429,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			bytebaseURL = fmt.Sprintf("%s/issue/%s-%d?stage=%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID, task.StageID)
 		}
 
-		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcsPushEvent, mi, writebackBranch, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcs, vcsPushEvent, mi, writebackBranch, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}
@@ -439,7 +438,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		{
 			payload, err := json.Marshal(api.ActivityPipelineTaskFileCommitPayload{
 				TaskID:             task.ID,
-				VCSInstanceURL:     repo.VCS.InstanceURL,
+				VCSInstanceURL:     vcs.InstanceURL,
 				RepositoryFullPath: repo.FullPath,
 				Branch:             repo.BranchFilter,
 				FilePath:           latestSchemaFile,
@@ -501,7 +500,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}, nil
 }
 
-func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI.LicenseService, project *store.ProjectMessage, repo *api.Repository, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent) (string, error) {
+func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI.LicenseService, project *store.ProjectMessage, repo *store.RepositoryMessage, task *store.TaskMessage, vcsPushEvent *vcsPlugin.PushEvent) (string, error) {
 	if !license.IsFeatureEnabled(api.FeatureVCSSchemaWriteBack) {
 		return "", nil
 	}
@@ -570,17 +569,25 @@ func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.
 
 // Writes back the latest schema to the repository after migration.
 // Returns the commit id on success.
-func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, writebackBranch, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
-	schemaFileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+func writeBackLatestSchema(
+	ctx context.Context,
+	storage *store.Store,
+	repository *store.RepositoryMessage,
+	vcs *store.ExternalVersionControlMessage,
+	pushEvent *vcsPlugin.PushEvent,
+	mi *db.MigrationInfo,
+	writebackBranch, latestSchemaFile string, schema string, bytebaseURL string,
+) (string, error) {
+	schemaFileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
-			ClientID:     repository.VCS.ApplicationID,
-			ClientSecret: repository.VCS.Secret,
+			ClientID:     vcs.ApplicationID,
+			ClientSecret: vcs.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, storage, repository.WebURL),
 		},
-		repository.VCS.InstanceURL,
+		vcs.InstanceURL,
 		repository.ExternalID,
 		latestSchemaFile,
 		writebackBranch,
@@ -628,12 +635,9 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 	// Retrieve the latest AccessToken and RefreshToken as the previous VCS call may have
 	// updated the stored token pair. VCS will fetch and store the new token pair if the
 	// existing token pair has expired.
-	repo2, err := store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
+	repo2, vcs2, err := getRepositoryAndVCS(ctx, storage, repository.UID, repository.VCSUID)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to fetch repository for schema write-back")
-	}
-	if repo2 == nil {
-		return "", errors.Errorf("repository not found for schema write-back: %v", repository.ID)
+		return "", err
 	}
 
 	schemaFileCommit := vcsPlugin.FileCommitCreate{
@@ -648,16 +652,16 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 			zap.String("schema_file", latestSchemaFile),
 		)
 
-		err := vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).CreateFile(
+		err := vcsPlugin.Get(vcs2.Type, vcsPlugin.ProviderConfig{}).CreateFile(
 			ctx,
 			common.OauthContext{
-				ClientID:     repo2.VCS.ApplicationID,
-				ClientSecret: repo2.VCS.Secret,
+				ClientID:     vcs2.ApplicationID,
+				ClientSecret: vcs2.Secret,
 				AccessToken:  repo2.AccessToken,
 				RefreshToken: repo2.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, store, repo2.WebURL),
+				Refresher:    utils.RefreshToken(ctx, storage, repo2.WebURL),
 			},
-			repo2.VCS.InstanceURL,
+			vcs2.InstanceURL,
 			repo2.ExternalID,
 			latestSchemaFile,
 			schemaFileCommit,
@@ -672,16 +676,16 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 
 		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID
 		schemaFileCommit.SHA = schemaFileMeta.SHA
-		err := vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
+		err := vcsPlugin.Get(vcs2.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
 			ctx,
 			common.OauthContext{
-				ClientID:     repo2.VCS.ApplicationID,
-				ClientSecret: repo2.VCS.Secret,
+				ClientID:     vcs2.ApplicationID,
+				ClientSecret: vcs2.Secret,
 				AccessToken:  repo2.AccessToken,
 				RefreshToken: repo2.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, store, repo2.WebURL),
+				Refresher:    utils.RefreshToken(ctx, storage, repo2.WebURL),
 			},
-			repo2.VCS.InstanceURL,
+			vcs2.InstanceURL,
 			repo2.ExternalID,
 			latestSchemaFile,
 			schemaFileCommit,
@@ -694,24 +698,22 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 	// Retrieve the latest AccessToken and RefreshToken as the previous VCS call may have
 	// updated the stored token pair. VCS will fetch and store the new token pair if the
 	// existing token pair has expired.
-	repo2, err = store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
+	repo2, vcs2, err = getRepositoryAndVCS(ctx, storage, repository.UID, repository.VCSUID)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to fetch repository after schema write-back")
+		return "", err
 	}
-	if repo2 == nil {
-		return "", errors.Errorf("repository not found after schema write-back: %v", repository.ID)
-	}
+
 	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
-	schemaFileMeta, err = vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+	schemaFileMeta, err = vcsPlugin.Get(vcs2.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
-			ClientID:     repo2.VCS.ApplicationID,
-			ClientSecret: repo2.VCS.Secret,
+			ClientID:     vcs2.ApplicationID,
+			ClientSecret: vcs2.Secret,
 			AccessToken:  repo2.AccessToken,
 			RefreshToken: repo2.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, store, repo2.WebURL),
+			Refresher:    utils.RefreshToken(ctx, storage, repo2.WebURL),
 		},
-		repo2.VCS.InstanceURL,
+		vcs2.InstanceURL,
 		repo2.ExternalID,
 		latestSchemaFile,
 		writebackBranch,
@@ -721,4 +723,24 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 		return "", errors.Wrapf(err, "failed to fetch latest schema file %s after update", latestSchemaFile)
 	}
 	return schemaFileMeta.LastCommitID, nil
+}
+
+func getRepositoryAndVCS(ctx context.Context, storage *store.Store, repoUID, vcsUID int) (*store.RepositoryMessage, *store.ExternalVersionControlMessage, error) {
+	repo, err := storage.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
+		UID: &repoUID,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to fetch repository after schema write-back")
+	}
+	if repo == nil {
+		return nil, nil, errors.Errorf("repository not found after schema write-back: %v", repoUID)
+	}
+	vcs, err := storage.GetExternalVersionControlV2(ctx, vcsUID)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to fetch vcs for schema write-back")
+	}
+	if vcs == nil {
+		return nil, nil, errors.Errorf("vcs not found for schema write-back: %v", vcsUID)
+	}
+	return repo, vcs, nil
 }

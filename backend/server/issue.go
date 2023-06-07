@@ -942,9 +942,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if !s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping) {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureDatabaseGrouping.AccessErrorMessage())
 			}
-			if len(migrationDetail.SchemaGroupNames) == 0 {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Missing schema groups when specifying database group")
-			}
 			// Deploy to given database group.
 			parts := strings.Split(migrationDetail.DatabaseGroupName, "/")
 			if len(parts) != 4 {
@@ -1139,7 +1136,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					for i := 0; i < len(schemaGroups)-1; i++ {
 						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + migrationDetailIdx*len(schemaGroups) + i, ToIndex: len(taskCreateList) + migrationDetailIdx*len(schemaGroups) + i + 1})
 					}
-					for _, schemaGroup := range schemaGroups {
+					for schemaGroupIdx, schemaGroup := range schemaGroups {
 						matches, _, err := getMatchesAndUnmatchedTables(ctx, dbSchema, schemaGroup)
 						if err != nil {
 							return nil, err
@@ -1147,7 +1144,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						if len(matches) == 0 {
 							continue
 						}
-						for _, match := range matches {
+						for matchIdx, match := range matches {
 							newStatement := strings.ReplaceAll(originalSheet.Statement, schemaGroup.Placeholder, match)
 							newSheet, err := s.store.CreateSheetV2(ctx, &store.SheetMessage{
 								ProjectUID: originalSheet.ProjectUID,
@@ -1166,7 +1163,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							// Replace the origin sheet id
 							newMigrationDetail := *migrationDetail
 							newMigrationDetail.SheetID = newSheet.UID
-							taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersion(&newMigrationDetail))
+							taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d-%03d-%03d", migrationDetailIdx, schemaGroupIdx, matchIdx)))
 							if err != nil {
 								return nil, err
 							}
@@ -1207,6 +1204,13 @@ func getOrDefaultSchemaVersion(detail *api.MigrationDetail) string {
 		return detail.SchemaVersion
 	}
 	return common.DefaultMigrationVersion()
+}
+
+func getOrDefaultSchemaVersionWithSuffix(detail *api.MigrationDetail, suffix string) string {
+	if detail.SchemaVersion != "" {
+		return detail.SchemaVersion + suffix
+	}
+	return common.DefaultMigrationVersion() + suffix
 }
 
 func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMessage, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string) (api.TaskCreate, error) {

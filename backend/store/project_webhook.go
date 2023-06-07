@@ -112,8 +112,7 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, principalUID int, pr
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.projectCache.Delete(projectResourceID)
-	s.projectIDCache.Delete(projectUID)
+	s.removeProjectCache(projectResourceID)
 	return &projectWebhook, nil
 }
 
@@ -162,7 +161,7 @@ func (s *Store) GetProjectWebhookV2(ctx context.Context, find *FindProjectWebhoo
 }
 
 // UpdateProjectWebhookV2 updates an instance of ProjectWebhook.
-func (s *Store) UpdateProjectWebhookV2(ctx context.Context, principalUID int, projectID int, projectResourceID string, projectWebhookID int, update *UpdateProjectWebhookMessage) (*ProjectWebhookMessage, error) {
+func (s *Store) UpdateProjectWebhookV2(ctx context.Context, principalUID int, projectResourceID string, projectWebhookID int, update *UpdateProjectWebhookMessage) (*ProjectWebhookMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
@@ -212,13 +211,12 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, principalUID int, pr
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.projectCache.Delete(projectResourceID)
-	s.projectIDCache.Delete(projectID)
+	s.removeProjectCache(projectResourceID)
 	return &projectWebhook, nil
 }
 
 // DeleteProjectWebhookV2 deletes an existing projectWebhook by projectUID and url.
-func (s *Store) DeleteProjectWebhookV2(ctx context.Context, projectUID int, projectResourceID string, projectWebhookUID int) error {
+func (s *Store) DeleteProjectWebhookV2(ctx context.Context, projectResourceID string, projectWebhookUID int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
@@ -232,8 +230,7 @@ func (s *Store) DeleteProjectWebhookV2(ctx context.Context, projectUID int, proj
 		return errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.projectCache.Delete(projectResourceID)
-	s.projectIDCache.Delete(projectUID)
+	s.removeProjectCache(projectResourceID)
 	return nil
 }
 

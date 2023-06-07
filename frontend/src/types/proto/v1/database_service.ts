@@ -456,7 +456,7 @@ export interface DatabaseSchema {
 export interface BackupSetting {
   /**
    * The name of the database backup setting.
-   * Format: instances/{instance}/databases/{database}/backupSettings
+   * Format: instances/{instance}/databases/{database}/backupSetting
    */
   name: string;
   /**

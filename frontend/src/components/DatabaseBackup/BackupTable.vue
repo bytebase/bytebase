@@ -66,54 +66,67 @@
       </BBGrid>
     </div>
 
+    <Drawer
+      :show="state.restoreBackupContext !== undefined"
+      @close="state.restoreBackupContext = undefined"
+    >
+      <DrawerContent
+        v-if="state.restoreBackupContext"
+        :title="$t('database.restore-database')"
+      >
+        <div class="w-72">
+          <div v-if="allowRestoreInPlace" class="space-y-4">
+            <RestoreTargetForm
+              :target="state.restoreBackupContext.target"
+              first="NEW"
+              @change="state.restoreBackupContext!.target = $event"
+            />
+          </div>
+
+          <div class="mt-2">
+            <CreateDatabasePrepForm
+              v-if="state.restoreBackupContext.target === 'NEW'"
+              ref="createDatabasePrepForm"
+              :project-id="database.projectEntity.uid"
+              :environment-id="database.instanceEntity.environmentEntity.uid"
+              :instance-id="database.instanceEntity.uid"
+              :backup="state.restoreBackupContext.backup"
+              @dismiss="state.restoreBackupContext = undefined"
+            />
+          </div>
+          <div
+            v-if="state.creatingRestoreIssue"
+            class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
+          >
+            <BBSpin />
+          </div>
+        </div>
+
+        <template #footer>
+          <div v-if="state.restoreBackupContext.target === 'NEW'">
+            <CreateDatabasePrepButtonGroup :form="createDatabasePrepForm" />
+          </div>
+
+          <div
+            v-if="state.restoreBackupContext.target === 'IN-PLACE'"
+            class="w-full flex justify-end gap-x-3"
+          >
+            <NButton @click="state.restoreBackupContext = undefined">
+              {{ $t("common.cancel") }}
+            </NButton>
+
+            <NButton type="primary" @click="doRestoreInPlace">
+              {{ $t("common.confirm") }}
+            </NButton>
+          </div>
+        </template>
+      </DrawerContent>
+    </Drawer>
     <BBModal
-      v-if="state.restoreBackupContext"
+      v-if="false && state.restoreBackupContext"
       :title="$t('database.restore-database')"
       @close="state.restoreBackupContext = undefined"
     >
-      <div v-if="allowRestoreInPlace" class="space-y-4 w-[35rem]">
-        <RestoreTargetForm
-          :target="state.restoreBackupContext.target"
-          @change="state.restoreBackupContext!.target = $event"
-        />
-      </div>
-
-      <CreateDatabasePrepForm
-        v-if="state.restoreBackupContext.target === 'NEW'"
-        :project-id="database.projectEntity.uid"
-        :environment-id="database.instanceEntity.environmentEntity.uid"
-        :instance-id="database.instanceEntity.uid"
-        :backup="state.restoreBackupContext.backup"
-        @dismiss="state.restoreBackupContext = undefined"
-      />
-
-      <div
-        v-if="state.restoreBackupContext.target === 'IN-PLACE'"
-        class="w-full pt-6 mt-4 flex justify-end gap-x-3 border-t border-block-border"
-      >
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click="state.restoreBackupContext = undefined"
-        >
-          {{ $t("common.cancel") }}
-        </button>
-
-        <button
-          type="button"
-          class="btn-primary py-2 px-4"
-          @click="doRestoreInPlace"
-        >
-          {{ $t("common.confirm") }}
-        </button>
-      </div>
-
-      <div
-        v-if="state.creatingRestoreIssue"
-        class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
-      >
-        <BBSpin />
-      </div>
     </BBModal>
 
     <FeatureModal
@@ -125,7 +138,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import { computed, PropType, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
@@ -139,7 +152,11 @@ import {
 } from "@/types";
 import { issueSlug, extractBackupResourceName } from "@/utils";
 import { featureToRef, useIssueStore } from "@/store";
-import CreateDatabasePrepForm from "@/components/CreateDatabasePrepForm.vue";
+import { Drawer, DrawerContent } from "@/components/v2";
+import {
+  CreateDatabasePrepForm,
+  CreateDatabasePrepButtonGroup,
+} from "@/components/CreateDatabasePrepForm";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import EllipsisText from "@/components/EllipsisText.vue";
 import {
@@ -202,6 +219,8 @@ const allowRestoreInPlace = computed((): boolean => {
 });
 
 const hasPITRFeature = featureToRef("bb.feature.pitr");
+const createDatabasePrepForm =
+  ref<InstanceType<typeof CreateDatabasePrepForm>>();
 
 const columnList = computed(() => {
   const columns: BBGridColumn[] = [

@@ -8,7 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -25,35 +27,84 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		prepareStatements string
 		query             string
 		want              bool
-		affectedRows      []string
+		affectedRows      []*v1pb.QueryResult
 	}{
 		{
 			databaseName:      "Test1",
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1);",
-			affectedRows:      []string{`[["Affected Rows"],["INT"],[[1]]]`},
+			affectedRows: []*v1pb.QueryResult{
+				{
+					ColumnNames:     []string{"Affected Rows"},
+					ColumnTypeNames: []string{"INT"},
+					Rows: []*v1pb.QueryRow{
+						{
+							Values: []*v1pb.RowValue{
+								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+							},
+						},
+					},
+				},
+			},
 		},
 		{
 			databaseName:      "Test2",
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1); DELETE FROM tbl WHERE id = 1;",
-			affectedRows:      []string{`[["Affected Rows"],["INT"],[[1]]]`, `[["Affected Rows"],["INT"],[[1]]]`},
+			affectedRows: []*v1pb.QueryResult{
+				{
+					ColumnNames:     []string{"Affected Rows"},
+					ColumnTypeNames: []string{"INT"},
+					Rows: []*v1pb.QueryRow{
+						{
+							Values: []*v1pb.RowValue{
+								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+							},
+						},
+					},
+				},
+				{
+					ColumnNames:     []string{"Affected Rows"},
+					ColumnTypeNames: []string{"INT"},
+					Rows: []*v1pb.QueryRow{
+						{
+							Values: []*v1pb.RowValue{
+								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+							},
+						},
+					},
+				},
+			},
 		},
 		{
 			databaseName:      "Test3",
 			dbType:            db.Postgres,
 			prepareStatements: "CREATE TABLE public.tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1),(2);",
-			affectedRows:      []string{`[["Affected Rows"],["INT"],[[2]]]`},
+			affectedRows: []*v1pb.QueryResult{
+				{
+					ColumnNames:     []string{"Affected Rows"},
+					ColumnTypeNames: []string{"INT"},
+					Rows: []*v1pb.QueryRow{
+						{
+							Values: []*v1pb.RowValue{
+								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 2}},
+							},
+						},
+					},
+				},
+			},
 		},
 		{
 			databaseName:      "Test4",
 			dbType:            db.Postgres,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "ALTER TABLE tbl ADD COLUMN name VARCHAR(255);",
-			affectedRows:      []string{`[[],null,[],[]]`},
+			affectedRows: []*v1pb.QueryResult{
+				{},
+			},
 		},
 	}
 
@@ -84,7 +135,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	mysqlInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -169,13 +220,14 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		singleSQLResults, err := ctl.adminQuery(instance, tt.databaseName, tt.query)
+		results, err := ctl.adminQuery(ctx, instance, tt.databaseName, tt.query)
 		a.NoError(err)
 
-		a.Equal(len(tt.affectedRows), len(singleSQLResults))
-		for idx, singleSQLResult := range singleSQLResults {
-			a.Equal("", singleSQLResult.Error)
-			a.Equal(tt.affectedRows[idx], singleSQLResult.Data)
+		a.Equal(len(tt.affectedRows), len(results))
+		for idx, result := range results {
+			a.Equal("", result.Error)
+			diff := cmp.Diff(tt.affectedRows[idx], result, protocmp.Transform())
+			a.Equal("", diff)
 		}
 	}
 }

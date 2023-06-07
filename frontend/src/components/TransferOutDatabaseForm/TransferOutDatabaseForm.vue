@@ -1,63 +1,70 @@
 <template>
-  <div class="w-[60rem] space-y-2">
-    <div class="flex items-center justify-between">
-      <div class="flex-1 flex items-center gap-x-2">
-        <span class="textlabel">
-          {{ $t("database.transfer.source-project") }}
-        </span>
-        <ProjectV1Name :project="sourceProject" :link="false" />
-      </div>
-      <div class="flex-1 flex items-center gap-x-2">
-        <span class="textlabel">
-          {{ $t("database.transfer.target-project") }}
-        </span>
-        <ProjectSelect
-          v-model:project="targetProjectId"
-          :allowed-project-role-list="
-            hasWorkspaceManageProjectPermission ? [] : [PresetRoleType.OWNER]
-          "
-          :include-default-project="true"
-          :filter="filterTargetProject"
-        />
-      </div>
-    </div>
-    <NTransfer
-      ref="transfer"
-      v-model:value="selectedValueList"
-      style="height: calc(100vh - 380px)"
-      :options="sourceTransferOptions"
-      :render-source-list="renderSourceList"
-      :render-target-list="renderTargetList"
-      :source-filterable="true"
-      :source-filter-placeholder="$t('database.search-database-name')"
-    />
-    <div class="flex items-center justify-end gap-x-2">
-      <NButton @click="$emit('dismiss')">{{ $t("common.cancel") }}</NButton>
-      <NTooltip :disabled="allowTransfer">
-        <template #trigger>
-          <NButton
-            type="primary"
-            :disabled="!allowTransfer"
-            tag="div"
-            @click="doTransfer"
-          >
-            {{ $t("common.transfer") }}
-          </NButton>
-        </template>
-        <ul>
-          <li v-for="(error, i) in validationErrors" :key="i">
-            {{ error }}
-          </li>
-        </ul>
-      </NTooltip>
-    </div>
+  <DrawerContent :title="$t('quick-action.transfer-out-db-title')">
     <div
-      v-if="loading"
-      class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
+      class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] h-full flex flex-col gap-y-2"
     >
-      <BBSpin />
+      <div class="flex items-center justify-between">
+        <div class="flex-1 flex items-center gap-x-2">
+          <span class="textlabel">
+            {{ $t("database.transfer.source-project") }}
+          </span>
+          <ProjectV1Name :project="sourceProject" :link="false" />
+        </div>
+        <div class="flex-1 flex items-center gap-x-2">
+          <span class="textlabel">
+            {{ $t("database.transfer.target-project") }}
+          </span>
+          <ProjectSelect
+            v-model:project="targetProjectId"
+            :allowed-project-role-list="
+              hasWorkspaceManageProjectPermission ? [] : [PresetRoleType.OWNER]
+            "
+            :include-default-project="true"
+            :filter="filterTargetProject"
+          />
+        </div>
+      </div>
+      <NTransfer
+        ref="transfer"
+        v-model:value="selectedValueList"
+        :options="sourceTransferOptions"
+        :render-source-list="renderSourceList"
+        :render-target-list="renderTargetList"
+        :source-filterable="true"
+        :source-filter-placeholder="$t('database.search-database-name')"
+        style="height: 100%"
+      />
+      <div
+        v-if="loading"
+        class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
+      >
+        <BBSpin />
+      </div>
     </div>
-  </div>
+
+    <template #footer>
+      <div class="flex items-center justify-end gap-x-3">
+        <NButton @click="$emit('dismiss')">{{ $t("common.cancel") }}</NButton>
+        <NTooltip :disabled="allowTransfer">
+          <template #trigger>
+            <NButton
+              type="primary"
+              :disabled="!allowTransfer"
+              tag="div"
+              @click="doTransfer"
+            >
+              {{ $t("common.transfer") }}
+            </NButton>
+          </template>
+          <ul>
+            <li v-for="(error, i) in validationErrors" :key="i">
+              {{ error }}
+            </li>
+          </ul>
+        </NTooltip>
+      </div>
+    </template>
+  </DrawerContent>
 </template>
 
 <script setup lang="ts">
@@ -71,6 +78,7 @@ import {
   NTooltip,
 } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { cloneDeep } from "lodash-es";
 
 import { ComposedDatabase, PresetRoleType, UNKNOWN_ID } from "@/types";
 import {
@@ -81,7 +89,7 @@ import {
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
-import { ProjectV1Name, ProjectSelect } from "../v2";
+import { ProjectV1Name, ProjectSelect, DrawerContent } from "@/components/v2";
 import Label from "./Label.vue";
 import {
   DatabaseTreeOption,
@@ -89,7 +97,6 @@ import {
   mapTreeOptions,
 } from "./common";
 import { Project } from "@/types/proto/v1/project_service";
-import { cloneDeep } from "lodash-es";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 const props = defineProps<{

@@ -119,7 +119,7 @@ const projectTabItemList = computed((): ProjectTabItem[] => {
     { name: t("common.databases"), hash: "databases" },
 
     isTenantProject.value
-      ? { name: "Database groups", hash: "database-groups" }
+      ? { name: t("common.database-groups"), hash: "database-groups" }
       : null,
 
     isTenantProject.value

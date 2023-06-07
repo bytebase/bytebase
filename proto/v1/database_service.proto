@@ -519,7 +519,7 @@ message DatabaseSchema {
 // BackupSetting is the setting for database backup.
 message BackupSetting {
   // The name of the database backup setting.
-  // Format: instances/{instance}/databases/{database}/backupSettings
+  // Format: instances/{instance}/databases/{database}/backupSetting
   string name = 1;
 
   // The default maximum age of a Backup created via this BackupPlan.
