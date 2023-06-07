@@ -216,17 +216,12 @@ func marshalLabels(labelMap map[string]string, environmentID string) (string, er
 }
 
 // disableAutomaticBackup disables the automatic backup of a database.
-func (ctl *controller) disableAutomaticBackup(ctx context.Context, databaseName string) error {
-	backupSetting, err := ctl.databaseServiceClient.GetBackupSetting(ctx, &v1pb.GetBackupSettingRequest{
-		Name: fmt.Sprintf("%s/backupSetting", databaseName),
-	})
-	if err != nil {
-		return err
-	}
-	backupSetting.CronSchedule = ""
-
-	if _, err := ctl.databaseServiceClient.UpdateBackupSetting(ctx, &v1pb.UpdateBackupSettingRequest{
-		Setting: backupSetting,
+func (ctl *controller) disableAutomaticBackup(ctx context.Context, environmentName string) error {
+	if _, err := ctl.environmentServiceClient.UpdateBackupSetting(ctx, &v1pb.UpdateEnvironmentBackupSettingRequest{
+		Setting: &v1pb.EnvironmentBackupSetting{
+			Name:    fmt.Sprintf("%s/backupSetting", environmentName),
+			Enabled: false,
+		},
 	}); err != nil {
 		return err
 	}
