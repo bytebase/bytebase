@@ -1,10 +1,4 @@
-import { BackupSetting } from "@/types";
 import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
-
-export type BackupSettingEdit = Pick<
-  BackupSetting,
-  "enabled" | "dayOfWeek" | "hour" | "retentionPeriodTs"
->;
 
 export const PLAN_SCHEDULES: BackupPlanSchedule[] = [
   BackupPlanSchedule.UNSET,
@@ -20,10 +14,14 @@ export const DEFAULT_BACKUP_RETENTION_PERIOD_TS =
   DEFAULT_BACKUP_RETENTION_PERIOD_DAYS * 3600 * 24; // 7 days
 
 export function parseScheduleFromBackupSetting(
-  backupSetting: BackupSettingEdit
+  cronSchedule: string
 ): BackupPlanSchedule {
-  if (!backupSetting.enabled) return BackupPlanSchedule.UNSET;
-  if (backupSetting.dayOfWeek === -1) return BackupPlanSchedule.DAILY;
+  if (cronSchedule == "") return BackupPlanSchedule.UNSET;
+  const sections = cronSchedule.split(" ");
+  if (sections.length !== 5) {
+    return BackupPlanSchedule.UNSET;
+  }
+  if (sections[4] === "*") return BackupPlanSchedule.DAILY;
   return BackupPlanSchedule.WEEKLY;
 }
 

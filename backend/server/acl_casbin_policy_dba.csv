@@ -28,7 +28,6 @@ p, DBA, /environment, GET
 p, DBA, /environment/{environmentID}, GET
 p, DBA, /environment/{environmentID}, PATCH
 p, DBA, /environment/{environmentID}, DELETE
-p, DBA, /environment/{environmentID}/backup-setting, PATCH
 p, DBA, /policy, GET
 p, DBA, /policy/{resourceType}/{resourceID}, GET
 p, DBA, /policy/{resourceType}/{resourceID}, PATCH
@@ -61,8 +60,6 @@ p, DBA, /database/{databaseID}/schema, GET
 p, DBA, /database/{databaseID}/edit, POST
 p, DBA, /database/{databaseID}/backup, GET
 p, DBA, /database/{databaseID}/backup, POST
-p, DBA, /database/{databaseID}/backup-setting, GET
-p, DBA, /database/{databaseID}/backup-setting, PATCH
 p, DBA, /database/{databaseID}/data-source, POST
 p, DBA, /database/{databaseID}/data-source/{dataSourceID}, GET
 p, DBA, /database/{databaseID}/data-source/{dataSourceID}, PATCH

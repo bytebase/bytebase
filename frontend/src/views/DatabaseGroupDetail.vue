@@ -127,7 +127,7 @@ import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
 import { useRouter } from "vue-router";
 import { ComposedDatabaseGroup } from "@/types";
-import { generateIssueRoute } from "@/utils/databaseGroup/issue";
+import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 import { NButton } from "naive-ui";
 
 interface LocalState {
@@ -207,7 +207,7 @@ const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
 const createMigration = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
-  const issueRoute = generateIssueRoute(type, databaseGroup.value);
+  const issueRoute = generateDatabaseGroupIssueRoute(type, databaseGroup.value);
   router.push(issueRoute);
 };
 

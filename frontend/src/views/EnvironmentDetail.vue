@@ -50,12 +50,14 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
-import ArchiveBanner from "../components/ArchiveBanner.vue";
-import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { idFromSlug } from "../utils";
-import { hasFeature, pushNotification, useLegacyBackupStore } from "@/store";
 import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
+import { useRouter } from "vue-router";
+
+import ArchiveBanner from "@/components/ArchiveBanner.vue";
+import EnvironmentForm from "@/components/EnvironmentForm.vue";
+import { environmentV1Slug, idFromSlug } from "@/utils";
+import { hasFeature, pushNotification, useBackupV1Store } from "@/store";
 import BBModal from "@/bbkit/BBModal.vue";
 import {
   usePolicyV1Store,
@@ -104,7 +106,8 @@ const emit = defineEmits(["archive"]);
 
 const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
-const backupStore = useLegacyBackupStore();
+const backupStore = useBackupV1Store();
+const router = useRouter();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
@@ -216,6 +219,7 @@ const doArchive = (environment: Environment) => {
     emit("archive", environment);
     environment.state = State.DELETED;
     assignEnvironment(environment);
+    router.replace(`/environment/${environmentV1Slug(environment)}`);
   });
 };
 
@@ -224,6 +228,7 @@ const doRestore = (environment: Environment) => {
     .undeleteEnvironment(environment.name)
     .then((environment) => {
       assignEnvironment(environment);
+      router.replace(`/environment#${environment.uid}`);
     });
 };
 
@@ -294,12 +299,9 @@ const disableAutoBackupContent = computed(() => {
 });
 
 const disableEnvironmentAutoBackup = async () => {
-  await backupStore.upsertBackupSettingByEnvironmentId(state.environment.uid, {
+  await backupStore.upsertEnvironmentBackupSetting({
+    name: `${state.environment.name}/backupSetting`,
     enabled: false,
-    hour: 0,
-    dayOfWeek: 0,
-    retentionPeriodTs: 0,
-    hookUrl: "",
   });
   success();
   state.showDisableAutoBackupModal = false;

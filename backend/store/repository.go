@@ -12,35 +12,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// repositoryRaw is the store model for a Repository.
-// Fields have exactly the same meanings as Repository.
-type repositoryRaw struct {
-	ID int
-
-	// Related fields
-	VCSID     int
-	ProjectID int
-
-	// Domain specific fields
-	Name               string
-	FullPath           string
-	WebURL             string
-	BranchFilter       string
-	BaseDirectory      string
-	FilePathTemplate   string
-	SchemaPathTemplate string
-	SheetPathTemplate  string
-	EnableSQLReviewCI  bool
-	ExternalID         string
-	ExternalWebhookID  string
-	WebhookURLHost     string
-	WebhookEndpointID  string
-	WebhookSecretToken string
-	AccessToken        string
-	ExpiresTs          int64
-	RefreshToken       string
-}
-
 // RepositoryMessage is the message for a repository.
 type RepositoryMessage struct {
 	// Output only
@@ -76,6 +47,7 @@ type FindRepositoryMessage struct {
 	WebURL            *string
 	VCSUID            *int
 	ProjectResourceID *string
+	WebhookEndpointID *string
 }
 
 // PatchRepositoryMessage is the API message for patching a repository.
@@ -93,35 +65,6 @@ type PatchRepositoryMessage struct {
 	AccessToken        *string
 	ExpiresTs          *int64
 	RefreshToken       *string
-}
-
-// toRepository creates an instance of Repository based on the repositoryRaw.
-// This is intended to be called when we need to compose a Repository relationship.
-func (raw *repositoryRaw) toRepository() *api.Repository {
-	return &api.Repository{
-		ID: raw.ID,
-
-		VCSID:     raw.VCSID,
-		ProjectID: raw.ProjectID,
-
-		Name:               raw.Name,
-		FullPath:           raw.FullPath,
-		WebURL:             raw.WebURL,
-		BranchFilter:       raw.BranchFilter,
-		BaseDirectory:      raw.BaseDirectory,
-		FilePathTemplate:   raw.FilePathTemplate,
-		SchemaPathTemplate: raw.SchemaPathTemplate,
-		SheetPathTemplate:  raw.SheetPathTemplate,
-		EnableSQLReviewCI:  raw.EnableSQLReviewCI,
-		ExternalID:         raw.ExternalID,
-		ExternalWebhookID:  raw.ExternalWebhookID,
-		WebhookURLHost:     raw.WebhookURLHost,
-		WebhookEndpointID:  raw.WebhookEndpointID,
-		WebhookSecretToken: raw.WebhookSecretToken,
-		AccessToken:        raw.AccessToken,
-		ExpiresTs:          raw.ExpiresTs,
-		RefreshToken:       raw.RefreshToken,
-	}
 }
 
 // CreateRepositoryV2 creates the repository.
@@ -219,65 +162,6 @@ func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string
 	s.removeProjectCache(projectResourceID)
 
 	return tx.Commit()
-}
-
-// FindRepository finds a list of Repository instances.
-func (s *Store) FindRepository(ctx context.Context, find *api.RepositoryFind) ([]*api.Repository, error) {
-	repositoryRawList, err := s.findRepositoryRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Repository list with RepositoryFind[%+v]", find)
-	}
-	var repositoryList []*api.Repository
-	for _, raw := range repositoryRawList {
-		repository, err := s.composeRepository(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Repository with repositoryRaw[%+v]", raw)
-		}
-		repositoryList = append(repositoryList, repository)
-	}
-	return repositoryList, nil
-}
-
-//
-// private functions
-//
-
-func (s *Store) composeRepository(ctx context.Context, raw *repositoryRaw) (*api.Repository, error) {
-	repository := raw.toRepository()
-
-	vcs, err := s.GetVCSByID(ctx, repository.VCSID)
-	if err != nil {
-		return nil, err
-	}
-	// We should always expect VCS to exist when ID isn't the default zero.
-	if repository.VCSID > 0 && vcs == nil {
-		return nil, errors.Errorf("VCS not found for ID: %v", repository.VCSID)
-	}
-	repository.VCS = vcs
-
-	project, err := s.GetProjectByID(ctx, repository.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	repository.Project = project
-
-	return repository, nil
-}
-
-// findRepositoryRaw retrieves a list of repositories based on find.
-func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind) ([]*repositoryRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	list, err := s.findRepositoryImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
 }
 
 // createRepositoryImplV2 creates a new repository.
@@ -380,94 +264,6 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 	return &repository, nil
 }
 
-func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.RepositoryFind) ([]*repositoryRaw, error) {
-	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []any{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.VCSID; v != nil {
-		where, args = append(where, fmt.Sprintf("vcs_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.WebhookEndpointID; v != nil {
-		where, args = append(where, fmt.Sprintf("webhook_endpoint_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.WebURL; v != nil {
-		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			id,
-			vcs_id,
-			project_id,
-			name,
-			full_path,
-			web_url,
-			branch_filter,
-			base_directory,
-			file_path_template,
-			schema_path_template,
-			sheet_path_template,
-			enable_sql_review_ci,
-			external_id,
-			external_webhook_id,
-			webhook_url_host,
-			webhook_endpoint_id,
-			webhook_secret_token,
-			access_token,
-			expires_ts,
-			refresh_token
-		FROM repository
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into repoRawList.
-	var repoRawList []*repositoryRaw
-	for rows.Next() {
-		var repository repositoryRaw
-		if err := rows.Scan(
-			&repository.ID,
-			&repository.VCSID,
-			&repository.ProjectID,
-			&repository.Name,
-			&repository.FullPath,
-			&repository.WebURL,
-			&repository.BranchFilter,
-			&repository.BaseDirectory,
-			&repository.FilePathTemplate,
-			&repository.SchemaPathTemplate,
-			&repository.SheetPathTemplate,
-			&repository.EnableSQLReviewCI,
-			&repository.ExternalID,
-			&repository.ExternalWebhookID,
-			&repository.WebhookURLHost,
-			&repository.WebhookEndpointID,
-			&repository.WebhookSecretToken,
-			&repository.AccessToken,
-			&repository.ExpiresTs,
-			&repository.RefreshToken,
-		); err != nil {
-			return nil, err
-		}
-
-		repoRawList = append(repoRawList, &repository)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return repoRawList, nil
-}
-
 func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindRepositoryMessage) ([]*RepositoryMessage, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []any{}
@@ -479,6 +275,9 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 	}
 	if v := find.WebURL; v != nil {
 		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.WebhookEndpointID; v != nil {
+		where, args = append(where, fmt.Sprintf("webhook_endpoint_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)

@@ -512,7 +512,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	})
 	s.registerOAuthRoutes(apiGroup)
 	s.registerProjectRoutes(apiGroup)
-	s.registerEnvironmentRoutes(apiGroup)
 	s.registerDatabaseRoutes(apiGroup)
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
@@ -666,6 +665,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	options := []grpcweb.Option{
 		grpcweb.WithCorsForRegisteredEndpointsOnly(false),
 		grpcweb.WithOriginFunc(func(origin string) bool {
+			return true
+		}),
+		grpcweb.WithWebsockets(true),
+		grpcweb.WithWebsocketOriginFunc(func(req *http.Request) bool {
 			return true
 		}),
 	}

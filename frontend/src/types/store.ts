@@ -1,6 +1,6 @@
 import { MigrationHistoryId, QueryHistory, OnboardingGuideType } from ".";
 import { Activity } from "./activity";
-import { Backup, BackupSetting } from "./backup";
+import { Backup } from "./backup";
 import { Bookmark } from "./bookmark";
 import { Command } from "./common";
 import { Database } from "./database";
@@ -102,10 +102,6 @@ export interface DBSchemaState {
 
 export interface BackupState {
   backupList: Map<DatabaseId, Backup[]>;
-}
-
-export interface BackupSettingState {
-  backupSetting: Map<DatabaseId, BackupSetting>;
 }
 
 export interface VCSState {
