@@ -279,7 +279,7 @@ watchEffect(prepareBackupPolicy);
 
 const assignBackupSetting = (backupSetting: BackupSetting) => {
   const schedule = backupStore.parseBackupSchedule(backupSetting.cronSchedule);
-  state.autoBackupEnabled = backupSetting.cronSchedule != "";
+  state.autoBackupEnabled = backupSetting.cronSchedule !== "";
   state.autoBackupHour = schedule.hourOfDay;
   state.autoBackupDayOfWeek = schedule.dayOfWeek;
   state.autoBackupRetentionPeriodTs =

@@ -401,7 +401,7 @@ function setRetentionPeriodDays(input: string) {
 function extractEditValue(backupSetting: BackupSetting): BackupSettingEdit {
   const schedule = backupStore.parseBackupSchedule(backupSetting.cronSchedule);
   return {
-    enabled: backupSetting.cronSchedule === "",
+    enabled: backupSetting.cronSchedule !== "",
     dayOfWeek: schedule.dayOfWeek,
     hour: schedule.hourOfDay,
     retentionPeriodTs: backupSetting.backupRetainDuration?.seconds ?? 0,
