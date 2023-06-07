@@ -668,6 +668,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		grpcweb.WithOriginFunc(func(origin string) bool {
 			return true
 		}),
+		grpcweb.WithWebsockets(true),
 	}
 	wrappedGrpc := grpcweb.WrapServer(s.grpcServer, options...)
 	e.Any("/bytebase.v1.*", echo.WrapHandler(wrappedGrpc))
