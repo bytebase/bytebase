@@ -101,7 +101,7 @@ const props = defineProps<{
 const state = reactive<LocalState>({
   isRequesting: false,
   showMatchedTableList: true,
-  showUnmatchedTableList: false,
+  showUnmatchedTableList: true,
 });
 const matchedTableList = ref<SchemaGroup_Table[]>([]);
 const unmatchedTableList = ref<SchemaGroup_Table[]>([]);
@@ -118,7 +118,7 @@ const updateMatchingState = useDebounceFn(async () => {
         name: `${databaseGroupName}/${schemaGroupNamePrefix}${validateOnlyResourceId}`,
         tablePlaceholder: validateOnlyResourceId,
         tableExpr: Expr.fromJSON({
-          expression: celString,
+          expression: celString || "true",
         }),
       },
       schemaGroupId: validateOnlyResourceId,
