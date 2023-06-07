@@ -128,9 +128,8 @@
       />
     </div>
 
-    <BBModal
-      v-if="state.showBackupSettingModal"
-      :title="$t('database.automatic-backup')"
+    <Drawer
+      :show="state.showBackupSettingModal"
       @close="state.showBackupSettingModal = false"
     >
       <DatabaseBackupSettingForm
@@ -141,7 +140,7 @@
         @cancel="state.showBackupSettingModal = false"
         @update="updateBackupSetting"
       />
-    </BBModal>
+    </Drawer>
 
     <BBModal
       v-if="state.showCreateBackupModal"
@@ -209,6 +208,7 @@ import {
   Backup_BackupState,
   Backup_BackupType,
 } from "@/types/proto/v1/database_service";
+import { Drawer } from "@/components/v2";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -441,7 +441,7 @@ onBeforeMount(prepareBackupSetting);
 const updateBackupHookUrl = () => {
   backupStore
     .upsertBackupSetting({
-      name: `${props.database.name}/backupSettings`,
+      name: `${props.database.name}/backupSetting`,
       cronSchedule: backupStore.buildSimpleSchedule({
         enabled: state.autoBackupEnabled,
         hourOfDay: state.autoBackupHour,

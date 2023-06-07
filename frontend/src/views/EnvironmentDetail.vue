@@ -300,7 +300,7 @@ const disableAutoBackupContent = computed(() => {
 
 const disableEnvironmentAutoBackup = async () => {
   await backupStore.upsertEnvironmentBackupSetting({
-    name: `${state.environment.name}/backupSettings`,
+    name: `${state.environment.name}/backupSetting`,
     enabled: false,
   });
   success();

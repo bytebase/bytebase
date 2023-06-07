@@ -1,155 +1,162 @@
 <template>
-  <div class="w-[30rem] max-w-full flex flex-col items-center">
-    <div class="py-0.5 space-y-6">
-      <div class="flex flex-col gap-y-2">
-        <label class="textlabel">
-          {{ $t("database.backup-setting.form.schedule") }}
-        </label>
-        <NPopover
-          trigger="manual"
-          :show="state.showBackupPolicyEnforcement"
-          :show-arrow="false"
-          placement="bottom-start"
-        >
-          <template #trigger>
-            <div class="flex items-center gap-x-2 text-sm">
-              <label
-                v-for="schedule in PLAN_SCHEDULES"
-                :key="schedule"
-                class="flex items-center gap-x-2"
-                :class="
-                  !isAllowedScheduleByPolicy(schedule) &&
-                  'opacity-50 cursor-not-allowed'
-                "
-                @click="setSchedule(schedule)"
-              >
-                <input
-                  type="radio"
-                  :value="schedule"
-                  :checked="schedule === checkedSchedule"
-                  :disabled="!isAllowedScheduleByPolicy(schedule)"
-                />
-                <span>{{ nameOfSchedule(schedule) }}</span>
-              </label>
-            </div>
-          </template>
-
-          <router-link
-            class="normal-link text-sm"
-            :to="`/environment/${database.instanceEntity.environmentEntity.uid}`"
+  <DrawerContent :title="$t('database.automatic-backup')">
+    <div class="max-w-full flex flex-col items-center">
+      <div class="py-0.5 space-y-6">
+        <div class="flex flex-col gap-y-2">
+          <label class="textlabel">
+            {{ $t("database.backup-setting.form.schedule") }}
+          </label>
+          <NPopover
+            trigger="manual"
+            :show="state.showBackupPolicyEnforcement"
+            :show-arrow="false"
+            placement="bottom-start"
           >
-            {{
-              $t("database.backuppolicy-backup-enforced-and-cant-be-disabled", [
+            <template #trigger>
+              <div class="flex items-center gap-x-2 text-sm">
+                <label
+                  v-for="schedule in PLAN_SCHEDULES"
+                  :key="schedule"
+                  class="flex items-center gap-x-2"
+                  :class="
+                    !isAllowedScheduleByPolicy(schedule) &&
+                    'opacity-50 cursor-not-allowed'
+                  "
+                  @click="setSchedule(schedule)"
+                >
+                  <input
+                    type="radio"
+                    :value="schedule"
+                    :checked="schedule === checkedSchedule"
+                    :disabled="!isAllowedScheduleByPolicy(schedule)"
+                  />
+                  <span>{{ nameOfSchedule(schedule) }}</span>
+                </label>
+              </div>
+            </template>
+
+            <router-link
+              class="normal-link text-sm"
+              :to="`/environment/${database.instanceEntity.environmentEntity.uid}`"
+            >
+              {{
                 $t(
-                  `database.backup-policy.${backupPlanScheduleToJSON(
-                    backupPolicy
-                  )}`
-                ),
-              ])
-            }}
-          </router-link>
-        </NPopover>
-      </div>
+                  "database.backuppolicy-backup-enforced-and-cant-be-disabled",
+                  [
+                    $t(
+                      `database.backup-policy.${backupPlanScheduleToJSON(
+                        backupPolicy
+                      )}`
+                    ),
+                  ]
+                )
+              }}
+            </router-link>
+          </NPopover>
+        </div>
 
-      <div
-        v-if="checkedSchedule === BackupPlanSchedule.WEEKLY"
-        class="flex flex-col gap-y-2"
-      >
-        <label class="textlabel">
-          {{ $t("database.backup-setting.form.day-of-week") }}
-        </label>
-        <div class="w-[16rem]">
-          <BBSelect
-            :selected-item="
-              localFromUTC(state.setting.hour, state.setting.dayOfWeek)
-                .dayOfWeek
-            "
-            :item-list="AVAILABLE_DAYS_OF_WEEK"
-            @select-item="setDayOfWeek"
-          >
-            <template #menuItem="{ item: day }">
-              {{ nameOfDay(day) }}
-            </template>
-          </BBSelect>
+        <div
+          v-if="checkedSchedule === BackupPlanSchedule.WEEKLY"
+          class="flex flex-col gap-y-2"
+        >
+          <label class="textlabel">
+            {{ $t("database.backup-setting.form.day-of-week") }}
+          </label>
+          <div class="w-[16rem]">
+            <BBSelect
+              :selected-item="
+                localFromUTC(state.setting.hour, state.setting.dayOfWeek)
+                  .dayOfWeek
+              "
+              :item-list="AVAILABLE_DAYS_OF_WEEK"
+              @select-item="setDayOfWeek"
+            >
+              <template #menuItem="{ item: day }">
+                {{ nameOfDay(day) }}
+              </template>
+            </BBSelect>
+          </div>
+        </div>
+
+        <div
+          v-if="
+            checkedSchedule === BackupPlanSchedule.WEEKLY ||
+            checkedSchedule === BackupPlanSchedule.DAILY
+          "
+          class="flex flex-col gap-y-2"
+        >
+          <label class="textlabel">
+            <span>
+              {{ $t("database.backup-setting.form.time-of-day") }}
+            </span>
+            <span class="ml-1 textinfolabel">
+              ({{ Intl.DateTimeFormat().resolvedOptions().timeZone }})
+            </span>
+          </label>
+          <div class="w-[16rem]">
+            <BBSelect
+              :selected-item="
+                localFromUTC(state.setting.hour, state.setting.dayOfWeek).hour
+              "
+              :item-list="AVAILABLE_HOURS_OF_DAY"
+              @select-item="setHour"
+            >
+              <template #menuItem="{ item: hour }">
+                {{ nameOfHour(hour) }}
+              </template>
+            </BBSelect>
+          </div>
+        </div>
+
+        <div
+          v-if="
+            checkedSchedule === BackupPlanSchedule.WEEKLY ||
+            checkedSchedule === BackupPlanSchedule.DAILY
+          "
+          class="flex flex-col gap-y-2"
+        >
+          <label class="textlabel">
+            {{ $t("database.backup-setting.form.retention-period") }}
+          </label>
+          <div class="w-[16rem]">
+            <input
+              type="number"
+              class="textfield w-full hide-ticker"
+              :placeholder="String(DEFAULT_BACKUP_RETENTION_PERIOD_DAYS)"
+              :value="retentionPeriodDaysInputValue"
+              @input="(e: any) => setRetentionPeriodDays(e.target.value)"
+            />
+          </div>
         </div>
       </div>
 
       <div
-        v-if="
-          checkedSchedule === BackupPlanSchedule.WEEKLY ||
-          checkedSchedule === BackupPlanSchedule.DAILY
-        "
-        class="flex flex-col gap-y-2"
+        class="w-full mt-5 pt-4 flex justify-end border-t border-block-border"
       >
-        <label class="textlabel">
-          <span>
-            {{ $t("database.backup-setting.form.time-of-day") }}
-          </span>
-          <span class="ml-1 textinfolabel">
-            ({{ Intl.DateTimeFormat().resolvedOptions().timeZone }})
-          </span>
-        </label>
-        <div class="w-[16rem]">
-          <BBSelect
-            :selected-item="
-              localFromUTC(state.setting.hour, state.setting.dayOfWeek).hour
-            "
-            :item-list="AVAILABLE_HOURS_OF_DAY"
-            @select-item="setHour"
-          >
-            <template #menuItem="{ item: hour }">
-              {{ nameOfHour(hour) }}
-            </template>
-          </BBSelect>
-        </div>
+        <button
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="$emit('cancel')"
+        >
+          {{ $t("common.cancel") }}
+        </button>
+        <button
+          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          :disabled="!isValid"
+          @click.prevent="handleSave"
+        >
+          {{ $t("common.save") }}
+        </button>
       </div>
 
       <div
-        v-if="
-          checkedSchedule === BackupPlanSchedule.WEEKLY ||
-          checkedSchedule === BackupPlanSchedule.DAILY
-        "
-        class="flex flex-col gap-y-2"
+        v-if="state.loading"
+        class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center rounded-lg"
       >
-        <label class="textlabel">
-          {{ $t("database.backup-setting.form.retention-period") }}
-        </label>
-        <div class="w-[16rem]">
-          <input
-            type="number"
-            class="textfield w-full hide-ticker"
-            :placeholder="String(DEFAULT_BACKUP_RETENTION_PERIOD_DAYS)"
-            :value="retentionPeriodDaysInputValue"
-            @input="(e: any) => setRetentionPeriodDays(e.target.value)"
-          />
-        </div>
+        <BBSpin />
       </div>
     </div>
-
-    <div class="w-full mt-5 pt-4 flex justify-end border-t border-block-border">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="$emit('cancel')"
-      >
-        {{ $t("common.cancel") }}
-      </button>
-      <button
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        :disabled="!isValid"
-        @click.prevent="handleSave"
-      >
-        {{ $t("common.save") }}
-      </button>
-    </div>
-
-    <div
-      v-if="state.loading"
-      class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center rounded-lg"
-    >
-      <BBSpin />
-    </div>
-  </div>
+  </DrawerContent>
 </template>
 
 <script lang="ts" setup>
@@ -173,6 +180,7 @@ import {
   backupPlanScheduleToJSON,
 } from "@/types/proto/v1/org_policy_service";
 import { BackupSetting } from "@/types/proto/v1/database_service";
+import { DrawerContent } from "@/components/v2";
 
 interface BackupSettingEdit {
   enabled: boolean;
@@ -289,7 +297,7 @@ const handleSave = async () => {
   try {
     state.loading = true;
     const updatedBackupSetting = await backupStore.upsertBackupSetting({
-      name: `${props.database.name}/backupSettings`,
+      name: `${props.database.name}/backupSetting`,
       cronSchedule: backupStore.buildSimpleSchedule({
         enabled: setting.enabled,
         hourOfDay: setting.hour,
