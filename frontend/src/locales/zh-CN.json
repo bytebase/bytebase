@@ -2537,6 +2537,9 @@
     },
     "condition": {
       "self": "条件"
+    },
+    "prev-editor": {
+      "description": "您可以在 SQL 中引用表分组来对表分组内的所有表进行批量变更。对于每一张表，Bytebase 都会生成单独的 SQL。"
     }
   },
   "export-center": {

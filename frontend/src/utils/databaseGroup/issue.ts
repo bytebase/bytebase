@@ -1,13 +1,13 @@
-import { ComposedDatabaseGroup } from "@/types";
 import dayjs from "dayjs";
+import { ComposedDatabaseGroup } from "@/types";
 
-export const generateIssueRoute = (
+export const generateDatabaseGroupIssueRoute = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update",
   databaseGroup: ComposedDatabaseGroup,
-  schemaGroupNameList: string[] = []
+  sql = ""
 ) => {
   const issueNameParts: string[] = [];
-  issueNameParts.push(`[${databaseGroup.databaseGroupName}]`);
+  issueNameParts.push(`[${databaseGroup.databasePlaceholder}]`);
   issueNameParts.push(
     type === "bb.issue.database.schema.update" ? `Alter schema` : `Change data`
   );
@@ -21,7 +21,7 @@ export const generateIssueRoute = (
     name: issueNameParts.join(" "),
     project: databaseGroup.project.uid,
     databaseGroupName: databaseGroup.name,
-    schemaGroupNames: schemaGroupNameList.join(","),
+    sql,
   };
 
   return {

@@ -2523,6 +2523,9 @@
     },
     "condition": {
       "self": "Condición"
+    },
+    "prev-editor": {
+      "description": "Puedes hacer referencia a la agrupación de tablas en SQL para realizar cambios en lote en todas las tablas dentro de un grupo de tablas. Para cada tabla, Bytebase generará un SQL individual."
     }
   },
   "export-center": {
