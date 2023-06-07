@@ -249,7 +249,8 @@
       "years": "{years} 年"
     },
     "expiration": "过期时间",
-    "configure": "配置"
+    "configure": "配置",
+    "database-groups": "数据库分组"
   },
   "error-page": {
     "go-back-home": "回到主页"

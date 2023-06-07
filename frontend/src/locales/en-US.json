@@ -251,7 +251,8 @@
       "years": "{years} year"
     },
     "expiration": "Expiration",
-    "configure": "Configure"
+    "configure": "Configure",
+    "database-groups": "Database Groups"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2524,7 +2525,7 @@
     "select-role": "Select role"
   },
   "database-group": {
-    "self": "Database group",
+    "self": "Database Group",
     "create": "New database group",
     "edit": "Edit database group",
     "matched-database": "Matched database",
