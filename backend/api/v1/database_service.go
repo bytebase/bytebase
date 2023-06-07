@@ -436,7 +436,7 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	backupSetting, err := validateAndConvertToStoreBackupSetting(request.Setting, database.UID)
+	backupSetting, err := s.validateAndConvertToStoreBackupSetting(ctx, request.Setting, database)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1563,7 +1563,7 @@ func convertToBackupSetting(backupSetting *store.BackupSettingMessage, instanceI
 	}, nil
 }
 
-func validateAndConvertToStoreBackupSetting(backupSetting *v1pb.BackupSetting, databaseUID int) (*store.BackupSettingMessage, error) {
+func (s *DatabaseService) validateAndConvertToStoreBackupSetting(ctx context.Context, backupSetting *v1pb.BackupSetting, database *store.DatabaseMessage) (*store.BackupSettingMessage, error) {
 	enable := backupSetting.CronSchedule != ""
 	hourOfDay := 0
 	dayOfWeek := -1
@@ -1578,14 +1578,46 @@ func validateAndConvertToStoreBackupSetting(backupSetting *v1pb.BackupSetting, d
 	if err != nil {
 		return nil, err
 	}
-	return &store.BackupSettingMessage{
-		DatabaseUID:       databaseUID,
+	setting := &store.BackupSettingMessage{
+		DatabaseUID:       database.UID,
 		Enabled:           enable,
 		HourOfDay:         hourOfDay,
 		DayOfWeek:         dayOfWeek,
 		RetentionPeriodTs: periodTs,
 		HookURL:           backupSetting.HookUrl,
-	}, nil
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID:  &database.EnvironmentID,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EnvironmentID)
+	}
+	backupPlanPolicy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, environment.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
+		if !setting.Enabled {
+			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+		}
+		switch backupPlanPolicy.Schedule {
+		case api.BackupPlanPolicyScheduleDaily:
+			if setting.DayOfWeek != -1 {
+				return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			}
+		case api.BackupPlanPolicyScheduleWeekly:
+			if setting.DayOfWeek == -1 {
+				return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			}
+		}
+	}
+
+	return setting, nil
 }
 
 // parseSimpleCron parses a simple cron expression(only support hour of day and day of week), and returns them as int.

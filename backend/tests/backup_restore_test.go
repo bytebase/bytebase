@@ -482,7 +482,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
-	err = ctl.disableAutomaticBackup(databaseUID)
+	err = ctl.disableAutomaticBackup(ctx, database.Name)
 	a.NoError(err)
 
 	mysqlDB := initPITRDB(t, databaseName, mysqlPort)

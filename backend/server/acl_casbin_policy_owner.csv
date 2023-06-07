@@ -63,8 +63,6 @@ p, OWNER, /database/{databaseID}/schema, GET
 p, OWNER, /database/{databaseID}/edit, POST
 p, OWNER, /database/{databaseID}/backup, GET
 p, OWNER, /database/{databaseID}/backup, POST
-p, OWNER, /database/{databaseID}/backup-setting, GET
-p, OWNER, /database/{databaseID}/backup-setting, PATCH
 p, OWNER, /database/{databaseID}/data-source, POST
 p, OWNER, /database/{databaseID}/data-source/{dataSourceID}, GET
 p, OWNER, /database/{databaseID}/data-source/{dataSourceID}, PATCH
