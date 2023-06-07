@@ -2189,7 +2189,9 @@
     "instance": "实例",
     "project": "项目",
     "idp": "身份提供商",
-    "role": "角色"
+    "role": "角色",
+    "database-group": "数据库分组",
+    "schema-group": "表分组"
   },
   "resource-id": {
     "self": "{resource} ID",
