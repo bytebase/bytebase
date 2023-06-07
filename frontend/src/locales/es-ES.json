@@ -2172,7 +2172,9 @@
     "instance": "Instancia",
     "project": "Proyecto",
     "idp": "Proveedor de Identidad",
-    "role": "Rol"
+    "role": "Rol",
+    "database-group": "grupo de bases de datos",
+    "schema-group": "grupo de mesas"
   },
   "resource-id": {
     "self": "ID de {resource}",
