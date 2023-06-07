@@ -60,8 +60,6 @@ p, DBA, /database/{databaseID}/schema, GET
 p, DBA, /database/{databaseID}/edit, POST
 p, DBA, /database/{databaseID}/backup, GET
 p, DBA, /database/{databaseID}/backup, POST
-p, DBA, /database/{databaseID}/backup-setting, GET
-p, DBA, /database/{databaseID}/backup-setting, PATCH
 p, DBA, /database/{databaseID}/data-source, POST
 p, DBA, /database/{databaseID}/data-source/{dataSourceID}, GET
 p, DBA, /database/{databaseID}/data-source/{dataSourceID}, PATCH

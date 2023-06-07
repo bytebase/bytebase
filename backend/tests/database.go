@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -217,19 +216,21 @@ func marshalLabels(labelMap map[string]string, environmentID string) (string, er
 }
 
 // disableAutomaticBackup disables the automatic backup of a database.
-func (ctl *controller) disableAutomaticBackup(databaseID int) error {
-	backupSetting := api.BackupSettingUpsert{
-		DatabaseID: databaseID,
-		Enabled:    false,
-	}
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &backupSetting); err != nil {
-		return errors.Wrap(err, "failed to marshal backupSetting")
-	}
-
-	if _, err := ctl.patch(fmt.Sprintf("/database/%d/backup-setting", databaseID), buf); err != nil {
+func (ctl *controller) disableAutomaticBackup(ctx context.Context, databaseName string) error {
+	backupSetting, err := ctl.databaseServiceClient.GetBackupSetting(ctx, &v1pb.GetBackupSettingRequest{
+		Name: fmt.Sprintf("%s/backupSetting", databaseName),
+	})
+	if err != nil {
 		return err
 	}
+	backupSetting.CronSchedule = ""
+
+	if _, err := ctl.databaseServiceClient.UpdateBackupSetting(ctx, &v1pb.UpdateBackupSettingRequest{
+		Setting: backupSetting,
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
