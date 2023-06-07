@@ -31,7 +31,6 @@ p, OWNER, /environment, GET
 p, OWNER, /environment/{environmentID}, GET
 p, OWNER, /environment/{environmentID}, PATCH
 p, OWNER, /environment/{environmentID}, DELETE
-p, OWNER, /environment/{environmentID}/backup-setting, PATCH
 p, OWNER, /policy, GET
 p, OWNER, /policy/{resourceType}/{resourceID}, GET
 p, OWNER, /policy/{resourceType}/{resourceID}, PATCH

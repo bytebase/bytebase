@@ -49,6 +49,13 @@ service EnvironmentService {
       body: "*"
     };
   }
+
+  rpc UpdateBackupSetting(UpdateEnvironmentBackupSettingRequest) returns (EnvironmentBackupSetting) {
+    option (google.api.http) = {
+      patch: "/v1/{setting.name=environments/*/backupSetting}"
+      body: "setting"
+    };
+  }
 }
 
 message GetEnvironmentRequest {
@@ -140,4 +147,17 @@ enum EnvironmentTier {
   ENVIRONMENT_TIER_UNSPECIFIED = 0;
   PROTECTED = 1;
   UNPROTECTED = 2;
+}
+
+message UpdateEnvironmentBackupSettingRequest {
+  // The environment backup setting to update.
+  EnvironmentBackupSetting setting = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message EnvironmentBackupSetting {
+  // The name of the database backup setting.
+  // Format: environments/{environment}/backupSettings
+  string name = 1;
+
+  bool enabled = 2;
 }

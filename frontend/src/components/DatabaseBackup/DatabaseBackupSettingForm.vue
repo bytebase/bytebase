@@ -156,12 +156,7 @@
 import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NPopover } from "naive-ui";
-import {
-  BackupSetting,
-  BackupSettingUpsert,
-  ComposedDatabase,
-  unknown,
-} from "@/types";
+import { ComposedDatabase, unknown } from "@/types";
 import {
   AVAILABLE_DAYS_OF_WEEK,
   AVAILABLE_HOURS_OF_DAY,
@@ -171,13 +166,20 @@ import {
   localFromUTC,
   localToUTC,
   parseScheduleFromBackupSetting,
-  BackupSettingEdit,
 } from "./utils";
-import { pushNotification, useLegacyBackupStore } from "@/store";
+import { pushNotification, useBackupV1Store } from "@/store";
 import {
   BackupPlanSchedule,
   backupPlanScheduleToJSON,
 } from "@/types/proto/v1/org_policy_service";
+import { BackupSetting } from "@/types/proto/v1/database_service";
+
+interface BackupSettingEdit {
+  enabled: boolean;
+  dayOfWeek: number;
+  hour: number;
+  retentionPeriodTs: number;
+}
 
 type LocalState = {
   setting: BackupSettingEdit;
@@ -211,13 +213,14 @@ const emit = defineEmits<{
   (event: "update", setting: BackupSetting): void;
 }>();
 
+const backupStore = useBackupV1Store();
+
 const state = reactive<LocalState>({
   setting: extractEditValue(props.backupSetting),
   showBackupPolicyEnforcement: false,
   loading: false,
 });
 
-const backupStore = useLegacyBackupStore();
 const { t } = useI18n();
 
 const allowDisableAutoBackup = computed(() => {
@@ -243,7 +246,13 @@ watch(
 );
 
 const checkedSchedule = computed((): BackupPlanSchedule => {
-  return parseScheduleFromBackupSetting(state.setting);
+  return parseScheduleFromBackupSetting(
+    backupStore.buildSimpleSchedule({
+      enabled: state.setting.enabled,
+      hourOfDay: state.setting.hour,
+      dayOfWeek: state.setting.dayOfWeek,
+    })
+  );
 });
 
 const retentionPeriodDaysInputValue = computed((): string => {
@@ -277,15 +286,20 @@ const handleSave = async () => {
     setting.retentionPeriodTs = DEFAULT_BACKUP_RETENTION_PERIOD_TS;
   }
 
-  const newBackupSetting: BackupSettingUpsert = {
-    databaseId: Number(props.database.uid),
-    ...setting,
-    hookUrl: props.backupSetting.hookUrl, // won't modify hookUrl
-  };
   try {
     state.loading = true;
     const updatedBackupSetting = await backupStore.upsertBackupSetting({
-      newBackupSetting,
+      name: `${props.database.name}/backupSettings`,
+      cronSchedule: backupStore.buildSimpleSchedule({
+        enabled: setting.enabled,
+        hourOfDay: setting.hour,
+        dayOfWeek: setting.dayOfWeek,
+      }),
+      hookUrl: props.backupSetting.hookUrl,
+      backupRetainDuration: {
+        seconds: setting.retentionPeriodTs,
+        nanos: 0,
+      },
     });
 
     const action = setting.enabled
@@ -385,11 +399,12 @@ function setRetentionPeriodDays(input: string) {
 }
 
 function extractEditValue(backupSetting: BackupSetting): BackupSettingEdit {
+  const schedule = backupStore.parseBackupSchedule(backupSetting.cronSchedule);
   return {
-    enabled: backupSetting.enabled,
-    dayOfWeek: backupSetting.dayOfWeek,
-    hour: backupSetting.hour,
-    retentionPeriodTs: backupSetting.retentionPeriodTs,
+    enabled: backupSetting.cronSchedule === "",
+    dayOfWeek: schedule.dayOfWeek,
+    hour: schedule.hourOfDay,
+    retentionPeriodTs: backupSetting.backupRetainDuration?.seconds ?? 0,
   };
 }
 

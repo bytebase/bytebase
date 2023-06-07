@@ -143,10 +143,12 @@
     - [CreateEnvironmentRequest](#bytebase-v1-CreateEnvironmentRequest)
     - [DeleteEnvironmentRequest](#bytebase-v1-DeleteEnvironmentRequest)
     - [Environment](#bytebase-v1-Environment)
+    - [EnvironmentBackupSetting](#bytebase-v1-EnvironmentBackupSetting)
     - [GetEnvironmentRequest](#bytebase-v1-GetEnvironmentRequest)
     - [ListEnvironmentsRequest](#bytebase-v1-ListEnvironmentsRequest)
     - [ListEnvironmentsResponse](#bytebase-v1-ListEnvironmentsResponse)
     - [UndeleteEnvironmentRequest](#bytebase-v1-UndeleteEnvironmentRequest)
+    - [UpdateEnvironmentBackupSettingRequest](#bytebase-v1-UpdateEnvironmentBackupSettingRequest)
     - [UpdateEnvironmentRequest](#bytebase-v1-UpdateEnvironmentRequest)
   
     - [EnvironmentTier](#bytebase-v1-EnvironmentTier)
@@ -2567,6 +2569,22 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+<a name="bytebase-v1-EnvironmentBackupSetting"></a>
+
+### EnvironmentBackupSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database backup setting. Format: environments/{environment}/backupSettings |
+| enabled | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetEnvironmentRequest"></a>
 
 ### GetEnvironmentRequest
@@ -2632,6 +2650,21 @@ When paginating, all other parameters provided to `ListEnvironments` must match 
 
 
 
+<a name="bytebase-v1-UpdateEnvironmentBackupSettingRequest"></a>
+
+### UpdateEnvironmentBackupSettingRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| setting | [EnvironmentBackupSetting](#bytebase-v1-EnvironmentBackupSetting) |  | The environment backup setting to update. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateEnvironmentRequest"></a>
 
 ### UpdateEnvironmentRequest
@@ -2682,6 +2715,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | UpdateEnvironment | [UpdateEnvironmentRequest](#bytebase-v1-UpdateEnvironmentRequest) | [Environment](#bytebase-v1-Environment) |  |
 | DeleteEnvironment | [DeleteEnvironmentRequest](#bytebase-v1-DeleteEnvironmentRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteEnvironment | [UndeleteEnvironmentRequest](#bytebase-v1-UndeleteEnvironmentRequest) | [Environment](#bytebase-v1-Environment) |  |
+| UpdateBackupSetting | [UpdateEnvironmentBackupSettingRequest](#bytebase-v1-UpdateEnvironmentBackupSettingRequest) | [EnvironmentBackupSetting](#bytebase-v1-EnvironmentBackupSetting) |  |
 
  
 
