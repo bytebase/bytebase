@@ -100,10 +100,13 @@ const allowConfirm = computed(() => {
 
   const formState = formRef.value.getFormState();
   if (props.resourceType === "DATABASE_GROUP") {
-    return formState.resourceId && formState.environmentId;
+    return (
+      formState.resourceId && formState.placeholder && formState.environmentId
+    );
   } else if (props.resourceType === "SCHEMA_GROUP") {
     return (
       formState.resourceId &&
+      formState.placeholder &&
       formState.environmentId &&
       formState.selectedDatabaseGroupId
     );
@@ -175,7 +178,7 @@ const doConfirm = async () => {
           props.project.name,
           {
             name: `${props.project.name}/databaseGroups/${resourceId}`,
-            databasePlaceholder: resourceId,
+            databasePlaceholder: formState.placeholder,
             databaseExpr: Expr.fromJSON({
               expression: celString,
             }),
@@ -192,7 +195,7 @@ const doConfirm = async () => {
         });
         await dbGroupStore.updateDatabaseGroup({
           ...props.databaseGroup!,
-          databasePlaceholder: "",
+          databasePlaceholder: formState.placeholder,
           databaseExpr: Expr.fromJSON({
             expression: celString,
           }),
@@ -210,7 +213,7 @@ const doConfirm = async () => {
           formState.selectedDatabaseGroupId,
           {
             name: `${formState.selectedDatabaseGroupId}/schemaGroups/${resourceId}`,
-            tablePlaceholder: resourceId,
+            tablePlaceholder: formState.placeholder,
             tableExpr: Expr.fromJSON({
               expression: celString,
             }),
@@ -221,7 +224,7 @@ const doConfirm = async () => {
         const celString = convertToCELString(formState.expr);
         await dbGroupStore.updateSchemaGroup({
           ...props.databaseGroup!,
-          tablePlaceholder: "",
+          tablePlaceholder: formState.placeholder,
           tableExpr: Expr.fromJSON({
             expression: celString,
           }),

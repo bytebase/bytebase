@@ -139,7 +139,7 @@ const updateMatchingState = useDebounceFn(async () => {
   const result = await projectServiceClient.createDatabaseGroup({
     parent: props.project.name,
     databaseGroup: {
-      name: `${props.project.name}/${databaseGroupNamePrefix}/${validateOnlyResourceId}`,
+      name: `${props.project.name}/${databaseGroupNamePrefix}${validateOnlyResourceId}`,
       databasePlaceholder: validateOnlyResourceId,
       databaseExpr: Expr.fromJSON({
         expression: celString,

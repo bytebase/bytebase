@@ -85,7 +85,8 @@ type ResourceType =
   | "project"
   | "idp"
   | "role"
-  | "database-group";
+  | "database-group"
+  | "schema-group";
 
 const props = withDefaults(
   defineProps<{
