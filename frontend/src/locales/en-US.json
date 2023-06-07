@@ -2543,6 +2543,9 @@
     },
     "condition": {
       "self": "Condition"
+    },
+    "prev-editor": {
+      "description": "To batch change tables from the table group, you can reference that table group in SQL. Bytebase will generate a separate SQL for each table in the table group."
     }
   },
   "export-center": {

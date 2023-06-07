@@ -11,7 +11,7 @@ import {
   BuildNewIssueContext,
   VALIDATE_ONLY_SQL,
   findDatabaseListByQuery,
-  findDatabaseGroupAndSchemaGroupListByQuery,
+  findDatabaseGroupNameByQuery,
 } from "../common";
 import { IssueCreateHelper } from "./helper";
 
@@ -52,15 +52,13 @@ const buildNewTenantSchemaUpdateIssue = async (
   }
 
   const databaseList = findDatabaseListByQuery(context);
-  const databaseGroupContext =
-    findDatabaseGroupAndSchemaGroupListByQuery(context);
-  if (databaseGroupContext && databaseGroupContext.databaseGroupName !== "") {
+  const databaseGroupName = findDatabaseGroupNameByQuery(context);
+  if (databaseGroupName) {
     helper.issueCreate!.createContext = {
       detailList: [
         {
           migrationType: migrationType,
-          databaseGroupName: databaseGroupContext.databaseGroupName,
-          schemaGroupNames: databaseGroupContext.schemaGroupNameList,
+          databaseGroupName: databaseGroupName,
           statement: VALIDATE_ONLY_SQL,
           earliestAllowedTs: 0,
         },
