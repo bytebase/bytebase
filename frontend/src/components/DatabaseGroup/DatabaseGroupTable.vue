@@ -9,7 +9,7 @@
   >
     <template #item="{ item }: { item: ComposedDatabaseGroup }">
       <div class="bb-grid-cell">
-        {{ item.databaseGroupName }}
+        {{ item.databasePlaceholder }}
       </div>
       <div class="bb-grid-cell">{{ item.environment.title }}</div>
       <div v-if="props.showEdit" class="bb-grid-cell gap-x-2 justify-end">

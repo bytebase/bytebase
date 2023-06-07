@@ -130,8 +130,6 @@ export const useDBGroupStore = defineStore("db-group", () => {
     >,
     name: string
   ) => {
-    // Note: use resource id as placeholder right now.
-    databaseGroup.databasePlaceholder = name;
     const createdDatabaseGroup = await projectServiceClient.createDatabaseGroup(
       {
         parent: projectName,
@@ -218,8 +216,6 @@ export const useDBGroupStore = defineStore("db-group", () => {
     schemaGroup: Pick<SchemaGroup, "name" | "tablePlaceholder" | "tableExpr">,
     name: string
   ) => {
-    // Note: use resource id as placeholder right now.
-    schemaGroup.tablePlaceholder = name;
     const createdSchemaGroup = await projectServiceClient.createSchemaGroup({
       parent: dbGroupName,
       schemaGroup,
