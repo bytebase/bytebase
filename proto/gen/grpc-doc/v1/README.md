@@ -143,10 +143,12 @@
     - [CreateEnvironmentRequest](#bytebase-v1-CreateEnvironmentRequest)
     - [DeleteEnvironmentRequest](#bytebase-v1-DeleteEnvironmentRequest)
     - [Environment](#bytebase-v1-Environment)
+    - [EnvironmentBackupSetting](#bytebase-v1-EnvironmentBackupSetting)
     - [GetEnvironmentRequest](#bytebase-v1-GetEnvironmentRequest)
     - [ListEnvironmentsRequest](#bytebase-v1-ListEnvironmentsRequest)
     - [ListEnvironmentsResponse](#bytebase-v1-ListEnvironmentsResponse)
     - [UndeleteEnvironmentRequest](#bytebase-v1-UndeleteEnvironmentRequest)
+    - [UpdateEnvironmentBackupSettingRequest](#bytebase-v1-UpdateEnvironmentBackupSettingRequest)
     - [UpdateEnvironmentRequest](#bytebase-v1-UpdateEnvironmentRequest)
   
     - [EnvironmentTier](#bytebase-v1-EnvironmentTier)
@@ -1577,7 +1579,7 @@ BackupSetting is the setting for database backup.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database backup setting. Format: instances/{instance}/databases/{database}/backupSettings |
+| name | [string](#string) |  | The name of the database backup setting. Format: instances/{instance}/databases/{database}/backupSetting |
 | backup_retain_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The default maximum age of a Backup created via this BackupPlan. If specified, a Backup will be automatically deleted after its age reaches. If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS. It will be rounded up to the number of days. |
 | cron_schedule | [string](#string) |  | Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups. Support hour of day, day of week. (UTC time)
 
@@ -2567,6 +2569,22 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+<a name="bytebase-v1-EnvironmentBackupSetting"></a>
+
+### EnvironmentBackupSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the environment backup setting. Format: environments/{environment}/backupSetting |
+| enabled | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetEnvironmentRequest"></a>
 
 ### GetEnvironmentRequest
@@ -2632,6 +2650,21 @@ When paginating, all other parameters provided to `ListEnvironments` must match 
 
 
 
+<a name="bytebase-v1-UpdateEnvironmentBackupSettingRequest"></a>
+
+### UpdateEnvironmentBackupSettingRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| setting | [EnvironmentBackupSetting](#bytebase-v1-EnvironmentBackupSetting) |  | The environment backup setting to update. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateEnvironmentRequest"></a>
 
 ### UpdateEnvironmentRequest
@@ -2682,6 +2715,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | UpdateEnvironment | [UpdateEnvironmentRequest](#bytebase-v1-UpdateEnvironmentRequest) | [Environment](#bytebase-v1-Environment) |  |
 | DeleteEnvironment | [DeleteEnvironmentRequest](#bytebase-v1-DeleteEnvironmentRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteEnvironment | [UndeleteEnvironmentRequest](#bytebase-v1-UndeleteEnvironmentRequest) | [Environment](#bytebase-v1-Environment) |  |
+| UpdateBackupSetting | [UpdateEnvironmentBackupSettingRequest](#bytebase-v1-UpdateEnvironmentBackupSettingRequest) | [EnvironmentBackupSetting](#bytebase-v1-EnvironmentBackupSetting) |  |
 
  
 

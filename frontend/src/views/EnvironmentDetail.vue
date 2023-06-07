@@ -57,7 +57,7 @@ import { useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import EnvironmentForm from "@/components/EnvironmentForm.vue";
 import { environmentV1Slug, idFromSlug } from "@/utils";
-import { hasFeature, pushNotification, useLegacyBackupStore } from "@/store";
+import { hasFeature, pushNotification, useBackupV1Store } from "@/store";
 import BBModal from "@/bbkit/BBModal.vue";
 import {
   usePolicyV1Store,
@@ -106,7 +106,7 @@ const emit = defineEmits(["archive"]);
 
 const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
-const backupStore = useLegacyBackupStore();
+const backupStore = useBackupV1Store();
 const router = useRouter();
 const { t } = useI18n();
 
@@ -299,12 +299,9 @@ const disableAutoBackupContent = computed(() => {
 });
 
 const disableEnvironmentAutoBackup = async () => {
-  await backupStore.upsertBackupSettingByEnvironmentId(state.environment.uid, {
+  await backupStore.upsertEnvironmentBackupSetting({
+    name: `${state.environment.name}/backupSetting`,
     enabled: false,
-    hour: 0,
-    dayOfWeek: 0,
-    retentionPeriodTs: 0,
-    hookUrl: "",
   });
   success();
   state.showDisableAutoBackupModal = false;

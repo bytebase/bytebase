@@ -512,7 +512,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	})
 	s.registerOAuthRoutes(apiGroup)
 	s.registerProjectRoutes(apiGroup)
-	s.registerEnvironmentRoutes(apiGroup)
 	s.registerDatabaseRoutes(apiGroup)
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
