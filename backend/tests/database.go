@@ -12,6 +12,7 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -216,11 +217,12 @@ func marshalLabels(labelMap map[string]string, environmentID string) (string, er
 }
 
 // disableAutomaticBackup disables the automatic backup of a database.
-func (ctl *controller) disableAutomaticBackup(ctx context.Context, environmentName string) error {
-	if _, err := ctl.environmentServiceClient.UpdateBackupSetting(ctx, &v1pb.UpdateEnvironmentBackupSettingRequest{
-		Setting: &v1pb.EnvironmentBackupSetting{
-			Name:    fmt.Sprintf("%s/backupSetting", environmentName),
-			Enabled: false,
+func (ctl *controller) disableAutomaticBackup(ctx context.Context, databaseName string) error {
+	if _, err := ctl.databaseServiceClient.UpdateBackupSetting(ctx, &v1pb.UpdateBackupSettingRequest{
+		Setting: &v1pb.BackupSetting{
+			Name:                 fmt.Sprintf("%s/backupSetting", databaseName),
+			CronSchedule:         "",
+			BackupRetainDuration: durationpb.New(time.Duration(7*24*60*60) * time.Second),
 		},
 	}); err != nil {
 		return err
