@@ -15,6 +15,7 @@ var ownerAndDBAMethods = map[string]bool{
 	"EnvironmentService/UpdateEnvironment":   true,
 	"EnvironmentService/DeleteEnvironment":   true,
 	"EnvironmentService/UndeleteEnvironment": true,
+	"EnvironmentService/UpdateBackupSetting": true,
 	"InstanceService/CreateInstance":         true,
 	"InstanceService/UpdateInstance":         true,
 	"InstanceService/DeleteInstance":         true,
