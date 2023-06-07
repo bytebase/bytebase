@@ -2334,7 +2334,7 @@ type BackupSetting struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the database backup setting.
-	// Format: instances/{instance}/databases/{database}/backupSettings
+	// Format: instances/{instance}/databases/{database}/backupSetting
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The default maximum age of a Backup created via this BackupPlan.
 	// If specified, a Backup will be automatically deleted after its age reaches.

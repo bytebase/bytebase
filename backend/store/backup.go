@@ -63,35 +63,6 @@ func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSetti
 	return backupSettingRaw.toBackupSetting(), nil
 }
 
-// UpdateBackupSettingsInEnvironment upserts an instance of backup setting.
-func (s *Store) UpdateBackupSettingsInEnvironment(ctx context.Context, upsert *api.BackupSettingUpsert) error {
-	if err := s.validateBackupSettingUpsert(ctx, upsert); err != nil {
-		return err
-	}
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	stmt := `
-		UPDATE backup_setting
-		SET enabled = $1
-		WHERE id IN (
-			SELECT backup_setting.id
-			FROM backup_setting
-			INNER JOIN db ON backup_setting.database_id = db.id
-			INNER JOIN instance ON db.instance_id = instance.id
-			INNER JOIN environment ON instance.environment_id = environment.id
-			WHERE environment.id = $2
-		);
-	`
-	if _, err := tx.ExecContext(ctx, stmt, upsert.Enabled, upsert.EnvironmentID); err != nil {
-		return err
-	}
-	return tx.Commit()
-}
-
 // FindBackupSettingsMatch finds a list of backup setting instances with match conditions.
 func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
 	backupSettingRawList, err := s.findBackupSettingsMatchImpl(ctx, match)
@@ -490,6 +461,34 @@ func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, ups
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 	return &backupSetting, nil
+}
+
+// UpdateBackupSettingsForEnvironmentV2 upserts an instance of backup setting.
+func (s *Store) UpdateBackupSettingsForEnvironmentV2(ctx context.Context, environmentID string, enabled bool, updaterID int) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt := `
+		UPDATE backup_setting
+		SET
+			updater_id = $1,
+			enabled = $2
+		WHERE id IN (
+			SELECT backup_setting.id
+			FROM backup_setting
+			INNER JOIN db ON backup_setting.database_id = db.id
+			INNER JOIN instance ON db.instance_id = instance.id
+			INNER JOIN environment ON instance.environment_id = environment.id
+			WHERE environment.resource_id = $3
+		);
+	`
+	if _, err := tx.ExecContext(ctx, stmt, updaterID, enabled, environmentID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // ListBackupSettingV2 finds the backup setting.

@@ -139,6 +139,20 @@ export interface Environment {
   tier: EnvironmentTier;
 }
 
+export interface UpdateEnvironmentBackupSettingRequest {
+  /** The environment backup setting to update. */
+  setting?: EnvironmentBackupSetting;
+}
+
+export interface EnvironmentBackupSetting {
+  /**
+   * The name of the environment backup setting.
+   * Format: environments/{environment}/backupSetting
+   */
+  name: string;
+  enabled: boolean;
+}
+
 function createBaseGetEnvironmentRequest(): GetEnvironmentRequest {
   return { name: "" };
 }
@@ -739,6 +753,136 @@ export const Environment = {
   },
 };
 
+function createBaseUpdateEnvironmentBackupSettingRequest(): UpdateEnvironmentBackupSettingRequest {
+  return { setting: undefined };
+}
+
+export const UpdateEnvironmentBackupSettingRequest = {
+  encode(message: UpdateEnvironmentBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.setting !== undefined) {
+      EnvironmentBackupSetting.encode(message.setting, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateEnvironmentBackupSettingRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateEnvironmentBackupSettingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.setting = EnvironmentBackupSetting.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateEnvironmentBackupSettingRequest {
+    return { setting: isSet(object.setting) ? EnvironmentBackupSetting.fromJSON(object.setting) : undefined };
+  },
+
+  toJSON(message: UpdateEnvironmentBackupSettingRequest): unknown {
+    const obj: any = {};
+    message.setting !== undefined &&
+      (obj.setting = message.setting ? EnvironmentBackupSetting.toJSON(message.setting) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateEnvironmentBackupSettingRequest>): UpdateEnvironmentBackupSettingRequest {
+    return UpdateEnvironmentBackupSettingRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<UpdateEnvironmentBackupSettingRequest>): UpdateEnvironmentBackupSettingRequest {
+    const message = createBaseUpdateEnvironmentBackupSettingRequest();
+    message.setting = (object.setting !== undefined && object.setting !== null)
+      ? EnvironmentBackupSetting.fromPartial(object.setting)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseEnvironmentBackupSetting(): EnvironmentBackupSetting {
+  return { name: "", enabled: false };
+}
+
+export const EnvironmentBackupSetting = {
+  encode(message: EnvironmentBackupSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.enabled === true) {
+      writer.uint32(16).bool(message.enabled);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): EnvironmentBackupSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnvironmentBackupSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnvironmentBackupSetting {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      enabled: isSet(object.enabled) ? Boolean(object.enabled) : false,
+    };
+  },
+
+  toJSON(message: EnvironmentBackupSetting): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.enabled !== undefined && (obj.enabled = message.enabled);
+    return obj;
+  },
+
+  create(base?: DeepPartial<EnvironmentBackupSetting>): EnvironmentBackupSetting {
+    return EnvironmentBackupSetting.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<EnvironmentBackupSetting>): EnvironmentBackupSetting {
+    const message = createBaseEnvironmentBackupSetting();
+    message.name = object.name ?? "";
+    message.enabled = object.enabled ?? false;
+    return message;
+  },
+};
+
 export type EnvironmentServiceDefinition = typeof EnvironmentServiceDefinition;
 export const EnvironmentServiceDefinition = {
   name: "EnvironmentService",
@@ -1046,6 +1190,80 @@ export const EnvironmentServiceDefinition = {
         },
       },
     },
+    updateBackupSetting: {
+      name: "UpdateBackupSetting",
+      requestType: UpdateEnvironmentBackupSettingRequest,
+      requestStream: false,
+      responseType: EnvironmentBackupSetting,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              58,
+              58,
+              7,
+              115,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              50,
+              47,
+              47,
+              118,
+              49,
+              47,
+              123,
+              115,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              101,
+              110,
+              118,
+              105,
+              114,
+              111,
+              110,
+              109,
+              101,
+              110,
+              116,
+              115,
+              47,
+              42,
+              47,
+              98,
+              97,
+              99,
+              107,
+              117,
+              112,
+              83,
+              101,
+              116,
+              116,
+              105,
+              110,
+              103,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -1074,6 +1292,10 @@ export interface EnvironmentServiceImplementation<CallContextExt = {}> {
     request: UndeleteEnvironmentRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Environment>>;
+  updateBackupSetting(
+    request: UpdateEnvironmentBackupSettingRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<EnvironmentBackupSetting>>;
 }
 
 export interface EnvironmentServiceClient<CallOptionsExt = {}> {
@@ -1101,6 +1323,10 @@ export interface EnvironmentServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UndeleteEnvironmentRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Environment>;
+  updateBackupSetting(
+    request: DeepPartial<UpdateEnvironmentBackupSettingRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<EnvironmentBackupSetting>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
