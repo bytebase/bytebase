@@ -1579,7 +1579,7 @@ BackupSetting is the setting for database backup.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database backup setting. Format: instances/{instance}/databases/{database}/backupSettings |
+| name | [string](#string) |  | The name of the database backup setting. Format: instances/{instance}/databases/{database}/backupSetting |
 | backup_retain_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The default maximum age of a Backup created via this BackupPlan. If specified, a Backup will be automatically deleted after its age reaches. If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS. It will be rounded up to the number of days. |
 | cron_schedule | [string](#string) |  | Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups. Support hour of day, day of week. (UTC time)
 
@@ -2577,7 +2577,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database backup setting. Format: environments/{environment}/backupSettings |
+| name | [string](#string) |  | The name of the environment backup setting. Format: environments/{environment}/backupSetting |
 | enabled | [bool](#bool) |  |  |
 
 

@@ -146,8 +146,8 @@ export interface UpdateEnvironmentBackupSettingRequest {
 
 export interface EnvironmentBackupSetting {
   /**
-   * The name of the database backup setting.
-   * Format: environments/{environment}/backupSettings
+   * The name of the environment backup setting.
+   * Format: environments/{environment}/backupSetting
    */
   name: string;
   enabled: boolean;

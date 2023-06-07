@@ -614,8 +614,8 @@ type EnvironmentBackupSetting struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The name of the database backup setting.
-	// Format: environments/{environment}/backupSettings
+	// The name of the environment backup setting.
+	// Format: environments/{environment}/backupSetting
 	Name    string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Enabled bool   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
 }
