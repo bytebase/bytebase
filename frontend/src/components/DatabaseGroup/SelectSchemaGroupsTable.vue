@@ -18,7 +18,7 @@
         </NRadio>
       </div>
       <div class="bb-grid-cell">
-        {{ dbGroup.databaseGroupName }}
+        {{ dbGroup.databasePlaceholder }}
       </div>
       <div class="bb-grid-cell">{{ dbGroup.project.title }}</div>
       <div class="bb-grid-cell">{{ dbGroup.environment.title }}</div>
