@@ -102,6 +102,7 @@ import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import { Expr } from "@/types/proto/google/type/expr";
 import { useDebounceFn } from "@vueuse/core";
 import BBLoader from "@/bbkit/BBLoader.vue";
+import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 
 interface LocalState {
   isRequesting: boolean;
@@ -121,7 +122,7 @@ const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   isRequesting: false,
   showMatchedDatabaseList: true,
-  showUnmatchedDatabaseList: false,
+  showUnmatchedDatabaseList: true,
 });
 const matchedDatabaseList = ref<ComposedDatabase[]>([]);
 const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
@@ -138,7 +139,7 @@ const updateMatchingState = useDebounceFn(async () => {
   const result = await projectServiceClient.createDatabaseGroup({
     parent: props.project.name,
     databaseGroup: {
-      name: `${props.project.name}/databaseGroups/${validateOnlyResourceId}`,
+      name: `${props.project.name}/${databaseGroupNamePrefix}/${validateOnlyResourceId}`,
       databasePlaceholder: validateOnlyResourceId,
       databaseExpr: Expr.fromJSON({
         expression: celString,
