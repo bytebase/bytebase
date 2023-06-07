@@ -120,13 +120,10 @@
                   />
                 </div>
                 <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
-                  <SelectSchemaGroupsTable
+                  <SelectDatabaseGroupTable
                     :database-group-list="databaseGroupList"
                     :selected-database-group-name="
                       state.selectedDatabaseGroupName
-                    "
-                    :selected-schema-group-name-list="
-                      state.selectedSchemaGroupNameList
                     "
                     @update="handleDatabaseGroupSelect"
                   />
@@ -224,12 +221,9 @@
             />
           </div>
           <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
-            <SelectSchemaGroupsTable
+            <SelectDatabaseGroupTable
               :database-group-list="databaseGroupList"
               :selected-database-group-name="state.selectedDatabaseGroupName"
-              :selected-schema-group-name-list="
-                state.selectedSchemaGroupNameList
-              "
               @update="handleDatabaseGroupSelect"
             />
           </div>
@@ -298,6 +292,14 @@
     :alter-type="state.alterType"
     @close="state.showSchemaEditorModal = false"
   />
+
+  <DatabaseGroupPrevEditorModal
+    v-if="state.selectedDatabaseGroup"
+    :issue-type="type"
+    :database-group="state.selectedDatabaseGroup"
+    :database-id-list="schemaEditorContext.databaseIdList"
+    @close="state.selectedDatabaseGroup = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -345,8 +347,8 @@ import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
 import GhostDialog from "./GhostDialog.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
 import { watchEffect } from "vue";
-import SelectSchemaGroupsTable from "../DatabaseGroup/SelectSchemaGroupsTable.vue";
-import { generateIssueRoute } from "@/utils/databaseGroup/issue";
+import SelectDatabaseGroupTable from "../DatabaseGroup/SelectDatabaseGroupTable.vue";
+import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
 
 type LocalState = ProjectStandardViewState &
   ProjectTenantViewState & {
@@ -356,7 +358,8 @@ type LocalState = ProjectStandardViewState &
     showSchemaLessDatabaseList: boolean;
     showSchemaEditorModal: boolean;
     selectedDatabaseGroupName?: string;
-    selectedSchemaGroupNameList?: string[];
+    // Using to display the database group prev editor.
+    selectedDatabaseGroup?: ComposedDatabaseGroup;
   };
 
 const props = defineProps({
@@ -567,12 +570,7 @@ const generateMultiDb = async () => {
     const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
       state.selectedDatabaseGroupName
     );
-    const issueRoute = generateIssueRoute(
-      props.type,
-      databaseGroup,
-      state.selectedSchemaGroupNameList
-    );
-    router.push(issueRoute);
+    state.selectedDatabaseGroup = databaseGroup;
     return;
   }
 
@@ -675,12 +673,8 @@ const toggleAllDatabasesSelection = (
   }
 };
 
-const handleDatabaseGroupSelect = (
-  databaseGroupName: string,
-  schemaGroupNameList: string[]
-) => {
+const handleDatabaseGroupSelect = (databaseGroupName: string) => {
   state.selectedDatabaseGroupName = databaseGroupName;
-  state.selectedSchemaGroupNameList = schemaGroupNameList;
 };
 
 const isDatabaseSelected = (database: ComposedDatabase): boolean => {
@@ -709,12 +703,7 @@ const generateTenant = async () => {
     const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
       state.selectedDatabaseGroupName
     );
-    const issueRoute = generateIssueRoute(
-      props.type,
-      databaseGroup,
-      state.selectedSchemaGroupNameList
-    );
-    router.push(issueRoute);
+    state.selectedDatabaseGroup = databaseGroup;
     return;
   }
 
