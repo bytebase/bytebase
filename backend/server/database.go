@@ -11,7 +11,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
@@ -99,81 +98,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			if _, err := c.Response().Write([]byte(dbSchema.Schema)); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
 			}
-		}
-		return nil
-	})
-
-	g.PATCH("/database/:databaseID/backup-setting", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("databaseID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
-		}
-
-		backupSettingUpsert := &api.BackupSettingUpsert{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupSettingUpsert); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed set backup setting request").SetInternal(err)
-		}
-		backupSettingUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
-
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &id})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
-		}
-		if database == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("database %d not found", id)).SetInternal(err)
-		}
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
-		if err != nil {
-			return err
-		}
-		backupSettingUpsert.EnvironmentID = environment.UID
-
-		backupSetting, err := s.store.UpsertBackupSetting(ctx, backupSettingUpsert)
-		if err != nil {
-			if common.ErrorCode(err) == common.Invalid {
-				return echo.NewHTTPError(http.StatusBadRequest, "Invalid backup setting").SetInternal(err)
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set backup setting").SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, backupSetting); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create set backup setting response").SetInternal(err)
-		}
-		return nil
-	})
-
-	g.GET("/database/:databaseID/backup-setting", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("databaseID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
-		}
-
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &id})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
-		}
-		if database == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("database %d not found", id)).SetInternal(err)
-		}
-
-		backupSetting, err := s.store.GetBackupSettingV2(ctx, id)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get backup setting for database id: %d", id)).SetInternal(err)
-		}
-		// Returns the backup setting with UNKNOWN_ID to indicate the database has no backup
-		apiBackupSetting := &api.BackupSetting{
-			ID: api.UnknownID,
-		}
-		if backupSetting != nil {
-			apiBackupSetting = backupSetting.ToAPIBackupSetting()
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, apiBackupSetting); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get backup setting response: %v", id)).SetInternal(err)
 		}
 		return nil
 	})
