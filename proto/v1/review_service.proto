@@ -50,6 +50,13 @@ service ReviewService {
       body: "*"
     };
   }
+
+  rpc SendBackReview(SendBackReviewRequest) returns (Review) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/reviews/*}:sendBack"
+      body: "*"
+    };
+  }
 }
 
 message GetReviewRequest {
@@ -125,6 +132,12 @@ message BatchUpdateReviewsResponse {
 }
 
 message ApproveReviewRequest {
+  // The name of the review to add an approver.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SendBackReviewRequest {
   // The name of the review to add an approver.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
