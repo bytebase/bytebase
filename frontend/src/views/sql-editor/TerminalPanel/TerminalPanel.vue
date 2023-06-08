@@ -29,8 +29,9 @@
             @clear-screen="handleClearScreen"
           />
           <ResultView
-            v-if="query.queryResult"
+            v-if="query.executeParams && query.queryResult"
             class="max-h-[20rem] flex-1 flex flex-col overflow-hidden"
+            :execute-params="query.executeParams"
             :result-set="query.queryResult"
             :loading="query.status === 'RUNNING'"
             :dark="true"
