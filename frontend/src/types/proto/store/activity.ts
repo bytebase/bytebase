@@ -134,6 +134,7 @@ export enum ActivityIssueCommentCreatePayload_ApprovalEvent_Status {
   STATUS_UNSPECIFIED = 0,
   PENDING = 1,
   APPROVED = 2,
+  SENT_BACK = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -150,6 +151,9 @@ export function activityIssueCommentCreatePayload_ApprovalEvent_StatusFromJSON(
     case 2:
     case "APPROVED":
       return ActivityIssueCommentCreatePayload_ApprovalEvent_Status.APPROVED;
+    case 3:
+    case "SENT_BACK":
+      return ActivityIssueCommentCreatePayload_ApprovalEvent_Status.SENT_BACK;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -167,6 +171,8 @@ export function activityIssueCommentCreatePayload_ApprovalEvent_StatusToJSON(
       return "PENDING";
     case ActivityIssueCommentCreatePayload_ApprovalEvent_Status.APPROVED:
       return "APPROVED";
+    case ActivityIssueCommentCreatePayload_ApprovalEvent_Status.SENT_BACK:
+      return "SENT_BACK";
     case ActivityIssueCommentCreatePayload_ApprovalEvent_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
