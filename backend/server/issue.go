@@ -1165,7 +1165,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							return nil, err
 						}
 						if databaseGroup == nil {
-							return nil, errors.New(fmt.Sprintf("cannot find database group with uid %d", schemaGroup.DatabaseGroupUID))
+							return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot find database group with uid %d", schemaGroup.DatabaseGroupUID))
 						}
 						for _, tableName := range matches {
 							table2SchemaGroupName[tableName] = fmt.Sprintf("databaseGroups/%s/schemaGroups/%s", databaseGroup.ResourceID, schemaGroup.ResourceID)
