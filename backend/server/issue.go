@@ -1199,11 +1199,24 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						return nil, echo.NewHTTPError(http.StatusBadRequest, "The valid statement of migration detail should not be empty")
 					}
 
+					var prevSchemaGroup *store.SchemaGroupMessage
 					for _, singleStatement := range singleStatements {
 						// If singleStatement contains the schema table placeholder, we regard it belongs to this table group.
 						match := false
 						for _, schemaGroup := range schemaGroups {
 							if strings.Contains(singleStatement.Text, schemaGroup.Placeholder) {
+								// Current statement belongs to another schemaGroup, we should flush the statement buf to the prevSchemaGroup.
+								if ((prevSchemaGroup == nil) != (schemaGroup == nil)) || (prevSchemaGroup != nil && schemaGroup.ResourceID != prevSchemaGroup.ResourceID) {
+									taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(table2TaskStatement, table2SchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
+									if err != nil {
+										return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
+									}
+									for i := 0; i < len(taskCreates)-1; i++ {
+										taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+									}
+									taskCreateList = append(taskCreateList, taskCreates...)
+								}
+								prevSchemaGroup = schemaGroup
 								// Iterate the matches tables in this physical database and render the statement.
 								for _, tableName := range schemaGroups2MatchedTableNames[schemaGroup.Placeholder] {
 									newStatement := strings.ReplaceAll(singleStatement.Text, schemaGroup.Placeholder, tableName)
@@ -1215,37 +1228,46 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							}
 						}
 						if !match {
+							prevSchemaGroup = nil
 							table2TaskStatement[""] += singleStatement.Text
 						}
 					}
-					idx := 0
-					// Run [""] task first.
-					if statement, ok := table2TaskStatement[""]; ok && statement != "" {
-						newMigrationDetail := *migrationDetail
-						newMigrationDetail.Statement = statement
-						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), "")
-						if err != nil {
-							return nil, err
-						}
-						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList), ToIndex: len(taskCreateList) + 1})
-						taskCreateList = append(taskCreateList, taskCreate)
-						idx++
+					taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(table2TaskStatement, table2SchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
+					if err != nil {
+						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
 					}
+					for i := 0; i < len(taskCreates)-1; i++ {
+						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+					}
+					taskCreateList = append(taskCreateList, taskCreates...)
+					// idx := 0
+					// // Run [""] task first.
+					// if statement, ok := table2TaskStatement[""]; ok && statement != "" {
+					// 	newMigrationDetail := *migrationDetail
+					// 	newMigrationDetail.Statement = statement
+					// 	taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), "")
+					// 	if err != nil {
+					// 		return nil, err
+					// 	}
+					// 	taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList), ToIndex: len(taskCreateList) + 1})
+					// 	taskCreateList = append(taskCreateList, taskCreate)
+					// 	idx++
+					// }
 
-					for tableName, statement := range table2TaskStatement {
-						if statement == "" || tableName == "" {
-							continue
-						}
-						newMigrationDetail := *migrationDetail
-						newMigrationDetail.Statement = statement
-						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), table2SchemaGroupName[tableName])
-						if err != nil {
-							return nil, err
-						}
-						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList), ToIndex: len(taskCreateList) + 1})
-						taskCreateList = append(taskCreateList, taskCreate)
-						idx++
-					}
+					// for tableName, statement := range table2TaskStatement {
+					// 	if statement == "" || tableName == "" {
+					// 		continue
+					// 	}
+					// 	newMigrationDetail := *migrationDetail
+					// 	newMigrationDetail.Statement = statement
+					// 	taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), table2SchemaGroupName[tableName])
+					// 	if err != nil {
+					// 		return nil, err
+					// 	}
+					// 	taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList), ToIndex: len(taskCreateList) + 1})
+					// 	taskCreateList = append(taskCreateList, taskCreate)
+					// 	idx++
+					// }
 				} else {
 					// Create grouping batch change issue.
 					for i := 0; i < len(migrationDetailList)-1; i++ {
@@ -1301,6 +1323,29 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		})
 	}
 	return create, nil
+}
+
+func flushGroupingDatabaseTaskToTaskCreate(table2TaskStatement map[string]string, table2SchemaGroupName map[string]string, database *store.DatabaseMessage, instance *store.InstanceMessage, pushEvent *vcs.PushEvent, migrationDetail *api.MigrationDetail) ([]api.TaskCreate, error) {
+	var taskCreateList []api.TaskCreate
+	idx := 0
+	for tableName, statement := range table2TaskStatement {
+		if statement == "" {
+			continue
+		}
+		newMigrationDetail := *migrationDetail
+		newMigrationDetail.Statement = statement
+		taskCreate, err := getUpdateTask(database, instance, pushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), table2SchemaGroupName[tableName])
+		if err != nil {
+			return nil, err
+		}
+		taskCreateList = append(taskCreateList, taskCreate)
+		idx++
+	}
+	// clear the table2TaskStatement map.
+	for tableName := range table2TaskStatement {
+		delete(table2TaskStatement, tableName)
+	}
+	return taskCreateList, nil
 }
 
 func convertDatabaseToParserEngineType(engine db.Type) (parser.EngineType, error) {
