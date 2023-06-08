@@ -38,9 +38,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive } from "vue";
+import { onMounted, reactive } from "vue";
 import { head } from "lodash-es";
-import { unparse } from "papaparse";
 import dayjs from "dayjs";
 
 import { useExtraIssueLogic, useIssueLogic } from "../logic";
@@ -51,9 +50,11 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
+  getExportRequestFormat,
   pushNotification,
   useDatabaseV1Store,
-  useLegacySQLStore,
+  useProjectIamPolicyStore,
+  useSQLStore,
 } from "@/store";
 import { BBSpin } from "@/bbkit";
 import { convertFromCEL } from "@/utils/issue/cel";
@@ -70,6 +71,8 @@ interface LocalState {
 const { changeIssueStatus } = useExtraIssueLogic();
 const { issue } = useIssueLogic();
 const databaseStore = useDatabaseV1Store();
+const sqlStore = useSQLStore();
+const projectIamPolicyStore = useProjectIamPolicyStore();
 const state = reactive<LocalState>({
   databaseId: String(UNKNOWN_ID),
   statement: "",
@@ -77,20 +80,6 @@ const state = reactive<LocalState>({
   exportFormat: "CSV",
   showConfirmModal: false,
   isRequesting: false,
-});
-
-const exportContext = computed(() => {
-  const database = databaseStore.getDatabaseByUID(state.databaseId);
-  if (database.uid === String(UNKNOWN_ID)) {
-    throw "Database not found";
-  }
-  return {
-    instanceId: Number(database.instanceEntity.uid),
-    databaseName: database.databaseName,
-    statement: state.statement,
-    limit: state.maxRowCount,
-    exportFormat: state.exportFormat,
-  };
 });
 
 onMounted(async () => {
@@ -126,72 +115,44 @@ const handleExport = async () => {
   if (state.isRequesting) {
     return;
   }
-
   state.isRequesting = true;
-  const queryResult = await useLegacySQLStore().query(exportContext.value);
-  if (queryResult.error) {
+
+  const database = databaseStore.getDatabaseByUID(state.databaseId);
+  if (database.uid === String(UNKNOWN_ID)) {
+    throw "Database not found";
+  }
+
+  try {
+    const { content } = await sqlStore.exportData({
+      name: database.instance,
+      connectionDatabase: database.databaseName,
+      statement: state.statement,
+      limit: state.maxRowCount,
+      format: getExportRequestFormat(state.exportFormat),
+    });
+    const blob = new Blob([content], {
+      type: state.exportFormat === "CSV" ? "text/csv" : "application/json",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const fileFormat = state.exportFormat.toLowerCase();
+    const formattedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
+    const filename = `export-data-${formattedDateString}`;
+    const link = document.createElement("a");
+    link.download = `${filename}.${fileFormat}`;
+    link.href = url;
+    link.click();
+    // Fetch the latest iam policy.
+    await projectIamPolicyStore.fetchProjectIamPolicy(database.project, true);
+    state.isRequesting = false;
+    state.showConfirmModal = false;
+  } catch (error) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: `Failed to export data`,
-      description: queryResult.error,
+      description: JSON.stringify(error),
     });
-    return;
   }
-  const result = head(queryResult.resultList);
-  if (!result || result.error) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: `Failed to export data`,
-      description: result?.error || "No result found",
-    });
-    return;
-  }
-
-  const columns = result.data[0];
-  const data = result.data[2];
-  let rawText = "";
-
-  if (state.exportFormat === "CSV") {
-    const csvFields = columns.map((col) => col);
-    const csvData = data.map((d) => {
-      const temp: any[] = [];
-      for (const k in d) {
-        temp.push(d[k]);
-      }
-      return temp;
-    });
-
-    rawText = unparse({
-      fields: csvFields,
-      data: csvData,
-    });
-  } else {
-    const objects = [];
-    for (const item of data) {
-      const object = {} as any;
-      for (let i = 0; i < columns.length; i++) {
-        object[columns[i]] = item[i];
-      }
-      objects.push(object);
-    }
-    rawText = JSON.stringify(objects);
-  }
-
-  const fileFormat = state.exportFormat.toLowerCase();
-  const encodedUri = encodeURI(
-    `data:text/${fileFormat};charset=utf-8,${rawText}`
-  );
-  const formattedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
-  const filename = `export-data-${formattedDateString}`;
-  const link = document.createElement("a");
-  link.download = `${filename}.${fileFormat}`;
-  link.href = encodedUri;
-  link.click();
-  state.isRequesting = false;
-  state.showConfirmModal = false;
-
   // After data exported successfully, we change the issue status to DONE automatically.
   changeIssueStatus("DONE", "");
 };
