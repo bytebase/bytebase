@@ -95,7 +95,10 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	if setting.DisallowSignup {
-		return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
+		rolePtr := ctx.Value(common.RoleContextKey)
+		if rolePtr == nil || rolePtr.(api.Role) != api.Owner {
+			return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
+		}
 	}
 	if request.User == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "user must be set")
