@@ -29,6 +29,7 @@ export enum IssuePayloadApproval_Approver_Status {
   STATUS_UNSPECIFIED = 0,
   PENDING = 1,
   APPROVED = 2,
+  SENT_BACK = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -43,6 +44,9 @@ export function issuePayloadApproval_Approver_StatusFromJSON(object: any): Issue
     case 2:
     case "APPROVED":
       return IssuePayloadApproval_Approver_Status.APPROVED;
+    case 3:
+    case "SENT_BACK":
+      return IssuePayloadApproval_Approver_Status.SENT_BACK;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -58,6 +62,8 @@ export function issuePayloadApproval_Approver_StatusToJSON(object: IssuePayloadA
       return "PENDING";
     case IssuePayloadApproval_Approver_Status.APPROVED:
       return "APPROVED";
+    case IssuePayloadApproval_Approver_Status.SENT_BACK:
+      return "SENT_BACK";
     case IssuePayloadApproval_Approver_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
