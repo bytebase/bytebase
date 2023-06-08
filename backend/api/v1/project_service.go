@@ -2056,6 +2056,8 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 			result = append(result, string(api.ActivityIssueFieldUpdate))
 		case v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE:
 			result = append(result, string(api.ActivityIssueStatusUpdate))
+		case v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY:
+			result = append(result, string(api.ActivityIssueApprovalNotify))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
 			result = append(result, string(api.ActivityPipelineStageStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE:
@@ -2107,6 +2109,8 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 			result = append(result, v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE)
 		case string(api.ActivityIssueStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE)
+		case string(api.ActivityIssueApprovalNotify):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY)
 		case string(api.ActivityPipelineStageStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
 		case string(api.ActivityPipelineTaskStatusUpdate):
