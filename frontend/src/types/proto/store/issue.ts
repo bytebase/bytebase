@@ -8,6 +8,12 @@ export const protobufPackage = "bytebase.store";
 export interface IssuePayload {
   approval?: IssuePayloadApproval;
   grantRequest?: GrantRequest;
+  grouping?: Grouping;
+}
+
+export interface Grouping {
+  /** The group name, format projects/{project}/database_groups/{database_group} */
+  databaseGroupName: string;
 }
 
 export interface GrantRequest {
@@ -19,7 +25,7 @@ export interface GrantRequest {
 }
 
 function createBaseIssuePayload(): IssuePayload {
-  return { approval: undefined, grantRequest: undefined };
+  return { approval: undefined, grantRequest: undefined, grouping: undefined };
 }
 
 export const IssuePayload = {
@@ -29,6 +35,9 @@ export const IssuePayload = {
     }
     if (message.grantRequest !== undefined) {
       GrantRequest.encode(message.grantRequest, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.grouping !== undefined) {
+      Grouping.encode(message.grouping, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -54,6 +63,13 @@ export const IssuePayload = {
 
           message.grantRequest = GrantRequest.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.grouping = Grouping.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -67,6 +83,7 @@ export const IssuePayload = {
     return {
       approval: isSet(object.approval) ? IssuePayloadApproval.fromJSON(object.approval) : undefined,
       grantRequest: isSet(object.grantRequest) ? GrantRequest.fromJSON(object.grantRequest) : undefined,
+      grouping: isSet(object.grouping) ? Grouping.fromJSON(object.grouping) : undefined,
     };
   },
 
@@ -76,6 +93,7 @@ export const IssuePayload = {
       (obj.approval = message.approval ? IssuePayloadApproval.toJSON(message.approval) : undefined);
     message.grantRequest !== undefined &&
       (obj.grantRequest = message.grantRequest ? GrantRequest.toJSON(message.grantRequest) : undefined);
+    message.grouping !== undefined && (obj.grouping = message.grouping ? Grouping.toJSON(message.grouping) : undefined);
     return obj;
   },
 
@@ -91,6 +109,65 @@ export const IssuePayload = {
     message.grantRequest = (object.grantRequest !== undefined && object.grantRequest !== null)
       ? GrantRequest.fromPartial(object.grantRequest)
       : undefined;
+    message.grouping = (object.grouping !== undefined && object.grouping !== null)
+      ? Grouping.fromPartial(object.grouping)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGrouping(): Grouping {
+  return { databaseGroupName: "" };
+}
+
+export const Grouping = {
+  encode(message: Grouping, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.databaseGroupName !== "") {
+      writer.uint32(10).string(message.databaseGroupName);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Grouping {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGrouping();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databaseGroupName = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Grouping {
+    return { databaseGroupName: isSet(object.databaseGroupName) ? String(object.databaseGroupName) : "" };
+  },
+
+  toJSON(message: Grouping): unknown {
+    const obj: any = {};
+    message.databaseGroupName !== undefined && (obj.databaseGroupName = message.databaseGroupName);
+    return obj;
+  },
+
+  create(base?: DeepPartial<Grouping>): Grouping {
+    return Grouping.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<Grouping>): Grouping {
+    const message = createBaseGrouping();
+    message.databaseGroupName = object.databaseGroupName ?? "";
     return message;
   },
 };
