@@ -66,7 +66,7 @@ func TestMySQLParser(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		_, err := ParseMySQL(test.statement)
+		_, _, err := ParseMySQL(test.statement)
 		if test.errorMessage == "" {
 			require.NoError(t, err, i)
 		} else {
@@ -103,7 +103,7 @@ func TestMySQLValidateForEditor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tree, err := ParseMySQL(test.statement)
+		tree, _, err := ParseMySQL(test.statement)
 		require.NoError(t, err)
 		err = MySQLValidateForEditor(tree)
 		if test.validate {

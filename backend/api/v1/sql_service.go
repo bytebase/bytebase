@@ -1071,7 +1071,7 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			}
 		}
 	case db.MySQL:
-		tree, err := parser.ParseMySQL(statement)
+		tree, _, err := parser.ParseMySQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}

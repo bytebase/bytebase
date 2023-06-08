@@ -11,7 +11,7 @@ import (
 )
 
 // ParseMySQL parses the given SQL statement and returns the AST.
-func ParseMySQL(statement string) (antlr.Tree, error) {
+func ParseMySQL(statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	return parseMySQL(antlr.NewInputStream(statement))
 }
 
@@ -19,11 +19,11 @@ func ParseMySQL(statement string) (antlr.Tree, error) {
 // Note that the reader is read completely into memory and so it must actually
 // have a stopping point - you cannot pass in a reader on an open-ended source such
 // as a socket for instance.
-func ParseMySQLStream(src io.Reader) (antlr.Tree, error) {
+func ParseMySQLStream(src io.Reader) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	return parseMySQL(antlr.NewIoStream(src))
 }
 
-func parseMySQL(input *antlr.InputStream) (antlr.Tree, error) {
+func parseMySQL(input *antlr.InputStream) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	lexer := parser.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewMySQLParser(stream)
@@ -41,14 +41,14 @@ func parseMySQL(input *antlr.InputStream) (antlr.Tree, error) {
 	tree := p.Script()
 
 	if lexerErrorListener.err != nil {
-		return nil, lexerErrorListener.err
+		return nil, nil, lexerErrorListener.err
 	}
 
 	if parserErrorListener.err != nil {
-		return nil, parserErrorListener.err
+		return nil, nil, parserErrorListener.err
 	}
 
-	return tree, nil
+	return tree, stream, nil
 }
 
 // MySQLValidateForEditor validates the given SQL statement for editor.
@@ -99,7 +99,7 @@ func (l *mysqlValidateForEditorListener) EnterExplainableStatement(ctx *parser.E
 }
 
 func extractMySQLResourceList(currentDatabase string, statement string) ([]SchemaResource, error) {
-	tree, err := ParseMySQL(statement)
+	tree, _, err := ParseMySQL(statement)
 	if err != nil {
 		return nil, err
 	}

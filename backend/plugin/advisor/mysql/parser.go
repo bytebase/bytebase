@@ -22,7 +22,7 @@ func newParser() *tidbparser.Parser {
 }
 
 func parseStatement(statement string, charset string, collation string) ([]ast.StmtNode, []advisor.Advice) {
-	tree, err := parser.ParseMySQL(statement)
+	tree, tokens, err := parser.ParseMySQL(statement)
 	if err != nil {
 		if syntaxErr, ok := err.(*parser.SyntaxError); ok {
 			return nil, []advisor.Advice{
@@ -45,6 +45,9 @@ func parseStatement(statement string, charset string, collation string) ([]ast.S
 			},
 		}
 	}
+	if tree == nil {
+		return nil, nil
+	}
 
 	var returnNodes []ast.StmtNode
 	var adviceList []advisor.Advice
@@ -55,7 +58,7 @@ func parseStatement(statement string, charset string, collation string) ([]ast.S
 		}
 
 		if query, ok := child.(mysqlparser.IQueryContext); ok {
-			text := query.GetText()
+			text := tokens.GetTextFromRuleContext(query)
 			lastLine := query.GetStop().GetLine()
 			if nodes, _, err := p.Parse(text, charset, collation); err == nil {
 				if len(nodes) != 1 {

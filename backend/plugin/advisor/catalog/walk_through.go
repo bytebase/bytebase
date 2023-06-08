@@ -1323,9 +1323,12 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
 
-	tree, err := parser.ParseMySQL(statement)
+	tree, tokens, err := parser.ParseMySQL(statement)
 	if err != nil {
 		NewParseError(err.Error())
+	}
+	if tree == nil {
+		return nil, nil
 	}
 
 	var returnNodes []tidbast.StmtNode
@@ -1335,8 +1338,9 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 		}
 
 		if query, ok := child.(mysqlparser.IQueryContext); ok {
-			text := query.GetText()
+			text := tokens.GetTextFromRuleContext(query)
 			lastLine := query.GetStop().GetLine()
+
 			if nodes, _, err := p.Parse(text, "", ""); err == nil {
 				if len(nodes) != 1 {
 					continue
