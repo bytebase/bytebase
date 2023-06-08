@@ -265,6 +265,9 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 
 	if err := func() error {
+		if len(payload.Approval.ApprovalTemplates) != 1 {
+			return nil
+		}
 		protoPayload, err := protojson.Marshal(&storepb.ActivityIssueApprovalNotifyPayload{
 			ApprovalStep: utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers),
 		})
