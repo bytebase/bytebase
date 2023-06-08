@@ -162,7 +162,7 @@ type MigrationDetail struct {
 	// DatabaseGroupName is the name of a database group.
 	DatabaseGroupName string `json:"databaseGroupName"`
 	// SchemaGroupName is the name of a schema group.
-	SchemaGroupName string `json:"schemaGroupName`
+	SchemaGroupName string `json:"schemaGroupName"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
 	EarliestAllowedTs int64 `json:"earliestAllowedTs"`
 	// SchemaVersion is parsed from VCS file name.
