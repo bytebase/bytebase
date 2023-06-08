@@ -262,6 +262,9 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	}
 
 	if err := func() error {
+		if len(payload.Approval.ApprovalTemplates) != 1 {
+			return nil
+		}
 		approvalStep := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 		if approvalStep == nil {
 			return nil
