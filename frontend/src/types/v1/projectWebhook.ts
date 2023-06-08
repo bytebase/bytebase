@@ -110,5 +110,10 @@ export const projectWebhookV1ActivityItemList =
         label: t("project.webhook.activity-item.issue-comment-creation.label"),
         activity: Activity_Type.TYPE_ISSUE_COMMENT_CREATE,
       },
+      {
+        title: t("project.webhook.activity-item.issue-approval-notify.title"),
+        label: t("project.webhook.activity-item.issue-approval-notify.label"),
+        activity: Activity_Type.TYPE_ISSUE_APPROVAL_NOTIFY,
+      },
     ];
   };

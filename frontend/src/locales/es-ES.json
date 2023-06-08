@@ -1425,6 +1425,10 @@
         "issue-comment-creation": {
           "title": "Creación de comentario de incidencia",
           "label": "Cuando se crea un nuevo comentario en la incidencia"
+        },
+        "issue-approval-notify": {
+          "title": "Notificación de aprobación de incidencia",
+          "label": "Cuando se aprueba o rechaza una incidencia"
         }
       }
     },
