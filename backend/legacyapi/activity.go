@@ -21,6 +21,8 @@ const (
 	ActivityIssueFieldUpdate ActivityType = "bb.issue.field.update"
 	// ActivityIssueStatusUpdate is the type for updating issue status.
 	ActivityIssueStatusUpdate ActivityType = "bb.issue.status.update"
+	// ActivityIssueApprovalStepPending is the type for pending-approval issue approval step.
+	ActivityIssueApprovalStepPending ActivityType = "bb.issue.approval.step.pending"
 	// ActivityPipelineStageStatusUpdate is the type for stage begins or ends.
 	ActivityPipelineStageStatusUpdate ActivityType = "bb.pipeline.stage.status.update"
 	// ActivityPipelineTaskStatusUpdate is the type for updating pipeline task status.
@@ -135,6 +137,12 @@ type ActivityIssueStatusUpdatePayload struct {
 	NewStatus IssueStatus `json:"newStatus,omitempty"`
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
+}
+
+// ActivityIssueApprovalStepPendingPayload is the API message payloads for approval steps that are pending approval.
+type ActivityIssueApprovalStepPendingPayload struct {
+	// ProtoPayload is protojson.Marshal(storepb.ActivityIssueApprovalStepPendingPayload).
+	ProtoPayload string `json:"protoPayload,omitempty"`
 }
 
 // ActivityPipelineStageStatusUpdatePayload is the API message payloads for stage status updates.
