@@ -504,7 +504,7 @@ func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload stri
 		if err != nil {
 			return "", err
 		}
-		payload = string(newPayload)
+		return string(newPayload), nil
 	case api.ActivityIssueCommentCreate:
 		var originalPayload api.ActivityIssueCommentCreatePayload
 		if err := json.Unmarshal([]byte(payload), &originalPayload); err != nil {
@@ -541,9 +541,16 @@ func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload stri
 		if err != nil {
 			return "", err
 		}
-		payload = string(newPayload)
+		return string(newPayload), nil
+	case api.ActivityIssueApprovalStepPending:
+		var originalPayload api.ActivityIssueApprovalStepPendingPayload
+		if err := json.Unmarshal([]byte(payload), &originalPayload); err != nil {
+			return "", err
+		}
+		return originalPayload.ProtoPayload, nil
+	default:
+		return payload, nil
 	}
-	return payload, nil
 }
 
 func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload string) (string, error) {
@@ -561,7 +568,7 @@ func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload stri
 		if err != nil {
 			return "", err
 		}
-		payload = string(newPayload)
+		return string(newPayload), nil
 	case api.ActivityIssueCommentCreate:
 		var protoPayload storepb.ActivityIssueCommentCreatePayload
 		if err := protojson.Unmarshal([]byte(payload), &protoPayload); err != nil {
@@ -599,8 +606,23 @@ func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload stri
 				}
 			}
 		}
+		newPayload, err := json.Marshal(originalPayload)
+		if err != nil {
+			return "", err
+		}
+		return string(newPayload), nil
+	case api.ActivityIssueApprovalStepPending:
+		originalPayload := &api.ActivityIssueApprovalStepPendingPayload{
+			ProtoPayload: payload,
+		}
+		newPayload, err := json.Marshal(originalPayload)
+		if err != nil {
+			return "", err
+		}
+		return string(newPayload), nil
+	default:
+		return payload, nil
 	}
-	return payload, nil
 }
 
 func convertAPIExternalApprovalEventActionToStorePBAction(action api.ExternalApprovalEventActionType) storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action {
