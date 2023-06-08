@@ -351,32 +351,35 @@ func collapseUnion(query string) (string, error) {
 func SplitMultiSQLAndNormalize(engineType EngineType, statement string) ([]SingleSQL, error) {
 	switch engineType {
 	case MySQL:
-		list, err := SplitMultiSQL(MySQL, statement)
+		has, list, err := hasDelimiter(statement)
 		if err != nil {
 			return nil, err
 		}
-
-		var result []SingleSQL
-		delimiter := `;`
-		for _, sql := range list {
-			if IsDelimiter(sql.Text) {
-				delimiter, err = ExtractDelimiter(sql.Text)
-				if err != nil {
-					return nil, err
+		if has {
+			var result []SingleSQL
+			delimiter := `;`
+			for _, sql := range list {
+				if IsDelimiter(sql.Text) {
+					delimiter, err = ExtractDelimiter(sql.Text)
+					if err != nil {
+						return nil, err
+					}
+					continue
 				}
-				continue
+				if delimiter != ";" {
+					result = append(result, SingleSQL{
+						Text:     fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)),
+						LastLine: sql.LastLine,
+						Empty:    sql.Empty,
+					})
+				} else {
+					result = append(result, sql)
+				}
 			}
-			if delimiter != ";" {
-				result = append(result, SingleSQL{
-					Text:     fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)),
-					LastLine: sql.LastLine,
-					Empty:    sql.Empty,
-				})
-			} else {
-				result = append(result, sql)
-			}
+			return result, nil
 		}
-		return result, nil
+
+		return SplitMultiSQL(MySQL, statement)
 	default:
 		return SplitMultiSQL(engineType, statement)
 	}
@@ -653,13 +656,26 @@ func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
 
 // isTiDBUnsupportStmt returns true if this statement is unsupported in TiDB.
 func isTiDBUnsupportStmt(stmt string) bool {
-	if IsTiDBUnsupportDDLStmt(stmt) {
+	if _, err := ParseTiDB(stmt, "", ""); err != nil {
 		return true
 	}
-	// Match DELIMITER statement
-	// Now, we assume that all input comes from our mysqldump, and the tokenizer can split the mysqldump DELIMITER statement
-	// in one singleSQL correctly, so we can handle it easily here by checking the prefix.
-	return IsDelimiter(stmt)
+	return false
+}
+
+func hasDelimiter(statement string) (bool, []SingleSQL, error) {
+	// use splitTiDBMultiSQL to check if the statement has delimiter
+	list, err := SplitMultiSQL(TiDB, statement)
+	if err != nil {
+		return false, nil, errors.Errorf("failed to split multi sql: %v", err)
+	}
+
+	for _, sql := range list {
+		if IsDelimiter(sql.Text) {
+			return true, list, nil
+		}
+	}
+
+	return false, list, nil
 }
 
 // IsTiDBUnsupportDDLStmt checks whether the `stmt` is unsupported DDL statement in TiDB, the following statements are unsupported:

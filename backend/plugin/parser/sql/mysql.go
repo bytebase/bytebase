@@ -3,8 +3,10 @@ package parser
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"sort"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
@@ -12,6 +14,33 @@ import (
 
 // ParseMySQL parses the given SQL statement and returns the AST.
 func ParseMySQL(statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
+	// deal with delimiter if needed
+	has, list, err := hasDelimiter(statement)
+	if err != nil {
+		return nil, nil, err
+	}
+	if has {
+		var result []string
+		delimiter := `;`
+		for _, sql := range list {
+			if IsDelimiter(sql.Text) {
+				delimiter, err = ExtractDelimiter(sql.Text)
+				if err != nil {
+					return nil, nil, err
+				}
+				result = append(result, "-- "+sql.Text)
+				continue
+			}
+			// TODO(rebelice): after deal with delimiter, we may cannot get the right line number, fix it.
+			if delimiter != ";" {
+				result = append(result, fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)))
+			} else {
+				result = append(result, sql.Text)
+			}
+		}
+
+		statement = strings.Join(result, "\n")
+	}
 	return parseInputStream(antlr.NewInputStream(statement))
 }
 
@@ -20,7 +49,8 @@ func ParseMySQL(statement string) (antlr.Tree, *antlr.CommonTokenStream, error) 
 // have a stopping point - you cannot pass in a reader on an open-ended source such
 // as a socket for instance.
 func ParseMySQLStream(src io.Reader) (antlr.Tree, *antlr.CommonTokenStream, error) {
-	return parseInputStream(antlr.NewIoStream(src))
+	text := antlr.NewIoStream(src).String()
+	return ParseMySQL(text)
 }
 
 func parseInputStream(input *antlr.InputStream) (antlr.Tree, *antlr.CommonTokenStream, error) {
