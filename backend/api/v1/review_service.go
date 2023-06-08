@@ -262,8 +262,12 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 	}
 
 	if err := func() error {
+		approvalStep := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
+		if approvalStep == nil {
+			return nil
+		}
 		protoPayload, err := protojson.Marshal(&storepb.ActivityIssueApprovalNotifyPayload{
-			ApprovalStep: utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers),
+			ApprovalStep: approvalStep,
 		})
 		if err != nil {
 			return err
