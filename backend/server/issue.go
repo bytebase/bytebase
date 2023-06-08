@@ -1196,7 +1196,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to split multi SQL").SetInternal(err)
 					}
 					if len(singleStatements) == 0 {
-						return nil, echo.NewHTTPError(http.StatusBadRequest, "The valid statement of migration detail should not be empty")
+						return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at least one non-empty statement provided")
 					}
 
 					var prevSchemaGroup *store.SchemaGroupMessage
