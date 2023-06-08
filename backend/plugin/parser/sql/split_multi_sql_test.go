@@ -540,13 +540,13 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		{
 			statement: `INSERT INTO t VALUES ('klajfas)`,
 			want: resData{
-				err: "line 1:22 token recognition error at: ''klajfas)'",
+				err: "failed to split multi sql: invalid string: not found delimiter: ', but found EOF",
 			},
 		},
 		{
 			statement: "INSERT INTO `t VALUES ('klajfas)",
 			want: resData{
-				err: "line 1:12 token recognition error at: '`t VALUES ('klajfas)'",
+				err: "failed to split multi sql: invalid indentifier: not found delimiter: `, but found EOF",
 			},
 		},
 	}
