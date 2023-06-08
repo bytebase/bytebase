@@ -1431,6 +1431,10 @@
         "issue-comment-creation": {
           "title": "Issue comment creation",
           "label": "When new issue comment has been created"
+        },
+        "issue-approval-notify": {
+          "title": "Issue approval needed",
+          "label": "When issue is pending approval"
         }
       }
     },

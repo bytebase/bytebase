@@ -25,6 +25,7 @@ export type IssueActivityType =
   | "bb.issue.comment.create"
   | "bb.issue.field.update"
   | "bb.issue.status.update"
+  | "bb.issue.approval.notify"
   | "bb.pipeline.stage.status.update"
   | "bb.pipeline.task.status.update"
   | "bb.pipeline.task.file.commit"
