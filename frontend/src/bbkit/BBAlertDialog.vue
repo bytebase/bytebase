@@ -1,5 +1,9 @@
 <template>
-  <div v-if="state.visible" class="fixed z-10 inset-0 overflow-y-auto">
+  <div
+    v-if="state.visible"
+    v-zindexable="{ enabled: true }"
+    class="fixed inset-0 overflow-y-auto"
+  >
     <div
       class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
     >
@@ -121,6 +125,7 @@
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
 import { withDefaults, computed, reactive } from "vue";
+import { zindexable as vZindexable } from "vdirs";
 import { BBAlertStyle } from "./types";
 import { Defer, defer } from "@/utils";
 
