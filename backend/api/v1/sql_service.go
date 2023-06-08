@@ -1288,12 +1288,13 @@ func (s *SQLService) checkQueryRights(
 	for _, resource := range resourceList {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
 		attributes := map[string]any{
-			"request.time":      time.Now(),
-			"resource.database": databaseResourceURL,
-			"resource.schema":   resource.Schema,
-			"resource.table":    resource.Table,
-			"request.statement": base64.StdEncoding.EncodeToString([]byte(statement)),
-			"request.row_limit": limit,
+			"request.time":         time.Now(),
+			"resource.environment": instance.EnvironmentID,
+			"resource.database":    databaseResourceURL,
+			"resource.schema":      resource.Schema,
+			"resource.table":       resource.Table,
+			"request.statement":    base64.StdEncoding.EncodeToString([]byte(statement)),
+			"request.row_limit":    limit,
 		}
 
 		switch exportFormat {
@@ -1428,7 +1429,7 @@ func evaluateCondition(expression string, attributes map[string]any) (bool, erro
 	if expression == "" {
 		return true, nil
 	}
-	env, err := cel.NewEnv(queryAttributes...)
+	env, err := cel.NewEnv(iamPolicyCELAttributes...)
 	if err != nil {
 		return false, err
 	}

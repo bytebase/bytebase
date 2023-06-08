@@ -1,32 +1,41 @@
 <template>
-  <teleport to="#bb-modal-stack">
-    <div class="fixed inset-0 bg-transparent" :style="style" />
+  <teleport to="body">
     <div
-      v-bind="$attrs"
-      class="bb-modal"
-      :style="style"
-      :data-bb-modal-id="id"
-      :data-bb-modal-index="index"
-      :data-bb-modal-active="active"
+      v-zindexable="{ enabled: true }"
+      class="fixed inset-0 w-full h-screen flex items-center justify-center bg-transparent"
     >
-      <div class="modal-header" :class="headerClass">
-        <div class="text-xl text-main mr-2 flex-1 overflow-hidden">
-          <slot name="title"><component :is="renderTitle" /></slot>
-          <component :is="renderSubtitle" />
-        </div>
-        <button
-          v-if="showClose"
-          class="text-control-light"
-          aria-label="close"
-          @click.prevent="close"
+      <div
+        v-bind="$attrs"
+        class="absolute m-auto w-full max-w-max max-h-[calc(100vh-80px)] bg-white shadow-lg rounded-lg pt-4 pb-4 flex pointer-events-auto flex-col"
+        :data-bb-modal-id="id"
+        :data-bb-modal-index="index"
+        :data-bb-modal-active="active"
+      >
+        <div
+          class="relative mx-8 pb-2 flex items-center justify-between border-b border-block-border"
+          :class="headerClass"
         >
-          <span class="sr-only">Close</span>
-          <!-- Heroicons name: x -->
-          <heroicons-solid:x class="w-6 h-6" />
-        </button>
-      </div>
-      <div class="modal-container" :class="containerClass">
-        <slot />
+          <div class="text-xl text-main mr-2 flex-1 overflow-hidden">
+            <slot name="title"><component :is="renderTitle" /></slot>
+            <component :is="renderSubtitle" />
+          </div>
+          <button
+            v-if="showClose"
+            class="text-control-light"
+            aria-label="close"
+            @click.prevent="close"
+          >
+            <span class="sr-only">Close</span>
+            <!-- Heroicons name: x -->
+            <heroicons-solid:x class="w-6 h-6" />
+          </button>
+        </div>
+        <div
+          class="px-8 pt-2 max-h-screen overflow-auto w-full"
+          :class="containerClass"
+        >
+          <slot />
+        </div>
       </div>
     </div>
   </teleport>
@@ -34,7 +43,6 @@
 
 <script lang="ts">
 import {
-  computed,
   defineComponent,
   h,
   inject,
@@ -47,6 +55,7 @@ import {
   Ref,
   RenderFunction,
 } from "vue";
+import { zindexable } from "vdirs";
 import type { VueClass } from "@/utils";
 import { useModalStack } from "./BBModalStack.vue";
 
@@ -61,6 +70,9 @@ const BB_MODAL_CONTEXT = "bb.modal.context";
 
 export default defineComponent({
   name: "BBModal",
+  directives: {
+    zindexable,
+  },
   props: {
     title: {
       default: "",
@@ -94,10 +106,6 @@ export default defineComponent({
   emits: ["close"],
   setup(props, { emit }) {
     const { stack, id, index, active } = useModalStack();
-
-    const style = computed(() => ({
-      "z-index": 4000 + index.value, // "4000 + " because the container in BBModalStack is z-4000
-    }));
 
     const overrides = ref<Overrides>({
       title: undefined,
@@ -171,7 +179,6 @@ export default defineComponent({
     };
 
     return {
-      style,
       close,
       stack,
       id,
@@ -222,20 +229,3 @@ export const useOverrideSubtitle = (
   });
 };
 </script>
-
-<style scoped>
-.bb-modal {
-  @apply absolute m-auto w-full max-w-max bg-white shadow-lg rounded-lg pt-4 pb-4 flex pointer-events-auto;
-  @apply flex-col;
-
-  max-height: calc(100vh - 80px);
-}
-
-.modal-header {
-  @apply relative mx-8 pb-2 flex items-center justify-between border-b border-block-border;
-}
-
-.modal-container {
-  @apply px-8 pt-2 max-h-screen overflow-auto w-full;
-}
-</style>

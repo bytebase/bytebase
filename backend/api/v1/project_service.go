@@ -2266,6 +2266,7 @@ var iamPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("request.statement", cel.StringType),
 	cel.Variable("request.row_limit", cel.IntType),
 	cel.Variable("request.export_format", cel.StringType),
+	cel.Variable("resource.environment", cel.StringType),
 	cel.Variable("resource.database", cel.StringType),
 	cel.Variable("resource.schema", cel.StringType),
 	cel.Variable("resource.table", cel.StringType),
