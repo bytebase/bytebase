@@ -16,6 +16,7 @@ import {
   MigrationContext,
   SheetId,
   UNKNOWN_ID,
+  MigrationDetail,
 } from "@/types";
 import {
   errorAssertion,
@@ -61,7 +62,7 @@ export default defineComponent({
     const selectedStatement = computed(() => {
       if (create.value) {
         if (isGroupingIssue.value) {
-          return selectedTask.value.statement;
+          return selectedTask.value.statement || "";
         }
 
         const issueCreate = issue.value as IssueCreate;
@@ -171,14 +172,19 @@ export default defineComponent({
         const taskList = flattenTaskList(issueCreate);
         context.detailList = [];
         for (const task of taskList) {
-          context.detailList.push({
+          const migrationDetail: MigrationDetail = {
             migrationType: detail.migrationType,
             earliestAllowedTs: detail.earliestAllowedTs,
             databaseGroupName: route.query.databaseGroupName as string,
             databaseId: (task as any).databaseId,
             statement: (task as any).statement,
             sheetId: (task as any).sheetId,
-          });
+          };
+          const payload = (task as Task).payload;
+          if (payload && (payload as any).schemaGroupName) {
+            migrationDetail.schemaGroupName = (payload as any).schemaGroupName;
+          }
+          context.detailList.push(migrationDetail);
         }
         createIssue(issueCreate);
         return;
