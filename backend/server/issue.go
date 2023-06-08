@@ -1230,6 +1230,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						if !match {
 							prevSchemaGroup = nil
 							table2TaskStatement[""] += singleStatement.Text
+							table2TaskStatement[""] += "\n"
 						}
 					}
 					taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(table2TaskStatement, table2SchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
@@ -1240,34 +1241,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 					}
 					taskCreateList = append(taskCreateList, taskCreates...)
-					// idx := 0
-					// // Run [""] task first.
-					// if statement, ok := table2TaskStatement[""]; ok && statement != "" {
-					// 	newMigrationDetail := *migrationDetail
-					// 	newMigrationDetail.Statement = statement
-					// 	taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), "")
-					// 	if err != nil {
-					// 		return nil, err
-					// 	}
-					// 	taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList), ToIndex: len(taskCreateList) + 1})
-					// 	taskCreateList = append(taskCreateList, taskCreate)
-					// 	idx++
-					// }
-
-					// for tableName, statement := range table2TaskStatement {
-					// 	if statement == "" || tableName == "" {
-					// 		continue
-					// 	}
-					// 	newMigrationDetail := *migrationDetail
-					// 	newMigrationDetail.Statement = statement
-					// 	taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), table2SchemaGroupName[tableName])
-					// 	if err != nil {
-					// 		return nil, err
-					// 	}
-					// 	taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList), ToIndex: len(taskCreateList) + 1})
-					// 	taskCreateList = append(taskCreateList, taskCreate)
-					// 	idx++
-					// }
 				} else {
 					// Create grouping batch change issue.
 					for i := 0; i < len(migrationDetailList)-1; i++ {
