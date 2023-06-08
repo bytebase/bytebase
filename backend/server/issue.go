@@ -1129,66 +1129,70 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					schemaGroups2MatchedTableNames[schemaGroup.Placeholder] = matches
 				}
 
-				for migrationDetailIdx, migrationDetail := range migrationDetailList {
-					originalStatement := migrationDetail.Statement
-					if originalStatement == "" {
-						return nil, echo.NewHTTPError(http.StatusBadRequest, "The statement of migration detail should not be empty")
-					}
-					parserEngineType, err := convertDatabaseToParserEngineType(instance.Engine)
-					if err != nil {
-						return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to convert database engine type").SetInternal(err)
-					}
-					singleStatements, err := parser.SplitMultiSQL(parserEngineType, originalStatement)
-					if err != nil {
-						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to split multi SQL").SetInternal(err)
-					}
-					for _, singleStatement := range singleStatements {
-						// If singleStatement contains the schema table placeholder, we regard it belongs to this table group.
-						match := false
-						for _, schemaGroup := range schemaGroups {
-							if strings.Contains(singleStatement.Text, schemaGroup.Placeholder) {
-								// Iterate the matches tables in this physical database and render the statement.
-								for _, tableName := range schemaGroups2MatchedTableNames[schemaGroup.Placeholder] {
-									newStatement := strings.ReplaceAll(singleStatement.Text, schemaGroup.Placeholder, tableName)
-									table2TaskStatement[tableName] += newStatement
-									table2TaskStatement[tableName] += "\n"
-									match = true
-								}
-								break
+				// For grouping batch change, the migration detail list must contain only one migration detail.
+				// TODO(zp): Can we move the logic of rendering statement from here to generate multiple detail list?
+				if len(migrationDetailList) != 1 {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Migration detail list should contain only one migration detail for grouping batch change")
+				}
+				migrationDetail := migrationDetailList[0]
+				originalStatement := migrationDetail.Statement
+				if originalStatement == "" {
+					return nil, echo.NewHTTPError(http.StatusBadRequest, "The statement of migration detail should not be empty")
+				}
+				parserEngineType, err := convertDatabaseToParserEngineType(instance.Engine)
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to convert database engine type").SetInternal(err)
+				}
+				singleStatements, err := parser.SplitMultiSQL(parserEngineType, originalStatement)
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to split multi SQL").SetInternal(err)
+				}
+				for _, singleStatement := range singleStatements {
+					// If singleStatement contains the schema table placeholder, we regard it belongs to this table group.
+					match := false
+					for _, schemaGroup := range schemaGroups {
+						if strings.Contains(singleStatement.Text, schemaGroup.Placeholder) {
+							// Iterate the matches tables in this physical database and render the statement.
+							for _, tableName := range schemaGroups2MatchedTableNames[schemaGroup.Placeholder] {
+								newStatement := strings.ReplaceAll(singleStatement.Text, schemaGroup.Placeholder, tableName)
+								table2TaskStatement[tableName] += newStatement
+								table2TaskStatement[tableName] += "\n"
+								match = true
 							}
-						}
-						if !match {
-							table2TaskStatement[""] += singleStatement.Text
+							break
 						}
 					}
-					var idx = 0
-					// Run [""] task first.
-					if statement, ok := table2TaskStatement[""]; ok && statement != "" {
-						newMigrationDetail := *migrationDetail
-						newMigrationDetail.Statement = statement
-						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d-%03d", migrationDetailIdx, idx)))
-						if err != nil {
-							return nil, err
-						}
-						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList), ToIndex: len(taskCreateList) + 1})
-						taskCreateList = append(taskCreateList, taskCreate)
-						idx++
+					if !match {
+						table2TaskStatement[""] += singleStatement.Text
 					}
+				}
+				var idx = 0
+				// Run [""] task first.
+				if statement, ok := table2TaskStatement[""]; ok && statement != "" {
+					newMigrationDetail := *migrationDetail
+					newMigrationDetail.Statement = statement
+					taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)))
+					if err != nil {
+						return nil, err
+					}
+					taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList), ToIndex: len(taskCreateList) + 1})
+					taskCreateList = append(taskCreateList, taskCreate)
+					idx++
+				}
 
-					for _, statement := range table2TaskStatement {
-						if statement == "" {
-							continue
-						}
-						newMigrationDetail := *migrationDetail
-						newMigrationDetail.Statement = statement
-						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d-%03d", migrationDetailIdx, idx)))
-						if err != nil {
-							return nil, err
-						}
-						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList), ToIndex: len(taskCreateList) + 1})
-						taskCreateList = append(taskCreateList, taskCreate)
-						idx++
+				for _, statement := range table2TaskStatement {
+					if statement == "" {
+						continue
 					}
+					newMigrationDetail := *migrationDetail
+					newMigrationDetail.Statement = statement
+					taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)))
+					if err != nil {
+						return nil, err
+					}
+					taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList), ToIndex: len(taskCreateList) + 1})
+					taskCreateList = append(taskCreateList, taskCreate)
+					idx++
 				}
 			} else {
 				for i := 0; i < len(migrationDetailList)-1; i++ {
