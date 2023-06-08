@@ -33,6 +33,7 @@ type DatabaseGroupMessage struct {
 type FindDatabaseGroupMessage struct {
 	ProjectUID *int
 	ResourceID *string
+	UID        *int64
 }
 
 // UpdateDatabaseGroupMessage is the message for updating database group.
@@ -47,16 +48,18 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, databaseGroupUID int64)
 	DELETE
 		FROM db_group
 	WHERE id = $1
-	RETURNING project_id, resource_id;
+	RETURNING id, project_id, resource_id;
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
+	var id int64
 	var projectUID int
 	var resourceID string
 	if err := tx.QueryRowContext(ctx, query, databaseGroupUID).Scan(
+		&id,
 		&projectUID,
 		&resourceID,
 	); err != nil {
@@ -66,6 +69,7 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, databaseGroupUID int64)
 		return errors.Wrapf(err, "failed to commit transaction")
 	}
 	s.databaseGroupCache.Delete(getDatabaseGroupCacheKey(projectUID, resourceID))
+	s.databaseGroupIDCache.Delete(projectUID)
 	return nil
 }
 
@@ -87,6 +91,7 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 	}
 	for _, databaseGroup := range databaseGroups {
 		s.databaseGroupCache.Store(getDatabaseGroupCacheKey(databaseGroup.ProjectUID, databaseGroup.ResourceID), databaseGroup)
+		s.databaseGroupCache.Store(databaseGroup.UID, databaseGroup)
 	}
 
 	return databaseGroups, nil
@@ -94,11 +99,17 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 
 // GetDatabaseGroup gets a database group.
 func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
-	if find.ProjectUID != nil && find.ResourceID != nil {
+	if find.ProjectUID != nil && find.ResourceID != nil && find.UID == nil {
 		if databaseGroup, ok := s.databaseGroupCache.Load(getDatabaseGroupCacheKey(*find.ProjectUID, *find.ResourceID)); ok {
 			return databaseGroup.(*DatabaseGroupMessage), nil
 		}
 	}
+	if find.UID != nil && find.ProjectUID == nil && find.ResourceID == nil {
+		if databaseGroup, ok := s.databaseGroupIDCache.Load(*find.UID); ok {
+			return databaseGroup.(*DatabaseGroupMessage), nil
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
@@ -121,6 +132,7 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 		return nil, errors.Errorf("found multiple database groups")
 	}
 	s.databaseGroupCache.Store(getDatabaseGroupCacheKey(databaseGroups[0].ProjectUID, databaseGroups[0].ResourceID), databaseGroups[0])
+	s.databaseGroupIDCache.Store(databaseGroups[0].UID, databaseGroups[0])
 	return databaseGroups[0], nil
 }
 
@@ -131,6 +143,9 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	query := fmt.Sprintf(`SELECT
@@ -234,6 +249,7 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 	}
 	updatedDatabaseGroup.Expression = &expression
 	s.databaseGroupCache.Store(getDatabaseGroupCacheKey(updatedDatabaseGroup.ProjectUID, updatedDatabaseGroup.ResourceID), &updatedDatabaseGroup)
+	s.databaseGroupIDCache.Store(updatedDatabaseGroup.UID, &updatedDatabaseGroup)
 	return &updatedDatabaseGroup, nil
 }
 
@@ -294,6 +310,7 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 	}
 	insertedDatabaseGroup.Expression = &expression
 	s.databaseGroupCache.Store(getDatabaseGroupCacheKey(insertedDatabaseGroup.ProjectUID, insertedDatabaseGroup.ResourceID), &insertedDatabaseGroup)
+	s.databaseGroupCache.Store(insertedDatabaseGroup.UID, &insertedDatabaseGroup)
 	return &insertedDatabaseGroup, nil
 }
 

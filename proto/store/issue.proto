@@ -10,6 +10,12 @@ option go_package = "generated-go/store";
 message IssuePayload {
   IssuePayloadApproval approval = 1;
   GrantRequest grant_request = 2;
+  Grouping grouping = 3;
+}
+
+message Grouping {
+  // The group name, format projects/{project}/database_groups/{database_group}
+  string database_group_name = 1;
 }
 
 message GrantRequest {
