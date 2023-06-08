@@ -49,7 +49,7 @@
           :options="exportDropdownOptions"
           @select="handleExportBtnClick"
         >
-          <NButton>
+          <NButton :loading="isExportingData" :disabled="isExportingData">
             <template #icon>
               <heroicons-outline:download class="h-5 w-5" />
             </template>
@@ -107,10 +107,14 @@ import {
   useVueTable,
 } from "@tanstack/vue-table";
 import { isEmpty } from "lodash-es";
-import { unparse } from "papaparse";
-import dayjs from "dayjs";
 
-import { SingleSQLResult, UNKNOWN_ID } from "@/types";
+import {
+  ExecuteConfig,
+  ExecuteOption,
+  SingleSQLResult,
+  TabMode,
+  UNKNOWN_ID,
+} from "@/types";
 import {
   createExplainToken,
   hasWorkspacePermissionV1,
@@ -132,6 +136,7 @@ import ErrorView from "./ErrorView.vue";
 import { useSQLResultViewContext } from "./context";
 import { Engine } from "@/types/proto/v1/common";
 import { useRouter } from "vue-router";
+import { useExportData } from "./useExportData";
 
 type LocalState = {
   search: string;
@@ -142,6 +147,11 @@ const PAGE_SIZES = [20, 50, 100];
 const DEFAULT_PAGE_SIZE = 50;
 
 const props = defineProps<{
+  params: {
+    query: string;
+    config: ExecuteConfig;
+    option?: Partial<ExecuteOption> | undefined;
+  };
   result: SingleSQLResult;
 }>();
 
@@ -158,6 +168,7 @@ const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const currentUserV1 = useCurrentUserV1();
 const dataTable = ref<InstanceType<typeof DataTable>>();
+const { isExportingData, exportData } = useExportData();
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -245,12 +256,12 @@ table.setPageSize(DEFAULT_PAGE_SIZE);
 const exportDropdownOptions = computed(() => [
   {
     label: t("sql-editor.download-as-csv"),
-    key: "csv",
+    key: "CSV",
     disabled: props.result === null || isEmpty(props.result),
   },
   {
     label: t("sql-editor.download-as-json"),
-    key: "json",
+    key: "JSON",
     disabled: props.result === null || isEmpty(props.result),
   },
 ]);
@@ -271,7 +282,7 @@ const showRequestExportButton = computed(() => {
   );
 });
 
-const handleExportBtnClick = (format: "csv" | "json") => {
+const handleExportBtnClick = (format: "CSV" | "JSON") => {
   if (!allowToExportData.value) {
     pushNotification({
       module: "bytebase",
@@ -281,43 +292,22 @@ const handleExportBtnClick = (format: "csv" | "json") => {
     return;
   }
 
-  let rawText = "";
-
-  if (format === "csv") {
-    const csvFields = columns.value.map((col) => col.header as string);
-    const csvData = data.value.map((d) => {
-      const temp: any[] = [];
-      for (const k in d) {
-        temp.push(d[k]);
-      }
-      return temp;
-    });
-
-    rawText = unparse({
-      fields: csvFields,
-      data: csvData,
-    });
-  } else {
-    const objects = [];
-    for (const item of data.value) {
-      const object = {} as any;
-      for (let i = 0; i < columns.value.length; i++) {
-        object[columns.value[i].header as string] = item[i];
-      }
-      objects.push(object);
-    }
-    rawText = JSON.stringify(objects);
-  }
-
-  const encodedUri = encodeURI(`data:text/${format};charset=utf-8,${rawText}`);
-  const formattedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
-  // Example filename: `mysheet-2022-03-23T09-54-21.json`
-  const filename = `${tabStore.currentTab.name}-${formattedDateString}`;
-  const link = document.createElement("a");
-
-  link.download = `${filename}.${format}`;
-  link.href = encodedUri;
-  link.click();
+  const { instanceId, databaseId } = tabStore.currentTab.connection;
+  const instance = instanceStore.getInstanceByUID(instanceId).name;
+  const database =
+    databaseId === String(UNKNOWN_ID)
+      ? ""
+      : databaseStore.getDatabaseByUID(databaseId).name;
+  const statement = props.params.query;
+  const limit =
+    tabStore.currentTab.mode === TabMode.Admin ? 0 : RESULT_ROWS_LIMIT;
+  exportData({
+    database,
+    instance,
+    format,
+    statement,
+    limit,
+  });
 };
 
 const handleGotoRequestExportPage = () => {
