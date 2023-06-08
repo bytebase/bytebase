@@ -405,6 +405,8 @@
     "profile": {
       "email": "Correo electrónico",
       "role": "Rol",
+      "phone": "Número de móvil",
+      "country-code": "Códigos de país y de área",
       "password": "Contraseña",
       "password-confirm": "Confirmar",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
