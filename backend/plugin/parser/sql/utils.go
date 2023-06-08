@@ -453,19 +453,25 @@ func splitMySQLMultiSQL(statement string) ([]SingleSQL, error) {
 // have a stopping point - you cannot pass in a reader on an open-ended source such
 // as a socket for instance.
 func splitMySQLMultiSQLStream(src io.Reader, f func(string) error) ([]SingleSQL, error) {
-	tree, _, err := ParseMySQLStream(src)
+	tree, tokens, err := ParseMySQLStream(src)
 	if err != nil {
 		return nil, err
+	}
+	if tree == nil {
+		return nil, nil
 	}
 
 	var result []SingleSQL
 	for _, node := range tree.GetChildren() {
 		if query, ok := node.(mysqlparser.IQueryContext); ok {
-			if err := f(query.GetText()); err != nil {
-				return nil, err
+			text := tokens.GetTextFromRuleContext(query)
+			if f != nil {
+				if err := f(text); err != nil {
+					return nil, err
+				}
 			}
 			result = append(result, SingleSQL{
-				Text:     query.GetText(),
+				Text:     text,
 				LastLine: query.GetStop().GetLine(),
 				Empty:    false,
 			})

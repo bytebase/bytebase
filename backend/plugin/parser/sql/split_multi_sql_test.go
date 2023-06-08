@@ -350,8 +350,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			},
 		},
 		{
-			statement: "DELIMITER ;;\n" +
-				"CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\n" +
+			statement: "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\n" +
 				`BEGIN
 
 		   DECLARE income INT;
@@ -364,14 +363,9 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 
 		   RETURN income;
 
-		END ;;
-		DELIMITER ;`,
+		END ;`,
 			want: resData{
 				res: []SingleSQL{
-					{
-						Text:     "DELIMITER ;;",
-						LastLine: 1,
-					},
 					{
 						Text: "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\n" +
 							`BEGIN
@@ -386,12 +380,8 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 
 		   RETURN income;
 
-		END ;;`,
-						LastLine: 15,
-					},
-					{
-						Text:     "DELIMITER ;",
-						LastLine: 16,
+		END ;`,
+						LastLine: 14,
 					},
 				},
 			},
@@ -449,18 +439,15 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []SingleSQL{
 					{
-						Text: `/* this is the comment. */
-						CREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));`,
+						Text:     `CREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));`,
 						LastLine: 3,
 					},
 					{
-						Text: `-- this is the comment.
-						INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
+						Text:     `INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
 						LastLine: 5,
 					},
 					{
-						Text: `# this is the comment.
-						INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
+						Text:     `INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
 						LastLine: 7,
 					},
 				},
@@ -468,69 +455,51 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		},
 		{
 			statement: `# test for defining stored programs
-						delimiter //
 						CREATE PROCEDURE dorepeat(p1 INT)
 						BEGIN
 							SET @x = 0;
 							REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
 						END
-						//
-						delimiter ;
+						;
 						CALL dorepeat(1000);
 						SELECT @x;
 						`,
 			want: resData{
 				res: []SingleSQL{
 					{
-						Text: `# test for defining stored programs
-						delimiter //`,
-						LastLine: 2,
-					},
-					{
 						Text: `CREATE PROCEDURE dorepeat(p1 INT)
 						BEGIN
 							SET @x = 0;
 							REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
 						END
-						//`,
-						LastLine: 8,
-					},
-					{
-						Text:     `delimiter ;`,
-						LastLine: 9,
+						;`,
+						LastLine: 7,
 					},
 					{
 						Text:     `CALL dorepeat(1000);`,
-						LastLine: 10,
+						LastLine: 8,
 					},
 					{
 						Text:     `SELECT @x;`,
-						LastLine: 11,
+						LastLine: 9,
 					},
 				},
 			},
 		},
 		{
 			statement: `# test for defining stored programs
-						delimiter //
 						CREATE PROCEDURE dorepeat(p1 INT)
 						/* This is a comment */
 						BEGIN
 							SET @x = 0;
 							REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
 						END
-						//
-						delimiter ;
+						;
 						CALL dorepeat(1000);
 						SELECT @x;
 						`,
 			want: resData{
 				res: []SingleSQL{
-					{
-						Text: `# test for defining stored programs
-						delimiter //`,
-						LastLine: 2,
-					},
 					{
 						Text: `CREATE PROCEDURE dorepeat(p1 INT)
 						/* This is a comment */
@@ -538,20 +507,16 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 							SET @x = 0;
 							REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
 						END
-						//`,
-						LastLine: 9,
-					},
-					{
-						Text:     `delimiter ;`,
-						LastLine: 10,
+						;`,
+						LastLine: 8,
 					},
 					{
 						Text:     `CALL dorepeat(1000);`,
-						LastLine: 11,
+						LastLine: 9,
 					},
 					{
 						Text:     `SELECT @x;`,
-						LastLine: 12,
+						LastLine: 10,
 					},
 				},
 			},
@@ -575,19 +540,13 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		{
 			statement: `INSERT INTO t VALUES ('klajfas)`,
 			want: resData{
-				err: "invalid string: not found delimiter: ', but found EOF",
+				err: "line 1:22 token recognition error at: ''klajfas)'",
 			},
 		},
 		{
 			statement: "INSERT INTO `t VALUES ('klajfas)",
 			want: resData{
-				err: "invalid indentifier: not found delimiter: `, but found EOF",
-			},
-		},
-		{
-			statement: "/*INSERT INTO `t VALUES ('klajfas)",
-			want: resData{
-				err: "invalid comment: not found */, but found EOF",
+				err: "line 1:12 token recognition error at: '`t VALUES ('klajfas)'",
 			},
 		},
 	}
@@ -627,22 +586,17 @@ func TestMySQLSplitMultiSQLAndNormalize(t *testing.T) {
 			statement: `
 			DROP PROCEDURE IF EXISTS p1;
 			
-			DELIMITER //
-			
 			CREATE PROCEDURE p1()
 			BEGIN
 				SELECT count(*) from t;
-			END//
+			END;
 
-			DELIMITER ;
 			DROP PROCEDURE IF EXISTS p2;
-			
-			DELIMITER //
 			
 			CREATE PROCEDURE p2()
 			BEGIN
 				SELECT count(*) from t;
-			END//
+			END;
 			`,
 			want: resData{
 				res: []SingleSQL{
@@ -655,18 +609,18 @@ func TestMySQLSplitMultiSQLAndNormalize(t *testing.T) {
 			BEGIN
 				SELECT count(*) from t;
 			END;`,
-						LastLine: 9,
+						LastLine: 7,
 					},
 					{
 						Text:     `DROP PROCEDURE IF EXISTS p2;`,
-						LastLine: 12,
+						LastLine: 9,
 					},
 					{
 						Text: `CREATE PROCEDURE p2()
 			BEGIN
 				SELECT count(*) from t;
 			END;`,
-						LastLine: 19,
+						LastLine: 14,
 					},
 				},
 			},
