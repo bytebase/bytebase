@@ -173,7 +173,7 @@ export function activityIssueCommentCreatePayload_ApprovalEvent_StatusToJSON(
   }
 }
 
-export interface ActivityIssueApprovalStepPendingPayload {
+export interface ActivityIssueApprovalNotifyPayload {
   approvalStep?: ApprovalStep;
 }
 
@@ -621,22 +621,22 @@ export const ActivityIssueCommentCreatePayload_ApprovalEvent = {
   },
 };
 
-function createBaseActivityIssueApprovalStepPendingPayload(): ActivityIssueApprovalStepPendingPayload {
+function createBaseActivityIssueApprovalNotifyPayload(): ActivityIssueApprovalNotifyPayload {
   return { approvalStep: undefined };
 }
 
-export const ActivityIssueApprovalStepPendingPayload = {
-  encode(message: ActivityIssueApprovalStepPendingPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ActivityIssueApprovalNotifyPayload = {
+  encode(message: ActivityIssueApprovalNotifyPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.approvalStep !== undefined) {
       ApprovalStep.encode(message.approvalStep, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ActivityIssueApprovalStepPendingPayload {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ActivityIssueApprovalNotifyPayload {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseActivityIssueApprovalStepPendingPayload();
+    const message = createBaseActivityIssueApprovalNotifyPayload();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -656,23 +656,23 @@ export const ActivityIssueApprovalStepPendingPayload = {
     return message;
   },
 
-  fromJSON(object: any): ActivityIssueApprovalStepPendingPayload {
+  fromJSON(object: any): ActivityIssueApprovalNotifyPayload {
     return { approvalStep: isSet(object.approvalStep) ? ApprovalStep.fromJSON(object.approvalStep) : undefined };
   },
 
-  toJSON(message: ActivityIssueApprovalStepPendingPayload): unknown {
+  toJSON(message: ActivityIssueApprovalNotifyPayload): unknown {
     const obj: any = {};
     message.approvalStep !== undefined &&
       (obj.approvalStep = message.approvalStep ? ApprovalStep.toJSON(message.approvalStep) : undefined);
     return obj;
   },
 
-  create(base?: DeepPartial<ActivityIssueApprovalStepPendingPayload>): ActivityIssueApprovalStepPendingPayload {
-    return ActivityIssueApprovalStepPendingPayload.fromPartial(base ?? {});
+  create(base?: DeepPartial<ActivityIssueApprovalNotifyPayload>): ActivityIssueApprovalNotifyPayload {
+    return ActivityIssueApprovalNotifyPayload.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ActivityIssueApprovalStepPendingPayload>): ActivityIssueApprovalStepPendingPayload {
-    const message = createBaseActivityIssueApprovalStepPendingPayload();
+  fromPartial(object: DeepPartial<ActivityIssueApprovalNotifyPayload>): ActivityIssueApprovalNotifyPayload {
+    const message = createBaseActivityIssueApprovalNotifyPayload();
     message.approvalStep = (object.approvalStep !== undefined && object.approvalStep !== null)
       ? ApprovalStep.fromPartial(object.approvalStep)
       : undefined;

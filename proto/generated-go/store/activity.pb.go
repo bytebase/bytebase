@@ -325,7 +325,7 @@ func (*ActivityIssueCommentCreatePayload_TaskRollbackBy_) isActivityIssueComment
 func (*ActivityIssueCommentCreatePayload_ApprovalEvent_) isActivityIssueCommentCreatePayload_Event() {
 }
 
-type ActivityIssueApprovalStepPendingPayload struct {
+type ActivityIssueApprovalNotifyPayload struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -333,8 +333,8 @@ type ActivityIssueApprovalStepPendingPayload struct {
 	ApprovalStep *ApprovalStep `protobuf:"bytes,1,opt,name=approval_step,json=approvalStep,proto3" json:"approval_step,omitempty"`
 }
 
-func (x *ActivityIssueApprovalStepPendingPayload) Reset() {
-	*x = ActivityIssueApprovalStepPendingPayload{}
+func (x *ActivityIssueApprovalNotifyPayload) Reset() {
+	*x = ActivityIssueApprovalNotifyPayload{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_store_activity_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -342,13 +342,13 @@ func (x *ActivityIssueApprovalStepPendingPayload) Reset() {
 	}
 }
 
-func (x *ActivityIssueApprovalStepPendingPayload) String() string {
+func (x *ActivityIssueApprovalNotifyPayload) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ActivityIssueApprovalStepPendingPayload) ProtoMessage() {}
+func (*ActivityIssueApprovalNotifyPayload) ProtoMessage() {}
 
-func (x *ActivityIssueApprovalStepPendingPayload) ProtoReflect() protoreflect.Message {
+func (x *ActivityIssueApprovalNotifyPayload) ProtoReflect() protoreflect.Message {
 	mi := &file_store_activity_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -360,12 +360,12 @@ func (x *ActivityIssueApprovalStepPendingPayload) ProtoReflect() protoreflect.Me
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ActivityIssueApprovalStepPendingPayload.ProtoReflect.Descriptor instead.
-func (*ActivityIssueApprovalStepPendingPayload) Descriptor() ([]byte, []int) {
+// Deprecated: Use ActivityIssueApprovalNotifyPayload.ProtoReflect.Descriptor instead.
+func (*ActivityIssueApprovalNotifyPayload) Descriptor() ([]byte, []int) {
 	return file_store_activity_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ActivityIssueApprovalStepPendingPayload) GetApprovalStep() *ApprovalStep {
+func (x *ActivityIssueApprovalNotifyPayload) GetApprovalStep() *ApprovalStep {
 	if x != nil {
 		return x.ApprovalStep
 	}
@@ -638,15 +638,15 @@ var file_store_activity_proto_rawDesc = []byte{
 	0x55, 0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00,
 	0x12, 0x0b, 0x0a, 0x07, 0x50, 0x45, 0x4e, 0x44, 0x49, 0x4e, 0x47, 0x10, 0x01, 0x12, 0x0c, 0x0a,
 	0x08, 0x41, 0x50, 0x50, 0x52, 0x4f, 0x56, 0x45, 0x44, 0x10, 0x02, 0x42, 0x07, 0x0a, 0x05, 0x65,
-	0x76, 0x65, 0x6e, 0x74, 0x22, 0x6c, 0x0a, 0x27, 0x41, 0x63, 0x74, 0x69, 0x76, 0x69, 0x74, 0x79,
-	0x49, 0x73, 0x73, 0x75, 0x65, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x53, 0x74, 0x65,
-	0x70, 0x50, 0x65, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x12,
-	0x41, 0x0a, 0x0d, 0x61, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x5f, 0x73, 0x74, 0x65, 0x70,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c,
-	0x53, 0x74, 0x65, 0x70, 0x52, 0x0c, 0x61, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x53, 0x74,
-	0x65, 0x70, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d,
-	0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x76, 0x65, 0x6e, 0x74, 0x22, 0x67, 0x0a, 0x22, 0x41, 0x63, 0x74, 0x69, 0x76, 0x69, 0x74, 0x79,
+	0x49, 0x73, 0x73, 0x75, 0x65, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x4e, 0x6f, 0x74,
+	0x69, 0x66, 0x79, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x41, 0x0a, 0x0d, 0x61, 0x70,
+	0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x5f, 0x73, 0x74, 0x65, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x1c, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f,
+	0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x53, 0x74, 0x65, 0x70, 0x52,
+	0x0c, 0x61, 0x70, 0x70, 0x72, 0x6f, 0x76, 0x61, 0x6c, 0x53, 0x74, 0x65, 0x70, 0x42, 0x14, 0x5a,
+	0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74,
+	0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -669,7 +669,7 @@ var file_store_activity_proto_goTypes = []interface{}{
 	(ActivityIssueCommentCreatePayload_ApprovalEvent_Status)(0),         // 2: bytebase.store.ActivityIssueCommentCreatePayload.ApprovalEvent.Status
 	(*ActivityIssueCreatePayload)(nil),                                  // 3: bytebase.store.ActivityIssueCreatePayload
 	(*ActivityIssueCommentCreatePayload)(nil),                           // 4: bytebase.store.ActivityIssueCommentCreatePayload
-	(*ActivityIssueApprovalStepPendingPayload)(nil),                     // 5: bytebase.store.ActivityIssueApprovalStepPendingPayload
+	(*ActivityIssueApprovalNotifyPayload)(nil),                          // 5: bytebase.store.ActivityIssueApprovalNotifyPayload
 	(*ActivityIssueCommentCreatePayload_TaskRollbackBy)(nil),            // 6: bytebase.store.ActivityIssueCommentCreatePayload.TaskRollbackBy
 	(*ActivityIssueCommentCreatePayload_ExternalApprovalEvent)(nil),     // 7: bytebase.store.ActivityIssueCommentCreatePayload.ExternalApprovalEvent
 	(*ActivityIssueCommentCreatePayload_ApprovalEvent)(nil),             // 8: bytebase.store.ActivityIssueCommentCreatePayload.ApprovalEvent
@@ -679,7 +679,7 @@ var file_store_activity_proto_depIdxs = []int32{
 	7, // 0: bytebase.store.ActivityIssueCommentCreatePayload.external_approval_event:type_name -> bytebase.store.ActivityIssueCommentCreatePayload.ExternalApprovalEvent
 	6, // 1: bytebase.store.ActivityIssueCommentCreatePayload.task_rollback_by:type_name -> bytebase.store.ActivityIssueCommentCreatePayload.TaskRollbackBy
 	8, // 2: bytebase.store.ActivityIssueCommentCreatePayload.approval_event:type_name -> bytebase.store.ActivityIssueCommentCreatePayload.ApprovalEvent
-	9, // 3: bytebase.store.ActivityIssueApprovalStepPendingPayload.approval_step:type_name -> bytebase.store.ApprovalStep
+	9, // 3: bytebase.store.ActivityIssueApprovalNotifyPayload.approval_step:type_name -> bytebase.store.ApprovalStep
 	0, // 4: bytebase.store.ActivityIssueCommentCreatePayload.ExternalApprovalEvent.type:type_name -> bytebase.store.ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type
 	1, // 5: bytebase.store.ActivityIssueCommentCreatePayload.ExternalApprovalEvent.action:type_name -> bytebase.store.ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action
 	2, // 6: bytebase.store.ActivityIssueCommentCreatePayload.ApprovalEvent.status:type_name -> bytebase.store.ActivityIssueCommentCreatePayload.ApprovalEvent.Status
@@ -722,7 +722,7 @@ func file_store_activity_proto_init() {
 			}
 		}
 		file_store_activity_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ActivityIssueApprovalStepPendingPayload); i {
+			switch v := v.(*ActivityIssueApprovalNotifyPayload); i {
 			case 0:
 				return &v.state
 			case 1:

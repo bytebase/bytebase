@@ -17,7 +17,7 @@
     - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
   
 - [store/activity.proto](#store_activity-proto)
-    - [ActivityIssueApprovalStepPendingPayload](#bytebase-store-ActivityIssueApprovalStepPendingPayload)
+    - [ActivityIssueApprovalNotifyPayload](#bytebase-store-ActivityIssueApprovalNotifyPayload)
     - [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload)
     - [ActivityIssueCommentCreatePayload.ApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent)
@@ -297,9 +297,9 @@ ANY means approving any node will proceed.
 
 
 
-<a name="bytebase-store-ActivityIssueApprovalStepPendingPayload"></a>
+<a name="bytebase-store-ActivityIssueApprovalNotifyPayload"></a>
 
-### ActivityIssueApprovalStepPendingPayload
+### ActivityIssueApprovalNotifyPayload
 
 
 
