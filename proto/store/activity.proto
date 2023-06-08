@@ -62,6 +62,6 @@ message ActivityIssueCommentCreatePayload {
   string issue_name = 4;
 }
 
-message ActivityIssueApprovalStepPendingPayload {
+message ActivityIssueApprovalNotifyPayload {
   ApprovalStep approval_step = 1;
 }
