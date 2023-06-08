@@ -146,6 +146,9 @@ dependencies:
   v-code-diff:
     specifier: 0.3.12
     version: 0.3.12(vue@3.2.47)
+  vdirs:
+    specifier: ^0.1.8
+    version: 0.1.8(vue@3.2.47)
   vscode-languageserver:
     specifier: 8.0.2
     version: 8.0.2
