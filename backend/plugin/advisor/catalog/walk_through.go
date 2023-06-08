@@ -1325,7 +1325,7 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 
 	tree, tokens, err := parser.ParseMySQL(statement)
 	if err != nil {
-		NewParseError(err.Error())
+		return nil, NewParseError(err.Error())
 	}
 	if tree == nil {
 		return nil, nil

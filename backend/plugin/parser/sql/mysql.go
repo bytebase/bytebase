@@ -12,7 +12,7 @@ import (
 
 // ParseMySQL parses the given SQL statement and returns the AST.
 func ParseMySQL(statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
-	return parseMySQL(antlr.NewInputStream(statement))
+	return parseInputStream(antlr.NewInputStream(statement))
 }
 
 // ParseMySQLStream parses the given SQL stream and returns the AST.
@@ -20,10 +20,10 @@ func ParseMySQL(statement string) (antlr.Tree, *antlr.CommonTokenStream, error) 
 // have a stopping point - you cannot pass in a reader on an open-ended source such
 // as a socket for instance.
 func ParseMySQLStream(src io.Reader) (antlr.Tree, *antlr.CommonTokenStream, error) {
-	return parseMySQL(antlr.NewIoStream(src))
+	return parseInputStream(antlr.NewIoStream(src))
 }
 
-func parseMySQL(input *antlr.InputStream) (antlr.Tree, *antlr.CommonTokenStream, error) {
+func parseInputStream(input *antlr.InputStream) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	lexer := parser.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewMySQLParser(stream)
