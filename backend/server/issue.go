@@ -429,12 +429,22 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if assignee == nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("assignee %d not found", issueCreate.AssigneeID))
 	}
-	// TODO(p0ny): remove issueCreate.Payload
+
 	issueCreatePayload := &storepb.IssuePayload{
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
 		},
 	}
+	databaseGroup, err := isGroupingChangeIssueCreate(issueCreate)
+	if err != nil {
+		return nil, err
+	}
+	if databaseGroup != "" {
+		issueCreatePayload.Grouping = &storepb.Grouping{
+			DatabaseGroupName: databaseGroup,
+		}
+	}
+
 	if !s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) {
 		issueCreatePayload.Approval.ApprovalFindingDone = true
 	}
@@ -530,6 +540,22 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 
 	return composedIssue, nil
+}
+
+func isGroupingChangeIssueCreate(issueCreate *api.IssueCreate) (string, error) {
+	if issueCreate.Type != api.IssueDatabaseDataUpdate && issueCreate.Type != api.IssueDatabaseSchemaUpdate {
+		return "", nil
+	}
+	c := api.MigrationContext{}
+	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
+		return "", err
+	}
+	for _, detail := range c.DetailList {
+		if detail.DatabaseGroupName != "" {
+			return detail.DatabaseGroupName, nil
+		}
+	}
+	return "", nil
 }
 
 func (s *Server) createGrantRequestIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
@@ -1126,8 +1152,24 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					schemaGroups2MatchedTableNames := make(map[string][]string)
 					// TODO(zp): using strings.Builder to improve performance.
 					table2TaskStatement := make(map[string]string)
+					table2SchemaGroupName := make(map[string]string)
 					for _, schemaGroup := range schemaGroups {
 						matches, _, err := getMatchesAndUnmatchedTables(ctx, dbSchema, schemaGroup)
+						if err != nil {
+							return nil, err
+						}
+						databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+							UID: &schemaGroup.DatabaseGroupUID,
+						})
+						if err != nil {
+							return nil, err
+						}
+						if databaseGroup == nil {
+							return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot find database group with uid %d", schemaGroup.DatabaseGroupUID))
+						}
+						for _, tableName := range matches {
+							table2SchemaGroupName[tableName] = fmt.Sprintf("databaseGroups/%s/schemaGroups/%s", databaseGroup.ResourceID, schemaGroup.ResourceID)
+						}
 						if err != nil {
 							return nil, err
 						}
@@ -1177,7 +1219,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					if statement, ok := table2TaskStatement[""]; ok && statement != "" {
 						newMigrationDetail := *migrationDetail
 						newMigrationDetail.Statement = statement
-						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)))
+						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), "")
 						if err != nil {
 							return nil, err
 						}
@@ -1186,13 +1228,13 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						idx++
 					}
 
-					for _, statement := range table2TaskStatement {
-						if statement == "" {
+					for tableName, statement := range table2TaskStatement {
+						if statement == "" || tableName == "" {
 							continue
 						}
 						newMigrationDetail := *migrationDetail
 						newMigrationDetail.Statement = statement
-						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)))
+						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), table2SchemaGroupName[tableName])
 						if err != nil {
 							return nil, err
 						}
@@ -1222,7 +1264,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						}
 						newMigrationDetail := *migrationDetail
 						newMigrationDetail.SheetID = sheet.UID
-						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", migrationDetailIdx)))
+						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", migrationDetailIdx)), migrationDetail.SchemaGroupName)
 						if err != nil {
 							return nil, err
 						}
@@ -1234,7 +1276,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 				}
 				for _, migrationDetail := range migrationDetailList {
-					taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
+					taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail), "")
 					if err != nil {
 						return nil, err
 					}
@@ -1293,7 +1335,7 @@ func getOrDefaultSchemaVersionWithSuffix(detail *api.MigrationDetail, suffix str
 	return common.DefaultMigrationVersion() + suffix
 }
 
-func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMessage, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string) (api.TaskCreate, error) {
+func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMessage, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string, schemaGroupName string) (api.TaskCreate, error) {
 	var taskName string
 	var taskType api.TaskType
 
@@ -1314,9 +1356,10 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 		taskName = fmt.Sprintf("DDL(schema) for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseSchemaUpdate
 		payload := api.TaskDatabaseSchemaUpdatePayload{
-			SheetID:       d.SheetID,
-			SchemaVersion: schemaVersion,
-			VCSPushEvent:  vcsPushEvent,
+			SheetID:         d.SheetID,
+			SchemaVersion:   schemaVersion,
+			VCSPushEvent:    vcsPushEvent,
+			SchemaGroupName: schemaGroupName,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -1345,6 +1388,7 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 			VCSPushEvent:      vcsPushEvent,
 			RollbackEnabled:   d.RollbackEnabled,
 			RollbackSQLStatus: api.RollbackSQLStatusPending,
+			SchemaGroupName:   schemaGroupName,
 		}
 		if d.RollbackDetail != nil {
 			payload.RollbackFromIssueID = d.RollbackDetail.IssueID
