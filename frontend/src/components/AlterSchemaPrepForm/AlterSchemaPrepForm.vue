@@ -297,7 +297,6 @@
     v-if="state.selectedDatabaseGroup"
     :issue-type="type"
     :database-group="state.selectedDatabaseGroup"
-    :database-id-list="schemaEditorContext.databaseIdList"
     @close="state.selectedDatabaseGroup = undefined"
   />
 </template>
