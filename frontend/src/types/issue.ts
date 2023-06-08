@@ -58,6 +58,7 @@ export type MigrationDetail = {
   sheetId: SheetId;
   earliestAllowedTs: number;
   databaseId?: DatabaseId;
+  databaseGroupName?: string;
   rollbackEnabled?: boolean;
   rollbackDetail?: RollbackDetail;
 };
