@@ -17,6 +17,8 @@ import (
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
 
+	mysqlparser "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
@@ -391,9 +393,11 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	case Postgres, Redshift:
 		t := newTokenizer(statement)
 		list, err = t.splitPostgreSQLMultiSQL()
-	case MySQL, TiDB, MariaDB, OceanBase:
+	case MySQL, MariaDB, OceanBase:
+		return splitMySQLMultiSQL(statement)
+	case TiDB:
 		t := newTokenizer(statement)
-		list, err = t.splitMySQLMultiSQL()
+		list, err = t.splitTiDBMultiSQL()
 	default:
 		err = applyMultiStatements(strings.NewReader(statement), func(sql string) error {
 			list = append(list, SingleSQL{
@@ -419,6 +423,52 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 		}
 		result = append(result, sql)
 	}
+	return result, nil
+}
+
+func splitMySQLMultiSQL(statement string) ([]SingleSQL, error) {
+	tree, err := ParseMySQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []SingleSQL
+	for _, node := range tree.GetChildren() {
+		if query, ok := node.(mysqlparser.IQueryContext); ok {
+			result = append(result, SingleSQL{
+				Text:     query.GetText(),
+				LastLine: query.GetStop().GetLine(),
+				Empty:    false,
+			})
+		}
+	}
+
+	return result, nil
+}
+
+// Note that the reader is read completely into memory and so it must actually
+// have a stopping point - you cannot pass in a reader on an open-ended source such
+// as a socket for instance.
+func splitMySQLMultiSQLStream(src io.Reader, f func(string) error) ([]SingleSQL, error) {
+	tree, err := ParseMySQLStream(src)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []SingleSQL
+	for _, node := range tree.GetChildren() {
+		if query, ok := node.(mysqlparser.IQueryContext); ok {
+			if err := f(query.GetText()); err != nil {
+				return nil, err
+			}
+			result = append(result, SingleSQL{
+				Text:     query.GetText(),
+				LastLine: query.GetStop().GetLine(),
+				Empty:    false,
+			})
+		}
+	}
+
 	return result, nil
 }
 
@@ -519,9 +569,11 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	case Postgres, Redshift:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitPostgreSQLMultiSQL()
-	case MySQL, TiDB, MariaDB, OceanBase:
+	case MySQL, MariaDB, OceanBase:
+		return splitMySQLMultiSQLStream(src, f)
+	case TiDB:
 		t := newStreamTokenizer(src, f)
-		list, err = t.splitMySQLMultiSQL()
+		list, err = t.splitTiDBMultiSQL()
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}

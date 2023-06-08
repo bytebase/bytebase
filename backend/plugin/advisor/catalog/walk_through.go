@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	mysqlparser "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
@@ -1321,43 +1323,38 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
 
-	list, err := parser.SplitMultiSQLAndNormalize(parser.MySQL, statement)
+	tree, err := parser.ParseMySQL(statement)
 	if err != nil {
-		return nil, NewParseError(err.Error())
+		NewParseError(err.Error())
 	}
 
-	var result []tidbast.StmtNode
-	for _, sql := range list {
-		if sql.Empty {
-			continue
-		}
-		if parser.IsTiDBUnsupportDDLStmt(sql.Text) {
-			// skip the TiDB parser unsupported DDL statement
+	var returnNodes []tidbast.StmtNode
+	for _, child := range tree.GetChildren() {
+		if child == nil {
 			continue
 		}
 
-		nodes, _, err := p.Parse(sql.Text, "", "")
-		if err != nil {
-			return nil, NewParseError(err.Error())
-		}
-		if len(nodes) == 0 {
-			continue
-		}
-		if len(nodes) > 1 {
-			return nil, NewParseError(fmt.Sprintf("get more than one sql after split: %s", sql.Text))
-		}
-		node := nodes[0]
-		node.SetText(nil, strings.TrimSpace(node.Text()))
-		node.SetOriginTextPosition(sql.LastLine)
-		if n, ok := node.(*tidbast.CreateTableStmt); ok {
-			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
-				return nil, NewParseError(err.Error())
+		if query, ok := child.(mysqlparser.IQueryContext); ok {
+			text := query.GetText()
+			lastLine := query.GetStop().GetLine()
+			if nodes, _, err := p.Parse(text, "", ""); err == nil {
+				if len(nodes) != 1 {
+					continue
+				}
+				node := nodes[0]
+				node.SetText(nil, text)
+				node.SetOriginTextPosition(lastLine)
+				if n, ok := node.(*tidbast.CreateTableStmt); ok {
+					if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
+						return nil, NewParseError(err.Error())
+					}
+				}
+				returnNodes = append(returnNodes, node)
 			}
 		}
-		result = append(result, node)
 	}
 
-	return result, nil
+	return returnNodes, nil
 }
 
 func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, *WalkThroughError) {

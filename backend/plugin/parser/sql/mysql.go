@@ -3,6 +3,7 @@ package parser
 
 import (
 	"errors"
+	"io"
 	"sort"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -11,7 +12,19 @@ import (
 
 // ParseMySQL parses the given SQL statement and returns the AST.
 func ParseMySQL(statement string) (antlr.Tree, error) {
-	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
+	return parseMySQL(antlr.NewInputStream(statement))
+}
+
+// ParseMySQLStream parses the given SQL stream and returns the AST.
+// Note that the reader is read completely into memory and so it must actually
+// have a stopping point - you cannot pass in a reader on an open-ended source such
+// as a socket for instance.
+func ParseMySQLStream(src io.Reader) (antlr.Tree, error) {
+	return parseMySQL(antlr.NewIoStream(src))
+}
+
+func parseMySQL(input *antlr.InputStream) (antlr.Tree, error) {
+	lexer := parser.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewMySQLParser(stream)
 
