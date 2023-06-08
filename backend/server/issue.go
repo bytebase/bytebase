@@ -1217,6 +1217,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							Type:       api.SheetForSQL,
 							Payload:    "",
 						})
+						if err != nil {
+							return nil, err
+						}
 						newMigrationDetail := *migrationDetail
 						newMigrationDetail.SheetID = sheet.UID
 						taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", migrationDetailIdx)))
@@ -1227,7 +1230,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					}
 				}
 			} else {
-
 				for i := 0; i < len(migrationDetailList)-1; i++ {
 					taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 				}
