@@ -267,6 +267,8 @@ type Task struct {
 	BlockedBy []string `jsonapi:"attr,blockedBy"`
 	// Progress is loaded from the task scheduler in memory, NOT from the database
 	Progress Progress `jsonapi:"attr,progress"`
+	// OUTPUT ONLY, used by grouping batch change.
+	Statement string `jsonapi:"attr,statement"`
 }
 
 // Progress is a generalized struct which can track the progress of a task.
@@ -309,6 +311,8 @@ type TaskCreate struct {
 	Collation         string `jsonapi:"attr,collation"`
 	Labels            string `jsonapi:"attr,labels"`
 	BackupID          *int   `jsonapi:"attr,backupId"`
+	// Statement used by grouping batch change, Bytebase use it to render.
+	Statement string `jsonapi:"attr,statement"`
 }
 
 // TaskFind is the API message for finding tasks.
