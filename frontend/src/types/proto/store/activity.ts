@@ -1,6 +1,7 @@
 /* eslint-disable */
 import * as Long from "long";
 import * as _m0 from "protobufjs/minimal";
+import { ApprovalStep } from "./approval";
 
 export const protobufPackage = "bytebase.store";
 
@@ -170,6 +171,10 @@ export function activityIssueCommentCreatePayload_ApprovalEvent_StatusToJSON(
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface ActivityIssueApprovalStepPendingPayload {
+  approvalStep?: ApprovalStep;
 }
 
 function createBaseActivityIssueCreatePayload(): ActivityIssueCreatePayload {
@@ -612,6 +617,65 @@ export const ActivityIssueCommentCreatePayload_ApprovalEvent = {
   ): ActivityIssueCommentCreatePayload_ApprovalEvent {
     const message = createBaseActivityIssueCommentCreatePayload_ApprovalEvent();
     message.status = object.status ?? 0;
+    return message;
+  },
+};
+
+function createBaseActivityIssueApprovalStepPendingPayload(): ActivityIssueApprovalStepPendingPayload {
+  return { approvalStep: undefined };
+}
+
+export const ActivityIssueApprovalStepPendingPayload = {
+  encode(message: ActivityIssueApprovalStepPendingPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.approvalStep !== undefined) {
+      ApprovalStep.encode(message.approvalStep, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ActivityIssueApprovalStepPendingPayload {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseActivityIssueApprovalStepPendingPayload();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.approvalStep = ApprovalStep.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ActivityIssueApprovalStepPendingPayload {
+    return { approvalStep: isSet(object.approvalStep) ? ApprovalStep.fromJSON(object.approvalStep) : undefined };
+  },
+
+  toJSON(message: ActivityIssueApprovalStepPendingPayload): unknown {
+    const obj: any = {};
+    message.approvalStep !== undefined &&
+      (obj.approvalStep = message.approvalStep ? ApprovalStep.toJSON(message.approvalStep) : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ActivityIssueApprovalStepPendingPayload>): ActivityIssueApprovalStepPendingPayload {
+    return ActivityIssueApprovalStepPendingPayload.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ActivityIssueApprovalStepPendingPayload>): ActivityIssueApprovalStepPendingPayload {
+    const message = createBaseActivityIssueApprovalStepPendingPayload();
+    message.approvalStep = (object.approvalStep !== undefined && object.approvalStep !== null)
+      ? ApprovalStep.fromPartial(object.approvalStep)
+      : undefined;
     return message;
   },
 };
