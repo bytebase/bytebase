@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/bytebase/bytebase/backend/common"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -229,4 +231,54 @@ func schemaDiff(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, diff)
+}
+
+func (s *Server) sqlCheck(
+	ctx context.Context,
+	dbType advisorDB.Type,
+	dbCharacterSet string,
+	dbCollation string,
+	environmentID int,
+	statement string,
+	catalog catalog.Catalog,
+	driver *sql.DB,
+) (advisor.Status, []advisor.Advice, error) {
+	var adviceList []advisor.Advice
+	policy, err := s.store.GetSQLReviewPolicy(ctx, environmentID)
+	if err != nil {
+		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+			return advisor.Success, nil, nil
+		}
+		return advisor.Error, nil, err
+	}
+
+	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
+		Charset:   dbCharacterSet,
+		Collation: dbCollation,
+		DbType:    dbType,
+		Catalog:   catalog,
+		Driver:    driver,
+		Context:   ctx,
+	})
+	if err != nil {
+		return advisor.Error, nil, err
+	}
+
+	adviceLevel := advisor.Success
+	for _, advice := range res {
+		switch advice.Status {
+		case advisor.Warn:
+			if adviceLevel != advisor.Error {
+				adviceLevel = advisor.Warn
+			}
+		case advisor.Error:
+			adviceLevel = advisor.Error
+		case advisor.Success:
+			continue
+		}
+
+		adviceList = append(adviceList, advice)
+	}
+
+	return adviceLevel, adviceList, nil
 }

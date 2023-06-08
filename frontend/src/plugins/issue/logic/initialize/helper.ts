@@ -149,6 +149,9 @@ const defaultStatementOfTask = (task: Task) => {
   if (task.type === "bb.task.database.schema.baseline") {
     return ESTABLISH_BASELINE_SQL;
   }
+  if (task.statement) {
+    return task.statement;
+  }
 
   // if we are using VALIDATE_ONLY_SQL, set it back to empty
   // otherwise keep it as-is
