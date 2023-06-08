@@ -1149,10 +1149,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					if err != nil {
 						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database schema").SetInternal(err)
 					}
-					schemaGroups2MatchedTableNames := make(map[string][]string)
+					schemaGroupsToMatchedTableNames := make(map[string][]string)
 					// TODO(zp): using strings.Builder to improve performance.
-					table2TaskStatement := make(map[string]string)
-					table2SchemaGroupName := make(map[string]string)
+					tableToTaskStatement := make(map[string]string)
+					tableToSchemaGroupName := make(map[string]string)
 					for _, schemaGroup := range schemaGroups {
 						matches, _, err := getMatchesAndUnmatchedTables(ctx, dbSchema, schemaGroup)
 						if err != nil {
@@ -1168,13 +1168,13 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 							return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot find database group with uid %d", schemaGroup.DatabaseGroupUID))
 						}
 						for _, tableName := range matches {
-							table2SchemaGroupName[tableName] = fmt.Sprintf("databaseGroups/%s/schemaGroups/%s", databaseGroup.ResourceID, schemaGroup.ResourceID)
+							tableToSchemaGroupName[tableName] = fmt.Sprintf("databaseGroups/%s/schemaGroups/%s", databaseGroup.ResourceID, schemaGroup.ResourceID)
 						}
 						if err != nil {
 							return nil, err
 						}
 						// Placeholder is unique in the same database group parent, so we can use it as the key.
-						schemaGroups2MatchedTableNames[schemaGroup.Placeholder] = matches
+						schemaGroupsToMatchedTableNames[schemaGroup.Placeholder] = matches
 					}
 
 					// For grouping batch change, the migration detail list must contain only one migration detail.
@@ -1200,47 +1200,99 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					}
 
 					var prevSchemaGroup *store.SchemaGroupMessage
+					var emptyStatementsBuffer strings.Builder
+					var taskCreateListGroup [][]api.TaskCreate
+					var taskIndexDAGListGroup [][]api.TaskIndexDAG
 					for _, singleStatement := range singleStatements {
+						// We don't want empty statements(likes comments) to be involved in the match/replace SchemaGroup operation. We will
+						// put them in the next valid statement.
+						if singleStatement.Empty {
+							emptyStatementsBuffer.Write([]byte(singleStatement.Text))
+							continue
+						}
 						// If singleStatement contains the schema table placeholder, we regard it belongs to this table group.
 						match := false
 						for _, schemaGroup := range schemaGroups {
 							if strings.Contains(singleStatement.Text, schemaGroup.Placeholder) {
 								// Current statement belongs to another schemaGroup, we should flush the statement buf to the prevSchemaGroup.
 								if ((prevSchemaGroup == nil) != (schemaGroup == nil)) || (prevSchemaGroup != nil && schemaGroup.ResourceID != prevSchemaGroup.ResourceID) {
-									taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(table2TaskStatement, table2SchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
+									taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(&emptyStatementsBuffer, tableToTaskStatement, tableToSchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
+									emptyStatementsBuffer.Reset()
 									if err != nil {
 										return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
 									}
+									var tempTaskIndexDAGList []api.TaskIndexDAG
 									for i := 0; i < len(taskCreates)-1; i++ {
-										taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+										tempTaskIndexDAGList = append(tempTaskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 									}
-									taskCreateList = append(taskCreateList, taskCreates...)
+									taskIndexDAGListGroup = append(taskIndexDAGListGroup, tempTaskIndexDAGList)
+									taskCreateListGroup = append(taskCreateListGroup, taskCreates)
 								}
 								prevSchemaGroup = schemaGroup
 								// Iterate the matches tables in this physical database and render the statement.
-								for _, tableName := range schemaGroups2MatchedTableNames[schemaGroup.Placeholder] {
+								for _, tableName := range schemaGroupsToMatchedTableNames[schemaGroup.Placeholder] {
 									newStatement := strings.ReplaceAll(singleStatement.Text, schemaGroup.Placeholder, tableName)
-									table2TaskStatement[tableName] += newStatement
-									table2TaskStatement[tableName] += "\n"
+									tableToTaskStatement[tableName] += newStatement
+									tableToTaskStatement[tableName] += "\n"
 								}
 								match = true
 								break
 							}
 						}
 						if !match {
+							if prevSchemaGroup != nil {
+								taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(&emptyStatementsBuffer, tableToTaskStatement, tableToSchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
+								emptyStatementsBuffer.Reset()
+								if err != nil {
+									return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
+								}
+								var tempTaskIndexDAGList []api.TaskIndexDAG
+								for i := 0; i < len(taskCreates)-1; i++ {
+									tempTaskIndexDAGList = append(tempTaskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+								}
+								taskIndexDAGListGroup = append(taskIndexDAGListGroup, tempTaskIndexDAGList)
+								taskCreateListGroup = append(taskCreateListGroup, taskCreates)
+							}
 							prevSchemaGroup = nil
-							table2TaskStatement[""] += singleStatement.Text
-							table2TaskStatement[""] += "\n"
+							tableToTaskStatement[""] += emptyStatementsBuffer.String()
+							emptyStatementsBuffer.Reset()
+							tableToTaskStatement[""] += singleStatement.Text
+							tableToTaskStatement[""] += "\n"
 						}
 					}
-					taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(table2TaskStatement, table2SchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
+					// Flush the last statement.
+					taskCreates, err := flushGroupingDatabaseTaskToTaskCreate(&emptyStatementsBuffer, tableToTaskStatement, tableToSchemaGroupName, database, instance, c.VCSPushEvent, migrationDetail)
+					emptyStatementsBuffer.Reset()
 					if err != nil {
 						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to flush grouping database task to task create").SetInternal(err)
 					}
+					var tempTaskIndexDAGList []api.TaskIndexDAG
 					for i := 0; i < len(taskCreates)-1; i++ {
-						taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+						tempTaskIndexDAGList = append(tempTaskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 					}
-					taskCreateList = append(taskCreateList, taskCreates...)
+					taskIndexDAGListGroup = append(taskIndexDAGListGroup, tempTaskIndexDAGList)
+					taskCreateListGroup = append(taskCreateListGroup, taskCreates)
+
+					// If there is no previous task group, it means that there is no any non-empty statement, we should report an error.
+					if len(taskCreateListGroup) == 0 {
+						return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at least one non-empty statement provided")
+					}
+					// If the last statement is empty, and there are no non-empty statement following it, we should put the
+					// empty statement in the previous task group.
+					if emptyStatementsBuffer.Len() > 0 {
+						lastTaskCreateList := taskCreateListGroup[len(taskCreateListGroup)-1]
+						for i := 0; i < len(lastTaskCreateList); i++ {
+							lastTaskCreateList[i].Statement += emptyStatementsBuffer.String()
+						}
+					}
+
+					// Flatten taskCreateListGroup and taskIndexDAGListGroup to taskCreateList and taskIndexDAGList.
+					for _, taskCreateListEle := range taskCreateListGroup {
+						taskCreateList = append(taskCreateList, taskCreateListEle...)
+					}
+					for _, taskIndexDAGListEle := range taskIndexDAGListGroup {
+						taskIndexDAGList = append(taskIndexDAGList, taskIndexDAGListEle...)
+					}
 				} else {
 					// Create grouping batch change issue.
 					for i := 0; i < len(migrationDetailList)-1; i++ {
@@ -1298,7 +1350,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	return create, nil
 }
 
-func flushGroupingDatabaseTaskToTaskCreate(table2TaskStatement map[string]string, table2SchemaGroupName map[string]string, database *store.DatabaseMessage, instance *store.InstanceMessage, pushEvent *vcs.PushEvent, migrationDetail *api.MigrationDetail) ([]api.TaskCreate, error) {
+func flushGroupingDatabaseTaskToTaskCreate(statementPrefix *strings.Builder, table2TaskStatement map[string]string, table2SchemaGroupName map[string]string, database *store.DatabaseMessage, instance *store.InstanceMessage, pushEvent *vcs.PushEvent, migrationDetail *api.MigrationDetail) ([]api.TaskCreate, error) {
 	var taskCreateList []api.TaskCreate
 	idx := 0
 	for tableName, statement := range table2TaskStatement {
@@ -1306,7 +1358,8 @@ func flushGroupingDatabaseTaskToTaskCreate(table2TaskStatement map[string]string
 			continue
 		}
 		newMigrationDetail := *migrationDetail
-		newMigrationDetail.Statement = statement
+		statementWithPrefix := statementPrefix.String() + statement
+		newMigrationDetail.Statement = statementWithPrefix
 		taskCreate, err := getUpdateTask(database, instance, pushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), table2SchemaGroupName[tableName])
 		if err != nil {
 			return nil, err
