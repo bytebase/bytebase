@@ -1,6 +1,6 @@
 <template>
   <main
-    class="flex-1 h-full relative z-0 overflow-auto pb-8 focus:outline-none xl:order-last"
+    class="flex-1 h-full relative pb-8 focus:outline-none xl:order-last"
     tabindex="0"
   >
     <!-- Profile header -->
@@ -46,6 +46,7 @@
             :input-props="{ autocomplete: 'off' }"
             :value="state.editingUser?.title"
             style="width: 16rem"
+            size="large"
             @update:value="updateUser('title', $event)"
           />
           <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
@@ -66,7 +67,7 @@
       v-if="user.userType === UserType.USER"
       class="mt-6 mb-2 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
     >
-      <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3">
         <div class="sm:col-span-1">
           <dt class="text-sm font-medium text-control-light">
             {{ $t("settings.profile.role") }}
@@ -92,12 +93,29 @@
           <dd class="mt-1 text-sm text-main">
             <NInput
               v-if="state.editing"
+              size="large"
               :value="state.editingUser?.email"
               :input-props="{ autocomplete: 'off', type: 'email' }"
               @update:value="updateUser('email', $event)"
             />
             <template v-else>
               {{ user.email }}
+            </template>
+          </dd>
+        </div>
+
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-control-light">
+            {{ $t("settings.profile.phone") }}
+          </dt>
+          <dd class="mt-1 text-sm text-main">
+            <PhoneNumberInput
+              v-if="state.editing"
+              :value="state.editingUser?.phone || ''"
+              @update="(value) => updateUser('phone', value)"
+            />
+            <template v-else>
+              {{ user.phone }}
             </template>
           </dd>
         </div>
@@ -110,6 +128,7 @@
             <dd class="mt-1 text-sm text-main">
               <NInput
                 type="password"
+                size="large"
                 :placeholder="$t('common.sensitive-placeholder')"
                 :value="state.editingUser?.password"
                 :input-props="{ autocomplete: 'off' }"
@@ -127,6 +146,7 @@
             </dt>
             <dd class="mt-1 text-sm text-main">
               <NInput
+                size="large"
                 :placeholder="
                   $t('settings.profile.password-confirm-placeholder')
                 "
@@ -249,6 +269,7 @@ import {
 } from "@/types/proto/v1/auth_service";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
+import PhoneNumberInput from "@/components/v2/Form/PhoneNumberInput.vue";
 
 interface LocalState {
   editing: boolean;
@@ -376,15 +397,27 @@ const saveEdit = async () => {
   if (userPatch.email !== user.value.email) {
     updateMask.push("email");
   }
+  if (userPatch.phone !== user.value.phone) {
+    updateMask.push("phone");
+  }
   if (userPatch.password !== user.value.email) {
     updateMask.push("password");
   }
-  await userStore.updateUser({
-    user: userPatch,
-    updateMask,
-    regenerateRecoveryCodes: false,
-    regenerateTempMfaSecret: false,
-  });
+  try {
+    await userStore.updateUser({
+      user: userPatch,
+      updateMask,
+      regenerateRecoveryCodes: false,
+      regenerateTempMfaSecret: false,
+    });
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: (error as any).details || "Failed to update user",
+    });
+    return;
+  }
   await useAuthStore().refreshUserIfNeeded(currentUserV1.value.name);
 
   state.editingUser = undefined;
