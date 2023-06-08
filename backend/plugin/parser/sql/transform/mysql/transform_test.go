@@ -42,13 +42,10 @@ func TestTransform(t *testing.T) {
 			KEY idx_name (name)
 		);
 		
-		DELIMITER ;;
 		CREATE PROCEDURE p1()
 		BEGIN
 			SELECT * FROM t;
-		END;;
-		DELIMITER ;
-	`
+		END;`
 
 	want := "CREATE TABLE `t` (" + "\n" +
 		"  `id` INT NOT NULL," + "\n" +
@@ -59,14 +56,11 @@ func TestTransform(t *testing.T) {
 		"\n" +
 		"CREATE INDEX `idx_name` ON `t` (`name`);" + "\n" +
 		"\n" +
-		"DELIMITER ;;" + "\n" +
-		"\n" +
 		"CREATE PROCEDURE p1()" + "\n" +
 		"		BEGIN" + "\n" +
 		"			SELECT * FROM t;" + "\n" +
-		"		END;;" + "\n" +
-		"\n" +
-		"DELIMITER ;\n\n"
+		"		END;" + "\n" +
+		"\n"
 
 	a := require.New(t)
 	mysqlTransformer := &SchemaTransformer{}

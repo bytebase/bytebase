@@ -367,18 +367,18 @@ func (e *SyntaxError) Error() string {
 	return e.Message
 }
 
-// PLSQLErrorListener is a custom error listener for PLSQL parser.
-type PLSQLErrorListener struct {
+// ParseErrorListener is a custom error listener for PLSQL parser.
+type ParseErrorListener struct {
 	err *SyntaxError
 }
 
 // NewPLSQLErrorListener creates a new PLSQLErrorListener.
-func NewPLSQLErrorListener() *PLSQLErrorListener {
-	return &PLSQLErrorListener{}
+func NewPLSQLErrorListener() *ParseErrorListener {
+	return &ParseErrorListener{}
 }
 
 // SyntaxError returns the errors.
-func (l *PLSQLErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column int, msg string, _ antlr.RecognitionException) {
+func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column int, msg string, _ antlr.RecognitionException) {
 	if len(msg) > 1024 {
 		msg = msg[:1024]
 	}
@@ -394,17 +394,17 @@ func (l *PLSQLErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column
 }
 
 // ReportAmbiguity reports an ambiguity.
-func (*PLSQLErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, exact bool, ambigAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
+func (*ParseErrorListener) ReportAmbiguity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, exact bool, ambigAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
 	antlr.ConsoleErrorListenerINSTANCE.ReportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
 }
 
 // ReportAttemptingFullContext reports an attempting full context.
-func (*PLSQLErrorListener) ReportAttemptingFullContext(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, conflictingAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
+func (*ParseErrorListener) ReportAttemptingFullContext(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex int, conflictingAlts *antlr.BitSet, configs *antlr.ATNConfigSet) {
 	antlr.ConsoleErrorListenerINSTANCE.ReportAttemptingFullContext(recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs)
 }
 
 // ReportContextSensitivity reports a context sensitivity.
-func (*PLSQLErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex, prediction int, configs *antlr.ATNConfigSet) {
+func (*ParseErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex, prediction int, configs *antlr.ATNConfigSet) {
 	antlr.ConsoleErrorListenerINSTANCE.ReportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs)
 }
 
@@ -417,11 +417,11 @@ func ParsePLSQL(sql string) (antlr.Tree, error) {
 	p := parser.NewPlSqlParser(steam)
 	p.SetVersion12(true)
 
-	lexerErrorListener := &PLSQLErrorListener{}
+	lexerErrorListener := &ParseErrorListener{}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &PLSQLErrorListener{}
+	parserErrorListener := &ParseErrorListener{}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 
@@ -441,7 +441,7 @@ func ParsePLSQL(sql string) (antlr.Tree, error) {
 
 // PLSQLValidateForEditor validates the given PLSQL for editor.
 func PLSQLValidateForEditor(tree antlr.Tree) error {
-	l := &validateForEditorListener{
+	l := &plsqlValidateForEditorListener{
 		validate: true,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
@@ -451,28 +451,28 @@ func PLSQLValidateForEditor(tree antlr.Tree) error {
 	return nil
 }
 
-type validateForEditorListener struct {
+type plsqlValidateForEditorListener struct {
 	*parser.BasePlSqlParserListener
 
 	validate bool
 }
 
 // EnterSql_script is called when production sql_script is entered.
-func (l *validateForEditorListener) EnterSql_script(ctx *parser.Sql_scriptContext) {
+func (l *plsqlValidateForEditorListener) EnterSql_script(ctx *parser.Sql_scriptContext) {
 	if len(ctx.AllSql_plus_command()) > 0 {
 		l.validate = false
 	}
 }
 
 // EnterUnit_statement is called when production unit_statement is entered.
-func (l *validateForEditorListener) EnterUnit_statement(ctx *parser.Unit_statementContext) {
+func (l *plsqlValidateForEditorListener) EnterUnit_statement(ctx *parser.Unit_statementContext) {
 	if ctx.Data_manipulation_language_statements() == nil {
 		l.validate = false
 	}
 }
 
 // EnterData_manipulation_language_statements is called when production data_manipulation_language_statements is entered.
-func (l *validateForEditorListener) EnterData_manipulation_language_statements(ctx *parser.Data_manipulation_language_statementsContext) {
+func (l *plsqlValidateForEditorListener) EnterData_manipulation_language_statements(ctx *parser.Data_manipulation_language_statementsContext) {
 	if ctx.Select_statement() == nil && ctx.Explain_statement() == nil {
 		l.validate = false
 	}

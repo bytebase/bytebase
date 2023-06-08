@@ -1,8 +1,10 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
+	plsqlparser "github.com/bytebase/plsql-parser"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,7 +32,10 @@ func TestPLSQLParser(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		_, err := ParsePLSQL(test.statement)
+		tree, err := ParsePLSQL(test.statement)
+		if sql, ok := tree.(*plsqlparser.Sql_scriptContext); ok {
+			fmt.Println(sql.GetText())
+		}
 		if test.errorMessage == "" {
 			require.NoError(t, err)
 		} else {
