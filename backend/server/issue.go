@@ -1205,8 +1205,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 									newStatement := strings.ReplaceAll(singleStatement.Text, schemaGroup.Placeholder, tableName)
 									table2TaskStatement[tableName] += newStatement
 									table2TaskStatement[tableName] += "\n"
-									match = true
 								}
+								match = true
 								break
 							}
 						}
