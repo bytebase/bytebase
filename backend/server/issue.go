@@ -1195,6 +1195,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					if err != nil {
 						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to split multi SQL").SetInternal(err)
 					}
+					if len(singleStatements) == 0 {
+						return nil, echo.NewHTTPError(http.StatusBadRequest, "The valid statement of migration detail should not be empty")
+					}
+
 					for _, singleStatement := range singleStatements {
 						// If singleStatement contains the schema table placeholder, we regard it belongs to this table group.
 						match := false
