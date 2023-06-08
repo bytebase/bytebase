@@ -347,6 +347,7 @@
     - [ListReviewsResponse](#bytebase-v1-ListReviewsResponse)
     - [Review](#bytebase-v1-Review)
     - [Review.Approver](#bytebase-v1-Review-Approver)
+    - [SendBackReviewRequest](#bytebase-v1-SendBackReviewRequest)
     - [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest)
   
     - [ApprovalNode.GroupValue](#bytebase-v1-ApprovalNode-GroupValue)
@@ -5630,6 +5631,21 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 
 
 
+<a name="bytebase-v1-SendBackReviewRequest"></a>
+
+### SendBackReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review to add an approver. Format: projects/{project}/reviews/{review} |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateReviewRequest"></a>
 
 ### UpdateReviewRequest
@@ -5744,6 +5760,7 @@ ANY means approving any node will proceed.
 | UpdateReview | [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |
 | ApproveReview | [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| SendBackReview | [SendBackReviewRequest](#bytebase-v1-SendBackReviewRequest) | [Review](#bytebase-v1-Review) |  |
 
  
 

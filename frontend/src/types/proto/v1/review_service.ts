@@ -143,6 +143,14 @@ export interface ApproveReviewRequest {
   name: string;
 }
 
+export interface SendBackReviewRequest {
+  /**
+   * The name of the review to add an approver.
+   * Format: projects/{project}/reviews/{review}
+   */
+  name: string;
+}
+
 export interface Review {
   /**
    * The name of the review.
@@ -958,6 +966,62 @@ export const ApproveReviewRequest = {
 
   fromPartial(object: DeepPartial<ApproveReviewRequest>): ApproveReviewRequest {
     const message = createBaseApproveReviewRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseSendBackReviewRequest(): SendBackReviewRequest {
+  return { name: "" };
+}
+
+export const SendBackReviewRequest = {
+  encode(message: SendBackReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SendBackReviewRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSendBackReviewRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SendBackReviewRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: SendBackReviewRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SendBackReviewRequest>): SendBackReviewRequest {
+    return SendBackReviewRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SendBackReviewRequest>): SendBackReviewRequest {
+    const message = createBaseSendBackReviewRequest();
     message.name = object.name ?? "";
     return message;
   },
@@ -2007,6 +2071,67 @@ export const ReviewServiceDefinition = {
         },
       },
     },
+    sendBackReview: {
+      name: "SendBackReview",
+      requestType: SendBackReviewRequest,
+      requestStream: false,
+      responseType: Review,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              45,
+              58,
+              1,
+              42,
+              34,
+              40,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              118,
+              105,
+              101,
+              119,
+              115,
+              47,
+              42,
+              125,
+              58,
+              115,
+              101,
+              110,
+              100,
+              66,
+              97,
+              99,
+              107,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -2023,6 +2148,7 @@ export interface ReviewServiceImplementation<CallContextExt = {}> {
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BatchUpdateReviewsResponse>>;
   approveReview(request: ApproveReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  sendBackReview(request: SendBackReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
 }
 
 export interface ReviewServiceClient<CallOptionsExt = {}> {
@@ -2038,6 +2164,7 @@ export interface ReviewServiceClient<CallOptionsExt = {}> {
     options?: CallOptions & CallOptionsExt,
   ): Promise<BatchUpdateReviewsResponse>;
   approveReview(request: DeepPartial<ApproveReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  sendBackReview(request: DeepPartial<SendBackReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
