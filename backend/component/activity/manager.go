@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gosimple/slug"
+	"github.com/nyaruka/phonenumbers"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -17,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -192,6 +196,7 @@ func postWebhookList(webhookCtx webhook.Context, webhookList []*store.ProjectWeb
 func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *Metadata, updater *store.UserMessage) (webhook.Context, error) {
 	var webhookCtx webhook.Context
 	var webhookTaskResult *webhook.TaskResult
+	var webhookApproval webhook.Approval
 
 	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
@@ -399,6 +404,72 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 			}
 			webhookTaskResult.Detail = result.Detail
 		}
+	case api.ActivityIssueApprovalNotify:
+		payload := &api.ActivityIssueApprovalNotifyPayload{}
+		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
+			log.Warn("Failed to post webhook event after changing the issue approval node status, failed to unmarshal payload",
+				zap.String("issue_name", meta.Issue.Title),
+				zap.Error(err))
+			return webhookCtx, err
+		}
+		protoPayload := &storepb.ActivityIssueApprovalNotifyPayload{}
+		if err := protojson.Unmarshal([]byte(payload.ProtoPayload), protoPayload); err != nil {
+			log.Warn("Failed to post webhook event")
+		}
+		pendingStep := protoPayload.ApprovalStep
+
+		title = "Issue approval needed - " + meta.Issue.Title
+
+		if len(pendingStep.Nodes) != 1 {
+			log.Warn("Failed to post webhook event after changing the issue approval node status, pending step nodes length is not 1")
+			return webhookCtx, errors.Errorf("pending step nodes length is not 1, got %v", len(pendingStep.Nodes))
+		}
+
+		node := pendingStep.Nodes[0]
+
+		var usersGetter func(ctx context.Context) ([]*store.UserMessage, error)
+
+		switch val := node.Payload.(type) {
+		case *storepb.ApprovalNode_GroupValue_:
+			switch val.GroupValue {
+			case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
+				return webhookCtx, errors.Errorf("invalid group value")
+			case storepb.ApprovalNode_WORKSPACE_OWNER:
+				usersGetter = getUsersFromWorkspaceRole(m.store, api.Owner)
+			case storepb.ApprovalNode_WORKSPACE_DBA:
+				usersGetter = getUsersFromWorkspaceRole(m.store, api.DBA)
+			case storepb.ApprovalNode_PROJECT_OWNER:
+				usersGetter = getUsersFromProjectRole(m.store, api.Owner, meta.Issue.Project.ResourceID)
+			case storepb.ApprovalNode_PROJECT_MEMBER:
+				usersGetter = getUsersFromProjectRole(m.store, api.Developer, meta.Issue.Project.ResourceID)
+			default:
+				return webhookCtx, errors.Errorf("invalid group value")
+			}
+		case *storepb.ApprovalNode_Role:
+			role := api.Role(strings.TrimPrefix(val.Role, "roles/"))
+			usersGetter = getUsersFromProjectRole(m.store, role, meta.Issue.Project.ResourceID)
+		default:
+			return webhookCtx, errors.Errorf("invalid node payload type")
+		}
+
+		users, err := usersGetter(ctx)
+		if err != nil {
+			log.Warn("Failed to post webhook event after changing the issue approval node status, failed to get users",
+				zap.String("issue_name", meta.Issue.Title),
+				zap.Error(err))
+			return webhookCtx, err
+		}
+		for _, user := range users {
+			phoneNumber, err := phonenumbers.Parse(user.Phone, "")
+			if err != nil {
+				log.Warn("Failed to post webhook event after changing the issue approval node status, failed to parse phone number",
+					zap.String("issue_name", meta.Issue.Title),
+					zap.Error(err))
+				continue
+			}
+			phone := strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10)
+			webhookApproval.MentionUsersByPhone = append(webhookApproval.MentionUsersByPhone, phone)
+		}
 	}
 
 	webhookCtx = webhook.Context{
@@ -422,6 +493,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		CreatorID:    updater.ID,
 		CreatorName:  updater.Name,
 		CreatorEmail: updater.Email,
+		Approval:     &webhookApproval,
 	}
 	return webhookCtx, nil
 }
@@ -489,4 +561,30 @@ func shouldPostInbox(activity *api.Activity, createType api.ActivityType) (bool,
 		}
 	}
 	return false, nil
+}
+
+func getUsersFromWorkspaceRole(s *store.Store, role api.Role) func(context.Context) ([]*store.UserMessage, error) {
+	return func(ctx context.Context) ([]*store.UserMessage, error) {
+		return s.ListUsers(ctx, &store.FindUserMessage{
+			Role: &role,
+		})
+	}
+}
+
+func getUsersFromProjectRole(s *store.Store, role api.Role, projectID string) func(context.Context) ([]*store.UserMessage, error) {
+	return func(ctx context.Context) ([]*store.UserMessage, error) {
+		projectIAM, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+			ProjectID: &projectID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		var users []*store.UserMessage
+		for _, binding := range projectIAM.Bindings {
+			if binding.Role == role {
+				users = append(users, binding.Members...)
+			}
+		}
+		return users, nil
+	}
 }
