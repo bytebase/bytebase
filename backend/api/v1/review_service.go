@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -257,7 +258,38 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 
 		return nil
 	}(); err != nil {
-		log.Error("failed to create activity after approving review", zap.Error(err))
+		log.Error("failed to create skipping steps activity after approving review", zap.Error(err))
+	}
+
+	if err := func() error {
+		protoPayload, err := protojson.Marshal(&storepb.ActivityIssueApprovalNotifyPayload{
+			ApprovalStep: utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers),
+		})
+		if err != nil {
+			return err
+		}
+		activityPayload, err := json.Marshal(api.ActivityIssueApprovalNotifyPayload{
+			ProtoPayload: string(protoPayload),
+		})
+		if err != nil {
+			return err
+		}
+
+		create := &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: issue.UID,
+			Type:        api.ActivityIssueApprovalNotify,
+			Level:       api.ActivityInfo,
+			Comment:     "",
+			Payload:     string(activityPayload),
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
+			return err
+		}
+
+		return nil
+	}(); err != nil {
+		log.Error("failed to create approval step pending activity after creating review", zap.Error(err))
 	}
 
 	review, err := convertToReview(ctx, s.store, issue)
