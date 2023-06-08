@@ -127,8 +127,8 @@ import {
   useCurrentUserIamPolicy,
   pushNotification,
   useDatabaseV1Store,
+  featureToRef,
   useCurrentUserV1,
-  hasFeature,
 } from "@/store";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
@@ -267,7 +267,7 @@ const exportDropdownOptions = computed(() => [
 ]);
 
 const showExportButton = computed(() => {
-  if (!hasFeature("bb.feature.custom-role")) {
+  if (!featureToRef("bb.feature.custom-role").value) {
     return true;
   }
   return hasWorkspacePermissionV1(
@@ -277,7 +277,9 @@ const showExportButton = computed(() => {
 });
 
 const showRequestExportButton = computed(() => {
-  return hasFeature("bb.feature.custom-role") && !showExportButton.value;
+  return (
+    featureToRef("bb.feature.custom-role").value && !showExportButton.value
+  );
 });
 
 const handleExportBtnClick = (format: "CSV" | "JSON") => {
