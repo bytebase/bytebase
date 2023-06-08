@@ -164,6 +164,7 @@ func (s *Store) createPipelineValidateOnly(ctx context.Context, create *api.Pipe
 				InstanceID:        tc.InstanceID,
 				DatabaseID:        tc.DatabaseID,
 				BlockedBy:         blockedBy,
+				Statement:         tc.Statement,
 			}
 			instance, err := s.GetInstanceByID(ctx, task.InstanceID)
 			if err != nil {
