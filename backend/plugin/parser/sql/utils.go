@@ -58,7 +58,10 @@ func (r SchemaResource) Pretty() string {
 // ExtractResourceList extracts the resource list from the SQL.
 func ExtractResourceList(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
 	switch engineType {
-	case MySQL, TiDB, MariaDB, OceanBase:
+	case TiDB:
+		return extractTiDBResourceList(currentDatabase, sql)
+	case MySQL, MariaDB, OceanBase:
+		// The resource list for MySQL may contains table, view and temporary table.
 		return extractMySQLResourceList(currentDatabase, sql)
 	case Oracle:
 		// The resource list for Oracle may contains table, view and temporary table.
@@ -135,31 +138,30 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 	return result
 }
 
-func extractMySQLResourceList(currentDatabase string, sql string) ([]SchemaResource, error) {
-	nodes, err := ParseMySQL(sql, "", "")
+func extractTiDBResourceList(currentDatabase string, sql string) ([]SchemaResource, error) {
+	nodes, err := ParseTiDB(sql, "", "")
 	if err != nil {
 		return nil, err
 	}
 
 	resourceMap := make(map[string]SchemaResource)
 
-	_ = nodes
-	// for _, node := range nodes {
-	// 	tableList := ExtractMySQLTableList(node, false /* asName */)
-	// 	for _, table := range tableList {
-	// 		resource := SchemaResource{
-	// 			Database: table.Schema.O,
-	// 			Schema:   "",
-	// 			Table:    table.Name.O,
-	// 		}
-	// 		if resource.Database == "" {
-	// 			resource.Database = currentDatabase
-	// 		}
-	// 		if _, ok := resourceMap[resource.String()]; !ok {
-	// 			resourceMap[resource.String()] = resource
-	// 		}
-	// 	}
-	// }
+	for _, node := range nodes {
+		tableList := ExtractMySQLTableList(node, false /* asName */)
+		for _, table := range tableList {
+			resource := SchemaResource{
+				Database: table.Schema.O,
+				Schema:   "",
+				Table:    table.Name.O,
+			}
+			if resource.Database == "" {
+				resource.Database = currentDatabase
+			}
+			if _, ok := resourceMap[resource.String()]; !ok {
+				resourceMap[resource.String()] = resource
+			}
+		}
+	}
 
 	resourceList := make([]SchemaResource, 0, len(resourceMap))
 	for _, resource := range resourceMap {

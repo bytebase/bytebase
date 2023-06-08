@@ -126,7 +126,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid sql statement: %v", err))
 			}
 		case db.MySQL, db.OceanBase:
-			if _, err := parser.ParseMySQL(exec.Statement, "", ""); err != nil {
+			if _, err := parser.ParseMySQL(exec.Statement); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid sql statement: %v", err))
 			}
 		}

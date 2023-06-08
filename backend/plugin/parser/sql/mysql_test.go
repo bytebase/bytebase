@@ -12,6 +12,9 @@ func TestMySQLParser(t *testing.T) {
 		errorMessage string
 	}{
 		{
+			statement: "SELECT count(t.a) as TID from t1 as t;",
+		},
+		{
 			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
 		},
 		{
@@ -40,7 +43,7 @@ func TestMySQLParser(t *testing.T) {
 				        SET output = CONCAT(var1, input, ' and ', var2);
 				    ELSE
 				        -- Use a SELECT statement to get data from a table
-				        SELECT column_name INTO output FROM table_name WHERE condition;
+				        SELECT column_name INTO output FROM table_name WHERE condition_expression;
 				    END IF;
 				END;
 				
@@ -63,7 +66,7 @@ func TestMySQLParser(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		_, err := ParseMySQL(test.statement, "", "")
+		_, err := ParseMySQL(test.statement)
 		if test.errorMessage == "" {
 			require.NoError(t, err, i)
 		} else {
@@ -100,7 +103,7 @@ func TestMySQLValidateForEditor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tree, err := ParseMySQL(test.statement, "", "")
+		tree, err := ParseMySQL(test.statement)
 		require.NoError(t, err)
 		err = MySQLValidateForEditor(tree)
 		if test.validate {
@@ -108,5 +111,58 @@ func TestMySQLValidateForEditor(t *testing.T) {
 		} else {
 			require.Error(t, err)
 		}
+	}
+}
+
+func TestExtractMySQLResourceList(t *testing.T) {
+	tests := []struct {
+		statement string
+		expected  []SchemaResource
+	}{
+		{
+			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
+			expected: []SchemaResource{
+				{
+					Database: "db",
+					Table:    "t1",
+				},
+				{
+					Database: "db",
+					Table:    "t2",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM db1.t1 JOIN db2.t2 ON t1.c1 = t2.c1;",
+			expected: []SchemaResource{
+				{
+					Database: "db1",
+					Table:    "t1",
+				},
+				{
+					Database: "db2",
+					Table:    "t2",
+				},
+			},
+		},
+		{
+			statement: "SELECT a > (select max(a) from t1) FROM t2;",
+			expected: []SchemaResource{
+				{
+					Database: "db",
+					Table:    "t1",
+				},
+				{
+					Database: "db",
+					Table:    "t2",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		resources, err := extractMySQLResourceList("db", test.statement)
+		require.NoError(t, err)
+		require.Equal(t, test.expected, resources, test.statement)
 	}
 }

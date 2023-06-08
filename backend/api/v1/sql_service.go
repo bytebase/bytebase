@@ -1071,7 +1071,7 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			}
 		}
 	case db.MySQL:
-		tree, err := parser.ParseMySQL(statement, "", "")
+		tree, err := parser.ParseMySQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
@@ -1110,6 +1110,42 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 
 func (s *SQLService) extractResourceList(ctx context.Context, engine parser.EngineType, databaseName string, statement string, instance *store.InstanceMessage) ([]parser.SchemaResource, error) {
 	switch engine {
+	case parser.MySQL, parser.MariaDB, parser.OceanBase:
+		list, err := parser.ExtractResourceList(engine, databaseName, "", statement)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+		}
+
+		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		if err != nil {
+			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+				// If database not found, skip.
+				return nil, nil
+			}
+			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+
+		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+		}
+
+		var result []parser.SchemaResource
+		for _, resource := range list {
+			if resource.Database != dbSchema.Metadata.Name {
+				// Should not happen.
+				continue
+			}
+
+			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+				// If table not found, skip.
+				continue
+			}
+
+			result = append(result, resource)
+		}
+
+		return result, nil
 	case parser.Postgres:
 		list, err := parser.ExtractResourceList(engine, databaseName, "public", statement)
 		if err != nil {
