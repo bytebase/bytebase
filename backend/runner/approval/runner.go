@@ -265,13 +265,13 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 
 	if err := func() error {
-		protoPayload, err := protojson.Marshal(&storepb.ActivityIssueApprovalStepPendingPayload{
+		protoPayload, err := protojson.Marshal(&storepb.ActivityIssueApprovalNotifyPayload{
 			ApprovalStep: utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers),
 		})
 		if err != nil {
 			return err
 		}
-		activityPayload, err := json.Marshal(api.ActivityIssueApprovalStepPendingPayload{
+		activityPayload, err := json.Marshal(api.ActivityIssueApprovalNotifyPayload{
 			ProtoPayload: string(protoPayload),
 		})
 		if err != nil {
@@ -281,7 +281,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		create := &api.ActivityCreate{
 			CreatorID:   api.SystemBotID,
 			ContainerID: issue.UID,
-			Type:        api.ActivityIssueApprovalStepPending,
+			Type:        api.ActivityIssueApprovalNotify,
 			Level:       api.ActivityInfo,
 			Comment:     "",
 			Payload:     string(activityPayload),

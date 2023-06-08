@@ -404,15 +404,15 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 			}
 			webhookTaskResult.Detail = result.Detail
 		}
-	case api.ActivityIssueApprovalStepPending:
-		payload := &api.ActivityIssueApprovalStepPendingPayload{}
+	case api.ActivityIssueApprovalNotify:
+		payload := &api.ActivityIssueApprovalNotifyPayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
 			log.Warn("Failed to post webhook event after changing the issue approval node status, failed to unmarshal payload",
 				zap.String("issue_name", meta.Issue.Title),
 				zap.Error(err))
 			return webhookCtx, err
 		}
-		protoPayload := &storepb.ActivityIssueApprovalStepPendingPayload{}
+		protoPayload := &storepb.ActivityIssueApprovalNotifyPayload{}
 		if err := protojson.Unmarshal([]byte(payload.ProtoPayload), protoPayload); err != nil {
 			log.Warn("Failed to post webhook event")
 		}

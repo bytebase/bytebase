@@ -542,8 +542,8 @@ func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload stri
 			return "", err
 		}
 		return string(newPayload), nil
-	case api.ActivityIssueApprovalStepPending:
-		var originalPayload api.ActivityIssueApprovalStepPendingPayload
+	case api.ActivityIssueApprovalNotify:
+		var originalPayload api.ActivityIssueApprovalNotifyPayload
 		if err := json.Unmarshal([]byte(payload), &originalPayload); err != nil {
 			return "", err
 		}
@@ -611,8 +611,8 @@ func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload stri
 			return "", err
 		}
 		return string(newPayload), nil
-	case api.ActivityIssueApprovalStepPending:
-		originalPayload := &api.ActivityIssueApprovalStepPendingPayload{
+	case api.ActivityIssueApprovalNotify:
+		originalPayload := &api.ActivityIssueApprovalNotifyPayload{
 			ProtoPayload: payload,
 		}
 		newPayload, err := json.Marshal(originalPayload)
