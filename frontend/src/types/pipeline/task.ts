@@ -71,6 +71,7 @@ export type TaskDatabaseSchemaUpdatePayload = {
   skippedReason: string;
   statement: string;
   sheetId: SheetId;
+  schemaGroupName?: string;
   pushEvent?: VCSPushEvent;
 };
 
@@ -121,6 +122,7 @@ export type TaskDatabaseDataUpdatePayload = {
   skippedReason: string;
   statement: string;
   sheetId: SheetId;
+  schemaGroupName?: string;
   pushEvent?: VCSPushEvent;
   rollbackEnabled: boolean;
   rollbackSqlStatus?: RollbackSQLStatus;

@@ -121,6 +121,7 @@ export class IssueCreateHelper {
               statement,
               sheetId: UNKNOWN_ID,
               earliestAllowedTs: task.earliestAllowedTs,
+              payload: task.payload,
             };
           }),
         })),
@@ -149,7 +150,7 @@ const defaultStatementOfTask = (task: Task) => {
   if (task.type === "bb.task.database.schema.baseline") {
     return ESTABLISH_BASELINE_SQL;
   }
-  if (task.statement) {
+  if (task.statement && task.statement !== VALIDATE_ONLY_SQL) {
     return task.statement;
   }
 
