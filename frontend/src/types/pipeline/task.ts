@@ -185,6 +185,8 @@ export type Task = {
   // Tasks such as creating database may not have database.
   database?: Database;
   payload?: TaskPayload;
+  // Using by grouping batch change.
+  statement?: string;
 
   // Task DAG
   blockedBy: Task[];

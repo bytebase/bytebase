@@ -51,15 +51,16 @@ const buildNewTenantSchemaUpdateIssue = async (
     migrationType = "DATA";
   }
 
-  const databaseList = findDatabaseListByQuery(context);
   const databaseGroupName = findDatabaseGroupNameByQuery(context);
+  const databaseList = findDatabaseListByQuery(context);
   if (databaseGroupName) {
+    const sql = route.query.sql as string;
     helper.issueCreate!.createContext = {
       detailList: [
         {
           migrationType: migrationType,
           databaseGroupName: databaseGroupName,
-          statement: VALIDATE_ONLY_SQL,
+          statement: sql || VALIDATE_ONLY_SQL,
           earliestAllowedTs: 0,
         },
       ],
