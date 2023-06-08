@@ -1150,8 +1150,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database schema").SetInternal(err)
 					}
 					schemaGroupsToMatchedTableNames := make(map[string][]string)
-					// TODO(zp): using strings.Builder to improve performance.
-					tableToTaskStatement := make(map[string]string)
+					tableToTaskStatement := make(map[string]*strings.Builder)
+					// Empty table name means the statement is not matched to any table group.
+					tableToTaskStatement[""] = &strings.Builder{}
 					tableToSchemaGroupName := make(map[string]string)
 					for _, schemaGroup := range schemaGroups {
 						matches, _, err := getMatchesAndUnmatchedTables(ctx, dbSchema, schemaGroup)
@@ -1169,6 +1170,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						}
 						for _, tableName := range matches {
 							tableToSchemaGroupName[tableName] = fmt.Sprintf("databaseGroups/%s/schemaGroups/%s", databaseGroup.ResourceID, schemaGroup.ResourceID)
+							tableToTaskStatement[tableName] = &strings.Builder{}
 						}
 						if err != nil {
 							return nil, err
@@ -1207,7 +1209,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 						// We don't want empty statements(likes comments) to be involved in the match/replace SchemaGroup operation. We will
 						// put them in the next valid statement.
 						if singleStatement.Empty {
-							emptyStatementsBuffer.Write([]byte(singleStatement.Text))
+							if _, err := emptyStatementsBuffer.Write([]byte(singleStatement.Text)); err != nil {
+								return nil, echo.NewHTTPError(http.StatusInternalServerError, "Cannot write to string builder")
+							}
 							continue
 						}
 						// If singleStatement contains the schema table placeholder, we regard it belongs to this table group.
@@ -1232,8 +1236,12 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 								// Iterate the matches tables in this physical database and render the statement.
 								for _, tableName := range schemaGroupsToMatchedTableNames[schemaGroup.Placeholder] {
 									newStatement := strings.ReplaceAll(singleStatement.Text, schemaGroup.Placeholder, tableName)
-									tableToTaskStatement[tableName] += newStatement
-									tableToTaskStatement[tableName] += "\n"
+									if _, err := tableToTaskStatement[tableName].Write([]byte(newStatement)); err != nil {
+										return nil, echo.NewHTTPError(http.StatusInternalServerError, "Cannot write to string builder")
+									}
+									if _, err := tableToTaskStatement[tableName].Write([]byte("\n")); err != nil {
+										return nil, echo.NewHTTPError(http.StatusInternalServerError, "Cannot write to string builder")
+									}
 								}
 								match = true
 								break
@@ -1254,10 +1262,16 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 								taskCreateListGroup = append(taskCreateListGroup, taskCreates)
 							}
 							prevSchemaGroup = nil
-							tableToTaskStatement[""] += emptyStatementsBuffer.String()
+							if _, err := tableToTaskStatement[""].Write([]byte(emptyStatementsBuffer.String())); err != nil {
+								return nil, echo.NewHTTPError(http.StatusInternalServerError, "Cannot write to string builder")
+							}
 							emptyStatementsBuffer.Reset()
-							tableToTaskStatement[""] += singleStatement.Text
-							tableToTaskStatement[""] += "\n"
+							if _, err := tableToTaskStatement[""].Write([]byte(singleStatement.Text)); err != nil {
+								return nil, echo.NewHTTPError(http.StatusInternalServerError, "Cannot write to string builder")
+							}
+							if _, err := tableToTaskStatement[""].Write([]byte("\n")); err != nil {
+								return nil, echo.NewHTTPError(http.StatusInternalServerError, "Cannot write to string builder")
+							}
 						}
 					}
 					// Flush the last statement.
@@ -1350,15 +1364,16 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	return create, nil
 }
 
-func flushGroupingDatabaseTaskToTaskCreate(statementPrefix *strings.Builder, table2TaskStatement map[string]string, table2SchemaGroupName map[string]string, database *store.DatabaseMessage, instance *store.InstanceMessage, pushEvent *vcs.PushEvent, migrationDetail *api.MigrationDetail) ([]api.TaskCreate, error) {
+func flushGroupingDatabaseTaskToTaskCreate(statementPrefix *strings.Builder, table2TaskStatement map[string]*strings.Builder, table2SchemaGroupName map[string]string, database *store.DatabaseMessage, instance *store.InstanceMessage, pushEvent *vcs.PushEvent, migrationDetail *api.MigrationDetail) ([]api.TaskCreate, error) {
 	var taskCreateList []api.TaskCreate
 	idx := 0
 	for tableName, statement := range table2TaskStatement {
-		if statement == "" {
+		if statement.Len() == 0 {
 			continue
 		}
 		newMigrationDetail := *migrationDetail
-		statementWithPrefix := statementPrefix.String() + statement
+		statementWithPrefix := statementPrefix.String() + statement.String()
+		statement.Reset()
 		newMigrationDetail.Statement = statementWithPrefix
 		taskCreate, err := getUpdateTask(database, instance, pushEvent, &newMigrationDetail, getOrDefaultSchemaVersionWithSuffix(&newMigrationDetail, fmt.Sprintf("-%03d", idx)), table2SchemaGroupName[tableName])
 		if err != nil {
@@ -1366,10 +1381,6 @@ func flushGroupingDatabaseTaskToTaskCreate(statementPrefix *strings.Builder, tab
 		}
 		taskCreateList = append(taskCreateList, taskCreate)
 		idx++
-	}
-	// clear the table2TaskStatement map.
-	for tableName := range table2TaskStatement {
-		delete(table2TaskStatement, tableName)
 	}
 	return taskCreateList, nil
 }
