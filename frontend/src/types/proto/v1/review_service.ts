@@ -141,6 +141,7 @@ export interface ApproveReviewRequest {
    * Format: projects/{project}/reviews/{review}
    */
   name: string;
+  comment: string;
 }
 
 export interface RejectReviewRequest {
@@ -149,6 +150,7 @@ export interface RejectReviewRequest {
    * Format: projects/{project}/reviews/{review}
    */
   name: string;
+  comment: string;
 }
 
 export interface Review {
@@ -916,13 +918,16 @@ export const BatchUpdateReviewsResponse = {
 };
 
 function createBaseApproveReviewRequest(): ApproveReviewRequest {
-  return { name: "" };
+  return { name: "", comment: "" };
 }
 
 export const ApproveReviewRequest = {
   encode(message: ApproveReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.comment !== "") {
+      writer.uint32(18).string(message.comment);
     }
     return writer;
   },
@@ -941,6 +946,13 @@ export const ApproveReviewRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -951,12 +963,16 @@ export const ApproveReviewRequest = {
   },
 
   fromJSON(object: any): ApproveReviewRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      comment: isSet(object.comment) ? String(object.comment) : "",
+    };
   },
 
   toJSON(message: ApproveReviewRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
@@ -967,18 +983,22 @@ export const ApproveReviewRequest = {
   fromPartial(object: DeepPartial<ApproveReviewRequest>): ApproveReviewRequest {
     const message = createBaseApproveReviewRequest();
     message.name = object.name ?? "";
+    message.comment = object.comment ?? "";
     return message;
   },
 };
 
 function createBaseRejectReviewRequest(): RejectReviewRequest {
-  return { name: "" };
+  return { name: "", comment: "" };
 }
 
 export const RejectReviewRequest = {
   encode(message: RejectReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.comment !== "") {
+      writer.uint32(18).string(message.comment);
     }
     return writer;
   },
@@ -997,6 +1017,13 @@ export const RejectReviewRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1007,12 +1034,16 @@ export const RejectReviewRequest = {
   },
 
   fromJSON(object: any): RejectReviewRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      comment: isSet(object.comment) ? String(object.comment) : "",
+    };
   },
 
   toJSON(message: RejectReviewRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.comment !== undefined && (obj.comment = message.comment);
     return obj;
   },
 
@@ -1023,6 +1054,7 @@ export const RejectReviewRequest = {
   fromPartial(object: DeepPartial<RejectReviewRequest>): RejectReviewRequest {
     const message = createBaseRejectReviewRequest();
     message.name = object.name ?? "";
+    message.comment = object.comment ?? "";
     return message;
   },
 };
