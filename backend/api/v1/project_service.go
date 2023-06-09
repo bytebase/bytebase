@@ -1388,6 +1388,9 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 	if request.DatabaseGroup.DatabaseExpr == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
 	}
+	if request.DatabaseGroup.DatabaseExpr.Expression == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
+	}
 	if _, err := validateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
 	}
@@ -1636,6 +1639,9 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 	}
 	if request.SchemaGroup.TableExpr == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "schema group table expression is required")
+	}
+	if request.SchemaGroup.TableExpr.Expression == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
 	}
 	if _, err := validateGroupCELExpr(request.SchemaGroup.TableExpr.Expression); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid schema group table expression: %v", err)
