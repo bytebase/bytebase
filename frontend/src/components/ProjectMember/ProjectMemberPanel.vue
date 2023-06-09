@@ -14,7 +14,7 @@
     </div>
 
     <div v-if="allowAdmin" class="my-4 w-full flex gap-x-2">
-      <div class="w-[18rem] shrink-0">
+      <div class="w-[12rem] shrink-0">
         <UserSelect
           v-model:users="state.userUIDList"
           :multiple="true"
@@ -24,7 +24,7 @@
           style="width: 100%"
         />
       </div>
-      <div v-if="hasRBACFeature" class="flex-1 overflow-hidden">
+      <div v-if="hasRBACFeature" class="overflow-hidden w-[12rem]">
         <ProjectRolesSelect
           v-model:role-list="state.roleList"
           :disabled="state.adding"
