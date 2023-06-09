@@ -53,8 +53,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import { computed, watchEffect, h } from "vue";
-import { Translation, useI18n } from "vue-i18n";
+import { computed, watchEffect } from "vue";
 import { RouterLink } from "vue-router";
 import type { ComposedDatabase, LabelKeyType } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
@@ -76,11 +75,9 @@ const props = defineProps<{
   state: ProjectTenantViewState;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "dismiss"): void;
 }>();
-
-const { t } = useI18n();
 
 const { deploymentConfig, ready } = useDeploymentConfigV1ByProject(
   computed(() => {
