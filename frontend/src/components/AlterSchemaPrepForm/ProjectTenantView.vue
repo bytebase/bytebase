@@ -60,7 +60,6 @@ import type { ComposedDatabase, LabelKeyType } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import { getPipelineFromDeploymentScheduleV1, projectV1Slug } from "@/utils";
 import { useDeploymentConfigV1ByProject } from "@/store";
-import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { Project } from "@/types/proto/v1/project_service";
 
@@ -103,36 +102,6 @@ watchEffect(() => {
   // these databases are to be deployed
   const databaseIdList = stages.flatMap((stage) => stage.map((db) => db.uid));
   props.state.deployingTenantDatabaseList = databaseIdList;
-});
-
-useOverrideSubtitle(() => {
-  return h(
-    Translation,
-    {
-      tag: "p",
-      class: "textinfolabel",
-      keypath: "deployment-config.pipeline-generated-from-deployment-config",
-    },
-    {
-      deployment_config: () =>
-        h(
-          RouterLink,
-          {
-            to: {
-              path: `/project/${projectV1Slug(props.project!)}`,
-              hash: "#databases",
-            },
-            activeClass: "",
-            exactActiveClass: "",
-            class: "underline hover:bg-link-hover",
-            onClick: () => emit("dismiss"),
-          },
-          {
-            default: () => t("common.deployment-config"),
-          }
-        ),
-    }
-  );
 });
 </script>
 
