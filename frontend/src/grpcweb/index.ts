@@ -44,6 +44,14 @@ const clientFactory = createClientFactory()
   // A middleware that is attached first, will be invoked last.
   .use(authInterceptorMiddleware)
   .use(errorNotificationMiddleware);
+/**
+ * Example to use error notification middleware.
+ * Errors occurs during the request will cause UI notifications automatically.
+ * abcServiceClient.foo(requestParams, {
+ *   // true if you want to suppress error notifications for this call
+ *   silent: true,
+ * })
+ */
 
 export const authServiceClient = clientFactory.create(
   AuthServiceDefinition,
