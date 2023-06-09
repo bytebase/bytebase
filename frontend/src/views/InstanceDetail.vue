@@ -131,7 +131,7 @@ import {
   pushNotification,
   useSubscriptionV1Store,
   useLegacySQLStore,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useCurrentUserV1,
   useInstanceV1Store,
   useEnvironmentV1Store,
@@ -291,12 +291,12 @@ const syncSchema = () => {
 
       // Clear the db schema metadata cache entities.
       // So we will re-fetch new values when needed.
-      const dbSchemaStore = useDBSchemaStore();
+      const dbSchemaStore = useDBSchemaV1Store();
       const databaseList = useDatabaseV1Store().databaseListByInstance(
         instance.value.name
       );
       databaseList.forEach((database) =>
-        dbSchemaStore.removeCacheByDatabaseId(Number(database.uid))
+        dbSchemaStore.removeCache(database.name)
       );
     })
     .catch(() => {

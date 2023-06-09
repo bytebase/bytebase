@@ -126,7 +126,7 @@ import { useI18n } from "vue-i18n";
 import {
   hasFeature,
   pushNotification,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useUIStateStore,
   useSheetV1Store,
   useDatabaseV1Store,
@@ -193,7 +193,7 @@ const {
 const { t } = useI18n();
 const overrideSQLDialog = useDialog();
 const uiStateStore = useUIStateStore();
-const dbSchemaStore = useDBSchemaStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const sheetV1Store = useSheetV1Store();
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -641,7 +641,6 @@ const onStatementChange = (value: string) => {
 // Handle and update monaco editor auto completion context.
 const useDatabaseAndTableList = () => {
   const { selectedDatabase } = useIssueLogic();
-  const dbSchemaStore = useDBSchemaStore();
 
   const databaseList = computed(() => {
     if (selectedDatabase.value) return [selectedDatabase.value];
@@ -653,7 +652,7 @@ const useDatabaseAndTableList = () => {
     (list) => {
       list.forEach((db) => {
         if (db.uid !== String(UNKNOWN_ID)) {
-          dbSchemaStore.getOrFetchDatabaseMetadataById(Number(db.uid));
+          dbSchemaStore.getOrFetchDatabaseMetadata(db.name);
         }
       });
     },
@@ -662,7 +661,7 @@ const useDatabaseAndTableList = () => {
 
   const tableList = computed(() => {
     return databaseList.value
-      .map((item) => dbSchemaStore.getTableListByDatabaseId(Number(item.uid)))
+      .map((item) => dbSchemaStore.getTableList(item.name))
       .flat();
   });
 
@@ -674,9 +673,7 @@ const { databaseList, tableList } = useDatabaseAndTableList();
 const handleUpdateEditorAutoCompletionContext = async () => {
   const databaseMap: Map<ComposedDatabase, TableMetadata[]> = new Map();
   for (const database of databaseList.value) {
-    const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
-      Number(database.uid)
-    );
+    const tableList = await dbSchemaStore.getOrFetchTableList(database.name);
     databaseMap.set(database, tableList);
   }
   editorRef.value?.setEditorAutoCompletionContextV1(databaseMap);

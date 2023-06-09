@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -56,21 +55,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			dbSchema = newDBSchema
 		}
 
-		isMetadata := c.QueryParam("metadata") == "true"
-		isSDL := c.QueryParam("sdl") == "true"
-		if isMetadata && isSDL {
-			return echo.NewHTTPError(http.StatusBadRequest, "Cannot choose metadata and sdl format together")
-		}
-		if isMetadata {
-			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-			metadataBytes, err := protojson.Marshal(dbSchema.Metadata)
-			if err != nil {
-				return err
-			}
-			if _, err := c.Response().Write(metadataBytes); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
-			}
-		} else if isSDL {
+		if c.QueryParam("sdl") == "true" {
 			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 			if err != nil {
 				return err

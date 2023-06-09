@@ -23,7 +23,7 @@ import { editor as Editor } from "monaco-editor";
 import {
   useTabStore,
   useSQLEditorStore,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useDatabaseV1Store,
   useInstanceV1ByUID,
 } from "@/store";
@@ -73,7 +73,7 @@ const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const sqlEditorStore = useSQLEditorStore();
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
@@ -300,8 +300,8 @@ const handleEditorReady = async () => {
         ? [selectedDatabase.value]
         : databaseStore.databaseListByInstance(selectedInstance.value.name);
       for (const database of databaseList) {
-        const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
-          Number(database.uid)
+        const tableList = await dbSchemaStore.getOrFetchTableList(
+          database.name
         );
         databaseMap.set(database, tableList);
       }
