@@ -12,6 +12,12 @@ export type SilentRequestOptions = {
   silent?: boolean;
 };
 
+/**
+ * Way to define a grpc-web middleware
+ * ClientMiddleware<ExtendedOptions>
+ * See https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-client-middleware-deadline/src/index.ts
+ *   as an example.
+ */
 export const errorNotificationMiddleware: ClientMiddleware<SilentRequestOptions> =
   async function* (call, options) {
     const maybePushNotification = (title: string, description?: string) => {
