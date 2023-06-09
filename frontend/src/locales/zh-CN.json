@@ -249,7 +249,8 @@
       "years": "{years} 年"
     },
     "expiration": "过期时间",
-    "configure": "配置"
+    "configure": "配置",
+    "database-groups": "数据库分组"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -402,6 +403,8 @@
     "profile": {
       "email": "邮箱",
       "role": "角色",
+      "phone": "手机号",
+      "country-code": "国家或地区代码",
       "password": "密码",
       "password-confirm": "确认密码",
       "password-confirm-placeholder": "再次输入以确认",
@@ -1424,6 +1427,10 @@
         "issue-stage-status-change": {
           "title": "工单阶段状态变更",
           "label": "当一个工单包含的阶段状态发生了变更"
+        },
+        "issue-approval-notify": {
+          "title": "工单待审批",
+          "label": "当工单需要审批"
         }
       }
     },
@@ -2188,7 +2195,9 @@
     "instance": "实例",
     "project": "项目",
     "idp": "身份提供商",
-    "role": "角色"
+    "role": "角色",
+    "database-group": "数据库分组",
+    "schema-group": "表分组"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -2534,6 +2543,12 @@
     },
     "condition": {
       "self": "条件"
+    },
+    "prev-editor": {
+      "description": "您可以在 SQL 中引用表分组来对表分组内的所有表进行批量变更。对于每一张表，Bytebase 都会生成单独的 SQL。"
     }
+  },
+  "export-center": {
+    "self": "导出中心"
   }
 }

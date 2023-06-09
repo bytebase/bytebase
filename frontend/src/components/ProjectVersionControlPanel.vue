@@ -79,6 +79,7 @@
           :repository="repository"
           :allow-edit="allowEdit"
           @change-repository="enterWizard(false)"
+          @restore="cancelWizard"
         />
       </template>
     </template>

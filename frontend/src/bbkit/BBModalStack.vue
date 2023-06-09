@@ -6,7 +6,8 @@
     <div
       v-show="stack.length > 0"
       id="bb-modal-stack"
-      class="bb-modal-mask"
+      v-zindexable="{ enabled: true }"
+      class="fixed inset-0 w-full h-screen flex items-center justify-center bg-gray-300/80"
       :data-bb-modal-stack="stack.join('|')"
     />
   </teleport>
@@ -23,6 +24,7 @@ import {
   Ref,
   ref,
 } from "vue";
+import { zindexable } from "vdirs";
 
 export type ModalStackContext = {
   stack: Ref<number[]>;
@@ -57,6 +59,9 @@ export function useModalStackStatus() {
 
 export default defineComponent({
   name: "BBModalStack",
+  directives: {
+    zindexable,
+  },
   setup() {
     const stack = ref<number[]>([]);
 
@@ -71,10 +76,3 @@ export default defineComponent({
   },
 });
 </script>
-
-<style scope>
-.bb-modal-mask {
-  @apply fixed inset-0 w-full h-screen flex items-center justify-center z-40;
-  background-color: rgba(209, 213, 219, 0.8); /* bg-gray-300 */
-}
-</style>

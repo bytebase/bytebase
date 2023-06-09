@@ -4,9 +4,12 @@
     class="relative flex flex-col justify-start items-start p-2"
     :class="dark && 'dark bg-dark-bg'"
   >
-    <template v-if="resultSet && !showPlaceholder">
+    <template v-if="executeParams && resultSet && !showPlaceholder">
       <template v-if="viewMode === 'SINGLE-RESULT'">
-        <SingleResultView :result="resultSet.resultList[0]" />
+        <SingleResultView
+          :params="executeParams"
+          :result="resultSet.resultList[0]"
+        />
       </template>
       <template v-else-if="viewMode === 'MULTI-RESULT'">
         <NTabs
@@ -20,7 +23,7 @@
             :name="tabName(result, i)"
             class="flex-1 flex flex-col overflow-hidden"
           >
-            <SingleResultView :result="result" />
+            <SingleResultView :params="executeParams" :result="result" />
           </NTabPane>
         </NTabs>
       </template>
@@ -56,13 +59,26 @@ import { darkTheme, NConfigProvider, NTabs, NTabPane } from "naive-ui";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import SingleResultView from "./SingleResultView.vue";
 import EmptyView from "./EmptyView.vue";
-import { SingleSQLResult, SQLResultSet } from "@/types";
+import {
+  ExecuteConfig,
+  ExecuteOption,
+  SingleSQLResult,
+  SQLResultSet,
+} from "@/types";
 import { provideSQLResultViewContext } from "./context";
 import ErrorView from "./ErrorView.vue";
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
 const props = defineProps({
+  executeParams: {
+    type: Object as PropType<{
+      query: string;
+      config: ExecuteConfig;
+      option?: Partial<ExecuteOption> | undefined;
+    }>,
+    default: undefined,
+  },
   resultSet: {
     type: Object as PropType<SQLResultSet>,
     default: undefined,

@@ -3,17 +3,6 @@
 
 ## Table of Contents
 
-- [store/activity.proto](#store_activity-proto)
-    - [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload)
-    - [ActivityIssueCommentCreatePayload.ApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent)
-    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent)
-    - [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy)
-    - [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload)
-  
-    - [ActivityIssueCommentCreatePayload.ApprovalEvent.Status](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status)
-    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
-    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
-  
 - [store/approval.proto](#store_approval-proto)
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
     - [ApprovalNode](#bytebase-store-ApprovalNode)
@@ -26,6 +15,18 @@
     - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
     - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
+  
+- [store/activity.proto](#store_activity-proto)
+    - [ActivityIssueApprovalNotifyPayload](#bytebase-store-ActivityIssueApprovalNotifyPayload)
+    - [ActivityIssueCommentCreatePayload](#bytebase-store-ActivityIssueCommentCreatePayload)
+    - [ActivityIssueCommentCreatePayload.ApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent)
+    - [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy)
+    - [ActivityIssueCreatePayload](#bytebase-store-ActivityIssueCreatePayload)
+  
+    - [ActivityIssueCommentCreatePayload.ApprovalEvent.Status](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
+    - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
 - [store/common.proto](#store_common-proto)
     - [PageToken](#bytebase-store-PageToken)
@@ -69,6 +70,7 @@
   
 - [store/issue.proto](#store_issue-proto)
     - [GrantRequest](#bytebase-store-GrantRequest)
+    - [Grouping](#bytebase-store-Grouping)
     - [IssuePayload](#bytebase-store-IssuePayload)
   
 - [store/plan.proto](#store_plan-proto)
@@ -107,148 +109,6 @@
     - [MFAConfig](#bytebase-store-MFAConfig)
   
 - [Scalar Value Types](#scalar-value-types)
-
-
-
-<a name="store_activity-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/activity.proto
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload"></a>
-
-### ActivityIssueCommentCreatePayload
-ActivityIssueCommentCreatePayload is the payloads for creating issue comments.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| external_approval_event | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent) |  |  |
-| task_rollback_by | [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy) |  |  |
-| approval_event | [ActivityIssueCommentCreatePayload.ApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent) |  |  |
-| issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
-
-
-
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent"></a>
-
-### ActivityIssueCommentCreatePayload.ApprovalEvent
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [ActivityIssueCommentCreatePayload.ApprovalEvent.Status](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status) |  | The new status. |
-
-
-
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent"></a>
-
-### ActivityIssueCommentCreatePayload.ExternalApprovalEvent
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type) |  |  |
-| action | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action) |  |  |
-| stage_name | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy"></a>
-
-### ActivityIssueCommentCreatePayload.TaskRollbackBy
-TaskRollbackBy records an issue rollback activity.
-The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issue_id | [int64](#int64) |  |  |
-| task_id | [int64](#int64) |  |  |
-| rollback_by_issue_id | [int64](#int64) |  |  |
-| rollback_by_task_id | [int64](#int64) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ActivityIssueCreatePayload"></a>
-
-### ActivityIssueCreatePayload
-ActivityIssueCreatePayload is the payloads for creating issues.
-These payload types are only used when marshalling to the json format for saving into the database.
-So we annotate with json tag using camelCase naming which is consistent with normal
-json naming convention. More importantly, frontend code can simply use JSON.parse to
-convert to the expected struct there.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status"></a>
-
-### ActivityIssueCommentCreatePayload.ApprovalEvent.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| APPROVED | 2 |  |
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action"></a>
-
-### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 |  |
-| ACTION_APPROVE | 1 |  |
-| ACTION_REJECT | 2 |  |
-
-
-
-<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type"></a>
-
-### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| TYPE_FEISHU | 1 |  |
-
-
- 
-
- 
-
- 
 
 
 
@@ -421,6 +281,163 @@ ANY means approving any node will proceed.
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_activity-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/activity.proto
+
+
+
+<a name="bytebase-store-ActivityIssueApprovalNotifyPayload"></a>
+
+### ActivityIssueApprovalNotifyPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| approval_step | [ApprovalStep](#bytebase-store-ApprovalStep) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload"></a>
+
+### ActivityIssueCommentCreatePayload
+ActivityIssueCommentCreatePayload is the payloads for creating issue comments.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| external_approval_event | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent) |  |  |
+| task_rollback_by | [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy) |  |  |
+| approval_event | [ActivityIssueCommentCreatePayload.ApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent) |  |  |
+| issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent"></a>
+
+### ActivityIssueCommentCreatePayload.ApprovalEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [ActivityIssueCommentCreatePayload.ApprovalEvent.Status](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status) |  | The new status. |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent"></a>
+
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type) |  |  |
+| action | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action) |  |  |
+| stage_name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy"></a>
+
+### ActivityIssueCommentCreatePayload.TaskRollbackBy
+TaskRollbackBy records an issue rollback activity.
+The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_id | [int64](#int64) |  |  |
+| task_id | [int64](#int64) |  |  |
+| rollback_by_issue_id | [int64](#int64) |  |  |
+| rollback_by_task_id | [int64](#int64) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ActivityIssueCreatePayload"></a>
+
+### ActivityIssueCreatePayload
+ActivityIssueCreatePayload is the payloads for creating issues.
+These payload types are only used when marshalling to the json format for saving into the database.
+So we annotate with json tag using camelCase naming which is consistent with normal
+json naming convention. More importantly, frontend code can simply use JSON.parse to
+convert to the expected struct there.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent-Status"></a>
+
+### ActivityIssueCommentCreatePayload.ApprovalEvent.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| APPROVED | 2 |  |
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action"></a>
+
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 |  |
+| ACTION_APPROVE | 1 |  |
+| ACTION_REJECT | 2 |  |
+
+
+
+<a name="bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type"></a>
+
+### ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_FEISHU | 1 |  |
 
 
  
@@ -1046,6 +1063,21 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
+<a name="bytebase-store-Grouping"></a>
+
+### Grouping
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database_group_name | [string](#string) |  | The group name, format projects/{project}/database_groups/{database_group} |
+
+
+
+
+
+
 <a name="bytebase-store-IssuePayload"></a>
 
 ### IssuePayload
@@ -1056,6 +1088,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ----- | ---- | ----- | ----------- |
 | approval | [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval) |  |  |
 | grant_request | [GrantRequest](#bytebase-store-GrantRequest) |  |  |
+| grouping | [Grouping](#bytebase-store-Grouping) |  |  |
 
 
 

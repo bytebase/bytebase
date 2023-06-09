@@ -51,7 +51,7 @@ const openAIEndpoint = computed(
 const tab = useCurrentTab();
 
 const { instance } = useInstanceV1ByUID(
-  computed(() => tab.value.connection.databaseId)
+  computed(() => tab.value.connection.instanceId)
 );
 const databaseMetadata = useMetadataByDatabaseId(
   computed(() => Number(tab.value.connection.databaseId)),

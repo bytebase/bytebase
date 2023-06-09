@@ -13,8 +13,8 @@ func TestTransformDelimiter(t *testing.T) {
 		want      string
 	}{
 		{
-			statement: "CREATE TABLE t1(id INT PRIMAR KEY);",
-			want:      "CREATE TABLE t1(id INT PRIMAR KEY);",
+			statement: "CREATE TABLE t1(id INT PRIMARY KEY);",
+			want:      "CREATE TABLE t1(id INT PRIMARY KEY);",
 		},
 		{
 			statement: `

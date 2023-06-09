@@ -1,572 +1,546 @@
 <template>
-  <div
-    class="space-y-6 divide-y divide-block-border"
-    :class="
-      modal && ['max-h-[calc(100vh-10rem)] overflow-hidden flex flex-col']
-    "
-  >
-    <div
-      class="divide-y divide-block-border w-[850px]"
-      :class="modal && ['flex-1 overflow-y-auto']"
-    >
-      <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
-        <template v-for="engine in engineList" :key="engine">
+  <component :is="drawer ? DrawerContent : 'div'" v-bind="bindings">
+    <div class="space-y-6 divide-y divide-block-border">
+      <div class="divide-y divide-block-border w-[850px]">
+        <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
+          <template v-for="engine in engineList" :key="engine">
+            <div
+              class="flex relative justify-start p-2 border rounded cursor-pointer hover:bg-control-bg-hover"
+              :class="
+                basicInfo.engine === engine && 'font-medium bg-control-bg-hover'
+              "
+              @click.capture="changeInstanceEngine(engine)"
+            >
+              <div class="flex flex-row justify-start items-center">
+                <input
+                  type="radio"
+                  class="btn mr-2"
+                  :checked="basicInfo.engine === engine"
+                />
+                <img
+                  v-if="EngineIconPath[engine]"
+                  class="w-5 h-auto max-h-[20px] object-contain mr-1"
+                  :src="EngineIconPath[engine]"
+                />
+                <p class="text-center text-sm">
+                  {{ engineNameV1(engine) }}
+                </p>
+                <template v-if="isEngineBeta(engine)">
+                  <BBBetaBadge
+                    class="absolute -top-px -right-px rounded text-xs !bg-gray-500 px-1 !py-0"
+                  />
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Instance Name -->
+        <div class="pt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+          <div class="sm:col-span-2 sm:col-start-1">
+            <label for="name" class="textlabel flex flex-row items-center">
+              {{ $t("instance.instance-name") }}
+              <span class="text-red-600 mr-2">*</span>
+              <template v-if="props.instance">
+                <InstanceV1EngineIcon
+                  :instance="props.instance"
+                  :tooltip="false"
+                />
+                <span class="ml-1">{{ props.instance.engineVersion }}</span>
+              </template>
+            </label>
+            <input
+              id="name"
+              v-model="basicInfo.title"
+              required
+              name="name"
+              type="text"
+              class="textfield mt-1 w-full"
+              :disabled="!allowEdit"
+            />
+          </div>
+
           <div
-            class="flex relative justify-start p-2 border rounded cursor-pointer hover:bg-control-bg-hover"
-            :class="
-              basicInfo.engine === engine && 'font-medium bg-control-bg-hover'
-            "
-            @click.capture="changeInstanceEngine(engine)"
+            :key="basicInfo.environment"
+            class="sm:col-span-3 sm:col-start-1 -mt-4"
           >
-            <div class="flex flex-row justify-start items-center">
+            <ResourceIdField
+              ref="resourceIdField"
+              v-model:value="resourceId"
+              class="max-w-full flex-nowrap"
+              resource-type="instance"
+              :readonly="!isCreating"
+              :resource-title="basicInfo.title"
+              :validate="validateResourceId"
+            />
+          </div>
+
+          <div class="sm:col-span-2 sm:col-start-1">
+            <label for="environment" class="textlabel">
+              {{ $t("common.environment") }}
+            </label>
+            <EnvironmentSelect
+              id="environment"
+              class="mt-1 w-full"
+              name="environment"
+              :disabled="!isCreating"
+              :selected-id="environment.uid"
+              @select-environment-id="handleSelectEnvironmentUID"
+            />
+          </div>
+
+          <div class="sm:col-span-3 sm:col-start-1">
+            <template v-if="basicInfo.engine !== Engine.SPANNER">
+              <label for="host" class="textlabel block">
+                <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
+                  {{ $t("instance.account-name") }}
+                  <span class="text-red-600 mr-2">*</span>
+                </template>
+                <template v-else>
+                  {{ $t("instance.host-or-socket") }}
+                  <span class="text-red-600 mr-2">*</span>
+                </template>
+              </label>
+              <input
+                id="host"
+                v-model="adminDataSource.host"
+                required
+                type="text"
+                name="host"
+                :placeholder="
+                  basicInfo.engine === Engine.SNOWFLAKE
+                    ? $t('instance.your-snowflake-account-name')
+                    : $t('instance.sentence.host.snowflake')
+                "
+                class="textfield mt-1 w-full"
+                :disabled="!allowEdit"
+              />
+              <div
+                v-if="basicInfo.engine === Engine.SNOWFLAKE"
+                class="mt-2 textinfolabel"
+              >
+                {{ $t("instance.sentence.proxy.snowflake") }}
+              </div>
+            </template>
+            <SpannerHostInput
+              v-else
+              v-model:host="adminDataSource.host"
+              :allow-edit="allowEdit"
+            />
+          </div>
+
+          <template v-if="basicInfo.engine !== Engine.SPANNER">
+            <div class="sm:col-span-1">
+              <label for="port" class="textlabel block">
+                {{ $t("instance.port") }}
+              </label>
+              <input
+                id="port"
+                type="text"
+                name="port"
+                class="textfield mt-1 w-full"
+                :value="adminDataSource.port"
+                :placeholder="defaultPort"
+                :disabled="!allowEdit || !allowEditPort"
+                @wheel="(e: WheelEvent) => (e.target as HTMLInputElement).blur()"
+                @input="adminDataSource.port = trimInputValue($event.target)"
+              />
+            </div>
+          </template>
+
+          <div
+            v-if="basicInfo.engine === Engine.MONGODB"
+            class="sm:col-span-4 sm:col-start-1"
+          >
+            <label
+              for="connectionStringSchema"
+              class="textlabel flex flex-row items-center"
+            >
+              {{ $t("data-source.connection-string-schema") }}
+            </label>
+            <label
+              v-for="type in mongodbConnectionStringSchemaList"
+              :key="type"
+              class="radio h-7"
+            >
               <input
                 type="radio"
-                class="btn mr-2"
-                :checked="basicInfo.engine === engine"
+                class="btn"
+                name="connectionStringSchema"
+                :value="type"
+                :checked="type === currentMongoDBConnectionSchema"
+                @change="handleMongodbConnectionStringSchemaChange"
               />
-              <img
-                v-if="EngineIconPath[engine]"
-                class="w-5 h-auto max-h-[20px] object-contain mr-1"
-                :src="EngineIconPath[engine]"
-              />
-              <p class="text-center text-sm">
-                {{ engineNameV1(engine) }}
-              </p>
-              <template v-if="isEngineBeta(engine)">
-                <BBBetaBadge
-                  class="absolute -top-px -right-px rounded text-xs !bg-gray-500 px-1 !py-0"
-                />
-              </template>
-            </div>
+              <span class="label">
+                {{ type }}
+              </span>
+            </label>
           </div>
-        </template>
-      </div>
 
-      <!-- Instance Name -->
-      <div class="pt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
-        <div class="sm:col-span-2 sm:col-start-1">
-          <label for="name" class="textlabel flex flex-row items-center">
-            {{ $t("instance.instance-name") }}
-            <span class="text-red-600 mr-2">*</span>
-            <template v-if="props.instance">
-              <InstanceV1EngineIcon
-                :instance="props.instance"
-                :tooltip="false"
+          <!--Do not show external link on create to reduce cognitive load-->
+          <div v-if="!isCreating" class="sm:col-span-3 sm:col-start-1">
+            <label for="external-link" class="textlabel inline-flex">
+              <span class>
+                {{
+                  basicInfo.engine === Engine.SNOWFLAKE
+                    ? $t("instance.snowflake-web-console")
+                    : $t("instance.external-link")
+                }}
+              </span>
+              <button
+                class="ml-1 btn-icon"
+                :disabled="instanceLink.trim().length === 0"
+                @click.prevent="window.open(urlfy(instanceLink), '_blank')"
+              >
+                <heroicons-outline:external-link class="w-4 h-4" />
+              </button>
+            </label>
+            <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
+              <input
+                id="external-link"
+                required
+                name="external-link"
+                type="text"
+                class="textfield mt-1 w-full"
+                disabled="true"
+                :value="instanceLink"
               />
-              <span class="ml-1">{{ props.instance.engineVersion }}</span>
             </template>
-          </label>
-          <input
-            id="name"
-            v-model="basicInfo.title"
-            required
-            name="name"
-            type="text"
-            class="textfield mt-1 w-full"
-            :disabled="!allowEdit"
-          />
-        </div>
-
-        <div
-          :key="basicInfo.environment"
-          class="sm:col-span-3 sm:col-start-1 -mt-4"
-        >
-          <ResourceIdField
-            ref="resourceIdField"
-            v-model:value="resourceId"
-            class="max-w-full flex-nowrap"
-            resource-type="instance"
-            :readonly="!isCreating"
-            :resource-title="basicInfo.title"
-            :validate="validateResourceId"
-          />
-        </div>
-
-        <div class="sm:col-span-2 sm:col-start-1">
-          <label for="environment" class="textlabel">
-            {{ $t("common.environment") }}
-          </label>
-          <EnvironmentSelect
-            id="environment"
-            class="mt-1 w-full"
-            name="environment"
-            :disabled="!isCreating"
-            :selected-id="environment.uid"
-            @select-environment-id="handleSelectEnvironmentUID"
-          />
-        </div>
-
-        <div class="sm:col-span-3 sm:col-start-1">
-          <template v-if="basicInfo.engine !== Engine.SPANNER">
-            <label for="host" class="textlabel block">
-              <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
-                {{ $t("instance.account-name") }}
-                <span class="text-red-600 mr-2">*</span>
-              </template>
-              <template v-else>
-                {{ $t("instance.host-or-socket") }}
-                <span class="text-red-600 mr-2">*</span>
-              </template>
-            </label>
-            <input
-              id="host"
-              v-model="adminDataSource.host"
-              required
-              type="text"
-              name="host"
-              :placeholder="
-                basicInfo.engine === Engine.SNOWFLAKE
-                  ? $t('instance.your-snowflake-account-name')
-                  : $t('instance.sentence.host.snowflake')
-              "
-              class="textfield mt-1 w-full"
-              :disabled="!allowEdit"
-            />
-            <div
-              v-if="basicInfo.engine === Engine.SNOWFLAKE"
-              class="mt-2 textinfolabel"
-            >
-              {{ $t("instance.sentence.proxy.snowflake") }}
-            </div>
-          </template>
-          <SpannerHostInput
-            v-else
-            v-model:host="adminDataSource.host"
-            :allow-edit="allowEdit"
-          />
-        </div>
-
-        <template v-if="basicInfo.engine !== Engine.SPANNER">
-          <div class="sm:col-span-1">
-            <label for="port" class="textlabel block">
-              {{ $t("instance.port") }}
-            </label>
-            <input
-              id="port"
-              type="text"
-              name="port"
-              class="textfield mt-1 w-full"
-              :value="adminDataSource.port"
-              :placeholder="defaultPort"
-              :disabled="!allowEdit || !allowEditPort"
-              @wheel="(e: WheelEvent) => (e.target as HTMLInputElement).blur()"
-              @input="adminDataSource.port = trimInputValue($event.target)"
-            />
+            <template v-else>
+              <div class="mt-1 textinfolabel">
+                {{ $t("instance.sentence.console.snowflake") }}
+              </div>
+              <input
+                id="external-link"
+                v-model="basicInfo.externalLink"
+                required
+                name="external-link"
+                type="text"
+                :disabled="!allowEdit"
+                class="textfield mt-1 w-full"
+                :placeholder="snowflakeExtraLinkPlaceHolder"
+              />
+            </template>
           </div>
-        </template>
+        </div>
+
+        <!-- Connection Info -->
+        <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
+          {{ $t("instance.connection-info") }}
+        </p>
 
         <div
-          v-if="basicInfo.engine === Engine.MONGODB"
-          class="sm:col-span-4 sm:col-start-1"
+          v-if="!isCreating && !hasReadOnlyDataSource && allowEdit"
+          class="mt-2 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3"
         >
-          <label
-            for="connectionStringSchema"
-            class="textlabel flex flex-row items-center"
-          >
-            {{ $t("data-source.connection-string-schema") }}
-          </label>
-          <label
-            v-for="type in mongodbConnectionStringSchemaList"
-            :key="type"
-            class="radio h-7"
-          >
-            <input
-              type="radio"
-              class="btn"
-              name="connectionStringSchema"
-              :value="type"
-              :checked="type === currentMongoDBConnectionSchema"
-              @change="handleMongodbConnectionStringSchemaChange"
-            />
-            <span class="label">
-              {{ type }}
-            </span>
-          </label>
-        </div>
-
-        <!--Do not show external link on create to reduce cognitive load-->
-        <div v-if="!isCreating" class="sm:col-span-3 sm:col-start-1">
-          <label for="external-link" class="textlabel inline-flex">
-            <span class>
-              {{
-                basicInfo.engine === Engine.SNOWFLAKE
-                  ? $t("instance.snowflake-web-console")
-                  : $t("instance.external-link")
-              }}
-            </span>
-            <button
-              class="ml-1 btn-icon"
-              :disabled="instanceLink.trim().length === 0"
-              @click.prevent="window.open(urlfy(instanceLink), '_blank')"
-            >
-              <heroicons-outline:external-link class="w-4 h-4" />
-            </button>
-          </label>
-          <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
-            <input
-              id="external-link"
-              required
-              name="external-link"
-              type="text"
-              class="textfield mt-1 w-full"
-              disabled="true"
-              :value="instanceLink"
-            />
-          </template>
-          <template v-else>
-            <div class="mt-1 textinfolabel">
-              {{ $t("instance.sentence.console.snowflake") }}
-            </div>
-            <input
-              id="external-link"
-              v-model="basicInfo.externalLink"
-              required
-              name="external-link"
-              type="text"
-              :disabled="!allowEdit"
-              class="textfield mt-1 w-full"
-              :placeholder="snowflakeExtraLinkPlaceHolder"
-            />
-          </template>
-        </div>
-      </div>
-
-      <!-- Connection Info -->
-      <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
-        {{ $t("instance.connection-info") }}
-      </p>
-
-      <div
-        v-if="!isCreating && !hasReadOnlyDataSource && allowEdit"
-        class="mt-2 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3"
-      >
-        <heroicons-outline:exclamation
-          class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
-        />
-        <span class="text-yellow-800 text-sm">
-          {{ $t("instance.no-read-only-data-source-warn") }}
-        </span>
-        <button
-          type="button"
-          class="btn-normal ml-4 text-sm"
-          @click.prevent="handleCreateRODataSource"
-        >
-          {{ $t("common.create") }}
-        </button>
-      </div>
-
-      <div
-        class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3"
-      >
-        <NTabs
-          v-if="!isCreating"
-          v-model:value="state.currentDataSourceType"
-          class="sm:col-span-3"
-          type="line"
-        >
-          <NTab :name="DataSourceType.ADMIN">
-            {{ $t("common.admin") }}
-          </NTab>
-          <NTab
-            :name="DataSourceType.READ_ONLY"
-            class="relative"
-            :disabled="!hasReadOnlyDataSource"
-          >
-            <span>{{ $t("common.read-only") }}</span>
-            <BBButtonConfirm
-              v-if="hasReadOnlyDataSource"
-              :style="'DELETE'"
-              class="absolute left-full ml-1"
-              :require-confirm="!readonlyDataSource?.pendingCreate"
-              :ok-text="$t('common.delete')"
-              :confirm-title="
-                $t('data-source.delete-read-only-data-source') + '?'
-              "
-              @confirm="handleDeleteRODataSource"
-            />
-          </NTab>
-        </NTabs>
-
-        <template v-if="basicInfo.engine !== Engine.SPANNER">
-          <CreateDataSourceExample
-            class-name="sm:col-span-3 border-none mt-2"
-            :create-instance-flag="isCreating"
-            :engine="basicInfo.engine"
-            :data-source-type="state.currentDataSourceType"
+          <heroicons-outline:exclamation
+            class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
           />
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <label for="username" class="textlabel block">
-              {{ $t("common.username") }}
-            </label>
-            <!-- For mysql, username can be empty indicating anonymous user.
+          <span class="text-yellow-800 text-sm">
+            {{ $t("instance.no-read-only-data-source-warn") }}
+          </span>
+          <button
+            type="button"
+            class="btn-normal ml-4 text-sm"
+            @click.prevent="handleCreateRODataSource"
+          >
+            {{ $t("common.create") }}
+          </button>
+        </div>
+
+        <div
+          class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3"
+        >
+          <NTabs
+            v-if="!isCreating"
+            v-model:value="state.currentDataSourceType"
+            class="sm:col-span-3"
+            type="line"
+          >
+            <NTab :name="DataSourceType.ADMIN">
+              {{ $t("common.admin") }}
+            </NTab>
+            <NTab
+              :name="DataSourceType.READ_ONLY"
+              class="relative"
+              :disabled="!hasReadOnlyDataSource"
+            >
+              <span>{{ $t("common.read-only") }}</span>
+              <BBButtonConfirm
+                v-if="hasReadOnlyDataSource"
+                :style="'DELETE'"
+                class="absolute left-full ml-1"
+                :require-confirm="!readonlyDataSource?.pendingCreate"
+                :ok-text="$t('common.delete')"
+                :confirm-title="
+                  $t('data-source.delete-read-only-data-source') + '?'
+                "
+                @confirm="handleDeleteRODataSource"
+              />
+            </NTab>
+          </NTabs>
+
+          <template v-if="basicInfo.engine !== Engine.SPANNER">
+            <CreateDataSourceExample
+              class-name="sm:col-span-3 border-none mt-2"
+              :create-instance-flag="isCreating"
+              :engine="basicInfo.engine"
+              :data-source-type="state.currentDataSourceType"
+            />
+            <div class="mt-2 sm:col-span-1 sm:col-start-1">
+              <label for="username" class="textlabel block">
+                {{ $t("common.username") }}
+              </label>
+              <!-- For mysql, username can be empty indicating anonymous user.
               But it's a very bad practice to use anonymous user for admin operation,
               thus we make it REQUIRED here.-->
+              <input
+                id="username"
+                v-model="currentDataSource.username"
+                name="username"
+                type="text"
+                class="textfield mt-1 w-full"
+                :disabled="!allowEdit"
+                :placeholder="
+                  basicInfo.engine === Engine.CLICKHOUSE
+                    ? $t('common.default')
+                    : ''
+                "
+              />
+            </div>
+            <div class="mt-2 sm:col-span-1 sm:col-start-1">
+              <div class="flex flex-row items-center space-x-2">
+                <label for="password" class="textlabel block">
+                  {{ $t("common.password") }}
+                </label>
+                <BBCheckbox
+                  v-if="!isCreating && allowUsingEmptyPassword"
+                  :title="$t('common.empty')"
+                  :value="currentDataSource.useEmptyPassword"
+                  :disabled="!allowEdit"
+                  @toggle="toggleUseEmptyPassword"
+                />
+              </div>
+              <input
+                id="password"
+                name="password"
+                type="text"
+                class="textfield mt-1 w-full"
+                autocomplete="off"
+                :placeholder="
+                  currentDataSource.useEmptyPassword
+                    ? $t('instance.no-password')
+                    : $t('instance.password-write-only')
+                "
+                :disabled="!allowEdit || currentDataSource.useEmptyPassword"
+                :value="
+                  currentDataSource.useEmptyPassword
+                    ? ''
+                    : currentDataSource.updatedPassword
+                "
+                @input="
+                  currentDataSource.updatedPassword = trimInputValue(
+                    $event.target
+                  )
+                "
+              />
+            </div>
+          </template>
+          <SpannerCredentialInput
+            v-else
+            v-model:value="currentDataSource.updatedPassword"
+            :write-only="!isCreating"
+            class="mt-2 sm:col-span-3 sm:col-start-1"
+          />
+
+          <template v-if="basicInfo.engine === Engine.ORACLE">
+            <OracleSIDAndServiceNameInput
+              v-model:sid="currentDataSource.sid"
+              v-model:service-name="currentDataSource.serviceName"
+              :allow-edit="allowEdit"
+            />
+          </template>
+
+          <template v-if="showAuthenticationDatabase">
+            <div class="sm:col-span-1 sm:col-start-1">
+              <div class="flex flex-row items-center space-x-2">
+                <label for="authenticationDatabase" class="textlabel block">
+                  {{ $t("instance.authentication-database") }}
+                </label>
+              </div>
+              <input
+                id="authenticationDatabase"
+                name="authenticationDatabase"
+                type="text"
+                class="textfield mt-1 w-full"
+                autocomplete="off"
+                placeholder="admin"
+                :value="currentDataSource.authenticationDatabase"
+                @input="
+                  currentDataSource.authenticationDatabase = trimInputValue(
+                    $event.target
+                  )
+                "
+              />
+            </div>
+          </template>
+
+          <template
+            v-if="
+              state.currentDataSourceType === DataSourceType.READ_ONLY &&
+              (hasReadonlyReplicaHost || hasReadonlyReplicaPort)
+            "
+          >
+            <div
+              v-if="hasReadonlyReplicaHost"
+              class="mt-2 sm:col-span-1 sm:col-start-1"
+            >
+              <div class="flex flex-row items-center space-x-2">
+                <label for="host" class="textlabel block">
+                  {{ $t("data-source.read-replica-host") }}
+                </label>
+              </div>
+              <input
+                id="host"
+                name="host"
+                type="text"
+                class="textfield mt-1 w-full"
+                autocomplete="off"
+                :value="currentDataSource.host"
+                @input="handleCurrentDataSourceHostInput"
+              />
+            </div>
+
+            <div
+              v-if="hasReadonlyReplicaPort"
+              class="mt-2 sm:col-span-1 sm:col-start-1"
+            >
+              <div class="flex flex-row items-center space-x-2">
+                <label for="port" class="textlabel block">
+                  {{ $t("data-source.read-replica-port") }}
+                </label>
+              </div>
+              <input
+                id="port"
+                name="port"
+                type="text"
+                class="textfield mt-1 w-full"
+                autocomplete="off"
+                :value="currentDataSource.port"
+                @input="handleCurrentDataSourcePortInput"
+              />
+            </div>
+          </template>
+
+          <div v-if="showDatabase" class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="database" class="textlabel block">
+              {{ $t("common.database") }}
+            </label>
             <input
-              id="username"
-              v-model="currentDataSource.username"
-              name="username"
+              id="database"
+              v-model="currentDataSource.database"
+              name="database"
               type="text"
               class="textfield mt-1 w-full"
               :disabled="!allowEdit"
-              :placeholder="
-                basicInfo.engine === Engine.CLICKHOUSE
-                  ? $t('common.default')
-                  : ''
-              "
+              :placeholder="$t('common.database')"
             />
           </div>
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <div class="flex flex-row items-center space-x-2">
-              <label for="password" class="textlabel block">
-                {{ $t("common.password") }}
-              </label>
-              <BBCheckbox
-                v-if="!isCreating && allowUsingEmptyPassword"
-                :title="$t('common.empty')"
-                :value="currentDataSource.useEmptyPassword"
-                :disabled="!allowEdit"
-                @toggle="toggleUseEmptyPassword"
-              />
-            </div>
-            <input
-              id="password"
-              name="password"
-              type="text"
-              class="textfield mt-1 w-full"
-              autocomplete="off"
-              :placeholder="
-                currentDataSource.useEmptyPassword
-                  ? $t('instance.no-password')
-                  : $t('instance.password-write-only')
-              "
-              :disabled="!allowEdit || currentDataSource.useEmptyPassword"
-              :value="
-                currentDataSource.useEmptyPassword
-                  ? ''
-                  : currentDataSource.updatedPassword
-              "
-              @input="
-                currentDataSource.updatedPassword = trimInputValue(
-                  $event.target
-                )
-              "
-            />
-          </div>
-        </template>
-        <SpannerCredentialInput
-          v-else
-          v-model:value="currentDataSource.updatedPassword"
-          :write-only="!isCreating"
-          class="mt-2 sm:col-span-3 sm:col-start-1"
-        />
 
-        <template v-if="basicInfo.engine === Engine.ORACLE">
-          <OracleSIDAndServiceNameInput
-            v-model:sid="currentDataSource.sid"
-            v-model:service-name="currentDataSource.serviceName"
-            :allow-edit="allowEdit"
-          />
-        </template>
-
-        <template v-if="showAuthenticationDatabase">
-          <div class="sm:col-span-1 sm:col-start-1">
-            <div class="flex flex-row items-center space-x-2">
-              <label for="authenticationDatabase" class="textlabel block">
-                {{ $t("instance.authentication-database") }}
+          <div v-if="showSSL" class="mt-2 sm:col-span-3 sm:col-start-1">
+            <div class="flex flex-row items-center">
+              <label for="ssl" class="textlabel block">
+                {{ $t("data-source.ssl-connection") }}
               </label>
             </div>
-            <input
-              id="authenticationDatabase"
-              name="authenticationDatabase"
-              type="text"
-              class="textfield mt-1 w-full"
-              autocomplete="off"
-              placeholder="admin"
-              :value="currentDataSource.authenticationDatabase"
-              @input="
-                currentDataSource.authenticationDatabase = trimInputValue(
-                  $event.target
-                )
-              "
-            />
-          </div>
-        </template>
-
-        <template
-          v-if="
-            state.currentDataSourceType === DataSourceType.READ_ONLY &&
-            (hasReadonlyReplicaHost || hasReadonlyReplicaPort)
-          "
-        >
-          <div
-            v-if="hasReadonlyReplicaHost"
-            class="mt-2 sm:col-span-1 sm:col-start-1"
-          >
-            <div class="flex flex-row items-center space-x-2">
-              <label for="host" class="textlabel block">
-                {{ $t("data-source.read-replica-host") }}
-              </label>
-            </div>
-            <input
-              id="host"
-              name="host"
-              type="text"
-              class="textfield mt-1 w-full"
-              autocomplete="off"
-              :value="currentDataSource.host"
-              @input="handleCurrentDataSourceHostInput"
-            />
-          </div>
-
-          <div
-            v-if="hasReadonlyReplicaPort"
-            class="mt-2 sm:col-span-1 sm:col-start-1"
-          >
-            <div class="flex flex-row items-center space-x-2">
-              <label for="port" class="textlabel block">
-                {{ $t("data-source.read-replica-port") }}
-              </label>
-            </div>
-            <input
-              id="port"
-              name="port"
-              type="text"
-              class="textfield mt-1 w-full"
-              autocomplete="off"
-              :value="currentDataSource.port"
-              @input="handleCurrentDataSourcePortInput"
-            />
-          </div>
-        </template>
-
-        <div v-if="showDatabase" class="mt-2 sm:col-span-1 sm:col-start-1">
-          <label for="database" class="textlabel block">
-            {{ $t("common.database") }}
-          </label>
-          <input
-            id="database"
-            v-model="currentDataSource.database"
-            name="database"
-            type="text"
-            class="textfield mt-1 w-full"
-            :disabled="!allowEdit"
-            :placeholder="$t('common.database')"
-          />
-        </div>
-
-        <div v-if="showSSL" class="mt-2 sm:col-span-3 sm:col-start-1">
-          <div class="flex flex-row items-center">
-            <label for="ssl" class="textlabel block">
-              {{ $t("data-source.ssl-connection") }}
-            </label>
-          </div>
-          <template v-if="currentDataSource.pendingCreate">
-            <SslCertificateForm
-              :value="currentDataSource"
-              @change="handleCurrentDataSourceSslChange"
-            />
-          </template>
-          <template v-else>
-            <template v-if="currentDataSource.updateSsl">
+            <template v-if="currentDataSource.pendingCreate">
               <SslCertificateForm
                 :value="currentDataSource"
                 @change="handleCurrentDataSourceSslChange"
               />
             </template>
             <template v-else>
-              <button
-                class="btn-normal mt-2"
-                :disabled="!allowEdit"
-                @click.prevent="handleEditSsl"
-              >
-                {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-              </button>
+              <template v-if="currentDataSource.updateSsl">
+                <SslCertificateForm
+                  :value="currentDataSource"
+                  @change="handleCurrentDataSourceSslChange"
+                />
+              </template>
+              <template v-else>
+                <button
+                  class="btn-normal mt-2"
+                  :disabled="!allowEdit"
+                  @click.prevent="handleEditSsl"
+                >
+                  {{ $t("common.edit") }} - {{ $t("common.write-only") }}
+                </button>
+              </template>
             </template>
-          </template>
-        </div>
-
-        <div v-if="showSSH" class="mt-2 sm:col-span-3 sm:col-start-1">
-          <div class="flex flex-row items-center gap-x-1">
-            <label for="ssh" class="textlabel block">
-              {{ $t("data-source.ssh-connection") }}
-            </label>
-            <FeatureBadge
-              feature="bb.feature.instance-ssh-connection"
-              class="text-accent"
-            />
           </div>
-          <template v-if="currentDataSource.pendingCreate">
-            <SshConnectionForm
-              :value="currentDataSource"
-              @change="handleCurrentDataSourceSshChange"
-            />
-          </template>
-          <template v-else>
-            <template v-if="currentDataSource.updateSsh">
+
+          <div v-if="showSSH" class="mt-2 sm:col-span-3 sm:col-start-1">
+            <div class="flex flex-row items-center gap-x-1">
+              <label for="ssh" class="textlabel block">
+                {{ $t("data-source.ssh-connection") }}
+              </label>
+              <FeatureBadge
+                feature="bb.feature.instance-ssh-connection"
+                class="text-accent"
+              />
+            </div>
+            <template v-if="currentDataSource.pendingCreate">
               <SshConnectionForm
                 :value="currentDataSource"
                 @change="handleCurrentDataSourceSshChange"
               />
             </template>
             <template v-else>
-              <button
-                class="btn-normal mt-2"
-                :disabled="!allowEdit"
-                @click.prevent="handleEditSsh"
-              >
-                {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-              </button>
+              <template v-if="currentDataSource.updateSsh">
+                <SshConnectionForm
+                  :value="currentDataSource"
+                  @change="handleCurrentDataSourceSshChange"
+                />
+              </template>
+              <template v-else>
+                <button
+                  class="btn-normal mt-2"
+                  :disabled="!allowEdit"
+                  @click.prevent="handleEditSsh"
+                >
+                  {{ $t("common.edit") }} - {{ $t("common.write-only") }}
+                </button>
+              </template>
             </template>
-          </template>
+          </div>
+        </div>
+
+        <BBAttention
+          v-if="outboundIpList && actuatorStore.isSaaSMode"
+          class="my-5 border-none"
+          :style="'INFO'"
+          :title="$t('instance.sentence.outbound-ip-list')"
+          :description="outboundIpList"
+        />
+
+        <div class="mt-6 pt-0 border-none">
+          <div class="flex flex-row space-x-2">
+            <button
+              type="button"
+              class="btn-normal whitespace-nowrap flex items-center gap-x-1"
+              :disabled="!allowCreate || state.isRequesting || !allowEdit"
+              @click.prevent="testConnection(false /* !silent */)"
+            >
+              <BBSpin v-if="state.isTestingConnection" />
+              <span>{{ $t("instance.test-connection") }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <BBAttention
-        v-if="outboundIpList && actuatorStore.isSaaSMode"
-        class="my-5 border-none"
-        :style="'INFO'"
-        :title="$t('instance.sentence.outbound-ip-list')"
-        :description="outboundIpList"
-      />
-
-      <div class="mt-6 pt-0 border-none">
-        <div class="flex flex-row space-x-2">
-          <button
-            type="button"
-            class="btn-normal whitespace-nowrap flex items-center gap-x-1"
-            :disabled="!allowCreate || state.isRequesting || !allowEdit"
-            @click.prevent="testConnection(false /* !silent */)"
-          >
-            <BBSpin v-if="state.isTestingConnection" />
-            <span>{{ $t("instance.test-connection") }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Action Button Group -->
-    <div class="pt-4">
-      <div class="w-full flex justify-between items-center">
-        <div class="w-full flex justify-end items-center gap-x-4">
-          <template v-if="isCreating">
-            <NButton
-              :disabled="state.isRequesting || state.isTestingConnection"
-              @click.prevent="cancel"
-            >
-              {{ $t("common.cancel") }}
-            </NButton>
-            <NButton
-              :disabled="
-                !allowCreate || state.isRequesting || state.isTestingConnection
-              "
-              :loading="state.isRequesting"
-              type="primary"
-              @click.prevent="tryCreate"
-            >
-              {{ $t("common.create") }}
-            </NButton>
-          </template>
-          <template v-else>
+      <!-- Action Button Group -->
+      <div v-if="!drawer" class="pt-4">
+        <div class="w-full flex justify-between items-center">
+          <div class="w-full flex justify-end items-center gap-x-4">
             <NButton
               v-if="allowEdit"
               :disabled="!allowUpdate || state.isRequesting"
@@ -576,11 +550,34 @@
             >
               {{ $t("common.update") }}
             </NButton>
-          </template>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+
+    <template v-if="drawer" #footer>
+      <div class="w-full flex justify-between items-center">
+        <div class="w-full flex justify-end items-center gap-x-3">
+          <NButton
+            :disabled="state.isRequesting || state.isTestingConnection"
+            @click.prevent="cancel"
+          >
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton
+            :disabled="
+              !allowCreate || state.isRequesting || state.isTestingConnection
+            "
+            :loading="state.isRequesting"
+            type="primary"
+            @click.prevent="tryCreate"
+          >
+            {{ $t("common.create") }}
+          </NButton>
+        </div>
+      </div>
+    </template>
+  </component>
 
   <FeatureModal
     v-if="state.showFeatureModal"
@@ -649,7 +646,7 @@ import SpannerHostInput from "./SpannerHostInput.vue";
 import SpannerCredentialInput from "./SpannerCredentialInput.vue";
 import OracleSIDAndServiceNameInput from "./OracleSIDAndServiceNameInput.vue";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
-import { InstanceV1EngineIcon } from "@/components/v2";
+import { DrawerContent, InstanceV1EngineIcon } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
   DataSource,
@@ -664,13 +661,22 @@ const props = defineProps({
     type: Object as PropType<Instance>,
     default: undefined,
   },
-  modal: {
+  drawer: {
     type: Boolean,
     default: false,
   },
 });
 
 const emit = defineEmits(["dismiss"]);
+
+const bindings = computed(() => {
+  if (props.drawer) {
+    return {
+      title: t("quick-action.add-instance"),
+    };
+  }
+  return {};
+});
 
 const cancel = () => {
   emit("dismiss");

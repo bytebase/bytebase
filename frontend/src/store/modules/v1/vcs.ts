@@ -60,6 +60,7 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     await externalVersionControlServiceClient.deleteExternalVersionControl({
       name,
     });
+    vcsMapByName.delete(name);
   };
 
   const createVCS = async (vcs: ExternalVersionControl) => {

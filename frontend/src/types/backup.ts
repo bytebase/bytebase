@@ -47,15 +47,3 @@ export type BackupSetting = {
   retentionPeriodTs: number;
   hookUrl: string;
 };
-
-export type BackupSettingUpsert = {
-  // Related fields
-  databaseId: DatabaseId;
-
-  // Domain specific fields
-  enabled: boolean;
-  hour: number;
-  dayOfWeek: number;
-  retentionPeriodTs: number;
-  hookUrl: string;
-};

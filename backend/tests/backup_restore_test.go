@@ -306,7 +306,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	defer dstStopFn()
 	dstConnCfg := getMySQLConnectionConfig(strconv.Itoa(dstPort), "")
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 	dstInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: "destinationinstance",
@@ -436,7 +436,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
@@ -482,7 +482,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (conte
 	databaseUID, err := strconv.Atoi(database.Uid)
 	a.NoError(err)
 
-	err = ctl.disableAutomaticBackup(databaseUID)
+	err = ctl.disableAutomaticBackup(ctx, database.Name)
 	a.NoError(err)
 
 	mysqlDB := initPITRDB(t, databaseName, mysqlPort)
