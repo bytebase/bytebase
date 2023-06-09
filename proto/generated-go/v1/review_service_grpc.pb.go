@@ -25,7 +25,7 @@ const (
 	ReviewService_UpdateReview_FullMethodName       = "/bytebase.v1.ReviewService/UpdateReview"
 	ReviewService_BatchUpdateReviews_FullMethodName = "/bytebase.v1.ReviewService/BatchUpdateReviews"
 	ReviewService_ApproveReview_FullMethodName      = "/bytebase.v1.ReviewService/ApproveReview"
-	ReviewService_SendBackReview_FullMethodName     = "/bytebase.v1.ReviewService/SendBackReview"
+	ReviewService_RejectReview_FullMethodName       = "/bytebase.v1.ReviewService/RejectReview"
 )
 
 // ReviewServiceClient is the client API for ReviewService service.
@@ -38,7 +38,7 @@ type ReviewServiceClient interface {
 	UpdateReview(ctx context.Context, in *UpdateReviewRequest, opts ...grpc.CallOption) (*Review, error)
 	BatchUpdateReviews(ctx context.Context, in *BatchUpdateReviewsRequest, opts ...grpc.CallOption) (*BatchUpdateReviewsResponse, error)
 	ApproveReview(ctx context.Context, in *ApproveReviewRequest, opts ...grpc.CallOption) (*Review, error)
-	SendBackReview(ctx context.Context, in *SendBackReviewRequest, opts ...grpc.CallOption) (*Review, error)
+	RejectReview(ctx context.Context, in *RejectReviewRequest, opts ...grpc.CallOption) (*Review, error)
 }
 
 type reviewServiceClient struct {
@@ -103,9 +103,9 @@ func (c *reviewServiceClient) ApproveReview(ctx context.Context, in *ApproveRevi
 	return out, nil
 }
 
-func (c *reviewServiceClient) SendBackReview(ctx context.Context, in *SendBackReviewRequest, opts ...grpc.CallOption) (*Review, error) {
+func (c *reviewServiceClient) RejectReview(ctx context.Context, in *RejectReviewRequest, opts ...grpc.CallOption) (*Review, error) {
 	out := new(Review)
-	err := c.cc.Invoke(ctx, ReviewService_SendBackReview_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ReviewService_RejectReview_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ type ReviewServiceServer interface {
 	UpdateReview(context.Context, *UpdateReviewRequest) (*Review, error)
 	BatchUpdateReviews(context.Context, *BatchUpdateReviewsRequest) (*BatchUpdateReviewsResponse, error)
 	ApproveReview(context.Context, *ApproveReviewRequest) (*Review, error)
-	SendBackReview(context.Context, *SendBackReviewRequest) (*Review, error)
+	RejectReview(context.Context, *RejectReviewRequest) (*Review, error)
 	mustEmbedUnimplementedReviewServiceServer()
 }
 
@@ -148,8 +148,8 @@ func (UnimplementedReviewServiceServer) BatchUpdateReviews(context.Context, *Bat
 func (UnimplementedReviewServiceServer) ApproveReview(context.Context, *ApproveReviewRequest) (*Review, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApproveReview not implemented")
 }
-func (UnimplementedReviewServiceServer) SendBackReview(context.Context, *SendBackReviewRequest) (*Review, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SendBackReview not implemented")
+func (UnimplementedReviewServiceServer) RejectReview(context.Context, *RejectReviewRequest) (*Review, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RejectReview not implemented")
 }
 func (UnimplementedReviewServiceServer) mustEmbedUnimplementedReviewServiceServer() {}
 
@@ -272,20 +272,20 @@ func _ReviewService_ApproveReview_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ReviewService_SendBackReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SendBackReviewRequest)
+func _ReviewService_RejectReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RejectReviewRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ReviewServiceServer).SendBackReview(ctx, in)
+		return srv.(ReviewServiceServer).RejectReview(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ReviewService_SendBackReview_FullMethodName,
+		FullMethod: ReviewService_RejectReview_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ReviewServiceServer).SendBackReview(ctx, req.(*SendBackReviewRequest))
+		return srv.(ReviewServiceServer).RejectReview(ctx, req.(*RejectReviewRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -322,8 +322,8 @@ var ReviewService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ReviewService_ApproveReview_Handler,
 		},
 		{
-			MethodName: "SendBackReview",
-			Handler:    _ReviewService_SendBackReview_Handler,
+			MethodName: "RejectReview",
+			Handler:    _ReviewService_RejectReview_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
