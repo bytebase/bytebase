@@ -1401,7 +1401,8 @@
         "view-doc": "{destination} 的官方文档"
       },
       "deletion": {
-        "btn-text": "删除这个 webhook"
+        "btn-text": "删除这个 webhook",
+        "confirm-title": "删除 webhook '{title}' 以及所有的执行历史?"
       },
       "activity-item": {
         "issue-creation": {

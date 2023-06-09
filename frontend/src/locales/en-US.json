@@ -1405,7 +1405,8 @@
         "view-doc": "View {destination}'s doc"
       },
       "deletion": {
-        "btn-text": "Delete this webhook"
+        "btn-text": "Delete this webhook",
+        "confirm-title": "Delete webhook '{title}' and all its execution history?"
       },
       "activity-item": {
         "issue-creation": {

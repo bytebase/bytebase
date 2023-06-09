@@ -1399,7 +1399,8 @@
         "view-doc": "Ver documentación de {destination}"
       },
       "deletion": {
-        "btn-text": "Eliminar este webhook"
+        "btn-text": "Eliminar este webhook",
+        "confirm-title": "¿Eliminar el '{title}' del webhook y todo su historial de ejecución?"
       },
       "activity-item": {
         "issue-creation": {
