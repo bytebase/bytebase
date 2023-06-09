@@ -208,7 +208,7 @@ export enum Review_Approver_Status {
   STATUS_UNSPECIFIED = 0,
   PENDING = 1,
   APPROVED = 2,
-  SENT_BACK = 3,
+  REJECTED = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -224,8 +224,8 @@ export function review_Approver_StatusFromJSON(object: any): Review_Approver_Sta
     case "APPROVED":
       return Review_Approver_Status.APPROVED;
     case 3:
-    case "SENT_BACK":
-      return Review_Approver_Status.SENT_BACK;
+    case "REJECTED":
+      return Review_Approver_Status.REJECTED;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -241,8 +241,8 @@ export function review_Approver_StatusToJSON(object: Review_Approver_Status): st
       return "PENDING";
     case Review_Approver_Status.APPROVED:
       return "APPROVED";
-    case Review_Approver_Status.SENT_BACK:
-      return "SENT_BACK";
+    case Review_Approver_Status.REJECTED:
+      return "REJECTED";
     case Review_Approver_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

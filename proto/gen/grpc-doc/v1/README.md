@@ -5725,7 +5725,7 @@ ANY means approving any node will proceed.
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
-| SENT_BACK | 3 |  |
+| REJECTED | 3 |  |
 
 
 
