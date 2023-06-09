@@ -83,18 +83,17 @@ import { NButton, NCheckbox } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { cloneDeep, orderBy, uniq } from "lodash-es";
 
-import {
+import ProjectMemberTable, {
   ComposedProjectMember,
-  ProjectMemberTable,
-} from "../components/Project/ProjectSetting";
-import { DEFAULT_PROJECT_V1_NAME, PresetRoleType, unknownUser } from "../types";
-import { UserSelect } from "./v2";
+} from "./ProjectMemberTable";
+import { DEFAULT_PROJECT_V1_NAME, PresetRoleType, unknownUser } from "@/types";
+import { UserSelect } from "@/components/v2";
 import {
   addRoleToProjectIamPolicy,
   extractUserUID,
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
-} from "../utils";
+} from "@/utils";
 import {
   extractUserEmail,
   featureToRef,

@@ -250,7 +250,8 @@
     },
     "expiration": "过期时间",
     "configure": "配置",
-    "database-groups": "数据库分组"
+    "database-groups": "数据库分组",
+    "members": "成员"
   },
   "error-page": {
     "go-back-home": "回到主页"

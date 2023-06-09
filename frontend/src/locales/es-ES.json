@@ -252,7 +252,8 @@
     },
     "expiration": "Expiración",
     "configure": "Configure",
-    "database-groups": "Grupo de bases de datos"
+    "database-groups": "Grupo de bases de datos",
+    "members": "Miembros"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

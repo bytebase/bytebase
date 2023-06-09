@@ -137,6 +137,9 @@ const projectTabItemList = computed((): ProjectTabItem[] => {
       : { name: t("common.webhooks"), hash: "webhook" },
     isDefaultProject.value
       ? null
+      : { name: t("common.members"), hash: "members" },
+    isDefaultProject.value
+      ? null
       : { name: t("common.settings"), hash: "setting" },
   ];
   const filteredList = list.filter((item) => item !== null) as ProjectTabItem[];

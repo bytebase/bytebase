@@ -2,9 +2,6 @@
   <div class="max-w-3xl mx-auto space-y-4">
     <div class="divide-y divide-block-border space-y-6">
       <ProjectGeneralSettingPanel :project="project" :allow-edit="allowEdit" />
-      <div class="pt-4">
-        <ProjectMemberPanel :project="project" />
-      </div>
     </div>
     <template v-if="allowArchiveOrRestore">
       <template v-if="project.state === State.ACTIVE">
@@ -40,8 +37,7 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { hasPermissionInProjectV1, hasWorkspacePermissionV1 } from "../utils";
-import { ProjectGeneralSettingPanel } from "../components/Project/ProjectSetting";
-import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
+import ProjectGeneralSettingPanel from "../components/Project/ProjectGeneralSettingPanel.vue";
 import {
   useCurrentUserV1,
   useGracefulRequest,
