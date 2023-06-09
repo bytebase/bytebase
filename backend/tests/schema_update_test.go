@@ -32,7 +32,6 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -1985,7 +1984,7 @@ func TestGetLatestSchema(t *testing.T) {
 		ddl                  string
 		wantRawSchema        string
 		wantSDL              string
-		wantDatabaseMetadata *storepb.DatabaseMetadata
+		wantDatabaseMetadata *v1pb.DatabaseMetadata
 	}{
 		{
 			name:         "MySQL",
@@ -2007,19 +2006,19 @@ func TestGetLatestSchema(t *testing.T) {
 				"  `id` INT DEFAULT NULL,\n" +
 				"  `name` TEXT COLLATE utf8mb4_general_ci\n" +
 				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n",
-			wantDatabaseMetadata: &storepb.DatabaseMetadata{
+			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
 				Name:         "latestSchema",
 				CharacterSet: "utf8mb4",
 				Collation:    "utf8mb4_general_ci",
-				Schemas: []*storepb.SchemaMetadata{
+				Schemas: []*v1pb.SchemaMetadata{
 					{
-						Tables: []*storepb.TableMetadata{
+						Tables: []*v1pb.TableMetadata{
 							{
 								Name:      "book",
 								Engine:    "InnoDB",
 								Collation: "utf8mb4_general_ci",
 								DataSize:  16384,
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*v1pb.ColumnMetadata{
 									{
 										Name:     "id",
 										Position: 1,
@@ -2069,18 +2068,18 @@ CREATE TABLE public.book (
 
 `,
 			wantSDL: ``,
-			wantDatabaseMetadata: &storepb.DatabaseMetadata{
+			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
 				Name:         "latestSchema",
 				CharacterSet: "UTF8",
 				Collation:    "en_US.UTF-8",
-				Schemas: []*storepb.SchemaMetadata{
+				Schemas: []*v1pb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*v1pb.TableMetadata{
 							{
 								Name:     "book",
 								DataSize: 8192,
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*v1pb.ColumnMetadata{
 									{Name: "id", Position: 1, Nullable: true, Type: "integer"},
 									{Name: "name", Position: 2, Nullable: true, Type: "text"},
 								},
