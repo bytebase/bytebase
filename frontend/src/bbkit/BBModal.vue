@@ -1,5 +1,5 @@
 <template>
-  <teleport to="#bb-modal-stack">
+  <teleport to="body">
     <div
       v-zindexable="{ enabled: true }"
       class="fixed inset-0 w-full h-screen flex items-center justify-center bg-transparent"
