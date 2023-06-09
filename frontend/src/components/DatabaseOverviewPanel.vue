@@ -187,9 +187,7 @@ const hasSchemaProperty = computed(() => {
 });
 
 const prepareDatabaseMetadata = async () => {
-  const res = await dbSchemaStore.getOrFetchDatabaseMetadata(
-    props.database.name
-  );
+  await dbSchemaStore.getOrFetchDatabaseMetadata(props.database.name);
   if (hasSchemaProperty.value && schemaList.value.length > 0) {
     state.selectedSchemaName = head(schemaList.value)?.name || "";
   }
