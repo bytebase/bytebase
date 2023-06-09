@@ -5481,6 +5481,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the review to add an approver. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
 
 
 
@@ -5593,6 +5594,7 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the review to add an approver. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
 
 
 
