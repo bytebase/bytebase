@@ -1195,7 +1195,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					}
 					singleStatements, err := parser.SplitMultiSQL(parserEngineType, originalStatement)
 					if err != nil {
-						return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to split multi SQL").SetInternal(err)
+						return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot split statements to multiple SQL, please check your SQL syntax. Error: %s", err.Error()))
 					}
 					if len(singleStatements) == 0 {
 						return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at least one non-empty statement provided")
