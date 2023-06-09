@@ -565,7 +565,10 @@ const isUsingGhostMigration = async (databaseList: ComposedDatabase[]) => {
 
 // Also works when single db selected.
 const generateMultiDb = async () => {
-  if (state.selectedDatabaseGroupName) {
+  if (
+    state.databaseSelectedTab === "DATABASE_GROUP" &&
+    state.selectedDatabaseGroupName
+  ) {
     const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
       state.selectedDatabaseGroupName
     );
@@ -698,7 +701,10 @@ const handleDatabaseGroupTabSelect = () => {
 };
 
 const generateTenant = async () => {
-  if (state.selectedDatabaseGroupName) {
+  if (
+    state.databaseSelectedTab === "DATABASE_GROUP" &&
+    state.selectedDatabaseGroupName
+  ) {
     const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
       state.selectedDatabaseGroupName
     );
