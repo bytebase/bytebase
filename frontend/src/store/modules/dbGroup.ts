@@ -154,6 +154,14 @@ export const useDBGroupStore = defineStore("db-group", () => {
       throw new Error("Database group not found");
     }
     const updateMask: string[] = [];
+    if (
+      !isEqual(
+        rawDatabaseGroup.databasePlaceholder,
+        databaseGroup.databasePlaceholder
+      )
+    ) {
+      updateMask.push("database_placeholder");
+    }
     if (!isEqual(rawDatabaseGroup.databaseExpr, databaseGroup.databaseExpr)) {
       updateMask.push("database_expr");
     }
@@ -242,6 +250,11 @@ export const useDBGroupStore = defineStore("db-group", () => {
       throw new Error("Schema group not found");
     }
     const updateMask: string[] = [];
+    if (
+      !isEqual(rawSchemaGroup.tablePlaceholder, schemaGroup.tablePlaceholder)
+    ) {
+      updateMask.push("table_placeholder");
+    }
     if (!isEqual(rawSchemaGroup.tableExpr, schemaGroup.tableExpr)) {
       updateMask.push("table_expr");
     }
