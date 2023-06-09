@@ -968,8 +968,8 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "database-groups/:databaseGroupName/schema-groups/:schemaGroupName",
-                name: "workspace.database-group.schema-group.detail",
+                path: "database-groups/:databaseGroupName/table-groups/:schemaGroupName",
+                name: "workspace.database-group.table-group.detail",
                 components: {
                   content: () => import("../views/SchemaGroupDetail.vue"),
                   leftSidebar: DashboardSidebar,
