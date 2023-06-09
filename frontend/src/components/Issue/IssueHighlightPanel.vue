@@ -24,7 +24,7 @@
           <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
             <IssueReviewButtonGroup v-if="showReviewButton" />
             <ExportDataButton v-if="showExportButton" />
-            <IssueStatusTransitionButtonGroup v-if="showRolloutButton" />
+            <CombinedRolloutButtonGroup v-if="showRolloutButton" />
           </div>
         </div>
         <div v-if="!create">
@@ -110,8 +110,8 @@ import { useCurrentUserV1 } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import { IssueReviewButtonGroup } from "./review";
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
-import IssueStatusTransitionButtonGroup from "./IssueStatusTransitionButtonGroup.vue";
 import ExportDataButton from "./action/ExportDataButton.vue";
+import { CombinedRolloutButtonGroup } from "./StatusTransitionButtonGroup";
 
 interface LocalState {
   editing: boolean;

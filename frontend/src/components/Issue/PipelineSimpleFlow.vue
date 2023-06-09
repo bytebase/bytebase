@@ -73,7 +73,7 @@ import {
 } from "@/types";
 import { taskSlug } from "@/utils";
 import { useIssueLogic } from "./logic";
-import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
+import { TaskExtraActionsButton } from "./StatusTransitionButtonGroup";
 import { useVerticalScrollState } from "@/composables/useScrollState";
 import { InstanceV1Name } from "../v2";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
