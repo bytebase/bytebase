@@ -28,6 +28,10 @@ const props = withDefaults(
 );
 
 const bindings = computed(() => {
+  if (!props.databaseGroup) {
+    return {};
+  }
+
   const route = `/${props.databaseGroup.project.name}/database-groups/${props.databaseGroup.databaseGroupName}`;
   if (props.link) {
     return {
