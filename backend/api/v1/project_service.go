@@ -1457,6 +1457,12 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 			if request.DatabaseGroup.DatabaseExpr == nil {
 				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
 			}
+			if request.DatabaseGroup.DatabaseExpr.Expression == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
+			}
+			if _, err := validateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
+			}
 			updateDatabaseGroup.Expression = request.DatabaseGroup.DatabaseExpr
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
@@ -1718,6 +1724,12 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 		case "table_expr":
 			if request.SchemaGroup.TableExpr == nil {
 				return nil, status.Errorf(codes.InvalidArgument, "schema group table expr is required")
+			}
+			if request.SchemaGroup.TableExpr.Expression == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "schema group table expression is required")
+			}
+			if _, err := validateGroupCELExpr(request.SchemaGroup.TableExpr.Expression); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid schema group table expression: %v", err)
 			}
 			updateSchemaGroup.Expression = request.SchemaGroup.TableExpr
 		default:
