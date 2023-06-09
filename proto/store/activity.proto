@@ -48,6 +48,7 @@ message ActivityIssueCommentCreatePayload {
       STATUS_UNSPECIFIED = 0;
       PENDING = 1;
       APPROVED = 2;
+      REJECTED = 3;
     }
     // The new status.
     Status status = 1;
