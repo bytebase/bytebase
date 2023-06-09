@@ -9,13 +9,73 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+)
+
+var (
+	maskedData = &v1pb.QueryResult{
+		ColumnNames:     []string{"id", "name", "author"},
+		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
+		Masked:          []bool{true, false, true},
+		Rows: []*v1pb.QueryRow{
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "bytebase"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}},
+				},
+			},
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "PostgreSQL 14 Internals"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}},
+				},
+			},
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "Designing Data-Intensive Applications"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}},
+				},
+			},
+		},
+	}
+	originData = &v1pb.QueryResult{
+		ColumnNames:     []string{"id", "name", "author"},
+		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
+		Rows: []*v1pb.QueryRow{
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "bytebase"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "bber"}},
+				},
+			},
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 2}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "PostgreSQL 14 Internals"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "Egor Rogov"}},
+				},
+			},
+			{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 3}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "Designing Data-Intensive Applications"}},
+					{Kind: &v1pb.RowValue_StringValue{StringValue: "Martin Kleppmann"}},
+				},
+			},
+		},
+	}
 )
 
 func TestSensitiveData(t *testing.T) {
@@ -36,8 +96,6 @@ func TestSensitiveData(t *testing.T) {
 				(3, 'Designing Data-Intensive Applications', 'Martin Kleppmann');
 		`
 		queryTable = `SELECT * FROM tech_book`
-		maskedData = "[[\"id\",\"name\",\"author\"],[\"INT\",\"VARCHAR\",\"VARCHAR\"],[[\"******\",\"bytebase\",\"******\"],[\"******\",\"PostgreSQL 14 Internals\",\"******\"],[\"******\",\"Designing Data-Intensive Applications\",\"******\"]],[true,false,true]]"
-		originData = "[[\"id\",\"name\",\"author\"],[\"INT\",\"VARCHAR\",\"VARCHAR\"],[[1,\"bytebase\",\"bber\"],[2,\"PostgreSQL 14 Internals\",\"Egor Rogov\"],[3,\"Designing Data-Intensive Applications\",\"Martin Kleppmann\"]],[false,false,false]]"
 	)
 	t.Parallel()
 	a := require.New(t)
@@ -77,7 +135,7 @@ func TestSensitiveData(t *testing.T) {
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	err = ctl.setLicense()
@@ -206,15 +264,20 @@ func TestSensitiveData(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Query masked data.
-	result, err := ctl.query(instance, databaseName, queryTable)
+	queryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
+		Name: instance.Name, ConnectionDatabase: databaseName, Statement: queryTable,
+	})
 	a.NoError(err)
-	a.Equal(maskedData, result)
+	a.Equal(1, len(queryResp.Results))
+	diff := cmp.Diff(maskedData, queryResp.Results[0], protocmp.Transform())
+	a.Equal("", diff)
 
 	// Query origin data.
-	singleSQLResults, err := ctl.adminQuery(instance, databaseName, queryTable)
+	singleSQLResults, err := ctl.adminQuery(ctx, instance, databaseName, queryTable)
 	a.NoError(err)
-	for _, singleSQLResult := range singleSQLResults {
-		a.Equal("", singleSQLResult.Error)
-		a.Equal(originData, singleSQLResult.Data)
-	}
+	a.Len(singleSQLResults, 1)
+	result := singleSQLResults[0]
+	a.Equal("", result.Error)
+	diff = cmp.Diff(originData, result, protocmp.Transform())
+	a.Equal("", diff)
 }

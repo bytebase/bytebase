@@ -22,7 +22,7 @@
         >
           🎈{{ $t("sql-review.unlock-full-feature") }}
         </button>
-        <span v-if="sqlHint" class="ml-1 text-accent">{{
+        <span v-if="sqlHint && !readonly" class="ml-1 text-accent">{{
           `(${sqlHint})`
         }}</span>
       </div>
@@ -38,7 +38,7 @@
     </div>
 
     <div class="space-x-2 flex items-center">
-      <template v-if="create || state.editing">
+      <template v-if="(create || state.editing) && !readonly">
         <label
           v-if="allowFormatOnSave"
           class="mt-0.5 mr-2 inline-flex items-center gap-1"
@@ -59,10 +59,10 @@
       <button
         v-if="shouldShowStatementEditButtonForUI"
         type="button"
-        class="btn-icon"
+        class="px-4 py-2 cursor-pointer border border-control-border rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed"
         @click.prevent="beginEdit"
       >
-        <heroicons-solid:pencil class="h-5 w-5" />
+        {{ $t("common.edit") }}
       </button>
 
       <template v-else-if="!create">
@@ -131,7 +131,7 @@ import {
   useSheetV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { useIssueLogic } from "./logic";
+import { isGroupingChangeIssue, useIssueLogic } from "./logic";
 import {
   ComposedDatabase,
   dialectOfEngineV1,
@@ -290,9 +290,19 @@ const useTempEditState = (state: LocalState) => {
     },
     { immediate: true }
   );
+
+  const reset = () => {
+    stopWatching && stopWatching();
+
+    if (!create.value) {
+      stopWatching = startWatching();
+    }
+  };
+
+  return reset;
 };
 
-useTempEditState(state);
+const resetTempEditState = useTempEditState(state);
 
 const getOrFetchSheetStatementByName = async (
   sheetName: string | undefined
@@ -309,7 +319,10 @@ const getOrFetchSheetStatementByName = async (
 
 const readonly = computed(() => {
   return (
-    !state.editing || !allowEditStatement.value || isTaskSheetOversize.value
+    !state.editing ||
+    !allowEditStatement.value ||
+    isTaskSheetOversize.value ||
+    isGroupingChangeIssue(issue.value as Issue)
   );
 });
 
@@ -354,6 +367,9 @@ const isTaskSheetOversize = computed(() => {
 
 const shouldShowStatementEditButtonForUI = computed(() => {
   if (create.value) {
+    return false;
+  }
+  if (readonly.value) {
     return false;
   }
   // For those task sheet oversized, it's readonly.
@@ -449,6 +465,7 @@ const saveEdit = async () => {
   if (!selectedDatabase.value) {
     return;
   }
+  resetTempEditState();
   if (allowFormatOnSave.value && formatOnSave.value) {
     editorRef.value?.formatEditorContent();
   }
@@ -508,12 +525,19 @@ const handleUploadFile = async (event: Event, tick: (p: number) => void) => {
     });
     state.isUploadingFile = false;
 
+    resetTempEditState();
     updateSheetId(sheetV1Store.getSheetUid(sheet.name));
     await updateStatement(statement);
     state.editing = false;
     if (selectedTask.value) {
       updateEditorHeight();
     }
+
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: "File upload success",
+    });
   };
 
   return new Promise((resolve, reject) => {

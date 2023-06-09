@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="h-full overflow-hidden flex flex-col">
     <BBTab
       :tab-item-list="tabItemList"
       :selected-index="state.selectedIndex"
@@ -20,6 +20,7 @@
         v-for="(env, index) in environmentList"
         :key="env.uid"
         :active="index == state.selectedIndex"
+        class="flex-1 overflow-y-scroll"
       >
         <div v-if="state.reorder" class="flex justify-center pt-5">
           <button
@@ -46,13 +47,11 @@
       </BBTabPanel>
     </BBTab>
   </div>
-  <BBModal
-    v-if="state.showCreateModal"
-    :title="$t('environment.create')"
-    @close="state.showCreateModal = false"
-  >
+
+  <Drawer v-model:show="state.showCreateModal">
     <EnvironmentForm
       :create="true"
+      :drawer="true"
       :environment="getEnvironmentCreate()"
       :approval-policy="(DEFAULT_NEW_APPROVAL_POLICY as any)"
       :backup-policy="(DEFAULT_NEW_BACKUP_PLAN_POLICY as any)"
@@ -60,7 +59,7 @@
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     />
-  </BBModal>
+  </Drawer>
 
   <FeatureModal
     v-if="state.missingRequiredFeature != undefined"
@@ -84,7 +83,7 @@ import {
   defaultEnvironmentTier,
   useEnvironmentV1List,
 } from "@/store";
-import { ProductionEnvironmentV1Icon } from "@/components/v2";
+import { Drawer, ProductionEnvironmentV1Icon } from "@/components/v2";
 import {
   Environment,
   EnvironmentTier,
@@ -251,8 +250,6 @@ const doCreate = async (
     order: environmentList.value.length,
     tier: environmentTier,
   });
-  // After creating with v1 store, we need to fetch the latest data in old store.
-  // TODO(steven): using grpc store.
   await environmentV1Store.fetchEnvironments();
 
   const requests = [

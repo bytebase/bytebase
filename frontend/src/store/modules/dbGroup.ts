@@ -36,6 +36,7 @@ const composeDatabaseGroup = async (
     project: project,
     environmentName: convertResult.environmentId ?? "",
     environment: environment,
+    simpleExpr: convertResult.conditionGroupExpr,
   };
 };
 
@@ -60,10 +61,11 @@ export const useDBGroupStore = defineStore("db-group", () => {
   const dbGroupMapByName = ref<Map<string, ComposedDatabaseGroup>>(new Map());
   const schemaGroupMapByName = ref<Map<string, ComposedSchemaGroup>>(new Map());
   const cachedProjectNameSet = ref<Set<string>>(new Set());
+  const cachedDatabaseGroupNameSet = ref<Set<string>>(new Set());
 
   const fetchAllDatabaseGroupList = async () => {
     const { databaseGroups } = await projectServiceClient.listDatabaseGroups({
-      parent: "projects/-",
+      parent: `${projectNamePrefix}-`,
     });
     const composedList = [];
     for (const dbGroup of databaseGroups) {
@@ -129,8 +131,6 @@ export const useDBGroupStore = defineStore("db-group", () => {
     >,
     name: string
   ) => {
-    // Note: use resource id as placeholder right now.
-    databaseGroup.databasePlaceholder = name;
     const createdDatabaseGroup = await projectServiceClient.createDatabaseGroup(
       {
         parent: projectName,
@@ -190,6 +190,12 @@ export const useDBGroupStore = defineStore("db-group", () => {
   const getOrFetchSchemaGroupListByDBGroupName = async (
     dbGroupName: string
   ) => {
+    const hasCache = cachedDatabaseGroupNameSet.value.has(dbGroupName);
+    if (hasCache) {
+      return Array.from(schemaGroupMapByName.value.values()).filter(
+        (schemaGroup) => schemaGroup.name.startsWith(dbGroupName)
+      );
+    }
     const { schemaGroups } = await projectServiceClient.listSchemaGroups({
       parent: dbGroupName,
     });
@@ -199,6 +205,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       schemaGroupMapByName.value.set(schemaGroup.name, composedData);
       composedList.push(composedData);
     }
+    cachedDatabaseGroupNameSet.value.add(dbGroupName);
     return composedList;
   };
 
@@ -217,8 +224,6 @@ export const useDBGroupStore = defineStore("db-group", () => {
     schemaGroup: Pick<SchemaGroup, "name" | "tablePlaceholder" | "tableExpr">,
     name: string
   ) => {
-    // Note: use resource id as placeholder right now.
-    schemaGroup.tablePlaceholder = name;
     const createdSchemaGroup = await projectServiceClient.createSchemaGroup({
       parent: dbGroupName,
       schemaGroup,

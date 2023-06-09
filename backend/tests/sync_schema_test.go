@@ -85,7 +85,7 @@ DROP SCHEMA "schema_a";
 	projectUID, err := strconv.Atoi(project.Uid)
 	a.NoError(err)
 
-	prodEnvironment, _, err := ctl.getEnvironment(ctx, "prod")
+	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
 
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
@@ -97,8 +97,6 @@ DROP SCHEMA "schema_a";
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 		},
 	})
-	a.NoError(err)
-	instanceUID, err := strconv.Atoi(instance.Uid)
 	a.NoError(err)
 
 	err = ctl.createDatabase(ctx, projectUID, instance, databaseName, "bytebase", nil)
@@ -149,14 +147,14 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	history, err := ctl.getInstanceMigrationHistory(instanceUID, db.MigrationHistoryFind{
-		Database: &databaseName,
+	resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+		Parent: database.Name,
 	})
 	a.NoError(err)
-
+	histories := resp.ChangeHistories
 	// history[0] is SchemaUpdate
-	a.Equal(1, len(history))
-	latest := history[0]
+	a.Equal(1, len(histories))
+	latest := histories[0]
 
 	err = ctl.createDatabase(ctx, projectUID, instance, newDatabaseName, "bytebase", nil)
 	a.NoError(err)

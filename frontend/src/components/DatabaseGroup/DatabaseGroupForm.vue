@@ -3,13 +3,22 @@
     <div class="w-full grid grid-cols-3 gap-x-6 pb-6 mb-4 border-b">
       <div>
         <p class="text-lg mb-2">{{ $t("common.name") }}</p>
-        <ResourceIdInput
-          ref="resourceIdInput"
-          :value="state.resourceId"
-          :resource-type="resourceIdType"
-          :readonly="!isCreating"
-          :validate="validateResourceId"
+        <input
+          v-model="state.placeholder"
+          required
+          type="text"
+          class="textfield w-full"
         />
+        <div class="mt-2">
+          <ResourceIdField
+            ref="resourceIdField"
+            :resource-type="formatedResourceType"
+            :readonly="!isCreating"
+            :value="state.resourceId"
+            :resource-title="state.placeholder"
+            :validate="validateResourceId"
+          />
+        </div>
       </div>
       <div>
         <p class="text-lg mb-2">{{ $t("common.environment") }}</p>
@@ -90,24 +99,21 @@ import ExprEditor from "./common/ExprEditor";
 import { ResourceType } from "./common/ExprEditor/context";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { ComposedProject, ResourceId, ValidatedMessage } from "@/types";
-import {
-  convertCELStringToExpr,
-  convertDatabaseGroupExprFromCEL,
-} from "@/utils/databaseGroup/cel";
-import { useDBGroupStore, useEnvironmentV1Store } from "@/store";
+import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
+import { useDBGroupStore } from "@/store";
 import { getErrorCode } from "@/utils/grpcweb";
 import EnvironmentSelect from "../EnvironmentSelect.vue";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import MatchedTableView from "./MatchedTableView.vue";
-import ResourceIdInput from "../v2/Form/ResourceIdInput.vue";
 import DatabaseGroupSelect from "./DatabaseGroupSelect.vue";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
   getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
+  schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { useDebounceFn } from "@vueuse/core";
+import { ResourceIdField } from "../v2";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -117,25 +123,29 @@ const props = defineProps<{
 
 type LocalState = {
   resourceId: string;
+  placeholder: string;
   environmentId?: string;
   selectedDatabaseGroupId?: string;
   expr: ConditionGroupExpr;
 };
 
 const { t } = useI18n();
-const environmentStore = useEnvironmentV1Store();
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   resourceId: "",
+  placeholder: "",
   expr: wrapAsGroup(resolveCELExpr(CELExpr.fromJSON({}))),
 });
-const resourceIdInput = ref<InstanceType<typeof ResourceIdInput>>();
+const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const selectedDatabaseGroupName = computed(() => {
   const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
     state.selectedDatabaseGroupId || ""
   );
   return databaseGroupName;
 });
+const formatedResourceType = computed(() =>
+  props.resourceType === "DATABASE_GROUP" ? "database-group" : "schema-group"
+);
 
 const isCreating = computed(() => props.databaseGroup === undefined);
 
@@ -150,26 +160,30 @@ onMounted(async () => {
   }
 
   if (props.resourceType === "DATABASE_GROUP") {
-    const expression =
-      (databaseGroup as DatabaseGroup).databaseExpr?.expression ?? "";
+    const databaseGroupEntity = databaseGroup as DatabaseGroup;
     const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
       databaseGroup.name
     );
     state.resourceId = databaseGroupName;
-    const convertResult = await convertDatabaseGroupExprFromCEL(expression);
-    if (convertResult.environmentId) {
-      const environment = environmentStore.getEnvironmentByName(
-        convertResult.environmentId
-      );
-      state.environmentId = environment?.uid;
+    state.placeholder = databaseGroupEntity.databasePlaceholder;
+    const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+      databaseGroup.name
+    );
+    if (composedDatabaseGroup.environment) {
+      state.environmentId = composedDatabaseGroup.environment.uid;
     }
-    state.expr = convertResult.conditionGroupExpr;
+    if (composedDatabaseGroup.simpleExpr) {
+      state.expr = composedDatabaseGroup.simpleExpr;
+    }
   } else {
-    const schemaGroup = databaseGroup as SchemaGroup;
-    const expression = schemaGroup.tableExpr?.expression ?? "";
+    const schemaGroupEntity = databaseGroup as SchemaGroup;
+    const expression = schemaGroupEntity.tableExpr?.expression ?? "";
     const [projectName, databaseGroupName, schemaGroupName] =
-      getProjectNameAndDatabaseGroupNameAndSchemaGroupName(schemaGroup.name);
+      getProjectNameAndDatabaseGroupNameAndSchemaGroupName(
+        schemaGroupEntity.name
+      );
     state.resourceId = schemaGroupName;
+    state.placeholder = schemaGroupEntity.tablePlaceholder;
     state.selectedDatabaseGroupId = `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
     const expr = await convertCELStringToExpr(expression);
     state.expr = expr;
@@ -178,69 +192,62 @@ onMounted(async () => {
     const relatedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
       `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`
     );
-    const convertResult = await convertDatabaseGroupExprFromCEL(
-      relatedDatabaseGroup.databaseExpr?.expression ?? ""
-    );
-    if (convertResult.environmentId) {
-      const environment = environmentStore.getEnvironmentByName(
-        convertResult.environmentId
-      );
-      state.environmentId = environment?.uid;
+    if (relatedDatabaseGroup.environment) {
+      state.environmentId = relatedDatabaseGroup.environment.uid;
     }
   }
 });
 
-const validateResourceId = useDebounceFn(
-  async (resourceId: ResourceId): Promise<ValidatedMessage[]> => {
-    if (!resourceId) {
-      return [];
-    }
-
-    let request = undefined;
-    if (props.resourceType === "DATABASE_GROUP") {
-      request = dbGroupStore.getOrFetchDBGroupByName(
-        `${props.project.name}/databaseGroups/${resourceId}`
-      );
-    } else if (props.resourceType === "SCHEMA_GROUP") {
-      if (state.selectedDatabaseGroupId) {
-        request = dbGroupStore.getOrFetchSchemaGroupByName(
-          `${state.selectedDatabaseGroupId}/schemaGroups/${resourceId}`
-        );
-      }
-    }
-
-    if (!request) {
-      return [];
-    }
-
-    try {
-      const data = await request;
-      if (data) {
-        return [
-          {
-            type: "error",
-            message: t("resource-id.validation.duplicated", {
-              resource: t(`resource.${resourceIdType.value}`),
-            }),
-          },
-        ];
-      }
-    } catch (error) {
-      if (getErrorCode(error) !== Status.NOT_FOUND) {
-        throw error;
-      }
-    }
-
+const validateResourceId = async (
+  resourceId: ResourceId
+): Promise<ValidatedMessage[]> => {
+  if (!resourceId) {
     return [];
-  },
-  500
-);
+  }
+
+  let request = undefined;
+  if (props.resourceType === "DATABASE_GROUP") {
+    request = dbGroupStore.getOrFetchDBGroupByName(
+      `${props.project.name}/${databaseGroupNamePrefix}${resourceId}`
+    );
+  } else if (props.resourceType === "SCHEMA_GROUP") {
+    if (state.selectedDatabaseGroupId) {
+      request = dbGroupStore.getOrFetchSchemaGroupByName(
+        `${state.selectedDatabaseGroupId}/${schemaGroupNamePrefix}${resourceId}`
+      );
+    }
+  }
+
+  if (!request) {
+    return [];
+  }
+
+  try {
+    const data = await request;
+    if (data) {
+      return [
+        {
+          type: "error",
+          message: t("resource-id.validation.duplicated", {
+            resource: t(`resource.${resourceIdType.value}`),
+          }),
+        },
+      ];
+    }
+  } catch (error) {
+    if (getErrorCode(error) !== Status.NOT_FOUND) {
+      throw error;
+    }
+  }
+
+  return [];
+};
 
 defineExpose({
   getFormState: () => {
     return {
       ...state,
-      resourceId: resourceIdInput.value?.resourceId || "",
+      resourceId: resourceIdField.value?.resourceId || "",
     };
   },
 });

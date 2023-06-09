@@ -41,7 +41,6 @@ import {
   useVCSV1Store,
   useDataSourceStore,
   useSQLReviewStore,
-  useLegacyProjectStore,
   useSheetV1Store,
   useAuthStore,
   useActuatorV1Store,
@@ -250,6 +249,19 @@ const routes: Array<RouteRecordRaw> = [
             meta: { title: () => startCase(t("database.sync-schema.title")) },
             components: {
               content: () => import("../views/SyncDatabaseSchema/index.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: {
+              content: true,
+              leftSidebar: true,
+            },
+          },
+          {
+            path: "export-center",
+            name: "workspace.export-center",
+            meta: { title: () => startCase(t("export-center.self")) },
+            components: {
+              content: () => import("../views/ExportCenter/index.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: {
@@ -1059,7 +1071,6 @@ router.beforeEach((to, from, next) => {
   const dbSchemaStore = useDBSchemaStore();
   const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
-  const projectStore = useLegacyProjectStore();
   const projectV1Store = useProjectV1Store();
   const projectWebhookV1Store = useProjectWebhookV1Store();
 
@@ -1302,6 +1313,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.inbox" ||
     to.name === "workspace.slow-query" ||
     to.name === "workspace.sync-schema" ||
+    to.name === "workspace.export-center" ||
     to.name === "workspace.anomaly-center" ||
     to.name === "workspace.project" ||
     to.name === "workspace.instance" ||
@@ -1402,11 +1414,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (projectSlug) {
-    projectStore
-      .fetchProjectById(idFromSlug(projectSlug))
-      .then(() =>
-        projectV1Store.fetchProjectByUID(String(idFromSlug(projectSlug)))
-      )
+    projectV1Store
+      .fetchProjectByUID(String(idFromSlug(projectSlug)))
       .then((project) => {
         if (!projectWebhookSlug) {
           next();

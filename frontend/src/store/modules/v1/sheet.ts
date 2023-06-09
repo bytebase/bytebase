@@ -18,6 +18,8 @@ interface SheetState {
   sheetByName: Map<string, Sheet>;
 }
 
+const REQUEST_CACHE = new Map<string /* uid */, Promise<Sheet | undefined>>();
+
 export const useSheetV1Store = defineStore("sheet_v1", {
   state: (): SheetState => ({
     sheetByName: new Map<string, Sheet>(),
@@ -161,15 +163,34 @@ export const useSheetV1Store = defineStore("sheet_v1", {
         return sheet;
       }
 
-      try {
-        const sheet = await sheetServiceClient.getSheet({
-          name: `${projectNamePrefix}-/${sheetNamePrefix}${uid}`,
-        });
-        this.sheetByName.set(sheet.name, sheet);
-        return sheet;
-      } catch {
-        return;
+      const cached = REQUEST_CACHE.get(String(uid));
+      if (cached) {
+        return cached;
       }
+
+      const runner = async () => {
+        try {
+          const sheet = await sheetServiceClient.getSheet({
+            name: `${projectNamePrefix}-/${sheetNamePrefix}${uid}`,
+          });
+          return sheet;
+        } catch {
+          return;
+        }
+      };
+
+      const request = runner();
+      request.then((sheet) => {
+        if (sheet) {
+          this.sheetByName.set(sheet.name, sheet);
+        } else {
+          // If the request failed (e.g., "Too many requests")
+          // Remove the cache entry so we can retry when needed.
+          REQUEST_CACHE.delete(String(uid));
+        }
+      });
+      REQUEST_CACHE.set(String(uid), request);
+      return request;
     },
     async getOrFetchSheetByName(name: string) {
       const storedSheet = this.sheetByName.get(name);

@@ -73,7 +73,7 @@ service DatabaseService {
     };
   }
 
-  rpc ListBackup(ListBackupRequest) returns (ListBackupResponse) {
+  rpc ListBackups(ListBackupsRequest) returns (ListBackupsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/backups"};
     option (google.api.method_signature) = "parent";
   }
@@ -216,13 +216,13 @@ message BatchUpdateDatabasesResponse {
 
 message GetDatabaseMetadataRequest {
   // The name of the database to retrieve metadata.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}/metadata
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetDatabaseSchemaRequest {
   // The name of the database to retrieve schema.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database}/schema
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
   // Format the schema dump into SDL format.
@@ -249,8 +249,8 @@ message CreateBackupRequest {
   Backup backup = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// ListBackupRequest is the request message for ListBackup.
-message ListBackupRequest {
+// ListBackupsRequest is the request message for ListBackup.
+message ListBackupsRequest {
   // The parent resource where this backup will be created.
   // Format: instances/{instance}/databases/{database}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
@@ -269,7 +269,7 @@ message ListBackupRequest {
   string page_token = 3;
 }
 
-message ListBackupResponse {
+message ListBackupsResponse {
   // The backups from the specified request.
   repeated Backup backups = 1;
 
@@ -519,7 +519,7 @@ message DatabaseSchema {
 // BackupSetting is the setting for database backup.
 message BackupSetting {
   // The name of the database backup setting.
-  // Format: instances/{instance}/databases/{database}/backupSettings
+  // Format: instances/{instance}/databases/{database}/backupSetting
   string name = 1;
 
   // The default maximum age of a Backup created via this BackupPlan.
@@ -534,7 +534,7 @@ message BackupSetting {
   // Default (empty): Disable automatic backup.
   string cron_schedule = 3;
 
-  // hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created.
+  // hook_url(https://www.bytebase.com/docs/disaster-recovery/backup/#post-backup-webhook) is the URL to send a notification when a backup is created.
   string hook_url = 4;
 }
 

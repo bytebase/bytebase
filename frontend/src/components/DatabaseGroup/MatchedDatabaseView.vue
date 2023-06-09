@@ -10,7 +10,7 @@
       class="sticky top-0 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b cursor-pointer"
       @click="state.showMatchedDatabaseList = !state.showMatchedDatabaseList"
     >
-      <div>
+      <div class="text-sm font-medium">
         <span>{{ $t("database-group.matched-database") }}</span>
         <span class="ml-1 text-gray-400"
           >({{ matchedDatabaseList.length }})</span
@@ -30,14 +30,18 @@
         :key="database.name"
         class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
-        <span class="text-sm">{{ database.databaseName }}</span>
-        <div class="flex flex-row justify-end items-center">
+        <NEllipsis class="text-sm" line-clamp="1">
+          {{ database.databaseName }}
+        </NEllipsis>
+        <div class="flex flex-row justify-end items-center shrink-0">
           <InstanceV1EngineIcon :instance="database.instanceEntity" />
-          <span class="ml-1 text-sm text-gray-400"
-            >{{ database.instanceEntity.title }} ({{
-              database.instanceEntity.environmentEntity.title
-            }})</span
+          <NEllipsis
+            class="ml-1 text-sm text-gray-400 max-w-[124px]"
+            line-clamp="1"
           >
+            ({{ database.instanceEntity.environmentEntity.title }})
+            {{ database.instanceEntity.title }}
+          </NEllipsis>
         </div>
       </div>
     </div>
@@ -47,7 +51,7 @@
         state.showUnmatchedDatabaseList = !state.showUnmatchedDatabaseList
       "
     >
-      <div>
+      <div class="text-sm font-medium">
         <span>{{ $t("database-group.unmatched-database") }}</span>
         <span class="ml-1 text-gray-400"
           >({{ unmatchedDatabaseList.length }})</span
@@ -67,14 +71,18 @@
         :key="database.name"
         class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
       >
-        <span class="text-sm">{{ database.databaseName }}</span>
-        <div class="flex flex-row justify-end items-center">
+        <NEllipsis class="text-sm" line-clamp="1">
+          {{ database.databaseName }}
+        </NEllipsis>
+        <div class="flex flex-row justify-end items-center shrink-0">
           <InstanceV1EngineIcon :instance="database.instanceEntity" />
-          <span class="ml-1 text-sm text-gray-400"
-            >{{ database.instanceEntity.title }} ({{
-              database.instanceEntity.environmentEntity.title
-            }})</span
+          <NEllipsis
+            class="ml-1 text-sm text-gray-400 max-w-[124px]"
+            line-clamp="1"
           >
+            ({{ database.instanceEntity.environmentEntity.title }})
+            {{ database.instanceEntity.title }}
+          </NEllipsis>
         </div>
       </div>
     </div>
@@ -82,20 +90,19 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, reactive, computed } from "vue";
+import { NEllipsis } from "naive-ui";
+import { ref, watch, reactive } from "vue";
 import { ConditionGroupExpr } from "@/plugins/cel";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { ComposedDatabase, ComposedProject } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";
-import {
-  DatabaseGroup,
-  DatabaseGroupView,
-} from "@/types/proto/v1/project_service";
+import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
 import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import { Expr } from "@/types/proto/google/type/expr";
 import { useDebounceFn } from "@vueuse/core";
 import BBLoader from "@/bbkit/BBLoader.vue";
+import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 
 interface LocalState {
   isRequesting: boolean;
@@ -115,72 +122,48 @@ const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   isRequesting: false,
   showMatchedDatabaseList: true,
-  showUnmatchedDatabaseList: false,
+  showUnmatchedDatabaseList: true,
 });
 const matchedDatabaseList = ref<ComposedDatabase[]>([]);
 const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
 
-const isCreating = computed(() => props.databaseGroup === undefined);
-
 const updateMatchingState = useDebounceFn(async () => {
   state.isRequesting = true;
-  const matchedDatabaseNameList: string[] = [];
-  const unmatchedDatabaseNameList: string[] = [];
 
-  if (isCreating.value) {
-    const environment = environmentStore.getEnvironmentByUID(
-      props.environmentId
-    );
-    const celString = stringifyDatabaseGroupExpr({
-      environmentId: environment.name,
-      conditionGroupExpr: props.expr,
-    });
-    const validateOnlyResourceId = "creating-database-group";
-    const result = await projectServiceClient.createDatabaseGroup({
-      parent: props.project.name,
-      databaseGroup: {
-        name: `${props.project.name}/databaseGroups/${validateOnlyResourceId}`,
-        databasePlaceholder: validateOnlyResourceId,
-        databaseExpr: Expr.fromJSON({
-          expression: celString,
-        }),
-      },
-      databaseGroupId: validateOnlyResourceId,
-      validateOnly: true,
-    });
-    matchedDatabaseNameList.push(
-      ...result.matchedDatabases.map((item) => item.name)
-    );
-    unmatchedDatabaseNameList.push(
-      ...result.unmatchedDatabases.map((item) => item.name)
-    );
-  } else {
-    const result = await projectServiceClient.getDatabaseGroup({
-      name: props.databaseGroup!.name,
-      view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
-    });
-    matchedDatabaseNameList.push(
-      ...result.matchedDatabases.map((item) => item.name)
-    );
-    unmatchedDatabaseNameList.push(
-      ...result.unmatchedDatabases.map((item) => item.name)
-    );
-  }
+  const environment = environmentStore.getEnvironmentByUID(props.environmentId);
+  const celString = stringifyDatabaseGroupExpr({
+    environmentId: environment.name,
+    conditionGroupExpr: props.expr,
+  });
+  const validateOnlyResourceId = "creating-database-group";
+  const result = await projectServiceClient.createDatabaseGroup({
+    parent: props.project.name,
+    databaseGroup: {
+      name: `${props.project.name}/${databaseGroupNamePrefix}${validateOnlyResourceId}`,
+      databasePlaceholder: validateOnlyResourceId,
+      databaseExpr: Expr.fromJSON({
+        expression: celString,
+      }),
+    },
+    databaseGroupId: validateOnlyResourceId,
+    validateOnly: true,
+  });
 
   matchedDatabaseList.value = [];
   unmatchedDatabaseList.value = [];
-  for (const name of matchedDatabaseNameList) {
-    const database = await databaseStore.getOrFetchDatabaseByName(name);
+  for (const item of result.matchedDatabases) {
+    const database = await databaseStore.getOrFetchDatabaseByName(item.name);
     if (database) {
       matchedDatabaseList.value.push(database);
     }
   }
-  for (const name of unmatchedDatabaseNameList) {
-    const database = await databaseStore.getOrFetchDatabaseByName(name);
+  for (const item of result.unmatchedDatabases) {
+    const database = await databaseStore.getOrFetchDatabaseByName(item.name);
     if (database) {
       unmatchedDatabaseList.value.push(database);
     }
   }
+
   state.isRequesting = false;
 }, 500);
 

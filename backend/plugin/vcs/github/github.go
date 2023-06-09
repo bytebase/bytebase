@@ -653,9 +653,47 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 	if err != nil {
 		return nil, errors.Wrap(err, "get last commit ID")
 	}
-	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, lastCommitID)
+
+	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), lastCommitID)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "read file")
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to read file meta from URL %s", url)
+	} else if code >= 300 {
+		return nil,
+			errors.Errorf("failed to read file meta from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	// This API endpoint returns a JSON array if the path is a directory, and we do
+	// not want that.
+	if body != "" && body[0] == '[' {
+		return nil, errors.Errorf("%q is a directory not a file", filePath)
+	}
+
+	var file File
+	if err = json.Unmarshal([]byte(body), &file); err != nil {
+		return nil, errors.Wrap(err, "unmarshal body")
 	}
 
 	return &vcs.FileMeta{
@@ -715,17 +753,8 @@ func (p *Provider) getLastCommitID(ctx context.Context, oauthCtx common.OauthCon
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
 func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
-	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
-	if err != nil {
-		return "", errors.Wrap(err, "read file")
-	}
-	return file.Content, nil
-}
-
-// readFile reads the given file in the repository.
-func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*File, error) {
 	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), ref)
-	code, _, body, err := oauth.Get(
+	code, _, body, err := oauth.GetWithHeader(
 		ctx,
 		p.client,
 		url,
@@ -739,41 +768,25 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 			},
 			oauthCtx.Refresher,
 		),
+		map[string]string{
+			"Accept": "application/vnd.github.raw",
+		},
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "GET %s", url)
+		return "", errors.Wrapf(err, "GET %s", url)
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to read file from URL %s", url)
+		return "", common.Errorf(common.NotFound, "failed to read file content from URL %s", url)
 	} else if code >= 300 {
-		return nil,
-			errors.Errorf("failed to read file from URL %s, status code: %d, body: %s",
+		return "",
+			errors.Errorf("failed to read file content from URL %s, status code: %d, body: %s",
 				url,
 				code,
 				body,
 			)
 	}
-
-	// This API endpoint returns a JSON array if the path is a directory, and we do
-	// not want that.
-	if body != "" && body[0] == '[' {
-		return nil, errors.Errorf("%q is a directory not a file", filePath)
-	}
-
-	var file File
-	if err = json.Unmarshal([]byte(body), &file); err != nil {
-		return nil, errors.Wrap(err, "unmarshal body")
-	}
-
-	if file.Encoding == "base64" {
-		decodedContent, err := base64.StdEncoding.DecodeString(file.Content)
-		if err != nil {
-			return nil, errors.Wrap(err, "decode file content")
-		}
-		file.Content = string(decodedContent)
-	}
-	return &file, nil
+	return body, nil
 }
 
 // PullRequestFile is the API message for files in GitHub pull request.

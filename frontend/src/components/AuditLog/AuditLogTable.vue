@@ -6,7 +6,7 @@
     :show-header="true"
     :row-clickable="false"
   >
-    <template #body="{ rowData: auditLog }">
+    <template #body="{ rowData: auditLog }: { rowData: AuditLog }">
       <BBTableCell :left-padding="4" class="table-cell w-56">
         <div>
           {{ dayjs.unix(auditLog.createdTs).format("YYYY-MM-DD HH:mm:ss Z") }}
@@ -26,7 +26,7 @@
         }}
       </BBTableCell>
       <BBTableCell class="table-cell w-20">
-        {{ auditLog.creator }}
+        <UserByEmail :email="auditLog.creator" :plain="true" />
       </BBTableCell>
       <BBTableCell class="table-cell w-36">
         <div v-if="auditLog.comment">
@@ -69,6 +69,7 @@ import {
   AuditActivityType,
   AuditActivityLevel,
 } from "@/types";
+import { UserByEmail } from "../v2";
 
 defineProps({
   auditLogList: {

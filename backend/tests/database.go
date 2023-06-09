@@ -1,12 +1,10 @@
 package tests
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +12,7 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -81,7 +80,7 @@ func (ctl *controller) createDatabase(ctx context.Context, projectUID int, insta
 }
 
 // cloneDatabaseFromBackup clones the database from an existing backup.
-func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, projectUID int, instance *v1pb.Instance, databaseName string, backup *api.Backup, labelMap map[string]string) error {
+func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, projectUID int, instance *v1pb.Instance, databaseName string, backup *v1pb.Backup, labelMap map[string]string) error {
 	environmentID := strings.TrimPrefix(instance.Environment, "environments/")
 	instanceUID, err := strconv.Atoi(instance.Uid)
 	if err != nil {
@@ -92,10 +91,14 @@ func (ctl *controller) cloneDatabaseFromBackup(ctx context.Context, projectUID i
 		return err
 	}
 
+	backupUID, err := strconv.Atoi(backup.Uid)
+	if err != nil {
+		return err
+	}
 	createContext, err := json.Marshal(&api.CreateDatabaseContext{
 		InstanceID:   instanceUID,
 		DatabaseName: databaseName,
-		BackupID:     backup.ID,
+		BackupID:     backupUID,
 		Labels:       labels,
 	})
 	if err != nil {
@@ -214,89 +217,47 @@ func marshalLabels(labelMap map[string]string, environmentID string) (string, er
 }
 
 // disableAutomaticBackup disables the automatic backup of a database.
-func (ctl *controller) disableAutomaticBackup(databaseID int) error {
-	backupSetting := api.BackupSettingUpsert{
-		DatabaseID: databaseID,
-		Enabled:    false,
-	}
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &backupSetting); err != nil {
-		return errors.Wrap(err, "failed to marshal backupSetting")
-	}
-
-	if _, err := ctl.patch(fmt.Sprintf("/database/%d/backup-setting", databaseID), buf); err != nil {
+func (ctl *controller) disableAutomaticBackup(ctx context.Context, databaseName string) error {
+	if _, err := ctl.databaseServiceClient.UpdateBackupSetting(ctx, &v1pb.UpdateBackupSettingRequest{
+		Setting: &v1pb.BackupSetting{
+			Name:                 fmt.Sprintf("%s/backupSetting", databaseName),
+			CronSchedule:         "",
+			BackupRetainDuration: durationpb.New(time.Duration(7*24*60*60) * time.Second),
+		},
+	}); err != nil {
 		return err
 	}
+
 	return nil
 }
 
-// createBackup creates a backup.
-func (ctl *controller) createBackup(backupCreate api.BackupCreate) (*api.Backup, error) {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &backupCreate); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal backupCreate")
-	}
-
-	body, err := ctl.post(fmt.Sprintf("/database/%d/backup", backupCreate.DatabaseID), buf)
-	if err != nil {
-		return nil, err
-	}
-
-	backup := new(api.Backup)
-	if err = jsonapi.UnmarshalPayload(body, backup); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal backup response")
-	}
-	return backup, nil
-}
-
-// listBackups lists backups for a database.
-func (ctl *controller) listBackups(databaseID int) ([]*api.Backup, error) {
-	body, err := ctl.get(fmt.Sprintf("/database/%d/backup", databaseID), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var backups []*api.Backup
-	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Backup)))
-	if err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal get backup response")
-	}
-	for _, p := range ps {
-		backup, ok := p.(*api.Backup)
-		if !ok {
-			return nil, errors.Errorf("fail to convert backup")
-		}
-		backups = append(backups, backup)
-	}
-	return backups, nil
-}
-
 // waitBackup waits for a backup to be done.
-func (ctl *controller) waitBackup(databaseID, backupID int) error {
+func (ctl *controller) waitBackup(ctx context.Context, databaseName, backupName string) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
-	log.Debug("Waiting for backup.", zap.Int("id", backupID))
+	log.Debug("Waiting for backup.", zap.String("id", backupName))
 	for range ticker.C {
-		backups, err := ctl.listBackups(databaseID)
+		resp, err := ctl.databaseServiceClient.ListBackups(ctx, &v1pb.ListBackupsRequest{Parent: databaseName})
 		if err != nil {
 			return err
 		}
-		var backup *api.Backup
+		backups := resp.Backups
+		var backup *v1pb.Backup
 		for _, b := range backups {
-			if b.ID == backupID {
+			if b.Name == backupName {
 				backup = b
 				break
 			}
 		}
 		if backup == nil {
-			return errors.Errorf("backup %v for database %v not found", backupID, databaseID)
+			return errors.Errorf("backup %v not found", backupName)
 		}
-		switch backup.Status {
-		case api.BackupStatusDone:
+		switch backup.State {
+		case v1pb.Backup_DONE:
 			return nil
-		case api.BackupStatusFailed:
-			return errors.Errorf("backup %v for database %v failed", backupID, databaseID)
+		case v1pb.Backup_FAILED:
+			return errors.Errorf("backup %v failed", backupName)
 		}
 	}
 	// Ideally, this should never happen because the ticker will not stop till the backup is finished.
@@ -304,27 +265,25 @@ func (ctl *controller) waitBackup(databaseID, backupID int) error {
 }
 
 // waitBackupArchived waits for a backup to be archived.
-func (ctl *controller) waitBackupArchived(databaseID, backupID int) error {
+func (ctl *controller) waitBackupArchived(ctx context.Context, databaseName, backupName string) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
-	log.Debug("Waiting for backup.", zap.Int("id", backupID))
+	log.Debug("Waiting for backup.", zap.String("id", backupName))
 	for range ticker.C {
-		backups, err := ctl.listBackups(databaseID)
+		resp, err := ctl.databaseServiceClient.ListBackups(ctx, &v1pb.ListBackupsRequest{Parent: databaseName})
 		if err != nil {
 			return err
 		}
-		var backup *api.Backup
+		backups := resp.Backups
+		var backup *v1pb.Backup
 		for _, b := range backups {
-			if b.ID == backupID {
+			if b.Name == backupName {
 				backup = b
 				break
 			}
 		}
 		if backup == nil {
-			return errors.Errorf("backup %d for database %d not found", backupID, databaseID)
-		}
-		if backup.RowStatus == api.Archived {
 			return nil
 		}
 	}

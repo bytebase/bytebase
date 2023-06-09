@@ -1,6 +1,7 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
+import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
@@ -491,12 +492,7 @@ export interface UpdateDeploymentConfigRequest {
   config?: DeploymentConfig;
 }
 
-export interface SetProjectGitOpsInfoRequest {
-  /**
-   * The name of the project.
-   * Format: projects/{project}
-   */
-  project: string;
+export interface UpdateProjectGitOpsInfoRequest {
   /** The binding for the project and external version control. */
   projectGitopsInfo?: ProjectGitOpsInfo;
   /** The mask of the fields to be updated. */
@@ -505,28 +501,28 @@ export interface SetProjectGitOpsInfoRequest {
   allowMissing: boolean;
 }
 
-export interface DeleteProjectGitOpsInfoRequest {
+export interface UnsetProjectGitOpsInfoRequest {
   /**
-   * The name of the project.
-   * Format: projects/{project}
+   * The name of the GitOps info.
+   * Format: projects/{project}/gitOpsInfo
    */
-  project: string;
+  name: string;
 }
 
 export interface GetProjectGitOpsInfoRequest {
   /**
-   * The name of the project.
-   * Format: projects/{project}
+   * The name of the GitOps info.
+   * Format: projects/{project}/gitOpsInfo
    */
-  project: string;
+  name: string;
 }
 
 export interface SetupSQLReviewCIRequest {
   /**
-   * The name of the project.
-   * Format: projects/{project}
+   * The name of the GitOps info.
+   * Format: projects/{project}/gitOpsInfo
    */
-  project: string;
+  name: string;
 }
 
 export interface SetupSQLReviewCIResponse {
@@ -584,6 +580,8 @@ export interface Binding {
    * If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.
    */
   condition?: Expr;
+  /** The parsed expression of the condition. */
+  parsedExpr?: ParsedExpr;
 }
 
 export interface AddWebhookRequest {
@@ -771,6 +769,8 @@ export enum Activity_Type {
   TYPE_ISSUE_FIELD_UPDATE = 3,
   /** TYPE_ISSUE_STATUS_UPDATE - TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. */
   TYPE_ISSUE_STATUS_UPDATE = 4,
+  /** TYPE_ISSUE_APPROVAL_NOTIFY - TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. */
+  TYPE_ISSUE_APPROVAL_NOTIFY = 21,
   /** TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. */
   TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5,
   /** TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
@@ -837,6 +837,9 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 4:
     case "TYPE_ISSUE_STATUS_UPDATE":
       return Activity_Type.TYPE_ISSUE_STATUS_UPDATE;
+    case 21:
+    case "TYPE_ISSUE_APPROVAL_NOTIFY":
+      return Activity_Type.TYPE_ISSUE_APPROVAL_NOTIFY;
     case 5:
     case "TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE":
       return Activity_Type.TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE;
@@ -904,6 +907,8 @@ export function activity_TypeToJSON(object: Activity_Type): string {
       return "TYPE_ISSUE_FIELD_UPDATE";
     case Activity_Type.TYPE_ISSUE_STATUS_UPDATE:
       return "TYPE_ISSUE_STATUS_UPDATE";
+    case Activity_Type.TYPE_ISSUE_APPROVAL_NOTIFY:
+      return "TYPE_ISSUE_APPROVAL_NOTIFY";
     case Activity_Type.TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
       return "TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE";
     case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE:
@@ -2278,15 +2283,12 @@ export const UpdateDeploymentConfigRequest = {
   },
 };
 
-function createBaseSetProjectGitOpsInfoRequest(): SetProjectGitOpsInfoRequest {
-  return { project: "", projectGitopsInfo: undefined, updateMask: undefined, allowMissing: false };
+function createBaseUpdateProjectGitOpsInfoRequest(): UpdateProjectGitOpsInfoRequest {
+  return { projectGitopsInfo: undefined, updateMask: undefined, allowMissing: false };
 }
 
-export const SetProjectGitOpsInfoRequest = {
-  encode(message: SetProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.project !== "") {
-      writer.uint32(10).string(message.project);
-    }
+export const UpdateProjectGitOpsInfoRequest = {
+  encode(message: UpdateProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.projectGitopsInfo !== undefined) {
       ProjectGitOpsInfo.encode(message.projectGitopsInfo, writer.uint32(18).fork()).ldelim();
     }
@@ -2299,20 +2301,13 @@ export const SetProjectGitOpsInfoRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SetProjectGitOpsInfoRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateProjectGitOpsInfoRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetProjectGitOpsInfoRequest();
+    const message = createBaseUpdateProjectGitOpsInfoRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.project = reader.string();
-          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -2343,9 +2338,8 @@ export const SetProjectGitOpsInfoRequest = {
     return message;
   },
 
-  fromJSON(object: any): SetProjectGitOpsInfoRequest {
+  fromJSON(object: any): UpdateProjectGitOpsInfoRequest {
     return {
-      project: isSet(object.project) ? String(object.project) : "",
       projectGitopsInfo: isSet(object.projectGitopsInfo)
         ? ProjectGitOpsInfo.fromJSON(object.projectGitopsInfo)
         : undefined,
@@ -2354,9 +2348,8 @@ export const SetProjectGitOpsInfoRequest = {
     };
   },
 
-  toJSON(message: SetProjectGitOpsInfoRequest): unknown {
+  toJSON(message: UpdateProjectGitOpsInfoRequest): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project);
     message.projectGitopsInfo !== undefined && (obj.projectGitopsInfo = message.projectGitopsInfo
       ? ProjectGitOpsInfo.toJSON(message.projectGitopsInfo)
       : undefined);
@@ -2365,13 +2358,12 @@ export const SetProjectGitOpsInfoRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<SetProjectGitOpsInfoRequest>): SetProjectGitOpsInfoRequest {
-    return SetProjectGitOpsInfoRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UpdateProjectGitOpsInfoRequest>): UpdateProjectGitOpsInfoRequest {
+    return UpdateProjectGitOpsInfoRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SetProjectGitOpsInfoRequest>): SetProjectGitOpsInfoRequest {
-    const message = createBaseSetProjectGitOpsInfoRequest();
-    message.project = object.project ?? "";
+  fromPartial(object: DeepPartial<UpdateProjectGitOpsInfoRequest>): UpdateProjectGitOpsInfoRequest {
+    const message = createBaseUpdateProjectGitOpsInfoRequest();
     message.projectGitopsInfo = (object.projectGitopsInfo !== undefined && object.projectGitopsInfo !== null)
       ? ProjectGitOpsInfo.fromPartial(object.projectGitopsInfo)
       : undefined;
@@ -2381,22 +2373,22 @@ export const SetProjectGitOpsInfoRequest = {
   },
 };
 
-function createBaseDeleteProjectGitOpsInfoRequest(): DeleteProjectGitOpsInfoRequest {
-  return { project: "" };
+function createBaseUnsetProjectGitOpsInfoRequest(): UnsetProjectGitOpsInfoRequest {
+  return { name: "" };
 }
 
-export const DeleteProjectGitOpsInfoRequest = {
-  encode(message: DeleteProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.project !== "") {
-      writer.uint32(10).string(message.project);
+export const UnsetProjectGitOpsInfoRequest = {
+  encode(message: UnsetProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteProjectGitOpsInfoRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UnsetProjectGitOpsInfoRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteProjectGitOpsInfoRequest();
+    const message = createBaseUnsetProjectGitOpsInfoRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2405,7 +2397,7 @@ export const DeleteProjectGitOpsInfoRequest = {
             break;
           }
 
-          message.project = reader.string();
+          message.name = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2416,35 +2408,35 @@ export const DeleteProjectGitOpsInfoRequest = {
     return message;
   },
 
-  fromJSON(object: any): DeleteProjectGitOpsInfoRequest {
-    return { project: isSet(object.project) ? String(object.project) : "" };
+  fromJSON(object: any): UnsetProjectGitOpsInfoRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
-  toJSON(message: DeleteProjectGitOpsInfoRequest): unknown {
+  toJSON(message: UnsetProjectGitOpsInfoRequest): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
-  create(base?: DeepPartial<DeleteProjectGitOpsInfoRequest>): DeleteProjectGitOpsInfoRequest {
-    return DeleteProjectGitOpsInfoRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UnsetProjectGitOpsInfoRequest>): UnsetProjectGitOpsInfoRequest {
+    return UnsetProjectGitOpsInfoRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<DeleteProjectGitOpsInfoRequest>): DeleteProjectGitOpsInfoRequest {
-    const message = createBaseDeleteProjectGitOpsInfoRequest();
-    message.project = object.project ?? "";
+  fromPartial(object: DeepPartial<UnsetProjectGitOpsInfoRequest>): UnsetProjectGitOpsInfoRequest {
+    const message = createBaseUnsetProjectGitOpsInfoRequest();
+    message.name = object.name ?? "";
     return message;
   },
 };
 
 function createBaseGetProjectGitOpsInfoRequest(): GetProjectGitOpsInfoRequest {
-  return { project: "" };
+  return { name: "" };
 }
 
 export const GetProjectGitOpsInfoRequest = {
   encode(message: GetProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.project !== "") {
-      writer.uint32(10).string(message.project);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     return writer;
   },
@@ -2461,7 +2453,7 @@ export const GetProjectGitOpsInfoRequest = {
             break;
           }
 
-          message.project = reader.string();
+          message.name = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2473,12 +2465,12 @@ export const GetProjectGitOpsInfoRequest = {
   },
 
   fromJSON(object: any): GetProjectGitOpsInfoRequest {
-    return { project: isSet(object.project) ? String(object.project) : "" };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: GetProjectGitOpsInfoRequest): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -2488,19 +2480,19 @@ export const GetProjectGitOpsInfoRequest = {
 
   fromPartial(object: DeepPartial<GetProjectGitOpsInfoRequest>): GetProjectGitOpsInfoRequest {
     const message = createBaseGetProjectGitOpsInfoRequest();
-    message.project = object.project ?? "";
+    message.name = object.name ?? "";
     return message;
   },
 };
 
 function createBaseSetupSQLReviewCIRequest(): SetupSQLReviewCIRequest {
-  return { project: "" };
+  return { name: "" };
 }
 
 export const SetupSQLReviewCIRequest = {
   encode(message: SetupSQLReviewCIRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.project !== "") {
-      writer.uint32(10).string(message.project);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     return writer;
   },
@@ -2517,7 +2509,7 @@ export const SetupSQLReviewCIRequest = {
             break;
           }
 
-          message.project = reader.string();
+          message.name = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2529,12 +2521,12 @@ export const SetupSQLReviewCIRequest = {
   },
 
   fromJSON(object: any): SetupSQLReviewCIRequest {
-    return { project: isSet(object.project) ? String(object.project) : "" };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: SetupSQLReviewCIRequest): unknown {
     const obj: any = {};
-    message.project !== undefined && (obj.project = message.project);
+    message.name !== undefined && (obj.name = message.name);
     return obj;
   },
 
@@ -2544,7 +2536,7 @@ export const SetupSQLReviewCIRequest = {
 
   fromPartial(object: DeepPartial<SetupSQLReviewCIRequest>): SetupSQLReviewCIRequest {
     const message = createBaseSetupSQLReviewCIRequest();
-    message.project = object.project ?? "";
+    message.name = object.name ?? "";
     return message;
   },
 };
@@ -2884,7 +2876,7 @@ export const IamPolicy = {
 };
 
 function createBaseBinding(): Binding {
-  return { role: "", members: [], condition: undefined };
+  return { role: "", members: [], condition: undefined, parsedExpr: undefined };
 }
 
 export const Binding = {
@@ -2897,6 +2889,9 @@ export const Binding = {
     }
     if (message.condition !== undefined) {
       Expr.encode(message.condition, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.parsedExpr !== undefined) {
+      ParsedExpr.encode(message.parsedExpr, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -2929,6 +2924,13 @@ export const Binding = {
 
           message.condition = Expr.decode(reader, reader.uint32());
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.parsedExpr = ParsedExpr.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2943,6 +2945,7 @@ export const Binding = {
       role: isSet(object.role) ? String(object.role) : "",
       members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+      parsedExpr: isSet(object.parsedExpr) ? ParsedExpr.fromJSON(object.parsedExpr) : undefined,
     };
   },
 
@@ -2955,6 +2958,8 @@ export const Binding = {
       obj.members = [];
     }
     message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    message.parsedExpr !== undefined &&
+      (obj.parsedExpr = message.parsedExpr ? ParsedExpr.toJSON(message.parsedExpr) : undefined);
     return obj;
   },
 
@@ -2968,6 +2973,9 @@ export const Binding = {
     message.members = object.members?.map((e) => e) || [];
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
+      : undefined;
+    message.parsedExpr = (object.parsedExpr !== undefined && object.parsedExpr !== null)
+      ? ParsedExpr.fromPartial(object.parsedExpr)
       : undefined;
     return message;
   },
@@ -6114,9 +6122,9 @@ export const ProjectServiceDefinition = {
         },
       },
     },
-    setProjectGitOpsInfo: {
-      name: "SetProjectGitOpsInfo",
-      requestType: SetProjectGitOpsInfoRequest,
+    updateProjectGitOpsInfo: {
+      name: "UpdateProjectGitOpsInfo",
+      requestType: UpdateProjectGitOpsInfoRequest,
       requestStream: false,
       responseType: ProjectGitOpsInfo,
       responseStream: false,
@@ -6124,12 +6132,12 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              40,
+              57,
               58,
               1,
               42,
-              26,
-              35,
+              34,
+              52,
               47,
               118,
               49,
@@ -6142,6 +6150,23 @@ export const ProjectServiceDefinition = {
               101,
               99,
               116,
+              95,
+              103,
+              105,
+              116,
+              111,
+              112,
+              115,
+              95,
+              105,
+              110,
+              102,
+              111,
+              46,
+              110,
+              97,
+              109,
+              101,
               61,
               112,
               114,
@@ -6153,7 +6178,6 @@ export const ProjectServiceDefinition = {
               115,
               47,
               42,
-              125,
               47,
               103,
               105,
@@ -6165,14 +6189,15 @@ export const ProjectServiceDefinition = {
               110,
               102,
               111,
+              125,
             ]),
           ],
         },
       },
     },
-    deleteProjectGitOpsInfo: {
-      name: "DeleteProjectGitOpsInfo",
-      requestType: DeleteProjectGitOpsInfoRequest,
+    unsetProjectGitOpsInfo: {
+      name: "UnsetProjectGitOpsInfo",
+      requestType: UnsetProjectGitOpsInfoRequest,
       requestStream: false,
       responseType: Empty,
       responseStream: false,
@@ -6181,21 +6206,18 @@ export const ProjectServiceDefinition = {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              37,
+              34,
               42,
-              35,
+              32,
               47,
               118,
               49,
               47,
               123,
-              112,
-              114,
-              111,
-              106,
+              110,
+              97,
+              109,
               101,
-              99,
-              116,
               61,
               112,
               114,
@@ -6207,7 +6229,6 @@ export const ProjectServiceDefinition = {
               115,
               47,
               42,
-              125,
               47,
               103,
               105,
@@ -6219,6 +6240,7 @@ export const ProjectServiceDefinition = {
               110,
               102,
               111,
+              125,
             ]),
           ],
         },
@@ -6234,24 +6256,21 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              57,
+              54,
               58,
               1,
               42,
               50,
-              52,
+              49,
               47,
               118,
               49,
               47,
               123,
-              112,
-              114,
-              111,
-              106,
+              110,
+              97,
+              109,
               101,
-              99,
-              116,
               61,
               112,
               114,
@@ -6263,7 +6282,6 @@ export const ProjectServiceDefinition = {
               115,
               47,
               42,
-              125,
               47,
               103,
               105,
@@ -6275,6 +6293,7 @@ export const ProjectServiceDefinition = {
               110,
               102,
               111,
+              125,
               58,
               115,
               101,
@@ -6307,21 +6326,18 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              37,
+              34,
               18,
-              35,
+              32,
               47,
               118,
               49,
               47,
               123,
-              112,
-              114,
-              111,
-              106,
+              110,
+              97,
+              109,
               101,
-              99,
-              116,
               61,
               112,
               114,
@@ -6333,7 +6349,6 @@ export const ProjectServiceDefinition = {
               115,
               47,
               42,
-              125,
               47,
               103,
               105,
@@ -6345,6 +6360,7 @@ export const ProjectServiceDefinition = {
               110,
               102,
               111,
+              125,
             ]),
           ],
         },
@@ -7231,12 +7247,12 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
     request: TestWebhookRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<TestWebhookResponse>>;
-  setProjectGitOpsInfo(
-    request: SetProjectGitOpsInfoRequest,
+  updateProjectGitOpsInfo(
+    request: UpdateProjectGitOpsInfoRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ProjectGitOpsInfo>>;
-  deleteProjectGitOpsInfo(
-    request: DeleteProjectGitOpsInfoRequest,
+  unsetProjectGitOpsInfo(
+    request: UnsetProjectGitOpsInfoRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
   setupProjectSQLReviewCI(
@@ -7328,12 +7344,12 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<TestWebhookRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<TestWebhookResponse>;
-  setProjectGitOpsInfo(
-    request: DeepPartial<SetProjectGitOpsInfoRequest>,
+  updateProjectGitOpsInfo(
+    request: DeepPartial<UpdateProjectGitOpsInfoRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ProjectGitOpsInfo>;
-  deleteProjectGitOpsInfo(
-    request: DeepPartial<DeleteProjectGitOpsInfoRequest>,
+  unsetProjectGitOpsInfo(
+    request: DeepPartial<UnsetProjectGitOpsInfoRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
   setupProjectSQLReviewCI(

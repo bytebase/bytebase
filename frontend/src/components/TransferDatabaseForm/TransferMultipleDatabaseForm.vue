@@ -1,147 +1,149 @@
 <template>
-  <div class="px-4 w-[60rem]">
-    <slot name="transfer-source-selector" />
-
-    <NCollapse
-      class="overflow-y-auto"
-      style="max-height: calc(100vh - 380px)"
-      arrow-placement="left"
-      :default-expanded-names="environmentList.map((env) => env.uid)"
+  <DrawerContent :title="$t('quick-action.transfer-in-db-title')">
+    <div
+      class="px-4 w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)]"
     >
-      <NCollapseItem
-        v-for="{
-          environment,
-          databaseList: databaseListInEnvironment,
-        } in databaseListGroupByEnvironment"
-        :key="environment.uid"
-        :name="environment.uid"
+      <slot name="transfer-source-selector" />
+
+      <NCollapse
+        arrow-placement="left"
+        :default-expanded-names="environmentList.map((env) => env.uid)"
       >
-        <template #header>
-          <label class="flex items-center gap-x-2" @click.stop="">
-            <input
-              type="checkbox"
-              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent ml-0.5"
-              v-bind="
-                getAllSelectionStateForEnvironment(
-                  environment,
-                  databaseListInEnvironment
-                )
-              "
-              @click.stop=""
-              @input="
-                toggleAllDatabasesSelectionForEnvironment(
-                  environment,
-                  databaseListInEnvironment,
-                  ($event.target as HTMLInputElement).checked
-                )
-              "
-            />
-            <div>{{ environment.title }}</div>
-            <ProductionEnvironmentV1Icon :environment="environment" />
-          </label>
-        </template>
-
-        <template #header-extra>
-          <div class="flex items-center text-xs text-gray-500 mr-2">
-            {{
-              $t(
-                "database.n-selected-m-in-total",
-                getSelectionStateSummaryForEnvironment(
-                  environment,
-                  databaseListInEnvironment
-                )
-              )
-            }}
-          </div>
-        </template>
-
-        <BBGrid
-          class="relative bg-white border"
-          :column-list="gridColumnList"
-          :show-header="false"
-          :data-source="databaseListInEnvironment"
-          row-key="id"
-          @click-row="handleClickRow"
+        <NCollapseItem
+          v-for="{
+            environment,
+            databaseList: databaseListInEnvironment,
+          } in databaseListGroupByEnvironment"
+          :key="environment.uid"
+          :name="environment.uid"
         >
-          <template #item="{ item: database }: { item: ComposedDatabase }">
-            <div class="bb-grid-cell gap-x-2 !pl-[23px]">
+          <template #header>
+            <label class="flex items-center gap-x-2" @click.stop="">
               <input
                 type="checkbox"
-                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent"
-                :checked="
-                  isDatabaseSelectedForEnvironment(
-                    database.uid,
-                    environment.uid
+                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent ml-0.5"
+                v-bind="
+                  getAllSelectionStateForEnvironment(
+                    environment,
+                    databaseListInEnvironment
                   )
                 "
-                @input="(e: any) => toggleDatabaseIdForEnvironment(database.uid, environment.uid, e.target.checked)"
                 @click.stop=""
+                @input="
+                  toggleAllDatabasesSelectionForEnvironment(
+                    environment,
+                    databaseListInEnvironment,
+                    ($event.target as HTMLInputElement).checked
+                  )
+                "
               />
-              <span
-                class="font-medium text-main"
-                :class="database.syncState !== State.ACTIVE && 'opacity-40'"
-                >{{ database.databaseName }}</span
-              >
-            </div>
-            <div v-if="showProjectColumn" class="bb-grid-cell">
-              {{ database.projectEntity.title }}
-            </div>
-            <div class="bb-grid-cell gap-x-1 textinfolabel justify-end">
-              <InstanceV1Name
-                :instance="database.instanceEntity"
-                :link="false"
-              />
+              <div>{{ environment.title }}</div>
+              <ProductionEnvironmentV1Icon :environment="environment" />
+            </label>
+          </template>
+
+          <template #header-extra>
+            <div class="flex items-center text-xs text-gray-500 mr-2">
+              {{
+                $t(
+                  "database.n-selected-m-in-total",
+                  getSelectionStateSummaryForEnvironment(
+                    environment,
+                    databaseListInEnvironment
+                  )
+                )
+              }}
             </div>
           </template>
-        </BBGrid>
-      </NCollapseItem>
-    </NCollapse>
 
-    <!-- Update button group -->
-    <div class="mt-4 pt-4 border-t border-block-border flex justify-between">
-      <div>
-        <div
-          v-if="combinedSelectedDatabaseUidList.length > 0"
-          class="textinfolabel"
-        >
-          {{
-            $t("database.selected-n-databases", {
-              n: combinedSelectedDatabaseUidList.length,
-            })
-          }}
+          <BBGrid
+            class="relative bg-white border"
+            :column-list="gridColumnList"
+            :show-header="false"
+            :data-source="databaseListInEnvironment"
+            row-key="id"
+            @click-row="handleClickRow"
+          >
+            <template #item="{ item: database }: { item: ComposedDatabase }">
+              <div class="bb-grid-cell gap-x-2 !pl-[23px]">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent"
+                  :checked="
+                    isDatabaseSelectedForEnvironment(
+                      database.uid,
+                      environment.uid
+                    )
+                  "
+                  @input="(e: any) => toggleDatabaseIdForEnvironment(database.uid, environment.uid, e.target.checked)"
+                  @click.stop=""
+                />
+                <span
+                  class="font-medium text-main"
+                  :class="database.syncState !== State.ACTIVE && 'opacity-40'"
+                  >{{ database.databaseName }}</span
+                >
+              </div>
+              <div v-if="showProjectColumn" class="bb-grid-cell">
+                {{ database.projectEntity.title }}
+              </div>
+              <div class="bb-grid-cell gap-x-1 textinfolabel justify-end">
+                <InstanceV1Name
+                  :instance="database.instanceEntity"
+                  :link="false"
+                />
+              </div>
+            </template>
+          </BBGrid>
+        </NCollapseItem>
+      </NCollapse>
+    </div>
+
+    <template #footer>
+      <div class="flex-1 flex items-center justify-between">
+        <div>
+          <div
+            v-if="combinedSelectedDatabaseUidList.length > 0"
+            class="textinfolabel"
+          >
+            {{
+              $t("database.selected-n-databases", {
+                n: combinedSelectedDatabaseUidList.length,
+              })
+            }}
+          </div>
+        </div>
+        <div class="flex items-center gap-x-3">
+          <NButton @click.prevent="$emit('dismiss')">
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton
+            type="primary"
+            :disabled="!allowTransfer"
+            @click.prevent="transferDatabase"
+          >
+            {{ $t("common.transfer") }}
+          </NButton>
         </div>
       </div>
-      <div class="flex items-center">
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="$emit('dismiss')"
-        >
-          {{ $t("common.cancel") }}
-        </button>
-        <button
-          type="button"
-          class="btn-primary py-2 px-4 ml-3"
-          :disabled="!allowTransfer"
-          @click.prevent="transferDatabase"
-        >
-          {{ $t("common.transfer") }}
-        </button>
-      </div>
-    </div>
-  </div>
+    </template>
+  </DrawerContent>
 </template>
 
 <script lang="ts" setup>
 import { computed, PropType, reactive, watch } from "vue";
-import { NCollapse, NCollapseItem } from "naive-ui";
+import { NButton, NCollapse, NCollapseItem } from "naive-ui";
 
 import { type BBGridColumn, BBGrid } from "@/bbkit";
 import { ComposedDatabase } from "@/types";
 import { TransferSource } from "./utils";
 import { useDatabaseV1Store, useEnvironmentV1List } from "@/store";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { InstanceV1Name, ProductionEnvironmentV1Icon } from "../v2";
+import {
+  DrawerContent,
+  InstanceV1Name,
+  ProductionEnvironmentV1Icon,
+} from "../v2";
 import { State } from "@/types/proto/v1/common";
 
 type LocalState = {

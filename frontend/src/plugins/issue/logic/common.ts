@@ -55,24 +55,9 @@ export const findDatabaseListByQuery = (
   return databaseList;
 };
 
-export const findDatabaseGroupAndSchemaGroupListByQuery = (
+export const findDatabaseGroupNameByQuery = (
   context: BuildNewIssueContext
-):
-  | {
-      databaseGroupName: string;
-      schemaGroupNameList: string[];
-    }
-  | undefined => {
+): string | undefined => {
   const { route } = context;
-  const databaseGroupName = route.query.databaseGroupName as string;
-  if (!databaseGroupName) {
-    return undefined;
-  }
-
-  const schemaGroupNames = (route.query.schemaGroupNames as string) || "";
-  const schemaGroupNameList: string[] = schemaGroupNames.split(",");
-  return {
-    databaseGroupName: databaseGroupName,
-    schemaGroupNameList: schemaGroupNameList,
-  };
+  return (route.query.databaseGroupName as string) || undefined;
 };

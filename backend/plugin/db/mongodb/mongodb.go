@@ -248,3 +248,8 @@ func (driver *Driver) QueryConn2(ctx context.Context, _ *sql.Conn, statement str
 		Rows:            rows,
 	}}, nil
 }
+
+// RunStatement runs a SQL statement in a given connection.
+func (driver *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	return driver.QueryConn2(ctx, nil, statement, nil)
+}

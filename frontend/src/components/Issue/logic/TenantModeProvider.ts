@@ -16,6 +16,7 @@ import {
   MigrationContext,
   SheetId,
   UNKNOWN_ID,
+  MigrationDetail,
 } from "@/types";
 import {
   errorAssertion,
@@ -32,16 +33,22 @@ import {
   Sheet_Source,
   Sheet_Type,
 } from "@/types/proto/v1/sheet_service";
+import { useRoute } from "vue-router";
 
 export default defineComponent({
   name: "TenantModeProvider",
   setup() {
     const { create, issue, selectedTask, createIssue, onStatusChanged } =
       useIssueLogic();
+    const route = useRoute();
     const databaseStore = useDatabaseV1Store();
     const sheetV1Store = useSheetV1Store();
     const projectV1Store = useProjectV1Store();
     const taskStore = useTaskStore();
+
+    const isGroupingIssue = computed(() => {
+      return route.query.databaseGroupName !== "";
+    });
 
     const allowEditStatement = computed(() => {
       if (create.value) {
@@ -54,6 +61,10 @@ export default defineComponent({
     // In tenant mode, the entire issue shares only one SQL statement
     const selectedStatement = computed(() => {
       if (create.value) {
+        if (isGroupingIssue.value) {
+          return selectedTask.value.statement || "";
+        }
+
         const issueCreate = issue.value as IssueCreate;
         const context = issueCreate.createContext as MigrationContext;
         return context.detailList[0].statement;
@@ -72,6 +83,11 @@ export default defineComponent({
 
     const updateStatement = async (newStatement: string) => {
       if (create.value) {
+        // For grouping issue, we don't allow to modify statement.
+        if (isGroupingIssue.value) {
+          return;
+        }
+
         // For tenant deploy mode, we apply the statement to all stages and all tasks
         const allTaskList = flattenTaskList<TaskCreate>(issue.value);
         allTaskList.forEach((task) => {
@@ -151,6 +167,29 @@ export default defineComponent({
         // throw error
         return;
       }
+      // For those database group issues, we create issue directly instead of creating sheets.
+      if (route.query.databaseGroupName) {
+        const taskList = flattenTaskList(issueCreate);
+        context.detailList = [];
+        for (const task of taskList) {
+          const migrationDetail: MigrationDetail = {
+            migrationType: detail.migrationType,
+            earliestAllowedTs: detail.earliestAllowedTs,
+            databaseGroupName: route.query.databaseGroupName as string,
+            databaseId: (task as any).databaseId,
+            statement: (task as any).statement,
+            sheetId: (task as any).sheetId,
+          };
+          const payload = (task as Task).payload;
+          if (payload && (payload as any).schemaGroupName) {
+            migrationDetail.schemaGroupName = (payload as any).schemaGroupName;
+          }
+          context.detailList.push(migrationDetail);
+        }
+        createIssue(issueCreate);
+        return;
+      }
+
       const db = databaseStore.getDatabaseByUID(String(detail.databaseId!));
       if (!detail.sheetId || detail.sheetId === UNKNOWN_ID) {
         const statement = maybeFormatStatementOnSave(detail.statement, db);

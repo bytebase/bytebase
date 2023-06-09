@@ -103,7 +103,7 @@ Bytebase records very detailed migration histories. The history is stored on the
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/plugin/db/mysql/mysql_migration_schema.sql?L5-44
 
-This detailed history schema info enables Bytebase to implement powerful features such as [Drift Detection](https://www.bytebase.com/docs/anomaly-detection/drift-detection), [Tenant Database Batch Change](https://www.bytebase.com/docs/batch-change/multi-tenant-change).
+This detailed history schema info enables Bytebase to implement powerful features such as [Drift Detection](https://www.bytebase.com/docs/change-database/drift-detection), [Tenant Database Batch Change](https://www.bytebase.com/docs/change-database/batch-change/#change-databases-from-multiple-tenants).
 
 ### How a task check is scheduled
 

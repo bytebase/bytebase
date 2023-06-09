@@ -135,7 +135,7 @@ const stop = () => {
 
   state.client.then((client) => {
     state.pendingCommands.clear();
-    client.stop();
+    client.isRunning() && client.stop();
   });
 };
 

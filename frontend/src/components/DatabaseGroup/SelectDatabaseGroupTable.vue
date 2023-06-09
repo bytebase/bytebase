@@ -22,60 +22,36 @@
       </div>
       <div class="bb-grid-cell">{{ dbGroup.project.title }}</div>
       <div class="bb-grid-cell">{{ dbGroup.environment.title }}</div>
-      <template v-if="state.selectedDatabaseGroupName === dbGroup.name">
-        <template
-          v-for="schemaGroup in getSchemaGroupListByDBGroupName(dbGroup.name)"
-          :key="schemaGroup.name"
-        >
-          <div class="bb-grid-cell"></div>
-          <div class="bb-grid-cell">
-            <NCheckbox
-              :checked="
-                state.selectedSchemaGroupNameList?.includes(schemaGroup.name)
-              "
-              @update-checked="handleSchemaGroupCheck(schemaGroup)"
-            >
-              <span>{{ getSchemaGroupTitle(schemaGroup.name) }}</span>
-            </NCheckbox>
-          </div>
-          <div class="bb-grid-cell"></div>
-          <div class="bb-grid-cell"></div>
-        </template>
-      </template>
     </template>
   </BBGrid>
 </template>
 
 <script lang="ts" setup>
-import { NRadio, NCheckbox } from "naive-ui";
+import { NRadio } from "naive-ui";
 import { ref, watch, reactive, computed } from "vue";
 import { useDBGroupStore } from "@/store";
 import { ComposedDatabaseGroup } from "@/types";
 import { SchemaGroup } from "@/types/proto/v1/project_service";
-import { getProjectNameAndDatabaseGroupNameAndSchemaGroupName } from "@/store/modules/v1/common";
 import { BBGridColumn } from "@/bbkit";
 import { useI18n } from "vue-i18n";
 
 interface LocalState {
   selectedDatabaseGroupName?: string;
-  selectedSchemaGroupNameList: string[];
 }
 
 const props = defineProps<{
   databaseGroupList: ComposedDatabaseGroup[];
   selectedDatabaseGroupName?: string;
-  selectedSchemaGroupNameList?: string[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update", dbGroupName: string, schemaGroupNameList: string[]): void;
+  (event: "update", dbGroupName: string): void;
 }>();
 
 const { t } = useI18n();
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   selectedDatabaseGroupName: props.selectedDatabaseGroupName,
-  selectedSchemaGroupNameList: props.selectedSchemaGroupNameList || [],
 });
 const schemaGroupListMap = ref<Map<string, SchemaGroup[]>>(new Map());
 
@@ -99,42 +75,13 @@ const COLUMN_LIST = computed(() => {
   return columns;
 });
 
-const getSchemaGroupListByDBGroupName = (name: string) => {
-  return schemaGroupListMap.value.get(name) || [];
-};
-
-const getSchemaGroupTitle = (name: string) => {
-  const [, , title] =
-    getProjectNameAndDatabaseGroupNameAndSchemaGroupName(name);
-  return title || "";
-};
-
 const handleDatabaseGroupSelect = (dbGroup: ComposedDatabaseGroup) => {
   if (state.selectedDatabaseGroupName === dbGroup.name) {
     return;
   }
 
   state.selectedDatabaseGroupName = dbGroup.name;
-  state.selectedSchemaGroupNameList = [];
-  emit(
-    "update",
-    state.selectedDatabaseGroupName || "",
-    state.selectedSchemaGroupNameList
-  );
-};
-
-const handleSchemaGroupCheck = (schemaGroup: SchemaGroup) => {
-  if (state.selectedSchemaGroupNameList.includes(schemaGroup.name)) {
-    state.selectedSchemaGroupNameList = [];
-  } else {
-    // Note: now we only support one schema group.
-    state.selectedSchemaGroupNameList = [schemaGroup.name];
-  }
-  emit(
-    "update",
-    state.selectedDatabaseGroupName || "",
-    state.selectedSchemaGroupNameList
-  );
+  emit("update", state.selectedDatabaseGroupName || "");
 };
 
 watch(

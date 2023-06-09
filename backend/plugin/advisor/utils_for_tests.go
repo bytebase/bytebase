@@ -254,6 +254,11 @@ func (*MockDriver) QueryConn2(_ context.Context, _ *sql.Conn, _ string, _ *datab
 	return nil, nil
 }
 
+// RunStatement implements the Driver interface.
+func (*MockDriver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
+	return nil, nil
+}
+
 // QueryConn implements the Driver interface.
 func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *database.QueryContext) ([]any, error) {
 	switch statement {

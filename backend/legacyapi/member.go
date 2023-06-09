@@ -29,33 +29,3 @@ const (
 	// UnknownRole is the unknown role.
 	UnknownRole Role = "UNKNOWN"
 )
-
-// Member is the API message for a member.
-type Member struct {
-	ID int `jsonapi:"primary,member"`
-
-	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-
-	// Domain specific fields
-	Status      MemberStatus `jsonapi:"attr,status"`
-	Role        Role         `jsonapi:"attr,role"`
-	PrincipalID int
-	Principal   *Principal `jsonapi:"relation,principal"`
-}
-
-// MemberCreate is the API message for creating a member.
-type MemberCreate struct {
-	// Domain specific fields
-	Role        Role `jsonapi:"attr,role"`
-	PrincipalID int  `jsonapi:"attr,principalId"`
-}
-
-// MemberPatch is the API message for patching a member.
-type MemberPatch struct {
-	ID int
-
-	// Standard fields
-	RowStatus *string `jsonapi:"attr,rowStatus"`
-	// Domain specific fields
-	Role *string `jsonapi:"attr,role"`
-}

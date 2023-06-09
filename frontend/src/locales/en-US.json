@@ -251,7 +251,8 @@
       "years": "{years} year"
     },
     "expiration": "Expiration",
-    "configure": "Configure"
+    "configure": "Configure",
+    "database-groups": "Database Groups"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -404,6 +405,8 @@
     "profile": {
       "email": "Email",
       "role": "Role",
+      "phone": "Phone",
+      "country-code": "Country Code",
       "password": "Password",
       "password-confirm": "Confirm",
       "password-confirm-placeholder": "Confirm new password",
@@ -1161,7 +1164,7 @@
       "restore-before-last-migration": "Restore to the point before last migration",
       "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}.",
       "restore-to": "Restore",
-      "restore-to-new-db": " To new database",
+      "restore-to-new-db": "To new database",
       "restore-to-in-place": "In place"
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
@@ -1402,7 +1405,8 @@
         "view-doc": "View {destination}'s doc"
       },
       "deletion": {
-        "btn-text": "Delete this webhook"
+        "btn-text": "Delete this webhook",
+        "confirm-title": "Delete webhook '{title}' and all its execution history?"
       },
       "activity-item": {
         "issue-creation": {
@@ -1428,6 +1432,10 @@
         "issue-comment-creation": {
           "title": "Issue comment creation",
           "label": "When new issue comment has been created"
+        },
+        "issue-approval-notify": {
+          "title": "Issue approval needed",
+          "label": "When issue is pending approval"
         }
       }
     },
@@ -2008,9 +2016,9 @@
         "title": "Encrypted Secrets",
         "desc": "Store your secrets of database and use them in your issue SQL scripts."
       },
-      "bb-feature-sharding": {
-        "title": "Database/schema group",
-        "desc": "Easy to manage database/table sharding with database groups."
+      "bb-feature-database-grouping": {
+        "title": "Database Group",
+        "desc": "Database group allows you to apply batch operations to the databases from the database group."
       },
       "bb-feature-disallow-signup": {
         "title": "Disable self-service signup",
@@ -2446,7 +2454,10 @@
       },
       "you": "You",
       "generating-approval-flow": "Generating approval flow",
-      "approved-issue": "approved issue"
+      "approved-issue": "approved issue",
+      "disallow-approve-reason": {
+        "some-task-checks-didnt-pass": "Some task checks didn't pass"
+      }
     }
   },
   "slow-query": {
@@ -2524,7 +2535,7 @@
     "select-role": "Select role"
   },
   "database-group": {
-    "self": "Database group",
+    "self": "Database Group",
     "create": "New database group",
     "edit": "Edit database group",
     "matched-database": "Matched database",
@@ -2542,6 +2553,12 @@
     },
     "condition": {
       "self": "Condition"
+    },
+    "prev-editor": {
+      "description": "To batch change tables from the table group, you can reference that table group in SQL. Bytebase will generate a separate SQL for each table in the table group."
     }
+  },
+  "export-center": {
+    "self": "Export Center"
   }
 }

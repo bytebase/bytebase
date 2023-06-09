@@ -176,7 +176,7 @@ export interface BatchUpdateDatabasesResponse {
 export interface GetDatabaseMetadataRequest {
   /**
    * The name of the database to retrieve metadata.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}/metadata
    */
   name: string;
 }
@@ -184,7 +184,7 @@ export interface GetDatabaseMetadataRequest {
 export interface GetDatabaseSchemaRequest {
   /**
    * The name of the database to retrieve schema.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database}/schema
    */
   name: string;
   /** Format the schema dump into SDL format. */
@@ -214,8 +214,8 @@ export interface CreateBackupRequest {
   backup?: Backup;
 }
 
-/** ListBackupRequest is the request message for ListBackup. */
-export interface ListBackupRequest {
+/** ListBackupsRequest is the request message for ListBackup. */
+export interface ListBackupsRequest {
   /**
    * The parent resource where this backup will be created.
    * Format: instances/{instance}/databases/{database}
@@ -238,7 +238,7 @@ export interface ListBackupRequest {
   pageToken: string;
 }
 
-export interface ListBackupResponse {
+export interface ListBackupsResponse {
   /** The backups from the specified request. */
   backups: Backup[];
   /**
@@ -456,7 +456,7 @@ export interface DatabaseSchema {
 export interface BackupSetting {
   /**
    * The name of the database backup setting.
-   * Format: instances/{instance}/databases/{database}/backupSettings
+   * Format: instances/{instance}/databases/{database}/backupSetting
    */
   name: string;
   /**
@@ -473,7 +473,7 @@ export interface BackupSetting {
    * Default (empty): Disable automatic backup.
    */
   cronSchedule: string;
-  /** hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created. */
+  /** hook_url(https://www.bytebase.com/docs/disaster-recovery/backup/#post-backup-webhook) is the URL to send a notification when a backup is created. */
   hookUrl: string;
 }
 
@@ -1929,12 +1929,12 @@ export const CreateBackupRequest = {
   },
 };
 
-function createBaseListBackupRequest(): ListBackupRequest {
+function createBaseListBackupsRequest(): ListBackupsRequest {
   return { parent: "", pageSize: 0, pageToken: "" };
 }
 
-export const ListBackupRequest = {
-  encode(message: ListBackupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListBackupsRequest = {
+  encode(message: ListBackupsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
@@ -1947,10 +1947,10 @@ export const ListBackupRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListBackupRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListBackupsRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListBackupRequest();
+    const message = createBaseListBackupsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1984,7 +1984,7 @@ export const ListBackupRequest = {
     return message;
   },
 
-  fromJSON(object: any): ListBackupRequest {
+  fromJSON(object: any): ListBackupsRequest {
     return {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
@@ -1992,7 +1992,7 @@ export const ListBackupRequest = {
     };
   },
 
-  toJSON(message: ListBackupRequest): unknown {
+  toJSON(message: ListBackupsRequest): unknown {
     const obj: any = {};
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
@@ -2000,12 +2000,12 @@ export const ListBackupRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListBackupRequest>): ListBackupRequest {
-    return ListBackupRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListBackupsRequest>): ListBackupsRequest {
+    return ListBackupsRequest.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ListBackupRequest>): ListBackupRequest {
-    const message = createBaseListBackupRequest();
+  fromPartial(object: DeepPartial<ListBackupsRequest>): ListBackupsRequest {
+    const message = createBaseListBackupsRequest();
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
@@ -2013,12 +2013,12 @@ export const ListBackupRequest = {
   },
 };
 
-function createBaseListBackupResponse(): ListBackupResponse {
+function createBaseListBackupsResponse(): ListBackupsResponse {
   return { backups: [], nextPageToken: "" };
 }
 
-export const ListBackupResponse = {
-  encode(message: ListBackupResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListBackupsResponse = {
+  encode(message: ListBackupsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.backups) {
       Backup.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -2028,10 +2028,10 @@ export const ListBackupResponse = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListBackupResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListBackupsResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListBackupResponse();
+    const message = createBaseListBackupsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2058,14 +2058,14 @@ export const ListBackupResponse = {
     return message;
   },
 
-  fromJSON(object: any): ListBackupResponse {
+  fromJSON(object: any): ListBackupsResponse {
     return {
       backups: Array.isArray(object?.backups) ? object.backups.map((e: any) => Backup.fromJSON(e)) : [],
       nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
     };
   },
 
-  toJSON(message: ListBackupResponse): unknown {
+  toJSON(message: ListBackupsResponse): unknown {
     const obj: any = {};
     if (message.backups) {
       obj.backups = message.backups.map((e) => e ? Backup.toJSON(e) : undefined);
@@ -2076,12 +2076,12 @@ export const ListBackupResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListBackupResponse>): ListBackupResponse {
-    return ListBackupResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListBackupsResponse>): ListBackupsResponse {
+    return ListBackupsResponse.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<ListBackupResponse>): ListBackupResponse {
-    const message = createBaseListBackupResponse();
+  fromPartial(object: DeepPartial<ListBackupsResponse>): ListBackupsResponse {
+    const message = createBaseListBackupsResponse();
     message.backups = object.backups?.map((e) => Backup.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
@@ -6272,11 +6272,11 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    listBackup: {
-      name: "ListBackup",
-      requestType: ListBackupRequest,
+    listBackups: {
+      name: "ListBackups",
+      requestType: ListBackupsRequest,
       requestStream: false,
-      responseType: ListBackupResponse,
+      responseType: ListBackupsResponse,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -6849,10 +6849,10 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BackupSetting>>;
   createBackup(request: CreateBackupRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Backup>>;
-  listBackup(
-    request: ListBackupRequest,
+  listBackups(
+    request: ListBackupsRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<ListBackupResponse>>;
+  ): Promise<DeepPartial<ListBackupsResponse>>;
   listSlowQueries(
     request: ListSlowQueriesRequest,
     context: CallContext & CallContextExt,
@@ -6913,10 +6913,10 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     options?: CallOptions & CallOptionsExt,
   ): Promise<BackupSetting>;
   createBackup(request: DeepPartial<CreateBackupRequest>, options?: CallOptions & CallOptionsExt): Promise<Backup>;
-  listBackup(
-    request: DeepPartial<ListBackupRequest>,
+  listBackups(
+    request: DeepPartial<ListBackupsRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<ListBackupResponse>;
+  ): Promise<ListBackupsResponse>;
   listSlowQueries(
     request: DeepPartial<ListSlowQueriesRequest>,
     options?: CallOptions & CallOptionsExt,

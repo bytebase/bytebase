@@ -75,25 +75,6 @@ func testFindPrincipalIDFromSheet(sheetID int, v string) int {
 	return id
 }
 
-func getProjectRolesFinderForTest(projectMemberMap map[int]map[common.ProjectRole][]int) func(projectID int, principalID int) (map[common.ProjectRole]bool, error) {
-	return func(projectID int, principalID int) (map[common.ProjectRole]bool, error) {
-		m, ok := projectMemberMap[projectID]
-		if !ok {
-			return nil, errors.Errorf("failed to get project iam policy for project %d", projectID)
-		}
-
-		projectRoles := make(map[common.ProjectRole]bool)
-		for role, ids := range m {
-			for _, id := range ids {
-				if id == principalID {
-					projectRoles[role] = true
-				}
-			}
-		}
-		return projectRoles, nil
-	}
-}
-
 var projectRolesFinderForTest = func(projectID int, principalID int) (map[common.ProjectRole]bool, error) {
 	m, ok := testProjectMemberMap[projectID]
 	if !ok {

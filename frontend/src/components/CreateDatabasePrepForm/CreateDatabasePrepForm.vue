@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
-    <div class="w-72 mx-12 space-y-4">
+    <div class="w-72 mx-auto space-y-4">
       <div class="w-full">
         <label for="project" class="textlabel">
           {{ $t("common.project") }} <span style="color: red">*</span>
@@ -199,25 +199,8 @@
         />
       </div>
     </div>
-
-    <!-- Create button group -->
-    <div class="w-full pt-4 flex justify-end">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="cancel"
-      >
-        {{ $t("common.cancel") }}
-      </button>
-      <button
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        :disabled="!allowCreate"
-        @click.prevent="create"
-      >
-        {{ $t("common.create") }}
-      </button>
-    </div>
   </div>
+
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.multi-tenancy"
@@ -237,16 +220,17 @@ import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { useEventListener } from "@vueuse/core";
 
+import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   DatabaseLabelForm,
   DatabaseNameTemplateTips,
   useDBNameTemplateInputState,
-} from "./CreateDatabasePrepForm/";
-import InstanceSelect from "./InstanceSelect.vue";
-import EnvironmentSelect from "./EnvironmentSelect.vue";
-import ProjectSelect from "./ProjectSelect.vue";
-import MemberSelect from "./MemberSelect.vue";
-import InstanceRoleSelect from "./InstanceRoleSelect.vue";
+} from "./";
+import InstanceSelect from "@/components/InstanceSelect.vue";
+import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
+import ProjectSelect from "@/components/ProjectSelect.vue";
+import MemberSelect from "@/components/MemberSelect.vue";
+import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
 import {
   IssueCreate,
   SYSTEM_BOT_ID,
@@ -257,7 +241,7 @@ import {
   PITRContext,
   ComposedInstance,
   unknownInstance,
-} from "../types";
+} from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import {
@@ -267,7 +251,7 @@ import {
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
   issueSlug,
-} from "../utils";
+} from "@/utils";
 import {
   hasFeature,
   useCurrentUserV1,
@@ -279,7 +263,6 @@ import {
 } from "@/store";
 import { UserRole } from "@/types/proto/v1/auth_service";
 import { Engine } from "@/types/proto/v1/common";
-import { InstanceV1EngineIcon } from "./v2";
 import { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { Backup } from "@/types/proto/v1/database_service";
 
@@ -602,5 +585,11 @@ watchEffect(() => {
   } else {
     delete labels[key];
   }
+});
+
+defineExpose({
+  allowCreate,
+  cancel,
+  create,
 });
 </script>

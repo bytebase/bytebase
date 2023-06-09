@@ -1,7 +1,7 @@
 <template>
   <div class="w-full space-y-4 text-sm">
     <div class="flex items-center gap-x-4">
-      <label class="w-1/4 flex justify-end textlabel">
+      <label class="w-1/4 flex justify-start textlabel">
         {{ $t("common.version") }}
       </label>
       <div class="flex-1">
@@ -16,7 +16,7 @@
     </div>
 
     <div v-if="changeHistory" class="flex items-center gap-x-4">
-      <label class="w-1/4 flex justify-end textlabel">
+      <label class="w-1/4 flex justify-start textlabel">
         {{ $t("common.issue") }}
       </label>
       <div class="flex-1">
@@ -31,7 +31,7 @@
     </div>
 
     <div class="flex items-start gap-x-4">
-      <label class="w-1/4 flex justify-end textlabel">
+      <label class="w-1/4 flex justify-start textlabel">
         {{ $t("common.sql") }}
       </label>
       <div class="flex-1">
@@ -58,7 +58,7 @@
     </div>
 
     <div class="flex items-center gap-x-4">
-      <label class="w-1/4 flex justify-end textlabel">
+      <label class="w-1/4 flex justify-start textlabel">
         {{ $t("common.created-at") }}
       </label>
       <div class="flex-1">
@@ -68,7 +68,7 @@
     </div>
 
     <div class="flex items-center gap-x-4">
-      <label class="w-1/4 flex justify-end textlabel">
+      <label class="w-1/4 flex justify-start textlabel">
         {{ $t("common.creator") }}
       </label>
       <div v-if="creator" class="flex-1">

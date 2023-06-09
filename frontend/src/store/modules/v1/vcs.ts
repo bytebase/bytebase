@@ -9,6 +9,22 @@ import { VCSId } from "@/types";
 export const useVCSV1Store = defineStore("vcs_v1", () => {
   const vcsMapByName = reactive(new Map<string, ExternalVersionControl>());
 
+  const listVCSExternalProjects = async (
+    vcsName: string,
+    accessToken: string,
+    refreshToken: string
+  ) => {
+    const resp =
+      await externalVersionControlServiceClient.searchExternalVersionControlProjects(
+        {
+          name: vcsName,
+          accessToken,
+          refreshToken,
+        }
+      );
+    return resp.projects;
+  };
+
   const fetchVCSList = async () => {
     const resp =
       await externalVersionControlServiceClient.listExternalVersionControls({});
@@ -44,6 +60,7 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     await externalVersionControlServiceClient.deleteExternalVersionControl({
       name,
     });
+    vcsMapByName.delete(name);
   };
 
   const createVCS = async (vcs: ExternalVersionControl) => {
@@ -74,6 +91,7 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
   };
 
   return {
+    listVCSExternalProjects,
     getVCSByUid,
     getVCSList,
     fetchVCSByName,

@@ -310,21 +310,20 @@ func (r *Runner) downloadBinlogFilesForInstance(ctx context.Context, instance *s
 func (r *Runner) startAutoBackups(ctx context.Context) {
 	// Find all databases that need a backup in this hour.
 	t := time.Now().UTC().Truncate(time.Hour)
-	match := &api.BackupSettingsMatch{
+	backupSettingList, err := r.store.FindBackupSettingsMatch(ctx, &store.BackupSettingsMatchMessage{
 		Hour:      t.Hour(),
 		DayOfWeek: int(t.Weekday()),
-	}
-	backupSettingList, err := r.store.FindBackupSettingsMatch(ctx, match)
+	})
 	if err != nil {
 		log.Error("Failed to retrieve backup settings match", zap.Error(err))
 		return
 	}
 
 	for _, backupSetting := range backupSettingList {
-		if _, ok := r.stateCfg.RunningBackupDatabases.Load(backupSetting.DatabaseID); ok {
+		if _, ok := r.stateCfg.RunningBackupDatabases.Load(backupSetting.DatabaseUID); ok {
 			continue
 		}
-		database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &backupSetting.DatabaseID})
+		database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &backupSetting.DatabaseUID})
 		if err != nil {
 			log.Error("Failed to get database", zap.Error(err))
 			return
@@ -371,7 +370,7 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 			continue
 		}
 
-		r.stateCfg.RunningBackupDatabases.Store(backupSetting.DatabaseID, true)
+		r.stateCfg.RunningBackupDatabases.Store(backupSetting.DatabaseUID, true)
 		go func(database *store.DatabaseMessage, backupName string, hookURL string) {
 			defer func() {
 				r.stateCfg.RunningBackupDatabases.Delete(database.UID)

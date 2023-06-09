@@ -27,7 +27,11 @@ export function convertToCELString(expr: SimpleExpr): string {
 function convertLogicalExprToCELString(expr: LogicalExpr): string {
   const operator = convertOperatorToCELString(expr.operator);
   const args = expr.args.map((arg) => convertToCELString(arg));
-  return `(${args.join(` ${operator} `)})`;
+  if (args.length > 0) {
+    return `(${args.join(` ${operator} `)})`;
+  } else {
+    return "";
+  }
 }
 
 function convertConditionExprToCELString(expr: ConditionExpr): string {

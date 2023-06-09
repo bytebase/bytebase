@@ -92,17 +92,16 @@
     </div>
   </div>
 
-  <BBModal
-    v-if="state.showCreateDatabaseModal"
+  <Drawer
+    v-model:show="state.showCreateDatabaseModal"
     :title="$t('quick-action.create-db')"
-    @close="state.showCreateDatabaseModal = false"
   >
-    <CreateDatabasePrepForm
+    <CreateDatabasePrepPanel
       :environment-id="environment?.uid"
       :instance-id="instance.uid"
       @dismiss="state.showCreateDatabaseModal = false"
     />
-  </BBModal>
+  </Drawer>
 
   <FeatureModal
     v-if="state.showFeatureModal"
@@ -124,8 +123,8 @@ import {
 } from "@/utils";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import InstanceForm from "@/components/InstanceForm/";
-import CreateDatabasePrepForm from "@/components/CreateDatabasePrepForm.vue";
-import { InstanceRoleTable, DatabaseV1Table } from "@/components/v2";
+import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
 import { SQLResultSet } from "@/types";
 import {
   featureToRef,

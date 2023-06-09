@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -87,6 +88,7 @@ type UpdateUserMessage struct {
 	Role         *api.Role
 	Delete       *bool
 	MFAConfig    *storepb.MFAConfig
+	Phone        *string
 }
 
 // UserMessage is the message for an user.
@@ -100,6 +102,8 @@ type UserMessage struct {
 	Role          api.Role
 	MemberDeleted bool
 	MFAConfig     *storepb.MFAConfig
+	// Phone conforms E.164 format.
+	Phone string
 }
 
 // GetUser gets an user.
@@ -207,6 +211,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		principal.type,
 		principal.password_hash,
 		principal.mfa_config,
+		principal.phone,
 		member.role,
 		member.row_status AS row_status
 	FROM principal
@@ -234,6 +239,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			&userMessage.Type,
 			&userMessage.PasswordHash,
 			&mfaConfigBytes,
+			&userMessage.Phone,
 			&role,
 			&rowStatus,
 		); err != nil {
@@ -280,8 +286,8 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 	defer tx.Rollback()
 
-	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash"}
-	args := []any{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash}
+	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash", "phone"}
+	args := []any{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash, create.Phone}
 	placeholder := []string{}
 	for index := range set {
 		placeholder = append(placeholder, fmt.Sprintf("$%d", index+1))
@@ -344,6 +350,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		Name:         create.Name,
 		Type:         create.Type,
 		PasswordHash: create.PasswordHash,
+		Phone:        create.Phone,
 		Role:         role,
 	}
 	s.userIDCache.Store(user.ID, user)
@@ -365,6 +372,9 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	}
 	if v := patch.PasswordHash; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("password_hash = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+	}
+	if v := patch.Phone; v != nil {
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("phone = $%d", len(principalArgs)+1)), append(principalArgs, *v)
 	}
 	if v := patch.MFAConfig; v != nil {
 		mfaConfigBytes, err := protojson.Marshal(v)
@@ -400,7 +410,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		UPDATE principal
 		SET `+strings.Join(principalSet, ", ")+`
 		WHERE id = $%d
-		RETURNING id, email, name, type, password_hash, mfa_config
+		RETURNING id, email, name, type, password_hash, mfa_config, phone
 	`, len(principalArgs)),
 		principalArgs...,
 	).Scan(
@@ -410,6 +420,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		&user.Type,
 		&user.PasswordHash,
 		&mfaConfigBytes,
+		&user.Phone,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -446,5 +457,9 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		return nil, err
 	}
 	s.userIDCache.Store(user.ID, user)
+	if patch.Email != nil {
+		s.projectIDPolicyCache = sync.Map{}
+		s.projectPolicyCache = sync.Map{}
+	}
 	return user, nil
 }

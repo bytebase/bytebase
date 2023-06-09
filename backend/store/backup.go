@@ -14,198 +14,24 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
-// backupSettingRaw is the store model for an BackupSetting.
-// Fields have exactly the same meanings as BackupSetting.
-type backupSettingRaw struct {
-	ID int
-
-	UpdatedTs int64
-
-	// Related fields
-	DatabaseID int
-
-	// Domain specific fields
-	Enabled           bool
-	Hour              int
-	DayOfWeek         int
-	RetentionPeriodTs int
-	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
-	HookURL string
-}
-
-// toBackupSetting creates an instance of BackupSetting based on the backupSettingRaw.
-// This is intended to be called when we need to compose an BackupSetting relationship.
-func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
-	return &api.BackupSetting{
-		ID: raw.ID,
-
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Enabled:           raw.Enabled,
-		Hour:              raw.Hour,
-		DayOfWeek:         raw.DayOfWeek,
-		RetentionPeriodTs: raw.RetentionPeriodTs,
-		// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
-		HookURL: raw.HookURL,
-	}
-}
-
-// UpsertBackupSetting upserts an instance of backup setting.
-func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
-	backupSettingRaw, err := s.upsertBackupSettingRaw(ctx, upsert)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to upsert backup setting with BackupSettingUpsert[%+v]", upsert)
-	}
-	return backupSettingRaw.toBackupSetting(), nil
-}
-
-// UpdateBackupSettingsInEnvironment upserts an instance of backup setting.
-func (s *Store) UpdateBackupSettingsInEnvironment(ctx context.Context, upsert *api.BackupSettingUpsert) error {
-	if err := s.validateBackupSettingUpsert(ctx, upsert); err != nil {
-		return err
-	}
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	stmt := `
-		UPDATE backup_setting
-		SET enabled = $1
-		WHERE id IN (
-			SELECT backup_setting.id
-			FROM backup_setting
-			INNER JOIN db ON backup_setting.database_id = db.id
-			INNER JOIN instance ON db.instance_id = instance.id
-			INNER JOIN environment ON instance.environment_id = environment.id
-			WHERE environment.id = $2
-		);
-	`
-	if _, err := tx.ExecContext(ctx, stmt, upsert.Enabled, upsert.EnvironmentID); err != nil {
-		return err
-	}
-	return tx.Commit()
+// BackupSettingsMatchMessage is the message to find backup settings matching the conditions.
+type BackupSettingsMatchMessage struct {
+	Hour      int
+	DayOfWeek int
 }
 
 // FindBackupSettingsMatch finds a list of backup setting instances with match conditions.
-func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
-	backupSettingRawList, err := s.findBackupSettingsMatchImpl(ctx, match)
+func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *BackupSettingsMatchMessage) ([]*BackupSettingMessage, error) {
+	backupSettingList, err := s.findBackupSettingsMatchImpl(ctx, match)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find matching backup setting list with BackupSettingsMatch[%+v]", match)
 	}
-	var backupSettingList []*api.BackupSetting
-	for _, raw := range backupSettingRawList {
-		backupSettingList = append(backupSettingList, raw.toBackupSetting())
-	}
+
 	return backupSettingList, nil
 }
 
-// upsertBackupSettingRaw sets the backup settings for a database.
-func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
-	if err := s.validateBackupSettingUpsert(ctx, upsert); err != nil {
-		return nil, err
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	backupRaw, err := s.upsertBackupSettingImpl(ctx, tx, upsert)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return backupRaw, nil
-}
-
-func (s *Store) validateBackupSettingUpsert(ctx context.Context, upsert *api.BackupSettingUpsert) error {
-	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, upsert.EnvironmentID)
-	if err != nil {
-		return err
-	}
-	// Backup plan policy check for backup setting mutation.
-	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
-		if !upsert.Enabled {
-			return &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-		}
-		switch backupPlanPolicy.Schedule {
-		case api.BackupPlanPolicyScheduleDaily:
-			if upsert.DayOfWeek != -1 {
-				return &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-			}
-		case api.BackupPlanPolicyScheduleWeekly:
-			if upsert.DayOfWeek == -1 {
-				return &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-			}
-		}
-	}
-	return nil
-}
-
-// upsertBackupSettingImpl updates an existing backup setting.
-func (*Store) upsertBackupSettingImpl(ctx context.Context, tx *Tx, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
-	// Upsert row into backup_setting.
-	query := `
-		INSERT INTO backup_setting (
-			creator_id,
-			updater_id,
-			database_id,
-			enabled,
-			hour,
-			day_of_week,
-			retention_period_ts,
-			hook_url
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		ON CONFLICT(database_id) DO UPDATE SET
-				enabled = EXCLUDED.enabled,
-				hour = EXCLUDED.hour,
-				day_of_week = EXCLUDED.day_of_week,
-				retention_period_ts = EXCLUDED.retention_period_ts,
-				hook_url = EXCLUDED.hook_url
-		RETURNING id, updated_ts, database_id, enabled, hour, day_of_week, retention_period_ts, hook_url
-	`
-	var backupSettingRaw backupSettingRaw
-	if err := tx.QueryRowContext(ctx, query,
-		upsert.UpdaterID,
-		upsert.UpdaterID,
-		upsert.DatabaseID,
-		upsert.Enabled,
-		upsert.Hour,
-		upsert.DayOfWeek,
-		upsert.RetentionPeriodTs,
-		upsert.HookURL,
-	).Scan(
-		&backupSettingRaw.ID,
-		&backupSettingRaw.UpdatedTs,
-		&backupSettingRaw.DatabaseID,
-		&backupSettingRaw.Enabled,
-		&backupSettingRaw.Hour,
-		&backupSettingRaw.DayOfWeek,
-		&backupSettingRaw.RetentionPeriodTs,
-		&backupSettingRaw.HookURL,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, err
-	}
-	return &backupSettingRaw, nil
-}
-
 // findBackupSettingsMatchImpl retrieves a list of backup settings based on match condition.
-func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.BackupSettingsMatch) ([]*backupSettingRaw, error) {
+func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *BackupSettingsMatchMessage) ([]*BackupSettingMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -214,8 +40,6 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
-			updated_ts,
 			database_id,
 			enabled,
 			hour,
@@ -240,30 +64,28 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into backupSettingRawList.
-	var backupSettingRawList []*backupSettingRaw
+	// Iterate over result set and deserialize rows into backupSettingList.
+	var backupSettingList []*BackupSettingMessage
 	for rows.Next() {
-		var backupSettingRaw backupSettingRaw
+		var backupSetting BackupSettingMessage
 		if err := rows.Scan(
-			&backupSettingRaw.ID,
-			&backupSettingRaw.UpdatedTs,
-			&backupSettingRaw.DatabaseID,
-			&backupSettingRaw.Enabled,
-			&backupSettingRaw.Hour,
-			&backupSettingRaw.DayOfWeek,
-			&backupSettingRaw.RetentionPeriodTs,
-			&backupSettingRaw.HookURL,
+			&backupSetting.DatabaseUID,
+			&backupSetting.Enabled,
+			&backupSetting.HourOfDay,
+			&backupSetting.DayOfWeek,
+			&backupSetting.RetentionPeriodTs,
+			&backupSetting.HookURL,
 		); err != nil {
 			return nil, err
 		}
 
-		backupSettingRawList = append(backupSettingRawList, &backupSettingRaw)
+		backupSettingList = append(backupSettingList, &backupSetting)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return backupSettingRawList, nil
+	return backupSettingList, nil
 }
 
 // BackupSettingMessage is the message for backup setting.
@@ -284,20 +106,6 @@ type BackupSettingMessage struct {
 	RetentionPeriodTs int
 	// HookURL is the URL to send the backup status.
 	HookURL string
-}
-
-// ToAPIBackupSetting converts BackupSettingMessage to legacy api BackupSetting.
-func (b *BackupSettingMessage) ToAPIBackupSetting() *api.BackupSetting {
-	return &api.BackupSetting{
-		ID:                b.ID,
-		DatabaseID:        b.DatabaseUID,
-		UpdatedTs:         b.UpdatedTs,
-		Enabled:           b.Enabled,
-		Hour:              b.HourOfDay,
-		DayOfWeek:         b.DayOfWeek,
-		RetentionPeriodTs: b.RetentionPeriodTs,
-		HookURL:           b.HookURL,
-	}
 }
 
 // FindBackupSettingMessage is the message for finding backup setting.
@@ -490,6 +298,34 @@ func (s *Store) UpsertBackupSettingV2(ctx context.Context, principalUID int, ups
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 	return &backupSetting, nil
+}
+
+// UpdateBackupSettingsForEnvironmentV2 upserts an instance of backup setting.
+func (s *Store) UpdateBackupSettingsForEnvironmentV2(ctx context.Context, environmentID string, enabled bool, updaterID int) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt := `
+		UPDATE backup_setting
+		SET
+			updater_id = $1,
+			enabled = $2
+		WHERE id IN (
+			SELECT backup_setting.id
+			FROM backup_setting
+			INNER JOIN db ON backup_setting.database_id = db.id
+			INNER JOIN instance ON db.instance_id = instance.id
+			INNER JOIN environment ON instance.environment_id = environment.id
+			WHERE environment.resource_id = $3
+		);
+	`
+	if _, err := tx.ExecContext(ctx, stmt, updaterID, enabled, environmentID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // ListBackupSettingV2 finds the backup setting.

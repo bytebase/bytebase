@@ -58,7 +58,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       type: Webhook_Type.TYPE_CUSTOM,
       name: t("common.custom"),
       urlPrefix:
-        "https://bytebase.com/docs/administration/webhook-integration/project-webhook#custom?source=console",
+        "https://bytebase.com/docs/change-database/webhook#custom?source=console",
     },
   ];
 };
@@ -109,6 +109,11 @@ export const projectWebhookV1ActivityItemList =
         title: t("project.webhook.activity-item.issue-comment-creation.title"),
         label: t("project.webhook.activity-item.issue-comment-creation.label"),
         activity: Activity_Type.TYPE_ISSUE_COMMENT_CREATE,
+      },
+      {
+        title: t("project.webhook.activity-item.issue-approval-notify.title"),
+        label: t("project.webhook.activity-item.issue-approval-notify.label"),
+        activity: Activity_Type.TYPE_ISSUE_APPROVAL_NOTIFY,
       },
     ];
   };

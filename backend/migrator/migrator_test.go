@@ -201,7 +201,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	err = initializeSchema(ctx, storeInstance, metadataDriver, releaseVersion, serverVersion)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err := storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+	histories, err := storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
 		InstanceID: nil,
 	})
 	require.NoError(t, err)
@@ -214,7 +214,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, releaseVersion, common.ReleaseModeProd, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err = storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+	histories, err = storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
 		InstanceID: nil,
 	})
 	require.NoError(t, err)
@@ -227,7 +227,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	// Check migration history.
 	devMigrations, err := getDevMigrations()
 	require.NoError(t, err)
-	histories, err = storeInstance.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+	histories, err = storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
 		InstanceID: nil,
 	})
 	require.NoError(t, err)
@@ -241,5 +241,5 @@ func TestMigrationCompatibility(t *testing.T) {
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("2.2.4"), releaseVersion)
+	require.Equal(t, semver.MustParse("2.2.6"), releaseVersion)
 }

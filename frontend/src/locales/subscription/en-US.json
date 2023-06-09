@@ -75,6 +75,7 @@
         "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
         "sql-check": "100+ Automated SQL check",
         "schedule-change": "Scheduled change at specific time",
+        "database-group": "Database Group",
         "sync-schema": "Synchronize schema between databases",
         "sync-schema-basic": "Basic",
         "sync-schema-basic-tooltip": "Sync from the latest schema version",

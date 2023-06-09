@@ -104,8 +104,8 @@
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
-    - [ListBackupRequest](#bytebase-v1-ListBackupRequest)
-    - [ListBackupResponse](#bytebase-v1-ListBackupResponse)
+    - [ListBackupsRequest](#bytebase-v1-ListBackupsRequest)
+    - [ListBackupsResponse](#bytebase-v1-ListBackupsResponse)
     - [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest)
     - [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
@@ -143,10 +143,12 @@
     - [CreateEnvironmentRequest](#bytebase-v1-CreateEnvironmentRequest)
     - [DeleteEnvironmentRequest](#bytebase-v1-DeleteEnvironmentRequest)
     - [Environment](#bytebase-v1-Environment)
+    - [EnvironmentBackupSetting](#bytebase-v1-EnvironmentBackupSetting)
     - [GetEnvironmentRequest](#bytebase-v1-GetEnvironmentRequest)
     - [ListEnvironmentsRequest](#bytebase-v1-ListEnvironmentsRequest)
     - [ListEnvironmentsResponse](#bytebase-v1-ListEnvironmentsResponse)
     - [UndeleteEnvironmentRequest](#bytebase-v1-UndeleteEnvironmentRequest)
+    - [UpdateEnvironmentBackupSettingRequest](#bytebase-v1-UpdateEnvironmentBackupSettingRequest)
     - [UpdateEnvironmentRequest](#bytebase-v1-UpdateEnvironmentRequest)
   
     - [EnvironmentTier](#bytebase-v1-EnvironmentTier)
@@ -276,7 +278,6 @@
     - [DatabaseGroup](#bytebase-v1-DatabaseGroup)
     - [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database)
     - [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest)
-    - [DeleteProjectGitOpsInfoRequest](#bytebase-v1-DeleteProjectGitOpsInfoRequest)
     - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
     - [DeleteSchemaGroupRequest](#bytebase-v1-DeleteSchemaGroupRequest)
     - [DeploymentConfig](#bytebase-v1-DeploymentConfig)
@@ -305,14 +306,15 @@
     - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
-    - [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest)
     - [SetupSQLReviewCIRequest](#bytebase-v1-SetupSQLReviewCIRequest)
     - [SetupSQLReviewCIResponse](#bytebase-v1-SetupSQLReviewCIResponse)
     - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
     - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
+    - [UnsetProjectGitOpsInfoRequest](#bytebase-v1-UnsetProjectGitOpsInfoRequest)
     - [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest)
     - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
+    - [UpdateProjectGitOpsInfoRequest](#bytebase-v1-UpdateProjectGitOpsInfoRequest)
     - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
     - [UpdateSchemaGroupRequest](#bytebase-v1-UpdateSchemaGroupRequest)
     - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
@@ -478,6 +480,8 @@
     - [SheetService](#bytebase-v1-SheetService)
   
 - [v1/sql_service.proto](#v1_sql_service-proto)
+    - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
+    - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
     - [Advice](#bytebase-v1-Advice)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
@@ -1120,7 +1124,7 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 The user&#39;s `name` field is used to identify the user to update. Format: users/{user} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
-| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate tempary MFA secret for user. This is used for MFA setup. The tempary MFA secret and recovery codes will be returned in the response. |
+| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user. This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. |
 | regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
 
 
@@ -1145,8 +1149,9 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | password | [string](#string) |  |  |
 | service_key | [string](#string) |  |  |
 | mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
-| mfa_secret | [string](#string) |  | The mfa_secret is the tempary secret using in two phase verification. |
-| recovery_codes | [string](#string) | repeated | The recovery_codes is the tempary recovery codes using in two phase verification. |
+| mfa_secret | [string](#string) |  | The mfa_secret is the temporary secret using in two phase verification. |
+| recovery_codes | [string](#string) | repeated | The recovery_codes is the temporary recovery codes using in two phase verification. |
+| phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 
 
 
@@ -1574,12 +1579,12 @@ BackupSetting is the setting for database backup.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database backup setting. Format: instances/{instance}/databases/{database}/backupSettings |
+| name | [string](#string) |  | The name of the database backup setting. Format: instances/{instance}/databases/{database}/backupSetting |
 | backup_retain_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The default maximum age of a Backup created via this BackupPlan. If specified, a Backup will be automatically deleted after its age reaches. If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS. It will be rounded up to the number of days. |
 | cron_schedule | [string](#string) |  | Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups. Support hour of day, day of week. (UTC time)
 
 Default (empty): Disable automatic backup. |
-| hook_url | [string](#string) |  | hook_url(https://www.bytebase.com/docs/administration/webhook-integration/database-webhook) is the URL to send a notification when a backup is created. |
+| hook_url | [string](#string) |  | hook_url(https://www.bytebase.com/docs/disaster-recovery/backup/#post-backup-webhook) is the URL to send a notification when a backup is created. |
 
 
 
@@ -1886,7 +1891,7 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
 
 
 
@@ -1916,7 +1921,7 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database} |
+| name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database}/schema |
 | sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
 
 
@@ -1945,10 +1950,10 @@ IndexMetadata is the metadata for indexes.
 
 
 
-<a name="bytebase-v1-ListBackupRequest"></a>
+<a name="bytebase-v1-ListBackupsRequest"></a>
 
-### ListBackupRequest
-ListBackupRequest is the request message for ListBackup.
+### ListBackupsRequest
+ListBackupsRequest is the request message for ListBackup.
 
 
 | Field | Type | Label | Description |
@@ -1964,9 +1969,9 @@ When paginating, all other parameters provided to `ListBackup` must match the ca
 
 
 
-<a name="bytebase-v1-ListBackupResponse"></a>
+<a name="bytebase-v1-ListBackupsResponse"></a>
 
-### ListBackupResponse
+### ListBackupsResponse
 
 
 
@@ -2459,7 +2464,7 @@ The type of the backup.
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | UpdateBackupSetting | [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
 | CreateBackup | [CreateBackupRequest](#bytebase-v1-CreateBackupRequest) | [Backup](#bytebase-v1-Backup) |  |
-| ListBackup | [ListBackupRequest](#bytebase-v1-ListBackupRequest) | [ListBackupResponse](#bytebase-v1-ListBackupResponse) |  |
+| ListBackups | [ListBackupsRequest](#bytebase-v1-ListBackupsRequest) | [ListBackupsResponse](#bytebase-v1-ListBackupsResponse) |  |
 | ListSlowQueries | [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest) | [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse) |  |
 | ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) |  |
 | UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
@@ -2564,6 +2569,22 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+<a name="bytebase-v1-EnvironmentBackupSetting"></a>
+
+### EnvironmentBackupSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the environment backup setting. Format: environments/{environment}/backupSetting |
+| enabled | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetEnvironmentRequest"></a>
 
 ### GetEnvironmentRequest
@@ -2629,6 +2650,21 @@ When paginating, all other parameters provided to `ListEnvironments` must match 
 
 
 
+<a name="bytebase-v1-UpdateEnvironmentBackupSettingRequest"></a>
+
+### UpdateEnvironmentBackupSettingRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| setting | [EnvironmentBackupSetting](#bytebase-v1-EnvironmentBackupSetting) |  | The environment backup setting to update. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateEnvironmentRequest"></a>
 
 ### UpdateEnvironmentRequest
@@ -2679,6 +2715,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | UpdateEnvironment | [UpdateEnvironmentRequest](#bytebase-v1-UpdateEnvironmentRequest) | [Environment](#bytebase-v1-Environment) |  |
 | DeleteEnvironment | [DeleteEnvironmentRequest](#bytebase-v1-DeleteEnvironmentRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteEnvironment | [UndeleteEnvironmentRequest](#bytebase-v1-UndeleteEnvironmentRequest) | [Environment](#bytebase-v1-Environment) |  |
+| UpdateBackupSetting | [UpdateEnvironmentBackupSettingRequest](#bytebase-v1-UpdateEnvironmentBackupSettingRequest) | [EnvironmentBackupSetting](#bytebase-v1-EnvironmentBackupSetting) |  |
 
  
 
@@ -4359,6 +4396,7 @@ TODO(zp): move to activity later.
 
 * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com` . |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+| parsed_expr | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  | The parsed expression of the condition. |
 
 
 
@@ -4466,21 +4504,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database group to delete. Format: projects/{project}/databaseGroups/{databaseGroup} |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteProjectGitOpsInfoRequest"></a>
-
-### DeleteProjectGitOpsInfoRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
 
 
 
@@ -4604,7 +4627,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
+| name | [string](#string) |  | The name of the GitOps info. Format: projects/{project}/gitOpsInfo |
 
 
 
@@ -4955,24 +4978,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 
 
 
-<a name="bytebase-v1-SetProjectGitOpsInfoRequest"></a>
-
-### SetProjectGitOpsInfoRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
-| project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  | The binding for the project and external version control. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
-| allow_missing | [bool](#bool) |  | If true, the gitops will be created if it does not exist. |
-
-
-
-
-
-
 <a name="bytebase-v1-SetupSQLReviewCIRequest"></a>
 
 ### SetupSQLReviewCIRequest
@@ -4981,7 +4986,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
+| name | [string](#string) |  | The name of the GitOps info. Format: projects/{project}/gitOpsInfo |
 
 
 
@@ -5049,6 +5054,21 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 
 
 
+<a name="bytebase-v1-UnsetProjectGitOpsInfoRequest"></a>
+
+### UnsetProjectGitOpsInfoRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the GitOps info. Format: projects/{project}/gitOpsInfo |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateDatabaseGroupRequest"></a>
 
 ### UpdateDatabaseGroupRequest
@@ -5076,6 +5096,23 @@ The database group&#39;s `name` field is used to identify the database group to 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | config | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateProjectGitOpsInfoRequest"></a>
+
+### UpdateProjectGitOpsInfoRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  | The binding for the project and external version control. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
+| allow_missing | [bool](#bool) |  | If true, the gitops will be created if it does not exist. |
 
 
 
@@ -5169,6 +5206,7 @@ TYPE_ISSUE_CREATE represents creating an issue. |
 | TYPE_ISSUE_COMMENT_CREATE | 2 | TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue. |
 | TYPE_ISSUE_FIELD_UPDATE | 3 | TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, assignee, etc. |
 | TYPE_ISSUE_STATUS_UPDATE | 4 | TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. |
+| TYPE_ISSUE_APPROVAL_NOTIFY | 21 | TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
 | TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
 | TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE | 6 | TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
 | TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT | 7 | TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. |
@@ -5341,8 +5379,8 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
-| SetProjectGitOpsInfo | [SetProjectGitOpsInfoRequest](#bytebase-v1-SetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
-| DeleteProjectGitOpsInfo | [DeleteProjectGitOpsInfoRequest](#bytebase-v1-DeleteProjectGitOpsInfoRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| UpdateProjectGitOpsInfo | [UpdateProjectGitOpsInfoRequest](#bytebase-v1-UpdateProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
+| UnsetProjectGitOpsInfo | [UnsetProjectGitOpsInfoRequest](#bytebase-v1-UnsetProjectGitOpsInfoRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | SetupProjectSQLReviewCI | [SetupSQLReviewCIRequest](#bytebase-v1-SetupSQLReviewCIRequest) | [SetupSQLReviewCIResponse](#bytebase-v1-SetupSQLReviewCIResponse) |  |
 | GetProjectGitOpsInfo | [GetProjectGitOpsInfoRequest](#bytebase-v1-GetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
 | ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) |  |
@@ -5796,6 +5834,7 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | level | [int64](#int64) |  |  |
 | expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | active | [bool](#bool) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
 
 
 
@@ -7124,6 +7163,7 @@ The data in setting value.
 | ----- | ---- | ----- | ----------- |
 | expression | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  |  |
 | template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
 
 
 
@@ -7494,6 +7534,39 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
 
+<a name="bytebase-v1-AdminExecuteRequest"></a>
+
+### AdminExecuteRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance} |
+| connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
+| statement | [string](#string) |  | The SQL statement to execute. |
+| limit | [int32](#int32) |  | The maximum number of rows to return. |
+
+
+
+
+
+
+<a name="bytebase-v1-AdminExecuteResponse"></a>
+
+### AdminExecuteResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
+
+
+
+
+
+
 <a name="bytebase-v1-Advice"></a>
 
 ### Advice
@@ -7717,6 +7790,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
+| AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 
  
 

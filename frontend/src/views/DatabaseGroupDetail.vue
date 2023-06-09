@@ -32,7 +32,7 @@
                 >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
               >
               <EnvironmentV1Name
-                :environment="state.environment"
+                :environment="environment"
                 icon-class="textinfolabel"
               />
             </dd>
@@ -77,7 +77,7 @@
         <div class="col-span-2">
           <MatchedDatabaseView
             :project="project"
-            :environment-id="state.environment?.name || ''"
+            :environment-id="environment.uid"
             :expr="state.expr!"
             :database-group="databaseGroup"
           />
@@ -109,36 +109,35 @@
     :database-group="editState.databaseGroup"
     @close="editState.showConfigurePanel = false"
   />
+
+  <DatabaseGroupPrevEditorModal
+    v-if="issueType"
+    :issue-type="issueType"
+    :database-group="databaseGroup"
+    @close="issueType = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, computed, watch } from "vue";
-import {
-  useDBGroupStore,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { onMounted, reactive, computed, watch, ref } from "vue";
+import { useDBGroupStore, useProjectV1Store } from "@/store";
 import {
   databaseGroupNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
-import { convertDatabaseGroupExprFromCEL } from "@/utils/databaseGroup/cel";
 import { ConditionGroupExpr } from "@/plugins/cel";
-import { Environment } from "@/types/proto/v1/environment_service";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
-import { useRouter } from "vue-router";
 import { ComposedDatabaseGroup } from "@/types";
-import { generateIssueRoute } from "@/utils/databaseGroup/issue";
 import { NButton } from "naive-ui";
+import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/DatabaseGroupPrevEditorModal.vue";
 
 interface LocalState {
   isLoaded: boolean;
-  environment?: Environment;
   expr?: ConditionGroupExpr;
 }
 
@@ -159,8 +158,6 @@ const props = defineProps({
   },
 });
 
-const router = useRouter();
-const environmentStore = useEnvironmentV1Store();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
@@ -170,6 +167,11 @@ const editState = reactive<EditDatabaseGroupState>({
   showConfigurePanel: false,
   type: "DATABASE_GROUP",
 });
+const issueType = ref<
+  | "bb.issue.database.schema.update"
+  | "bb.issue.database.data.update"
+  | undefined
+>();
 const databaseGroupResourceName = computed(() => {
   return `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
 });
@@ -183,6 +185,7 @@ const schemaGroupList = computed(() => {
     databaseGroupResourceName.value
   );
 });
+const environment = computed(() => databaseGroup.value.environment);
 const project = computed(() => {
   return projectStore.getProjectByName(
     `${projectNamePrefix}${props.projectName}`
@@ -214,8 +217,7 @@ const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
 const createMigration = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
-  const issueRoute = generateIssueRoute(type, databaseGroup.value);
-  router.push(issueRoute);
+  issueType.value = type;
 };
 
 watch(
@@ -225,15 +227,11 @@ watch(
       return;
     }
 
-    const expression = databaseGroup.value.databaseExpr?.expression ?? "";
-    const convertResult = await convertDatabaseGroupExprFromCEL(expression);
-    state.environment = environmentStore.getEnvironmentByName(
-      convertResult.environmentId
-    );
-    state.expr = convertResult.conditionGroupExpr;
+    state.expr = databaseGroup.value.simpleExpr;
     await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(
       databaseGroup.value.name
     );
+
     state.isLoaded = true;
   },
   {

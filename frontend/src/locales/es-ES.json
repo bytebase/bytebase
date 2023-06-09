@@ -251,7 +251,8 @@
       "years": "{years} años"
     },
     "expiration": "Expiración",
-    "configure": "Configure"
+    "configure": "Configure",
+    "database-groups": "Grupo de bases de datos"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -404,6 +405,8 @@
     "profile": {
       "email": "Correo electrónico",
       "role": "Rol",
+      "phone": "Número de móvil",
+      "country-code": "Códigos de país y de área",
       "password": "Contraseña",
       "password-confirm": "Confirmar",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
@@ -1396,7 +1399,8 @@
         "view-doc": "Ver documentación de {destination}"
       },
       "deletion": {
-        "btn-text": "Eliminar este webhook"
+        "btn-text": "Eliminar este webhook",
+        "confirm-title": "¿Eliminar el '{title}' del webhook y todo su historial de ejecución?"
       },
       "activity-item": {
         "issue-creation": {
@@ -1422,6 +1426,10 @@
         "issue-comment-creation": {
           "title": "Creación de comentario de incidencia",
           "label": "Cuando se crea un nuevo comentario en la incidencia"
+        },
+        "issue-approval-notify": {
+          "title": "Notificación de aprobación de incidencia",
+          "label": "Cuando se aprueba o rechaza una incidencia"
         }
       }
     },
@@ -1991,9 +1999,9 @@
         "title": "Secretos Encriptados",
         "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
       },
-      "bb-feature-sharding": {
-        "title": "Sharding de bases de datos/tablas",
-        "desc": "Utilice grupos de bases de datos para administrar fácilmente la fragmentación de bases de datos/tablas."
+      "bb-feature-database-grouping": {
+        "title": "Grupo de base de datos",
+        "desc": "El grupo de base de datos le permite aplicar operaciones por lotes a las base de datos del grupo de base de datos"
       },
       "bb-feature-disallow-signup": {
         "title": "Deshabilitar el registro de autoservicio",
@@ -2171,7 +2179,9 @@
     "instance": "Instancia",
     "project": "Proyecto",
     "idp": "Proveedor de Identidad",
-    "role": "Rol"
+    "role": "Rol",
+    "database-group": "grupo de bases de datos",
+    "schema-group": "grupo de mesas"
   },
   "resource-id": {
     "self": "ID de {resource}",
@@ -2424,7 +2434,10 @@
       },
       "you": "Tú",
       "generating-approval-flow": "Generando flujo de aprobación",
-      "approved-issue": "incidencia aprobada"
+      "approved-issue": "incidencia aprobada",
+      "disallow-approve-reason": {
+        "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no pasaron"
+      }
     }
   },
   "slow-query": {
@@ -2520,6 +2533,12 @@
     },
     "condition": {
       "self": "Condición"
+    },
+    "prev-editor": {
+      "description": "Puedes hacer referencia a la agrupación de tablas en SQL para realizar cambios en lote en todas las tablas dentro de un grupo de tablas. Para cada tabla, Bytebase generará un SQL individual."
     }
+  },
+  "export-center": {
+    "self": "centro de exportacion"
   }
 }

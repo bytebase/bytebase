@@ -41,6 +41,7 @@
 
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
+import { ClientError } from "nice-grpc-common";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ComposedProject } from "@/types";
@@ -99,10 +100,13 @@ const allowConfirm = computed(() => {
 
   const formState = formRef.value.getFormState();
   if (props.resourceType === "DATABASE_GROUP") {
-    return formState.resourceId && formState.environmentId;
+    return (
+      formState.resourceId && formState.placeholder && formState.environmentId
+    );
   } else if (props.resourceType === "SCHEMA_GROUP") {
     return (
       formState.resourceId &&
+      formState.placeholder &&
       formState.environmentId &&
       formState.selectedDatabaseGroupId
     );
@@ -159,74 +163,83 @@ const doConfirm = async () => {
     return;
   }
 
-  if (props.resourceType === "DATABASE_GROUP") {
-    if (isCreating.value) {
-      const environment = environmentStore.getEnvironmentByUID(
-        formState.environmentId || ""
-      );
-      const celString = stringifyDatabaseGroupExpr({
-        environmentId: environment.name,
-        conditionGroupExpr: formState.expr,
-      });
-      const resourceId = formState.resourceId;
-      await dbGroupStore.createDatabaseGroup(
-        props.project.name,
-        {
-          name: `${props.project.name}/databaseGroups/${resourceId}`,
-          databasePlaceholder: resourceId,
+  try {
+    if (props.resourceType === "DATABASE_GROUP") {
+      if (isCreating.value) {
+        const environment = environmentStore.getEnvironmentByUID(
+          formState.environmentId || ""
+        );
+        const celString = stringifyDatabaseGroupExpr({
+          environmentId: environment.name,
+          conditionGroupExpr: formState.expr,
+        });
+        const resourceId = formState.resourceId;
+        await dbGroupStore.createDatabaseGroup(
+          props.project.name,
+          {
+            name: `${props.project.name}/databaseGroups/${resourceId}`,
+            databasePlaceholder: formState.placeholder,
+            databaseExpr: Expr.fromJSON({
+              expression: celString,
+            }),
+          },
+          resourceId
+        );
+      } else {
+        const environment = environmentStore.getEnvironmentByUID(
+          formState.environmentId || ""
+        );
+        const celString = stringifyDatabaseGroupExpr({
+          environmentId: environment.name,
+          conditionGroupExpr: formState.expr,
+        });
+        await dbGroupStore.updateDatabaseGroup({
+          ...props.databaseGroup!,
+          databasePlaceholder: formState.placeholder,
           databaseExpr: Expr.fromJSON({
             expression: celString,
           }),
-        },
-        resourceId
-      );
-    } else {
-      const environment = environmentStore.getEnvironmentByUID(
-        formState.environmentId || ""
-      );
-      const celString = stringifyDatabaseGroupExpr({
-        environmentId: environment.name,
-        conditionGroupExpr: formState.expr,
-      });
-      await dbGroupStore.updateDatabaseGroup({
-        ...props.databaseGroup!,
-        databasePlaceholder: "",
-        databaseExpr: Expr.fromJSON({
-          expression: celString,
-        }),
-      });
-    }
-  } else if (props.resourceType === "SCHEMA_GROUP") {
-    if (isCreating.value) {
-      if (!formState.selectedDatabaseGroupId) {
-        return;
+        });
       }
+    } else if (props.resourceType === "SCHEMA_GROUP") {
+      if (isCreating.value) {
+        if (!formState.selectedDatabaseGroupId) {
+          return;
+        }
 
-      const celString = convertToCELString(formState.expr);
-      const resourceId = formState.resourceId;
-      await dbGroupStore.createSchemaGroup(
-        formState.selectedDatabaseGroupId,
-        {
-          name: `${formState.selectedDatabaseGroupId}/schemaGroups/${resourceId}`,
-          tablePlaceholder: resourceId,
+        const celString = convertToCELString(formState.expr);
+        const resourceId = formState.resourceId;
+        await dbGroupStore.createSchemaGroup(
+          formState.selectedDatabaseGroupId,
+          {
+            name: `${formState.selectedDatabaseGroupId}/schemaGroups/${resourceId}`,
+            tablePlaceholder: formState.placeholder,
+            tableExpr: Expr.fromJSON({
+              expression: celString,
+            }),
+          },
+          resourceId
+        );
+      } else {
+        const celString = convertToCELString(formState.expr);
+        await dbGroupStore.updateSchemaGroup({
+          ...props.databaseGroup!,
+          tablePlaceholder: formState.placeholder,
           tableExpr: Expr.fromJSON({
             expression: celString,
           }),
-        },
-        resourceId
-      );
-    } else {
-      const celString = convertToCELString(formState.expr);
-      await dbGroupStore.updateSchemaGroup({
-        ...props.databaseGroup!,
-        tablePlaceholder: "",
-        tableExpr: Expr.fromJSON({
-          expression: celString,
-        }),
-      });
+        });
+      }
     }
-  } else {
-    throw new Error("Unknown resource type");
+  } catch (error) {
+    console.error(error);
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `Request error occurred`,
+      description: (error as ClientError).details,
+    });
+    return;
   }
 
   emit("close");

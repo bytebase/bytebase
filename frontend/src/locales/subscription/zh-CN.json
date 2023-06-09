@@ -75,6 +75,7 @@
         "disaster-recovery-advanced-tooltip": "数据库备份和恢复 + 恢复到指定时间点 (PITR)",
         "sql-check": "100+ SQL 自动检查",
         "schedule-change": "设定任务执行时间",
+        "database-group": "数据库组",
         "sync-schema": "库表同步",
         "sync-schema-basic": "基础",
         "sync-schema-basic-tooltip": "同步最新的 schema 版本",

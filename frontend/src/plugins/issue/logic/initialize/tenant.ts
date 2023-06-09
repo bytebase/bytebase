@@ -11,7 +11,7 @@ import {
   BuildNewIssueContext,
   VALIDATE_ONLY_SQL,
   findDatabaseListByQuery,
-  findDatabaseGroupAndSchemaGroupListByQuery,
+  findDatabaseGroupNameByQuery,
 } from "../common";
 import { IssueCreateHelper } from "./helper";
 
@@ -51,17 +51,16 @@ const buildNewTenantSchemaUpdateIssue = async (
     migrationType = "DATA";
   }
 
+  const databaseGroupName = findDatabaseGroupNameByQuery(context);
   const databaseList = findDatabaseListByQuery(context);
-  const databaseGroupContext =
-    findDatabaseGroupAndSchemaGroupListByQuery(context);
-  if (databaseGroupContext && databaseGroupContext.databaseGroupName !== "") {
+  if (databaseGroupName) {
+    const sql = route.query.sql as string;
     helper.issueCreate!.createContext = {
       detailList: [
         {
           migrationType: migrationType,
-          databaseGroupName: databaseGroupContext.databaseGroupName,
-          schemaGroupNames: databaseGroupContext.schemaGroupNameList,
-          statement: VALIDATE_ONLY_SQL,
+          databaseGroupName: databaseGroupName,
+          statement: sql || VALIDATE_ONLY_SQL,
           earliestAllowedTs: 0,
         },
       ],

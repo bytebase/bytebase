@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -12,8 +13,9 @@ const (
 )
 
 // Retry uses exponential backoff with timeout.
-func Retry(fn func() error) error {
+func Retry(ctx context.Context, fn func() error) error {
 	b := backoff.NewExponentialBackOff()
 	b.MaxElapsedTime = timeout
-	return backoff.Retry(fn, b)
+	bWithContext := backoff.WithContext(b, ctx)
+	return backoff.Retry(fn, bWithContext)
 }

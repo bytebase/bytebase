@@ -54,7 +54,7 @@
               )
             }}
             <a
-              href="https://bytebase.com/docs/administration/webhook-integration/database-webhook?source=console"
+              href="https://bytebase.com/docs/backup/#post-backup-webhook?source=console"
               class="normal-link inline-flex flex-row items-center"
             >
               {{ $t("common.learn-more") }}
@@ -128,9 +128,8 @@
       />
     </div>
 
-    <BBModal
-      v-if="state.showBackupSettingModal"
-      :title="$t('database.automatic-backup')"
+    <Drawer
+      :show="state.showBackupSettingModal"
       @close="state.showBackupSettingModal = false"
     >
       <DatabaseBackupSettingForm
@@ -141,7 +140,7 @@
         @cancel="state.showBackupSettingModal = false"
         @update="updateBackupSetting"
       />
-    </BBModal>
+    </Drawer>
 
     <BBModal
       v-if="state.showCreateBackupModal"
@@ -175,19 +174,15 @@ import { isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
 import {
-  BackupSetting,
   ComposedDatabase,
   NORMAL_POLL_INTERVAL,
   POLL_JITTER,
   MINIMUM_POLL_INTERVAL,
-  UNKNOWN_ID,
-  BackupSettingUpsert,
 } from "@/types";
 import DatabaseBackupCreateForm from "@/components/DatabaseBackupCreateForm.vue";
 import PITRRestoreButton from "@/components/DatabaseDetail/PITRRestoreButton.vue";
 import {
   pushNotification,
-  useLegacyBackupStore,
   useBackupV1Store,
   useGracefulRequest,
 } from "@/store";
@@ -209,9 +204,11 @@ import {
 import { instanceV1HasBackupRestore } from "@/utils";
 import {
   Backup,
+  BackupSetting,
   Backup_BackupState,
   Backup_BackupType,
 } from "@/types/proto/v1/database_service";
+import { Drawer } from "@/components/v2";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -241,7 +238,6 @@ const props = defineProps({
   },
 });
 
-const legacyBackupStore = useLegacyBackupStore();
 const backupStore = useBackupV1Store();
 const policyV1Store = usePolicyV1Store();
 const { t } = useI18n();
@@ -282,10 +278,12 @@ const prepareBackupPolicy = () => {
 watchEffect(prepareBackupPolicy);
 
 const assignBackupSetting = (backupSetting: BackupSetting) => {
-  state.autoBackupEnabled = backupSetting.enabled;
-  state.autoBackupHour = backupSetting.hour;
-  state.autoBackupDayOfWeek = backupSetting.dayOfWeek;
-  state.autoBackupRetentionPeriodTs = backupSetting.retentionPeriodTs;
+  const schedule = backupStore.parseBackupSchedule(backupSetting.cronSchedule);
+  state.autoBackupEnabled = backupSetting.cronSchedule !== "";
+  state.autoBackupHour = schedule.hourOfDay;
+  state.autoBackupDayOfWeek = schedule.dayOfWeek;
+  state.autoBackupRetentionPeriodTs =
+    backupSetting.backupRetainDuration?.seconds ?? 0;
   state.autoBackupHookUrl = backupSetting.hookUrl;
   state.autoBackupUpdatedHookUrl = backupSetting.hookUrl;
 
@@ -374,7 +372,9 @@ const backupPolicy = computed((): BackupPlanSchedule => {
 const hasBackupPolicyViolation = computed((): boolean => {
   if (!state.backupSetting) return false;
   if (!backupPolicy.value) return false;
-  const schedule = parseScheduleFromBackupSetting(state.backupSetting);
+  const schedule = parseScheduleFromBackupSetting(
+    state.backupSetting.cronSchedule
+  );
   return levelOfSchedule(schedule) < levelOfSchedule(backupPolicy.value);
 });
 
@@ -427,11 +427,10 @@ const pollBackups = (interval: number) => {
 };
 
 const prepareBackupSetting = () => {
-  legacyBackupStore
-    .fetchBackupSettingByDatabaseId(Number(props.database.uid))
-    .then((backupSetting: BackupSetting) => {
-      // UNKNOWN_ID means database does not have backup setting and we should NOT overwrite the default setting.
-      if (backupSetting.id != UNKNOWN_ID) {
+  backupStore
+    .fetchBackupSetting(props.database.name)
+    .then((backupSetting: BackupSetting | undefined) => {
+      if (backupSetting) {
         assignBackupSetting(backupSetting);
       }
     });
@@ -440,17 +439,19 @@ const prepareBackupSetting = () => {
 onBeforeMount(prepareBackupSetting);
 
 const updateBackupHookUrl = () => {
-  const newBackupSetting: BackupSettingUpsert = {
-    databaseId: Number(props.database.uid),
-    enabled: state.autoBackupEnabled,
-    hour: state.autoBackupHour,
-    dayOfWeek: state.autoBackupDayOfWeek,
-    retentionPeriodTs: state.autoBackupRetentionPeriodTs,
-    hookUrl: state.autoBackupUpdatedHookUrl,
-  };
-  legacyBackupStore
+  backupStore
     .upsertBackupSetting({
-      newBackupSetting: newBackupSetting,
+      name: `${props.database.name}/backupSetting`,
+      cronSchedule: backupStore.buildSimpleSchedule({
+        enabled: state.autoBackupEnabled,
+        hourOfDay: state.autoBackupHour,
+        dayOfWeek: state.autoBackupDayOfWeek,
+      }),
+      hookUrl: state.autoBackupUpdatedHookUrl,
+      backupRetainDuration: {
+        seconds: state.autoBackupRetentionPeriodTs,
+        nanos: 0,
+      },
     })
     .then((backupSetting: BackupSetting) => {
       assignBackupSetting(backupSetting);

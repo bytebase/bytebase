@@ -6,4 +6,4 @@ title: What is 'Issue' ?
 
 #### Learn more
 
-- [Use UI Workflow](https://www.bytebase.com/docs/get-started/work-with-a-project/run-a-ui-workflow)
+- [Use UI Workflow](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)

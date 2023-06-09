@@ -49,20 +49,6 @@
         </div>
 
         <div
-          v-if="quickAction === 'quickaction.bb.database.request'"
-          class="flex flex-col items-center w-24"
-        >
-          <button class="btn-icon-primary p-3" @click.prevent="requestDatabase">
-            <heroicons-outline:database class="w-5 h-5" />
-          </button>
-          <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-          >
-            {{ $t("quick-action.request-db") }}
-          </h3>
-        </div>
-
-        <div
           v-if="quickAction === 'quickaction.bb.database.schema.update'"
           class="flex flex-col items-center w-24"
         >
@@ -223,78 +209,55 @@
       </template>
     </template>
   </div>
-  <BBModal
-    v-if="state.showModal"
-    class="relative overflow-hidden"
-    :title="state.modalTitle"
-    :subtitle="state.modalSubtitle"
-    :data-label="`bb-${kebabCase(state.modalTitle)}-modal`"
-    @close="state.showModal = false"
+
+  <Drawer
+    :show="state.quickActionType !== undefined"
+    @close="state.quickActionType = undefined"
   >
-    <template v-if="state.quickActionType == 'quickaction.bb.project.create'">
-      <ProjectCreate @dismiss="state.showModal = false" />
-    </template>
-    <template
-      v-else-if="state.quickActionType == 'quickaction.bb.instance.create'"
-    >
-      <InstanceForm :modal="true" @dismiss="state.showModal = false" />
-    </template>
-    <template
-      v-else-if="
-        state.quickActionType == 'quickaction.bb.database.schema.update'
+    <ProjectCreatePanel
+      v-if="state.quickActionType === 'quickaction.bb.project.create'"
+      @dismiss="state.quickActionType = undefined"
+    />
+    <InstanceForm
+      v-if="state.quickActionType === 'quickaction.bb.instance.create'"
+      :drawer="true"
+      @dismiss="state.quickActionType = undefined"
+    />
+    <CreateDatabasePrepPanel
+      v-if="state.quickActionType === 'quickaction.bb.database.create'"
+      :project-id="projectId"
+      @dismiss="state.quickActionType = undefined"
+    />
+    <AlterSchemaPrepForm
+      v-if="state.quickActionType === 'quickaction.bb.database.schema.update'"
+      :project-id="projectId"
+      :type="'bb.issue.database.schema.update'"
+      @dismiss="state.quickActionType = undefined"
+    />
+    <AlterSchemaPrepForm
+      v-if="state.quickActionType === 'quickaction.bb.database.data.update'"
+      :project-id="projectId"
+      :type="'bb.issue.database.data.update'"
+      @dismiss="state.quickActionType = undefined"
+    />
+    <TransferDatabaseForm
+      v-if="
+        projectId &&
+        state.quickActionType === 'quickaction.bb.project.database.transfer'
       "
-    >
-      <AlterSchemaPrepForm
-        :project-id="projectId"
-        :type="'bb.issue.database.schema.update'"
-        @dismiss="state.showModal = false"
-      />
-    </template>
-    <template
-      v-else-if="state.quickActionType == 'quickaction.bb.database.data.update'"
-    >
-      <AlterSchemaPrepForm
-        :project-id="projectId"
-        :type="'bb.issue.database.data.update'"
-        @dismiss="state.showModal = false"
-      />
-    </template>
-    <template
-      v-else-if="state.quickActionType == 'quickaction.bb.database.create'"
-    >
-      <CreateDatabasePrepForm
-        :project-id="projectId"
-        @dismiss="state.showModal = false"
-      />
-    </template>
-    <template
-      v-else-if="state.quickActionType == 'quickaction.bb.database.request'"
-    >
-      <RequestDatabasePrepForm @dismiss="state.showModal = false" />
-    </template>
-    <template
-      v-else-if="
-        state.quickActionType == 'quickaction.bb.project.database.transfer'
+      :project-id="projectId"
+      @dismiss="state.quickActionType = undefined"
+    />
+    <TransferOutDatabaseForm
+      v-if="
+        projectId &&
+        state.quickActionType === 'quickaction.bb.project.database.transfer-out'
       "
-    >
-      <TransferDatabaseForm
-        v-if="projectId"
-        :project-id="projectId"
-        @dismiss="state.showModal = false"
-      />
-    </template>
-    <template
-      v-else-if="
-        state.quickActionType == 'quickaction.bb.project.database.transfer-out'
-      "
-    >
-      <TransferOutDatabaseForm
-        v-if="projectId"
-        :project-id="projectId"
-        @dismiss="state.showModal = false"
-      />
-    </template>
-  </BBModal>
+      :project-id="projectId"
+      @dismiss="state.quickActionType = undefined"
+    />
+  </Drawer>
+
   <FeatureModal
     v-if="state.showFeatureModal && state.featureName !== ''"
     :feature="state.featureName"
@@ -304,12 +267,12 @@
 
 <script lang="ts" setup>
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { kebabCase } from "lodash-es";
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { QuickActionType } from "../types";
-import { idFromSlug, isDev } from "../utils";
+
+import { QuickActionType } from "@/types";
+import { idFromSlug, isDev } from "@/utils";
 import {
   useCommandStore,
   useCurrentUserIamPolicy,
@@ -318,21 +281,18 @@ import {
   useRouterStore,
   useSubscriptionV1Store,
 } from "@/store";
-import ProjectCreate from "../components/ProjectCreate.vue";
-import InstanceForm from "../components/InstanceForm/";
-import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
-import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
-import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
-import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
-import TransferOutDatabaseForm from "../components/TransferOutDatabaseForm";
+import { Drawer } from "@/components/v2";
+import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
+import InstanceForm from "@/components/InstanceForm/";
+import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
+import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
+import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 
 interface LocalState {
-  showModal: boolean;
   featureName: string;
   showFeatureModal: boolean;
-  modalTitle: string;
-  modalSubtitle: string;
-  quickActionType: QuickActionType;
+  quickActionType: QuickActionType | undefined;
 }
 
 const props = defineProps({
@@ -354,12 +314,9 @@ const hasCustomRoleFeature = computed(() => {
 });
 
 const state = reactive<LocalState>({
-  showModal: false,
   featureName: "",
   showFeatureModal: false,
-  modalTitle: "",
-  modalSubtitle: "",
-  quickActionType: "quickaction.bb.instance.create",
+  quickActionType: undefined,
 });
 
 const projectId = computed((): string | undefined => {
@@ -382,28 +339,19 @@ const shouldShowAlterDatabaseEntries = computed(() => {
 });
 
 watch(route, () => {
-  state.showModal = false;
+  state.quickActionType = undefined;
 });
 
 const createProject = () => {
-  state.modalTitle = t("quick-action.create-project");
-  state.modalSubtitle = "";
   state.quickActionType = "quickaction.bb.project.create";
-  state.showModal = true;
 };
 
 const transferDatabase = () => {
-  state.modalTitle = t("quick-action.transfer-in-db-title");
-  state.modalSubtitle = "";
   state.quickActionType = "quickaction.bb.project.database.transfer";
-  state.showModal = true;
 };
 
 const transferOutDatabase = () => {
-  state.modalTitle = t("quick-action.transfer-out-db-title");
-  state.modalSubtitle = "";
   state.quickActionType = "quickaction.bb.project.database.transfer-out";
-  state.showModal = true;
 };
 
 const createInstance = () => {
@@ -413,36 +361,19 @@ const createInstance = () => {
     state.showFeatureModal = true;
     return;
   }
-  state.modalTitle = t("quick-action.create-instance");
-  state.modalSubtitle = "";
   state.quickActionType = "quickaction.bb.instance.create";
-  state.showModal = true;
 };
 
 const alterSchema = () => {
-  state.modalTitle = t("database.alter-schema");
   state.quickActionType = "quickaction.bb.database.schema.update";
-  state.showModal = true;
 };
 
 const changeData = () => {
-  state.modalTitle = t("database.change-data");
   state.quickActionType = "quickaction.bb.database.data.update";
-  state.showModal = true;
 };
 
 const createDatabase = () => {
-  state.modalTitle = t("quick-action.create-db");
-  state.modalSubtitle = "";
   state.quickActionType = "quickaction.bb.database.create";
-  state.showModal = true;
-};
-
-const requestDatabase = () => {
-  state.modalTitle = "Request database";
-  state.modalSubtitle = "";
-  state.quickActionType = "quickaction.bb.database.request";
-  state.showModal = true;
 };
 
 const createEnvironment = () => {
@@ -507,10 +438,6 @@ const QuickActionMap: Record<string, Partial<Action>> = {
   "quickaction.bb.database.create": {
     name: t("quick-action.new-db"),
     perform: () => createDatabase(),
-  },
-  "quickaction.bb.database.request": {
-    name: t("quick-action.request-db"),
-    perform: () => requestDatabase(),
   },
   "quickaction.bb.database.schema.update": {
     name: t("database.alter-schema"),

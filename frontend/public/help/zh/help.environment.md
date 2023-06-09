@@ -10,4 +10,4 @@ title: 什么是「环境」?
 
 #### 了解更多
 
-- [配置一个环境](https://www.bytebase.com/docs/get-started/configure-workspace/set-up-environments)
+- [配置一个环境](https://www.bytebase.com/docs/get-started/step-by-step/set-up-environments)

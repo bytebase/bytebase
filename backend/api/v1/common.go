@@ -52,6 +52,7 @@ const (
 	backupSettingSuffix    = "/backupSetting"
 	schemaSuffix           = "/schema"
 	metadataSuffix         = "/metadata"
+	gitOpsInfoSuffix       = "/gitOpsInfo"
 
 	setupExternalURLError = "external URL isn't setup yet, see https://www.bytebase.com/docs/get-started/install/external-url"
 

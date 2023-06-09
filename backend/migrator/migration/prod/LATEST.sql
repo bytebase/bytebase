@@ -46,6 +46,7 @@ CREATE TABLE principal (
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
+    phone TEXT NOT NULL DEFAULT '',
     mfa_config JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -1230,6 +1231,8 @@ CREATE TABLE db_group (
 
 CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON db_group(project_id, resource_id);
 
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON db_group(project_id, placeholder);
+
 ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_db_group_updated_ts
@@ -1252,6 +1255,8 @@ CREATE TABLE schema_group (
 );
 
 CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON schema_group(db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON schema_group(db_group_id, placeholder);
 
 ALTER SEQUENCE schema_group_id_seq RESTART WITH 101;
 

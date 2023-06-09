@@ -8,6 +8,7 @@ import "google/api/expr/v1alpha1/syntax.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "google/type/expr.proto";
 
 option go_package = "generated-go/v1";
 
@@ -102,4 +103,5 @@ message Risk {
   int64 level = 5;
   google.api.expr.v1alpha1.ParsedExpr expression = 6;
   bool active = 7;
+  google.type.Expr condition = 8;
 }

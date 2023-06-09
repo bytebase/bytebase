@@ -36,9 +36,11 @@ type Store struct {
 	projectIDDeploymentConfigCache sync.Map // map[int]*DeploymentConfigMessage
 	risksCache                     sync.Map // []*RiskMessage, use 0 as the key
 	databaseGroupCache             sync.Map // map[string]*DatabaseGroupMessage
+	databaseGroupIDCache           sync.Map // map[int]*DatabaseGroupMessage
 	schemaGroupCache               sync.Map // map[string]*SchemaGroupMessage
 	// sheetStatementCache caches the statement of a sheet.
 	sheetStatementCache cache.Cache[int, string]
+	vcsIDCache          sync.Map // map[int]*ExternalVersionControlMessage
 }
 
 // New creates a new instance of Store.

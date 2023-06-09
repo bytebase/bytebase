@@ -88,7 +88,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		pushEvent.CommitList = nonBytebaseCommitList
 
-		filter := func(repo *api.Repository) (bool, error) {
+		filter := func(repo *store.RepositoryMessage) (bool, error) {
 			if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
 				return false, nil
 			}
@@ -156,7 +156,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		pushEvent.Commits = nonBytebaseCommitList
 
-		filter := func(repo *api.Repository) (bool, error) {
+		filter := func(repo *store.RepositoryMessage) (bool, error) {
 			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
@@ -224,7 +224,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 
 			ref := "refs/heads/" + change.New.Name
-			filter := func(repo *api.Repository) (bool, error) {
+			filter := func(repo *store.RepositoryMessage) (bool, error) {
 				return s.isWebhookEventBranch(ref, repo.BranchFilter)
 			}
 			repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
@@ -243,17 +243,17 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				if len(commit.Parents) > 0 {
 					before = commit.Parents[0].Hash
 				}
-				fileDiffList, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).GetDiffFileList(
+				fileDiffList, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).GetDiffFileList(
 					ctx,
 					common.OauthContext{
-						ClientID:     repo.VCS.ApplicationID,
-						ClientSecret: repo.VCS.Secret,
-						AccessToken:  repo.AccessToken,
-						RefreshToken: repo.RefreshToken,
-						Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+						ClientID:     repo.vcs.ApplicationID,
+						ClientSecret: repo.vcs.Secret,
+						AccessToken:  repo.repository.AccessToken,
+						RefreshToken: repo.repository.RefreshToken,
+						Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
 					},
-					repo.VCS.InstanceURL,
-					repo.ExternalID,
+					repo.vcs.InstanceURL,
+					repo.repository.ExternalID,
 					before,
 					commit.Hash,
 				)
@@ -351,10 +351,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		token := c.Request().Header.Get("X-SQL-Review-Token")
 
-		filter := func(repo *api.Repository) (bool, error) {
+		filter := func(repo *store.RepositoryMessage) (bool, error) {
 			if !repo.EnableSQLReviewCI {
 				log.Debug("Skip repository as the SQL review CI is not enabled.",
-					zap.Int("repository_id", repo.ID),
+					zap.Int("repository_id", repo.UID),
 					zap.String("repository_external_id", repo.ExternalID),
 				)
 				return false, nil
@@ -389,16 +389,16 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repo := repositoryList[0]
 
-		prFiles, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ListPullRequestFile(
+		prFiles, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).ListPullRequestFile(
 			ctx,
 			common.OauthContext{
-				ClientID:     repo.VCS.ApplicationID,
-				ClientSecret: repo.VCS.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+				ClientID:     repo.vcs.ApplicationID,
+				ClientSecret: repo.vcs.Secret,
+				AccessToken:  repo.repository.AccessToken,
+				RefreshToken: repo.repository.RefreshToken,
+				Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
 			},
-			repo.VCS.InstanceURL,
+			repo.vcs.InstanceURL,
 			request.RepositoryID,
 			request.PullRequestID,
 		)
@@ -428,17 +428,17 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				if !strings.HasSuffix(prFile.Path, ".xml") {
 					continue
 				}
-				fileContent, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+				fileContent, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).ReadFileContent(
 					ctx,
 					common.OauthContext{
-						ClientID:     repo.VCS.ApplicationID,
-						ClientSecret: repo.VCS.Secret,
-						AccessToken:  repo.AccessToken,
-						RefreshToken: repo.RefreshToken,
-						Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+						ClientID:     repo.vcs.ApplicationID,
+						ClientSecret: repo.vcs.Secret,
+						AccessToken:  repo.repository.AccessToken,
+						RefreshToken: repo.repository.RefreshToken,
+						Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
 					},
-					repo.VCS.InstanceURL,
-					repo.ExternalID,
+					repo.vcs.InstanceURL,
+					repo.repository.ExternalID,
 					prFile.Path,
 					prFile.LastCommitID,
 				)
@@ -463,7 +463,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		response := &api.VCSSQLReviewResult{}
-		switch repo.VCS.Type {
+		switch repo.vcs.Type {
 		case vcs.GitHub:
 			response = convertSQLAdviceToGitHubActionResult(sqlFileName2Advice)
 		case vcs.GitLab:
@@ -475,14 +475,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			zap.String("status", string(response.Status)),
 			zap.String("content", strings.Join(response.Content, "\n")),
 			zap.String("repository_id", request.RepositoryID),
-			zap.String("vcs", string(repo.VCS.Type)),
+			zap.String("vcs", string(repo.vcs.Type)),
 		)
 
 		return c.JSON(http.StatusOK, response)
 	})
 }
 
-func (s *Server) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapperContent map[string]string, commitID string, repo *api.Repository) (map[string][]advisor.Advice, error) {
+func (s *Server) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapperContent map[string]string, commitID string, repoInfo *repoInfo) (map[string][]advisor.Advice, error) {
 	if len(mybatisMapperContent) == 0 {
 		return map[string][]advisor.Advice{}, nil
 	}
@@ -491,7 +491,7 @@ func (s *Server) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapp
 	}
 
 	sqlCheckAdvices := make(map[string][]advisor.Advice)
-	mybatisMapperXMLFileData, err := s.buildMybatisMapperXMLFileData(ctx, repo, commitID, mybatisMapperContent)
+	mybatisMapperXMLFileData, err := s.buildMybatisMapperXMLFileData(ctx, repoInfo, commitID, mybatisMapperContent)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to build mybatis mapper xml file data")
 	}
@@ -512,7 +512,7 @@ func (s *Server) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapp
 				log.Error(
 					"Failed to take SQL review for file",
 					zap.String("file", datum.mapperContent),
-					zap.String("repository", repo.WebURL),
+					zap.String("repository", repoInfo.repository.WebURL),
 					zap.Error(err),
 				)
 				sqlCheckAdvices[datum.configPath] = []advisor.Advice{
@@ -620,7 +620,12 @@ func (s *Server) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybat
 	return result, nil
 }
 
-func (s *Server) sqlAdviceForSQLFiles(ctx context.Context, repositoryList []*api.Repository, prFiles []*vcs.PullRequestFile, externalURL string) map[string][]advisor.Advice {
+func (s *Server) sqlAdviceForSQLFiles(
+	ctx context.Context,
+	repoInfoList []*repoInfo,
+	prFiles []*vcs.PullRequestFile,
+	externalURL string,
+) map[string][]advisor.Advice {
 	distinctFileList := []vcs.DistinctFileItem{}
 	for _, prFile := range prFiles {
 		if prFile.IsDeleted {
@@ -637,7 +642,7 @@ func (s *Server) sqlAdviceForSQLFiles(ctx context.Context, repositoryList []*api
 	sqlCheckAdvice := map[string][]advisor.Advice{}
 	var wg sync.WaitGroup
 
-	repoID2FileItemList := groupFileInfoByRepo(distinctFileList, repositoryList)
+	repoID2FileItemList := groupFileInfoByRepo(distinctFileList, repoInfoList)
 
 	for _, fileInfoListInRepo := range repoID2FileItemList {
 		for _, file := range fileInfoListInRepo {
@@ -649,7 +654,7 @@ func (s *Server) sqlAdviceForSQLFiles(ctx context.Context, repositoryList []*api
 					log.Error(
 						"Failed to take SQL review for file",
 						zap.String("file", file.item.FileName),
-						zap.String("external_id", file.repository.ExternalID),
+						zap.String("external_id", file.repoInfo.repository.ExternalID),
 						zap.Error(err),
 					)
 					sqlCheckAdvice[file.item.FileName] = []advisor.Advice{
@@ -678,17 +683,17 @@ func (s *Server) sqlAdviceForFile(
 ) ([]advisor.Advice, error) {
 	log.Debug("Processing file",
 		zap.String("file", fileInfo.item.FileName),
-		zap.String("vcs", string(fileInfo.repository.VCS.Type)),
+		zap.String("vcs", string(fileInfo.repoInfo.vcs.Type)),
 	)
 
 	// TODO: support tenant mode project
-	if fileInfo.repository.Project.TenantMode == api.TenantModeTenant {
+	if fileInfo.repoInfo.project.TenantMode == api.TenantModeTenant {
 		return []advisor.Advice{
 			{
 				Status:  advisor.Warn,
 				Code:    advisor.Unsupported,
 				Title:   "Tenant mode is not supported",
-				Content: fmt.Sprintf("Project %s a tenant mode project.", fileInfo.repository.Project.Name),
+				Content: fmt.Sprintf("Project %s a tenant mode project.", fileInfo.repoInfo.project.Title),
 				Line:    1,
 			},
 		}, nil
@@ -696,11 +701,11 @@ func (s *Server) sqlAdviceForFile(
 
 	// TODO(ed): findProjectDatabases doesn't support the tenant mode.
 	// We can use https://github.com/bytebase/bytebase/blob/main/server/issue.go#L691 to find databases in tenant mode project.
-	databases, err := s.findProjectDatabases(ctx, fileInfo.repository.ProjectID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
+	databases, err := s.findProjectDatabases(ctx, fileInfo.repoInfo.project.UID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
 	if err != nil {
 		log.Debug(
 			"Failed to list database migration info",
-			zap.Int("project", fileInfo.repository.ProjectID),
+			zap.String("project", fileInfo.repoInfo.repository.ProjectResourceID),
 			zap.String("database", fileInfo.migrationInfo.Database),
 			zap.String("environment", fileInfo.migrationInfo.Environment),
 			zap.Error(err),
@@ -708,17 +713,17 @@ func (s *Server) sqlAdviceForFile(
 		return nil, errors.Errorf("Failed to list databse with error: %v", err)
 	}
 
-	fileContent, err := vcs.Get(fileInfo.repository.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+	fileContent, err := vcs.Get(fileInfo.repoInfo.vcs.Type, vcs.ProviderConfig{}).ReadFileContent(
 		ctx,
 		common.OauthContext{
-			ClientID:     fileInfo.repository.VCS.ApplicationID,
-			ClientSecret: fileInfo.repository.VCS.Secret,
-			AccessToken:  fileInfo.repository.AccessToken,
-			RefreshToken: fileInfo.repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, fileInfo.repository.WebURL),
+			ClientID:     fileInfo.repoInfo.vcs.ApplicationID,
+			ClientSecret: fileInfo.repoInfo.vcs.Secret,
+			AccessToken:  fileInfo.repoInfo.repository.AccessToken,
+			RefreshToken: fileInfo.repoInfo.repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, fileInfo.repoInfo.repository.WebURL),
 		},
-		fileInfo.repository.VCS.InstanceURL,
-		fileInfo.repository.ExternalID,
+		fileInfo.repoInfo.vcs.InstanceURL,
+		fileInfo.repoInfo.repository.ExternalID,
 		fileInfo.item.FileName,
 		fileInfo.item.Commit.ID,
 	)
@@ -796,10 +801,16 @@ func (s *Server) sqlAdviceForFile(
 	}, nil
 }
 
-type repositoryFilter func(*api.Repository) (bool, error)
+type repositoryFilter func(*store.RepositoryMessage) (bool, error)
 
-func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
-	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
+type repoInfo struct {
+	repository *store.RepositoryMessage
+	project    *store.ProjectMessage
+	vcs        *store.ExternalVersionControlMessage
+}
+
+func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRepositoryID string, filter repositoryFilter) ([]*repoInfo, error) {
+	repos, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 	}
@@ -807,21 +818,44 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository for webhook endpoint %s not found", webhookEndpointID))
 	}
 
-	var filteredRepos []*api.Repository
+	var filteredRepos []*repoInfo
 	for _, repo := range repos {
-		if repo.Project.RowStatus == api.Archived {
-			log.Debug("Skip repository as the associated project is archived",
-				zap.Int("repository_id", repo.ID),
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID:  &repo.ProjectResourceID,
+			ShowDeleted: false,
+		})
+		if err != nil {
+			log.Error("failed to find the project",
+				zap.String("project_resource_id", repo.ProjectResourceID),
 				zap.String("repository_external_id", repo.ExternalID),
 			)
 			continue
 		}
-		if repo.VCS == nil {
-			log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
+		if project == nil {
+			log.Debug("skipping repo due to missing project",
+				zap.String("project_resource_id", repo.ProjectResourceID),
+				zap.String("repository_external_id", repo.ExternalID),
+			)
 			continue
 		}
+		externalVCS, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
+		if err != nil {
+			log.Error("failed to find the vcs",
+				zap.Int("vcs_uid", repo.VCSUID),
+				zap.String("repository_external_id", repo.ExternalID),
+			)
+			continue
+		}
+		if externalVCS == nil {
+			log.Debug("skipping repo due to missing VCS",
+				zap.Int("vcs_uid", repo.VCSUID),
+				zap.String("repository_external_id", repo.ExternalID),
+			)
+			continue
+		}
+
 		if pushEventRepositoryID != repo.ExternalID {
-			log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", pushEventRepositoryID), zap.String("repoExternalID", repo.ExternalID))
+			log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.UID), zap.String("pushEventExternalID", pushEventRepositoryID), zap.String("repoExternalID", repo.ExternalID))
 			continue
 		}
 
@@ -830,11 +864,15 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 			return nil, err
 		}
 		if !ok {
-			log.Debug("Skipping repo due to mismatched payload signature", zap.Int("repoID", repo.ID))
+			log.Debug("Skipping repo due to mismatched payload signature", zap.Int("repoID", repo.UID))
 			continue
 		}
 
-		filteredRepos = append(filteredRepos, repo)
+		filteredRepos = append(filteredRepos, &repoInfo{
+			repository: repo,
+			project:    project,
+			vcs:        externalVCS,
+		})
 	}
 	return filteredRepos, nil
 }
@@ -887,8 +925,8 @@ func parseBranchNameFromRefs(ref string) (string, error) {
 	return ref[len(expectedPrefix):], nil
 }
 
-func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Repository, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
-	if len(repositoryList) == 0 {
+func (s *Server) processPushEvent(ctx context.Context, repoInfoList []*repoInfo, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
+	if len(repoInfoList) == 0 {
 		return nil, errors.Errorf("empty repository list")
 	}
 
@@ -905,7 +943,7 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 		return nil, nil
 	}
 
-	repo := repositoryList[0]
+	repo := repoInfoList[0]
 	filteredDistinctFileList := distinctFileList
 	// The before commit ID is all zeros when the branch is just created and contains no commits yet, and we will encounter an error when we try to get the diff.
 	if baseVCSPushEvent.Before != strings.Repeat("0", 40) {
@@ -917,7 +955,7 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 	}
 
 	var createdMessageList []string
-	repoID2FileItemList := groupFileInfoByRepo(filteredDistinctFileList, repositoryList)
+	repoID2FileItemList := groupFileInfoByRepo(filteredDistinctFileList, repoInfoList)
 	for _, fileInfoListInRepo := range repoID2FileItemList {
 		// There are possibly multiple files in the push event.
 		// Each file corresponds to a (database name, schema version) pair.
@@ -925,14 +963,14 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 		dbID2FileInfoList := groupFileInfoByDatabase(fileInfoListInRepo)
 		for _, fileInfoListInDB := range dbID2FileInfoList {
 			fileInfoListSorted := sortFilesBySchemaVersion(fileInfoListInDB)
-			repository := fileInfoListSorted[0].repository
+			repoInfo := fileInfoListSorted[0].repoInfo
 			pushEvent := baseVCSPushEvent
-			pushEvent.VCSType = repository.VCS.Type
-			pushEvent.BaseDirectory = repository.BaseDirectory
+			pushEvent.VCSType = repoInfo.vcs.Type
+			pushEvent.BaseDirectory = repoInfo.repository.BaseDirectory
 			createdMessage, created, activityCreateList, err := s.processFilesInProject(
 				ctx,
 				pushEvent,
-				repository,
+				repoInfo,
 				fileInfoListSorted,
 			)
 			if err != nil {
@@ -952,8 +990,8 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 
 	if len(createdMessageList) == 0 {
 		var repoURLs []string
-		for _, repo := range repositoryList {
-			repoURLs = append(repoURLs, repo.WebURL)
+		for _, repoInfo := range repoInfoList {
+			repoURLs = append(repoURLs, repoInfo.repository.WebURL)
 		}
 		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Strings("repos", repoURLs))
 	}
@@ -965,23 +1003,28 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 // In that case, the commits in the push event contains files which are not added in this PR/MR.
 // We use the compare API to get the file diffs and filter files by the diffs.
 // TODO(dragonly): generate distinct file change list from the commits diff instead of filter.
-func (s *Server) filterFilesByCommitsDiff(ctx context.Context, repo *api.Repository, distinctFileList []vcs.DistinctFileItem, beforeCommit, afterCommit string) ([]vcs.DistinctFileItem, error) {
-	fileDiffList, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).GetDiffFileList(
+func (s *Server) filterFilesByCommitsDiff(
+	ctx context.Context,
+	repoInfo *repoInfo,
+	distinctFileList []vcs.DistinctFileItem,
+	beforeCommit, afterCommit string,
+) ([]vcs.DistinctFileItem, error) {
+	fileDiffList, err := vcs.Get(repoInfo.vcs.Type, vcs.ProviderConfig{}).GetDiffFileList(
 		ctx,
 		common.OauthContext{
-			ClientID:     repo.VCS.ApplicationID,
-			ClientSecret: repo.VCS.Secret,
-			AccessToken:  repo.AccessToken,
-			RefreshToken: repo.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+			ClientID:     repoInfo.vcs.ApplicationID,
+			ClientSecret: repoInfo.vcs.Secret,
+			AccessToken:  repoInfo.repository.AccessToken,
+			RefreshToken: repoInfo.repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repoInfo.repository.WebURL),
 		},
-		repo.VCS.InstanceURL,
-		repo.ExternalID,
+		repoInfo.vcs.InstanceURL,
+		repoInfo.repository.ExternalID,
 		beforeCommit,
 		afterCommit,
 	)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "failed to get file diff list for repository %s", repo.ExternalID)
+		return nil, errors.WithMessagef(err, "failed to get file diff list for repository %s", repoInfo.repository.ExternalID)
 	}
 	var filteredDistinctFileList []vcs.DistinctFileItem
 	for _, file := range distinctFileList {
@@ -999,7 +1042,7 @@ type fileInfo struct {
 	item          vcs.DistinctFileItem
 	migrationInfo *db.MigrationInfo
 	fType         fileType
-	repository    *api.Repository
+	repoInfo      *repoInfo
 }
 
 func groupFileInfoByDatabase(fileInfoList []fileInfo) map[string][]fileInfo {
@@ -1010,16 +1053,16 @@ func groupFileInfoByDatabase(fileInfoList []fileInfo) map[string][]fileInfo {
 	return dbID2FileInfoList
 }
 
-// groupFileInfoByRepo groups information for distinct files in the push event by their corresponding api.Repository.
+// groupFileInfoByRepo groups information for distinct files in the push event by their corresponding store.RepositoryMessage.
 // In a GitLab/GitHub monorepo, a user could create multiple projects and configure different base directory in the repository.
-// Bytebase will create a different api.Repository for each project. If the user decides to do a migration in multiple directories at once,
-// the push event will trigger changes in multiple projects. So we first group the files into api.Repository, and create issue(s) in
+// Bytebase will create a different store.RepositoryMessage for each project. If the user decides to do a migration in multiple directories at once,
+// the push event will trigger changes in multiple projects. So we first group the files into store.RepositoryMessage, and create issue(s) in
 // each project.
-func groupFileInfoByRepo(distinctFileList []vcs.DistinctFileItem, repositoryList []*api.Repository) map[int][]fileInfo {
+func groupFileInfoByRepo(distinctFileList []vcs.DistinctFileItem, repoInfoList []*repoInfo) map[int][]fileInfo {
 	repoID2FileItemList := make(map[int][]fileInfo)
 	for _, item := range distinctFileList {
 		log.Debug("Processing file", zap.String("file", item.FileName), zap.String("commit", item.Commit.ID))
-		migrationInfo, fType, repository, err := getFileInfo(item, repositoryList)
+		migrationInfo, fType, repoInfo, err := getFileInfo(item, repoInfoList)
 		if err != nil {
 			log.Warn("Failed to get file info for the ignored repository file",
 				zap.String("file", item.FileName),
@@ -1027,11 +1070,11 @@ func groupFileInfoByRepo(distinctFileList []vcs.DistinctFileItem, repositoryList
 			)
 			continue
 		}
-		repoID2FileItemList[repository.ID] = append(repoID2FileItemList[repository.ID], fileInfo{
+		repoID2FileItemList[repoInfo.repository.UID] = append(repoID2FileItemList[repoInfo.repository.UID], fileInfo{
 			item:          item,
 			migrationInfo: migrationInfo,
 			fType:         fType,
-			repository:    repository,
+			repoInfo:      repoInfo,
 		})
 	}
 	return repoID2FileItemList
@@ -1049,23 +1092,23 @@ const (
 // repositories and returns the parsed migration information, file change type
 // and a single matched repository. It returns an error when none or multiple
 // repositories are matched.
-func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository) (*db.MigrationInfo, fileType, *api.Repository, error) {
+func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.MigrationInfo, fileType, *repoInfo, error) {
 	var migrationInfo *db.MigrationInfo
 	var fType fileType
-	var fileRepositoryList []*api.Repository
-	for _, repository := range repositoryList {
-		if !strings.HasPrefix(fileItem.FileName, repository.BaseDirectory) {
+	var fileRepositoryList []*repoInfo
+	for _, repoInfo := range repoInfoList {
+		if !strings.HasPrefix(fileItem.FileName, repoInfo.repository.BaseDirectory) {
 			log.Debug("Ignored file outside the base directory",
 				zap.String("file", fileItem.FileName),
-				zap.String("base_directory", repository.BaseDirectory),
+				zap.String("base_directory", repoInfo.repository.BaseDirectory),
 			)
 			continue
 		}
 
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		filePathTemplate := path.Join(repository.BaseDirectory, repository.FilePathTemplate)
+		filePathTemplate := path.Join(repoInfo.repository.BaseDirectory, repoInfo.repository.FilePathTemplate)
 		allowOmitDatabaseName := false
-		if repository.Project.TenantMode == api.TenantModeTenant {
+		if repoInfo.project.TenantMode == api.TenantModeTenant {
 			allowOmitDatabaseName = true
 			// If the committed file is a YAML file, then the user may have opted-in
 			// advanced mode, we need to alter the FilePathTemplate to match ".yml" instead
@@ -1078,7 +1121,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 		mi, err := db.ParseMigrationInfo(fileItem.FileName, filePathTemplate, allowOmitDatabaseName)
 		if err != nil {
 			log.Error("Failed to parse migration file info",
-				zap.Int("project", repository.ProjectID),
+				zap.String("project", repoInfo.repository.ProjectResourceID),
 				zap.String("file", fileItem.FileName),
 				zap.Error(err),
 			)
@@ -1091,11 +1134,11 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 
 			migrationInfo = mi
 			fType = fileTypeMigration
-			fileRepositoryList = append(fileRepositoryList, repository)
+			fileRepositoryList = append(fileRepositoryList, repoInfo)
 			continue
 		}
 
-		si, err := db.ParseSchemaFileInfo(repository.BaseDirectory, repository.SchemaPathTemplate, fileItem.FileName)
+		si, err := db.ParseSchemaFileInfo(repoInfo.repository.BaseDirectory, repoInfo.repository.SchemaPathTemplate, fileItem.FileName)
 		if err != nil {
 			log.Debug("Failed to parse schema file info",
 				zap.String("file", fileItem.FileName),
@@ -1106,7 +1149,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 		if si != nil {
 			migrationInfo = si
 			fType = fileTypeSchema
-			fileRepositoryList = append(fileRepositoryList, repository)
+			fileRepositoryList = append(fileRepositoryList, repoInfo)
 			continue
 		}
 	}
@@ -1118,8 +1161,8 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 		return migrationInfo, fType, fileRepositoryList[0], nil
 	default:
 		var projectList []string
-		for _, repository := range fileRepositoryList {
-			projectList = append(projectList, repository.Project.Name)
+		for _, repoInfo := range fileRepositoryList {
+			projectList = append(projectList, repoInfo.project.Title)
 		}
 		return nil, fileTypeUnknown, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ", "))
 	}
@@ -1131,8 +1174,8 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 // It returns "created=true" when new issue(s) has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, fileInfoList []fileInfo) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
-	if repo.Project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
+func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
+	if repoInfo.project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 		return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 	}
 
@@ -1144,15 +1187,15 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
 	for _, fileInfo := range fileInfoList {
 		if fileInfo.fType == fileTypeSchema {
-			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
+			if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 				// Create one issue per schema file for SDL project.
-				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
+				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repoInfo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
 				activityCreateList = append(activityCreateList, activityCreateListForFile...)
 				if len(migrationDetailListForFile) != 0 {
 					databaseName := fileInfo.migrationInfo.Database
 					issueName := fmt.Sprintf(sdlIssueNameTemplate, databaseName, "Alter schema")
-					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repo.BaseDirectory+"/"))
-					if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repo.ProjectID, migrationDetailListForFile); err != nil {
+					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
+					if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repoInfo.project.UID, migrationDetailListForFile); err != nil {
 						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 					}
 					createdIssueList = append(createdIssueList, issueName)
@@ -1167,11 +1210,11 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 			// 1) DML is always migration-based.
 			// 2) We may have a limitation in SDL implementation.
 			// 3) User just wants to break the glass.
-			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repo, pushEvent, fileInfo)
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repoInfo, pushEvent, fileInfo)
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
 			if len(migrationDetailListForFile) != 0 {
-				fileNameList = append(fileNameList, strings.TrimPrefix(fileInfo.item.FileName, repo.BaseDirectory+"/"))
+				fileNameList = append(fileNameList, strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
 			}
 		}
 	}
@@ -1193,7 +1236,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	description := strings.ReplaceAll(fileInfoList[0].migrationInfo.Description, "_", " ")
 	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType, description)
 	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
-	if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repo.ProjectID, migrationDetailList); err != nil {
+	if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repoInfo.project.UID, migrationDetailList); err != nil {
 		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
 	}
 	createdIssueList = append(createdIssueList, issueName)
@@ -1390,29 +1433,37 @@ func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file s
 }
 
 // readFileContent reads the content of the given file from the given repository.
-func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, file string) (string, error) {
+func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, file string) (string, error) {
 	// Retrieve the latest AccessToken and RefreshToken as the previous
 	// ReadFileContent call may have updated the stored token pair. ReadFileContent
 	// will fetch and store the new token pair if the existing token pair has
 	// expired.
-	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &repo.WebhookEndpointID})
+	repos, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{WebhookEndpointID: &repoInfo.repository.WebhookEndpointID})
 	if err != nil {
-		return "", errors.Wrapf(err, "get repository by webhook endpoint %q", repo.WebhookEndpointID)
+		return "", errors.Wrapf(err, "get repository by webhook endpoint %q", repoInfo.repository.WebhookEndpointID)
 	} else if len(repos) == 0 {
-		return "", errors.Wrapf(err, "repository not found by webhook endpoint %q", repo.WebhookEndpointID)
+		return "", errors.Wrapf(err, "repository not found by webhook endpoint %q", repoInfo.repository.WebhookEndpointID)
 	}
 
-	repo = repos[0]
-	content, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+	repo := repos[0]
+	externalVCS, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
+	if err != nil {
+		return "", err
+	}
+	if externalVCS == nil {
+		return "", errors.Errorf("cannot found vcs with id %d", repo.VCSUID)
+	}
+
+	content, err := vcs.Get(externalVCS.Type, vcs.ProviderConfig{}).ReadFileContent(
 		ctx,
 		common.OauthContext{
-			ClientID:     repo.VCS.ApplicationID,
-			ClientSecret: repo.VCS.Secret,
+			ClientID:     externalVCS.ApplicationID,
+			ClientSecret: externalVCS.Secret,
 			AccessToken:  repo.AccessToken,
 			RefreshToken: repo.RefreshToken,
 			Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 		},
-		repo.VCS.InstanceURL,
+		externalVCS.InstanceURL,
 		repo.ExternalID,
 		file,
 		pushEvent.CommitList[len(pushEvent.CommitList)-1].ID,
@@ -1425,22 +1476,22 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 
 // prepareIssueFromSDLFile returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	dbName := schemaInfo.Database
-	if dbName == "" && repo.Project.TenantMode == api.TenantModeDisabled {
+	if dbName == "" && repoInfo.project.TenantMode == api.TenantModeDisabled {
 		log.Debug("Ignored schema file without a database name", zap.String("file", file))
 		return nil, nil
 	}
 
-	sdl, err := s.readFileContent(ctx, pushEvent, repo, file)
+	sdl, err := s.readFileContent(ctx, pushEvent, repoInfo, file)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
 	sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
 		CreatorID:  api.SystemBotID,
-		ProjectID:  repo.ProjectID,
+		ProjectID:  repoInfo.project.UID,
 		Name:       file,
 		Statement:  sdl,
 		Visibility: api.ProjectSheet,
@@ -1448,12 +1499,12 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		Type:       api.SheetForSQL,
 	})
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
 	var migrationDetailList []*api.MigrationDetail
-	if repo.Project.TenantMode == api.TenantModeTenant {
+	if repoInfo.project.TenantMode == api.TenantModeTenant {
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
 				MigrationType: db.MigrateSDL,
@@ -1463,9 +1514,9 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, dbName, schemaInfo.Environment)
+	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, dbName, schemaInfo.Environment)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
@@ -1484,12 +1535,17 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 
 // prepareIssueFromFile returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileInfo fileInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
-	content, err := s.readFileContent(ctx, pushEvent, repo, fileInfo.item.FileName)
+func (s *Server) prepareIssueFromFile(
+	ctx context.Context,
+	repoInfo *repoInfo,
+	pushEvent vcs.PushEvent,
+	fileInfo fileInfo,
+) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+	content, err := s.readFileContent(ctx, pushEvent, repoInfo, fileInfo.item.FileName)
 	if err != nil {
 		return nil, []*api.ActivityCreate{
 			getIgnoredFileActivityCreate(
-				repo.ProjectID,
+				repoInfo.project.UID,
 				pushEvent,
 				fileInfo.item.FileName,
 				errors.Wrap(err, "Failed to read file content"),
@@ -1497,12 +1553,12 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 		}
 	}
 
-	if repo.Project.TenantMode == api.TenantModeTenant {
+	if repoInfo.project.TenantMode == api.TenantModeTenant {
 		// A non-YAML file means the whole file content is the SQL statement
 		if !fileInfo.item.IsYAML {
 			sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
 				CreatorID:  api.SystemBotID,
-				ProjectID:  repo.ProjectID,
+				ProjectID:  repoInfo.project.UID,
 				Name:       fileInfo.item.FileName,
 				Statement:  content,
 				Visibility: api.ProjectSheet,
@@ -1510,7 +1566,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 				Type:       api.SheetForSQL,
 			})
 			if err != nil {
-				activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+				activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
 				return nil, []*api.ActivityCreate{activityCreate}
 			}
 
@@ -1528,7 +1584,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 		if err != nil {
 			return nil, []*api.ActivityCreate{
 				getIgnoredFileActivityCreate(
-					repo.ProjectID,
+					repoInfo.project.UID,
 					pushEvent,
 					fileInfo.item.FileName,
 					errors.Wrap(err, "Failed to parse file content as YAML"),
@@ -1538,7 +1594,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 
 		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
 			CreatorID:  api.SystemBotID,
-			ProjectID:  repo.ProjectID,
+			ProjectID:  repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
 			Statement:  migrationFile.Statement,
 			Visibility: api.ProjectSheet,
@@ -1546,17 +1602,17 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 			Type:       api.SheetForSQL,
 		})
 		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
 			return nil, []*api.ActivityCreate{activityCreate}
 		}
 
 		var migrationDetailList []*api.MigrationDetail
 		for _, database := range migrationFile.Databases {
-			dbList, err := s.findProjectDatabases(ctx, repo.ProjectID, database.Name, "")
+			dbList, err := s.findProjectDatabases(ctx, repoInfo.project.UID, database.Name, "")
 			if err != nil {
 				return nil, []*api.ActivityCreate{
 					getIgnoredFileActivityCreate(
-						repo.ProjectID,
+						repoInfo.project.UID,
 						pushEvent,
 						fileInfo.item.FileName,
 						errors.Wrapf(err, "Failed to find project database %q", database.Name),
@@ -1579,16 +1635,16 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 	}
 
 	// TODO(dragonly): handle modified file for tenant mode.
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
+	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to find project databases"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
 	if fileInfo.item.ItemType == vcs.FileItemTypeAdded {
 		sheet, err := s.store.CreateSheet(ctx, &api.SheetCreate{
 			CreatorID:  api.SystemBotID,
-			ProjectID:  repo.ProjectID,
+			ProjectID:  repoInfo.project.UID,
 			Name:       fileInfo.item.FileName,
 			Statement:  content,
 			Visibility: api.ProjectSheet,
@@ -1596,7 +1652,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 			Type:       api.SheetForSQL,
 		})
 		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
 			return nil, []*api.ActivityCreate{activityCreate}
 		}
 
@@ -1618,7 +1674,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, migrationVersion, content); err != nil {
 		return nil, []*api.ActivityCreate{
 			getIgnoredFileActivityCreate(
-				repo.ProjectID,
+				repoInfo.project.UID,
 				pushEvent,
 				fileInfo.item.FileName,
 				errors.Wrap(err, "Failed to find project task"),
@@ -1931,7 +1987,7 @@ type mybatisMapperXMLFileDatum struct {
 //	repo: the repository will be list file tree and get file content from.
 //	commitID: the commitID is the snapshot of the file tree and file content.
 //	mapperFiles: the map of the mybatis mapper XML file path and content.
-func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repo *api.Repository, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
+func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *repoInfo, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
 	if len(mapperFiles) == 0 {
 		return []*mybatisMapperXMLFileDatum{}, nil
 	}
@@ -1966,44 +2022,44 @@ func (s *Server) buildMybatisMapperXMLFileData(ctx context.Context, repo *api.Re
 				break
 			}
 
-			filesInDir, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).FetchRepositoryFileList(
+			filesInDir, err := vcs.Get(repoInfo.vcs.Type, vcs.ProviderConfig{}).FetchRepositoryFileList(
 				ctx,
 				common.OauthContext{
-					ClientID:     repo.VCS.ApplicationID,
-					ClientSecret: repo.VCS.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+					ClientID:     repoInfo.vcs.ApplicationID,
+					ClientSecret: repoInfo.vcs.Secret,
+					AccessToken:  repoInfo.repository.AccessToken,
+					RefreshToken: repoInfo.repository.RefreshToken,
+					Refresher:    utils.RefreshToken(ctx, s.store, repoInfo.repository.WebURL),
 				},
-				repo.VCS.InstanceURL,
-				repo.ExternalID,
+				repoInfo.vcs.InstanceURL,
+				repoInfo.repository.ExternalID,
 				commitID,
 				currentDir,
 			)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to fetch repository file list for repository %q commitID %q directory %q", repo.WebURL, commitID, currentDir)
+				return nil, errors.Wrapf(err, "failed to fetch repository file list for repository %q commitID %q directory %q", repoInfo.repository.WebURL, commitID, currentDir)
 			}
 
 			for _, file := range filesInDir {
 				if file.Type != "blob" || !strings.HasSuffix(file.Path, ".xml") {
 					continue
 				}
-				fileContent, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+				fileContent, err := vcs.Get(repoInfo.vcs.Type, vcs.ProviderConfig{}).ReadFileContent(
 					ctx,
 					common.OauthContext{
-						ClientID:     repo.VCS.ApplicationID,
-						ClientSecret: repo.VCS.Secret,
-						AccessToken:  repo.AccessToken,
-						RefreshToken: repo.RefreshToken,
-						Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+						ClientID:     repoInfo.vcs.ApplicationID,
+						ClientSecret: repoInfo.vcs.Secret,
+						AccessToken:  repoInfo.repository.AccessToken,
+						RefreshToken: repoInfo.repository.RefreshToken,
+						Refresher:    utils.RefreshToken(ctx, s.store, repoInfo.repository.WebURL),
 					},
-					repo.VCS.InstanceURL,
-					repo.ExternalID,
+					repoInfo.vcs.InstanceURL,
+					repoInfo.repository.ExternalID,
 					file.Path,
 					commitID,
 				)
 				if err != nil {
-					return nil, errors.Wrapf(err, "failed to read file content for repository %q commitID %q file %q", repo.WebURL, commitID, file.Path)
+					return nil, errors.Wrapf(err, "failed to read file content for repository %q commitID %q file %q", repoInfo.repository.WebURL, commitID, file.Path)
 				}
 				if !isMybatisConfigXMLRegex.MatchString(fileContent) {
 					continue
