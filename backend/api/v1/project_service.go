@@ -1388,6 +1388,12 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 	if request.DatabaseGroup.DatabaseExpr == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
 	}
+	if request.DatabaseGroup.DatabaseExpr.Expression == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
+	}
+	if _, err := validateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
+	}
 
 	storeDatabaseGroup := &store.DatabaseGroupMessage{
 		ResourceID:  request.DatabaseGroupId,
@@ -1634,6 +1640,12 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 	if request.SchemaGroup.TableExpr == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "schema group table expression is required")
 	}
+	if request.SchemaGroup.TableExpr.Expression == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
+	}
+	if _, err := validateGroupCELExpr(request.SchemaGroup.TableExpr.Expression); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid schema group table expression: %v", err)
+	}
 
 	storeSchemaGroup := &store.SchemaGroupMessage{
 		ResourceID:       request.SchemaGroupId,
@@ -1877,6 +1889,24 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 	return ret, nil
 }
 
+func validateGroupCELExpr(expr string) (cel.Program, error) {
+	e, err := cel.NewEnv(
+		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(expr)
+	if issues != nil && issues.Err() != nil {
+		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	return prog, nil
+}
+
 func (s *ProjectService) getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &projectResourceID,
@@ -1884,21 +1914,10 @@ func (s *ProjectService) getMatchedAndUnmatchedDatabases(ctx context.Context, da
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	prog, err := validateGroupCELExpr(databaseGroup.Expression.Expression)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, err
 	}
-	ast, issues := e.Parse(databaseGroup.Expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
 	var matches []*store.DatabaseMessage
 	var unmatches []*store.DatabaseMessage
 
@@ -1955,19 +1974,9 @@ func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schem
 		return nil, nil, err
 	}
 
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	prog, err := validateGroupCELExpr(schemaGroup.Expression.Expression)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
-	}
-	ast, issues := e.Parse(schemaGroup.Expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 
 	var matches []*v1pb.SchemaGroup_Table
