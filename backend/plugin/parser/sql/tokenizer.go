@@ -363,8 +363,8 @@ func matchTableConstraint(text string, cons *ast.ConstraintDef) bool {
 	return false
 }
 
-// splitMySQLMultiSQL splits the statement to a string slice.
-func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
+// splitTiDBMultiSQL splits the statement to a string slice.
+func (t *tokenizer) splitTiDBMultiSQL() ([]SingleSQL, error) {
 	var res []SingleSQL
 	delimiter := []rune{';'}
 

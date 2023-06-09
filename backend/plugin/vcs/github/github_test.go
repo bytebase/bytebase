@@ -603,40 +603,7 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 }
 
 func TestProvider_ReadFileContent(t *testing.T) {
-	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
-		assert.Equal(t, "/repos/octocat/Hello-World/contents/README.md", r.URL.Path)
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			// Example response derived from https://docs.github.com/en/rest/repos/contents#get-repository-content
-			Body: io.NopCloser(strings.NewReader(`
-{
-  "type": "file",
-  "encoding": "base64",
-  "size": 442,
-  "name": "README.md",
-  "path": "README.md",
-  "content": "IyBTYW1wbGUgR2l0TGFiIFByb2plY3QKClRoaXMgc2FtcGxlIHByb2plY3Qgc2hvd3MgaG93IGEgcHJvamVjdCBpbiBHaXRMYWIgbG9va3MgZm9yIGRlbW9uc3RyYXRpb24gcHVycG9zZXMuIEl0IGNvbnRhaW5zIGlzc3VlcywgbWVyZ2UgcmVxdWVzdHMgYW5kIE1hcmtkb3duIGZpbGVzIGluIG1hbnkgYnJhbmNoZXMsCm5hbWVkIGFuZCBmaWxsZWQgd2l0aCBsb3JlbSBpcHN1bS4KCllvdSBjYW4gbG9vayBhcm91bmQgdG8gZ2V0IGFuIGlkZWEgaG93IHRvIHN0cnVjdHVyZSB5b3VyIHByb2plY3QgYW5kLCB3aGVuIGRvbmUsIHlvdSBjYW4gc2FmZWx5IGRlbGV0ZSB0aGlzIHByb2plY3QuCgpbTGVhcm4gbW9yZSBhYm91dCBjcmVhdGluZyBHaXRMYWIgcHJvamVjdHMuXShodHRwczovL2RvY3MuZ2l0bGFiLmNvbS9lZS9naXRsYWItYmFzaWNzL2NyZWF0ZS1wcm9qZWN0Lmh0bWwpCg==",
-  "sha": "3d21ec53a331a6f037a91c368710b99387d012c1",
-  "url": "https://api.github.com/repos/octocat/Hello-World/contents/README.md",
-  "git_url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/3d21ec53a331a6f037a91c368710b99387d012c1",
-  "html_url": "https://github.com/octocat/Hello-World/blob/master/README.md",
-  "download_url": "https://raw.githubusercontent.com/octocat/Hello-World/master/README.md",
-  "_links": {
-    "git": "https://api.github.com/repos/octocat/Hello-World/git/blobs/3d21ec53a331a6f037a91c368710b99387d012c1",
-    "self": "https://api.github.com/repos/octocat/Hello-World/contents/README.md",
-    "html": "https://github.com/octocat/Hello-World/blob/master/README.md"
-  }
-}
-`)),
-		}, nil
-	},
-	)
-
-	ctx := context.Background()
-	got, err := p.ReadFileContent(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", "master")
-	require.NoError(t, err)
-
-	want := `# Sample GitLab Project
+	const want = `# Sample GitLab Project
 
 This sample project shows how a project in GitLab looks for demonstration purposes. It contains issues, merge requests and Markdown files in many branches,
 named and filled with lorem ipsum.
@@ -645,6 +612,22 @@ You can look around to get an idea how to structure your project and, when done,
 
 [Learn more about creating GitLab projects.](https://docs.gitlab.com/ee/gitlab-basics/create-project.html)
 `
+
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/octocat/Hello-World/contents/README.md", r.URL.Path)
+		assert.Equal(t, "application/vnd.github.raw", r.Header.Get("Accept"))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response derived from https://docs.github.com/en/rest/repos/contents#get-repository-content
+			Body: io.NopCloser(strings.NewReader(want)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	got, err := p.ReadFileContent(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", "master")
+	require.NoError(t, err)
+
 	assert.Equal(t, want, got)
 }
 

@@ -17,6 +17,8 @@ import (
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
 
+	mysqlparser "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
@@ -58,7 +60,10 @@ func (r SchemaResource) Pretty() string {
 // ExtractResourceList extracts the resource list from the SQL.
 func ExtractResourceList(engineType EngineType, currentDatabase string, currentSchema string, sql string) ([]SchemaResource, error) {
 	switch engineType {
-	case MySQL, TiDB, MariaDB, OceanBase:
+	case TiDB:
+		return extractTiDBResourceList(currentDatabase, sql)
+	case MySQL, MariaDB, OceanBase:
+		// The resource list for MySQL may contains table, view and temporary table.
 		return extractMySQLResourceList(currentDatabase, sql)
 	case Oracle:
 		// The resource list for Oracle may contains table, view and temporary table.
@@ -135,8 +140,8 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 	return result
 }
 
-func extractMySQLResourceList(currentDatabase string, sql string) ([]SchemaResource, error) {
-	nodes, err := ParseMySQL(sql, "", "")
+func extractTiDBResourceList(currentDatabase string, sql string) ([]SchemaResource, error) {
+	nodes, err := ParseTiDB(sql, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -346,32 +351,35 @@ func collapseUnion(query string) (string, error) {
 func SplitMultiSQLAndNormalize(engineType EngineType, statement string) ([]SingleSQL, error) {
 	switch engineType {
 	case MySQL:
-		list, err := SplitMultiSQL(MySQL, statement)
+		has, list, err := hasDelimiter(statement)
 		if err != nil {
 			return nil, err
 		}
-
-		var result []SingleSQL
-		delimiter := `;`
-		for _, sql := range list {
-			if IsDelimiter(sql.Text) {
-				delimiter, err = ExtractDelimiter(sql.Text)
-				if err != nil {
-					return nil, err
+		if has {
+			var result []SingleSQL
+			delimiter := `;`
+			for _, sql := range list {
+				if IsDelimiter(sql.Text) {
+					delimiter, err = ExtractDelimiter(sql.Text)
+					if err != nil {
+						return nil, err
+					}
+					continue
 				}
-				continue
+				if delimiter != ";" {
+					result = append(result, SingleSQL{
+						Text:     fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)),
+						LastLine: sql.LastLine,
+						Empty:    sql.Empty,
+					})
+				} else {
+					result = append(result, sql)
+				}
 			}
-			if delimiter != ";" {
-				result = append(result, SingleSQL{
-					Text:     fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)),
-					LastLine: sql.LastLine,
-					Empty:    sql.Empty,
-				})
-			} else {
-				result = append(result, sql)
-			}
+			return result, nil
 		}
-		return result, nil
+
+		return SplitMultiSQL(MySQL, statement)
 	default:
 		return SplitMultiSQL(engineType, statement)
 	}
@@ -388,9 +396,11 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	case Postgres, Redshift:
 		t := newTokenizer(statement)
 		list, err = t.splitPostgreSQLMultiSQL()
-	case MySQL, TiDB, MariaDB, OceanBase:
+	case MySQL, MariaDB, OceanBase:
+		return splitMySQLMultiSQL(statement)
+	case TiDB:
 		t := newTokenizer(statement)
-		list, err = t.splitMySQLMultiSQL()
+		list, err = t.splitTiDBMultiSQL()
 	default:
 		err = applyMultiStatements(strings.NewReader(statement), func(sql string) error {
 			list = append(list, SingleSQL{
@@ -416,6 +426,61 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 		}
 		result = append(result, sql)
 	}
+	return result, nil
+}
+
+func splitMySQLMultiSQL(statement string) ([]SingleSQL, error) {
+	tree, tokens, err := ParseMySQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	if tree == nil {
+		return nil, nil
+	}
+
+	var result []SingleSQL
+	for _, node := range tree.GetChildren() {
+		if query, ok := node.(mysqlparser.IQueryContext); ok {
+			result = append(result, SingleSQL{
+				Text:     tokens.GetTextFromRuleContext(query),
+				LastLine: query.GetStop().GetLine(),
+				Empty:    false,
+			})
+		}
+	}
+
+	return result, nil
+}
+
+// Note that the reader is read completely into memory and so it must actually
+// have a stopping point - you cannot pass in a reader on an open-ended source such
+// as a socket for instance.
+func splitMySQLMultiSQLStream(src io.Reader, f func(string) error) ([]SingleSQL, error) {
+	tree, tokens, err := ParseMySQLStream(src)
+	if err != nil {
+		return nil, err
+	}
+	if tree == nil {
+		return nil, nil
+	}
+
+	var result []SingleSQL
+	for _, node := range tree.GetChildren() {
+		if query, ok := node.(mysqlparser.IQueryContext); ok {
+			text := tokens.GetTextFromRuleContext(query)
+			if f != nil {
+				if err := f(text); err != nil {
+					return nil, err
+				}
+			}
+			result = append(result, SingleSQL{
+				Text:     text,
+				LastLine: query.GetStop().GetLine(),
+				Empty:    false,
+			})
+		}
+	}
+
 	return result, nil
 }
 
@@ -516,9 +581,11 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) er
 	case Postgres, Redshift:
 		t := newStreamTokenizer(src, f)
 		list, err = t.splitPostgreSQLMultiSQL()
-	case MySQL, TiDB, MariaDB, OceanBase:
+	case MySQL, MariaDB, OceanBase:
+		return splitMySQLMultiSQLStream(src, f)
+	case TiDB:
 		t := newStreamTokenizer(src, f)
-		list, err = t.splitMySQLMultiSQL()
+		list, err = t.splitTiDBMultiSQL()
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
@@ -589,13 +656,26 @@ func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
 
 // isTiDBUnsupportStmt returns true if this statement is unsupported in TiDB.
 func isTiDBUnsupportStmt(stmt string) bool {
-	if IsTiDBUnsupportDDLStmt(stmt) {
+	if _, err := ParseTiDB(stmt, "", ""); err != nil {
 		return true
 	}
-	// Match DELIMITER statement
-	// Now, we assume that all input comes from our mysqldump, and the tokenizer can split the mysqldump DELIMITER statement
-	// in one singleSQL correctly, so we can handle it easily here by checking the prefix.
-	return IsDelimiter(stmt)
+	return false
+}
+
+func hasDelimiter(statement string) (bool, []SingleSQL, error) {
+	// use splitTiDBMultiSQL to check if the statement has delimiter
+	list, err := SplitMultiSQL(TiDB, statement)
+	if err != nil {
+		return false, nil, errors.Errorf("failed to split multi sql: %v", err)
+	}
+
+	for _, sql := range list {
+		if IsDelimiter(sql.Text) {
+			return true, list, nil
+		}
+	}
+
+	return false, list, nil
 }
 
 // IsTiDBUnsupportDDLStmt checks whether the `stmt` is unsupported DDL statement in TiDB, the following statements are unsupported:

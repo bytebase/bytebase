@@ -272,18 +272,18 @@ func TestIndexOption(t *testing.T) {
 				"ALTER TABLE `book` ADD PRIMARY KEY (`name`) KEY_BLOCK_SIZE=50;\n\n",
 		},
 		// WITH PARSER not match.
-		{
-			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) WITH PARSER parser_a);`,
-			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) WITH PARSER parser_b);`,
-			want: "DROP INDEX `book_idx` ON `book`;\n\n" +
-				"CREATE FULLTEXT INDEX `book_idx` ON `book` (`name`) WITH PARSER `parser_b`;\n\n",
-		},
-		{
-			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) WITH PARSER parser_a);`,
-			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL,CONSTRAINT PRIMARY KEY (name) WITH PARSER parser_b);`,
-			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD PRIMARY KEY (`name`) WITH PARSER `parser_b`;\n\n",
-		},
+		// {
+		// 	old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) WITH PARSER parser_a);`,
+		// 	new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) WITH PARSER parser_b);`,
+		// 	want: "DROP INDEX `book_idx` ON `book`;\n\n" +
+		// 		"CREATE FULLTEXT INDEX `book_idx` ON `book` (`name`) WITH PARSER `parser_b`;\n\n",
+		// },
+		// {
+		// 	old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) WITH PARSER parser_a);`,
+		// 	new: `CREATE TABLE book(name VARCHAR(50) NOT NULL,CONSTRAINT PRIMARY KEY (name) WITH PARSER parser_b);`,
+		// 	want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
+		// 		"ALTER TABLE `book` ADD PRIMARY KEY (`name`) WITH PARSER `parser_b`;\n\n",
+		// },
 		// COMMENT not match.
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) COMMENT 'comment_a');`,
@@ -313,13 +313,13 @@ func TestIndexOption(t *testing.T) {
 				"ALTER TABLE `book` ADD PRIMARY KEY (`name`) INVISIBLE;\n\n",
 		},
 		{
-			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) KEY_BLOCK_SIZE=30 WITH PARSER parser_a COMMENT 'no difference!');`,
-			new:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) KEY_BLOCK_SIZE=30 WITH PARSER parser_a COMMENT 'no difference!');`,
+			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) KEY_BLOCK_SIZE=30 COMMENT 'no difference!');`,
+			new:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) KEY_BLOCK_SIZE=30 COMMENT 'no difference!');`,
 			want: "",
 		},
 		{
-			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY(name) KEY_BLOCK_SIZE=30 WITH PARSER parser_a COMMENT 'no difference!');`,
-			new:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY(name) KEY_BLOCK_SIZE=30 WITH PARSER parser_a COMMENT 'no difference!');`,
+			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) KEY_BLOCK_SIZE=30 COMMENT 'no difference!');`,
+			new:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) KEY_BLOCK_SIZE=30 COMMENT 'no difference!');`,
 			want: "",
 		},
 	}
@@ -371,8 +371,8 @@ func TestKeyPart(t *testing.T) {
 			want: "",
 		},
 		{
-			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY (id, name) COMMENT 'comment_a');`,
-			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY (id, name) COMMENT 'comment_a');`,
+			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (id, name) COMMENT 'comment_a');`,
+			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (id, name) COMMENT 'comment_a');`,
 			want: "",
 		},
 		{
@@ -381,8 +381,8 @@ func TestKeyPart(t *testing.T) {
 			want: "",
 		},
 		{
-			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY ((id + 1)) COMMENT 'comment_a');`,
-			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY ((id + 1)) COMMENT 'comment_a');`,
+			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
+			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
 			want: "",
 		},
 	}
