@@ -5910,6 +5910,8 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 | DDL | 1 |  |
 | DML | 2 |  |
 | CREATE_DATABASE | 3 |  |
+| QUERY | 4 |  |
+| EXPORT | 5 |  |
 
 
  
