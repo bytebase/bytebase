@@ -43,9 +43,9 @@ import { useI18n } from "vue-i18n";
 import { DropdownOption, NDropdown } from "naive-ui";
 
 import type { Issue, Task } from "@/types";
-import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import { canSkipTask, TaskStatusTransition } from "@/utils";
 import StatusTransitionForm from "./StatusTransitionForm.vue";
+import { useExtraIssueLogic, useIssueLogic } from "../logic";
 
 type LocalState = {
   showModal: boolean;

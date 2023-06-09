@@ -1,24 +1,30 @@
 <template>
-  <BBTooltipButton
-    v-if="showApproveButton"
-    :disabled="disallowApproveReasonList.length > 0"
-    :tooltip-props="{
-      placement: 'bottom-end',
-    }"
-    type="primary"
-    tooltip-mode="DISABLED-ONLY"
-    @click="state.modal = true"
-  >
-    {{ $t("common.approve") }}
+  <div class="flex items-stretch gap-x-2">
+    <BBTooltipButton
+      v-if="showApproveButton"
+      :disabled="disallowApproveReasonList.length > 0"
+      :tooltip-props="{
+        placement: 'bottom-end',
+      }"
+      type="primary"
+      tooltip-mode="DISABLED-ONLY"
+      @click="state.modal = true"
+    >
+      {{ $t("common.approve") }}
 
-    <template v-if="disallowApproveReasonList.length > 0" #tooltip>
-      <div class="whitespace-pre-line max-w-[20rem]">
-        <div v-for="(reason, i) in disallowApproveReasonList" :key="i">
-          {{ reason }}
+      <template #tooltip>
+        <div class="whitespace-pre-line max-w-[20rem]">
+          <div v-for="(reason, i) in disallowApproveReasonList" :key="i">
+            {{ reason }}
+          </div>
         </div>
-      </div>
-    </template>
-  </BBTooltipButton>
+      </template>
+    </BBTooltipButton>
+
+    <StandaloneIssueStatusTransitionButtonGroup
+      :display-mode="showApproveButton ? 'DROPDOWN' : 'BUTTON'"
+    />
+  </div>
 
   <BBModal
     v-if="state.modal"
@@ -55,6 +61,7 @@ import { useIssueLogic } from "../logic";
 import IssueReviewForm from "./IssueReviewForm.vue";
 import { taskCheckRunSummary } from "@/utils";
 import { useI18n } from "vue-i18n";
+import { StandaloneIssueStatusTransitionButtonGroup } from "../StatusTransitionButtonGroup";
 
 type LocalState = {
   modal: boolean;

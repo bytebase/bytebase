@@ -81,7 +81,7 @@ import TaskStatusIcon from "./TaskStatusIcon.vue";
 import { useDatabaseV1Store } from "@/store";
 import PipelineStageList from "./PipelineStageList.vue";
 import TaskProgressPie from "./TaskProgressPie.vue";
-import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
+import { TaskExtraActionsButton } from "./StatusTransitionButtonGroup";
 import { useIssueLogic } from "./logic";
 import { useVerticalScrollState } from "@/composables/useScrollState";
 

@@ -30,7 +30,7 @@ import { useAdvices } from "./plugins/useAdvices";
 const props = defineProps({
   value: {
     type: String,
-    required: true,
+    default: "",
   },
   language: {
     type: String as PropType<Language>,
