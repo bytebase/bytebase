@@ -1,11 +1,24 @@
 <template>
-  <button
+  <BBTooltipButton
     v-if="showApproveButton"
-    class="btn-primary"
+    :disabled="disallowApproveReasonList.length > 0"
+    :tooltip-props="{
+      placement: 'bottom-end',
+    }"
+    type="primary"
+    tooltip-mode="DISABLED-ONLY"
     @click="state.modal = true"
   >
     {{ $t("common.approve") }}
-  </button>
+
+    <template v-if="disallowApproveReasonList.length > 0" #tooltip>
+      <div class="whitespace-pre-line max-w-[20rem]">
+        <div v-for="(reason, i) in disallowApproveReasonList" :key="i">
+          {{ reason }}
+        </div>
+      </div>
+    </template>
+  </BBTooltipButton>
 
   <BBModal
     v-if="state.modal"
@@ -37,8 +50,11 @@ import {
   useReviewStore,
 } from "@/store";
 import { Issue } from "@/types";
+import { BBTooltipButton } from "@/bbkit";
 import { useIssueLogic } from "../logic";
 import IssueReviewForm from "./IssueReviewForm.vue";
+import { taskCheckRunSummary } from "@/utils";
+import { useI18n } from "vue-i18n";
 
 type LocalState = {
   modal: boolean;
@@ -50,6 +66,7 @@ const state = reactive<LocalState>({
   loading: false,
 });
 
+const { t } = useI18n();
 const store = useReviewStore();
 const currentUserV1 = useCurrentUserV1();
 const issueContext = useIssueLogic();
@@ -70,6 +87,27 @@ const showApproveButton = computed(() => {
   if (!step) return [];
   const candidates = candidatesOfApprovalStep(issue.value, step);
   return candidates.includes(currentUserV1.value.name);
+});
+
+const allTaskChecksPassed = computed(() => {
+  const taskList =
+    issue.value.pipeline?.stageList.flatMap((stage) => stage.taskList) ?? [];
+  return taskList.every((task) => {
+    const summary = taskCheckRunSummary(task);
+    return summary.errorCount === 0 && summary.runningCount === 0;
+  });
+});
+
+const disallowApproveReasonList = computed((): string[] => {
+  const reasons: string[] = [];
+  if (!allTaskChecksPassed.value) {
+    reasons.push(
+      t(
+        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+      )
+    );
+  }
+  return reasons;
 });
 
 const handleConfirmApprove = async (onSuccess: () => void) => {

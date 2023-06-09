@@ -2448,7 +2448,10 @@
       },
       "you": "你",
       "generating-approval-flow": "正在生成审批流",
-      "approved-issue": "批准工单"
+      "approved-issue": "批准工单",
+      "disallow-approve-reason": {
+        "some-task-checks-didnt-pass": "尚有未通过的任务检查项"
+      }
     }
   },
   "slow-query": {

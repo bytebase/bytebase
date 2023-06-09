@@ -1,5 +1,5 @@
 <template>
-  <NTooltip trigger="manual" :show="state.tooltipVisible">
+  <NTooltip trigger="manual" :show="state.tooltipVisible" v-bind="tooltipProps">
     <template #trigger>
       <!--
         Allowing to overwrite the entire button
@@ -40,6 +40,7 @@ export default {
 
 <script lang="ts" setup>
 import { withDefaults, computed, reactive, watch, useSlots } from "vue";
+import { NTooltip, type TooltipProps } from "naive-ui";
 
 export type ButtonType =
   | "normal"
@@ -56,11 +57,13 @@ const props = withDefaults(
     type?: ButtonType;
     disabled: boolean;
     tooltipMode: TooltipMode;
+    tooltipProps?: TooltipProps;
   }>(),
   {
     type: "normal",
     disabled: false,
     tooltipMode: "ALWAYS",
+    tooltipProps: undefined,
   }
 );
 
