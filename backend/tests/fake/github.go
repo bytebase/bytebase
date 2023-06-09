@@ -176,6 +176,10 @@ func (gh *GitHub) readRepositoryFile(c echo.Context) error {
 		return c.String(http.StatusNotFound, fmt.Sprintf("file %q not found", filePath))
 	}
 
+	if c.Request().Header.Get("Accept") == "application/vnd.github.raw" {
+		return c.String(http.StatusOK, content)
+	}
+
 	buf, err := json.Marshal(
 		github.File{
 			Encoding: "base64",
