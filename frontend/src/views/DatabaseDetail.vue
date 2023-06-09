@@ -227,9 +227,7 @@
     <div class="w-[80vw] h-full">
       <SchemaDiagram
         :database="database"
-        :database-metadata="
-          dbSchemaStore.getDatabaseMetadataByDatabaseId(Number(database.uid))
-        "
+        :database-metadata="dbSchemaStore.getDatabaseMetadata(database.name)"
       />
     </div>
   </BBModal>
@@ -287,7 +285,7 @@ import {
   useCurrentUserIamPolicy,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useGracefulRequest,
   useLegacySQLStore,
 } from "@/store";
@@ -327,7 +325,7 @@ const props = defineProps({
 const { t } = useI18n();
 const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const sqlStore = useLegacySQLStore();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
@@ -692,8 +690,8 @@ const syncDatabaseSchema = () => {
           description: resultSet.error,
         });
       }
-      useDBSchemaStore().getOrFetchDatabaseMetadataById(
-        Number(database.value.uid),
+      dbSchemaStore.getOrFetchDatabaseMetadata(
+        database.value.name,
         true // skip cache
       );
     })

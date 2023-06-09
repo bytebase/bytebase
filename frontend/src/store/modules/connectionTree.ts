@@ -12,11 +12,14 @@ import {
 } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import { emptyConnection } from "@/utils";
-import { useDBSchemaStore } from "./dbSchema";
 import { Policy } from "@/types/proto/v1/org_policy_service";
 import { Project } from "@/types/proto/v1/project_service";
 import { Engine } from "@/types/proto/v1/common";
-import { useDatabaseV1Store, useInstanceV1Store } from "./v1";
+import {
+  useDatabaseV1Store,
+  useInstanceV1Store,
+  useDBSchemaV1Store,
+} from "./v1";
 
 // Normalize value, fallback to ConnectionTreeMode.PROJECT
 const normalizeConnectionTreeMode = (raw: string) => {
@@ -55,11 +58,11 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
     databaseId: string
   ): Promise<Connection> => {
     try {
-      await Promise.all([
+      const [db, _] = await Promise.all([
         useDatabaseV1Store().getOrFetchDatabaseByUID(databaseId),
         useInstanceV1Store().getOrFetchInstanceByUID(instanceId),
-        useDBSchemaStore().getOrFetchTableListByDatabaseId(databaseId),
       ]);
+      await useDBSchemaV1Store().getOrFetchTableList(db.name);
 
       return {
         instanceId,
@@ -78,11 +81,9 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
       const databaseList = useDatabaseV1Store().databaseList.filter(
         (db) => db.instanceEntity.uid === instanceId
       );
-      const dbSchemaStore = useDBSchemaStore();
+      const dbSchemaStore = useDBSchemaV1Store();
       await Promise.all(
-        databaseList.map((db) =>
-          dbSchemaStore.getOrFetchTableListByDatabaseId(Number(db.uid))
-        )
+        databaseList.map((db) => dbSchemaStore.getOrFetchTableList(db.name))
       );
 
       return {

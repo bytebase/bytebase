@@ -46,7 +46,7 @@ import {
   useActuatorV1Store,
   useLegacyInstanceStore,
   useRouterStore,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useConnectionTreeStore,
   useOnboardingStateStore,
   useTabStore,
@@ -1068,7 +1068,7 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
 
   const authStore = useAuthStore();
-  const dbSchemaStore = useDBSchemaStore();
+  const dbSchemaStore = useDBSchemaV1Store();
   const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
   const projectV1Store = useProjectV1Store();
@@ -1462,7 +1462,7 @@ router.beforeEach((to, from, next) => {
       .fetchDatabaseByUID(String(idFromSlug(databaseSlug)))
       .then((database) => {
         dbSchemaStore
-          .getOrFetchDatabaseMetadataById(Number(database.uid), true)
+          .getOrFetchDatabaseMetadata(database.name, true)
           .then(() => {
             if (!dataSourceSlug) {
               next();

@@ -147,7 +147,7 @@ import {
   useDBNameTemplateInputState,
 } from "@/components/CreateDatabasePrepForm";
 import {
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useProjectV1ByUID,
   useInstanceV1Store,
 } from "@/store";
@@ -179,8 +179,8 @@ const extractLocalContextFromProps = (): CreatePITRDatabaseContext => {
   if (context) {
     return context;
   } else {
-    const dbSchemaMetadata = dbSchemaStore.getDatabaseMetadataByDatabaseId(
-      Number(props.database.uid)
+    const dbSchemaMetadata = dbSchemaStore.getDatabaseMetadata(
+      props.database.name
     );
 
     return {
@@ -196,7 +196,7 @@ const extractLocalContextFromProps = (): CreatePITRDatabaseContext => {
 };
 
 const instanceV1Store = useInstanceV1Store();
-const dbSchemaStore = useDBSchemaStore();
+const dbSchemaStore = useDBSchemaV1Store();
 
 // Refresh the instance list
 const prepareInstanceList = () => {
