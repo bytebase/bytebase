@@ -122,6 +122,7 @@ import {
 } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ResourceIdField } from "../v2";
+import { head } from "lodash-es";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -170,9 +171,18 @@ const resourceIdType = computed(() =>
 );
 
 onMounted(async () => {
-  if (props.parentDatabaseGroup) {
-    state.environmentId = props.parentDatabaseGroup.environment.uid;
-    state.selectedDatabaseGroupId = props.parentDatabaseGroup.name;
+  if (isCreating.value && props.resourceType === "SCHEMA_GROUP") {
+    if (props.parentDatabaseGroup) {
+      state.environmentId = props.parentDatabaseGroup.environment.uid;
+      state.selectedDatabaseGroupId = props.parentDatabaseGroup.name;
+    } else {
+      const dbGroup = head(dbGroupStore.getAllDatabaseGroupList());
+      if (dbGroup) {
+        state.environmentId = dbGroup.environment.uid;
+        state.selectedDatabaseGroupId = dbGroup.name;
+      }
+    }
+    return;
   }
 
   const databaseGroup = props.databaseGroup;
