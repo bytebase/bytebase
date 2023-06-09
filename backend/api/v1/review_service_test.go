@@ -183,7 +183,7 @@ func TestCanUserApproveStep(t *testing.T) {
 
 	a := require.New(t)
 	for _, test := range tests {
-		got, err := canUserApproveStep(test.step, test.user, test.policy)
+		got, err := isUserReviewer(test.step, test.user, test.policy)
 		a.NoError(err)
 		a.Equal(test.want, got)
 	}
