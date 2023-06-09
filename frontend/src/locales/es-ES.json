@@ -2434,7 +2434,10 @@
       },
       "you": "Tú",
       "generating-approval-flow": "Generando flujo de aprobación",
-      "approved-issue": "incidencia aprobada"
+      "approved-issue": "incidencia aprobada",
+      "disallow-approve-reason": {
+        "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no pasaron"
+      }
     }
   },
   "slow-query": {
