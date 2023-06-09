@@ -2214,7 +2214,7 @@ CREATE TABLE public.book (
 			}
 			latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(ctx, database.Name)
 			a.NoError(err)
-			diff := cmp.Diff(test.wantDatabaseMetadata, &latestSchemaMetadata, protocmp.Transform())
+			diff := cmp.Diff(test.wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
 			a.Equal("", diff)
 		})
 	}

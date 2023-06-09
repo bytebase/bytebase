@@ -259,7 +259,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(ctx, database.Name)
 	a.NoError(err)
 
-	diff := cmp.Diff(wantDatabaseMetadata, &latestSchemaMetadata, protocmp.Transform())
+	diff := cmp.Diff(wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
 	a.Equal("", diff)
 }
 
@@ -540,5 +540,5 @@ func TestSyncerForMySQL(t *testing.T) {
 	var expectedSchemaMetadata v1pb.DatabaseMetadata
 	err = protojson.Unmarshal([]byte(expectedSchema), &expectedSchemaMetadata)
 	a.NoError(err)
-	a.Equal(&expectedSchemaMetadata, &latestSchemaMetadata)
+	a.Equal(&expectedSchemaMetadata, latestSchemaMetadata)
 }
