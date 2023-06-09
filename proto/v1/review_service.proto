@@ -135,12 +135,14 @@ message ApproveReviewRequest {
   // The name of the review to add an approver.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string comment = 2;
 }
 
 message RejectReviewRequest {
   // The name of the review to add an approver.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string comment = 2;
 }
 
 message Review {
