@@ -61,7 +61,7 @@ const clickSchemaGroup = ({ schemaGroup }: FormatedSchemaGroup) => {
   const [projectName, databaseGroupName, schemaGroupName] =
     getProjectNameAndDatabaseGroupNameAndSchemaGroupName(schemaGroup.name);
   router.push(
-    `/projects/${projectName}/database-groups/${databaseGroupName}/schema-groups/${schemaGroupName}`
+    `/projects/${projectName}/database-groups/${databaseGroupName}/table-groups/${schemaGroupName}`
   );
 };
 
