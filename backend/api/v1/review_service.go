@@ -99,6 +99,11 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		return nil, status.Errorf(codes.Internal, "expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates))
 	}
 
+	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
+	if rejectedStep != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot approve because the review has been rejected")
+	}
+
 	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if step == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "the review has been approved")

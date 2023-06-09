@@ -658,10 +658,25 @@ func EndMigration(ctx context.Context, storeInstance *store.Store, startedNs int
 func FindNextPendingStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
 	// We can do the finding like this for now because we are presuming that
 	// one step is approved by one approver.
+	// and the approver status is either
+	// APPROVED or REJECTED.
 	if len(approvers) >= len(template.Flow.Steps) {
 		return nil
 	}
 	return template.Flow.Steps[len(approvers)]
+}
+
+// FindRejectedStep finds the rejected step in the approval flow.
+func FindRejectedStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
+	for i, approver := range approvers {
+		if i >= len(template.Flow.Steps) {
+			return nil
+		}
+		if approver.Status == storepb.IssuePayloadApproval_Approver_REJECTED {
+			return template.Flow.Steps[i]
+		}
+	}
+	return nil
 }
 
 // CheckApprovalApproved checks if the approval is approved.
@@ -678,7 +693,7 @@ func CheckApprovalApproved(approval *storepb.IssuePayloadApproval) (bool, error)
 	if len(approval.ApprovalTemplates) != 1 {
 		return false, errors.Errorf("expecting one approval template but got %d", len(approval.ApprovalTemplates))
 	}
-	return FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers) == nil, nil
+	return FindRejectedStep(approval.ApprovalTemplates[0], approval.Approvers) == nil && FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers) == nil, nil
 }
 
 // CheckIssueApproved checks if the issue is approved.
