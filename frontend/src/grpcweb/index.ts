@@ -3,6 +3,7 @@ import {
   createClientFactory,
   FetchTransport,
 } from "nice-grpc-web";
+import { errorNotificationMiddleware } from "./middlewares";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
@@ -36,7 +37,7 @@ const channel = createChannel(
   })
 );
 
-const clientFactory = createClientFactory();
+const clientFactory = createClientFactory().use(errorNotificationMiddleware);
 
 export const authServiceClient = clientFactory.create(
   AuthServiceDefinition,
