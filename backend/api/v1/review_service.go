@@ -238,7 +238,7 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 			ContainerID: issue.UID,
 			Type:        api.ActivityIssueCommentCreate,
 			Level:       api.ActivityInfo,
-			Comment:     "",
+			Comment:     request.Comment,
 			Payload:     string(activityPayload),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
