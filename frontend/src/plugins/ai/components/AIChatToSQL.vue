@@ -13,7 +13,8 @@ import { useChatByTab, provideAIContext } from "../logic";
 import {
   useCurrentTab,
   useInstanceV1ByUID,
-  useMetadataByDatabaseId,
+  useDatabaseV1ByUID,
+  useMetadata,
 } from "@/store";
 import ChatPanel from "./ChatPanel.vue";
 import MockInputPlaceholder from "./MockInputPlaceholder.vue";
@@ -53,8 +54,11 @@ const tab = useCurrentTab();
 const { instance } = useInstanceV1ByUID(
   computed(() => tab.value.connection.instanceId)
 );
-const databaseMetadata = useMetadataByDatabaseId(
-  computed(() => Number(tab.value.connection.databaseId)),
+const { database } = useDatabaseV1ByUID(
+  computed(() => tab.value.connection.databaseId)
+);
+const databaseMetadata = useMetadata(
+  database.value.name,
   false /* !skipCache */
 );
 

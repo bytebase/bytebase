@@ -182,7 +182,7 @@ import {
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
@@ -208,7 +208,7 @@ const props = defineProps({
 const route = useRoute();
 const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const table = ref<TableMetadata>();
 const databaseId = computed((): number =>
@@ -257,7 +257,7 @@ const getTableName = (tableName: string) => {
 };
 
 onMounted(() => {
-  const schemaList = dbSchemaStore.getSchemaListByDatabaseId(databaseId.value);
+  const schemaList = dbSchemaStore.getSchemaList(database.value.name);
   const schema = schemaList.find((schema) => schema.name === schemaName);
   if (schema) {
     table.value = schema.tables.find((table) => table.name === props.tableName);

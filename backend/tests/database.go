@@ -184,16 +184,10 @@ func (ctl *controller) getLatestSchemaDump(databaseID int) (string, error) {
 	return string(bs), nil
 }
 
-func (ctl *controller) getLatestSchemaMetadata(databaseID int) (string, error) {
-	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), map[string]string{"metadata": "true"})
-	if err != nil {
-		return "", err
-	}
-	bs, err := io.ReadAll(body)
-	if err != nil {
-		return "", err
-	}
-	return string(bs), nil
+func (ctl *controller) getLatestSchemaMetadata(ctx context.Context, database string) (*v1pb.DatabaseMetadata, error) {
+	return ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+		Name: fmt.Sprintf("%s/metadata", database),
+	})
 }
 
 func marshalLabels(labelMap map[string]string, environmentID string) (string, error) {

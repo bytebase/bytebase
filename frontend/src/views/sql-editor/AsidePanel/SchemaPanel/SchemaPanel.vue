@@ -36,13 +36,13 @@
 import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 
-import { DatabaseId, UNKNOWN_ID } from "@/types";
+import { DatabaseId } from "@/types";
 import {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import { useDatabaseV1ByUID, useDBSchemaStore, useTabStore } from "@/store";
+import { useDatabaseV1ByUID, useDBSchemaV1Store, useTabStore } from "@/store";
 import DatabaseSchema from "./DatabaseSchema.vue";
 import TableSchema from "./TableSchema.vue";
 
@@ -61,7 +61,7 @@ const state = reactive<LocalState>({
   selected: undefined,
 });
 
-const dbSchemaStore = useDBSchemaStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const { currentTab } = storeToRefs(useTabStore());
 const conn = computed(() => currentTab.value.connection);
 
@@ -73,17 +73,13 @@ const handleSelectTable = (schema: SchemaMetadata, table: TableMetadata) => {
 };
 
 watch(
-  () => database.value.uid,
-  async (uid) => {
+  () => database.value.name,
+  async (name) => {
     state.selected = undefined;
-    databaseMetadata.value = undefined;
-    if (uid !== String(UNKNOWN_ID)) {
-      databaseMetadata.value =
-        await dbSchemaStore.getOrFetchDatabaseMetadataById(
-          Number(uid),
-          /* !skipCache */ false
-        );
-    }
+    databaseMetadata.value = await dbSchemaStore.getOrFetchDatabaseMetadata(
+      name,
+      /* !skipCache */ false
+    );
   },
   { immediate: true }
 );
