@@ -89,11 +89,12 @@
 <script lang="ts" setup>
 import { computed, reactive, ref } from "vue";
 import { groupBy } from "lodash-es";
+import { useI18n } from "vue-i18n";
+
 import { Issue, Task, TaskStatusPatch } from "@/types";
 import { TaskStatusTransition } from "@/utils";
-import { useI18n } from "vue-i18n";
-import { useIssueLogic } from "./logic";
 import { pushNotification, useTaskStore } from "@/store";
+import { useIssueLogic } from "../logic";
 
 interface LocalState {
   success: Set<Task>;
@@ -188,7 +189,7 @@ const patchTaskStatus = async (task: Task) => {
     const { issue } = props;
     await taskStore.updateStatus({
       issueId: issue.id,
-      pipelineId: issue.pipeline.id,
+      pipelineId: issue.pipeline!.id,
       taskId: task.id,
       taskStatusPatch,
     });
