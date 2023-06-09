@@ -7,7 +7,9 @@ import { router } from "@/router";
 /**
  * Way to define a grpc-web middleware
  * ClientMiddleware<CallOptionsExt = {}, RequiredCallOptionsExt = {}>
- * See https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-client-middleware-deadline/src/index.ts
+ * See
+ *   - https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-client-middleware-deadline/src/index.ts
+ *   - https://github.com/deeplay-io/nice-grpc/tree/master/packages/nice-grpc-web#middleware
  *   as an example.
  */
 export const authInterceptorMiddleware: ClientMiddleware = async function* (
