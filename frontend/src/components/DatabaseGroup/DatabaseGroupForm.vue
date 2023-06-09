@@ -93,8 +93,11 @@
 import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ConditionGroupExpr, resolveCELExpr, wrapAsGroup } from "@/plugins/cel";
-import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import {
+  ConditionGroupExpr,
+  emptySimpleExpr,
+  wrapAsGroup,
+} from "@/plugins/cel";
 import ExprEditor from "./common/ExprEditor";
 import { ResourceType } from "./common/ExprEditor/context";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
@@ -140,7 +143,7 @@ const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   resourceId: "",
   placeholder: "",
-  expr: wrapAsGroup(resolveCELExpr(CELExpr.fromJSON({}))),
+  expr: wrapAsGroup(emptySimpleExpr("_||_"), "_||_"),
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const selectedDatabaseGroupName = computed(() => {

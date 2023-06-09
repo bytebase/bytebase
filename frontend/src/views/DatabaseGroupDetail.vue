@@ -17,7 +17,7 @@
                 <h1
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
-                  {{ databaseGroupName }}
+                  {{ databaseGroup.databasePlaceholder }}
                   <BBBadge
                     text="Database Group"
                     :can-remove="false"
