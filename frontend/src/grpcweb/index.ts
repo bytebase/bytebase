@@ -46,7 +46,7 @@ const clientFactory = createClientFactory()
   .use(errorNotificationMiddleware);
 /**
  * Example to use error notification middleware.
- * Errors occurs during the request will cause UI notifications automatically.
+ * Errors occurs during all requests will cause UI notifications automatically.
  * abcServiceClient.foo(requestParams, {
  *   // true if you want to suppress error notifications for this call
  *   silent: true,
