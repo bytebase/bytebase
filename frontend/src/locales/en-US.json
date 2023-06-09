@@ -2454,7 +2454,10 @@
       },
       "you": "You",
       "generating-approval-flow": "Generating approval flow",
-      "approved-issue": "approved issue"
+      "approved-issue": "approved issue",
+      "disallow-approve-reason": {
+        "some-task-checks-didnt-pass": "Some task checks didn't pass"
+      }
     }
   },
   "slow-query": {
