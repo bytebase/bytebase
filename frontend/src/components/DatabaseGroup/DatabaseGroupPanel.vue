@@ -161,7 +161,7 @@ const doDelete = () => {
         if (
           router.currentRoute.value.name === "workspace.database-group.detail"
         ) {
-          router.push({
+          router.replace({
             name: "workspace.project.detail",
             params: {
               projectSlug: projectV1Slug(props.project),
@@ -171,19 +171,18 @@ const doDelete = () => {
         }
       } else if (props.resourceType === "SCHEMA_GROUP") {
         const schemaGroup = props.databaseGroup as ComposedSchemaGroup;
-        await dbGroupStore.deleteSchemaGroup(schemaGroup.name);
-        if (router.currentRoute.value.name === "workspace.table-group.detail") {
+        const schemaGroupName = schemaGroup.name;
+        await dbGroupStore.deleteSchemaGroup(schemaGroupName);
+        if (
+          router.currentRoute.value.name ===
+          "workspace.database-group.table-group.detail"
+        ) {
           const [projectName, databaseGroupName] =
             getProjectNameAndDatabaseGroupNameAndSchemaGroupName(
-              schemaGroup.name
+              schemaGroupName
             );
-          router.push({
-            name: "workspace.database-group.detail",
-            params: {
-              projectName,
-              databaseGroupName,
-            },
-          });
+          // TODO(steven): prevent `Cannot use 'in' operator to search for 'path' in undefined` error in vue-router.
+          window.location.href = `/projects/${projectName}/database-groups/${databaseGroupName}`;
         }
       }
       emit("close");
@@ -214,7 +213,7 @@ const doConfirm = async () => {
             name: `${props.project.name}/databaseGroups/${resourceId}`,
             databasePlaceholder: formState.placeholder,
             databaseExpr: Expr.fromJSON({
-              expression: celString,
+              expression: celString || "true",
             }),
           },
           resourceId
@@ -249,7 +248,7 @@ const doConfirm = async () => {
             name: `${formState.selectedDatabaseGroupId}/schemaGroups/${resourceId}`,
             tablePlaceholder: formState.placeholder,
             tableExpr: Expr.fromJSON({
-              expression: celString,
+              expression: celString || "true",
             }),
           },
           resourceId

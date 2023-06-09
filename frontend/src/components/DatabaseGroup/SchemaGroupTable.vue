@@ -1,18 +1,18 @@
 <template>
   <BBGrid
     :column-list="COLUMN_LIST"
-    :data-source="formatedSchemaGroupList"
+    :data-source="schemaGroupList"
     :row-clickable="true"
     row-key="name"
     class="border"
     @click-row="clickSchemaGroup"
   >
-    <template #item="{ item }: { item: FormatedSchemaGroup }">
+    <template #item="{ item }: { item: ComposedSchemaGroup }">
       <div class="bb-grid-cell">
-        {{ item.resourceId }}
+        {{ item.tablePlaceholder }}
       </div>
       <div class="bb-grid-cell gap-x-2 justify-end">
-        <NButton size="small" @click.stop="$emit('edit', item.schemaGroup)">{{
+        <NButton size="small" @click.stop="$emit('edit', item)">{{
           $t("common.configure")
         }}</NButton>
       </div>
@@ -21,19 +21,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
 import { SchemaGroup } from "@/types/proto/v1/project_service";
 import { useRouter } from "vue-router";
 import { getProjectNameAndDatabaseGroupNameAndSchemaGroupName } from "@/store/modules/v1/common";
+import { ComposedSchemaGroup } from "@/types";
 
-interface FormatedSchemaGroup {
-  resourceId: string;
-  schemaGroup: SchemaGroup;
-}
-
-const props = defineProps<{
+defineProps<{
   schemaGroupList: SchemaGroup[];
 }>();
 
@@ -43,7 +39,6 @@ defineEmits<{
 
 const { t } = useI18n();
 const router = useRouter();
-const formatedSchemaGroupList = ref<FormatedSchemaGroup[]>([]);
 
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
@@ -57,28 +52,11 @@ const COLUMN_LIST = computed(() => {
   return columns;
 });
 
-const clickSchemaGroup = ({ schemaGroup }: FormatedSchemaGroup) => {
+const clickSchemaGroup = (schemaGroup: ComposedSchemaGroup) => {
   const [projectName, databaseGroupName, schemaGroupName] =
     getProjectNameAndDatabaseGroupNameAndSchemaGroupName(schemaGroup.name);
   router.push(
     `/projects/${projectName}/database-groups/${databaseGroupName}/table-groups/${schemaGroupName}`
   );
 };
-
-watch(
-  () => [props.schemaGroupList],
-  () => {
-    const list: FormatedSchemaGroup[] = [];
-    for (const schemaGroup of props.schemaGroupList) {
-      list.push({
-        resourceId: schemaGroup.name.split("/").pop() || "",
-        schemaGroup,
-      });
-    }
-    formatedSchemaGroupList.value = list;
-  },
-  {
-    immediate: true,
-  }
-);
 </script>
