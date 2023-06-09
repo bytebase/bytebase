@@ -57,6 +57,13 @@ service ReviewService {
       body: "*"
     };
   }
+
+  rpc RequestReview(RequestReviewRequest) returns (Review) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/reviews/*}:request"
+      body: "*"
+    };
+  }
 }
 
 message GetReviewRequest {
@@ -139,7 +146,14 @@ message ApproveReviewRequest {
 }
 
 message RejectReviewRequest {
-  // The name of the review to add an approver.
+  // The name of the review to add an rejecting reviewer.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string comment = 2;
+}
+
+message RequestReviewRequest {
+  // The name of the review to request a review.
   // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
   string comment = 2;

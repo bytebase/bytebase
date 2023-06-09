@@ -346,6 +346,7 @@
     - [ListReviewsRequest](#bytebase-v1-ListReviewsRequest)
     - [ListReviewsResponse](#bytebase-v1-ListReviewsResponse)
     - [RejectReviewRequest](#bytebase-v1-RejectReviewRequest)
+    - [RequestReviewRequest](#bytebase-v1-RequestReviewRequest)
     - [Review](#bytebase-v1-Review)
     - [Review.Approver](#bytebase-v1-Review-Approver)
     - [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest)
@@ -5593,7 +5594,23 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review to add an approver. Format: projects/{project}/reviews/{review} |
+| name | [string](#string) |  | The name of the review to add an rejecting reviewer. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RequestReviewRequest"></a>
+
+### RequestReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review to request a review. Format: projects/{project}/reviews/{review} |
 | comment | [string](#string) |  |  |
 
 
@@ -5763,6 +5780,7 @@ ANY means approving any node will proceed.
 | BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |
 | ApproveReview | [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | RejectReview | [RejectReviewRequest](#bytebase-v1-RejectReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| RequestReview | [RequestReviewRequest](#bytebase-v1-RequestReviewRequest) | [Review](#bytebase-v1-Review) |  |
 
  
 
