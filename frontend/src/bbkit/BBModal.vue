@@ -6,15 +6,12 @@
     >
       <div
         v-bind="$attrs"
-        class="absolute m-auto w-full max-w-max max-h-[calc(100vh-80px)] bg-white shadow-lg rounded-lg pt-4 pb-4 flex pointer-events-auto flex-col"
+        class="bb-modal"
         :data-bb-modal-id="id"
         :data-bb-modal-index="index"
         :data-bb-modal-active="active"
       >
-        <div
-          class="relative mx-8 pb-2 flex items-center justify-between border-b border-block-border"
-          :class="headerClass"
-        >
+        <div class="modal-header" :class="headerClass">
           <div class="text-xl text-main mr-2 flex-1 overflow-hidden">
             <slot name="title"><component :is="renderTitle" /></slot>
             <component :is="renderSubtitle" />
@@ -30,10 +27,7 @@
             <heroicons-solid:x class="w-6 h-6" />
           </button>
         </div>
-        <div
-          class="px-8 pt-2 max-h-screen overflow-auto w-full"
-          :class="containerClass"
-        >
+        <div class="modal-container" :class="containerClass">
           <slot />
         </div>
       </div>
@@ -229,3 +223,20 @@ export const useOverrideSubtitle = (
   });
 };
 </script>
+
+<style scoped lang="postcss">
+.bb-modal {
+  @apply absolute m-auto w-full max-w-max bg-white shadow-lg rounded-lg pt-4 pb-4 flex pointer-events-auto;
+  @apply flex-col;
+
+  max-height: calc(100vh - 80px);
+}
+
+.modal-header {
+  @apply relative mx-8 pb-2 flex items-center justify-between border-b border-block-border;
+}
+
+.modal-container {
+  @apply px-8 pt-2 max-h-screen overflow-auto w-full;
+}
+</style>

@@ -159,7 +159,10 @@ const updateMatchingState = useDebounceFn(async () => {
   }
   for (const item of result.unmatchedDatabases) {
     const database = await databaseStore.getOrFetchDatabaseByName(item.name);
-    if (database) {
+    if (
+      database &&
+      database.instanceEntity.environmentEntity.uid === props.environmentId
+    ) {
       unmatchedDatabaseList.value.push(database);
     }
   }

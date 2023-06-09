@@ -17,8 +17,12 @@
                 <h1
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
-                  {{ databaseGroupName }}
-                  <BBBadge text="Group" :can-remove="false" class="text-xs" />
+                  {{ databaseGroup.databasePlaceholder }}
+                  <BBBadge
+                    text="Database Group"
+                    :can-remove="false"
+                    class="text-xs"
+                  />
                 </h1>
               </div>
             </div>
@@ -107,6 +111,7 @@
     :project="project"
     :resource-type="editState.type"
     :database-group="editState.databaseGroup"
+    :parent-database-group="editState.parentDatabaseGroup"
     @close="editState.showConfigurePanel = false"
   />
 
@@ -145,6 +150,7 @@ interface EditDatabaseGroupState {
   showConfigurePanel: boolean;
   type: ResourceType;
   databaseGroup?: DatabaseGroup | SchemaGroup;
+  parentDatabaseGroup?: ComposedDatabaseGroup;
 }
 
 const props = defineProps({
@@ -206,6 +212,7 @@ const handleCreateSchemaGroup = () => {
   editState.type = "SCHEMA_GROUP";
   editState.databaseGroup = undefined;
   editState.showConfigurePanel = true;
+  editState.parentDatabaseGroup = databaseGroup.value;
 };
 
 const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {

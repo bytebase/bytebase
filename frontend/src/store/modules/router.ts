@@ -208,9 +208,9 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /projects/proj-nt-iq3z/database-groups/test/schema-groups/asd123
+        // /projects/proj-nt-iq3z/database-groups/test/table-groups/asd123
         const schemaGroupDetailComponents = currentRoute.path.match(
-          "/projects/([0-9a-zA-Z_-]+)/database-groups/([0-9a-zA-Z_-]+)/schema-groups/([0-9a-zA-Z_-]+)"
+          "/projects/([0-9a-zA-Z_-]+)/database-groups/([0-9a-zA-Z_-]+)/table-groups/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
 
         if (schemaGroupDetailComponents.length === 4) {

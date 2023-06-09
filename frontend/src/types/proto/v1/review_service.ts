@@ -143,6 +143,14 @@ export interface ApproveReviewRequest {
   name: string;
 }
 
+export interface RejectReviewRequest {
+  /**
+   * The name of the review to add an approver.
+   * Format: projects/{project}/reviews/{review}
+   */
+  name: string;
+}
+
 export interface Review {
   /**
    * The name of the review.
@@ -200,6 +208,7 @@ export enum Review_Approver_Status {
   STATUS_UNSPECIFIED = 0,
   PENDING = 1,
   APPROVED = 2,
+  REJECTED = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -214,6 +223,9 @@ export function review_Approver_StatusFromJSON(object: any): Review_Approver_Sta
     case 2:
     case "APPROVED":
       return Review_Approver_Status.APPROVED;
+    case 3:
+    case "REJECTED":
+      return Review_Approver_Status.REJECTED;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -229,6 +241,8 @@ export function review_Approver_StatusToJSON(object: Review_Approver_Status): st
       return "PENDING";
     case Review_Approver_Status.APPROVED:
       return "APPROVED";
+    case Review_Approver_Status.REJECTED:
+      return "REJECTED";
     case Review_Approver_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -952,6 +966,62 @@ export const ApproveReviewRequest = {
 
   fromPartial(object: DeepPartial<ApproveReviewRequest>): ApproveReviewRequest {
     const message = createBaseApproveReviewRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseRejectReviewRequest(): RejectReviewRequest {
+  return { name: "" };
+}
+
+export const RejectReviewRequest = {
+  encode(message: RejectReviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RejectReviewRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRejectReviewRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RejectReviewRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: RejectReviewRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<RejectReviewRequest>): RejectReviewRequest {
+    return RejectReviewRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<RejectReviewRequest>): RejectReviewRequest {
+    const message = createBaseRejectReviewRequest();
     message.name = object.name ?? "";
     return message;
   },
@@ -2001,6 +2071,65 @@ export const ReviewServiceDefinition = {
         },
       },
     },
+    rejectReview: {
+      name: "RejectReview",
+      requestType: RejectReviewRequest,
+      requestStream: false,
+      responseType: Review,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              43,
+              58,
+              1,
+              42,
+              34,
+              38,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              118,
+              105,
+              101,
+              119,
+              115,
+              47,
+              42,
+              125,
+              58,
+              114,
+              101,
+              106,
+              101,
+              99,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -2017,6 +2146,7 @@ export interface ReviewServiceImplementation<CallContextExt = {}> {
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BatchUpdateReviewsResponse>>;
   approveReview(request: ApproveReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
+  rejectReview(request: RejectReviewRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Review>>;
 }
 
 export interface ReviewServiceClient<CallOptionsExt = {}> {
@@ -2032,6 +2162,7 @@ export interface ReviewServiceClient<CallOptionsExt = {}> {
     options?: CallOptions & CallOptionsExt,
   ): Promise<BatchUpdateReviewsResponse>;
   approveReview(request: DeepPartial<ApproveReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
+  rejectReview(request: DeepPartial<RejectReviewRequest>, options?: CallOptions & CallOptionsExt): Promise<Review>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

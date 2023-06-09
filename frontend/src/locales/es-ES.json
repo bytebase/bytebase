@@ -1399,7 +1399,8 @@
         "view-doc": "Ver documentación de {destination}"
       },
       "deletion": {
-        "btn-text": "Eliminar este webhook"
+        "btn-text": "Eliminar este webhook",
+        "confirm-title": "¿Eliminar el '{title}' del webhook y todo su historial de ejecución?"
       },
       "activity-item": {
         "issue-creation": {
@@ -2433,7 +2434,10 @@
       },
       "you": "Tú",
       "generating-approval-flow": "Generando flujo de aprobación",
-      "approved-issue": "incidencia aprobada"
+      "approved-issue": "incidencia aprobada",
+      "disallow-approve-reason": {
+        "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no pasaron"
+      }
     }
   },
   "slow-query": {

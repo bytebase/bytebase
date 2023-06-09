@@ -50,6 +50,13 @@ service ReviewService {
       body: "*"
     };
   }
+
+  rpc RejectReview(RejectReviewRequest) returns (Review) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/reviews/*}:reject"
+      body: "*"
+    };
+  }
 }
 
 message GetReviewRequest {
@@ -130,6 +137,12 @@ message ApproveReviewRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message RejectReviewRequest {
+  // The name of the review to add an approver.
+  // Format: projects/{project}/reviews/{review}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
 message Review {
   // The name of the review.
   // `review` is a system generated ID.
@@ -165,6 +178,7 @@ message Review {
       STATUS_UNSPECIFIED = 0;
       PENDING = 1;
       APPROVED = 2;
+      REJECTED = 3;
     }
     // The new status.
     Status status = 1;
