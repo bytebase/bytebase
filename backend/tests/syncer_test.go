@@ -257,11 +257,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	metadata, err := ctl.getLatestSchemaMetadata(databaseUID)
-	a.NoError(err)
-
-	var latestSchemaMetadata storepb.DatabaseMetadata
-	err = protojson.Unmarshal([]byte(metadata), &latestSchemaMetadata)
+	latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(ctx, database.Name)
 	a.NoError(err)
 
 	diff := cmp.Diff(wantDatabaseMetadata, &latestSchemaMetadata, protocmp.Transform())
@@ -539,11 +535,7 @@ func TestSyncerForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	metadata, err := ctl.getLatestSchemaMetadata(databaseUID)
-	a.NoError(err)
-
-	var latestSchemaMetadata storepb.DatabaseMetadata
-	err = protojson.Unmarshal([]byte(metadata), &latestSchemaMetadata)
+	latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(ctx, database.Name)
 	a.NoError(err)
 
 	var expectedSchemaMetadata storepb.DatabaseMetadata

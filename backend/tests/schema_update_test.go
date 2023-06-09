@@ -2213,10 +2213,7 @@ CREATE TABLE public.book (
 				a.NoError(err)
 				a.Equal(test.wantSDL, latestSchemaSDL)
 			}
-			latestSchemaMetadataString, err := ctl.getLatestSchemaMetadata(databaseUID)
-			a.NoError(err)
-			var latestSchemaMetadata storepb.DatabaseMetadata
-			err = protojson.Unmarshal([]byte(latestSchemaMetadataString), &latestSchemaMetadata)
+			latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(ctx, database.Name)
 			a.NoError(err)
 			diff := cmp.Diff(test.wantDatabaseMetadata, &latestSchemaMetadata, protocmp.Transform())
 			a.Equal("", diff)
