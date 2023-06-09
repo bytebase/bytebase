@@ -165,7 +165,6 @@ const operatorLabel = (op: LogicalOperator) => {
 };
 
 const OPERATORS: SelectOption[] = [
-  { label: operatorLabel("_&&_"), value: "_&&_" },
   { label: operatorLabel("_||_"), value: "_||_" },
 ];
 
@@ -179,7 +178,7 @@ const addCondition = () => {
 
 const addConditionGroup = () => {
   args.value.push({
-    operator: "_&&_",
+    operator: "_||_",
     args: [],
   });
   emit("update");
