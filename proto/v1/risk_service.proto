@@ -96,6 +96,8 @@ message Risk {
     DDL = 1;
     DML = 2;
     CREATE_DATABASE = 3;
+    QUERY = 4;
+    EXPORT = 5;
   }
   Source source = 3;
 
