@@ -107,7 +107,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	if !schemaOnly {
 		log.Debug("flush tables in database with read locks",
 			zap.String("database", driver.databaseName))
-		if err := FlushTablesWithReadLock(ctx, conn, driver.databaseName); err != nil {
+		if err := FlushTablesWithReadLock(ctx, driver.dbType, conn, driver.databaseName); err != nil {
 			log.Error("flush tables failed", zap.Error(err))
 			return "", err
 		}
@@ -154,7 +154,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 }
 
 // FlushTablesWithReadLock runs FLUSH TABLES table1, table2, ... WITH READ LOCK for all the tables in the database.
-func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
+func FlushTablesWithReadLock(ctx context.Context, dbType db.Type, conn *sql.Conn, database string) error {
 	// The lock acquiring could take a long time if there are concurrent exclusive locks on the tables.
 	// We ensures that the execution is canceled after 30 seconds, otherwise we may get dead lock and stuck forever.
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -166,7 +166,7 @@ func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 	}
 	defer txn.Rollback()
 
-	tables, err := getTablesTx(txn, database)
+	tables, err := getTablesTx(txn, dbType, database)
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, dbType db.Type, database string, 
 
 		// Table and view statement.
 		// We have to dump the table before views because of the structure dependency.
-		tables, err := getTablesTx(txn, dbName)
+		tables, err := getTablesTx(txn, dbType, dbName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get tables of database %q", dbName)
 		}
@@ -475,11 +475,11 @@ func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSche
 		return nil, err
 	}
 	defer txn.Rollback()
-	return getTablesTx(txn, dbName)
+	return getTablesTx(txn, db.MySQL, dbName)
 }
 
 // getTablesTx gets all tables of a database using the provided transaction.
-func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+func getTablesTx(txn *sql.Tx, dbType db.Type, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
@@ -499,7 +499,7 @@ func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 		return nil, err
 	}
 	for _, tbl := range tables {
-		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
+		stmt, err := getTableStmt(txn, dbType, dbName, tbl.Name, tbl.TableType)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to call getTableStmt(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
 		}
@@ -515,8 +515,17 @@ func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	return tables, nil
 }
 
+func trimAfterLastParenthesis(sql string) string {
+	pos := strings.LastIndex(sql, ")")
+	if pos != -1 {
+		return sql[:pos+1]
+	}
+
+	return sql
+}
+
 // getTableStmt gets the create statement of a table.
-func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) {
+func getTableStmt(txn *sql.Tx, dbType db.Type, dbName, tblName, tblType string) (string, error) {
 	switch tblType {
 	case baseTableType:
 		query := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`;", dbName, tblName)
@@ -526,6 +535,9 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 				return "", common.FormatDBErrorEmptyRowWithQuery(query)
 			}
 			return "", err
+		}
+		if dbType == db.OceanBase {
+			stmt = trimAfterLastParenthesis(stmt) + ";\n"
 		}
 		return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
 	case viewTableType:
