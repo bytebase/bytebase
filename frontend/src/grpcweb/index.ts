@@ -3,7 +3,10 @@ import {
   createClientFactory,
   FetchTransport,
 } from "nice-grpc-web";
-import { authInterceptorMiddleware } from "./middlewares";
+import {
+  authInterceptorMiddleware,
+  errorNotificationMiddleware,
+} from "./middlewares";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
@@ -37,7 +40,10 @@ const channel = createChannel(
   })
 );
 
-const clientFactory = createClientFactory().use(authInterceptorMiddleware);
+const clientFactory = createClientFactory()
+  // A middleware that is attached first, will be invoked last.
+  .use(authInterceptorMiddleware)
+  .use(errorNotificationMiddleware);
 
 export const authServiceClient = clientFactory.create(
   AuthServiceDefinition,

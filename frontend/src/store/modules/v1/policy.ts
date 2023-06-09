@@ -109,9 +109,14 @@ export const usePolicyV1Store = defineStore("policy_v1", {
         return cachedData;
       }
       try {
-        const policy = await policyServiceClient.getPolicy({
-          name: name.toLowerCase(),
-        });
+        const policy = await policyServiceClient.getPolicy(
+          {
+            name: name.toLowerCase(),
+          },
+          {
+            silent: true,
+          }
+        );
         this.policyMapByName.set(policy.name, policy);
         return policy;
       } catch {
