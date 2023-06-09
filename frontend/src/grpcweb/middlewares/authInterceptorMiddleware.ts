@@ -1,8 +1,8 @@
 import { ClientError, ServerError, Status } from "nice-grpc-common";
+import { ClientMiddleware } from "nice-grpc-web";
 
 import { useAuthStore } from "@/store";
 import { router } from "@/router";
-import { ClientMiddleware } from "nice-grpc-web";
 
 /**
  * Way to define a grpc-web middleware
