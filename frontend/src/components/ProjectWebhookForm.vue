@@ -237,8 +237,11 @@
         v-if="!create && allowEdit"
         :style="'DELETE'"
         :button-text="$t('project.webhook.deletion.btn-text')"
-        :ok-text="'Delete'"
-        :confirm-title="`Delete webhook '${webhook.title}' and all its execution history?`"
+        :ok-text="$t('common.delete')"
+        :confirm-title="
+          $t('project.webhook.deletion.confirm-title', { title: webhook.title })
+        "
+        :confirm-description="$t('common.cannot-undo-this-action')"
         :require-confirm="true"
         @confirm="deleteWebhook"
       />
