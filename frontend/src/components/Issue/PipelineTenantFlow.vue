@@ -64,7 +64,7 @@ import { computed, ref } from "vue";
 import type { Pipeline, Stage, StageCreate, Task, TaskCreate } from "@/types";
 import { activeTask, taskSlug, instanceV1Name } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
-import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
+import { TaskExtraActionsButton } from "./StatusTransitionButtonGroup";
 import { useDatabaseV1Store } from "@/store";
 import { useIssueLogic } from "./logic";
 import { useVerticalScrollState } from "@/composables/useScrollState";

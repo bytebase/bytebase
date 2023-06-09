@@ -76,7 +76,7 @@ import {
 } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
 import PipelineStageList from "./PipelineStageList.vue";
-import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
+import { TaskExtraActionsButton } from "./StatusTransitionButtonGroup";
 import { useIssueLogic } from "./logic";
 
 const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
