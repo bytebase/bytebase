@@ -1,6 +1,6 @@
 import { flatten } from "lodash-es";
 import { TransferOption, TreeOption } from "naive-ui";
-import { useDBSchemaStore } from "@/store";
+import { useDBSchemaV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { hasSchemaProperty } from "@/utils";
 
@@ -21,12 +21,10 @@ export const mapTreeOptions = (
   databaseList: ComposedDatabase[],
   filterValueList?: string[]
 ) => {
-  const dbSchemaStore = useDBSchemaStore();
+  const dbSchemaStore = useDBSchemaV1Store();
   const databaseNodes: DatabaseTreeOption<"database">[] = [];
   for (const database of databaseList) {
-    const databaseMetadata = dbSchemaStore.getDatabaseMetadataByDatabaseId(
-      Number(database.uid)
-    );
+    const databaseMetadata = dbSchemaStore.getDatabaseMetadata(database.name);
     const databaseNode: DatabaseTreeOption<"database"> = {
       level: "database",
       value: `d-${database.uid}`,

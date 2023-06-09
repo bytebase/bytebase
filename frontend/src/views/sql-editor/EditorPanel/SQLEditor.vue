@@ -24,7 +24,7 @@ import {
   useTabStore,
   useSQLEditorStore,
   useSheetV1Store,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useUIStateStore,
   useDatabaseV1Store,
   useInstanceV1ByUID,
@@ -53,7 +53,7 @@ const emit = defineEmits<{
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const sheetV1Store = useSheetV1Store();
 const uiStateStore = useUIStateStore();
@@ -178,9 +178,7 @@ const handleEditorReady = async () => {
         : databaseStore.databaseListByInstance(selectedInstance.value.name);
       // Only provide auto-complete context for those opened database.
       for (const database of databaseList) {
-        const tableList = dbSchemaStore.getTableListByDatabaseId(
-          Number(database.uid)
-        );
+        const tableList = dbSchemaStore.getTableList(database.name);
         if (tableList.length > 0) {
           databaseMap.set(database, tableList);
         }

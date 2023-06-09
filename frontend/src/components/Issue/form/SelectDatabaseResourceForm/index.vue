@@ -39,7 +39,7 @@ import {
 
 import {
   useDatabaseV1Store,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useProjectV1Store,
 } from "@/store";
 import {
@@ -62,7 +62,7 @@ const emits = defineEmits<{
 }>();
 
 const databaseStore = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const selectedValueList = ref<string[]>([]);
 const databaseResourceMap = ref<Map<string, DatabaseResource>>(new Map());
 const loading = ref(false);
@@ -77,8 +77,8 @@ onMounted(async () => {
   });
 
   for (const database of databaseList) {
-    const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadataById(
-      Number(database.uid)
+    const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata(
+      database.name
     );
     databaseResourceMap.value.set(`d-${database.uid}`, {
       databaseId: database.uid,
