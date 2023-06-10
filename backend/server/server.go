@@ -511,7 +511,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return aclMiddleware(s, internalAPIPrefix, ce, next, profile.Readonly)
 	})
 	s.registerOAuthRoutes(apiGroup)
-	s.registerProjectRoutes(apiGroup)
 	s.registerDatabaseRoutes(apiGroup)
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
