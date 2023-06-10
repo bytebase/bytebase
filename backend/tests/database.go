@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -158,36 +157,6 @@ func (ctl *controller) postDatabaseEdit(databaseEdit api.DatabaseEdit) (*Databas
 		return nil, errors.Wrap(err, "fail to unmarshal post database edit response")
 	}
 	return databaseEditResult, nil
-}
-
-func (ctl *controller) getLatestSchemaSDL(databaseID int) (string, error) {
-	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), map[string]string{"sdl": "true"})
-	if err != nil {
-		return "", err
-	}
-	bs, err := io.ReadAll(body)
-	if err != nil {
-		return "", err
-	}
-	return string(bs), nil
-}
-
-func (ctl *controller) getLatestSchemaDump(databaseID int) (string, error) {
-	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), nil)
-	if err != nil {
-		return "", err
-	}
-	bs, err := io.ReadAll(body)
-	if err != nil {
-		return "", err
-	}
-	return string(bs), nil
-}
-
-func (ctl *controller) getLatestSchemaMetadata(ctx context.Context, database string) (*v1pb.DatabaseMetadata, error) {
-	return ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
-		Name: fmt.Sprintf("%s/metadata", database),
-	})
 }
 
 func marshalLabels(labelMap map[string]string, environmentID string) (string, error) {
