@@ -173,6 +173,17 @@ export interface BatchUpdateDatabasesResponse {
   databases: Database[];
 }
 
+export interface SyncDatabaseRequest {
+  /**
+   * The name of the database to sync.
+   * Format: instances/{instance}/databases/{database}
+   */
+  name: string;
+}
+
+export interface SyncDatabaseResponse {
+}
+
 export interface GetDatabaseMetadataRequest {
   /**
    * The name of the database to retrieve metadata.
@@ -1610,6 +1621,106 @@ export const BatchUpdateDatabasesResponse = {
   fromPartial(object: DeepPartial<BatchUpdateDatabasesResponse>): BatchUpdateDatabasesResponse {
     const message = createBaseBatchUpdateDatabasesResponse();
     message.databases = object.databases?.map((e) => Database.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSyncDatabaseRequest(): SyncDatabaseRequest {
+  return { name: "" };
+}
+
+export const SyncDatabaseRequest = {
+  encode(message: SyncDatabaseRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SyncDatabaseRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSyncDatabaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SyncDatabaseRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: SyncDatabaseRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SyncDatabaseRequest>): SyncDatabaseRequest {
+    return SyncDatabaseRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SyncDatabaseRequest>): SyncDatabaseRequest {
+    const message = createBaseSyncDatabaseRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseSyncDatabaseResponse(): SyncDatabaseResponse {
+  return {};
+}
+
+export const SyncDatabaseResponse = {
+  encode(_: SyncDatabaseResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SyncDatabaseResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSyncDatabaseResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): SyncDatabaseResponse {
+    return {};
+  },
+
+  toJSON(_: SyncDatabaseResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<SyncDatabaseResponse>): SyncDatabaseResponse {
+    return SyncDatabaseResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial(_: DeepPartial<SyncDatabaseResponse>): SyncDatabaseResponse {
+    const message = createBaseSyncDatabaseResponse();
     return message;
   },
 };
@@ -5933,6 +6044,66 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
+    syncDatabase: {
+      name: "SyncDatabase",
+      requestType: SyncDatabaseRequest,
+      requestStream: false,
+      responseType: SyncDatabaseResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              44,
+              58,
+              1,
+              42,
+              34,
+              39,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              115,
+              121,
+              110,
+              99,
+            ]),
+          ],
+        },
+      },
+    },
     getDatabaseMetadata: {
       name: "GetDatabaseMetadata",
       requestType: GetDatabaseMetadataRequest,
@@ -6832,6 +7003,10 @@ export interface DatabaseServiceImplementation<CallContextExt = {}> {
     request: BatchUpdateDatabasesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<BatchUpdateDatabasesResponse>>;
+  syncDatabase(
+    request: SyncDatabaseRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<SyncDatabaseResponse>>;
   getDatabaseMetadata(
     request: GetDatabaseMetadataRequest,
     context: CallContext & CallContextExt,
@@ -6896,6 +7071,10 @@ export interface DatabaseServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<BatchUpdateDatabasesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<BatchUpdateDatabasesResponse>;
+  syncDatabase(
+    request: DeepPartial<SyncDatabaseRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<SyncDatabaseResponse>;
   getDatabaseMetadata(
     request: DeepPartial<GetDatabaseMetadataRequest>,
     options?: CallOptions & CallOptionsExt,
