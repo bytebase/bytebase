@@ -351,6 +351,25 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 	return convertToInstance(ins), nil
 }
 
+// SyncInstance syncs the instance.
+func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncInstanceRequest) (*v1pb.SyncInstanceResponse, error) {
+	instance, err := s.getInstanceMessage(ctx, request.Name)
+	if err != nil {
+		return nil, err
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Name)
+	}
+
+	if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+		return nil, err
+	}
+	// Sync all databases in the instance asynchronously.
+	s.stateCfg.InstanceDatabaseSyncChan <- instance
+
+	return &v1pb.SyncInstanceResponse{}, nil
+}
+
 // AddDataSource adds a data source to an instance.
 func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDataSourceRequest) (*v1pb.Instance, error) {
 	if request.DataSource == nil {

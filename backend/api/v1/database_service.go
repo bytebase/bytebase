@@ -36,6 +36,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
+	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -62,15 +63,17 @@ const (
 type DatabaseService struct {
 	v1pb.UnimplementedDatabaseServiceServer
 	store          *store.Store
-	BackupRunner   *backuprun.Runner
+	backupRunner   *backuprun.Runner
+	schemaSyncer   *schemasync.Syncer
 	licenseService enterpriseAPI.LicenseService
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner, licenseService enterpriseAPI.LicenseService) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterpriseAPI.LicenseService) *DatabaseService {
 	return &DatabaseService{
 		store:          store,
-		BackupRunner:   br,
+		backupRunner:   br,
+		schemaSyncer:   schemaSyncer,
 		licenseService: licenseService,
 	}
 }
@@ -242,6 +245,35 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	}
 
 	return convertToDatabase(updatedDatabase), nil
+}
+
+// SyncDatabase syncs the schema of a database.
+func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDatabaseRequest) (*v1pb.SyncDatabaseResponse, error) {
+	instanceID, databaseName, err := getInstanceDatabaseID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	find := &store.FindDatabaseMessage{}
+	databaseUID, isNumber := isNumber(databaseName)
+	if isNumber {
+		// Expected format: "instances/{ignored_value}/database/{uid}"
+		find.UID = &databaseUID
+	} else {
+		// Expected format: "instances/{instance}/database/{database}"
+		find.InstanceID = &instanceID
+		find.DatabaseName = &databaseName
+	}
+	database, err := s.store.GetDatabaseV2(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+		return nil, err
+	}
+	return &v1pb.SyncDatabaseResponse{}, nil
 }
 
 // BatchUpdateDatabases updates a database in batch.
@@ -530,7 +562,7 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 	}
 
 	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
-	backup, err := s.BackupRunner.ScheduleBackupTask(ctx, database, backupName, api.BackupTypeManual, creatorID)
+	backup, err := s.backupRunner.ScheduleBackupTask(ctx, database, backupName, api.BackupTypeManual, creatorID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
