@@ -256,7 +256,9 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(ctx, database.Name)
+	latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+		Name: fmt.Sprintf("%s/metadata", database.Name),
+	})
 	a.NoError(err)
 
 	diff := cmp.Diff(wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
@@ -534,7 +536,9 @@ func TestSyncerForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(ctx, database.Name)
+	latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+		Name: fmt.Sprintf("%s/metadata", database.Name),
+	})
 	a.NoError(err)
 
 	var expectedSchemaMetadata v1pb.DatabaseMetadata
