@@ -2204,15 +2204,22 @@ CREATE TABLE public.book (
 			status, err := ctl.waitIssuePipeline(ctx, issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
-			latestSchemaDump, err := ctl.getLatestSchemaDump(databaseUID)
+			latestSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+				Name: fmt.Sprintf("%s/schema", database.Name),
+			})
 			a.NoError(err)
-			a.Equal(test.wantRawSchema, latestSchemaDump)
+			a.Equal(test.wantRawSchema, latestSchema.Schema)
 			if test.dbType == db.MySQL {
-				latestSchemaSDL, err := ctl.getLatestSchemaSDL(databaseUID)
+				latestSchemaSDL, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+					Name:      fmt.Sprintf("%s/schema", database.Name),
+					SdlFormat: true,
+				})
 				a.NoError(err)
-				a.Equal(test.wantSDL, latestSchemaSDL)
+				a.Equal(test.wantSDL, latestSchemaSDL.Schema)
 			}
-			latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(ctx, database.Name)
+			latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+				Name: fmt.Sprintf("%s/metadata", database.Name),
+			})
 			a.NoError(err)
 			diff := cmp.Diff(test.wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
 			a.Equal("", diff)

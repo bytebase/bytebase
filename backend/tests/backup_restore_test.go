@@ -41,7 +41,9 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	ctx, project, mysqlDB, instanceUID, database, databaseUID, databaseName, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
-	latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(ctx, database.Name)
+	latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+		Name: fmt.Sprintf("%s/metadata", database.Name),
+	})
 	a.NoError(err)
 
 	backupUID, err := strconv.Atoi(backup.Uid)
