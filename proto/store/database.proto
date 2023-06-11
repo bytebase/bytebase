@@ -21,6 +21,9 @@ message DatabaseMetadata {
 
   // The extensions is the list of extensions in a database.
   repeated ExtensionMetadata extensions = 5;
+
+  // The database belongs to a datashare.
+  bool datashare = 6;
 }
 
 // SchemaMetadata is the metadata for schemas.
