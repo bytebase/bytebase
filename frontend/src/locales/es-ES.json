@@ -1468,8 +1468,8 @@
       }
     },
     "mode": {
-      "standard": "Estándar",
-      "tenant": "Inquilino"
+      "standard": "Modo Estándar",
+      "tenant": "Modo Inquilino"
     },
     "db-name-template": "Plantilla de nombre de base de datos del inquilino",
     "select": "Seleccionar proyecto",
