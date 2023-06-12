@@ -383,7 +383,8 @@ CREATE TABLE db (
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
-    secrets JSONB NOT NULL DEFAULT '{}'
+    secrets JSONB NOT NULL DEFAULT '{}',
+    datashare BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE INDEX idx_db_instance_id ON db(instance_id);

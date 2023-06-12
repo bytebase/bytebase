@@ -563,6 +563,7 @@ DatabaseMetadata is the metadata for databases.
 | character_set | [string](#string) |  | The character_set is the character set of a database. |
 | collation | [string](#string) |  | The collation is the collation of a database. |
 | extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
+| datashare | [bool](#bool) |  | The database belongs to a datashare. |
 
 
 
