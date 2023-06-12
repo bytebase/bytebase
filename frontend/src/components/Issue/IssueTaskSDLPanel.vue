@@ -98,7 +98,7 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { useIssueLogic } from "./logic";
-import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
+import { Task, TaskId } from "@/types";
 import MonacoEditor from "../MonacoEditor";
 import { sqlServiceClient } from "@/grpcweb";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
@@ -127,7 +127,7 @@ interface LocalState {
 }
 
 const databaseStore = useDatabaseV1Store();
-const { selectedTask } = useIssueLogic();
+const { selectedTask, selectedStatement } = useIssueLogic();
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
@@ -164,7 +164,8 @@ const useSDLState = () => {
   });
 
   const fetchOngoingSDLDetail = async (
-    task: Task
+    task: Task,
+    statement: string
   ): Promise<SDLDetail | undefined> => {
     if (!task.database) return undefined;
     const database = await databaseStore.getOrFetchDatabaseByUID(
@@ -176,9 +177,7 @@ const useSDLState = () => {
         true // fetch SDL format
       )
     ).schema;
-    const payload = task.payload as TaskDatabaseSchemaUpdateSDLPayload;
-    if (!payload) return undefined;
-    const expectedSDL = payload.statement;
+    const expectedSDL = statement;
 
     const getSchemaDiff = async () => {
       const { data } = await axios.post("/v1/sql/schema/diff", {
@@ -242,36 +241,34 @@ const useSDLState = () => {
 
   watch(
     [
-      () => (selectedTask.value as Task).id,
-      () => (selectedTask.value as Task).status,
+      () => selectedTask.value as Task,
+      () => selectedStatement.value,
       changeHistoryId,
     ],
-    async ([taskId, taskStatus, changeHistoryId]) => {
-      const task = selectedTask.value as Task;
-      if (!map.has(taskId)) {
-        map.set(taskId, emptyState(task));
+    async ([task, statement, changeHistoryId]) => {
+      if (!map.has(task.id)) {
+        map.set(task.id, emptyState(task));
       }
       const finish = (detail?: SDLState["detail"]) => {
-        const state = map.get(taskId)!;
+        const state = map.get(task.id)!;
         state.loading = false;
         state.detail = detail;
       };
       try {
-        if (taskStatus === "DONE") {
+        if (task.status === "DONE") {
           const detail = await fetchSDLDetailFromChangeHistory(
             task,
             changeHistoryId
           );
           finish(detail);
         } else {
-          const detail = await fetchOngoingSDLDetail(task);
+          const detail = await fetchOngoingSDLDetail(task, statement);
           finish(detail);
         }
       } catch (err: any) {
         // The task has been changed during the fetch
         // The result is meaningless.
         state.tab = "schema";
-        const payload = task.payload as TaskDatabaseSchemaUpdateSDLPayload;
         const message =
           err.response?.data?.message ?? err.details ?? "Internal server error";
 
@@ -283,7 +280,7 @@ const useSDLState = () => {
         finish({
           error: message,
           diffDDL: "",
-          expectedSDL: payload?.statement,
+          expectedSDL: statement,
           previousSDL: "",
           prettyExpectedSDL: "",
         });
