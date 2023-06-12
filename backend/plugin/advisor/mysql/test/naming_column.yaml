@@ -30,7 +30,7 @@
       code: 302
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 2
+      line: 3
       details: ""
 - statement: ALTER TABLE tech_book RENAME COLUMN id TO creator_id;
   want:
@@ -53,7 +53,7 @@
       code: 302
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 7
+      line: 8
       details: ""
 - statement: ALTER TABLE tech_book CHANGE COLUMN id creator_id int;
   want:
@@ -83,7 +83,7 @@
       code: 302
       title: naming.column
       content: '`book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 6
+      line: 7
       details: ""
 - statement: |-
     CREATE TABLE book(

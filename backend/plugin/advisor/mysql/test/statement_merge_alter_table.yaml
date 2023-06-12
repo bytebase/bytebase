@@ -14,7 +14,7 @@
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -32,7 +32,7 @@
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
-      line: 4
+      line: 5
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -50,5 +50,5 @@
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
-      line: 4
+      line: 5
       details: ""

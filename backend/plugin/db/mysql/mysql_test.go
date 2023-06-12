@@ -14,7 +14,7 @@ func TestTransformDelimiter(t *testing.T) {
 	}{
 		{
 			statement: "CREATE TABLE t1(id INT PRIMARY KEY);",
-			want:      "CREATE TABLE t1(id INT PRIMARY KEY);",
+			want:      "CREATE TABLE t1(id INT PRIMARY KEY)\n;",
 		},
 		{
 			statement: `
@@ -103,5 +103,6 @@ func TestTransformDelimiter_Truncate(t *testing.T) {
 	}
 	require.Equal(t, 12, len(got))
 	// Make sure all trunks add up.
-	require.Equal(t, total, len(statements))
+	// 12 trunks + 1 delimiter
+	require.Equal(t, total, len(statements)+1)
 }
