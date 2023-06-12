@@ -1,0 +1,76 @@
+- statement: CREATE TABLE UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES(ID INT);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE "UPPER_CASE_TABLE_NAME_WITH_DOUBLE_QUOTES"(ID INT);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE lower_case_table_name_without_double_quotes(ID INT);
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"lower_case_table_name_without_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      line: 1
+      details: ""
+- statement: CREATE TABLE "lower_case_table_name_with_double_quotes"(ID INT);
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"lower_case_table_name_with_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      line: 1
+      details: ""
+- statement: "CREATE TABLE \"\U0001F608EMOJI\U0001F604\"(ID INT);"
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: "\"\U0001F608EMOJI\U0001F604\" mismatches table naming convention, naming format should be \"^[A-Z]+(_[A-Z]+)*$\""
+      line: 1
+      details: ""
+- statement: ALTER TABLE "lower_case_table_with_double_quotes" RENAME TO UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE UPPER_CASE_TABLE_NAME RENAME TO "lower_case_table_with_double_quotes";
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"lower_case_table_with_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES(ID INT);
+                ALTER TABLE UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES RENAME TO "lower_case_table_with_double_quotes";
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"lower_case_table_with_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE "lower_case_table_name_with_double_quotes"(ID INT);
+                ALTER TABLE "lower_case_table_name_with_double_quotes" RENAME TO UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES;
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"lower_case_table_name_with_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      line: 1
+      details: ""
