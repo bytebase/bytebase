@@ -58,6 +58,11 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const composedDatabaseList = await upsertDatabaseMap(databases);
     return composedDatabaseList;
   };
+  const syncDatabase = async (database: string) => {
+    await databaseServiceClient.syncDatabase({
+      name: database,
+    });
+  };
   const databaseListByUser = (user: User) => {
     const canManageDatabase = hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-database",
@@ -143,6 +148,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     databaseList,
     fetchDatabaseList,
     searchDatabaseList,
+    syncDatabase,
     databaseListByUser,
     databaseListByProject,
     databaseListByInstance,
