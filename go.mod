@@ -14,6 +14,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/mysql-parser v0.0.0-20230608081517-18ca6de4af0d
 	github.com/bytebase/plsql-parser v0.0.0-20230605065610-558b30eea9da
+	github.com/bytebase/snowsql-parser v0.0.0-20230609063735-32997ba8276c
 	github.com/casbin/casbin/v2 v2.66.2
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
@@ -85,7 +86,6 @@ require (
 	github.com/apache/arrow/go/v12 v12.0.0 // indirect
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
-	github.com/bytebase/snowsql-parser v0.0.0-20230609063735-32997ba8276c // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
