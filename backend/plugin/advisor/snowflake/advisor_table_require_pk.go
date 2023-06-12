@@ -123,56 +123,55 @@ func (l *tableRequirePkChecker) ExitCreate_table(ctx *parser.Create_tableContext
 
 // EnterInline_constraint is called when production inline_constraint is entered.
 func (l *tableRequirePkChecker) EnterInline_constraint(ctx *parser.Inline_constraintContext) {
-	if ctx.PRIMARY() == nil {
+	if ctx.PRIMARY() == nil || l.currentNormalizedTableName == "" {
 		return
 	}
 	l.tableHasPrimaryKey[l.currentNormalizedTableName] = true
 }
 
+// EnterAlter_table is called when production alter_table is entered.
 func (l *tableRequirePkChecker) EnterOut_of_line_constraint(ctx *parser.Out_of_line_constraintContext) {
 	if ctx.PRIMARY() == nil || l.currentNormalizedTableName == "" || l.currentConstraintAction == currentConstraintActionNone {
 		return
 	}
 	if l.currentConstraintAction == currentConstraintActionAdd {
 		l.tableHasPrimaryKey[l.currentNormalizedTableName] = true
-	} else {
+	} else if l.currentConstraintAction == currentConstraintActionDrop {
 		l.tableHasPrimaryKey[l.currentNormalizedTableName] = false
 	}
 }
 
-// // EnterCreate_table is called when production create_table is entered.
-// func (l *tableRequirePkChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
-// 	anyPrimaryKey := false
-// 	tableName := normalizeIdentifierName(ctx.Object_name().GetText())
+// EnterConstraint_action is called when production constraint_action is entered.
+func (l *tableRequirePkChecker) EnterConstraint_action(ctx *parser.Constraint_actionContext) {
+	if l.currentNormalizedTableName == "" {
+		return
+	}
+	if ctx.DROP() != nil && ctx.PRIMARY() != nil {
+		if _, ok := l.tableHasPrimaryKey[l.currentNormalizedTableName]; ok {
+			l.tableHasPrimaryKey[l.currentNormalizedTableName] = false
+		}
+		return
+	}
+	if ctx.ADD() != nil {
+		l.currentConstraintAction = currentConstraintActionAdd
+		return
+	}
+}
 
-// 	//TODO(zp): split the following logic into EnterCreate_table, Enter_Full_col_decl and so on to improve the performance.
-// 	columnDeclItemListContext := ctx.Column_decl_item_list()
-// 	for _, declItem := range columnDeclItemListContext.AllColumn_decl_item() {
-// 		if anyPrimaryKey {
-// 			break
-// 		}
-// 		if fullColDeclContext := declItem.Full_col_decl(); fullColDeclContext != nil {
-// 			for _, inlineConstraintContext := range fullColDeclContext.AllInline_constraint() {
-// 				if inlineConstraintContext.PRIMARY() != nil {
-// 					anyPrimaryKey = true
-// 					break
-// 				}
-// 			}
-// 		} else if outOfLineConstraintContext := declItem.Out_of_line_constraint(); outOfLineConstraintContext != nil {
-// 			if outOfLineConstraintContext.PRIMARY() != nil {
-// 				anyPrimaryKey = true
-// 				break
-// 			}
-// 		}
-// 	}
+// EnterAlter_table is called when production alter_table is entered.
+func (l *tableRequirePkChecker) EnterAlter_table(ctx *parser.Alter_tableContext) {
+	if ctx.Constraint_action() == nil {
+		return
+	}
+	originalTableName := ctx.Object_name(0).GetText()
+	normalizedTableName := normalizeIdentifierName(originalTableName)
 
-// 	if !anyPrimaryKey {
-// 		l.adviceList = append(l.adviceList, advisor.Advice{
-// 			Status:  l.level,
-// 			Code:    advisor.TableNoPK,
-// 			Title:   l.title,
-// 			Content: fmt.Sprintf("Table %s requires PRIMARY KEY.", tableName),
-// 			Line:    ctx.GetStart().GetLine(),
-// 		})
-// 	}
-// }
+	l.currentNormalizedTableName = normalizedTableName
+	l.tableOriginalName[normalizedTableName] = originalTableName
+}
+
+// ExitAlter_table is called when production alter_table is exited.
+func (l *tableRequirePkChecker) ExitAlter_table(ctx *parser.Alter_tableContext) {
+	l.currentNormalizedTableName = ""
+	l.currentConstraintAction = currentConstraintActionNone
+}
