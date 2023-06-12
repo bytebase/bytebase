@@ -36,11 +36,12 @@ func (*TableRequirePkAdvisor) Check(ctx advisor.Context, statement string) ([]ad
 	}
 
 	listener := &tableRequirePkChecker{
-		currentConstraintAction: currentConstraintActionNone,
-		level:                   level,
-		title:                   string(ctx.Rule.Type),
-		tableHasPrimaryKey:      make(map[string]bool),
-		tableOriginalName:       make(map[string]string),
+		currentConstraintAction:    currentConstraintActionNone,
+		level:                      level,
+		title:                      string(ctx.Rule.Type),
+		currentNormalizedTableName: "",
+		tableHasPrimaryKey:         make(map[string]bool),
+		tableOriginalName:          make(map[string]string),
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -129,7 +130,7 @@ func (l *tableRequirePkChecker) EnterInline_constraint(ctx *parser.Inline_constr
 	l.tableHasPrimaryKey[l.currentNormalizedTableName] = true
 }
 
-// EnterAlter_table is called when production alter_table is entered.
+// EnterOut_of_line_constraint is called when production out_of_line_constraint is entered.
 func (l *tableRequirePkChecker) EnterOut_of_line_constraint(ctx *parser.Out_of_line_constraintContext) {
 	if ctx.PRIMARY() == nil || l.currentNormalizedTableName == "" || l.currentConstraintAction == currentConstraintActionNone {
 		return
