@@ -457,7 +457,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		return nil, err
 	}
 	s.userIDCache.Store(user.ID, user)
-	if patch.Email != nil {
+	if patch.Email != nil && patch.Phone != nil {
 		s.projectIDPolicyCache = sync.Map{}
 		s.projectPolicyCache = sync.Map{}
 	}
