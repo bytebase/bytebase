@@ -38,7 +38,7 @@
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int COMMENT 'this is comment');
@@ -54,7 +54,7 @@
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is comment');
@@ -70,7 +70,7 @@
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is COMMENT');
@@ -86,5 +86,5 @@
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 2
+      line: 3
       details: ""

@@ -15,6 +15,7 @@ import (
 // ParseMySQL parses the given SQL statement and returns the AST.
 func ParseMySQL(statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	// deal with delimiter if needed
+	statement = strings.TrimRight(statement, " \r\n\t\f;") + "\n;"
 	has, list, err := hasDelimiter(statement)
 	if err != nil {
 		return nil, nil, err
