@@ -1,11 +1,10 @@
 <template>
   <NSelect
-    :value="roleList"
+    :value="role"
     :options="roleOptions"
-    :multiple="true"
     :max-tag-count="'responsive'"
-    :placeholder="$t('role.select-roles')"
-    @update:value="$emit('update:role-list', $event)"
+    :placeholder="'Select role'"
+    @update:value="$emit('update:role', $event)"
   />
 </template>
 
@@ -18,11 +17,11 @@ import { PresetRoleType, ProjectRoleType } from "@/types";
 import { displayRoleTitle } from "@/utils";
 
 defineProps<{
-  roleList: ProjectRoleType[];
+  role: ProjectRoleType;
 }>();
 
 defineEmits<{
-  (event: "update:role-list", list: ProjectRoleType[]): void;
+  (event: "update:role", role: ProjectRoleType): void;
 }>();
 
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
