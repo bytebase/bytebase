@@ -117,7 +117,7 @@ func (l *tableRequirePkChecker) EnterCreate_table(ctx *parser.Create_tableContex
 }
 
 // ExitCreate_table is called when production create_table is exited.
-func (l *tableRequirePkChecker) ExitCreate_table(ctx *parser.Create_tableContext) {
+func (l *tableRequirePkChecker) ExitCreate_table(*parser.Create_tableContext) {
 	l.currentNormalizedTableName = ""
 	l.currentConstraintAction = currentConstraintActionNone
 }
@@ -172,7 +172,7 @@ func (l *tableRequirePkChecker) EnterAlter_table(ctx *parser.Alter_tableContext)
 }
 
 // ExitAlter_table is called when production alter_table is exited.
-func (l *tableRequirePkChecker) ExitAlter_table(ctx *parser.Alter_tableContext) {
+func (l *tableRequirePkChecker) ExitAlter_table(*parser.Alter_tableContext) {
 	l.currentNormalizedTableName = ""
 	l.currentConstraintAction = currentConstraintActionNone
 }
