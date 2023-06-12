@@ -397,7 +397,7 @@ const saveEdit = async () => {
   if (userPatch.email !== user.value.email) {
     updateMask.push("email");
   }
-  if (userPatch.phone && userPatch.phone !== user.value.phone) {
+  if (userPatch.phone !== user.value.phone) {
     updateMask.push("phone");
   }
   if (userPatch.password !== user.value.email) {
