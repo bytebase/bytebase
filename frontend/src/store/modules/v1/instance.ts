@@ -84,6 +84,11 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const composed = await upsertInstances([instance]);
     return composed[0];
   };
+  const syncInstance = async (instance: Instance) => {
+    await instanceServiceClient.syncInstance({
+      name: instance.name,
+    });
+  };
   const fetchInstanceByName = async (name: string) => {
     const instance = await instanceServiceClient.getInstance({
       name,
@@ -189,6 +194,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     updateInstance,
     archiveInstance,
     restoreInstance,
+    syncInstance,
     fetchInstanceList,
     fetchInstanceByName,
     getInstanceByName,
