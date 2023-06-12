@@ -529,10 +529,10 @@ func TestVCS(t *testing.T) {
 			gitFile3 := "bbtest/prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile3: migrationStatement3})
 			a.NoError(err)
-			gitFile2 := "bbtest/prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql"
+			gitFile2 := "bbtest/prod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile2: migrationStatement2})
 			a.NoError(err)
-			gitFile1 := "bbtest/prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql"
+			gitFile1 := "bbtest/prod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile1: migrationStatement})
 			a.NoError(err)
 			// This file is merged from other branch and included in this push event's commits.
@@ -566,8 +566,8 @@ func TestVCS(t *testing.T) {
 			// TODO(p0ny): expose task DAG list and check the dependency.
 			a.Equal(3, len(issue.Pipeline.StageList[0].TaskList))
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
-			a.Equal("[testVCSSchemaUpdate] Alter schema: Create table book", issue.Name)
-			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
+			a.Equal("[testVCSSchemaUpdate] Alter schema: 😊create table book", issue.Name)
+			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
