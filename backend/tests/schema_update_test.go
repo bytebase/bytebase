@@ -529,10 +529,10 @@ func TestVCS(t *testing.T) {
 			gitFile3 := "bbtest/prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile3: migrationStatement3})
 			a.NoError(err)
-			gitFile2 := "bbtest/prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql"
+			gitFile2 := "bbtest/prod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile2: migrationStatement2})
 			a.NoError(err)
-			gitFile1 := "bbtest/prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql"
+			gitFile1 := "bbtest/prod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile1: migrationStatement})
 			a.NoError(err)
 			// This file is merged from other branch and included in this push event's commits.
