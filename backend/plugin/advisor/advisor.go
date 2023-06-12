@@ -394,8 +394,11 @@ const (
 
 	// Snowflake Advisor.
 
-	// SnowflakeNamingTableConvention is an advisor type for Oracle table naming convention.
+	// SnowflakeNamingTableConvention is an advisor type for Snowflake table naming convention.
 	SnowflakeNamingTableConvention Type = "bb.plugin.advisor.snowflake.naming.table"
+
+	// SnowflakeTableRequirePK is an advisor type for Snowflake table require primary key.
+	SnowflakeTableRequirePK Type = "bb.plugin.advisor.snowflake.table.require-pk"
 )
 
 // Advice is the result of an advisor.
