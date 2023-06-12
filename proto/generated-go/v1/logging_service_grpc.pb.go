@@ -19,7 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	LoggingService_ListLogs_FullMethodName = "/bytebase.v1.LoggingService/ListLogs"
+	LoggingService_ListLogs_FullMethodName  = "/bytebase.v1.LoggingService/ListLogs"
+	LoggingService_UpdateLog_FullMethodName = "/bytebase.v1.LoggingService/UpdateLog"
+	LoggingService_CreateLog_FullMethodName = "/bytebase.v1.LoggingService/CreateLog"
 )
 
 // LoggingServiceClient is the client API for LoggingService service.
@@ -27,6 +29,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LoggingServiceClient interface {
 	ListLogs(ctx context.Context, in *ListLogsRequest, opts ...grpc.CallOption) (*ListLogsResponse, error)
+	UpdateLog(ctx context.Context, in *UpdateLogRequest, opts ...grpc.CallOption) (*LogEntity, error)
+	CreateLog(ctx context.Context, in *CreateLogRequest, opts ...grpc.CallOption) (*LogEntity, error)
 }
 
 type loggingServiceClient struct {
@@ -46,11 +50,31 @@ func (c *loggingServiceClient) ListLogs(ctx context.Context, in *ListLogsRequest
 	return out, nil
 }
 
+func (c *loggingServiceClient) UpdateLog(ctx context.Context, in *UpdateLogRequest, opts ...grpc.CallOption) (*LogEntity, error) {
+	out := new(LogEntity)
+	err := c.cc.Invoke(ctx, LoggingService_UpdateLog_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *loggingServiceClient) CreateLog(ctx context.Context, in *CreateLogRequest, opts ...grpc.CallOption) (*LogEntity, error) {
+	out := new(LogEntity)
+	err := c.cc.Invoke(ctx, LoggingService_CreateLog_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LoggingServiceServer is the server API for LoggingService service.
 // All implementations must embed UnimplementedLoggingServiceServer
 // for forward compatibility
 type LoggingServiceServer interface {
 	ListLogs(context.Context, *ListLogsRequest) (*ListLogsResponse, error)
+	UpdateLog(context.Context, *UpdateLogRequest) (*LogEntity, error)
+	CreateLog(context.Context, *CreateLogRequest) (*LogEntity, error)
 	mustEmbedUnimplementedLoggingServiceServer()
 }
 
@@ -60,6 +84,12 @@ type UnimplementedLoggingServiceServer struct {
 
 func (UnimplementedLoggingServiceServer) ListLogs(context.Context, *ListLogsRequest) (*ListLogsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListLogs not implemented")
+}
+func (UnimplementedLoggingServiceServer) UpdateLog(context.Context, *UpdateLogRequest) (*LogEntity, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateLog not implemented")
+}
+func (UnimplementedLoggingServiceServer) CreateLog(context.Context, *CreateLogRequest) (*LogEntity, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateLog not implemented")
 }
 func (UnimplementedLoggingServiceServer) mustEmbedUnimplementedLoggingServiceServer() {}
 
@@ -92,6 +122,42 @@ func _LoggingService_ListLogs_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LoggingService_UpdateLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LoggingServiceServer).UpdateLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LoggingService_UpdateLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LoggingServiceServer).UpdateLog(ctx, req.(*UpdateLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LoggingService_CreateLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LoggingServiceServer).CreateLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LoggingService_CreateLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LoggingServiceServer).CreateLog(ctx, req.(*CreateLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LoggingService_ServiceDesc is the grpc.ServiceDesc for LoggingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -102,6 +168,14 @@ var LoggingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListLogs",
 			Handler:    _LoggingService_ListLogs_Handler,
+		},
+		{
+			MethodName: "UpdateLog",
+			Handler:    _LoggingService_UpdateLog_Handler,
+		},
+		{
+			MethodName: "CreateLog",
+			Handler:    _LoggingService_CreateLog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -11,6 +11,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useUserStore } from "@/store";
+import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import { extractUserUID } from "@/utils";
 
 const props = withDefaults(
@@ -30,7 +31,7 @@ const props = withDefaults(
 const store = useUserStore();
 
 const user = computed(() => {
-  return store.getUserByEmail(props.email);
+  return store.getUserByEmail(getUserEmailFromIdentifier(props.email));
 });
 
 const bindings = computed(() => {

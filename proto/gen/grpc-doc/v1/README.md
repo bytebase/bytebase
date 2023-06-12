@@ -227,12 +227,14 @@
     - [InstanceService](#bytebase-v1-InstanceService)
   
 - [v1/logging_service.proto](#v1_logging_service-proto)
+    - [CreateLogRequest](#bytebase-v1-CreateLogRequest)
     - [ListLogsRequest](#bytebase-v1-ListLogsRequest)
     - [ListLogsResponse](#bytebase-v1-ListLogsResponse)
-    - [LogEntry](#bytebase-v1-LogEntry)
+    - [LogEntity](#bytebase-v1-LogEntity)
+    - [UpdateLogRequest](#bytebase-v1-UpdateLogRequest)
   
-    - [LogEntry.Action](#bytebase-v1-LogEntry-Action)
-    - [LogEntry.Level](#bytebase-v1-LogEntry-Level)
+    - [LogEntity.Action](#bytebase-v1-LogEntity-Action)
+    - [LogEntity.Level](#bytebase-v1-LogEntity-Level)
   
     - [LoggingService](#bytebase-v1-LoggingService)
   
@@ -3759,6 +3761,21 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
+<a name="bytebase-v1-CreateLogRequest"></a>
+
+### CreateLogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| log | [LogEntity](#bytebase-v1-LogEntity) |  | The log to create. |
+
+
+
+
+
+
 <a name="bytebase-v1-ListLogsRequest"></a>
 
 ### ListLogsRequest
@@ -3767,8 +3784,8 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource name. Format: projects/{project} workspaces/{workspace} |
-| filter | [string](#string) |  | filter is the filter to apply on the list logs request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - creator - container - level - action For example: List the logs of type &#39;ACTION_ISSUE_COMMENT_CREATE&#39; in issue/123: &#39;action=&#34;ACTION_ISSUE_COMMENT_CREATE&#34;, container=&#34;issue/123&#34;&#39; |
+| filter | [string](#string) |  | filter is the filter to apply on the list logs request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - creator, example: - creator = &#34;users/{email}&#34; - resource, example: - resource = &#34;projects/{project resource id}&#34; - level, example: - level = &#34;INFO&#34; - level = &#34;ERROR | WARN&#34; - action, example: - action = &#34;ACTION_MEMBER_CREATE&#34; | &#34;ACTION_ISSUE_CREATE&#34; - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; For example: List the logs of type &#39;ACTION_ISSUE_COMMENT_CREATE&#39; in issue/123: &#39;action=&#34;ACTION_ISSUE_COMMENT_CREATE&#34;, resource=&#34;issue/123&#34;&#39; |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time acs&#34; - order_by = &#34;create_time desc&#34; |
 | page_size | [int32](#int32) |  | Not used. The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListLogs` call. Provide this to retrieve the subsequent page. |
 
@@ -3785,29 +3802,46 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| log_entries | [LogEntry](#bytebase-v1-LogEntry) | repeated | The list of log entries. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of log entries. Pass this value in the page_token field in the subsequent call to `ListLogs` method to retrieve the next page of log entries. |
+| log_entities | [LogEntity](#bytebase-v1-LogEntity) | repeated | The list of log entities. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to `ListLogs` method to retrieve the next page of log entities. |
 
 
 
 
 
 
-<a name="bytebase-v1-LogEntry"></a>
+<a name="bytebase-v1-LogEntity"></a>
 
-### LogEntry
+### LogEntity
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| creator | [string](#string) |  | The creator of the log entry. Format: users/{emailid} |
+| name | [string](#string) |  | The name of the log. Format: logs/{uid} |
+| creator | [string](#string) |  | The creator of the log entity. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was created initally. |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the backup resource was updated. |
-| action | [LogEntry.Action](#bytebase-v1-LogEntry-Action) |  |  |
-| level | [LogEntry.Level](#bytebase-v1-LogEntry-Level) |  |  |
-| resource_name | [string](#string) |  | The name of the resource associated with this log entry. For example, the resource user associated with log entry type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: users/{email} For ACTION_ISSUE_*: issues/{issue} For ACTION_PIPELINE_*: pipelines/{pipeline} For ACTION_PROJECT_*: projects/{project} For ACTION_SQL_EDITOR_QUERY: workspaces/{workspace} OR projects/{project} |
-| json_payload | [google.protobuf.Struct](#google-protobuf-Struct) |  | The payload of the log entry. |
+| action | [LogEntity.Action](#bytebase-v1-LogEntity-Action) |  |  |
+| level | [LogEntity.Level](#bytebase-v1-LogEntity-Level) |  |  |
+| resource | [string](#string) |  | The name of the resource associated with this log entity. For example, the resource user associated with log entity type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: users/{email} For ACTION_ISSUE_*: issues/{issue uid} For ACTION_PIPELINE_*: pipelines/{pipeline uid} For ACTION_PROJECT_*: projects/{project resource id} For ACTION_DATABASE_*: instances/{instance resource id} |
+| payload | [string](#string) |  | The payload of the log entity. TODO: use oneof |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateLogRequest"></a>
+
+### UpdateLogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| log | [LogEntity](#bytebase-v1-LogEntity) |  | The log to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
 
@@ -3816,46 +3850,50 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
  
 
 
-<a name="bytebase-v1-LogEntry-Action"></a>
+<a name="bytebase-v1-LogEntity-Action"></a>
 
-### LogEntry.Action
+### LogEntity.Action
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 |  |
-| ACTION_MEMBER_CREATE | 1 | In worksapce resource only.
+| ACTION_UNSPECIFIED | 0 | In worksapce resource only. |
+| ACTION_MEMBER_CREATE | 1 | Member related activity types. Enum value 1 - 20
 
 ACTION_MEMBER_CREATE is the type for creating a new member. |
 | ACTION_MEMBER_ROLE_UPDATE | 2 | ACTION_MEMBER_ROLE_UPDATE is the type for updating a member&#39;s role. |
 | ACTION_MEMBER_ACTIVATE | 3 | ACTION_MEMBER_ACTIVATE_UPDATE is the type for activating members. |
 | ACTION_MEMBER_DEACTIVE | 4 | ACTION_MEMBER_DEACTIVE is the type for deactiving members. |
-| ACTION_ISSUE_CREATE | 5 | In project resource only.
+| ACTION_ISSUE_CREATE | 21 | Issue related activity types. Enum value 21 - 40
 
 ACTION_ISSUE_CREATE is the type for creating a new issue. |
-| ACTION_ISSUE_COMMENT_CREATE | 6 | ACTION_ISSUE_COMMENT_CREATE is the type for creating a new comment on an issue. |
-| ACTION_ISSUE_FIELD_UPDATE | 7 | ACTION_ISSUE_FIELD_UPDATE is the type for updating an issue&#39;s field. |
-| ACTION_ISSUE_STATUS_UPDATE | 8 | ACTION_ISSUE_STATUS_UPDATE is the type for updating an issue&#39;s status. |
-| ACTION_PIPELINE_STAGE_STATUS_UPDATE | 9 | ACTION_PIPELINE_STAGE_STATUS_UPDATE is the type for stage begins or ends. |
-| ACTION_PIPELINE_TASK_STATUS_UPDATE | 10 | ACTION_PIPELINE_TASK_STATUS_UPDATE is the type for updating pipeline task status. |
-| ACTION_PIPELINE_TASK_FILE_COMMIT | 11 | ACTION_PIPELINE_TASK_FILE_COMMIT is the type for committing pipeline task files. |
-| ACTION_PIPELINE_TASK_STATEMENT_UPDATE | 12 | ACTION_PIPELINE_TASK_STATEMENT_UPDATE is the type for updating pipeline task SQL statement. |
-| ACITON_PIPELINE_TASK_EARLIEST_ALLOWED_DATE_UPDATE | 13 | ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_DATE_UPDATE is the type for updating pipeline task the earliest allowed time. |
-| ACTION_PROJECT_MEMBER_CREATE | 14 | ACTION_PROJECT_MEMBER_CREATE is the type for creating a new project member. |
-| ACTION_PROJECT_MEMBER_ROLE_UPDATE | 15 | ACTION_PROJECT_MEMBER_ROLE_UPDATE is the type for updating a project member&#39;s role. |
-| ACTION_PROJECT_MEMBER_DELETE | 16 | ACTION_PROJECT_MEMBER_DELETE is the type for deleting a project member. |
-| ACTION_PROJECT_REPOSITORY_PUSH | 17 | ACTION_PROJECT_REPOSITORY_PUSH is the type for pushing to a project repository. |
-| ACTION_PROJECT_DTABASE_TRANSFER | 18 | ACTION_PROJECT_DATABASE_TRANSFER is the type for transferring a database to a project. |
-| ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE | 19 | ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. |
-| ACTION_SQL_EDITOR_QUERY | 20 | Both in workspace and project resource.
+| ACTION_ISSUE_COMMENT_CREATE | 22 | ACTION_ISSUE_COMMENT_CREATE is the type for creating a new comment on an issue. |
+| ACTION_ISSUE_FIELD_UPDATE | 23 | ACTION_ISSUE_FIELD_UPDATE is the type for updating an issue&#39;s field. |
+| ACTION_ISSUE_STATUS_UPDATE | 24 | ACTION_ISSUE_STATUS_UPDATE is the type for updating an issue&#39;s status. |
+| ACTION_ISSUE_APPROVAL_NOTIFY | 25 | ACTION_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
+| ACTION_PIPELINE_STAGE_STATUS_UPDATE | 31 | ACTION_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
+| ACTION_PIPELINE_TASK_STATUS_UPDATE | 32 | ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
+| ACTION_PIPELINE_TASK_FILE_COMMIT | 33 | ACTION_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. |
+| ACTION_PIPELINE_TASK_STATEMENT_UPDATE | 34 | ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. |
+| ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE | 35 | ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. |
+| ACTION_PROJECT_REPOSITORY_PUSH | 41 | Project related activity types. Enum value 41 - 60
 
-ACTION_SQL_EDITOR_QUERY is the type for SQL editor query. If user runs SQL in Read-only mode, this action will belong to project resource. If user runs SQL in Read-write mode, this action will belong to workspace resource. |
+ACTION_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository. |
+| ACTION_PROJECT_MEMBER_CREATE | 42 | ACTION_PROJECT_MEMBER_CREATE represents adding a member to the project. |
+| ACTION_PROJECT_MEMBER_DELETE | 43 | ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project. |
+| ACTION_PROJECT_MEMBER_ROLE_UPDATE | 44 | ACTION_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. |
+| ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE | 45 | ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. |
+| ACTION_PROJECT_DATABASE_TRANSFER | 46 | ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another. |
+| ACTION_DATABASE_SQL_EDITOR_QUERY | 61 | Database related activity types. Enum value 61 - 80
+
+ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
+| ACTION_DATABASE_SQL_EXPORT | 62 | ACTION_DATABASE_SQL_EXPORT is the type for exporting SQL. |
 
 
 
-<a name="bytebase-v1-LogEntry-Level"></a>
+<a name="bytebase-v1-LogEntity-Level"></a>
 
-### LogEntry.Level
+### LogEntity.Level
 
 
 | Name | Number | Description |
@@ -3879,6 +3917,8 @@ ACTION_SQL_EDITOR_QUERY is the type for SQL editor query. If user runs SQL in Re
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | ListLogs | [ListLogsRequest](#bytebase-v1-ListLogsRequest) | [ListLogsResponse](#bytebase-v1-ListLogsResponse) |  |
+| UpdateLog | [UpdateLogRequest](#bytebase-v1-UpdateLogRequest) | [LogEntity](#bytebase-v1-LogEntity) |  |
+| CreateLog | [CreateLogRequest](#bytebase-v1-CreateLogRequest) | [LogEntity](#bytebase-v1-LogEntity) |  |
 
  
 
