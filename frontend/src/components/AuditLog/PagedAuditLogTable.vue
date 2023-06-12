@@ -27,14 +27,15 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive, watch } from "vue";
 
-import { useIsLoggedIn, useAuditLogStore } from "@/store";
-import { ActivityFind, AuditLog } from "@/types";
+import { useIsLoggedIn, useActivityV1Store } from "@/store";
+import { FindActivityMessage } from "@/types";
 import { useSessionStorage } from "@vueuse/core";
 import { stringify } from "qs";
+import { LogEntity } from "@/types/proto/v1/logging_service";
 
 type LocalState = {
   loading: boolean;
-  auditLogList: AuditLog[];
+  auditLogList: LogEntity[];
   paginationToken: string;
   hasMore: boolean;
 };
@@ -63,10 +64,9 @@ const props = defineProps({
     required: true,
   },
   activityFind: {
-    type: Object as PropType<ActivityFind>,
+    type: Object as PropType<FindActivityMessage>,
     default: () => ({
-      typePrefix: "",
-      order: "DESC",
+      order: "desc",
     }),
   },
   pageSize: {
@@ -94,7 +94,7 @@ const sessionState = useSessionStorage<SessionState>(
   }
 );
 
-const auditLogStore = useAuditLogStore();
+const activityV1Store = useActivityV1Store();
 const isLoggedIn = useIsLoggedIn();
 
 const limit = computed(() => {
@@ -112,7 +112,7 @@ const condition = computed(() => {
   });
 });
 
-const fetchData = (refresh = false) => {
+const fetchData = async (refresh = false) => {
   state.loading = true;
 
   const isFirstFetch = state.paginationToken === "";
@@ -122,32 +122,33 @@ const fetchData = (refresh = false) => {
     : // Always load one page if NOT the first fetch
       limit.value;
 
-  auditLogStore
-    .fetchPagedAuditLogList({
-      ...props.activityFind,
-      limit: expectedRowCount,
-      token: state.paginationToken,
-    })
-    .then(({ nextToken, auditLogList }) => {
-      if (refresh) {
-        state.auditLogList = auditLogList;
-      } else {
-        state.auditLogList.push(...auditLogList);
-      }
+  try {
+    const { nextPageToken, logEntities } =
+      await activityV1Store.fetchActivityList({
+        ...props.activityFind,
+        pageSize: expectedRowCount,
+        pageToken: state.paginationToken,
+      });
+    if (refresh) {
+      state.auditLogList = logEntities;
+    } else {
+      state.auditLogList.push(...logEntities);
+    }
 
-      if (auditLogList.length < expectedRowCount) {
-        state.hasMore = false;
-      } else if (!isFirstFetch) {
-        // If we didn't reach the end, memorize we've clicked the "load more" button.
-        sessionState.value.page++;
-      }
+    if (logEntities.length < expectedRowCount) {
+      state.hasMore = false;
+    } else if (!isFirstFetch) {
+      // If we didn't reach the end, memorize we've clicked the "load more" button.
+      sessionState.value.page++;
+    }
 
-      sessionState.value.updatedTs = Date.now();
-      state.paginationToken = nextToken;
-    })
-    .finally(() => {
-      state.loading = false;
-    });
+    sessionState.value.updatedTs = Date.now();
+    state.paginationToken = nextPageToken;
+  } catch (e) {
+    console.error(e);
+  } finally {
+    state.loading = false;
+  }
 };
 
 const resetSession = () => {
