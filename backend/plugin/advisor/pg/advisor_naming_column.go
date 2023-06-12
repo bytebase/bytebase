@@ -34,7 +34,7 @@ func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement strin
 		return nil, err
 	}
 
-	format, maxLength, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	format, maxLength, err := advisor.UnmarshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}

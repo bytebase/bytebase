@@ -11,6 +11,7 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -277,7 +278,7 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (*v1pb.SQLReviewPolicy, error) {
 	}
 
 	for _, rule := range policy.Rules {
-		payload, err := advisor.SetDefaultSQLReviewRulePayload(advisor.SQLReviewRuleType(rule.Type))
+		payload, err := advisor.SetDefaultSQLReviewRulePayload(advisor.SQLReviewRuleType(rule.Type), db.Postgres)
 		if err != nil {
 			return nil, err
 		}
@@ -499,7 +500,7 @@ func prodTemplateSQLReviewPolicyForMySQL() (*v1pb.SQLReviewPolicy, error) {
 	}
 
 	for _, rule := range policy.Rules {
-		payload, err := advisor.SetDefaultSQLReviewRulePayload(advisor.SQLReviewRuleType(rule.Type))
+		payload, err := advisor.SetDefaultSQLReviewRulePayload(advisor.SQLReviewRuleType(rule.Type), db.Postgres)
 		if err != nil {
 			return nil, err
 		}
