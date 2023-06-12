@@ -163,7 +163,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 		}
 		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType})
 
-		payload, err := SetDefaultSQLReviewRulePayload(rule)
+		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)
 
 		ruleList := []*SQLReviewRule{
@@ -350,7 +350,7 @@ func (*MockDriver) CheckSlowQueryLogEnabled(_ context.Context) error {
 }
 
 // SetDefaultSQLReviewRulePayload sets the default payload for this rule.
-func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
+func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType db.Type) (string, error) {
 	var payload []byte
 	var err error
 	switch ruleTp {
@@ -397,9 +397,14 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 	case SchemaRuleTableNaming:
 		fallthrough
 	case SchemaRuleColumnNaming:
+		format := "^[a-z]+(_[a-z]+)*$"
+		maxLength := 64
+		if dbType == db.Snowflake {
+			format = "^[A-Z]+(_[A-Z]+)*$"
+		}
 		payload, err = json.Marshal(NamingRulePayload{
-			Format:    "^[a-z]+(_[a-z]+)*$",
-			MaxLength: 64,
+			Format:    format,
+			MaxLength: maxLength,
 		})
 	case SchemaRuleIDXNaming:
 		payload, err = json.Marshal(NamingRulePayload{
