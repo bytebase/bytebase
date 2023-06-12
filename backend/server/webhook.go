@@ -1293,6 +1293,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 	}
 	issue, err := s.createIssue(ctx, issueCreate, creatorID)
 	if err != nil {
+		log.Error("Failed to create issue", zap.Any("issueCreate", issueCreate), zap.Error(err))
 		errMsg := "Failed to create schema update issue"
 		if issueType == api.IssueDatabaseDataUpdate {
 			errMsg = "Failed to create data update issue"
