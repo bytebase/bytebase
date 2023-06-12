@@ -3,13 +3,10 @@ package snowflake
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/snowsql-parser"
-	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
 )
@@ -74,19 +71,7 @@ func (l *tableRequirePkChecker) generateAdvice() ([]advisor.Advice, error) {
 // EnterCreate_table is called when production create_table is entered.
 func (l *tableRequirePkChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	anyPrimaryKey := false
-
-	//TODO(zp): extract the following logic into a separate function to improve readability.
-	objectName := ctx.Object_name().GetText()
-	parts := strings.Split(objectName, ".")
-	if len(parts) == 0 {
-		log.Warn("Unexpected zero part after splitting snowflake object name with dot", zap.String("objectName", objectName))
-		return
-	}
-	tableName := parts[len(parts)-1]
-	if tableName[0] == '"' && tableName[len(tableName)-1] == '"' {
-		tableName = tableName[1 : len(tableName)-1]
-		tableName = strings.ReplaceAll(tableName, `""`, `"`)
-	}
+	tableName := normalizeIdentifierName(ctx.Object_name().GetText())
 
 	//TODO(zp): split the following logic into EnterCreate_table, Enter_Full_col_decl and so on to improve the performance.
 	columnDeclItemListContext := ctx.Column_decl_item_list()
