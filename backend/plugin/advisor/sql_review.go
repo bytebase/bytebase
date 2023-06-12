@@ -257,7 +257,7 @@ func (rule *SQLReviewRule) Validate() error {
 	// TODO(rebelice): add other SQL review rule validation.
 	switch rule.Type {
 	case SchemaRuleTableNaming, SchemaRuleColumnNaming, SchemaRuleAutoIncrementColumnNaming:
-		if _, _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
+		if _, _, err := UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
 			return err
 		}
 	case SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
@@ -322,8 +322,8 @@ type NamingCaseRulePayload struct {
 	Upper bool `json:"upper"`
 }
 
-// UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
-func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
+// UnmarshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
+func UnmarshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
 		return nil, 0, errors.Wrapf(err, "failed to unmarshal naming rule payload %q", payload)
@@ -833,6 +833,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLNamingTableConvention, nil
 		case db.Oracle:
 			return OracleNamingTableConvention, nil
+		case db.Snowflake:
+			return SnowflakeNamingTableConvention, nil
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {

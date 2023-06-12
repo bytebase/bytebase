@@ -37,7 +37,7 @@ func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, statement st
 	if err != nil {
 		return nil, err
 	}
-	format, _, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	format, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
