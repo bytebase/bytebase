@@ -6,7 +6,7 @@ import type {
 } from "./proto/v1/review_service";
 
 export type ApprovalEvent = {
-  status: "APPROVED";
+  status: "APPROVED" | "REJECTED" | "PENDING";
 };
 
 export type ReviewFlow = {
@@ -18,7 +18,7 @@ export type ReviewFlow = {
 export type WrappedReviewStep = {
   index: number;
   step: ApprovalStep;
-  status: "DONE" | "CURRENT" | "PENDING";
+  status: "APPROVED" | "REJECTED" | "CURRENT" | "PENDING";
   approver: User | undefined;
   candidates: User[];
 };

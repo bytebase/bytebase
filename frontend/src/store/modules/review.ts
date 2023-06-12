@@ -52,9 +52,26 @@ export const useReviewStore = defineStore("review", () => {
     }
   };
 
-  const approveReview = async (issue: Issue) => {
+  const approveReview = async (issue: Issue, comment?: string) => {
     const review = await reviewServiceClient.approveReview({
       name: reviewName(issue),
+      comment,
+    });
+    await setReviewByIssue(issue, review);
+  };
+
+  const rejectReview = async (issue: Issue, comment?: string) => {
+    const review = await reviewServiceClient.rejectReview({
+      name: reviewName(issue),
+      comment,
+    });
+    await setReviewByIssue(issue, review);
+  };
+
+  const requestReview = async (issue: Issue, comment?: string) => {
+    const review = await reviewServiceClient.requestReview({
+      name: reviewName(issue),
+      comment,
     });
     await setReviewByIssue(issue, review);
   };
@@ -74,6 +91,8 @@ export const useReviewStore = defineStore("review", () => {
     getReviewByIssue,
     fetchReviewByIssue,
     approveReview,
+    rejectReview,
+    requestReview,
     regenerateReview,
   };
 });

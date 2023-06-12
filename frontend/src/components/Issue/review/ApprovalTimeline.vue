@@ -7,7 +7,11 @@
           :class="iconClass(step)"
         >
           <heroicons-outline:thumb-up
-            v-if="step.status === 'DONE'"
+            v-if="step.status === 'APPROVED'"
+            class="w-3.5 h-3.5 text-white"
+          />
+          <heroicons:pause-solid
+            v-else-if="step.status === 'REJECTED'"
             class="w-3.5 h-3.5 text-white"
           />
           <heroicons-outline:user
@@ -27,7 +31,7 @@
         <div class="mr-1.5 shrink-0">:</div>
         <div class="flex-1 overflow-hidden">
           <NEllipsis
-            v-if="step.status === 'DONE'"
+            v-if="step.status === 'APPROVED'"
             class="inline-block"
             :class="step.approver?.name === currentUser.name && 'font-bold'"
           >
@@ -69,7 +73,8 @@ const { currentUser } = storeToRefs(useAuthStore());
 const iconClass = (step: WrappedReviewStep) => {
   const { status } = step;
   return [
-    status === "DONE" && "bg-success",
+    status === "APPROVED" && "bg-success",
+    status === "REJECTED" && "bg-warning",
     status === "CURRENT" && "bg-white border-[2px] border-info text-accent",
     status === "PENDING" && "bg-white border-[3px] border-gray-300",
   ];
@@ -78,7 +83,8 @@ const iconClass = (step: WrappedReviewStep) => {
 const itemClass = (step: WrappedReviewStep) => {
   const { status } = step;
   return [
-    status === "DONE" && "text-control-light",
+    status === "APPROVED" && "text-control-light",
+    status === "REJECTED" && "text-control-light",
     status === "CURRENT" && "text-accent",
     status === "PENDING" && "text-control-placeholder",
   ];
