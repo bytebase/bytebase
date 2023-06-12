@@ -19,8 +19,10 @@
     - status: WARN
       code: 501
       title: engine.mysql.use-innodb
-      content: '"CREATE TABLE book(id int) ENGINE = CSV" doesn''t use InnoDB engine'
-      line: 1
+      content: |-
+        "CREATE TABLE book(id int) ENGINE = CSV
+        ;" doesn't use InnoDB engine
+      line: 2
       details: ""
 - statement: ALTER TABLE tech_book ENGINE = INNODB
   want:
@@ -35,8 +37,10 @@
     - status: WARN
       code: 501
       title: engine.mysql.use-innodb
-      content: '"ALTER TABLE tech_book ENGINE = CSV" doesn''t use InnoDB engine'
-      line: 1
+      content: |-
+        "ALTER TABLE tech_book ENGINE = CSV
+        ;" doesn't use InnoDB engine
+      line: 2
       details: ""
 - statement: SET default_storage_engine=INNODB
   want:
@@ -51,6 +55,8 @@
     - status: WARN
       code: 501
       title: engine.mysql.use-innodb
-      content: '"SET default_storage_engine=CSV" doesn''t use InnoDB engine'
-      line: 1
+      content: |-
+        "SET default_storage_engine=CSV
+        ;" doesn't use InnoDB engine
+      line: 2
       details: ""

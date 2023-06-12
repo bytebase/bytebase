@@ -1470,8 +1470,8 @@
       }
     },
     "mode": {
-      "standard": "标准",
-      "tenant": "多租户"
+      "standard": "标准模式",
+      "tenant": "多租户模式"
     },
     "db-name-template": "租户数据库名称模板",
     "select": "选择项目",
