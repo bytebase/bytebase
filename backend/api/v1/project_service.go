@@ -1388,6 +1388,12 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 	if request.DatabaseGroup.DatabaseExpr == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
 	}
+	if request.DatabaseGroup.DatabaseExpr.Expression == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
+	}
+	if _, err := validateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
+	}
 
 	storeDatabaseGroup := &store.DatabaseGroupMessage{
 		ResourceID:  request.DatabaseGroupId,
@@ -1450,6 +1456,12 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 		case "database_expr":
 			if request.DatabaseGroup.DatabaseExpr == nil {
 				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
+			}
+			if request.DatabaseGroup.DatabaseExpr.Expression == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "database group expr is required")
+			}
+			if _, err := validateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid database group expression: %v", err)
 			}
 			updateDatabaseGroup.Expression = request.DatabaseGroup.DatabaseExpr
 		default:
@@ -1634,6 +1646,12 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 	if request.SchemaGroup.TableExpr == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "schema group table expression is required")
 	}
+	if request.SchemaGroup.TableExpr.Expression == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
+	}
+	if _, err := validateGroupCELExpr(request.SchemaGroup.TableExpr.Expression); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid schema group table expression: %v", err)
+	}
 
 	storeSchemaGroup := &store.SchemaGroupMessage{
 		ResourceID:       request.SchemaGroupId,
@@ -1706,6 +1724,12 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 		case "table_expr":
 			if request.SchemaGroup.TableExpr == nil {
 				return nil, status.Errorf(codes.InvalidArgument, "schema group table expr is required")
+			}
+			if request.SchemaGroup.TableExpr.Expression == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "schema group table expression is required")
+			}
+			if _, err := validateGroupCELExpr(request.SchemaGroup.TableExpr.Expression); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid schema group table expression: %v", err)
 			}
 			updateSchemaGroup.Expression = request.SchemaGroup.TableExpr
 		default:
@@ -1877,6 +1901,24 @@ func (s *ProjectService) convertStoreToAPIDatabaseGroupFull(ctx context.Context,
 	return ret, nil
 }
 
+func validateGroupCELExpr(expr string) (cel.Program, error) {
+	e, err := cel.NewEnv(
+		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	ast, issues := e.Parse(expr)
+	if issues != nil && issues.Err() != nil {
+		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+	}
+	prog, err := e.Program(ast)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	return prog, nil
+}
+
 func (s *ProjectService) getMatchedAndUnmatchedDatabases(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &projectResourceID,
@@ -1884,21 +1926,10 @@ func (s *ProjectService) getMatchedAndUnmatchedDatabases(ctx context.Context, da
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	prog, err := validateGroupCELExpr(databaseGroup.Expression.Expression)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, err
 	}
-	ast, issues := e.Parse(databaseGroup.Expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
 	var matches []*store.DatabaseMessage
 	var unmatches []*store.DatabaseMessage
 
@@ -1955,19 +1986,9 @@ func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schem
 		return nil, nil, err
 	}
 
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	prog, err := validateGroupCELExpr(schemaGroup.Expression.Expression)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
-	}
-	ast, issues := e.Parse(schemaGroup.Expression.Expression)
-	if issues != nil && issues.Err() != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 
 	var matches []*v1pb.SchemaGroup_Table
@@ -2056,6 +2077,8 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 			result = append(result, string(api.ActivityIssueFieldUpdate))
 		case v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE:
 			result = append(result, string(api.ActivityIssueStatusUpdate))
+		case v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY:
+			result = append(result, string(api.ActivityIssueApprovalNotify))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
 			result = append(result, string(api.ActivityPipelineStageStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE:
@@ -2107,6 +2130,8 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 			result = append(result, v1pb.Activity_TYPE_ISSUE_FIELD_UPDATE)
 		case string(api.ActivityIssueStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_STATUS_UPDATE)
+		case string(api.ActivityIssueApprovalNotify):
+			result = append(result, v1pb.Activity_TYPE_ISSUE_APPROVAL_NOTIFY)
 		case string(api.ActivityPipelineStageStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
 		case string(api.ActivityPipelineTaskStatusUpdate):
@@ -2266,6 +2291,7 @@ var iamPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("request.statement", cel.StringType),
 	cel.Variable("request.row_limit", cel.IntType),
 	cel.Variable("request.export_format", cel.StringType),
+	cel.Variable("resource.environment", cel.StringType),
 	cel.Variable("resource.database", cel.StringType),
 	cel.Variable("resource.schema", cel.StringType),
 	cel.Variable("resource.table", cel.StringType),

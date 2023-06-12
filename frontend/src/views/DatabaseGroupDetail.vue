@@ -17,8 +17,12 @@
                 <h1
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
-                  {{ databaseGroupName }}
-                  <BBBadge text="Group" :can-remove="false" class="text-xs" />
+                  {{ databaseGroup.databasePlaceholder }}
+                  <BBBadge
+                    text="Database Group"
+                    :can-remove="false"
+                    class="text-xs"
+                  />
                 </h1>
               </div>
             </div>
@@ -107,12 +111,20 @@
     :project="project"
     :resource-type="editState.type"
     :database-group="editState.databaseGroup"
+    :parent-database-group="editState.parentDatabaseGroup"
     @close="editState.showConfigurePanel = false"
+  />
+
+  <DatabaseGroupPrevEditorModal
+    v-if="issueType"
+    :issue-type="issueType"
+    :database-group="databaseGroup"
+    @close="issueType = undefined"
   />
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, computed, watch } from "vue";
+import { onMounted, reactive, computed, watch, ref } from "vue";
 import { useDBGroupStore, useProjectV1Store } from "@/store";
 import {
   databaseGroupNamePrefix,
@@ -125,10 +137,9 @@ import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
-import { useRouter } from "vue-router";
 import { ComposedDatabaseGroup } from "@/types";
-import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 import { NButton } from "naive-ui";
+import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/DatabaseGroupPrevEditorModal.vue";
 
 interface LocalState {
   isLoaded: boolean;
@@ -139,6 +150,7 @@ interface EditDatabaseGroupState {
   showConfigurePanel: boolean;
   type: ResourceType;
   databaseGroup?: DatabaseGroup | SchemaGroup;
+  parentDatabaseGroup?: ComposedDatabaseGroup;
 }
 
 const props = defineProps({
@@ -152,7 +164,6 @@ const props = defineProps({
   },
 });
 
-const router = useRouter();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
@@ -162,6 +173,11 @@ const editState = reactive<EditDatabaseGroupState>({
   showConfigurePanel: false,
   type: "DATABASE_GROUP",
 });
+const issueType = ref<
+  | "bb.issue.database.schema.update"
+  | "bb.issue.database.data.update"
+  | undefined
+>();
 const databaseGroupResourceName = computed(() => {
   return `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
 });
@@ -196,6 +212,7 @@ const handleCreateSchemaGroup = () => {
   editState.type = "SCHEMA_GROUP";
   editState.databaseGroup = undefined;
   editState.showConfigurePanel = true;
+  editState.parentDatabaseGroup = databaseGroup.value;
 };
 
 const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
@@ -207,8 +224,7 @@ const handleEditSchemaGroup = (schemaGroup: SchemaGroup) => {
 const createMigration = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
-  const issueRoute = generateDatabaseGroupIssueRoute(type, databaseGroup.value);
-  router.push(issueRoute);
+  issueType.value = type;
 };
 
 watch(

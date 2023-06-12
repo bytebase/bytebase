@@ -17,7 +17,7 @@ import {
   Table,
 } from "@/types/schemaEditor/atomType";
 import { SchemaMetadata } from "@/types/proto/store/database";
-import { useDatabaseV1Store, useDBSchemaStore } from ".";
+import { useDatabaseV1Store, useDBSchemaV1Store } from ".";
 import { Engine } from "@/types/proto/v1/common";
 
 export const generateUniqueTabId = () => {
@@ -168,8 +168,8 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
     async fetchSchemaListByDatabaseId(databaseId: string, skipCache = false) {
       const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
       const schemaMetadataList =
-        await useDBSchemaStore().getOrFetchSchemaListByDatabaseId(
-          databaseId,
+        await useDBSchemaV1Store().getOrFetchSchemaList(
+          database.name,
           skipCache
         );
       const schemaList = convertSchemaMetadataList(schemaMetadataList);

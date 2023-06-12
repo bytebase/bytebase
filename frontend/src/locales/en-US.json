@@ -252,7 +252,8 @@
     },
     "expiration": "Expiration",
     "configure": "Configure",
-    "database-groups": "Database Groups"
+    "database-groups": "Database Groups",
+    "members": "Members"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -405,6 +406,8 @@
     "profile": {
       "email": "Email",
       "role": "Role",
+      "phone": "Phone",
+      "country-code": "Country Code",
       "password": "Password",
       "password-confirm": "Confirm",
       "password-confirm-placeholder": "Confirm new password",
@@ -1403,7 +1406,8 @@
         "view-doc": "View {destination}'s doc"
       },
       "deletion": {
-        "btn-text": "Delete this webhook"
+        "btn-text": "Delete this webhook",
+        "confirm-title": "Delete webhook '{title}' and all its execution history?"
       },
       "activity-item": {
         "issue-creation": {
@@ -1429,6 +1433,10 @@
         "issue-comment-creation": {
           "title": "Issue comment creation",
           "label": "When new issue comment has been created"
+        },
+        "issue-approval-notify": {
+          "title": "Issue approval needed",
+          "label": "When issue is pending approval"
         }
       }
     },
@@ -2447,7 +2455,10 @@
       },
       "you": "You",
       "generating-approval-flow": "Generating approval flow",
-      "approved-issue": "approved issue"
+      "approved-issue": "approved issue",
+      "disallow-approve-reason": {
+        "some-task-checks-didnt-pass": "Some task checks didn't pass"
+      }
     }
   },
   "slow-query": {

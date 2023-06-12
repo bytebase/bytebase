@@ -23,10 +23,17 @@ type DingTalkWebhookMarkdown struct {
 	Text  string `json:"text"`
 }
 
+// DingTalkMention is the API message for DingTalk webhook to mention users in DingTalk.
+// https://open.dingtalk.com/document/orgapp/custom-robots-send-group-messages
+type DingTalkMention struct {
+	Mobiles []string `json:"atMobiles"`
+}
+
 // DingTalkWebhook is the API message for DingTalk webhook.
 type DingTalkWebhook struct {
 	MessageType string                  `json:"msgtype"`
 	Markdown    DingTalkWebhookMarkdown `json:"markdown"`
+	Mention     DingTalkMention         `json:"at"`
 }
 
 func init() {
@@ -48,6 +55,13 @@ func (*DingTalkReceiver) post(context Context) error {
 	if context.Description != "" {
 		text = fmt.Sprintf("# %s\n> %s\n%s\n##### [View in Bytebase](%s)", context.Title, context.Description, strings.Join(metaStrList, "\n"), context.Link)
 	}
+	if context.Approval != nil && len(context.Approval.MentionUsersByPhone) > 0 {
+		var ats []string
+		for _, phone := range context.Approval.MentionUsersByPhone {
+			ats = append(ats, fmt.Sprintf("@%s", phone))
+		}
+		text += "\n" + strings.Join(ats, " ")
+	}
 
 	post := DingTalkWebhook{
 		MessageType: "markdown",
@@ -56,6 +70,10 @@ func (*DingTalkReceiver) post(context Context) error {
 			Text:  text,
 		},
 	}
+	if context.Approval != nil {
+		post.Mention.Mobiles = append(post.Mention.Mobiles, context.Approval.MentionUsersByPhone...)
+	}
+
 	body, err := json.Marshal(post)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal webhook POST request to %s", context.URL)

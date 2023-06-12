@@ -1,5 +1,12 @@
-import { HighLevelFactorList, NumberFactorList } from "@/plugins/cel";
+import { HighLevelFactorList } from "@/plugins/cel";
 import { uniq, without } from "lodash-es";
+
+export const NumberFactorList = [
+  // Risk related factors
+  "affected_rows",
+  "level",
+  "source",
+] as const;
 
 export const StringFactorList = [
   "environment_id", // using `environment.resource_id`

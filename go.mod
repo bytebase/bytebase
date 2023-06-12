@@ -12,7 +12,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.60
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.1
 	github.com/blang/semver/v4 v4.0.0
+	github.com/bytebase/mysql-parser v0.0.0-20230608081517-18ca6de4af0d
 	github.com/bytebase/plsql-parser v0.0.0-20230605065610-558b30eea9da
+	github.com/bytebase/snowsql-parser v0.0.0-20230609063735-32997ba8276c
 	github.com/casbin/casbin/v2 v2.66.2
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/coreos/go-oidc v2.2.1+incompatible

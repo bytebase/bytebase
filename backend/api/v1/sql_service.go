@@ -1071,16 +1071,12 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 			}
 		}
 	case db.MySQL:
-		stmtList, err := parser.ParseMySQL(statement, "", "")
+		tree, _, err := parser.ParseMySQL(statement)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, "failed to parse query: %s", err.Error())
 		}
-		for _, stmt := range stmtList {
-			switch stmt.(type) {
-			case *tidbast.SelectStmt, *tidbast.ExplainStmt:
-			default:
-				return status.Errorf(codes.InvalidArgument, "Malformed sql execute request, only support SELECT sql statement")
-			}
+		if err := parser.MySQLValidateForEditor(tree); err != nil {
+			return status.Errorf(codes.InvalidArgument, err.Error())
 		}
 	case db.TiDB:
 		stmtList, err := parser.ParseTiDB(statement, "", "")
@@ -1114,6 +1110,42 @@ func (*SQLService) validateQueryRequest(instance *store.InstanceMessage, databas
 
 func (s *SQLService) extractResourceList(ctx context.Context, engine parser.EngineType, databaseName string, statement string, instance *store.InstanceMessage) ([]parser.SchemaResource, error) {
 	switch engine {
+	case parser.MySQL, parser.MariaDB, parser.OceanBase:
+		list, err := parser.ExtractResourceList(engine, databaseName, "", statement)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
+		}
+
+		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+		if err != nil {
+			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+				// If database not found, skip.
+				return nil, nil
+			}
+			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+
+		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+		}
+
+		var result []parser.SchemaResource
+		for _, resource := range list {
+			if resource.Database != dbSchema.Metadata.Name {
+				// Should not happen.
+				continue
+			}
+
+			if !dbSchema.TableExists(resource.Schema, resource.Table) {
+				// If table not found, skip.
+				continue
+			}
+
+			result = append(result, resource)
+		}
+
+		return result, nil
 	case parser.Postgres:
 		list, err := parser.ExtractResourceList(engine, databaseName, "public", statement)
 		if err != nil {
@@ -1256,12 +1288,13 @@ func (s *SQLService) checkQueryRights(
 	for _, resource := range resourceList {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
 		attributes := map[string]any{
-			"request.time":      time.Now(),
-			"resource.database": databaseResourceURL,
-			"resource.schema":   resource.Schema,
-			"resource.table":    resource.Table,
-			"request.statement": base64.StdEncoding.EncodeToString([]byte(statement)),
-			"request.row_limit": limit,
+			"request.time":         time.Now(),
+			"resource.environment": instance.EnvironmentID,
+			"resource.database":    databaseResourceURL,
+			"resource.schema":      resource.Schema,
+			"resource.table":       resource.Table,
+			"request.statement":    base64.StdEncoding.EncodeToString([]byte(statement)),
+			"request.row_limit":    limit,
 		}
 
 		switch exportFormat {
@@ -1396,7 +1429,7 @@ func evaluateCondition(expression string, attributes map[string]any) (bool, erro
 	if expression == "" {
 		return true, nil
 	}
-	env, err := cel.NewEnv(queryAttributes...)
+	env, err := cel.NewEnv(iamPolicyCELAttributes...)
 	if err != nil {
 		return false, err
 	}

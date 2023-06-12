@@ -14,16 +14,24 @@ func TestExtractTiDBUnsupportStmts(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			stmts: "CREATE TABLE t1(id INT, name VARCHAR(50), price DECIMAL(10,2), CONSTRAINT PRIMARY KEY(50), INDEX idx_name(name);\n" +
-				"DELIMITER ;;\n" +
-				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON `account` FOR EACH SET @sum=@sum + NEW.price;;\n" +
-				"DELIMITER ;\n",
+			stmts: "CREATE TABLE t1(id INT);\n" +
+				`CREATE TRIGGER order_insert_audit 
+				AFTER INSERT ON orders
+				FOR EACH ROW 
+				BEGIN
+					INSERT INTO orders_audit(order_id, order_date, customer_id, order_amount)
+					VALUES (NEW.order_id, NEW.order_date, NEW.customer_id, NEW.order_amount);
+				END;`,
 			wantUnsupport: []string{
-				"DELIMITER ;;",
-				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON `account` FOR EACH SET @sum=@sum + NEW.price;;",
-				"DELIMITER ;",
+				`CREATE TRIGGER order_insert_audit 
+				AFTER INSERT ON orders
+				FOR EACH ROW 
+				BEGIN
+					INSERT INTO orders_audit(order_id, order_date, customer_id, order_amount)
+					VALUES (NEW.order_id, NEW.order_date, NEW.customer_id, NEW.order_amount);
+				END;`,
 			},
-			wantSupport: "CREATE TABLE t1(id INT, name VARCHAR(50), price DECIMAL(10,2), CONSTRAINT PRIMARY KEY(50), INDEX idx_name(name);\n",
+			wantSupport: "CREATE TABLE t1(id INT);\n",
 			wantErr:     false,
 		},
 	}
@@ -33,6 +41,7 @@ func TestExtractTiDBUnsupportStmts(t *testing.T) {
 		if test.wantErr {
 			a.Error(err)
 		} else {
+			a.NoError(err)
 			a.Equal(test.wantUnsupport, gotUnsupport)
 			a.Equal(test.wantSupport, gotSupport)
 		}
@@ -69,7 +78,7 @@ func TestIsTiDBUnsupportStmt(t *testing.T) {
 			want: true,
 		},
 		{
-			stmt: "CREATE TABLE t1(id INT, name VARCHAR(50), price DECIMAL(10,2), CONSTRAINT PRIMARY KEY(50), INDEX idx_name(name);",
+			stmt: "CREATE TABLE t1(id INT, name VARCHAR(50));",
 			want: false,
 		},
 		{

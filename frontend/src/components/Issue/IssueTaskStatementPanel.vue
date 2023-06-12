@@ -22,7 +22,7 @@
         >
           🎈{{ $t("sql-review.unlock-full-feature") }}
         </button>
-        <span v-if="sqlHint" class="ml-1 text-accent">{{
+        <span v-if="sqlHint && !readonly" class="ml-1 text-accent">{{
           `(${sqlHint})`
         }}</span>
       </div>
@@ -38,7 +38,7 @@
     </div>
 
     <div class="space-x-2 flex items-center">
-      <template v-if="create || state.editing">
+      <template v-if="(create || state.editing) && !readonly">
         <label
           v-if="allowFormatOnSave"
           class="mt-0.5 mr-2 inline-flex items-center gap-1"
@@ -126,12 +126,12 @@ import { useI18n } from "vue-i18n";
 import {
   hasFeature,
   pushNotification,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useUIStateStore,
   useSheetV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { useIssueLogic } from "./logic";
+import { isGroupingChangeIssue, useIssueLogic } from "./logic";
 import {
   ComposedDatabase,
   dialectOfEngineV1,
@@ -193,7 +193,7 @@ const {
 const { t } = useI18n();
 const overrideSQLDialog = useDialog();
 const uiStateStore = useUIStateStore();
-const dbSchemaStore = useDBSchemaStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const sheetV1Store = useSheetV1Store();
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -319,7 +319,10 @@ const getOrFetchSheetStatementByName = async (
 
 const readonly = computed(() => {
   return (
-    !state.editing || !allowEditStatement.value || isTaskSheetOversize.value
+    !state.editing ||
+    !allowEditStatement.value ||
+    isTaskSheetOversize.value ||
+    isGroupingChangeIssue(issue.value as Issue)
   );
 });
 
@@ -364,6 +367,9 @@ const isTaskSheetOversize = computed(() => {
 
 const shouldShowStatementEditButtonForUI = computed(() => {
   if (create.value) {
+    return false;
+  }
+  if (readonly.value) {
     return false;
   }
   // For those task sheet oversized, it's readonly.
@@ -635,7 +641,6 @@ const onStatementChange = (value: string) => {
 // Handle and update monaco editor auto completion context.
 const useDatabaseAndTableList = () => {
   const { selectedDatabase } = useIssueLogic();
-  const dbSchemaStore = useDBSchemaStore();
 
   const databaseList = computed(() => {
     if (selectedDatabase.value) return [selectedDatabase.value];
@@ -647,7 +652,7 @@ const useDatabaseAndTableList = () => {
     (list) => {
       list.forEach((db) => {
         if (db.uid !== String(UNKNOWN_ID)) {
-          dbSchemaStore.getOrFetchDatabaseMetadataById(Number(db.uid));
+          dbSchemaStore.getOrFetchDatabaseMetadata(db.name);
         }
       });
     },
@@ -656,7 +661,7 @@ const useDatabaseAndTableList = () => {
 
   const tableList = computed(() => {
     return databaseList.value
-      .map((item) => dbSchemaStore.getTableListByDatabaseId(Number(item.uid)))
+      .map((item) => dbSchemaStore.getTableList(item.name))
       .flat();
   });
 
@@ -668,9 +673,7 @@ const { databaseList, tableList } = useDatabaseAndTableList();
 const handleUpdateEditorAutoCompletionContext = async () => {
   const databaseMap: Map<ComposedDatabase, TableMetadata[]> = new Map();
   for (const database of databaseList.value) {
-    const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
-      Number(database.uid)
-    );
+    const tableList = await dbSchemaStore.getOrFetchTableList(database.name);
     databaseMap.set(database, tableList);
   }
   editorRef.value?.setEditorAutoCompletionContextV1(databaseMap);

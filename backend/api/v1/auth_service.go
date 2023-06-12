@@ -95,7 +95,10 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	if setting.DisallowSignup {
-		return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
+		rolePtr := ctx.Value(common.RoleContextKey)
+		if rolePtr == nil || rolePtr.(api.Role) != api.Owner {
+			return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
+		}
 	}
 	if request.User == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "user must be set")
@@ -193,6 +196,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		Labels: map[string]any{
 			"email": user.Email,
 			"name":  user.Name,
+			"phone": user.Phone,
 			// We only send lark notification for the first principal registration.
 			// false means do not notify upfront. Later the notification will be triggered by the scheduler.
 			"lark_notified": !isFirstUser,

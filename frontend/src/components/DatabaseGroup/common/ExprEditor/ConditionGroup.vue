@@ -128,7 +128,6 @@ import {
   type ConditionGroupExpr,
   type LogicalOperator,
   StringOperatorList,
-  LogicalOperatorList,
   isConditionGroupExpr,
   isConditionExpr,
 } from "@/plugins/cel";
@@ -166,7 +165,6 @@ const operatorLabel = (op: LogicalOperator) => {
 };
 
 const OPERATORS: SelectOption[] = [
-  { label: operatorLabel("_&&_"), value: "_&&_" },
   { label: operatorLabel("_||_"), value: "_||_" },
 ];
 
@@ -180,7 +178,7 @@ const addCondition = () => {
 
 const addConditionGroup = () => {
   args.value.push({
-    operator: LogicalOperatorList[0],
+    operator: "_||_",
     args: [],
   });
   emit("update");

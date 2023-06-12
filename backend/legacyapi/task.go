@@ -128,9 +128,10 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	SkippedReason string `json:"skippedReason,omitempty"`
 	SpecID        string `json:"specId,omitempty"`
 
-	SheetID       int            `json:"sheetId,omitempty"`
-	SchemaVersion string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+	SheetID         int            `json:"sheetId,omitempty"`
+	SchemaVersion   string         `json:"schemaVersion,omitempty"`
+	VCSPushEvent    *vcs.PushEvent `json:"pushEvent,omitempty"`
+	SchemaGroupName string         `json:"schemaGroupName,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update (SDL).
@@ -220,6 +221,8 @@ type TaskDatabaseDataUpdatePayload struct {
 	RollbackFromIssueID int `json:"rollbackFromIssueId,omitempty"`
 	// RollbackFromTaskID is the task ID from which the rollback SQL statement is generated for this task.
 	RollbackFromTaskID int `json:"rollbackFromTaskId,omitempty"`
+
+	SchemaGroupName string `json:"schemaGroupName,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
@@ -267,6 +270,8 @@ type Task struct {
 	BlockedBy []string `jsonapi:"attr,blockedBy"`
 	// Progress is loaded from the task scheduler in memory, NOT from the database
 	Progress Progress `jsonapi:"attr,progress"`
+	// OUTPUT ONLY, used by grouping batch change.
+	Statement string `jsonapi:"attr,statement"`
 }
 
 // Progress is a generalized struct which can track the progress of a task.
@@ -309,6 +314,8 @@ type TaskCreate struct {
 	Collation         string `jsonapi:"attr,collation"`
 	Labels            string `jsonapi:"attr,labels"`
 	BackupID          *int   `jsonapi:"attr,backupId"`
+	// Statement used by grouping batch change, Bytebase use it to render.
+	Statement string `jsonapi:"attr,statement"`
 }
 
 // TaskFind is the API message for finding tasks.

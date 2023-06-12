@@ -15,6 +15,7 @@
         :project="project"
         :resource-type="resourceType"
         :database-group="props.databaseGroup"
+        :parent-database-group="props.parentDatabaseGroup"
       />
       <template #footer>
         <div class="w-full flex justify-between items-center">
@@ -44,7 +45,11 @@ import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
 import { ClientError } from "nice-grpc-common";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedProject } from "@/types";
+import {
+  ComposedDatabaseGroup,
+  ComposedProject,
+  ComposedSchemaGroup,
+} from "@/types";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { Expr } from "@/types/proto/google/type/expr";
 import { stringifyDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
@@ -56,11 +61,15 @@ import {
 import { ResourceType } from "./common/ExprEditor/context";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
 import { convertToCELString } from "@/plugins/cel/logic";
+import { useRouter } from "vue-router";
+import { projectV1Slug } from "@/utils";
+import { getProjectNameAndDatabaseGroupNameAndSchemaGroupName } from "@/store/modules/v1/common";
 
 const props = defineProps<{
   project: ComposedProject;
   resourceType: ResourceType;
   databaseGroup?: DatabaseGroup | SchemaGroup;
+  parentDatabaseGroup?: ComposedDatabaseGroup;
 }>();
 
 const emit = defineEmits<{
@@ -68,6 +77,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const dialog = useDialog();
 const environmentStore = useEnvironmentV1Store();
 const dbGroupStore = useDBGroupStore();
@@ -146,11 +156,34 @@ const doDelete = () => {
     negativeText: t("common.cancel"),
     onPositiveClick: async () => {
       if (props.resourceType === "DATABASE_GROUP") {
-        await dbGroupStore.deleteDatabaseGroup(props.databaseGroup!.name);
+        const databaseGroup = props.databaseGroup as DatabaseGroup;
+        await dbGroupStore.deleteDatabaseGroup(databaseGroup.name);
+        if (
+          router.currentRoute.value.name === "workspace.database-group.detail"
+        ) {
+          router.replace({
+            name: "workspace.project.detail",
+            params: {
+              projectSlug: projectV1Slug(props.project),
+            },
+            hash: "#database-groups",
+          });
+        }
       } else if (props.resourceType === "SCHEMA_GROUP") {
-        await dbGroupStore.deleteSchemaGroup(props.databaseGroup!.name);
-      } else {
-        throw new Error("Unknown resource type");
+        const schemaGroup = props.databaseGroup as ComposedSchemaGroup;
+        const schemaGroupName = schemaGroup.name;
+        await dbGroupStore.deleteSchemaGroup(schemaGroupName);
+        if (
+          router.currentRoute.value.name ===
+          "workspace.database-group.table-group.detail"
+        ) {
+          const [projectName, databaseGroupName] =
+            getProjectNameAndDatabaseGroupNameAndSchemaGroupName(
+              schemaGroupName
+            );
+          // TODO(steven): prevent `Cannot use 'in' operator to search for 'path' in undefined` error in vue-router.
+          window.location.href = `/projects/${projectName}/database-groups/${databaseGroupName}`;
+        }
       }
       emit("close");
     },
@@ -180,7 +213,7 @@ const doConfirm = async () => {
             name: `${props.project.name}/databaseGroups/${resourceId}`,
             databasePlaceholder: formState.placeholder,
             databaseExpr: Expr.fromJSON({
-              expression: celString,
+              expression: celString || "true",
             }),
           },
           resourceId
@@ -215,7 +248,7 @@ const doConfirm = async () => {
             name: `${formState.selectedDatabaseGroupId}/schemaGroups/${resourceId}`,
             tablePlaceholder: formState.placeholder,
             tableExpr: Expr.fromJSON({
-              expression: celString,
+              expression: celString || "true",
             }),
           },
           resourceId

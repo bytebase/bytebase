@@ -161,8 +161,8 @@ type MigrationDetail struct {
 	SheetID int `json:"sheetId"`
 	// DatabaseGroupName is the name of a database group.
 	DatabaseGroupName string `json:"databaseGroupName"`
-	// SchemaGroupNames is the list of schema group names.
-	SchemaGroupNames []string `json:"schemaGroupNames"`
+	// SchemaGroupName is the name of a schema group.
+	SchemaGroupName string `json:"schemaGroupName"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
 	EarliestAllowedTs int64 `json:"earliestAllowedTs"`
 	// SchemaVersion is parsed from VCS file name.
@@ -172,6 +172,8 @@ type MigrationDetail struct {
 	RollbackEnabled bool `json:"rollbackEnabled"`
 	// if RollbackDetail is not nil, then this task is for rolling back another task.
 	RollbackDetail *RollbackDetail `json:"rollbackDetail"`
+	// Statement used by grouping batch change, Bytebase use it to render.
+	Statement string `json:"statement"`
 }
 
 // MigrationContext is the issue create context for database migration such as Migrate, Data.

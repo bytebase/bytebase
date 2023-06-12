@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/approval.proto";
+
 option go_package = "generated-go/store";
 
 // ActivityIssueCreatePayload is the payloads for creating issues.
@@ -46,6 +48,7 @@ message ActivityIssueCommentCreatePayload {
       STATUS_UNSPECIFIED = 0;
       PENDING = 1;
       APPROVED = 2;
+      REJECTED = 3;
     }
     // The new status.
     Status status = 1;
@@ -58,4 +61,8 @@ message ActivityIssueCommentCreatePayload {
   }
   // Used by inbox to display info without paying the join cost
   string issue_name = 4;
+}
+
+message ActivityIssueApprovalNotifyPayload {
+  ApprovalStep approval_step = 1;
 }

@@ -7,12 +7,11 @@
             <div class="sm:col-span-1">
               <label class="textlabel">
                 {{ field.name }}
-                <span v-if="field.required" class="text-red-600">*</span>
               </label>
             </div>
           </div>
           <div class="sm:col-span-4 sm:col-start-1">
-            <template v-if="field.type == 'String'">
+            <template v-if="field.type === 'String'">
               <div class="mt-1 flex rounded-md shadow-sm">
                 <input
                   :id="field.id"
@@ -25,18 +24,14 @@
                 />
               </div>
             </template>
-            <template v-if="field.type == 'Database'">
+            <template v-if="field.type === 'Database'">
               <DatabaseSelect
                 class="mt-1 w-64"
                 :disabled="true"
                 :mode="'ENVIRONMENT'"
                 :environment-id="environmentId"
                 :selected-id="state.outputValueList[index]"
-                @select-database-id="
-                  (databaseId: string) => {
-                    state.outputValueList[index] = databaseId;
-                  }
-                "
+                @select-database-id="state.outputValueList[index] = $event"
               />
             </template>
           </div>
@@ -145,8 +140,10 @@
 <script lang="ts">
 import { computed, reactive, ref, PropType, defineComponent } from "vue";
 import { cloneDeep, groupBy } from "lodash-es";
-import DatabaseSelect from "../DatabaseSelect.vue";
-import TaskCheckBar from "./TaskCheckBar.vue";
+import { useI18n } from "vue-i18n";
+
+import DatabaseSelect from "@/components/DatabaseSelect.vue";
+import TaskCheckBar from "../TaskCheckBar.vue";
 import { Issue, IssueStatusTransition, Task } from "@/types";
 import { OutputField } from "@/plugins";
 import {
@@ -155,8 +152,7 @@ import {
   taskCheckRunSummary,
   TaskStatusTransition,
 } from "@/utils";
-import { useI18n } from "vue-i18n";
-import { useIssueLogic } from "./logic";
+import { useIssueLogic } from "../logic";
 
 interface LocalState {
   comment: string;
@@ -201,7 +197,7 @@ export default defineComponent({
     const state = reactive<LocalState>({
       comment: "",
       outputValueList: props.outputFieldList.map((field) =>
-        cloneDeep(props.issue.payload[field.id])
+        cloneDeep((props.issue.payload as Record<string, string>)[field.id])
       ),
     });
 
@@ -270,7 +266,7 @@ export default defineComponent({
     });
 
     const taskList = computed(() => {
-      const stage = activeStage(props.issue.pipeline);
+      const stage = activeStage(props.issue.pipeline!);
       const transition = props.transition as TaskStatusTransition;
       return stage.taskList.filter((task) => {
         return allowApplyTaskStatusTransition(task, transition.to);

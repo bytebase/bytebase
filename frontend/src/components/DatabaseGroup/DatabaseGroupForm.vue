@@ -23,7 +23,7 @@
       <div>
         <p class="text-lg mb-2">{{ $t("common.environment") }}</p>
         <EnvironmentSelect
-          :disabled="!isCreating"
+          :disabled="!isCreating || disableEditDatabaseGroupFields"
           :selected-id="state.environmentId"
           @select-environment-id="
             (environmentId) => {
@@ -46,7 +46,7 @@
       <div v-if="resourceType === 'SCHEMA_GROUP'">
         <p class="text-lg mb-2">{{ $t("database-group.self") }}</p>
         <DatabaseGroupSelect
-          :disabled="!isCreating"
+          :disabled="!isCreating || disableEditDatabaseGroupFields"
           :project-id="project.name"
           :environment-id="state.environmentId || ''"
           :selected-id="state.selectedDatabaseGroupId"
@@ -93,12 +93,20 @@
 import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ConditionGroupExpr, resolveCELExpr, wrapAsGroup } from "@/plugins/cel";
-import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import {
+  ConditionGroupExpr,
+  emptySimpleExpr,
+  wrapAsGroup,
+} from "@/plugins/cel";
 import ExprEditor from "./common/ExprEditor";
 import { ResourceType } from "./common/ExprEditor/context";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
-import { ComposedProject, ResourceId, ValidatedMessage } from "@/types";
+import {
+  ComposedDatabaseGroup,
+  ComposedProject,
+  ResourceId,
+  ValidatedMessage,
+} from "@/types";
 import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 import { useDBGroupStore } from "@/store";
 import { getErrorCode } from "@/utils/grpcweb";
@@ -114,11 +122,13 @@ import {
 } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ResourceIdField } from "../v2";
+import { head } from "lodash-es";
 
 const props = defineProps<{
   project: ComposedProject;
   resourceType: ResourceType;
   databaseGroup?: DatabaseGroup | SchemaGroup;
+  parentDatabaseGroup?: ComposedDatabaseGroup;
 }>();
 
 type LocalState = {
@@ -134,7 +144,7 @@ const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   resourceId: "",
   placeholder: "",
-  expr: wrapAsGroup(resolveCELExpr(CELExpr.fromJSON({}))),
+  expr: wrapAsGroup(emptySimpleExpr("_||_"), "_||_"),
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const selectedDatabaseGroupName = computed(() => {
@@ -149,11 +159,32 @@ const formatedResourceType = computed(() =>
 
 const isCreating = computed(() => props.databaseGroup === undefined);
 
+const disableEditDatabaseGroupFields = computed(() => {
+  return (
+    props.resourceType === "SCHEMA_GROUP" &&
+    props.parentDatabaseGroup !== undefined
+  );
+});
+
 const resourceIdType = computed(() =>
   props.resourceType === "DATABASE_GROUP" ? "database-group" : "schema-group"
 );
 
 onMounted(async () => {
+  if (isCreating.value && props.resourceType === "SCHEMA_GROUP") {
+    if (props.parentDatabaseGroup) {
+      state.environmentId = props.parentDatabaseGroup.environment.uid;
+      state.selectedDatabaseGroupId = props.parentDatabaseGroup.name;
+    } else {
+      const dbGroup = head(dbGroupStore.getAllDatabaseGroupList());
+      if (dbGroup) {
+        state.environmentId = dbGroup.environment.uid;
+        state.selectedDatabaseGroupId = dbGroup.name;
+      }
+    }
+    return;
+  }
+
   const databaseGroup = props.databaseGroup;
   if (!databaseGroup) {
     return;

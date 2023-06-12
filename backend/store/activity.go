@@ -504,7 +504,7 @@ func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload stri
 		if err != nil {
 			return "", err
 		}
-		payload = string(newPayload)
+		return string(newPayload), nil
 	case api.ActivityIssueCommentCreate:
 		var originalPayload api.ActivityIssueCommentCreatePayload
 		if err := json.Unmarshal([]byte(payload), &originalPayload); err != nil {
@@ -541,9 +541,16 @@ func convertAPIPayloadToProtoPayload(activityType api.ActivityType, payload stri
 		if err != nil {
 			return "", err
 		}
-		payload = string(newPayload)
+		return string(newPayload), nil
+	case api.ActivityIssueApprovalNotify:
+		var originalPayload api.ActivityIssueApprovalNotifyPayload
+		if err := json.Unmarshal([]byte(payload), &originalPayload); err != nil {
+			return "", err
+		}
+		return originalPayload.ProtoPayload, nil
+	default:
+		return payload, nil
 	}
-	return payload, nil
 }
 
 func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload string) (string, error) {
@@ -561,7 +568,7 @@ func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload stri
 		if err != nil {
 			return "", err
 		}
-		payload = string(newPayload)
+		return string(newPayload), nil
 	case api.ActivityIssueCommentCreate:
 		var protoPayload storepb.ActivityIssueCommentCreatePayload
 		if err := protojson.Unmarshal([]byte(payload), &protoPayload); err != nil {
@@ -599,8 +606,23 @@ func convertProtoPayloadToAPIPayload(activityType api.ActivityType, payload stri
 				}
 			}
 		}
+		newPayload, err := json.Marshal(originalPayload)
+		if err != nil {
+			return "", err
+		}
+		return string(newPayload), nil
+	case api.ActivityIssueApprovalNotify:
+		originalPayload := &api.ActivityIssueApprovalNotifyPayload{
+			ProtoPayload: payload,
+		}
+		newPayload, err := json.Marshal(originalPayload)
+		if err != nil {
+			return "", err
+		}
+		return string(newPayload), nil
+	default:
+		return payload, nil
 	}
-	return payload, nil
 }
 
 func convertAPIExternalApprovalEventActionToStorePBAction(action api.ExternalApprovalEventActionType) storepb.ActivityIssueCommentCreatePayload_ExternalApprovalEvent_Action {
@@ -649,6 +671,8 @@ func convertAPIApprovalEventStatusToStorePBStatus(status string) storepb.Activit
 		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED
 	case "PENDING":
 		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_PENDING
+	case "REJECTED":
+		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED
 	default:
 		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_STATUS_UNSPECIFIED
 	}
@@ -660,6 +684,8 @@ func convertStorePBStatusToAPIApprovalEventStatus(status storepb.ActivityIssueCo
 		return "APPROVED"
 	case storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_PENDING:
 		return "PENDING"
+	case storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED:
+		return "REJECTED"
 	default:
 		return ""
 	}

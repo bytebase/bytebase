@@ -9,99 +9,15 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
-	// When query metadata is present, we will return the schema metadata. Otherwise, we will return the raw dump.
-	g.GET("/database/:databaseID/schema", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("databaseID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
-		}
-
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &id})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database %q", database.DatabaseName)).SetInternal(err)
-		}
-		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
-		}
-
-		dbSchema, err := s.store.GetDBSchema(ctx, id)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get dbSchema for database %q", database.DatabaseName)).SetInternal(err)
-		}
-		if dbSchema == nil {
-			// TODO(d): make SyncDatabaseSchema return the updated database schema.
-			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync database schema for database %q", database.DatabaseName)).SetInternal(err)
-			}
-			newDBSchema, err := s.store.GetDBSchema(ctx, id)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get dbSchema for database %q", database.DatabaseName)).SetInternal(err)
-			}
-			if newDBSchema == nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("New dbSchema not found for database %q", database.DatabaseName)).SetInternal(err)
-			}
-			dbSchema = newDBSchema
-		}
-
-		isMetadata := c.QueryParam("metadata") == "true"
-		isSDL := c.QueryParam("sdl") == "true"
-		if isMetadata && isSDL {
-			return echo.NewHTTPError(http.StatusBadRequest, "Cannot choose metadata and sdl format together")
-		}
-		if isMetadata {
-			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-			metadataBytes, err := protojson.Marshal(dbSchema.Metadata)
-			if err != nil {
-				return err
-			}
-			if _, err := c.Response().Write(metadataBytes); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
-			}
-		} else if isSDL {
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-			if err != nil {
-				return err
-			}
-			// We only support MySQL now.
-			var engineType parser.EngineType
-			switch instance.Engine {
-			case db.MySQL, db.TiDB, db.MariaDB, db.OceanBase:
-				engineType = parser.MySQL
-			default:
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Not support SDL format for %s instance", instance.Engine))
-			}
-
-			sdlSchema, err := transform.SchemaTransform(engineType, string(dbSchema.Schema))
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to transform SDL format for database %q", database.DatabaseName)).SetInternal(err)
-			}
-
-			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
-			if _, err := c.Response().Write([]byte(sdlSchema)); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
-			}
-		} else {
-			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
-			if _, err := c.Response().Write([]byte(dbSchema.Schema)); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
-			}
-		}
-		return nil
-	})
-
 	g.POST("/database/:databaseID/edit", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		databaseID, err := strconv.Atoi(c.Param("databaseID"))

@@ -21,19 +21,9 @@ func NewCelService() *CelService {
 	return &CelService{}
 }
 
-var queryAttributes = []cel.EnvOption{
-	cel.Variable("request.time", cel.TimestampType),
-	cel.Variable("request.statement", cel.StringType),
-	cel.Variable("request.row_limit", cel.IntType),
-	cel.Variable("request.export_format", cel.StringType),
-	cel.Variable("resource.database", cel.StringType),
-	cel.Variable("resource.schema", cel.StringType),
-	cel.Variable("resource.table", cel.StringType),
-}
-
 // Parse parses a CEL expression.
 func (*CelService) Parse(_ context.Context, request *v1pb.ParseRequest) (*v1pb.ParseResponse, error) {
-	e, err := cel.NewEnv(queryAttributes...)
+	e, err := cel.NewEnv(iamPolicyCELAttributes...)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create CEL environment: %v", err)
 	}

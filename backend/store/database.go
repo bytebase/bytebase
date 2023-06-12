@@ -120,6 +120,7 @@ type DatabaseMessage struct {
 	SchemaVersion        string
 	Labels               map[string]string
 	Secrets              *storepb.Secrets
+	DataShare            bool
 	EnvironmentID        string
 }
 
@@ -135,6 +136,7 @@ type UpdateDatabaseMessage struct {
 	Labels               *map[string]string
 	SourceBackupID       *int
 	Secrets              *storepb.Secrets
+	DataShare            *bool
 	// TODO(d): allow database environment updates.
 	EnvironmentID *string
 }
@@ -341,9 +343,10 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			sync_status,
 			last_successful_sync_ts,
 			schema_version,
-			secrets
+			secrets,
+			datashare
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
 			name = EXCLUDED.name,
@@ -360,6 +363,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		create.SuccessfulSyncTimeTs,
 		create.SchemaVersion,
 		secretsString,
+		create.DataShare,
 	).Scan(
 		&databaseUID,
 	); err != nil {
@@ -408,6 +412,9 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 			return nil, err
 		}
 		set, args = append(set, fmt.Sprintf("secrets = $%d", len(args)+1)), append(args, secretsString)
+	}
+	if v := patch.DataShare; v != nil {
+		set, args = append(set, fmt.Sprintf("datashare = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, instance.UID, patch.DatabaseName)
 
@@ -569,7 +576,8 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			ARRAY_AGG (
 				db_label.value
 			) label_values,
-			db.secrets
+			db.secrets,
+			db.datashare
 		FROM db
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
@@ -601,6 +609,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			pq.Array(&keys),
 			pq.Array(&values),
 			&secretsString,
+			&databaseMessage.DataShare,
 		); err != nil {
 			return nil, err
 		}

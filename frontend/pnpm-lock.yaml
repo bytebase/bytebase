@@ -74,9 +74,15 @@ dependencies:
   js-yaml:
     specifier: 4.1.0
     version: 4.1.0
+  libphonenumber-js:
+    specifier: ^1.10.34
+    version: 1.10.34
   lodash-es:
     specifier: 4.17.21
     version: 4.17.21
+  maz-ui:
+    specifier: ^3.9.0
+    version: 3.9.0(dayjs@1.11.7)(libphonenumber-js@1.10.34)(vue-router@4.1.6)(vue@3.2.47)
   monaco-editor:
     specifier: 0.34.1
     version: 0.34.1
@@ -146,6 +152,9 @@ dependencies:
   v-code-diff:
     specifier: 0.3.12
     version: 0.3.12(vue@3.2.47)
+  vdirs:
+    specifier: ^0.1.8
+    version: 0.1.8(vue@3.2.47)
   vscode-languageserver:
     specifier: 8.0.2
     version: 8.0.2
@@ -3493,6 +3502,10 @@ packages:
       type-check: 0.4.0
     dev: true
 
+  /libphonenumber-js@1.10.34:
+    resolution: {integrity: sha512-p6g4NaQH4gK1gre32+kV14Mk6GPo2EDcPDvjbi+D2ycsPFsN4gVWNbs0itdHLZqByg6YEK8mE7OeP200I/ScTQ==}
+    dev: false
+
   /lilconfig@2.0.6:
     resolution: {integrity: sha512-9JROoBW7pobfsx+Sq2JsASvCo6Pfo6WWoUW79HuB1BCoBXD4PLWJPqDF6fNj67pqBYTbAHkE57M1kS/+L1neOg==}
     engines: {node: '>=10'}
@@ -3577,6 +3590,34 @@ packages:
     dependencies:
       '@babel/runtime': 7.20.1
       remove-accents: 0.4.2
+    dev: false
+
+  /maz-ui@3.9.0(dayjs@1.11.7)(libphonenumber-js@1.10.34)(vue-router@4.1.6)(vue@3.2.47):
+    resolution: {integrity: sha512-s0OCM2Eu5gHU2e4NerZnv7iTltW5Qowikyw0nQwY6kjfEjlMxiXntm/UBKo2aiGkQkDOfCaVLK2uetSfz0deBA==}
+    engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
+    peerDependencies:
+      chart.js: ^4.0.0
+      dayjs: ^1.1.0
+      dropzone: ^5.9.3
+      libphonenumber-js: ^1.9.44
+      vue: ^3.0.0
+      vue-router: ^4.0.0
+    peerDependenciesMeta:
+      chart.js:
+        optional: true
+      dayjs:
+        optional: true
+      dropzone:
+        optional: true
+      libphonenumber-js:
+        optional: true
+      vue-router:
+        optional: true
+    dependencies:
+      dayjs: 1.11.7
+      libphonenumber-js: 1.10.34
+      vue: 3.2.47
+      vue-router: 4.1.6(vue@3.2.47)
     dev: false
 
   /merge-stream@2.0.0:

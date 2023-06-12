@@ -3,6 +3,10 @@ import {
   createClientFactory,
   FetchTransport,
 } from "nice-grpc-web";
+import {
+  authInterceptorMiddleware,
+  errorNotificationMiddleware,
+} from "./middlewares";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
@@ -36,7 +40,18 @@ const channel = createChannel(
   })
 );
 
-const clientFactory = createClientFactory();
+const clientFactory = createClientFactory()
+  // A middleware that is attached first, will be invoked last.
+  .use(authInterceptorMiddleware)
+  .use(errorNotificationMiddleware);
+/**
+ * Example to use error notification middleware.
+ * Errors occurs during all requests will cause UI notifications automatically.
+ * abcServiceClient.foo(requestParams, {
+ *   // true if you want to suppress error notifications for this call
+ *   silent: true,
+ * })
+ */
 
 export const authServiceClient = clientFactory.create(
   AuthServiceDefinition,

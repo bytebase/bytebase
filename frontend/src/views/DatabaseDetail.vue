@@ -227,9 +227,7 @@
     <div class="w-[80vw] h-full">
       <SchemaDiagram
         :database="database"
-        :database-metadata="
-          dbSchemaStore.getDatabaseMetadataByDatabaseId(Number(database.uid))
-        "
+        :database-metadata="dbSchemaStore.getDatabaseMetadata(database.name)"
       />
     </div>
   </BBModal>
@@ -248,6 +246,7 @@ import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import { useI18n } from "vue-i18n";
 import { startCase } from "lodash-es";
+import { ClientError } from "nice-grpc-web";
 
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
 import DatabaseChangeHistoryPanel from "@/components/DatabaseChangeHistoryPanel.vue";
@@ -273,12 +272,7 @@ import {
   isDatabaseV1Accessible,
   allowUsingSchemaEditorV1,
 } from "@/utils";
-import {
-  UNKNOWN_ID,
-  SQLResultSet,
-  DEFAULT_PROJECT_V1_NAME,
-  ComposedDatabase,
-} from "@/types";
+import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME, ComposedDatabase } from "@/types";
 import { BBTabFilterItem } from "@/bbkit/types";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
@@ -287,9 +281,8 @@ import {
   useCurrentUserIamPolicy,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useGracefulRequest,
-  useLegacySQLStore,
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
@@ -327,8 +320,7 @@ const props = defineProps({
 const { t } = useI18n();
 const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaStore();
-const sqlStore = useLegacySQLStore();
+const dbSchemaStore = useDBSchemaV1Store();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
 const databaseTabItemList = computed((): DatabaseTabItem[] => {
@@ -665,40 +657,35 @@ watch(
   }
 );
 
-const syncDatabaseSchema = () => {
+const syncDatabaseSchema = async () => {
   state.syncingSchema = true;
-  sqlStore
-    .syncDatabaseSchema(Number(database.value.uid))
-    .then((resultSet: SQLResultSet) => {
-      state.syncingSchema = false;
-      if (resultSet.error) {
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t(
-            "db.failed-to-sync-schema-for-database-database-value-name",
-            [database.value.databaseName]
-          ),
-          description: resultSet.error,
-        });
-      } else {
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t(
-            "db.successfully-synced-schema-for-database-database-value-name",
-            [database.value.databaseName]
-          ),
-          description: resultSet.error,
-        });
-      }
-      useDBSchemaStore().getOrFetchDatabaseMetadataById(
-        Number(database.value.uid),
-        true // skip cache
-      );
-    })
-    .catch(() => {
-      state.syncingSchema = false;
+
+  try {
+    await databaseV1Store.syncDatabase(database.value.name);
+
+    dbSchemaStore.getOrFetchDatabaseMetadata(
+      database.value.name,
+      true // skip cache
+    );
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t(
+        "db.successfully-synced-schema-for-database-database-value-name",
+        [database.value.databaseName]
+      ),
     });
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("db.failed-to-sync-schema-for-database-database-value-name", [
+        database.value.databaseName,
+      ]),
+      description: (error as ClientError).details,
+    });
+  } finally {
+    state.syncingSchema = false;
+  }
 };
 </script>

@@ -48,7 +48,11 @@
             @goto-sql-editor-failed="
               handleGotoSQLEditorFailed(database as ComposedDatabase)
             "
-          />
+          >
+            <template v-if="showSelectionColumn" #selection>
+              <slot name="selection" :database="database" />
+            </template>
+          </DatabaseTableRow>
         </template>
         <template v-else>
           <div class="bb-grid-cell">

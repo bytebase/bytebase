@@ -19,7 +19,11 @@
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
                   {{ schemaGroupName }}
-                  <BBBadge text="Group" :can-remove="false" class="text-xs" />
+                  <BBBadge
+                    text="Schema Group"
+                    :can-remove="false"
+                    class="text-xs"
+                  />
                 </h1>
               </div>
             </div>
@@ -32,6 +36,12 @@
                 >{{ $t("common.project") }}&nbsp;-&nbsp;</span
               >
               <ProjectV1Name :project="project" hash="#database-groups" />
+            </dd>
+            <dd class="flex items-center text-sm md:mr-4">
+              <span class="textlabel"
+                >{{ $t("database-group.self") }}&nbsp;-&nbsp;</span
+              >
+              <DatabaseGroupName :database-group="schemaGroup?.databaseGroup" />
             </dd>
           </dl>
         </div>
@@ -96,6 +106,7 @@ import { ConditionGroupExpr } from "@/plugins/cel";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import MatchedTableView from "@/components/DatabaseGroup/MatchedTableView.vue";
+import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 
 interface LocalState {
   isLoaded: boolean;

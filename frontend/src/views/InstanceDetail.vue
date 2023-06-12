@@ -114,6 +114,7 @@
 import { computed, reactive, watchEffect } from "vue";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { ClientError } from "nice-grpc-web";
 
 import {
   idFromSlug,
@@ -125,13 +126,11 @@ import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import InstanceForm from "@/components/InstanceForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
-import { SQLResultSet } from "@/types";
 import {
   featureToRef,
   pushNotification,
   useSubscriptionV1Store,
-  useLegacySQLStore,
-  useDBSchemaStore,
+  useDBSchemaV1Store,
   useCurrentUserV1,
   useInstanceV1Store,
   useEnvironmentV1Store,
@@ -159,7 +158,6 @@ const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();
-const sqlStore = useLegacySQLStore();
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
@@ -261,47 +259,44 @@ const doRestore = async () => {
   });
 };
 
-const syncSchema = () => {
+const syncSchema = async () => {
   state.syncingSchema = true;
-  sqlStore
-    .syncSchema(instanceId.value)
-    .then((resultSet: SQLResultSet) => {
-      state.syncingSchema = false;
-      if (resultSet.error) {
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t(
-            "instance.failed-to-sync-schema-for-instance-instance-value-name",
-            [instance.value.title]
-          ),
-          description: resultSet.error,
-        });
-      } else {
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t(
-            "instance.successfully-synced-schema-for-instance-instance-value-name",
-            [instance.value.title]
-          ),
-          description: resultSet.error,
-        });
-      }
-
-      // Clear the db schema metadata cache entities.
-      // So we will re-fetch new values when needed.
-      const dbSchemaStore = useDBSchemaStore();
-      const databaseList = useDatabaseV1Store().databaseListByInstance(
-        instance.value.name
-      );
-      databaseList.forEach((database) =>
-        dbSchemaStore.removeCacheByDatabaseId(Number(database.uid))
-      );
-    })
-    .catch(() => {
-      state.syncingSchema = false;
+  try {
+    await instanceV1Store.syncInstance(instance.value).then(() => {
+      return databaseStore.searchDatabaseList({
+        parent: instance.value.name,
+      });
     });
+    // Clear the db schema metadata cache entities.
+    // So we will re-fetch new values when needed.
+    const dbSchemaStore = useDBSchemaV1Store();
+    const databaseList = useDatabaseV1Store().databaseListByInstance(
+      instance.value.name
+    );
+    databaseList.forEach((database) =>
+      dbSchemaStore.removeCache(database.name)
+    );
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t(
+        "instance.successfully-synced-schema-for-instance-instance-value-name",
+        [instance.value.title]
+      ),
+    });
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t(
+        "instance.failed-to-sync-schema-for-instance-instance-value-name",
+        [instance.value.title]
+      ),
+      description: (error as ClientError).details,
+    });
+  } finally {
+    state.syncingSchema = false;
+  }
 };
 
 const createDatabase = () => {

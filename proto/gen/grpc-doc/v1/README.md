@@ -121,6 +121,8 @@
     - [SlowQueryDetails](#bytebase-v1-SlowQueryDetails)
     - [SlowQueryLog](#bytebase-v1-SlowQueryLog)
     - [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics)
+    - [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest)
+    - [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse)
     - [TableMetadata](#bytebase-v1-TableMetadata)
     - [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
@@ -217,6 +219,8 @@
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
+    - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
+    - [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse)
     - [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest)
     - [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest)
     - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
@@ -345,6 +349,8 @@
     - [GetReviewRequest](#bytebase-v1-GetReviewRequest)
     - [ListReviewsRequest](#bytebase-v1-ListReviewsRequest)
     - [ListReviewsResponse](#bytebase-v1-ListReviewsResponse)
+    - [RejectReviewRequest](#bytebase-v1-RejectReviewRequest)
+    - [RequestReviewRequest](#bytebase-v1-RequestReviewRequest)
     - [Review](#bytebase-v1-Review)
     - [Review.Approver](#bytebase-v1-Review-Approver)
     - [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest)
@@ -2261,6 +2267,31 @@ SlowQueryStatistics is the statistics of the slow query log.
 
 
 
+<a name="bytebase-v1-SyncDatabaseRequest"></a>
+
+### SyncDatabaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database to sync. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncDatabaseResponse"></a>
+
+### SyncDatabaseResponse
+
+
+
+
+
+
+
 <a name="bytebase-v1-TableMetadata"></a>
 
 ### TableMetadata
@@ -2459,6 +2490,7 @@ The type of the backup.
 | SearchDatabases | [SearchDatabasesRequest](#bytebase-v1-SearchDatabasesRequest) | [SearchDatabasesResponse](#bytebase-v1-SearchDatabasesResponse) | Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. |
 | UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) |  |
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) |  |
+| SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | GetBackupSetting | [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest) | [BackupSetting](#bytebase-v1-BackupSetting) |  |
@@ -3643,6 +3675,31 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 
 
+<a name="bytebase-v1-SyncInstanceRequest"></a>
+
+### SyncInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of instance. Format: instances/{instance} |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncInstanceResponse"></a>
+
+### SyncInstanceResponse
+
+
+
+
+
+
+
 <a name="bytebase-v1-SyncSlowQueriesRequest"></a>
 
 ### SyncSlowQueriesRequest
@@ -3741,6 +3798,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
+| SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) |  |
 | AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
@@ -5206,6 +5264,7 @@ TYPE_ISSUE_CREATE represents creating an issue. |
 | TYPE_ISSUE_COMMENT_CREATE | 2 | TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue. |
 | TYPE_ISSUE_FIELD_UPDATE | 3 | TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, assignee, etc. |
 | TYPE_ISSUE_STATUS_UPDATE | 4 | TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. |
+| TYPE_ISSUE_APPROVAL_NOTIFY | 21 | TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
 | TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
 | TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE | 6 | TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
 | TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT | 7 | TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. |
@@ -5479,6 +5538,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the review to add an approver. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
 
 
 
@@ -5576,6 +5636,38 @@ When paginating, all other parameters provided to `ListReviews` must match the c
 | ----- | ---- | ----- | ----------- |
 | reviews | [Review](#bytebase-v1-Review) | repeated | The reviews from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-RejectReviewRequest"></a>
+
+### RejectReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review to add an rejecting reviewer. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RequestReviewRequest"></a>
+
+### RequestReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review to request a review. Format: projects/{project}/reviews/{review} |
+| comment | [string](#string) |  |  |
 
 
 
@@ -5708,6 +5800,7 @@ ANY means approving any node will proceed.
 | STATUS_UNSPECIFIED | 0 |  |
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
+| REJECTED | 3 |  |
 
 
 
@@ -5742,6 +5835,8 @@ ANY means approving any node will proceed.
 | UpdateReview | [UpdateReviewRequest](#bytebase-v1-UpdateReviewRequest) | [Review](#bytebase-v1-Review) |  |
 | BatchUpdateReviews | [BatchUpdateReviewsRequest](#bytebase-v1-BatchUpdateReviewsRequest) | [BatchUpdateReviewsResponse](#bytebase-v1-BatchUpdateReviewsResponse) |  |
 | ApproveReview | [ApproveReviewRequest](#bytebase-v1-ApproveReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| RejectReview | [RejectReviewRequest](#bytebase-v1-RejectReviewRequest) | [Review](#bytebase-v1-Review) |  |
+| RequestReview | [RequestReviewRequest](#bytebase-v1-RequestReviewRequest) | [Review](#bytebase-v1-Review) |  |
 
  
 
@@ -5871,6 +5966,8 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 | DDL | 1 |  |
 | DML | 2 |  |
 | CREATE_DATABASE | 3 |  |
+| QUERY | 4 |  |
+| EXPORT | 5 |  |
 
 
  

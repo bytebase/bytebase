@@ -16,6 +16,8 @@ export interface DatabaseMetadata {
   collation: string;
   /** The extensions is the list of extensions in a database. */
   extensions: ExtensionMetadata[];
+  /** The database belongs to a datashare. */
+  datashare: boolean;
 }
 
 /**
@@ -197,7 +199,7 @@ export interface SecretItem {
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [] };
+  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], datashare: false };
 }
 
 export const DatabaseMetadata = {
@@ -216,6 +218,9 @@ export const DatabaseMetadata = {
     }
     for (const v of message.extensions) {
       ExtensionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.datashare === true) {
+      writer.uint32(48).bool(message.datashare);
     }
     return writer;
   },
@@ -262,6 +267,13 @@ export const DatabaseMetadata = {
 
           message.extensions.push(ExtensionMetadata.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.datashare = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -280,6 +292,7 @@ export const DatabaseMetadata = {
       extensions: Array.isArray(object?.extensions)
         ? object.extensions.map((e: any) => ExtensionMetadata.fromJSON(e))
         : [],
+      datashare: isSet(object.datashare) ? Boolean(object.datashare) : false,
     };
   },
 
@@ -298,6 +311,7 @@ export const DatabaseMetadata = {
     } else {
       obj.extensions = [];
     }
+    message.datashare !== undefined && (obj.datashare = message.datashare);
     return obj;
   },
 
@@ -312,6 +326,7 @@ export const DatabaseMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
+    message.datashare = object.datashare ?? false;
     return message;
   },
 };
