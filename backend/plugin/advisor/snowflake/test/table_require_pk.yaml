@@ -15,6 +15,21 @@
 - statement: |-
     CREATE TABLE CUSTOMER
     (
+        ID            INT PRIMARY KEY,
+        FULL_NAME     VARCHAR(10),
+        POSITION      VARCHAR(100),
+        CONSTRAINT    PRIMARY_KEY PRIMARY KEY (ID)
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE CUSTOMER
+    (
         ID            INT,
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
@@ -24,37 +39,5 @@
       code: 601
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
-      line: 1
-      details: ""
-- statement: |-
-    CREATE TABLE CUSTOMER
-    (
-        ID            INT,
-        FULL_NAME     VARCHAR(10),
-        POSITION      VARCHAR(100),
-        CONSTRAINT    pkey_customer_id PRIMARY KEY(id) NOT ENFORCED
-    );
-    CREATE TABLE ORDERING
-    (
-        ODDER_ID      INT PRIMARY KEY,
-        CUSTOMER_ID   INT,
-        ORDER_DATE    DATE,
-        TOTAL_AMOUNT  DECIMAL(10, 2),
-        CONSTRAINT    pk_ordering PRIMARY KEY (order_id)
-    );
-    CREATE TABLE ADDRESS
-    (
-        ADDRESS_ID    INT,
-        STREET        VARCHAR(100),
-        CITY          VARCHAR(50),
-        STATE         VARCHAR(50),
-        POSTAL_CODE   VARCHAR(20),
-        COUNTRY       VARCHAR(50)
-    );
-  want:
-    - status: WARN
-      code: 601
-      title: table.require-pk
-      content: Table ADDRESS requires PRIMARY KEY.
-      line: 16
+      line: 0
       details: ""

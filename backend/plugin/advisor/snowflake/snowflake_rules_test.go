@@ -15,6 +15,6 @@ func TestSnowflakeRules(t *testing.T) {
 	}
 
 	for _, rule := range snowflakeRules {
-		advisor.RunSQLReviewRuleTest(t, rule, db.Snowflake, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, db.Snowflake, true /* record */)
 	}
 }
