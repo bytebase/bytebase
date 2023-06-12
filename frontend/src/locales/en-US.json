@@ -1474,8 +1474,8 @@
       }
     },
     "mode": {
-      "standard": "Standard",
-      "tenant": "Tenant"
+      "standard": "Standard Mode",
+      "tenant": "Tenant Mode"
     },
     "db-name-template": "Tenant Database Name Template",
     "select": "Select project",
