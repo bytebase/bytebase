@@ -28,51 +28,6 @@ import (
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
-	g.POST("/sql/sync-schema", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		sync := &api.SQLSyncSchema{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, sync); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql sync schema request").SetInternal(err)
-		}
-		if (sync.InstanceID == nil) == (sync.DatabaseID == nil) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Either InstanceID or DatabaseID should be set.")
-		}
-
-		var resultSet api.SQLResultSet
-		if sync.InstanceID != nil {
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: sync.InstanceID})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %d", *sync.InstanceID)).SetInternal(err)
-			}
-			if instance == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", *sync.InstanceID))
-			}
-			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
-				resultSet.Error = err.Error()
-			}
-			// Sync all databases in the instance asynchronously.
-			s.stateCfg.InstanceDatabaseSyncChan <- instance
-		}
-		if sync.DatabaseID != nil {
-			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: sync.DatabaseID})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", *sync.DatabaseID)).SetInternal(err)
-			}
-			if database == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sync.DatabaseID))
-			}
-			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-				resultSet.Error = err.Error()
-			}
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, &resultSet); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
-		}
-		return nil
-	})
-
 	g.POST("/sql/execute/admin", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		exec := &api.SQLExecute{}
