@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/pkg/errors"
 
@@ -309,7 +310,9 @@ func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName
 		// Replace _ with space
 		mi.Description = strings.ReplaceAll(mi.Description, "_", " ")
 		// Capitalize first letter
-		mi.Description = strings.ToUpper(mi.Description[:1]) + mi.Description[1:]
+		description := []rune(mi.Description)
+		description[0] = unicode.ToUpper(description[0])
+		mi.Description = string(description)
 	}
 
 	return mi, nil
