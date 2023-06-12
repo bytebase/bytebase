@@ -61,7 +61,11 @@ export function lastTask(pipeline: Pipeline): Task {
   return empty("TASK") as Task;
 }
 
-export function findTaskById(pipeline: Pipeline, taskId: TaskId): Task {
+export function findTaskById(
+  pipeline: Pipeline | undefined,
+  taskId: TaskId
+): Task {
+  if (!pipeline) return unknown("TASK");
   for (const stage of pipeline.stageList) {
     for (const task of stage.taskList) {
       if (task.id == taskId) {
@@ -72,7 +76,11 @@ export function findTaskById(pipeline: Pipeline, taskId: TaskId): Task {
   return unknown("TASK") as Task;
 }
 
-export function findStageById(pipeline: Pipeline, stageId: StageId): Stage {
+export function findStageById(
+  pipeline: Pipeline | undefined,
+  stageId: StageId
+): Stage {
+  if (!pipeline) return unknown("STAGE");
   return pipeline.stageList.find((s) => s.id === stageId) ?? unknown("STAGE");
 }
 
