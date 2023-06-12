@@ -98,7 +98,7 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { useIssueLogic } from "./logic";
-import { Task, TaskDatabaseSchemaUpdateSDLPayload, TaskId } from "@/types";
+import { Task, TaskId } from "@/types";
 import MonacoEditor from "../MonacoEditor";
 import { sqlServiceClient } from "@/grpcweb";
 import { useSQLAdviceMarkers } from "./logic/useSQLAdviceMarkers";
