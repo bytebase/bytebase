@@ -542,6 +542,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	recoveryUnaryInterceptor := recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	recoveryStreamInterceptor := recovery.StreamServerInterceptor(recovery.WithRecoveryHandler(onPanic))
 	s.grpcServer = grpc.NewServer(
+		// Override the maximum receiving message size to 100M for uploading large sheets.
+		grpc.MaxRecvMsgSize(100*1024*1024),
 		grpc.ChainUnaryInterceptor(
 			debugProvider.DebugInterceptor,
 			authProvider.AuthenticationInterceptor,
