@@ -692,6 +692,26 @@ func buildRedshiftVersionString(redshiftVersion, postgresVersion string) string 
 
 // getDatabases gets all databases of an instance.
 func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseMetadata, error) {
+	consumerDatabases := make(map[string]bool)
+	dsRows, err := driver.db.QueryContext(ctx, `
+		SELECT consumer_database FROM SVV_DATASHARES WHERE share_type = 'INBOUND';
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer dsRows.Close()
+
+	for dsRows.Next() {
+		var v string
+		if err := dsRows.Scan(&v); err != nil {
+			return nil, err
+		}
+		consumerDatabases[v] = true
+	}
+	if err := dsRows.Err(); err != nil {
+		return nil, err
+	}
+
 	var databases []*storepb.DatabaseMetadata
 	rows, err := driver.db.QueryContext(ctx, `
 		SELECT datname,
@@ -708,6 +728,7 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseMeta
 		if err := rows.Scan(&database.Name, &database.CharacterSet); err != nil {
 			return nil, err
 		}
+		database.Datashare = consumerDatabases[database.Name]
 		databases = append(databases, &database)
 	}
 	if err := rows.Err(); err != nil {

@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -71,8 +70,6 @@ func TestSheetVCS(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(ctx)
 			a.NoError(err)
-			projectUID, err := strconv.Atoi(project.Uid)
-			a.NoError(err)
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
@@ -119,7 +116,7 @@ func TestSheetVCS(t *testing.T) {
 			sheetsBefore := resp.Sheets
 			a.NoError(err)
 
-			err = ctl.syncSheet(projectUID)
+			_, err = ctl.sheetServiceClient.SyncSheets(ctx, &v1pb.SyncSheetsRequest{Parent: project.Name})
 			a.NoError(err)
 
 			resp, err = ctl.sheetServiceClient.SearchSheets(ctx, &v1pb.SearchSheetsRequest{

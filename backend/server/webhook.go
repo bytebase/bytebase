@@ -1293,6 +1293,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 	}
 	issue, err := s.createIssue(ctx, issueCreate, creatorID)
 	if err != nil {
+		log.Error("Failed to create issue", zap.Any("issueCreate", issueCreate), zap.Error(err))
 		errMsg := "Failed to create schema update issue"
 		if issueType == api.IssueDatabaseDataUpdate {
 			errMsg = "Failed to create data update issue"
@@ -1338,7 +1339,7 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 		if err != nil {
 			log.Warn("Failed to find the principal with committer email, use system bot instead", zap.String("email", email), zap.Error(err))
 		} else if committerPrincipal == nil {
-			log.Warn("Principal with committer email does not exist, use system bot instead", zap.String("email", email))
+			log.Info("Principal with committer email does not exist, use system bot instead", zap.String("email", email))
 		} else {
 			creatorID = committerPrincipal.ID
 		}

@@ -511,7 +511,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return aclMiddleware(s, internalAPIPrefix, ce, next, profile.Readonly)
 	})
 	s.registerOAuthRoutes(apiGroup)
-	s.registerProjectRoutes(apiGroup)
 	s.registerDatabaseRoutes(apiGroup)
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
@@ -586,7 +585,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.dbFactory,
 		s.SchemaSyncer))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store, s.ActivityManager, s.licenseService))
-	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner, s.licenseService))
+	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store, s.BackupRunner, s.SchemaSyncer, s.licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, s.dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(s.grpcServer, v1.NewIdentityProviderService(s.store, s.licenseService))

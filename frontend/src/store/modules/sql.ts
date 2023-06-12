@@ -1,8 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import {
-  DatabaseId,
-  InstanceId,
   INSTANCE_OPERATION_TIMEOUT,
   QueryInfo,
   ResourceObject,
@@ -11,7 +9,6 @@ import {
   SingleSQLResult,
   Attributes,
 } from "@/types";
-import { useDatabaseV1Store, useInstanceV1Store } from "./v1";
 
 export function convertSingleSQLResult(
   attributes: Attributes
@@ -50,87 +47,6 @@ export const useLegacySQLStore = defineStore("legacy_sql", {
   actions: {
     convert(resultSet: ResourceObject): SQLResultSet {
       return convert(resultSet);
-    },
-
-    async syncSchema(instanceId: InstanceId) {
-      const res = (
-        await axios.post(
-          `/api/sql/sync-schema`,
-          {
-            data: {
-              type: "sqlSyncSchema",
-              attributes: {
-                instanceId: instanceId,
-              },
-            },
-          },
-          {
-            timeout: INSTANCE_OPERATION_TIMEOUT,
-          }
-        )
-      ).data;
-
-      const resultSet = convert(res.data);
-      if (!resultSet.error) {
-        // Refresh the corresponding list.
-        const instance = await useInstanceV1Store().getOrFetchInstanceByUID(
-          String(instanceId)
-        );
-        useDatabaseV1Store().fetchDatabaseList({
-          parent: instance.name,
-        });
-      }
-
-      return resultSet;
-    },
-    async syncDatabaseSchema(databaseId: DatabaseId) {
-      const res = (
-        await axios.post(
-          `/api/sql/sync-schema`,
-          {
-            data: {
-              type: "sqlSyncSchema",
-              attributes: {
-                databaseId: databaseId,
-              },
-            },
-          },
-          {
-            timeout: INSTANCE_OPERATION_TIMEOUT,
-          }
-        )
-      ).data;
-
-      const resultSet = convert(res.data);
-      if (!resultSet.error) {
-        // Refresh the corresponding list.
-        useDatabaseV1Store().fetchDatabaseByUID(String(databaseId));
-      }
-
-      return resultSet;
-    },
-    async query(queryInfo: QueryInfo): Promise<SQLResultSet> {
-      const res = (
-        await axios.post(
-          `/api/sql/execute`,
-          {
-            data: {
-              type: "sqlExecute",
-              attributes: {
-                ...queryInfo,
-                readonly: true,
-              },
-            },
-          },
-          {
-            timeout: INSTANCE_OPERATION_TIMEOUT,
-          }
-        )
-      ).data;
-
-      const resultSet = convert(res.data);
-
-      return resultSet;
     },
     async adminQuery(queryInfo: QueryInfo): Promise<SQLResultSet> {
       const res = (
