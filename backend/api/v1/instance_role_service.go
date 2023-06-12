@@ -93,6 +93,7 @@ func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, request *v1
 				Attribute: &u.Grant,
 			})
 		}
+		return response, nil
 	}
 
 	roleList, err := func() ([]*db.DatabaseRoleMessage, error) {
