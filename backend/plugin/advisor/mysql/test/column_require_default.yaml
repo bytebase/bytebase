@@ -33,5 +33,5 @@
       code: 420
       title: column.require-default
       content: Column `tech_book`.`a` doesn't have DEFAULT.
-      line: 3
+      line: 4
       details: ""
