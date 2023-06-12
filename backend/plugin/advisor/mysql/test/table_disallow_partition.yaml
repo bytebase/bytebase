@@ -19,8 +19,9 @@
         Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a) (
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
-              )" creates
-      line: 4
+              )
+        ;" creates
+      line: 5
       details: ""
 - statement: |-
     ALTER TABLE tech_book PARTITION BY RANGE (a) (
@@ -35,6 +36,7 @@
         Table partition is forbidden, but "ALTER TABLE tech_book PARTITION BY RANGE (a) (
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
-              )" creates
-      line: 4
+              )
+        ;" creates
+      line: 5
       details: ""
