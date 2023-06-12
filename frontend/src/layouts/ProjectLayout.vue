@@ -109,7 +109,12 @@ const projectTabItemList = computed((): ProjectTabItem[] => {
   ) {
     const list = [{ name: t("common.databases"), hash: "databases" }];
     if (!isDefaultProject.value) {
-      list.push({ name: t("common.settings"), hash: "setting" });
+      list.push(
+        ...[
+          { name: t("common.members"), hash: "members" },
+          { name: t("common.settings"), hash: "setting" },
+        ]
+      );
     }
     return list;
   }
