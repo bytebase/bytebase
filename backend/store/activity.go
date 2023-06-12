@@ -671,6 +671,8 @@ func convertAPIApprovalEventStatusToStorePBStatus(status string) storepb.Activit
 		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED
 	case "PENDING":
 		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_PENDING
+	case "REJECTED":
+		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED
 	default:
 		return storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_STATUS_UNSPECIFIED
 	}
@@ -682,6 +684,8 @@ func convertStorePBStatusToAPIApprovalEventStatus(status storepb.ActivityIssueCo
 		return "APPROVED"
 	case storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_PENDING:
 		return "PENDING"
+	case storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED:
+		return "REJECTED"
 	default:
 		return ""
 	}
