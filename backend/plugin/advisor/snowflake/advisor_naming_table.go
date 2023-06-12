@@ -81,17 +81,7 @@ func (l *namingTableListener) generateAdvice() ([]advisor.Advice, error) {
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	objectName := ctx.Object_name().GetText()
-	parts := strings.Split(objectName, ".")
-	if len(parts) == 0 {
-		log.Warn("Unexpected zero part after splitting snowflake object name with dot", zap.String("objectName", objectName))
-		return
-	}
-	tableName := parts[len(parts)-1]
-	if tableName[0] == '"' && tableName[len(tableName)-1] == '"' {
-		tableName = tableName[1 : len(tableName)-1]
-		tableName = strings.ReplaceAll(tableName, `""`, `"`)
-	}
+	tableName := extractTableNameFromIdentifier(ctx.Object_name().GetText())
 
 	if !l.format.MatchString(tableName) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
