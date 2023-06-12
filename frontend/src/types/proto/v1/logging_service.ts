@@ -1,7 +1,6 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
-import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
@@ -58,18 +57,6 @@ export interface ListLogsResponse {
    * to retrieve the next page of log entities.
    */
   nextPageToken: string;
-}
-
-export interface UpdateLogRequest {
-  /** The log to update. */
-  log?: LogEntity;
-  /** The list of fields to update. */
-  updateMask?: string[];
-}
-
-export interface CreateLogRequest {
-  /** The log to create. */
-  log?: LogEntity;
 }
 
 export interface LogEntity {
@@ -527,133 +514,6 @@ export const ListLogsResponse = {
   },
 };
 
-function createBaseUpdateLogRequest(): UpdateLogRequest {
-  return { log: undefined, updateMask: undefined };
-}
-
-export const UpdateLogRequest = {
-  encode(message: UpdateLogRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.log !== undefined) {
-      LogEntity.encode(message.log, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.updateMask !== undefined) {
-      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateLogRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateLogRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.log = LogEntity.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UpdateLogRequest {
-    return {
-      log: isSet(object.log) ? LogEntity.fromJSON(object.log) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
-  },
-
-  toJSON(message: UpdateLogRequest): unknown {
-    const obj: any = {};
-    message.log !== undefined && (obj.log = message.log ? LogEntity.toJSON(message.log) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
-    return obj;
-  },
-
-  create(base?: DeepPartial<UpdateLogRequest>): UpdateLogRequest {
-    return UpdateLogRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<UpdateLogRequest>): UpdateLogRequest {
-    const message = createBaseUpdateLogRequest();
-    message.log = (object.log !== undefined && object.log !== null) ? LogEntity.fromPartial(object.log) : undefined;
-    message.updateMask = object.updateMask ?? undefined;
-    return message;
-  },
-};
-
-function createBaseCreateLogRequest(): CreateLogRequest {
-  return { log: undefined };
-}
-
-export const CreateLogRequest = {
-  encode(message: CreateLogRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.log !== undefined) {
-      LogEntity.encode(message.log, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreateLogRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateLogRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.log = LogEntity.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CreateLogRequest {
-    return { log: isSet(object.log) ? LogEntity.fromJSON(object.log) : undefined };
-  },
-
-  toJSON(message: CreateLogRequest): unknown {
-    const obj: any = {};
-    message.log !== undefined && (obj.log = message.log ? LogEntity.toJSON(message.log) : undefined);
-    return obj;
-  },
-
-  create(base?: DeepPartial<CreateLogRequest>): CreateLogRequest {
-    return CreateLogRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial(object: DeepPartial<CreateLogRequest>): CreateLogRequest {
-    const message = createBaseCreateLogRequest();
-    message.log = (object.log !== undefined && object.log !== null) ? LogEntity.fromPartial(object.log) : undefined;
-    return message;
-  },
-};
-
 function createBaseLogEntity(): LogEntity {
   return { name: "", creator: "", createTime: undefined, action: 0, level: 0, resource: "", payload: "", comment: "" };
 }
@@ -822,77 +682,15 @@ export const LoggingServiceDefinition = {
         },
       },
     },
-    updateLog: {
-      name: "UpdateLog",
-      requestType: UpdateLogRequest,
-      requestStream: false,
-      responseType: LogEntity,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([15, 108, 111, 103, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
-          578365826: [
-            new Uint8Array([
-              28,
-              58,
-              3,
-              108,
-              111,
-              103,
-              50,
-              21,
-              47,
-              118,
-              49,
-              47,
-              123,
-              108,
-              111,
-              103,
-              46,
-              110,
-              97,
-              109,
-              101,
-              61,
-              108,
-              111,
-              103,
-              115,
-              47,
-              42,
-              125,
-            ]),
-          ],
-        },
-      },
-    },
-    createLog: {
-      name: "CreateLog",
-      requestType: CreateLogRequest,
-      requestStream: false,
-      responseType: LogEntity,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([3, 108, 111, 103])],
-          578365826: [new Uint8Array([15, 58, 3, 108, 111, 103, 34, 8, 47, 118, 49, 47, 108, 111, 103, 115])],
-        },
-      },
-    },
   },
 } as const;
 
 export interface LoggingServiceImplementation<CallContextExt = {}> {
   listLogs(request: ListLogsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListLogsResponse>>;
-  updateLog(request: UpdateLogRequest, context: CallContext & CallContextExt): Promise<DeepPartial<LogEntity>>;
-  createLog(request: CreateLogRequest, context: CallContext & CallContextExt): Promise<DeepPartial<LogEntity>>;
 }
 
 export interface LoggingServiceClient<CallOptionsExt = {}> {
   listLogs(request: DeepPartial<ListLogsRequest>, options?: CallOptions & CallOptionsExt): Promise<ListLogsResponse>;
-  updateLog(request: DeepPartial<UpdateLogRequest>, options?: CallOptions & CallOptionsExt): Promise<LogEntity>;
-  createLog(request: DeepPartial<CreateLogRequest>, options?: CallOptions & CallOptionsExt): Promise<LogEntity>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

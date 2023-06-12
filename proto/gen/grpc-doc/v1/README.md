@@ -231,11 +231,9 @@
     - [InstanceService](#bytebase-v1-InstanceService)
   
 - [v1/logging_service.proto](#v1_logging_service-proto)
-    - [CreateLogRequest](#bytebase-v1-CreateLogRequest)
     - [ListLogsRequest](#bytebase-v1-ListLogsRequest)
     - [ListLogsResponse](#bytebase-v1-ListLogsResponse)
     - [LogEntity](#bytebase-v1-LogEntity)
-    - [UpdateLogRequest](#bytebase-v1-UpdateLogRequest)
   
     - [LogEntity.Action](#bytebase-v1-LogEntity-Action)
     - [LogEntity.Level](#bytebase-v1-LogEntity-Level)
@@ -3817,21 +3815,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-CreateLogRequest"></a>
-
-### CreateLogRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| log | [LogEntity](#bytebase-v1-LogEntity) |  | The log to create. |
-
-
-
-
-
-
 <a name="bytebase-v1-ListLogsRequest"></a>
 
 ### ListLogsRequest
@@ -3882,22 +3865,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | resource | [string](#string) |  | The name of the resource associated with this log entity. For example, the resource user associated with log entity type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: users/{email} For ACTION_ISSUE_*: issues/{issue uid} For ACTION_PIPELINE_*: pipelines/{pipeline uid} For ACTION_PROJECT_*: projects/{project resource id} For ACTION_DATABASE_*: instances/{instance resource id} |
 | payload | [string](#string) |  | The payload of the log entity. TODO: use oneof |
 | comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateLogRequest"></a>
-
-### UpdateLogRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| log | [LogEntity](#bytebase-v1-LogEntity) |  | The log to update. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 
 
 
@@ -3973,8 +3940,6 @@ ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | ListLogs | [ListLogsRequest](#bytebase-v1-ListLogsRequest) | [ListLogsResponse](#bytebase-v1-ListLogsResponse) |  |
-| UpdateLog | [UpdateLogRequest](#bytebase-v1-UpdateLogRequest) | [LogEntity](#bytebase-v1-LogEntity) |  |
-| CreateLog | [CreateLogRequest](#bytebase-v1-CreateLogRequest) | [LogEntity](#bytebase-v1-LogEntity) |  |
 
  
 

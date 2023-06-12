@@ -13,7 +13,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -267,88 +266,6 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 	return resp, nil
 }
 
-// UpdateLog updates the log.
-func (s *LoggingService) UpdateLog(ctx context.Context, request *v1pb.UpdateLogRequest) (*v1pb.LogEntity, error) {
-	if request.Log == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "log is required for update")
-	}
-	activityID, err := getUIDFromName(request.Log.Name, logNamePrefix)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	activityPatch := &store.UpdateActivityMessage{
-		UID:       activityID,
-		UpdaterID: ctx.Value(common.PrincipalIDContextKey).(int),
-	}
-
-	for _, path := range request.UpdateMask.Paths {
-		switch path {
-		case "comment":
-			activityPatch.Comment = &request.Log.Comment
-		case "level":
-			level, err := convertToActivityLevel(request.Log.Level)
-			if err != nil {
-				return nil, err
-			}
-			activityPatch.Level = &level
-		default:
-			return nil, status.Errorf(codes.InvalidArgument, "unsupport update mask %s", path)
-		}
-	}
-
-	activity, err := s.store.UpdateActivityV2(ctx, activityPatch)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update activity with error: %v", err.Error())
-	}
-
-	logEntity, err := s.convertToLogEntity(ctx, activity)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert log entity, error: %v", err)
-	}
-	return logEntity, nil
-}
-
-// CreateLog creates the log.
-func (s *LoggingService) CreateLog(ctx context.Context, request *v1pb.CreateLogRequest) (*v1pb.LogEntity, error) {
-	if request.Log == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "log is required for create")
-	}
-
-	activityType, err := convertToActivityType(request.Log.Action)
-	if err != nil {
-		return nil, err
-	}
-
-	activityLevel, err := convertToActivityLevel(request.Log.Level)
-	if err != nil {
-		return nil, err
-	}
-
-	containerUID, err := s.getResourceUID(ctx, request.Log.Action, request.Log.Resource)
-	if err != nil {
-		return nil, err
-	}
-
-	activity, err := s.store.CreateActivityV2(ctx, &store.ActivityMessage{
-		CreatorID:    ctx.Value(common.PrincipalIDContextKey).(int),
-		Comment:      request.Log.Comment,
-		Payload:      request.Log.Payload,
-		Type:         activityType,
-		Level:        activityLevel,
-		ContainerUID: containerUID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create activity with error: %v", err.Error())
-	}
-
-	logEntity, err := s.convertToLogEntity(ctx, activity)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert log entity, error: %v", err)
-	}
-	return logEntity, nil
-}
-
 func (s *LoggingService) convertToLogEntity(ctx context.Context, activity *store.ActivityMessage) (*v1pb.LogEntity, error) {
 	resource := ""
 	switch activity.Type {
@@ -425,95 +342,6 @@ func (s *LoggingService) convertToLogEntity(ctx context.Context, activity *store
 		Comment:    activity.Comment,
 		Payload:    activity.Payload,
 	}, nil
-}
-
-func (s *LoggingService) getResourceUID(ctx context.Context, action v1pb.LogEntity_Action, resource string) (int, error) {
-	switch action {
-	case
-		v1pb.LogEntity_ACTION_MEMBER_CREATE,
-		v1pb.LogEntity_ACTION_MEMBER_ROLE_UPDATE,
-		v1pb.LogEntity_ACTION_MEMBER_ACTIVATE,
-		v1pb.LogEntity_ACTION_MEMBER_DEACTIVE:
-		email, err := getUserEmail(resource)
-		if err != nil {
-			return 0, status.Errorf(codes.InvalidArgument, `invalid resource "%s": %v`, resource, err.Error())
-		}
-		user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-			Email:       &email,
-			ShowDeleted: true,
-		})
-		if err != nil {
-			return 0, err
-		}
-		if user == nil {
-			return 0, errors.Errorf("cannot found user with email %s", resource)
-		}
-		return user.ID, nil
-	case
-		v1pb.LogEntity_ACTION_ISSUE_CREATE,
-		v1pb.LogEntity_ACTION_ISSUE_COMMENT_CREATE,
-		v1pb.LogEntity_ACTION_ISSUE_FIELD_UPDATE,
-		v1pb.LogEntity_ACTION_ISSUE_STATUS_UPDATE,
-		v1pb.LogEntity_ACTION_ISSUE_APPROVAL_NOTIFY:
-		issueUID, err := getUIDFromName(resource, issueNamePrefix)
-		if err != nil {
-			return 0, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		return issueUID, nil
-	case
-		v1pb.LogEntity_ACTION_PIPELINE_STAGE_STATUS_UPDATE,
-		v1pb.LogEntity_ACTION_PIPELINE_TASK_STATUS_UPDATE,
-		v1pb.LogEntity_ACTION_PIPELINE_TASK_FILE_COMMIT,
-		v1pb.LogEntity_ACTION_PIPELINE_TASK_STATEMENT_UPDATE,
-		v1pb.LogEntity_ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
-		issueUID, err := getUIDFromName(resource, pipelineNamePrefix)
-		if err != nil {
-			return 0, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		return issueUID, nil
-	case
-		v1pb.LogEntity_ACTION_PROJECT_REPOSITORY_PUSH,
-		v1pb.LogEntity_ACTION_PROJECT_DATABASE_TRANSFER,
-		v1pb.LogEntity_ACTION_PROJECT_MEMBER_CREATE,
-		v1pb.LogEntity_ACTION_PROJECT_MEMBER_DELETE,
-		v1pb.LogEntity_ACTION_PROJECT_MEMBER_ROLE_UPDATE,
-		v1pb.LogEntity_ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
-		projectID, err := getProjectID(resource)
-		if err != nil {
-			return 0, status.Errorf(codes.InvalidArgument, `invalid resource "%s": %v`, resource, err.Error())
-		}
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID:  &projectID,
-			ShowDeleted: true,
-		})
-		if err != nil {
-			return 0, err
-		}
-		if project == nil {
-			return 0, errors.Errorf("cannot found project with id %s", resource)
-		}
-		return project.UID, nil
-	case
-		v1pb.LogEntity_ACTION_DATABASE_SQL_EDITOR_QUERY,
-		v1pb.LogEntity_ACTION_DATABASE_SQL_EXPORT:
-		instanceID, err := getInstanceID(resource)
-		if err != nil {
-			return 0, status.Errorf(codes.InvalidArgument, `invalid resource "%s": %v`, resource, err.Error())
-		}
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-			ResourceID:  &instanceID,
-			ShowDeleted: true,
-		})
-		if err != nil {
-			return 0, err
-		}
-		if instance == nil {
-			return 0, errors.Errorf("cannot found instance with id %s", resource)
-		}
-		return instance.UID, nil
-	default:
-		return 0, status.Errorf(codes.InvalidArgument, "unsupported action type: %v", action)
-	}
 }
 
 func convertToActivityType(action v1pb.LogEntity_Action) (api.ActivityType, error) {

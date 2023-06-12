@@ -5,7 +5,6 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
-import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/v1";
@@ -13,22 +12,6 @@ option go_package = "generated-go/v1";
 service LoggingService {
   rpc ListLogs(ListLogsRequest) returns (ListLogsResponse) {
     option (google.api.http) = {get: "/v1/logs:search"};
-  }
-
-  rpc UpdateLog(UpdateLogRequest) returns (LogEntity) {
-    option (google.api.http) = {
-      patch: "/v1/{log.name=logs/*}"
-      body: "log"
-    };
-    option (google.api.method_signature) = "log,update_mask";
-  }
-
-  rpc CreateLog(CreateLogRequest) returns (LogEntity) {
-    option (google.api.http) = {
-      post: "/v1/logs"
-      body: "log"
-    };
-    option (google.api.method_signature) = "log";
   }
 }
 
@@ -78,19 +61,6 @@ message ListLogsResponse {
   // Pass this value in the page_token field in the subsequent call to `ListLogs` method
   // to retrieve the next page of log entities.
   string next_page_token = 2;
-}
-
-message UpdateLogRequest {
-  // The log to update.
-  LogEntity log = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
-}
-
-message CreateLogRequest {
-  // The log to create.
-  LogEntity log = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message LogEntity {
