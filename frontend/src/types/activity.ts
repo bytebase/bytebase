@@ -19,6 +19,10 @@ import { VCSPushEvent } from "./vcs";
 import { Advice } from "./sqlAdvice";
 import { t } from "../plugins/i18n";
 import { ApprovalEvent } from "./review";
+import {
+  LogEntity_Action,
+  LogEntity_Level,
+} from "@/types/proto/v1/logging_service";
 
 export type IssueActivityType =
   | "bb.issue.create"
@@ -281,3 +285,15 @@ export type ActivityFind = {
   createdTsAfter?: number;
   createdTsBefore?: number;
 };
+
+export interface FindActivityMessage {
+  resource?: string;
+  creatorEmail?: string;
+  level?: LogEntity_Level[];
+  action?: LogEntity_Action[];
+  createdTsAfter?: number;
+  createdTsBefore?: number;
+  order?: "acs" | "desc";
+  pageSize?: number;
+  pageToken?: string;
+}

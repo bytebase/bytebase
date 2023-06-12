@@ -59,7 +59,7 @@ func TestTransform(t *testing.T) {
 		"CREATE PROCEDURE p1()" + "\n" +
 		"		BEGIN" + "\n" +
 		"			SELECT * FROM t;" + "\n" +
-		"		END;" + "\n" +
+		"		END\n;" + "\n" +
 		"\n"
 
 	a := require.New(t)

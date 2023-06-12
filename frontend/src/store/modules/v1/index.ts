@@ -17,3 +17,4 @@ export * from "./repository";
 export * from "./vcs";
 export * from "./changeHistory";
 export * from "./dbSchema";
+export * from "./activity";

@@ -47,7 +47,7 @@
       code: 402
       title: column.no-null
       content: '`book`.`id` cannot have NULL value'
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
@@ -67,7 +67,7 @@
       code: 402
       title: column.no-null
       content: '`book`.`name` cannot have NULL value'
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE book(id int NOT NULL);
