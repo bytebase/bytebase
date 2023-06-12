@@ -30,7 +30,7 @@
           </NTooltip>
           <NTooltip v-if="project.workflow === Workflow.VCS">
             <template #trigger>
-              <heroicons-outline:collection class="ml-1 w-4 h-4 text-control" />
+              <GitIcon class="ml-1 w-4 h-4 text-control" />
             </template>
             <span class="whitespace-nowrap">
               {{ $t("database.gitops-enabled") }}

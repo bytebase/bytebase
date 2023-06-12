@@ -75,9 +75,7 @@
             {{ $t("database.gitops-enabled") }}
           </span>
 
-          <heroicons-outline:collection
-            class="w-4 h-4 text-control hover:text-control-hover"
-          />
+          <GitIcon class="w-4 h-4 text-control hover:text-control-hover" />
         </template>
       </div>
     </div>
