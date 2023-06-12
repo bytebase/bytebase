@@ -4,14 +4,18 @@
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <img class="mt-1" src="../../../assets/logo-icon.svg" alt="Bytebase" />
+        <img class="mt-1" src="@/assets/logo-icon.svg" alt="Bytebase" />
       </div>
     </div>
     <div v-else-if="icon == 'avatar'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <PrincipalAvatar :principal="activity.creator" :size="'SMALL'" />
+        <PrincipalAvatar
+          :principal="activity.creator"
+          override-class="w-7 h-7 font-medium"
+          override-text-size="0.8rem"
+        />
       </div>
     </div>
     <div v-else-if="icon == 'create'" class="relative pl-0.5">
@@ -35,11 +39,29 @@
         <heroicons-outline:play class="w-6 h-6 text-control" />
       </div>
     </div>
-    <div v-else-if="icon == 'approve'" class="relative pl-0.5">
+    <div v-else-if="icon == 'approve-review'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
       >
         <heroicons-outline:thumb-up class="w-5 h-5 text-control" />
+      </div>
+    </div>
+    <div v-else-if="icon == 'reject-review'" class="relative pl-0.5">
+      <div
+        class="w-7 h-7 bg-warning rounded-full ring-4 ring-white flex items-center justify-center"
+      >
+        <heroicons:pause-solid class="w-5 h-5 text-white" />
+      </div>
+    </div>
+    <div v-else-if="icon == 're-request-review'" class="relative pl-0.5">
+      <div
+        class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
+      >
+        <PrincipalAvatar
+          :principal="activity.creator"
+          override-class="w-7 h-7 font-medium"
+          override-text-size="0.8rem"
+        />
       </div>
     </div>
     <div v-else-if="icon == 'cancel'" class="relative pl-0.5">
@@ -89,6 +111,7 @@ import {
   ActivityTaskStatusUpdatePayload,
   SYSTEM_BOT_ID,
 } from "@/types";
+import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 import { SkipIcon } from "@/components/Icon";
 
 type ActionIconType =
@@ -97,7 +120,9 @@ type ActionIconType =
   | "create"
   | "update"
   | "run"
-  | "approve"
+  | "approve-review"
+  | "reject-review"
+  | "re-request-review"
   | "rollout"
   | "cancel"
   | "fail"
@@ -166,8 +191,16 @@ const icon = computed((): ActionIconType => {
     return "update";
   } else if (activity.type === "bb.issue.comment.create") {
     const payload = activity.payload as ActivityIssueCommentCreatePayload;
-    if (payload.approvalEvent?.status === "APPROVED") {
-      return "approve";
+    if (payload.approvalEvent) {
+      const { status } = payload.approvalEvent;
+      switch (status) {
+        case "APPROVED":
+          return "approve-review";
+        case "REJECTED":
+          return "reject-review";
+        case "PENDING":
+          return "re-request-review";
+      }
     }
   }
 

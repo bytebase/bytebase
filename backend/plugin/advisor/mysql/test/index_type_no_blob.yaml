@@ -82,7 +82,7 @@
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -92,19 +92,19 @@
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
-      line: 2
+      line: 3
       details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
-      line: 2
+      line: 3
       details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -114,19 +114,19 @@
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
-      line: 2
+      line: 3
       details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
-      line: 2
+      line: 3
       details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int);

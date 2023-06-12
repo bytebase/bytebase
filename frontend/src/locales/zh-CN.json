@@ -777,7 +777,8 @@
       "manually-select": "手动选择",
       "customize": "自定义",
       "data-export-attention": "数据将被导出到一个文件并自动下载。而且您只能完成一次导出操作。"
-    }
+    },
+    "review-sent-back": "审核被退回"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1438,7 +1439,7 @@
     },
     "settings": {
       "success-updated": "项目设置更新成功",
-      "success-member-added-prompt": "成功将 {name} 添加到当前项目中.",
+      "success-member-added-prompt": "成功添加到当前项目中.",
       "success-member-deleted-prompt": "成功将 {name} 从当前项目移除.",
       "member-placeholder": "选择用户",
       "manage-member": "管理成员",
@@ -2453,8 +2454,15 @@
       "approved-issue": "批准工单",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "尚有未通过的任务检查项"
-      }
-    }
+      },
+      "send-back": "退回",
+      "send-back-issue": "退回工单？",
+      "re-request-review": "请求再次审批",
+      "re-request-review-issue": "请求再次审批工单？",
+      "sent-back-issue": "退回工单",
+      "re-requested-review": "再次请求审批工单"
+    },
+    "send-back": "退回"
   },
   "slow-query": {
     "self": "慢查询",

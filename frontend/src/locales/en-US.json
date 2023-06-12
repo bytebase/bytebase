@@ -779,7 +779,8 @@
       "manually-select": "Manually select",
       "customize": "Customize",
       "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once."
-    }
+    },
+    "review-sent-back": "Review sent back"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1442,7 +1443,7 @@
     },
     "settings": {
       "success-updated": "Project settings updated successfully.",
-      "success-member-added-prompt": "Successfully added {name} to the project.",
+      "success-member-added-prompt": "Successfully added to the project.",
       "success-member-deleted-prompt": "Successfully revoked {name} access from the project.",
       "member-placeholder": "Select user",
       "manage-member": "Manage members",
@@ -2458,8 +2459,15 @@
       "approved-issue": "approved issue",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "Some task checks didn't pass"
-      }
-    }
+      },
+      "send-back": "Send back",
+      "send-back-issue": "Send back issue?",
+      "re-request-review": "Re-request review",
+      "re-request-review-issue": "Re-request review issue?",
+      "sent-back-issue": "Sent back issue",
+      "re-requested-review": "re-requested issue review"
+    },
+    "send-back": "Send back"
   },
   "slow-query": {
     "self": "Slow query",

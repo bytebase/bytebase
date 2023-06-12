@@ -15,6 +15,7 @@
 import { computed, withDefaults } from "vue";
 import { hashCode } from "./BBUtil";
 import { BBAvatarSizeType } from "./types";
+import { VueClass } from "@/utils";
 
 const BACKGROUND_COLOR_LIST: string[] = [
   "#64748B",
@@ -55,12 +56,16 @@ const props = withDefaults(
     size: BBAvatarSizeType;
     rounded?: boolean;
     backgroundColor?: string;
+    overrideClass?: VueClass;
+    overrideTextSize?: string;
   }>(),
   {
     username: "",
     size: "NORMAL",
     rounded: true,
     backgroundColor: "",
+    overrideClass: undefined,
+    overrideTextSize: undefined,
   }
 );
 
@@ -102,11 +107,11 @@ const style = computed(() => {
     borderRadius: props.rounded ? "50%" : 0,
     backgroundColor: backgroundColor.value,
     color: "white",
-    "font-size": fontStyleClassMap.get(props.size),
+    "font-size": props.overrideTextSize ?? fontStyleClassMap.get(props.size),
   };
 });
 
 const textClass = computed(() => {
-  return sizeClassMap.get(props.size);
+  return props.overrideClass ?? sizeClassMap.get(props.size);
 });
 </script>

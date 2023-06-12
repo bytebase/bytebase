@@ -15,7 +15,6 @@ import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
 import { VCS } from "./vcs";
 import { SQLReviewPolicy } from "./sqlReview";
-import { AuditLog, AuditActivityType, AuditActivityLevel } from "./auditLog";
 import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
 
 // System bot id
@@ -125,7 +124,6 @@ interface ResourceMaker {
   (type: "VCS"): VCS;
   (type: "ANOMALY"): Anomaly;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
-  (type: "AUDIT_LOG"): AuditLog;
 }
 
 const makeUnknown = (type: ResourceType) => {
@@ -618,15 +616,6 @@ const makeEmpty = (type: ResourceType) => {
     },
   };
 
-  const EMPTY_AUDIT_LOG: AuditLog = {
-    createdTs: 0,
-    creator: EMPTY_PRINCIPAL.email,
-    type: AuditActivityType.WorkspaceMemberCreate,
-    level: AuditActivityLevel.INFO,
-    comment: "",
-    payload: "",
-  };
-
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -664,8 +653,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_VCS;
     case "ANOMALY":
       return EMPTY_ANOMALY;
-    case "AUDIT_LOG":
-      return EMPTY_AUDIT_LOG;
   }
 };
 
