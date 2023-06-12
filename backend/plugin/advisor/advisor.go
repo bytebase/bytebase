@@ -391,6 +391,11 @@ const (
 
 	// OracleIdentifierCase is an advisor type for Oracle identifier case.
 	OracleIdentifierCase Type = "bb.plugin.advisor.oracle.naming.identifier-case"
+
+	// Snowflake Advisor.
+
+	// SnowflakeNamingTableConvention is an advisor type for Oracle table naming convention.
+	SnowflakeNamingTableConvention Type = "bb.plugin.advisor.snowflake.naming.table"
 )
 
 // Advice is the result of an advisor.
