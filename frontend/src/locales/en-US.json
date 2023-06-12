@@ -1442,7 +1442,7 @@
     },
     "settings": {
       "success-updated": "Project settings updated successfully.",
-      "success-member-added-prompt": "Successfully added {name} to the project.",
+      "success-member-added-prompt": "Successfully added to the project.",
       "success-member-deleted-prompt": "Successfully revoked {name} access from the project.",
       "member-placeholder": "Select user",
       "manage-member": "Manage members",
@@ -1474,8 +1474,8 @@
       }
     },
     "mode": {
-      "standard": "Standard",
-      "tenant": "Tenant"
+      "standard": "Standard Mode",
+      "tenant": "Tenant Mode"
     },
     "db-name-template": "Tenant Database Name Template",
     "select": "Select project",

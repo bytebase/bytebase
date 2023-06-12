@@ -78,7 +78,6 @@ export type TaskDatabaseSchemaUpdatePayload = {
 export type TaskDatabaseSchemaUpdateSDLPayload = {
   skipped: boolean;
   skippedReason: string;
-  statement: string;
   sheetId: SheetId;
   pushEvent?: VCSPushEvent;
 };

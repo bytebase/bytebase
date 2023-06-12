@@ -1436,7 +1436,7 @@
     },
     "settings": {
       "success-updated": "La configuración del proyecto se actualizó correctamente.",
-      "success-member-added-prompt": "Se agregó correctamente a {name} al proyecto.",
+      "success-member-added-prompt": "Se agregó correctamente al proyecto.",
       "success-member-deleted-prompt": "Se revocó el acceso de {name} al proyecto correctamente.",
       "member-placeholder": "Seleccionar usuario",
       "manage-member": "Administrar miembros",
@@ -1468,8 +1468,8 @@
       }
     },
     "mode": {
-      "standard": "Estándar",
-      "tenant": "Inquilino"
+      "standard": "Modo Estándar",
+      "tenant": "Modo Inquilino"
     },
     "db-name-template": "Plantilla de nombre de base de datos del inquilino",
     "select": "Seleccionar proyecto",

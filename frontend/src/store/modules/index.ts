@@ -1,6 +1,5 @@
 export * from "./activity";
 export * from "./anomaly";
-export * from "./auditLog";
 export * from "./auth";
 export * from "./bookmark";
 export * from "./command";
