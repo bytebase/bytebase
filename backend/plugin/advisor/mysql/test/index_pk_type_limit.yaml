@@ -60,7 +60,7 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -80,7 +80,7 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -90,13 +90,13 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      line: 2
+      line: 3
       details: ""
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -126,7 +126,7 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5));
@@ -136,13 +136,13 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      line: 2
+      line: 3
       details: ""
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(id INT, id2 BIGINT);
@@ -172,7 +172,7 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
@@ -192,7 +192,7 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      line: 2
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(id int);

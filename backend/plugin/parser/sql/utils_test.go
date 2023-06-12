@@ -29,7 +29,8 @@ func TestExtractTiDBUnsupportStmts(t *testing.T) {
 				BEGIN
 					INSERT INTO orders_audit(order_id, order_date, customer_id, order_amount)
 					VALUES (NEW.order_id, NEW.order_date, NEW.customer_id, NEW.order_amount);
-				END;`,
+				END
+;`,
 			},
 			wantSupport: "CREATE TABLE t1(id INT);\n",
 			wantErr:     false,
