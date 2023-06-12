@@ -1026,11 +1026,11 @@
     "rollout": {
       "name": "Rollout policy",
       "tip": "The policy is applied to issues retroactively.",
-      "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
-      "manual": "Require manual rolling out",
-      "manual-info": "Tasks will only be executed after being manually rolled out.",
-      "auto": "Skip manual rolling out",
-      "auto-info": "Tasks will be rolled out and executed automatically if all task checks pass.",
+      "info": "For rolling out database change, this setting controls whether the rollout requires manual approval.",
+      "manual": "Manual rollout",
+      "manual-info": "Require clicking \"Rollout\" button manually, and then the change will be executed.",
+      "auto": "Automatic rollout",
+      "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
       "assignee-group": {
         "workspace-owner-or-dba": "Require rolling out from DBA or workspace owner.",
         "project-owner": "Require rolling out from project owner."

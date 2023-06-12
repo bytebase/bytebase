@@ -1021,10 +1021,10 @@
       "name": "Política de implementación",
       "tip": "La política se aplica retrospectivamente a las incidencias.",
       "info": "Para actualizar el esquema en la base de datos existente, esta configuración controla si la tarea requiere aprobación manual.",
-      "manual": "Requiere implementación manual",
-      "manual-info": "Las tareas solo se ejecutarán después de ser implementadas manualmente.",
-      "auto": "Omitir la implementación manual",
-      "auto-info": "Las tareas se implementarán y ejecutarán automáticamente si todas las comprobaciones de tarea son correctas.",
+      "manual": "Implementar manual",
+      "manual-info": "Requiere hacer clic en el botón \"Implementar\" manualmente, y luego se ejecutará el cambio.",
+      "auto": "Implementar automático",
+      "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
       "assignee-group": {
         "workspace-owner-or-dba": "Requiere implementación del DBA o del propietario del espacio de trabajo.",
         "project-owner": "Requiere implementación del propietario del proyecto."
