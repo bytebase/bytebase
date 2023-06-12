@@ -690,3 +690,145 @@ func convertStorePBStatusToAPIApprovalEventStatus(status storepb.ActivityIssueCo
 		return ""
 	}
 }
+
+// ActivityMessage is the API message for activity.
+type ActivityMessage struct {
+	UID       int
+	CreatedTs int64
+
+	// Related fields
+	CreatorID int
+	// The object where this activity belongs
+	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
+	ContainerUID int
+
+	// Domain specific fields
+	Type    api.ActivityType
+	Level   api.ActivityLevel
+	Comment string
+	Payload string
+}
+
+// FindActivityMessage is the API message for listing activities.
+type FindActivityMessage struct {
+	UID             *int
+	CreatorID       *int
+	LevelList       []api.ActivityLevel
+	TypeList        []api.ActivityType
+	ContainerUID    *int
+	CreatedTsAfter  *int64
+	CreatedTsBefore *int64
+	Limit           *int
+	Offset          *int
+	// If specified, sorts the returned list by created_ts in <<ORDER>>
+	// Different use cases want different orders.
+	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
+	Order *api.SortOrder
+}
+
+// ListActivityV2 lists the activity.
+func (s *Store) ListActivityV2(ctx context.Context, find *FindActivityMessage) ([]*ActivityMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	list, err := listActivityImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) ([]*ActivityMessage, error) {
+	// Build WHERE clause.
+	where, args := []string{"TRUE"}, []any{}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ContainerUID; v != nil {
+		where, args = append(where, fmt.Sprintf("container_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatorID; v != nil {
+		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.LevelList; len(v) > 0 {
+		var queryValues []string
+		for _, level := range v {
+			queryValues, args = append(queryValues, fmt.Sprintf("level = $%d", len(args)+1)), append(args, level)
+		}
+		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
+	}
+	if v := find.TypeList; len(v) > 0 {
+		var queryValues []string
+		for _, t := range v {
+			queryValues, args = append(queryValues, fmt.Sprintf("type = $%d", len(args)+1)), append(args, t)
+		}
+		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
+	}
+	if v := find.CreatedTsAfter; v != nil {
+		where, args = append(where, fmt.Sprintf("created_ts >= $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.CreatedTsBefore; v != nil {
+		where, args = append(where, fmt.Sprintf("created_ts <= $%d", len(args)+1)), append(args, *v)
+	}
+
+	query := `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			container_id,
+			type,
+			level,
+			comment,
+			payload
+		FROM activity
+		WHERE ` + strings.Join(where, " AND ")
+
+	if v := find.Order; v != nil {
+		query += fmt.Sprintf(" ORDER BY created_ts %s", *v)
+	}
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Iterate over result set and deserialize rows into activityRawList.
+	var activityList []*ActivityMessage
+	for rows.Next() {
+		var activity ActivityMessage
+		var protoPayload string
+		if err := rows.Scan(
+			&activity.UID,
+			&activity.CreatorID,
+			&activity.CreatedTs,
+			&activity.ContainerUID,
+			&activity.Type,
+			&activity.Level,
+			&activity.Comment,
+			&protoPayload,
+		); err != nil {
+			return nil, err
+		}
+		if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
+			return nil, err
+		}
+		activityList = append(activityList, &activity)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return activityList, nil
+}

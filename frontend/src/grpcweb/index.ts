@@ -25,6 +25,7 @@ import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_service";
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { ExternalVersionControlServiceDefinition } from "@/types/proto/v1/externalvs_service";
+import { LoggingServiceDefinition } from "@/types/proto/v1/logging_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -139,6 +140,11 @@ export const actuatorServiceClient = clientFactory.create(
 
 export const externalVersionControlServiceClient = clientFactory.create(
   ExternalVersionControlServiceDefinition,
+  channel
+);
+
+export const loggingServiceClient = clientFactory.create(
+  LoggingServiceDefinition,
   channel
 );
 

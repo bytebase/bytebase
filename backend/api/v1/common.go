@@ -47,6 +47,9 @@ const (
 	databaseGroupNamePrefix      = "databaseGroups/"
 	schemaGroupNamePrefix        = "schemaGroups/"
 	changeHistoryPrefix          = "changeHistories/"
+	issueNamePrefix              = "issues/"
+	pipelineNamePrefix           = "pipelines/"
+	logNamePrefix                = "logs/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
@@ -108,6 +111,18 @@ func getProjectIDWebhookID(name string) (string, string, error) {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
+}
+
+func getUIDFromName(name, prefix string) (int, error) {
+	tokens, err := getNameParentTokens(name, prefix)
+	if err != nil {
+		return 0, err
+	}
+	uid, err := strconv.Atoi(tokens[0])
+	if err != nil {
+		return 0, errors.Errorf("invalid ID %q", tokens[0])
+	}
+	return uid, nil
 }
 
 func trimSuffixAndGetProjectID(name string, suffix string) (string, error) {
@@ -188,15 +203,7 @@ func getInstanceDatabaseIDBackupName(name string) (string, string, string, error
 }
 
 func getUserID(name string) (int, error) {
-	tokens, err := getNameParentTokens(name, userNamePrefix)
-	if err != nil {
-		return 0, err
-	}
-	userID, err := strconv.Atoi(tokens[0])
-	if err != nil {
-		return 0, errors.Errorf("invalid user ID %q", tokens[0])
-	}
-	return userID, nil
+	return getUIDFromName(name, userNamePrefix)
 }
 
 func getUserEmail(name string) (string, error) {

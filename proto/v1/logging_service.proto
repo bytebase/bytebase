@@ -3,40 +3,43 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
-import "google/api/client.proto";
 import "google/api/field_behavior.proto";
-import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/v1";
 
 service LoggingService {
   rpc ListLogs(ListLogsRequest) returns (ListLogsResponse) {
-    option (google.api.http) = {
-      post: "/v1/{parent=projects/*}/logs"
-      additional_bindings: {post: "/v1/{parent=workspaces/*}/logs"}
-    };
-    option (google.api.method_signature) = "parent";
+    option (google.api.http) = {get: "/v1/logs:search"};
   }
 }
 
 message ListLogsRequest {
-  // The parent resource name.
-  // Format:
-  // projects/{project}
-  // workspaces/{workspace}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
   // filter is the filter to apply on the list logs request,
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
   // The field only support in filter:
-  // - creator
-  // - container
-  // - level
-  // - action
+  // - creator, example:
+  //    - creator = "users/{email}"
+  // - resource, example:
+  //    - resource = "projects/{project resource id}"
+  // - level, example:
+  //    - level = "INFO"
+  //    - level = "ERROR | WARN"
+  // - action, example:
+  //    - action = "ACTION_MEMBER_CREATE" | "ACTION_ISSUE_CREATE"
+  // - create_time, example:
+  //    - create_time <= "2022-01-01T12:00:00.000Z"
+  //    - create_time >= "2022-01-01T12:00:00.000Z"
   // For example:
-  // List the logs of type 'ACTION_ISSUE_COMMENT_CREATE' in issue/123: 'action="ACTION_ISSUE_COMMENT_CREATE", container="issue/123"'
-  string filter = 2;
+  // List the logs of type 'ACTION_ISSUE_COMMENT_CREATE' in issue/123: 'action="ACTION_ISSUE_COMMENT_CREATE", resource="issue/123"'
+  string filter = 1;
+
+  // The order by of the log.
+  // Only support order by create_time.
+  // For example:
+  //  - order_by = "create_time acs"
+  //  - order_by = "create_time desc"
+  string order_by = 2;
 
   // Not used. The maximum number of logs to return.
   // The service may return fewer than this value.
@@ -50,29 +53,33 @@ message ListLogsRequest {
 }
 
 message ListLogsResponse {
-  // The list of log entries.
-  repeated LogEntry log_entries = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The list of log entities.
+  repeated LogEntity log_entities = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // A token to retrieve next page of log entries.
+  // A token to retrieve next page of log entities.
   // Pass this value in the page_token field in the subsequent call to `ListLogs` method
-  // to retrieve the next page of log entries.
+  // to retrieve the next page of log entities.
   string next_page_token = 2;
 }
 
-message LogEntry {
-  // The creator of the log entry.
-  // Format: users/{emailid}
-  string creator = 1 [(google.api.field_behavior) = REQUIRED];
+message LogEntity {
+  // The name of the log.
+  // Format: logs/{uid}
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The creator of the log entity.
+  // Format: users/{email}
+  string creator = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the backup resource was created initally.
-  google.protobuf.Timestamp create_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The timestamp when the backup resource was updated.
-  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum Action {
     ACTION_UNSPECIFIED = 0;
     // In worksapce resource only.
+
+    // Member related activity types.
+    // Enum value 1 - 20
     //
     // ACTION_MEMBER_CREATE is the type for creating a new member.
     ACTION_MEMBER_CREATE = 1;
@@ -84,49 +91,56 @@ message LogEntry {
     ACTION_MEMBER_DEACTIVE = 4;
 
     // In project resource only.
+
+    // Issue related activity types.
+    // Enum value 21 - 40
     //
     // ACTION_ISSUE_CREATE is the type for creating a new issue.
-    ACTION_ISSUE_CREATE = 5;
+    ACTION_ISSUE_CREATE = 21;
     // ACTION_ISSUE_COMMENT_CREATE is the type for creating a new comment on an issue.
-    ACTION_ISSUE_COMMENT_CREATE = 6;
+    ACTION_ISSUE_COMMENT_CREATE = 22;
     // ACTION_ISSUE_FIELD_UPDATE is the type for updating an issue's field.
-    ACTION_ISSUE_FIELD_UPDATE = 7;
+    ACTION_ISSUE_FIELD_UPDATE = 23;
     // ACTION_ISSUE_STATUS_UPDATE is the type for updating an issue's status.
-    ACTION_ISSUE_STATUS_UPDATE = 8;
+    ACTION_ISSUE_STATUS_UPDATE = 24;
+    // ACTION_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
+    ACTION_ISSUE_APPROVAL_NOTIFY = 25;
+    // ACTION_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
+    ACTION_PIPELINE_STAGE_STATUS_UPDATE = 31;
+    // ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now.
+    ACTION_PIPELINE_TASK_STATUS_UPDATE = 32;
+    // ACTION_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement.
+    ACTION_PIPELINE_TASK_FILE_COMMIT = 33;
+    // ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement.
+    ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34;
+    // ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time.
+    ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 35;
 
-    // ACTION_PIPELINE_STAGE_STATUS_UPDATE is the type for stage begins or ends.
-    ACTION_PIPELINE_STAGE_STATUS_UPDATE = 9;
-    // ACTION_PIPELINE_TASK_STATUS_UPDATE is the type for updating pipeline task status.
-    ACTION_PIPELINE_TASK_STATUS_UPDATE = 10;
-    // ACTION_PIPELINE_TASK_FILE_COMMIT is the type for committing pipeline task files.
-    ACTION_PIPELINE_TASK_FILE_COMMIT = 11;
-    // ACTION_PIPELINE_TASK_STATEMENT_UPDATE is the type for updating pipeline task SQL statement.
-    ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 12;
-    // ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_DATE_UPDATE is the type for updating pipeline task the earliest allowed time.
-    ACITON_PIPELINE_TASK_EARLIEST_ALLOWED_DATE_UPDATE = 13;
-
-    // ACTION_PROJECT_MEMBER_CREATE is the type for creating a new project member.
-    ACTION_PROJECT_MEMBER_CREATE = 14;
-    // ACTION_PROJECT_MEMBER_ROLE_UPDATE is the type for updating a project member's role.
-    ACTION_PROJECT_MEMBER_ROLE_UPDATE = 15;
-    // ACTION_PROJECT_MEMBER_DELETE is the type for deleting a project member.
-    ACTION_PROJECT_MEMBER_DELETE = 16;
-
-    // ACTION_PROJECT_REPOSITORY_PUSH is the type for pushing to a project repository.
-    ACTION_PROJECT_REPOSITORY_PUSH = 17;
-
-    // ACTION_PROJECT_DATABASE_TRANSFER is the type for transferring a database to a project.
-    ACTION_PROJECT_DTABASE_TRANSFER = 18;
-
-    // ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done.
-    ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 19;
-
-    // Both in workspace and project resource.
+    // Project related activity types.
+    // Enum value 41 - 60
     //
-    // ACTION_SQL_EDITOR_QUERY is the type for SQL editor query.
-    // If user runs SQL in Read-only mode, this action will belong to project resource.
-    // If user runs SQL in Read-write mode, this action will belong to workspace resource.
-    ACTION_SQL_EDITOR_QUERY = 20;
+    // ACTION_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository.
+    ACTION_PROJECT_REPOSITORY_PUSH = 41;
+    // ACTION_PROJECT_MEMBER_CREATE represents adding a member to the project.
+    ACTION_PROJECT_MEMBER_CREATE = 42;
+    // ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project.
+    ACTION_PROJECT_MEMBER_DELETE = 43;
+    // ACTION_PROJECT_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER.
+    ACTION_PROJECT_MEMBER_ROLE_UPDATE = 44;
+    // ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done.
+    ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 45;
+    // ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another.
+    ACTION_PROJECT_DATABASE_TRANSFER = 46;
+
+    // In instance resource only.
+
+    // Database related activity types.
+    // Enum value 61 - 80
+    //
+    // ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query.
+    ACTION_DATABASE_SQL_EDITOR_QUERY = 61;
+    // ACTION_DATABASE_SQL_EXPORT is the type for exporting SQL.
+    ACTION_DATABASE_SQL_EXPORT = 62;
   }
   Action action = 4 [(google.api.field_behavior) = REQUIRED];
 
@@ -139,17 +153,20 @@ message LogEntry {
     // LEVEL_ERROR is the type for error.
     LEVEL_ERROR = 3;
   }
-  Level level = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  Level level = 5 [(google.api.field_behavior) = REQUIRED];
 
-  // The name of the resource associated with this log entry. For example, the resource user associated with log entry type of "ACTION_MEMBER_CREATE".
+  // The name of the resource associated with this log entity. For example, the resource user associated with log entity type of "ACTION_MEMBER_CREATE".
   // Format:
   // For ACTION_MEMBER_*: users/{email}
-  // For ACTION_ISSUE_*: issues/{issue}
-  // For ACTION_PIPELINE_*: pipelines/{pipeline}
-  // For ACTION_PROJECT_*: projects/{project}
-  // For ACTION_SQL_EDITOR_QUERY: workspaces/{workspace} OR projects/{project}
-  string resource_name = 6 [(google.api.field_behavior) = REQUIRED];
+  // For ACTION_ISSUE_*: issues/{issue uid}
+  // For ACTION_PIPELINE_*: pipelines/{pipeline uid}
+  // For ACTION_PROJECT_*: projects/{project resource id}
+  // For ACTION_DATABASE_*: instances/{instance resource id}
+  string resource = 6 [(google.api.field_behavior) = REQUIRED];
 
-  // The payload of the log entry.
-  google.protobuf.Struct json_payload = 7;
+  // The payload of the log entity.
+  // TODO: use oneof
+  string payload = 7 [(google.api.field_behavior) = REQUIRED];
+
+  string comment = 8;
 }
