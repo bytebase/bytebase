@@ -215,6 +215,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 				EnvironmentID: instance.EnvironmentID,
 				InstanceID:    instance.ResourceID,
 				DatabaseName:  databaseMetadata.Name,
+				DataShare:     databaseMetadata.Datashare,
 			}); err != nil {
 				return nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
 			}

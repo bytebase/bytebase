@@ -1225,7 +1225,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 		payloadString := string(bytes)
 		taskCreate := api.TaskCreate{
-			Name:              fmt.Sprintf("Establish baseline for database %q", database),
+			Name:              fmt.Sprintf("Establish baseline for database %q", database.DatabaseName),
 			InstanceID:        instance.UID,
 			DatabaseID:        &database.UID,
 			Status:            api.TaskPendingApproval,
