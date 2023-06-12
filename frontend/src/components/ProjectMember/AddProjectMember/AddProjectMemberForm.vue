@@ -43,14 +43,15 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
+import dayjs from "dayjs";
 import { NRadio, NRadioGroup, NInputNumber } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { ComposedProject } from "@/types";
-import { Binding } from "@/types/proto/v1/project_service";
-import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
+import { ComposedProject } from "@/types";
+import { Binding } from "@/types/proto/v1/project_service";
 import { Expr } from "@/types/proto/google/type/expr";
+import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -122,9 +123,9 @@ watch(
         days = state.customDays;
       }
       props.binding.condition = Expr.create({
-        expression: `request.time < timestamp("${new Date(
-          Date.now() + days * 24 * 60 * 60 * 1000
-        ).toISOString()}")`,
+        expression: `request.time < timestamp("${dayjs()
+          .add(days, "days")
+          .toISOString()}")`,
       });
     }
   },
