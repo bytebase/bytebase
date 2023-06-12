@@ -773,7 +773,8 @@
       "manually-select": "selección manual",
       "customize": "personalice",
       "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez."
-    }
+    },
+    "review-sent-back": "Revisión devuelta"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -2438,8 +2439,15 @@
       "approved-issue": "incidencia aprobada",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no pasaron"
-      }
-    }
+      },
+      "send-back": "Enviar de vuelta",
+      "send-back-issue": "¿Devolver el problema?",
+      "re-request-review": "Volver a solicitar revisión",
+      "re-request-review-issue": "¿Volver a solicitar revisión?",
+      "sent-back-issue": "Problema devuelto",
+      "re-requested-review": "revisión de problema nuevamente solicitada"
+    },
+    "send-back": "Enviar de vuelta"
   },
   "slow-query": {
     "self": "Consulta lenta",
