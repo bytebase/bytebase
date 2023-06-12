@@ -1,0 +1,112 @@
+- statement: |-
+    CREATE TABLE CUSTOMER
+    (
+        ID            INT PRIMARY KEY,
+        FULL_NAME     VARCHAR(10),
+        POSITION      VARCHAR(100)
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE CUSTOMER
+    (
+        ID            INT,
+        FULL_NAME     VARCHAR(10),
+        POSITION      VARCHAR(100),
+        CONSTRAINT    PK_CUSTOMER PRIMARY KEY (ID)
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE CUSTOMER
+    (
+        ID            INT,
+        FULL_NAME     VARCHAR(10),
+        POSITION      VARCHAR(100)
+    );
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table CUSTOMER requires PRIMARY KEY.
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE CUSTOMER
+    (
+        ID            INT PRIMARY KEY,
+        FULL_NAME     VARCHAR(10),
+        POSITION      VARCHAR(100)
+    );
+    ALTER TABLE CUSTOMER DROP PRIMARY KEY(ID);
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table CUSTOMER requires PRIMARY KEY.
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE CUSTOMER
+    (
+        ID            INT,
+        FULL_NAME     VARCHAR(10),
+        POSITION      VARCHAR(100)
+    );
+    ALTER TABLE CUSTOMER ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE CUSTOMER
+    (
+        ID            INT,
+        FULL_NAME     VARCHAR(10),
+        POSITION      VARCHAR(100)
+    );
+    ALTER TABLE CUSTOMER ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
+    CREATE TABLE ORDERING
+    (
+        ORDER_ID      INT PRIMARY KEY,
+        CUSTOMER_ID   INT,
+        ORDER_DATE    DATE,
+        TOTAL_AMOUNT  DECIMAL(10, 2)
+    );
+    CREATE TABLE ADDRESS
+    (
+        ADDRESS_ID    INT PRIMARY KEY,
+        STREET        VARCHAR(100),
+        CITY          VARCHAR(100),
+        STATE         VARCHAR(100),
+        POSTAL_CODE   VARCHAR(100),
+        COUNTRY       VARCHAR(100)
+    );
+    ALTER TABLE CUSTOMER DROP PRIMARY KEY(ID);
+    ALTER TABLE ORDERING DROP PRIMARY KEY(ORDER_ID);
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table CUSTOMER requires PRIMARY KEY.
+      line: 0
+      details: ""
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table ORDERING requires PRIMARY KEY.
+      line: 0
+      details: ""
