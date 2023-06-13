@@ -399,7 +399,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 	if writebackBranch != "" {
 		// Transform the schema to standard style for SDL mode.
-		if instance.Engine == db.MySQL || instance.Engine == db.MariaDB {
+		if instance.Engine == db.MySQL || instance.Engine == db.MariaDB || instance.Engine == db.OceanBase {
 			standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
 			if err != nil {
 				return true, nil, errors.Wrapf(err, "failed to transform to standard schema for database %q", database.DatabaseName)
