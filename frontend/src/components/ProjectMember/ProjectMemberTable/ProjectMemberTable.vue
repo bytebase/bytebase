@@ -64,8 +64,7 @@
       </div>
       <div class="bb-grid-cell gap-x-2 justify-end">
         <NButton v-if="allowAdmin" size="tiny" @click="editingMember = item">
-          {{ $t("common.edit") }}
-          <heroicons-outline:pencil-square class="w-4 h-auto ml-0.5" />
+          <heroicons-outline:pencil-square class="w-4 h-auto" />
         </NButton>
         <NButton
           v-else-if="allowView(item)"
