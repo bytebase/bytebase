@@ -78,9 +78,6 @@ p, DBA, /activity/{activityID}, PATCH_SELF
 p, DBA, /inbox/user/{userID}, GET_SELF
 p, DBA, /inbox/user/{userID}/summary, GET_SELF
 p, DBA, /inbox/{inboxID}, PATCH_SELF
-p, DBA, /bookmark, POST
-p, DBA, /bookmark/user/{userID}, GET_SELF
-p, DBA, /bookmark/{bookmarkID}, DELETE_SELF
 p, DBA, /pipeline/{pipelineID}/stage/{stageID}/status, PATCH
 p, DBA, /pipeline/{pipelineID}/task/all, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}, PATCH

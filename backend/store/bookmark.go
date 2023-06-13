@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // BookmarkMessage is the message for bookmark.
@@ -22,28 +21,19 @@ type BookmarkMessage struct {
 
 	// Output only fields.
 	//
-	// ID is the unique ID of the bookmark.
-	ID int
+	// UID is the unique ID of the bookmark.
+	UID int
 	// CreatorUID is the unique ID of the creator.
 	CreatorUID int
 }
 
-// listBookmarkMessage is the message for listing bookmarks.
-type listBookmarkMessage struct {
-	// id is the unique ID of the bookmark.
-	id *int
-	// creatorUID is the unique ID of the creator.
-	creatorUID *int
-}
+// DeleteBookmarkMessage is the message to delete a bookmark.
+type DeleteBookmarkMessage struct {
+	// UID is the unique ID of the bookmark.
+	UID int
 
-// ToAPIBookmark converts a BookmarkMessage to an API Bookmark.
-func (b *BookmarkMessage) ToAPIBookmark() *api.Bookmark {
-	return &api.Bookmark{
-		ID:        b.ID,
-		CreatorID: b.CreatorUID,
-		Name:      b.Name,
-		Link:      b.Link,
-	}
+	// CreatorUID is the unique ID of the creator.
+	CreatorUID int
 }
 
 // CreateBookmarkV2 creates a new bookmark.
@@ -72,7 +62,7 @@ func (s *Store) CreateBookmarkV2(ctx context.Context, create *BookmarkMessage, p
 		create.Name,
 		create.Link,
 	).Scan(
-		&bookmark.ID,
+		&bookmark.UID,
 		&bookmark.Name,
 		&bookmark.CreatorUID,
 		&bookmark.Link,
@@ -97,7 +87,7 @@ func (s *Store) ListBookmarkV2(ctx context.Context, principalUID int) ([]*Bookma
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	bookmarks, err := s.listBookmarkImplV2(ctx, tx, &listBookmarkMessage{creatorUID: &principalUID})
+	bookmarks, err := s.listBookmarkImplV2(ctx, tx, principalUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list bookmarks")
 	}
@@ -109,36 +99,12 @@ func (s *Store) ListBookmarkV2(ctx context.Context, principalUID int) ([]*Bookma
 	return bookmarks, nil
 }
 
-// GetBookmarkV2 gets a bookmark by ID.
-func (s *Store) GetBookmarkV2(ctx context.Context, bookmarkUID int) (*BookmarkMessage, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	bookmarks, err := s.listBookmarkImplV2(ctx, tx, &listBookmarkMessage{id: &bookmarkUID})
-	if err != nil {
-		return nil, err
-	}
-	if len(bookmarks) == 0 {
-		return nil, nil
-	}
-	if len(bookmarks) > 1 {
-		return nil, errors.Errorf("find %d bookmarks for bookmark ID %d", len(bookmarks), bookmarkUID)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
-	return bookmarks[0], nil
-}
-
 // DeleteBookmarkV2 try to delete a bookmark.
-func (s *Store) DeleteBookmarkV2(ctx context.Context, bookmarkUID int) error {
+func (s *Store) DeleteBookmarkV2(ctx context.Context, delete *DeleteBookmarkMessage) error {
 	var args []any
 	var where []string
-	where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, bookmarkUID)
+	where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, delete.UID)
+	where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, delete.CreatorUID)
 
 	query := fmt.Sprintf(`
 		DELETE FROM bookmark WHERE %s
@@ -152,11 +118,11 @@ func (s *Store) DeleteBookmarkV2(ctx context.Context, bookmarkUID int) error {
 
 	result, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete bookmark of principal id %d", bookmarkUID)
+		return errors.Wrapf(err, "failed to delete bookmark %v", delete)
 	}
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: errors.Errorf("bookmark ID not found: %d", bookmarkUID)}
+		return &common.Error{Code: common.NotFound, Err: errors.Errorf("bookmark not found: %v", delete)}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -166,14 +132,9 @@ func (s *Store) DeleteBookmarkV2(ctx context.Context, bookmarkUID int) error {
 	return nil
 }
 
-func (*Store) listBookmarkImplV2(ctx context.Context, tx *Tx, list *listBookmarkMessage) ([]*BookmarkMessage, error) {
+func (*Store) listBookmarkImplV2(ctx context.Context, tx *Tx, creatorUID int) ([]*BookmarkMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	if v := list.creatorUID; v != nil {
-		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := list.id; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
+	where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, creatorUID)
 
 	query := fmt.Sprintf(`
 		SELECT
@@ -186,7 +147,7 @@ func (*Store) listBookmarkImplV2(ctx context.Context, tx *Tx, list *listBookmark
 
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query bookmark of %v", list)
+		return nil, errors.Wrapf(err, "failed to query bookmark for user %v", creatorUID)
 	}
 	defer rows.Close()
 
@@ -195,18 +156,18 @@ func (*Store) listBookmarkImplV2(ctx context.Context, tx *Tx, list *listBookmark
 	for rows.Next() {
 		var bookmark BookmarkMessage
 		if err := rows.Scan(
-			&bookmark.ID,
+			&bookmark.UID,
 			&bookmark.CreatorUID,
 			&bookmark.Name,
 			&bookmark.Link,
 		); err != nil {
-			return nil, errors.Wrapf(err, "failed to scan bookmark of %v", list)
+			return nil, errors.Wrapf(err, "failed to scan bookmark for user %v", creatorUID)
 		}
 
 		bookmarks = append(bookmarks, &bookmark)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "failed to iterate bookmark of %v", list)
+		return nil, errors.Wrapf(err, "failed to iterate bookmark for user %v", creatorUID)
 	}
 
 	return bookmarks, nil
