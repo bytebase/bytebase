@@ -25,7 +25,7 @@ import {
 } from "@/utils";
 import { flattenTaskList, useIssueLogic } from "../logic";
 import {
-  useActivityStore,
+  useActivityLegacyStore,
   useCurrentUserV1,
   useDatabaseV1Store,
   useIssueStore,
@@ -201,7 +201,7 @@ export const useRollbackLogic = () => {
         payload,
       };
       try {
-        await useActivityStore().createActivity(createActivity);
+        await useActivityLegacyStore().createActivity(createActivity);
       } catch {
         // do nothing
         // failing to comment to won't be too bad
@@ -284,7 +284,7 @@ export const maybeCreateBackTraceComments = async (newIssue: Issue) => {
       payload,
     };
     try {
-      await useActivityStore().createActivity(createActivity);
+      await useActivityLegacyStore().createActivity(createActivity);
     } catch {
       // do nothing
       // failing to comment to won't be too bad

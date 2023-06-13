@@ -8,7 +8,6 @@ import dayjs from "dayjs";
 import { Translation, useI18n } from "vue-i18n";
 
 import {
-  Activity,
   ActivityIssueCommentCreatePayload,
   ActivityStageStatusUpdatePayload,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
@@ -16,7 +15,8 @@ import {
   ActivityTaskStatementUpdatePayload,
   ActivityTaskStatusUpdatePayload,
   Issue,
-  SYSTEM_BOT_ID,
+  SYSTEM_BOT_EMAIL,
+  empty,
 } from "@/types";
 import {
   findStageById,
@@ -27,12 +27,14 @@ import { useSheetV1Store, useSheetStatementByUid } from "@/store";
 import TaskName from "./TaskName.vue";
 import SQLPreviewPopover from "@/components/misc/SQLPreviewPopover.vue";
 import StageName from "./StageName.vue";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { extractUserResourceName } from "@/utils";
 
 type RenderedContent = string | ReturnType<typeof h>;
 
 const props = defineProps({
   activity: {
-    type: Object as PropType<Activity>,
+    type: Object as PropType<LogEntity>,
     required: true,
   },
   issue: {
@@ -50,9 +52,11 @@ const renderActionSentence = () => {
   };
 
   const { activity, issue } = props;
-  if (activity.type.startsWith("bb.issue.")) {
-    if (activity.type === "bb.issue.comment.create") {
-      const payload = activity.payload as ActivityIssueCommentCreatePayload;
+  if (activity.resource.startsWith("issues")) {
+    if (activity.action === LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE) {
+      const payload = JSON.parse(
+        activity.payload
+      ) as ActivityIssueCommentCreatePayload;
       if (payload.externalApprovalEvent) {
         if (payload.externalApprovalEvent.action == "REJECT") {
           let imName = "";
@@ -88,13 +92,18 @@ const renderActionSentence = () => {
     const [tid, params] = issueActivityActionSentence(activity);
     return renderSpan(t(tid, params));
   }
-  switch (activity.type) {
-    case "bb.pipeline.task.status.update": {
-      const payload = activity.payload as ActivityTaskStatusUpdatePayload;
+  switch (activity.action) {
+    case LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE: {
+      const payload = JSON.parse(
+        activity.payload
+      ) as ActivityTaskStatusUpdatePayload;
       if (payload.newStatus === "PENDING_APPROVAL") {
         // stale approval dismissed.
 
-        const task = findTaskById(issue.pipeline, payload.taskId);
+        const task = findTaskById(
+          issue.pipeline ?? empty("PIPELINE"),
+          payload.taskId
+        );
         const taskName = t("activity.sentence.task-name", {
           name: task.name,
         });
@@ -143,7 +152,10 @@ const renderActionSentence = () => {
         default:
           params.verb = t("activity.sentence.changed");
       }
-      const task = findTaskById(issue.pipeline, payload.taskId);
+      const task = findTaskById(
+        issue.pipeline ?? empty("PIPELINE"),
+        payload.taskId
+      );
       if (task) {
         params.target = h(TaskName, { issue, task });
       }
@@ -151,9 +163,14 @@ const renderActionSentence = () => {
         tag: "span",
       });
     }
-    case "bb.pipeline.stage.status.update": {
-      const payload = activity.payload as ActivityStageStatusUpdatePayload;
-      const stage = findStageById(issue.pipeline, payload.stageId);
+    case LogEntity_Action.ACTION_PIPELINE_STAGE_STATUS_UPDATE: {
+      const payload = JSON.parse(
+        activity.payload
+      ) as ActivityStageStatusUpdatePayload;
+      const stage = findStageById(
+        issue.pipeline ?? empty("PIPELINE"),
+        payload.stageId
+      );
       const params: VerbTypeTarget = {
         activity,
         verb: "",
@@ -178,8 +195,10 @@ const renderActionSentence = () => {
         tag: "span",
       });
     }
-    case "bb.pipeline.task.file.commit": {
-      const payload = activity.payload as ActivityTaskFileCommitPayload;
+    case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT: {
+      const payload = JSON.parse(
+        activity.payload
+      ) as ActivityTaskFileCommitPayload;
       // return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
       return t("activity.sentence.committed-to-at", {
         file: payload.filePath,
@@ -187,8 +206,10 @@ const renderActionSentence = () => {
         repo: payload.repositoryFullPath,
       });
     }
-    case "bb.pipeline.task.statement.update": {
-      const payload = activity.payload as ActivityTaskStatementUpdatePayload;
+    case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE: {
+      const payload = JSON.parse(
+        activity.payload
+      ) as ActivityTaskStatementUpdatePayload;
       const oldStatement =
         useSheetStatementByUid(payload.oldSheetId).value ||
         payload.oldStatement;
@@ -211,9 +232,10 @@ const renderActionSentence = () => {
         )
       );
     }
-    case "bb.pipeline.task.general.earliest-allowed-time.update": {
-      const payload =
-        activity.payload as ActivityTaskEarliestAllowedTimeUpdatePayload;
+    case LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE: {
+      const payload = JSON.parse(
+        activity.payload
+      ) as ActivityTaskEarliestAllowedTimeUpdatePayload;
       const newVal = payload.newEarliestAllowedTs;
       const oldVal = payload.oldEarliestAllowedTs;
       return t("activity.sentence.changed-from-to", {
@@ -226,8 +248,8 @@ const renderActionSentence = () => {
   return "";
 };
 
-const maybeAutomaticallyVerb = (activity: Activity, verb: string): string => {
-  if (activity.creator.id !== SYSTEM_BOT_ID) {
+const maybeAutomaticallyVerb = (activity: LogEntity, verb: string): string => {
+  if (extractUserResourceName(activity.creator) !== SYSTEM_BOT_EMAIL) {
     return verb;
   }
   return t("activity.sentence.xxx-automatically", {
@@ -236,7 +258,7 @@ const maybeAutomaticallyVerb = (activity: Activity, verb: string): string => {
 };
 
 type VerbTypeTarget = {
-  activity: Activity;
+  activity: LogEntity;
   verb: RenderedContent;
   type: RenderedContent;
   target?: RenderedContent;
@@ -244,7 +266,7 @@ type VerbTypeTarget = {
 
 const renderVerbTypeTarget = (params: VerbTypeTarget, props: object = {}) => {
   const keypath =
-    params.activity.creator.id === SYSTEM_BOT_ID
+    extractUserResourceName(params.activity.creator) === SYSTEM_BOT_EMAIL
       ? "activity.sentence.verb-type-target-by-system-bot"
       : "activity.sentence.verb-type-target-by-people";
   return h(
@@ -280,12 +302,16 @@ watch(
   async () => {
     const activity = props.activity;
     // Prepare sheet data for renderering.
-    if (activity.type === "bb.pipeline.task.statement.update") {
+    if (
+      activity.action === LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE
+    ) {
       sheetV1Store.getOrFetchSheetByUid(
-        (activity.payload as ActivityTaskStatementUpdatePayload).newSheetId
+        (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
+          .newSheetId
       );
       sheetV1Store.getOrFetchSheetByUid(
-        (activity.payload as ActivityTaskStatementUpdatePayload).oldSheetId
+        (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
+          .oldSheetId
       );
     }
   },

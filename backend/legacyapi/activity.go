@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 )
@@ -306,34 +304,6 @@ type ActivityCreate struct {
 	Level       ActivityLevel
 	Comment     string `jsonapi:"attr,comment"`
 	Payload     string `jsonapi:"attr,payload"`
-}
-
-// ActivityFind is the API message for finding activities.
-type ActivityFind struct {
-	ID *int
-
-	// Domain specific fields
-	CreatorID       *int
-	TypePrefixList  []string
-	LevelList       []ActivityLevel
-	ContainerID     *int
-	Limit           *int
-	CreatedTsAfter  *int64
-	CreatedTsBefore *int64
-	// If specified, only find activities whose ID is smaller than SinceID.
-	SinceID *int
-	// If specified, sorts the returned list by created_ts in <<ORDER>>
-	// Different use cases want different orders.
-	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
-	Order *SortOrder
-}
-
-func (find *ActivityFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
 }
 
 // ActivityPatch is the API message for patching an activity.

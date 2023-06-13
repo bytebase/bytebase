@@ -40,9 +40,10 @@ const link = computed(() => {
     task: task.id,
   };
 
-  const stageIndex = issue.pipeline.stageList.findIndex((stage) => {
-    return stage.taskList.findIndex((t) => t.id === task.id) >= 0;
-  });
+  const stageIndex =
+    issue.pipeline?.stageList.findIndex((stage) => {
+      return stage.taskList.findIndex((t) => t.id === task.id) >= 0;
+    }) ?? -1;
   if (stageIndex >= 0) {
     query.stage = stageIndex + 1;
   }

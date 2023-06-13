@@ -1,5 +1,5 @@
-import { Activity } from "./activity";
-import { InboxId, PrincipalId } from "./id";
+import { IdType, InboxId } from "./id";
+import { LogEntity } from "@/types/proto/v1/logging_service";
 
 export type InboxStatus = "UNREAD" | "READ";
 
@@ -7,8 +7,8 @@ export type Inbox = {
   id: InboxId;
 
   // Domain specific fields
-  receiver_id: PrincipalId;
-  activity: Activity;
+  activityId: IdType;
+  activity?: LogEntity;
   status: InboxStatus;
 };
 

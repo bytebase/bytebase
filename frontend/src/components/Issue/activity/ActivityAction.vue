@@ -4,24 +4,30 @@
       <div class="text-sm text-control-light space-x-1">
         <ActionCreator
           v-if="
-            activity.creator.id !== SYSTEM_BOT_ID ||
-            activity.type === 'bb.issue.comment.create'
+            extractUserResourceName(activity.creator) !== SYSTEM_BOT_EMAIL ||
+            activity.action === LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE
           "
           :activity="activity"
         />
 
         <ActionSentence :issue="issue" :activity="activity" />
 
-        <HumanizeTs :ts="activity.createdTs" class="ml-1" />
+        <HumanizeTs
+          :ts="(activity.createTime?.getTime() ?? 0) / 1000"
+          class="ml-1"
+        />
 
         <span
           v-if="
-            activity.createdTs != activity.updatedTs &&
-            activity.type == 'bb.issue.comment.create'
+            activity.createTime?.getTime() !== activity.updateTime?.getTime() &&
+            activity.action == LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE
           "
         >
           <span>({{ $t("common.edited") }}</span>
-          <HumanizeTs :ts="activity.updatedTs" class="ml-1" />)
+          <HumanizeTs
+            :ts="(activity.updateTime?.getTime() ?? 0) / 1000"
+            class="ml-1"
+          />)
         </span>
 
         <span
@@ -43,7 +49,11 @@
         <Comment :activity="activity" />
       </slot>
 
-      <template v-if="activity.type == 'bb.pipeline.task.file.commit'">
+      <template
+        v-if="
+          activity.action == LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT
+        "
+      >
         <a
           :href="fileCommitActivityUrl(activity)"
           target="__blank"
@@ -60,23 +70,24 @@
 <script lang="ts" setup>
 import {
   Issue,
-  Activity,
   ActivityTaskFileCommitPayload,
-  SYSTEM_BOT_ID,
+  SYSTEM_BOT_EMAIL,
 } from "@/types";
 import Comment from "./Comment";
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { extractUserResourceName } from "@/utils";
 
 defineProps<{
   issue: Issue;
   index: number;
-  activity: Activity;
-  similar: Activity[];
+  activity: LogEntity;
+  similar: LogEntity[];
 }>();
 
-const fileCommitActivityUrl = (activity: Activity) => {
-  const payload = activity.payload as ActivityTaskFileCommitPayload;
+const fileCommitActivityUrl = (activity: LogEntity) => {
+  const payload = JSON.parse(activity.payload) as ActivityTaskFileCommitPayload;
   if (payload.vcsInstanceUrl.includes("https://github.com"))
     return `${payload.vcsInstanceUrl}/${payload.repositoryFullPath}/commit/${payload.commitId}`;
   return `${payload.vcsInstanceUrl}/${payload.repositoryFullPath}/-/commit/${payload.commitId}`;

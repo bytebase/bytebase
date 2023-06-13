@@ -11,7 +11,7 @@
         <ul>
           <ActivityItem
             v-for="(item, index) in activityList"
-            :key="item.activity.id"
+            :key="item.activity.name"
             :activity-list="activityList"
             :issue="issue"
             :index="index"
@@ -23,7 +23,7 @@
                 <template
                   v-if="
                     state.editCommentMode &&
-                    state.activeActivity?.id === item.activity.id
+                    state.activeActivity?.name === item.activity.name
                   "
                 >
                   <button
@@ -59,7 +59,7 @@
               <div
                 v-if="
                   state.editCommentMode &&
-                  state.activeActivity?.id === item.activity.id
+                  state.activeActivity?.name === item.activity.name
                 "
                 class="mt-2 text-sm text-control whitespace-pre-wrap"
               >
@@ -155,17 +155,17 @@ import { useRoute } from "vue-router";
 import UserAvatar from "../User/UserAvatar.vue";
 import type {
   Issue,
-  Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityCreate,
   IssueSubscriber,
   ActivityIssueCommentCreatePayload,
 } from "@/types";
-import { extractUserUID, sizeToFit } from "@/utils";
+import { extractUserResourceName, sizeToFit } from "@/utils";
 import { IssueBuiltinFieldId } from "@/plugins";
 import {
   useIssueSubscriberStore,
-  useActivityStore,
+  useActivityLegacyStore,
+  useActivityV1Store,
   useCurrentUserV1,
   useCurrentUser,
 } from "@/store";
@@ -177,13 +177,16 @@ import {
   Comment as ActivityComment,
   isSimilarActivity,
 } from "./activity";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { getLogId } from "@/store/modules/v1/common";
 
 interface LocalState {
   editCommentMode: boolean;
-  activeActivity?: Activity;
+  activeActivity?: LogEntity;
 }
 
-const activityStore = useActivityStore();
+const activityLegacyStore = useActivityLegacyStore();
+const activityV1Store = useActivityV1Store();
 const route = useRoute();
 
 const newComment = ref("");
@@ -224,24 +227,24 @@ const currentUser = useCurrentUser();
 const currentUserV1 = useCurrentUserV1();
 
 const prepareActivityList = () => {
-  activityStore.fetchActivityListForIssue(issue.value);
+  activityV1Store.fetchActivityListForIssue(issue.value);
 };
 
 watchEffect(prepareActivityList);
 
 // Need to use computed to make list reactive to activity list changes.
 const activityList = computed((): DistinctActivity[] => {
-  const list = activityStore
+  const list = activityV1Store
     .getActivityListByIssue(issue.value.id)
-    .filter((activity: Activity) => {
-      if (activity.type === "bb.issue.approval.notify") {
+    .filter((activity) => {
+      if (activity.action === LogEntity_Action.ACTION_ISSUE_APPROVAL_NOTIFY) {
         return false;
       }
 
-      if (activity.type === "bb.issue.field.update") {
+      if (activity.action === LogEntity_Action.ACTION_ISSUE_FIELD_UPDATE) {
         const containUserVisibleChange =
-          (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !==
-          IssueBuiltinFieldId.SUBSCRIBER_LIST;
+          (JSON.parse(activity.payload) as ActivityIssueFieldUpdatePayload)
+            .fieldId !== IssueBuiltinFieldId.SUBSCRIBER_LIST;
         return containUserVisibleChange;
       }
       return true;
@@ -282,7 +285,7 @@ const doCreateComment = (comment: string, clear = true) => {
     containerId: issue.value.id,
     comment,
   };
-  activityStore.createActivity(createActivity).then(() => {
+  activityLegacyStore.createActivity(createActivity).then(() => {
     if (clear) {
       newComment.value = "";
       nextTick(() => sizeToFit(newCommentTextArea.value));
@@ -303,23 +306,23 @@ const doCreateComment = (comment: string, clear = true) => {
   });
 };
 
-const allowEditActivity = (activity: Activity) => {
-  if (activity.type !== "bb.issue.comment.create") {
+const allowEditActivity = (activity: LogEntity) => {
+  if (activity.action !== LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE) {
     return false;
   }
-  if (
-    extractUserUID(currentUserV1.value.name) !== String(activity.creator.id)
-  ) {
+  if (currentUserV1.value.email !== extractUserResourceName(activity.creator)) {
     return false;
   }
-  const payload = activity.payload as ActivityIssueCommentCreatePayload;
+  const payload = JSON.parse(
+    activity.payload
+  ) as ActivityIssueCommentCreatePayload;
   if (payload && payload.externalApprovalEvent) {
     return false;
   }
   return true;
 };
 
-const onUpdateComment = (activity: Activity) => {
+const onUpdateComment = (activity: LogEntity) => {
   editComment.value = activity.comment;
   state.activeActivity = activity;
   state.editCommentMode = true;
@@ -329,9 +332,14 @@ const onUpdateComment = (activity: Activity) => {
 };
 
 const doUpdateComment = () => {
-  activityStore
+  if (!state.activeActivity) {
+    return;
+  }
+  const activityId = getLogId(state.activeActivity.name);
+  activityLegacyStore
     .updateComment({
-      activityId: state.activeActivity!.id,
+      activityId,
+      issueId: issue.value.id,
       updatedComment: editComment.value,
     })
     .then(() => {

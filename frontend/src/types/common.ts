@@ -1,4 +1,3 @@
-import { Activity } from "./activity";
 import { Anomaly } from "./anomaly";
 import { BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
@@ -118,7 +117,6 @@ interface ResourceMaker {
   (type: "STAGE"): Stage;
   (type: "TASK_PROGRESS"): TaskProgress;
   (type: "TASK"): Task;
-  (type: "ACTIVITY"): Activity;
   (type: "INBOX"): Inbox;
   (type: "BOOKMARK"): Bookmark;
   (type: "VCS"): VCS;
@@ -294,22 +292,9 @@ const makeUnknown = (type: ResourceType) => {
     progress: { ...UNKNOWN_TASK_PROGRESS },
   };
 
-  const UNKNOWN_ACTIVITY: Activity = {
-    id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
-    containerId: UNKNOWN_ID,
-    type: "bb.issue.create",
-    level: "INFO",
-    comment: "<<Unknown comment>>",
-  };
-
   const UNKNOWN_INBOX: Inbox = {
     id: UNKNOWN_ID,
-    receiver_id: UNKNOWN_ID,
-    activity: UNKNOWN_ACTIVITY,
+    activityId: UNKNOWN_ID,
     status: "READ",
   };
 
@@ -377,8 +362,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_TASK_PROGRESS;
     case "TASK":
       return UNKNOWN_TASK;
-    case "ACTIVITY":
-      return UNKNOWN_ACTIVITY;
     case "INBOX":
       return UNKNOWN_INBOX;
     case "BOOKMARK":
@@ -560,22 +543,9 @@ const makeEmpty = (type: ResourceType) => {
     progress: { ...EMPTY_TASK_PROGRESS },
   };
 
-  const EMPTY_ACTIVITY: Activity = {
-    id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
-    containerId: EMPTY_ID,
-    type: "bb.issue.create",
-    level: "INFO",
-    comment: "",
-  };
-
   const EMPTY_INBOX: Inbox = {
     id: EMPTY_ID,
-    receiver_id: EMPTY_ID,
-    activity: EMPTY_ACTIVITY,
+    activityId: EMPTY_ID,
     status: "READ",
   };
 
@@ -643,8 +613,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_TASK_PROGRESS;
     case "TASK":
       return EMPTY_TASK;
-    case "ACTIVITY":
-      return EMPTY_ACTIVITY;
     case "INBOX":
       return EMPTY_INBOX;
     case "BOOKMARK":

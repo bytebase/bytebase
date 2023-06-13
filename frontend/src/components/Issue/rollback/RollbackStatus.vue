@@ -81,8 +81,9 @@ import { useRollbackLogic } from "./common";
 import IssueStatusIcon from "../IssueStatusIcon.vue";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
-import { useActivityStore, useIssueById, useSheetV1Store } from "@/store";
+import { useActivityV1Store, useIssueById, useSheetV1Store } from "@/store";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 
 type LocalState = {
   loading: boolean;
@@ -117,14 +118,15 @@ const allowPreviewRollback = computed(() => {
 });
 
 const taskRollbackBy = computed((): TaskRollbackBy | undefined => {
-  const activityList = useActivityStore().getActivityListByIssue(
+  const activityList = useActivityV1Store().getActivityListByIssue(
     issue.value.id
   );
   // Find the latest comment activity with TaskRollbackBy struct if possible.
   for (let i = activityList.length - 1; i >= 0; i--) {
     const activity = activityList[i];
-    if (activity.type !== "bb.issue.comment.create") continue;
-    const payload = activity.payload as
+    if (activity.action !== LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE)
+      continue;
+    const payload = JSON.parse(activity.payload) as
       | ActivityIssueCommentCreatePayload
       | undefined;
     if (!payload) continue;

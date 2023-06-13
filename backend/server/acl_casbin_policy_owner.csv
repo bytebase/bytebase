@@ -77,7 +77,6 @@ p, OWNER, /issue/{issueID}/subscriber, GET
 p, OWNER, /issue/{issueID}/subscriber, POST
 p, OWNER, /issue/{issueID}/subscriber/{subscriberID}, DELETE
 p, OWNER, /activity, POST
-p, OWNER, /activity, GET
 p, OWNER, /activity/{activityID}, PATCH_SELF
 p, OWNER, /inbox/user/{userID}, GET_SELF
 p, OWNER, /inbox/user/{userID}/summary, GET_SELF

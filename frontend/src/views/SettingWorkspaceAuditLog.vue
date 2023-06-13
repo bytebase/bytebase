@@ -33,7 +33,7 @@
         </NDatePicker>
       </div>
     </div>
-    <PagedAuditLogTable
+    <PagedActivityTable
       v-if="hasAuditLogFeature"
       :activity-find="{
         action:
@@ -45,13 +45,13 @@
         createdTsAfter: selectedTimeRange ? selectedTimeRange[0] : undefined,
         createdTsBefore: selectedTimeRange ? selectedTimeRange[1] : undefined,
       }"
-      session-key="settings-audit-log-table"
+      session-key="bb.page-audit-log-table.settings-audit-log-table"
       :page-size="10"
     >
       <template #table="{ list }">
         <AuditLogTable :audit-log-list="list" @view-detail="handleViewDetail" />
       </template>
-    </PagedAuditLogTable>
+    </PagedActivityTable>
     <template v-else>
       <AuditLogTable :audit-log-list="[]" />
       <div class="w-full h-full flex flex-col items-center justify-center">
