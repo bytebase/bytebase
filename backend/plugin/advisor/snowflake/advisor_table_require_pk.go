@@ -36,9 +36,9 @@ func (*TableRequirePkAdvisor) Check(ctx advisor.Context, statement string) ([]ad
 	}
 
 	listener := &tableRequirePkChecker{
-		currentConstraintAction:    currentConstraintActionNone,
 		level:                      level,
 		title:                      string(ctx.Rule.Type),
+		currentConstraintAction:    currentConstraintActionNone,
 		currentNormalizedTableName: "",
 		tableHasPrimaryKey:         make(map[string]bool),
 		tableOriginalName:          make(map[string]string),
@@ -49,15 +49,6 @@ func (*TableRequirePkAdvisor) Check(ctx advisor.Context, statement string) ([]ad
 
 	return listener.generateAdvice()
 }
-
-// currentConstraintAction is the action of current constraint.
-type currentConstraintAction int
-
-const (
-	currentConstraintActionNone currentConstraintAction = iota
-	currentConstraintActionAdd
-	currentConstraintActionDrop
-)
 
 // tableRequirePkChecker is the listener for table require primary key.
 type tableRequirePkChecker struct {
