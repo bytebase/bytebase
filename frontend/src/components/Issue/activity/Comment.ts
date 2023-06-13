@@ -1,12 +1,12 @@
 import { h, defineComponent, PropType } from "vue";
-import { Activity } from "@/types";
+import { LogEntity } from "@/types/proto/v1/logging_service";
 
 // Render activity comments and render "#{issue_id}" patterns as issue links.
 export default defineComponent({
   name: "ActivityComment",
   props: {
     activity: {
-      type: Object as PropType<Activity>,
+      type: Object as PropType<LogEntity>,
       required: true,
     },
   },

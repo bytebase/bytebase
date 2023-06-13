@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	LoggingService_ListLogs_FullMethodName = "/bytebase.v1.LoggingService/ListLogs"
+	LoggingService_GetLog_FullMethodName   = "/bytebase.v1.LoggingService/GetLog"
 )
 
 // LoggingServiceClient is the client API for LoggingService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LoggingServiceClient interface {
 	ListLogs(ctx context.Context, in *ListLogsRequest, opts ...grpc.CallOption) (*ListLogsResponse, error)
+	GetLog(ctx context.Context, in *GetLogRequest, opts ...grpc.CallOption) (*LogEntity, error)
 }
 
 type loggingServiceClient struct {
@@ -46,11 +48,21 @@ func (c *loggingServiceClient) ListLogs(ctx context.Context, in *ListLogsRequest
 	return out, nil
 }
 
+func (c *loggingServiceClient) GetLog(ctx context.Context, in *GetLogRequest, opts ...grpc.CallOption) (*LogEntity, error) {
+	out := new(LogEntity)
+	err := c.cc.Invoke(ctx, LoggingService_GetLog_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LoggingServiceServer is the server API for LoggingService service.
 // All implementations must embed UnimplementedLoggingServiceServer
 // for forward compatibility
 type LoggingServiceServer interface {
 	ListLogs(context.Context, *ListLogsRequest) (*ListLogsResponse, error)
+	GetLog(context.Context, *GetLogRequest) (*LogEntity, error)
 	mustEmbedUnimplementedLoggingServiceServer()
 }
 
@@ -60,6 +72,9 @@ type UnimplementedLoggingServiceServer struct {
 
 func (UnimplementedLoggingServiceServer) ListLogs(context.Context, *ListLogsRequest) (*ListLogsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListLogs not implemented")
+}
+func (UnimplementedLoggingServiceServer) GetLog(context.Context, *GetLogRequest) (*LogEntity, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLog not implemented")
 }
 func (UnimplementedLoggingServiceServer) mustEmbedUnimplementedLoggingServiceServer() {}
 
@@ -92,6 +107,24 @@ func _LoggingService_ListLogs_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LoggingService_GetLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LoggingServiceServer).GetLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LoggingService_GetLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LoggingServiceServer).GetLog(ctx, req.(*GetLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LoggingService_ServiceDesc is the grpc.ServiceDesc for LoggingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -102,6 +135,10 @@ var LoggingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListLogs",
 			Handler:    _LoggingService_ListLogs_Handler,
+		},
+		{
+			MethodName: "GetLog",
+			Handler:    _LoggingService_GetLog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

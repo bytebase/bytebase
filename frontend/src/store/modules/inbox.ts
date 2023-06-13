@@ -1,37 +1,31 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import {
-  Activity,
   Inbox,
   InboxId,
   InboxPatch,
   InboxState,
   InboxSummary,
   PrincipalId,
-  ResourceIdentifier,
   ResourceObject,
-  unknown,
 } from "@/types";
-import { useActivityStore } from "./activity";
+import { useActivityV1Store } from "./v1";
 
-function convert(inbox: ResourceObject, includedList: ResourceObject[]): Inbox {
-  const activityId = (inbox.relationships!.activity.data as ResourceIdentifier)
-    .id;
-  let activity: Activity = unknown("ACTIVITY") as Activity;
-  activity.id = parseInt(activityId);
-
-  const activityStore = useActivityStore();
-  for (const item of includedList || []) {
-    if (item.type == "activity" && item.id == activityId) {
-      activity = activityStore.convert(item, includedList);
-    }
-  }
-
-  return {
-    ...(inbox.attributes as Omit<Inbox, "id">),
-    id: parseInt(inbox.id),
-    activity,
+async function convert(raw: ResourceObject): Promise<Inbox> {
+  const inbox: Inbox = {
+    ...(raw.attributes as Omit<Inbox, "id">),
+    id: parseInt(raw.id),
   };
+
+  try {
+    const activity = await useActivityV1Store().fetchActivityByUID(
+      inbox.activityId
+    );
+    inbox.activity = activity;
+  } catch {
+    // nothing, we will skip inbox with undefined activity.
+  }
+  return inbox;
 }
 
 export const useInboxStore = defineStore("inbox", {
@@ -88,12 +82,17 @@ export const useInboxStore = defineStore("inbox", {
       if (readCreatedAfterTs) {
         url += `?created=${readCreatedAfterTs}`;
       }
-      const data = (await axios.get(url)).data;
-      const inboxList = data.data.map((inbox: ResourceObject) => {
-        return convert(inbox, data.included);
-      });
+      const { data } = (await axios.get(url)).data;
+      const inboxList = await Promise.all(
+        (data as ResourceObject[]).map((inbox: ResourceObject) => {
+          return convert(inbox);
+        })
+      );
 
-      this.setInboxListByUser({ userId, inboxList });
+      this.setInboxListByUser({
+        userId,
+        inboxList,
+      });
       return inboxList;
     },
     async fetchInboxSummaryByUser(userId: PrincipalId) {
@@ -119,8 +118,7 @@ export const useInboxStore = defineStore("inbox", {
           },
         })
       ).data;
-      const updatedInbox = convert(data.data, data.included);
-
+      const updatedInbox = await convert(data.data);
       this.updateInboxById({ inboxId, inbox: updatedInbox });
 
       return updatedInbox;

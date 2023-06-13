@@ -1,7 +1,6 @@
 import { ExternalApprovalEvent } from "./externalApproval";
 import { FieldId } from "../plugins";
 import {
-  ActivityId,
   ContainerId,
   DatabaseId,
   InstanceId,
@@ -14,7 +13,6 @@ import {
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
 import { StageStatusUpdateType, TaskStatus } from "./pipeline";
-import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 import { Advice } from "./sqlAdvice";
 import { t } from "../plugins/i18n";
@@ -24,84 +22,48 @@ import {
   LogEntity_Level,
 } from "@/types/proto/v1/logging_service";
 
-export type IssueActivityType =
-  | "bb.issue.create"
-  | "bb.issue.comment.create"
-  | "bb.issue.field.update"
-  | "bb.issue.status.update"
-  | "bb.issue.approval.notify"
-  | "bb.pipeline.stage.status.update"
-  | "bb.pipeline.task.status.update"
-  | "bb.pipeline.task.file.commit"
-  | "bb.pipeline.task.statement.update"
-  | "bb.pipeline.task.general.earliest-allowed-time.update";
-
-export type MemberActivityType =
-  | "bb.member.create"
-  | "bb.member.role.update"
-  | "bb.member.activate"
-  | "bb.member.deactivate";
-
-export type ProjectActivityType =
-  | "bb.project.repository.push"
-  | "bb.project.database.transfer"
-  | "bb.project.member.create"
-  | "bb.project.member.delete"
-  | "bb.project.member.role.update";
-
-export type DatabaseActivityType = "bb.database.recovery.pitr.done";
-
-export type SQLEditorActivityType = "bb.sql-editor.query";
-
-export type ActivityType =
-  | IssueActivityType
-  | MemberActivityType
-  | ProjectActivityType
-  | DatabaseActivityType
-  | SQLEditorActivityType;
-
-export function activityName(type: ActivityType): string {
-  switch (type) {
-    case "bb.issue.create":
+export function activityName(action: LogEntity_Action): string {
+  switch (action) {
+    case LogEntity_Action.ACTION_ISSUE_CREATE:
       return t("activity.type.issue-create");
-    case "bb.issue.comment.create":
+    case LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE:
       return t("activity.type.comment-create");
-    case "bb.issue.field.update":
+    case LogEntity_Action.ACTION_ISSUE_FIELD_UPDATE:
       return t("activity.type.issue-field-update");
-    case "bb.issue.status.update":
+    case LogEntity_Action.ACTION_ISSUE_STATUS_UPDATE:
       return t("activity.type.issue-status-update");
-    case "bb.pipeline.stage.status.update":
+    case LogEntity_Action.ACTION_PIPELINE_STAGE_STATUS_UPDATE:
       return t("activity.type.pipeline-stage-status-update");
-    case "bb.pipeline.task.status.update":
+    case LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE:
       return t("activity.type.pipeline-task-status-update");
-    case "bb.pipeline.task.file.commit":
+    case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT:
       return t("activity.type.pipeline-task-file-commit");
-    case "bb.pipeline.task.statement.update":
+    case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
       return t("activity.type.pipeline-task-statement-update");
-    case "bb.pipeline.task.general.earliest-allowed-time.update":
+    case LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
       return t("activity.type.pipeline-task-earliest-allowed-time-update");
-    case "bb.member.create":
+    case LogEntity_Action.ACTION_MEMBER_CREATE:
       return t("activity.type.member-create");
-    case "bb.member.role.update":
+    case LogEntity_Action.ACTION_MEMBER_ROLE_UPDATE:
       return t("activity.type.member-role-update");
-    case "bb.member.activate":
+    case LogEntity_Action.ACTION_MEMBER_ACTIVATE:
       return t("activity.type.member-activate");
-    case "bb.member.deactivate":
+    case LogEntity_Action.ACTION_MEMBER_DEACTIVE:
       return t("activity.type.member-deactivate");
-    case "bb.project.repository.push":
+    case LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH:
       return t("activity.type.project-repository-push");
-    case "bb.project.database.transfer":
+    case LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER:
       return t("activity.type.project-database-transfer");
-    case "bb.project.member.create":
+    case LogEntity_Action.ACTION_PROJECT_MEMBER_CREATE:
       return t("activity.type.project-member-create");
-    case "bb.project.member.delete":
+    case LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE:
       return t("activity.type.project-member-delete");
-    case "bb.project.member.role.update":
+    case LogEntity_Action.ACTION_PROJECT_MEMBER_ROLE_UPDATE:
       return t("activity.type.project-member-role-update");
-    case "bb.database.recovery.pitr.done":
+    case LogEntity_Action.ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
       return t("activity.type.database-recovery-pitr-done");
   }
-  console.assert(false, `undefined text for activity type "${type}"`);
+  console.assert(false, `undefined text for activity type "${action}"`);
   return "";
 }
 
@@ -242,29 +204,10 @@ export type ActionPayloadType =
   | ActivityProjectDatabaseTransferPayload
   | ActivitySQLEditorQueryPayload;
 
-export type Activity = {
-  id: ActivityId;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-
-  // Domain specific fields
-  // The object where this activity belongs
-  // e.g if type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
-  containerId: ContainerId;
-  type: ActivityType;
-  level: ActivityLevel;
-  comment: string;
-  payload?: ActionPayloadType;
-};
-
 export type ActivityCreate = {
   // Domain specific fields
   containerId: ContainerId;
-  type: ActivityType;
+  type: "bb.issue.comment.create";
   comment: string;
   payload?: ActionPayloadType;
 };
@@ -274,18 +217,6 @@ export type ActivityPatch = {
   comment: string;
 };
 
-export type ActivityFind = {
-  typePrefix?: string | string[];
-  container?: number | string;
-  order?: "ASC" | "DESC";
-  user?: number;
-  limit?: number;
-  level?: string | string[];
-  token?: string;
-  createdTsAfter?: number;
-  createdTsBefore?: number;
-};
-
 export interface FindActivityMessage {
   resource?: string;
   creatorEmail?: string;
@@ -293,7 +224,7 @@ export interface FindActivityMessage {
   action?: LogEntity_Action[];
   createdTsAfter?: number;
   createdTsBefore?: number;
-  order?: "acs" | "desc";
+  order?: "asc" | "desc";
   pageSize?: number;
   pageToken?: string;
 }

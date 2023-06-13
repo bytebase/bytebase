@@ -7,20 +7,19 @@
       <div class="relative">
         <!-- show the first 5 activities -->
         <!-- But won't show "Load more", since we have a "View all" link below -->
-        <PagedActivityTableVue
+        <PagedActivityTable
           :activity-find="{
-            typePrefix: ['bb.project.', 'bb.database.'],
-            container: project.uid,
-            order: 'DESC',
+            resource: project.name,
+            order: 'desc',
           }"
-          session-key="project-activity"
+          session-key="bb.page-activity-table.project-activity"
           :page-size="5"
           :hide-load-more="true"
         >
-          <template #table="{ activityList }">
-            <ActivityTable :activity-list="activityList" />
+          <template #table="{ list }">
+            <ActivityTable :activity-list="list" />
           </template>
-        </PagedActivityTableVue>
+        </PagedActivityTable>
         <div
           v-if="state.isFetchingActivityList"
           class="absolute inset-0 flex flex-col items-center justify-center bg-white/70"
@@ -119,11 +118,9 @@
 
 <script lang="ts" setup>
 import { reactive, PropType } from "vue";
-import ActivityTable from "../components/ActivityTable.vue";
 import { IssueTable } from "../components/Issue";
 import { Issue } from "../types";
 import PagedIssueTable from "@/components/Issue/table/PagedIssueTable.vue";
-import PagedActivityTableVue from "./PagedActivityTable.vue";
 import { featureToRef } from "@/store";
 import { Project } from "@/types/proto/v1/project_service";
 

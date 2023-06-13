@@ -19,7 +19,7 @@
           >
           <router-link
             v-if="showAuditLogItem"
-            to="/setting/audit-log?type=bb.sql-editor.query"
+            :to="`/setting/audit-log?type=${sqlQueryAction}`"
             class="router-link"
             exact-active-class="anchor-link"
             >{{ $t("settings.sidebar.audit-log") }}</router-link
@@ -77,7 +77,7 @@
     </router-link>
     <router-link
       v-if="showAuditLogItem"
-      to="/setting/audit-log?type=bb.sql-editor.query"
+      :to="`/setting/audit-log?type=${sqlQueryAction}`"
       class="bar-link rounded-md block px-3 py-2"
     >
       {{ $t("settings.sidebar.audit-log") }}
@@ -99,6 +99,7 @@ import { UNKNOWN_ID } from "@/types";
 import { useCurrentUser, useCurrentUserV1, useInboxStore } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -206,6 +207,7 @@ export default defineComponent({
       inboxSummary,
       logoUrl,
       goBack,
+      sqlQueryAction: LogEntity_Action.ACTION_DATABASE_SQL_EDITOR_QUERY,
     };
   },
 });

@@ -23,12 +23,15 @@ import {
 } from "@/types";
 import { isDatabaseRelatedIssueType } from "@/utils";
 import { getPrincipalFromIncludedList } from "./principal";
-import { useActivityStore } from "./activity";
 import { useLegacyDatabaseStore } from "./database";
 import { usePipelineStore } from "./pipeline";
 import { useLegacyProjectStore } from "./project";
 import { convertEntityList } from "./utils";
-import { useDatabaseV1Store, useInstanceV1Store } from "./v1";
+import {
+  useDatabaseV1Store,
+  useInstanceV1Store,
+  useActivityV1Store,
+} from "./v1";
 
 function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
   const result: Issue = {
@@ -290,7 +293,7 @@ export const useIssueStore = defineStore("issue", {
         issue: updatedIssue,
       });
 
-      useActivityStore().fetchActivityListByIssueId(issueId);
+      useActivityV1Store().fetchActivityListByIssueId(issueId);
 
       return updatedIssue;
     },
@@ -316,7 +319,7 @@ export const useIssueStore = defineStore("issue", {
         issue: updatedIssue,
       });
 
-      useActivityStore().fetchActivityListByIssueId(issueId);
+      useActivityV1Store().fetchActivityListByIssueId(issueId);
 
       return updatedIssue;
     },
