@@ -1,6 +1,5 @@
 import type * as monaco from "monaco-editor";
-import { InstanceId, DatabaseId, ActivityId, EngineType } from "../types";
-import { Principal } from "./principal";
+import { InstanceId, DatabaseId, EngineType } from "../types";
 import { Engine } from "./proto/v1/common";
 
 export type EditorModel = monaco.editor.ITextModel;

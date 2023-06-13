@@ -1,6 +1,6 @@
 <template>
   <BBAvatar
-    :username="username"
+    :username="name"
     :size="size"
     :override-class="overrideClass"
     :override-text-size="overrideTextSize"
@@ -41,13 +41,13 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const username = computed((): string => {
+    const name = computed((): string => {
       if (props.principal.id == UNKNOWN_ID) {
         return props.username;
       }
       return props.principal.name;
     });
-    return { username };
+    return { name };
   },
 });
 </script>

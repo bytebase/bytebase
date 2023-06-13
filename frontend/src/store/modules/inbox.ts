@@ -22,9 +22,8 @@ async function convert(raw: ResourceObject): Promise<Inbox> {
       inbox.activityId
     );
     inbox.activity = activity;
-  } finally {
-    return inbox;
-  }
+  } catch {}
+  return inbox;
 }
 
 export const useInboxStore = defineStore("inbox", {
