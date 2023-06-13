@@ -20,6 +20,8 @@ const (
 	SettingWorkspaceProfile SettingName = "bb.workspace.profile"
 	// SettingWorkspaceApproval is the setting name for workspace approval config.
 	SettingWorkspaceApproval SettingName = "bb.workspace.approval"
+	// SettingWorkspaceExternalApproval is the setting name for workspace external approval config.
+	SettingWorkspaceExternalApproval SettingName = "bb.workspace.approval.external"
 	// SettingEnterpriseLicense is the setting name for enterprise license.
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
 	// SettingEnterpriseTrial is the setting name for free trial.
