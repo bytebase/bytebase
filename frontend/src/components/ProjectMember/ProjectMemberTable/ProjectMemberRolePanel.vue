@@ -84,10 +84,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
+import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 import { PresetRoleType } from "@/types";
+import { State } from "@/types/proto/v1/common";
+import { Binding, Project } from "@/types/proto/v1/project_service";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -95,30 +99,25 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
-import { Binding, Project } from "@/types/proto/v1/project_service";
-import { watch } from "vue";
 import {
   displayRoleTitle,
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
 } from "@/utils";
-import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
-import { useI18n } from "vue-i18n";
-import RoleDescription from "./RoleDescription.vue";
-import { cloneDeep, isEqual } from "lodash-es";
-import { State } from "@/types/proto/v1/common";
-import { ComposedProjectMember } from "./types";
 import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
+import { ComposedProjectMember } from "./types";
+import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
 import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
+import RoleDescription from "./RoleDescription.vue";
 
 export interface FormattedCondition {
   databaseResource?: DatabaseResource;
   expiration?: Date;
   description?: string;
-  rawRole: Binding;
+  rawBinding: Binding;
 }
 
 export type FormattedConditionRow = BBGridRow<FormattedCondition>;
@@ -275,7 +274,7 @@ const handleDeleteRole = (role: string) => {
 };
 
 const handleDeleteCondition = async (condition: FormattedCondition) => {
-  let role = `${displayRoleTitle(condition.rawRole.role)}`;
+  let role = `${displayRoleTitle(condition.rawBinding.role)}`;
   if (condition.databaseResource) {
     const database = await databaseStore.getOrFetchDatabaseByName(
       String(condition.databaseResource.databaseName)
@@ -301,23 +300,23 @@ const handleDeleteCondition = async (condition: FormattedCondition) => {
     onPositiveClick: async () => {
       const user = `user:${props.member.user.email}`;
       const policy = cloneDeep(iamPolicy.value);
-      let rawRole = policy.bindings.find((binding) =>
-        isEqual(binding, condition.rawRole)
+      let rawBinding = policy.bindings.find((binding) =>
+        isEqual(binding, condition.rawBinding)
       );
-      if (!rawRole || !rawRole.condition) {
+      if (!rawBinding || !rawBinding.condition) {
         return;
       }
-      if (rawRole.members.length > 1) {
-        rawRole.members = rawRole.members.filter((member) => {
+      if (rawBinding.members.length > 1) {
+        rawBinding.members = rawBinding.members.filter((member) => {
           return member !== user;
         });
-        rawRole = cloneDeep(rawRole);
-        rawRole.members = [user];
-        policy.bindings.push(rawRole);
+        rawBinding = cloneDeep(rawBinding);
+        rawBinding.members = [user];
+        policy.bindings.push(rawBinding);
       }
 
-      if (rawRole.parsedExpr?.expr) {
-        const conditionExpr = convertFromExpr(rawRole.parsedExpr.expr);
+      if (rawBinding.parsedExpr?.expr) {
+        const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
         if (conditionExpr.databaseResources) {
           conditionExpr.databaseResources =
             conditionExpr.databaseResources.filter(
@@ -325,10 +324,10 @@ const handleDeleteCondition = async (condition: FormattedCondition) => {
             );
           if (conditionExpr.databaseResources.length === 0) {
             policy.bindings = policy.bindings.filter(
-              (binding) => !isEqual(binding, rawRole)
+              (binding) => !isEqual(binding, rawBinding)
             );
           } else {
-            rawRole.condition!.expression =
+            rawBinding.condition!.expression =
               stringifyConditionExpression(conditionExpr);
           }
         }
@@ -394,21 +393,21 @@ watch(
       role: string;
       formattedConditionList: FormattedCondition[];
     }[] = [];
-    const rawRoleList = iamPolicy.value?.bindings?.filter((binding) => {
+    const rawBindingList = iamPolicy.value?.bindings?.filter((binding) => {
       return binding.members.includes(`user:${props.member.user.email}`);
     });
-    for (const rawRole of rawRoleList) {
+    for (const rawBinding of rawBindingList) {
       const formattedConditionList = [];
       const formatedCondition: FormattedCondition = {
         databaseResource: undefined,
         expiration: undefined,
         description: undefined,
-        rawRole: rawRole,
+        rawBinding: rawBinding,
       };
 
-      if (rawRole.parsedExpr?.expr) {
-        const conditionExpr = convertFromExpr(rawRole.parsedExpr.expr);
-        formatedCondition.description = rawRole.condition?.description || "";
+      if (rawBinding.parsedExpr?.expr) {
+        const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
+        formatedCondition.description = rawBinding.condition?.description || "";
         if (conditionExpr.expiredTime) {
           formatedCondition.expiration = new Date(conditionExpr.expiredTime);
         }
@@ -429,12 +428,14 @@ watch(
         formattedConditionList.push(formatedCondition);
       }
 
-      const tempRole = tempRoleList.find((role) => role.role === rawRole.role);
+      const tempRole = tempRoleList.find(
+        (role) => role.role === rawBinding.role
+      );
       if (tempRole) {
         tempRole.formattedConditionList.push(...formattedConditionList);
       } else {
         tempRoleList.push({
-          role: rawRole.role,
+          role: rawBinding.role,
           formattedConditionList: formattedConditionList,
         });
       }
