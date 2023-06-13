@@ -2,6 +2,9 @@
 package snowflake
 
 import (
+	"strings"
+	"unicode"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -34,4 +37,61 @@ func parseStatement(statement string) (antlr.Tree, []advisor.Advice) {
 	}
 
 	return tree, nil
+}
+
+func extractTableNameFromIdentifier(identifier string) string {
+	if strings.HasPrefix(identifier, `"`) && strings.HasSuffix(identifier, `"`) {
+		identifier = identifier[1 : len(identifier)-1]
+	}
+	parts := strings.Split(identifier, ".")
+	if len(parts) == 0 {
+		return ""
+	}
+	return parts[len(parts)-1]
+}
+
+func normalizeIdentifierName(identifier string) string {
+	parts := normalizeIdentifierParts(identifier)
+	return strings.Join(parts, ".")
+}
+
+func normalizeIdentifierParts(identifier string) []string {
+	withDoubleQuote := false
+	var tidyIdentifier string
+	if strings.HasPrefix(identifier, `"`) && strings.HasSuffix(identifier, `"`) {
+		withDoubleQuote = true
+		identifier = identifier[1 : len(identifier)-1]
+		runeIdentifier := []rune(identifier)
+		for i := 0; i < len(runeIdentifier); i++ {
+			if runeIdentifier[i] == '"' {
+				if i+1 < len(runeIdentifier) && runeIdentifier[i+1] == '"' {
+					tidyIdentifier += string(runeIdentifier[i])
+					i++
+				}
+			} else {
+				tidyIdentifier += string(runeIdentifier[i])
+			}
+		}
+	} else {
+		tidyIdentifier = identifier
+	}
+
+	parts := strings.Split(tidyIdentifier, ".")
+	if len(parts) == 0 {
+		return []string{}
+	}
+	var newParts []string
+
+	for _, part := range parts {
+		if !withDoubleQuote {
+			var rs []rune
+			for _, r := range part {
+				rs = append(rs, unicode.ToUpper(r))
+			}
+			newParts = append(newParts, string(rs))
+		} else {
+			newParts = append(newParts, part)
+		}
+	}
+	return newParts
 }

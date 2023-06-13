@@ -73,12 +73,19 @@ const renderActionSentence = () => {
           );
         }
       }
-      if (payload.approvalEvent?.status === "APPROVED") {
-        const verb = maybeAutomaticallyVerb(
-          activity,
-          t("custom-approval.issue-review.approved-issue")
-        );
-        return renderSpan(verb);
+      if (payload.approvalEvent) {
+        if (payload.approvalEvent) {
+          const { status } = payload.approvalEvent;
+          const dict: Record<typeof status, string> = {
+            APPROVED: t("custom-approval.issue-review.approved-issue"),
+            REJECTED: t("custom-approval.issue-review.sent-back-issue"),
+            PENDING: t("custom-approval.issue-review.re-requested-review"),
+          };
+          const verb = dict[status];
+          if (verb) {
+            return renderSpan(maybeAutomaticallyVerb(activity, verb));
+          }
+        }
       }
     }
 

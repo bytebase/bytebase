@@ -15,12 +15,16 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
   const repositoryMapByVCS = reactive(new Map<string, ComposedRepository[]>());
 
   const fetchRepositoryByProject = async (
-    project: string
+    project: string,
+    silent = false
   ): Promise<ProjectGitOpsInfo | undefined> => {
     try {
-      const gitopsInfo = await projectServiceClient.getProjectGitOpsInfo({
-        name: project + "/gitOpsInfo",
-      });
+      const gitopsInfo = await projectServiceClient.getProjectGitOpsInfo(
+        {
+          name: project + "/gitOpsInfo",
+        },
+        { silent }
+      );
 
       repositoryMapByProject.set(project, gitopsInfo);
       return gitopsInfo;
@@ -35,11 +39,11 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     return repositoryMapByProject.get(project);
   };
 
-  const getOrFetchRepositoryByProject = (project: string) => {
+  const getOrFetchRepositoryByProject = (project: string, silent = false) => {
     if (repositoryMapByProject.has(project)) {
       return Promise.resolve(repositoryMapByProject.get(project));
     }
-    return fetchRepositoryByProject(project);
+    return fetchRepositoryByProject(project, silent);
   };
 
   const upsertRepository = async (

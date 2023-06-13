@@ -38,15 +38,14 @@ export const useIdentityProviderStore = defineStore("idp", {
       }
       return identityProviders;
     },
-    async getOrFetchIdentityProviderByName(name: string) {
+    async getOrFetchIdentityProviderByName(name: string, silent = false) {
       const cachedData = this.identityProviderMapByName.get(name);
       if (cachedData) {
         return cachedData;
       }
       const identityProvider = await identityProviderClient.getIdentityProvider(
-        {
-          name,
-        }
+        { name },
+        { silent }
       );
       this.identityProviderMapByName.set(
         identityProvider.name,

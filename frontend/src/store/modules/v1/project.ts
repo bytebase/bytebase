@@ -83,22 +83,20 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       unknownProject()
     );
   };
-  const fetchProjectByName = async (name: string) => {
-    const project = await projectServiceClient.getProject({
-      name,
-    });
+  const fetchProjectByName = async (name: string, silent = false) => {
+    const project = await projectServiceClient.getProject({ name }, { silent });
     await upsertProjectMap([project]);
     return project as ComposedProject;
   };
   const fetchProjectByUID = async (uid: string) => {
     return fetchProjectByName(`${projectNamePrefix}${uid}`);
   };
-  const getOrFetchProjectByName = async (name: string) => {
+  const getOrFetchProjectByName = async (name: string, silent = false) => {
     const cachedData = projectMapByName.get(name);
     if (cachedData) {
       return cachedData;
     }
-    return fetchProjectByName(name);
+    return fetchProjectByName(name, silent);
   };
   const getOrFetchProjectByUID = async (uid: string) => {
     if (uid === String(EMPTY_ID)) return emptyProject();

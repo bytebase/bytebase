@@ -779,7 +779,8 @@
       "manually-select": "Manually select",
       "customize": "Customize",
       "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once."
-    }
+    },
+    "review-sent-back": "Review sent back"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1025,11 +1026,11 @@
     "rollout": {
       "name": "Rollout policy",
       "tip": "The policy is applied to issues retroactively.",
-      "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
-      "manual": "Require manual rolling out",
-      "manual-info": "Tasks will only be executed after being manually rolled out.",
-      "auto": "Skip manual rolling out",
-      "auto-info": "Tasks will be rolled out and executed automatically if all task checks pass.",
+      "info": "For rolling out database change, this setting controls whether the rollout requires manual approval.",
+      "manual": "Manual rollout",
+      "manual-info": "Require clicking \"Rollout\" button manually, and then the change will be executed.",
+      "auto": "Automatic rollout",
+      "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
       "assignee-group": {
         "workspace-owner-or-dba": "Require rolling out from DBA or workspace owner.",
         "project-owner": "Require rolling out from project owner."
@@ -1442,7 +1443,7 @@
     },
     "settings": {
       "success-updated": "Project settings updated successfully.",
-      "success-member-added-prompt": "Successfully added {name} to the project.",
+      "success-member-added-prompt": "Successfully added to the project.",
       "success-member-deleted-prompt": "Successfully revoked {name} access from the project.",
       "member-placeholder": "Select user",
       "manage-member": "Manage members",
@@ -2458,8 +2459,15 @@
       "approved-issue": "approved issue",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "Some task checks didn't pass"
-      }
-    }
+      },
+      "send-back": "Send back",
+      "send-back-issue": "Send back issue?",
+      "re-request-review": "Re-request review",
+      "re-request-review-issue": "Re-request review issue?",
+      "sent-back-issue": "Sent back issue",
+      "re-requested-review": "re-requested issue review"
+    },
+    "send-back": "Send back"
   },
   "slow-query": {
     "self": "Slow query",

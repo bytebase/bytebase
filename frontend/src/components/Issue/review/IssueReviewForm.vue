@@ -1,38 +1,77 @@
 <template>
-  <div class="mt-2">
+  <div class="mt-2 flex flex-col gap-y-4">
     <div class="text-sm">
       {{ issue.name }}
     </div>
-    <div class="pt-4 pb-1 flex justify-end gap-x-3">
+    <div class="flex flex-col gap-y-1">
+      <p class="textlabel">
+        {{ $t("common.comment") }}
+      </p>
+      <AutoHeightTextarea
+        v-model:value="comment"
+        :placeholder="$t('issue.leave-a-comment')"
+        :max-height="160"
+        class="w-full"
+      />
+    </div>
+    <div class="py-1 flex justify-end gap-x-3">
       <button class="btn-normal" @click="$emit('cancel')">
         {{ $t("common.cancel") }}
       </button>
-      <button class="btn-primary" @click="handleConfirm">
-        {{ $t("common.approve") }}
+      <button
+        :class="
+          buttonStyle === 'PRIMARY'
+            ? 'btn-primary'
+            : buttonStyle === 'ERROR'
+            ? 'btn-danger'
+            : 'btn-normal'
+        "
+        @click="handleConfirm"
+      >
+        {{ okText }}
       </button>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { Ref } from "vue";
+import { Ref, ref } from "vue";
 
 import { useIssueLogic } from "../logic";
 import { Issue } from "@/types";
+import { Review_Approver_Status } from "@/types/proto/v1/review_service";
+import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
+
+const props = defineProps<{
+  okText: string;
+  status: Review_Approver_Status;
+  buttonStyle: "PRIMARY" | "ERROR" | "NORMAL";
+}>();
 
 const emit = defineEmits<{
   (event: "cancel"): void;
-  (event: "confirm", onSuccess: () => void): void;
+  (
+    event: "confirm",
+    params: {
+      status: Review_Approver_Status;
+      comment?: string;
+    },
+    onSuccess: () => void
+  ): void;
 }>();
 
 const issueContext = useIssueLogic();
 const issue = issueContext.issue as Ref<Issue>;
+const comment = ref("");
 
 const handleConfirm = (e: MouseEvent) => {
   const button = e.target as HTMLElement;
   const { left, top, width, height } = button.getBoundingClientRect();
   const { innerWidth: winWidth, innerHeight: winHeight } = window;
   const onSuccess = () => {
+    if (props.status !== Review_Approver_Status.APPROVED) {
+      return;
+    }
     // import the effect lib asynchronously
     import("canvas-confetti").then(({ default: confetti }) => {
       // Create a confetti effect from the position of the LGTM button
@@ -47,6 +86,13 @@ const handleConfirm = (e: MouseEvent) => {
     });
   };
 
-  emit("confirm", onSuccess);
+  emit(
+    "confirm",
+    {
+      status: props.status,
+      comment: comment.value,
+    },
+    onSuccess
+  );
 };
 </script>

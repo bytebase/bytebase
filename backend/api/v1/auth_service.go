@@ -324,11 +324,10 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 				patch.MFAConfig = &storepb.MFAConfig{}
 			}
 		case "phone":
-			if request.User.Phone == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "phone number cannot be empty")
-			}
-			if err := validatePhone(request.User.Phone); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid phone number %q, error: %v", request.User.Phone, err)
+			if request.User.Phone != "" {
+				if err := validatePhone(request.User.Phone); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid phone number %q, error: %v", request.User.Phone, err)
+				}
 			}
 			patch.Phone = &request.User.Phone
 		}
