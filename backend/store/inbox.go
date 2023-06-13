@@ -18,9 +18,9 @@ type inboxRaw struct {
 	ID int
 
 	// Domain specific fields
-	ReceiverID  int
-	ActivityRaw *activityRaw
-	Status      api.InboxStatus
+	ReceiverID int
+	ActivityID int
+	Status     api.InboxStatus
 }
 
 // toInbox creates an instance of Inbox based on the inboxRaw.
@@ -30,6 +30,7 @@ func (raw *inboxRaw) toInbox() *api.Inbox {
 		ID: raw.ID,
 
 		ReceiverID: raw.ReceiverID,
+		ActivityID: raw.ActivityID,
 		Status:     raw.Status,
 	}
 }
@@ -132,15 +133,7 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 
 // composeInbox composes an instance of Inbox by inboxRaw.
 func (s *Store) composeInbox(ctx context.Context, raw *inboxRaw) (*api.Inbox, error) {
-	inbox := raw.toInbox()
-
-	activity, err := s.composeActivity(ctx, raw.ActivityRaw)
-	if err != nil {
-		return nil, err
-	}
-	inbox.Activity = activity
-
-	return inbox, nil
+	return raw.toInbox(), nil
 }
 
 // createInboxRaw creates a new inbox.
@@ -151,7 +144,7 @@ func (s *Store) createInboxRaw(ctx context.Context, create *api.InboxCreate) (*i
 	}
 	defer tx.Rollback()
 
-	inbox, err := s.createInboxImpl(ctx, tx, create)
+	inbox, err := createInboxImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +203,7 @@ func (s *Store) patchInboxRaw(ctx context.Context, patch *api.InboxPatch) (*inbo
 	}
 	defer tx.Rollback()
 
-	inbox, err := s.patchInboxImpl(ctx, tx, patch)
+	inbox, err := patchInboxImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +216,7 @@ func (s *Store) patchInboxRaw(ctx context.Context, patch *api.InboxPatch) (*inbo
 }
 
 // createInboxImpl creates a new inbox.
-func (s *Store) createInboxImpl(ctx context.Context, tx *Tx, create *api.InboxCreate) (*inboxRaw, error) {
+func createInboxImpl(ctx context.Context, tx *Tx, create *api.InboxCreate) (*inboxRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO inbox (
@@ -235,14 +228,13 @@ func (s *Store) createInboxImpl(ctx context.Context, tx *Tx, create *api.InboxCr
 		RETURNING id, receiver_id, activity_id, status
 	`
 	var inboxRaw inboxRaw
-	var activityID int
 	if err := tx.QueryRowContext(ctx, query,
 		create.ReceiverID,
 		create.ActivityID,
 	).Scan(
 		&inboxRaw.ID,
 		&inboxRaw.ReceiverID,
-		&activityID,
+		&inboxRaw.ActivityID,
 		&inboxRaw.Status,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -250,18 +242,12 @@ func (s *Store) createInboxImpl(ctx context.Context, tx *Tx, create *api.InboxCr
 		}
 		return nil, err
 	}
-	activityRaw, err := s.getActivityRawByID(ctx, activityID)
-	if err != nil {
-		return nil, err
-	}
-	inboxRaw.ActivityRaw = activityRaw
 	return &inboxRaw, nil
 }
 
 func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []any{}
-	where = append(where, "inbox.activity_id = activity.id")
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("inbox.id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -275,19 +261,11 @@ func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRa
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			inbox.id,
-			receiver_id,
-			status,
-			activity.id,
-			activity.creator_id,
-			activity.created_ts,
-			activity.updater_id,
-			activity.updated_ts,
-			activity.container_id,
-			activity.type,
-			activity.level,
-			activity.comment,
-			activity.payload
-		FROM inbox, activity
+			inbox.receiver_id,
+			inbox.activity_id,
+			inbox.status
+		FROM inbox
+		LEFT JOIN activity ON inbox.activity_id = activity.id
 		WHERE `+strings.Join(where, " AND ")+`
 		ORDER BY activity.created_ts DESC`,
 		args...,
@@ -301,21 +279,11 @@ func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRa
 	var inboxRawList []*inboxRaw
 	for rows.Next() {
 		var inboxRaw inboxRaw
-		inboxRaw.ActivityRaw = &activityRaw{}
 		if err := rows.Scan(
 			&inboxRaw.ID,
 			&inboxRaw.ReceiverID,
+			&inboxRaw.ActivityID,
 			&inboxRaw.Status,
-			&inboxRaw.ActivityRaw.ID,
-			&inboxRaw.ActivityRaw.CreatorID,
-			&inboxRaw.ActivityRaw.CreatedTs,
-			&inboxRaw.ActivityRaw.UpdaterID,
-			&inboxRaw.ActivityRaw.UpdatedTs,
-			&inboxRaw.ActivityRaw.ContainerID,
-			&inboxRaw.ActivityRaw.Type,
-			&inboxRaw.ActivityRaw.Level,
-			&inboxRaw.ActivityRaw.Comment,
-			&inboxRaw.ActivityRaw.Payload,
 		); err != nil {
 			return nil, err
 		}
@@ -329,13 +297,12 @@ func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRa
 }
 
 // patchInboxImpl updates a inbox by ID. Returns the new state of the inbox after update.
-func (s *Store) patchInboxImpl(ctx context.Context, tx *Tx, patch *api.InboxPatch) (*inboxRaw, error) {
+func patchInboxImpl(ctx context.Context, tx *Tx, patch *api.InboxPatch) (*inboxRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"status = $1"}, []any{patch.Status}
 	args = append(args, patch.ID)
 
 	var inboxRaw inboxRaw
-	var activityID int
 	// Execute update query with RETURNING.
 	if err := tx.QueryRowContext(ctx, `
 		UPDATE inbox
@@ -347,7 +314,7 @@ func (s *Store) patchInboxImpl(ctx context.Context, tx *Tx, patch *api.InboxPatc
 	).Scan(
 		&inboxRaw.ID,
 		&inboxRaw.ReceiverID,
-		&activityID,
+		&inboxRaw.ActivityID,
 		&inboxRaw.Status,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -355,10 +322,5 @@ func (s *Store) patchInboxImpl(ctx context.Context, tx *Tx, patch *api.InboxPatc
 		}
 		return nil, err
 	}
-	activityRaw, err := s.getActivityRawByID(ctx, activityID)
-	if err != nil {
-		return nil, err
-	}
-	inboxRaw.ActivityRaw = activityRaw
 	return &inboxRaw, nil
 }

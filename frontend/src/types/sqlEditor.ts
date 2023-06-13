@@ -73,12 +73,12 @@ export enum SortText {
 }
 
 export interface QueryHistory {
-  id: ActivityId;
+  name: string;
 
   // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updatedTs: number;
+  // creator in users/{email} format.
+  creator: string;
+  createTime: Date;
 
   // Domain fields
   statement: string;
@@ -88,7 +88,4 @@ export interface QueryHistory {
   instanceId: InstanceId;
   databaseId: DatabaseId;
   error: string;
-
-  // Customized fields
-  createdAt: string;
 }

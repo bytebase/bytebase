@@ -14,6 +14,10 @@ export default defineComponent({
       type: Object as PropType<Principal>,
       default: () => unknown("PRINCIPAL"),
     },
+    username: {
+      type: String,
+      default: "?",
+    },
     size: {
       type: String as PropType<BBAvatarSizeType>,
       default: "NORMAL",
@@ -22,7 +26,7 @@ export default defineComponent({
   setup(props) {
     const username = computed((): string => {
       if (props.principal.id == UNKNOWN_ID) {
-        return "?";
+        return props.username;
       }
       return props.principal.name;
     });

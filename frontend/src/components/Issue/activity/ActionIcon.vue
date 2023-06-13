@@ -11,7 +11,7 @@
       <div
         class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <PrincipalAvatar :principal="activity.creator" :size="'SMALL'" />
+        <PrincipalAvatar :username="user?.title" :size="'SMALL'" />
       </div>
     </div>
     <div v-else-if="icon == 'create'" class="relative pl-0.5">
@@ -83,13 +83,15 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import {
-  Activity,
   ActivityIssueCommentCreatePayload,
   ActivityStageStatusUpdatePayload,
   ActivityTaskStatusUpdatePayload,
-  SYSTEM_BOT_ID,
+  SYSTEM_BOT_EMAIL,
 } from "@/types";
 import { SkipIcon } from "@/components/Icon";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { extractUserResourceName } from "@/utils";
+import { useUserStore } from "@/store";
 
 type ActionIconType =
   | "avatar"
@@ -106,17 +108,26 @@ type ActionIconType =
   | "commit";
 
 const props = defineProps<{
-  activity: Activity;
+  activity: LogEntity;
 }>();
+
+const user = computed(() => {
+  const email = extractUserResourceName(props.activity.creator);
+  return useUserStore().getUserByEmail(email);
+});
 
 const icon = computed((): ActionIconType => {
   const { activity } = props;
-  if (activity.type == "bb.issue.create") {
+  if (activity.action == LogEntity_Action.ACTION_ISSUE_CREATE) {
     return "create";
-  } else if (activity.type == "bb.issue.field.update") {
+  } else if (activity.action == LogEntity_Action.ACTION_ISSUE_FIELD_UPDATE) {
     return "update";
-  } else if (activity.type == "bb.pipeline.task.status.update") {
-    const payload = activity.payload as ActivityTaskStatusUpdatePayload;
+  } else if (
+    activity.action == LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE
+  ) {
+    const payload = JSON.parse(
+      activity.payload
+    ) as ActivityTaskStatusUpdatePayload;
     switch (payload.newStatus) {
       case "PENDING": {
         if (payload.oldStatus == "RUNNING") {
@@ -146,8 +157,12 @@ const icon = computed((): ActionIconType => {
         return "avatar"; // stale approval dismissed.
       }
     }
-  } else if (activity.type == "bb.pipeline.stage.status.update") {
-    const payload = activity.payload as ActivityStageStatusUpdatePayload;
+  } else if (
+    activity.action == LogEntity_Action.ACTION_PIPELINE_STAGE_STATUS_UPDATE
+  ) {
+    const payload = JSON.parse(
+      activity.payload
+    ) as ActivityStageStatusUpdatePayload;
     switch (payload.stageStatusUpdateType) {
       case "BEGIN": {
         return "run";
@@ -156,21 +171,30 @@ const icon = computed((): ActionIconType => {
         return "complete";
       }
     }
-  } else if (activity.type == "bb.pipeline.task.file.commit") {
-    return "commit";
-  } else if (activity.type == "bb.pipeline.task.statement.update") {
-    return "update";
   } else if (
-    activity.type == "bb.pipeline.task.general.earliest-allowed-time.update"
+    activity.action == LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT
+  ) {
+    return "commit";
+  } else if (
+    activity.action == LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE
   ) {
     return "update";
-  } else if (activity.type === "bb.issue.comment.create") {
-    const payload = activity.payload as ActivityIssueCommentCreatePayload;
+  } else if (
+    activity.action ==
+    LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE
+  ) {
+    return "update";
+  } else if (activity.action === LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE) {
+    const payload = JSON.parse(
+      activity.payload
+    ) as ActivityIssueCommentCreatePayload;
     if (payload.approvalEvent?.status === "APPROVED") {
       return "approve";
     }
   }
 
-  return activity.creator.id == SYSTEM_BOT_ID ? "system" : "avatar";
+  return extractUserResourceName(activity.creator) == SYSTEM_BOT_EMAIL
+    ? "system"
+    : "avatar";
 });
 </script>

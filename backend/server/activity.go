@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -58,101 +57,6 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, activity); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal created activity response").SetInternal(err)
-		}
-		return nil
-	})
-
-	g.GET("/activity", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		activityFind := &api.ActivityFind{}
-
-		pageToken := c.QueryParams().Get("token")
-		// We use descending order by default for activities.
-		sinceID, err := unmarshalPageToken(pageToken, api.DESC)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed page token").SetInternal(err)
-		}
-		activityFind.SinceID = &sinceID
-
-		if creatorIDStr := c.QueryParams().Get("user"); creatorIDStr != "" {
-			creatorID, err := strconv.Atoi(creatorIDStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", creatorIDStr)).SetInternal(err)
-			}
-			activityFind.CreatorID = &creatorID
-		}
-		if typePrefixList := c.QueryParams()["typePrefix"]; typePrefixList != nil {
-			activityFind.TypePrefixList = typePrefixList
-		}
-		if levelList := c.QueryParams()["level"]; levelList != nil {
-			list := make([]api.ActivityLevel, len(levelList))
-			for i, level := range levelList {
-				list[i] = api.ActivityLevel(level)
-			}
-			activityFind.LevelList = list
-		}
-		if containerIDStr := c.QueryParams().Get("container"); containerIDStr != "" {
-			containerID, err := strconv.Atoi(containerIDStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter container is not a number: %s", containerIDStr)).SetInternal(err)
-			}
-			activityFind.ContainerID = &containerID
-		}
-		if limitStr := c.QueryParam("limit"); limitStr != "" {
-			limit, err := strconv.Atoi(limitStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter limit is not a number: %s", limitStr)).SetInternal(err)
-			}
-			activityFind.Limit = &limit
-		} else {
-			limit := api.DefaultPageSize
-			activityFind.Limit = &limit
-		}
-		if orderStr := c.QueryParams().Get("order"); orderStr != "" {
-			order, err := api.StringToSortOrder(orderStr)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Query parameter order is invalid").SetInternal(err)
-			}
-			activityFind.Order = &order
-		}
-		if createdTsAfterStr := c.QueryParam("createdTsAfter"); createdTsAfterStr != "" {
-			createdTsAfter, err := strconv.ParseInt(createdTsAfterStr, 10, 64)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Query parameter createdTsAfter is invalid").SetInternal(err)
-			}
-			// Frontend pass it in milliseconds but we store it in seconds.
-			createdTsAfter = time.UnixMilli(createdTsAfter).Unix()
-			activityFind.CreatedTsAfter = &createdTsAfter
-		}
-		if createdTsBeforeStr := c.QueryParam("createdTsBefore"); createdTsBeforeStr != "" {
-			createdTsBefore, err := strconv.ParseInt(createdTsBeforeStr, 10, 64)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Query parameter createdTsBefore is invalid").SetInternal(err)
-			}
-			// Frontend pass it in milliseconds but we store it in seconds.
-			createdTsBefore = time.UnixMilli(createdTsBefore).Unix()
-			activityFind.CreatedTsBefore = &createdTsBefore
-		}
-		activityList, err := s.store.FindActivity(ctx, activityFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch activity list").SetInternal(err)
-		}
-
-		activityResponse := &api.ActivityResponse{}
-		activityResponse.ActivityList = activityList
-
-		nextSinceID := sinceID
-		if len(activityList) > 0 {
-			// Decrement the ID as we use decreasing order by default.
-			nextSinceID = activityList[len(activityList)-1].ID - 1
-		}
-		if activityResponse.NextToken, err = marshalPageToken(nextSinceID); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal page token").SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, activityResponse); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal activity list response").SetInternal(err)
 		}
 		return nil
 	})

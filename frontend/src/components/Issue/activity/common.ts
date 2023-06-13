@@ -1,24 +1,28 @@
 import type {
-  Activity,
   ActivityTaskStatementUpdatePayload,
   ActivityTaskStatusUpdatePayload,
 } from "@/types";
+import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 
 export type DistinctActivity = {
-  activity: Activity;
-  similar: Activity[];
+  activity: LogEntity;
+  similar: LogEntity[];
 };
 
-export const isSimilarActivity = (a: Activity, b: Activity): boolean => {
+export const isSimilarActivity = (a: LogEntity, b: LogEntity): boolean => {
   // Now, we recognize two "Change SQL from .... to ...." activities are similar
   // when they have the same "from" and "to" values.
   if (
-    a.type === "bb.pipeline.task.statement.update" &&
-    b.type === "bb.pipeline.task.statement.update" &&
-    a.containerId === b.containerId
+    a.action === LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE &&
+    a.action === b.action &&
+    a.resource === b.resource
   ) {
-    const payloadA = a.payload as ActivityTaskStatementUpdatePayload;
-    const payloadB = b.payload as ActivityTaskStatementUpdatePayload;
+    const payloadA = JSON.parse(
+      a.payload
+    ) as ActivityTaskStatementUpdatePayload;
+    const payloadB = JSON.parse(
+      b.payload
+    ) as ActivityTaskStatementUpdatePayload;
     if (
       payloadA.oldStatement === payloadB.oldStatement &&
       payloadB.newStatement === payloadB.newStatement
@@ -28,13 +32,13 @@ export const isSimilarActivity = (a: Activity, b: Activity): boolean => {
   }
 
   if (
-    a.type === "bb.pipeline.task.status.update" &&
-    b.type === "bb.pipeline.task.status.update" &&
-    a.containerId === b.containerId &&
-    a.creator.id === b.creator.id
+    a.action === LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE &&
+    a.action === b.action &&
+    a.resource === b.resource &&
+    a.creator === b.creator
   ) {
-    const payloadA = a.payload as ActivityTaskStatusUpdatePayload;
-    const payloadB = b.payload as ActivityTaskStatusUpdatePayload;
+    const payloadA = JSON.parse(a.payload) as ActivityTaskStatusUpdatePayload;
+    const payloadB = JSON.parse(b.payload) as ActivityTaskStatusUpdatePayload;
     if (
       payloadA.oldStatus === payloadB.oldStatus &&
       payloadB.newStatus === payloadB.newStatus

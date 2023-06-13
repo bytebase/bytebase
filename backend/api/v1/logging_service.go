@@ -266,6 +266,28 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 	return resp, nil
 }
 
+// GetLog gets the log.
+func (s *LoggingService) GetLog(ctx context.Context, request *v1pb.GetLogRequest) (*v1pb.LogEntity, error) {
+	activityUID, err := getUIDFromName(request.Name, logNamePrefix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	activity, err := s.store.GetActivityV2(ctx, activityUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find activity with error: %v", err.Error())
+	}
+	if activity == nil {
+		return nil, status.Errorf(codes.NotFound, "cannot found activity %s", request.Name)
+	}
+
+	logEntity, err := s.convertToLogEntity(ctx, activity)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert log entity, error: %v", err)
+	}
+	return logEntity, nil
+}
+
 func (s *LoggingService) convertToLogEntity(ctx context.Context, activity *store.ActivityMessage) (*v1pb.LogEntity, error) {
 	resource := ""
 	switch activity.Type {
@@ -339,6 +361,7 @@ func (s *LoggingService) convertToLogEntity(ctx context.Context, activity *store
 		Action:     convertToActionType(activity.Type),
 		Level:      convertToLogLevel(activity.Level),
 		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),
+		UpdateTime: timestamppb.New(time.Unix(activity.UpdatedTs, 0)),
 		Comment:    activity.Comment,
 		Payload:    activity.Payload,
 	}, nil

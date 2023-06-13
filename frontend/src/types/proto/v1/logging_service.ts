@@ -30,7 +30,7 @@ export interface ListLogsRequest {
    * The order by of the log.
    * Only support order by create_time.
    * For example:
-   *  - order_by = "create_time acs"
+   *  - order_by = "create_time asc"
    *  - order_by = "create_time desc"
    */
   orderBy: string;
@@ -59,6 +59,14 @@ export interface ListLogsResponse {
   nextPageToken: string;
 }
 
+export interface GetLogRequest {
+  /**
+   * The name of the log to retrieve.
+   * Format: logs/{uid}
+   */
+  name: string;
+}
+
 export interface LogEntity {
   /**
    * The name of the log.
@@ -70,8 +78,8 @@ export interface LogEntity {
    * Format: users/{email}
    */
   creator: string;
-  /** The timestamp when the backup resource was created initally. */
   createTime?: Date;
+  updateTime?: Date;
   action: LogEntity_Action;
   level: LogEntity_Level;
   /**
@@ -514,8 +522,74 @@ export const ListLogsResponse = {
   },
 };
 
+function createBaseGetLogRequest(): GetLogRequest {
+  return { name: "" };
+}
+
+export const GetLogRequest = {
+  encode(message: GetLogRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetLogRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetLogRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetLogRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetLogRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetLogRequest>): GetLogRequest {
+    return GetLogRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<GetLogRequest>): GetLogRequest {
+    const message = createBaseGetLogRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseLogEntity(): LogEntity {
-  return { name: "", creator: "", createTime: undefined, action: 0, level: 0, resource: "", payload: "", comment: "" };
+  return {
+    name: "",
+    creator: "",
+    createTime: undefined,
+    updateTime: undefined,
+    action: 0,
+    level: 0,
+    resource: "",
+    payload: "",
+    comment: "",
+  };
 }
 
 export const LogEntity = {
@@ -529,20 +603,23 @@ export const LogEntity = {
     if (message.createTime !== undefined) {
       Timestamp.encode(toTimestamp(message.createTime), writer.uint32(26).fork()).ldelim();
     }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(34).fork()).ldelim();
+    }
     if (message.action !== 0) {
-      writer.uint32(32).int32(message.action);
+      writer.uint32(40).int32(message.action);
     }
     if (message.level !== 0) {
-      writer.uint32(40).int32(message.level);
+      writer.uint32(48).int32(message.level);
     }
     if (message.resource !== "") {
-      writer.uint32(50).string(message.resource);
+      writer.uint32(58).string(message.resource);
     }
     if (message.payload !== "") {
-      writer.uint32(58).string(message.payload);
+      writer.uint32(66).string(message.payload);
     }
     if (message.comment !== "") {
-      writer.uint32(66).string(message.comment);
+      writer.uint32(74).string(message.comment);
     }
     return writer;
   },
@@ -576,35 +653,42 @@ export const LogEntity = {
           message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag !== 34) {
             break;
           }
 
-          message.action = reader.int32() as any;
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 40) {
             break;
           }
 
-          message.level = reader.int32() as any;
+          message.action = reader.int32() as any;
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag !== 48) {
             break;
           }
 
-          message.resource = reader.string();
+          message.level = reader.int32() as any;
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.payload = reader.string();
+          message.resource = reader.string();
           continue;
         case 8:
           if (tag !== 66) {
+            break;
+          }
+
+          message.payload = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
             break;
           }
 
@@ -624,6 +708,7 @@ export const LogEntity = {
       name: isSet(object.name) ? String(object.name) : "",
       creator: isSet(object.creator) ? String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       action: isSet(object.action) ? logEntity_ActionFromJSON(object.action) : 0,
       level: isSet(object.level) ? logEntity_LevelFromJSON(object.level) : 0,
       resource: isSet(object.resource) ? String(object.resource) : "",
@@ -637,6 +722,7 @@ export const LogEntity = {
     message.name !== undefined && (obj.name = message.name);
     message.creator !== undefined && (obj.creator = message.creator);
     message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
+    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
     message.action !== undefined && (obj.action = logEntity_ActionToJSON(message.action));
     message.level !== undefined && (obj.level = logEntity_LevelToJSON(message.level));
     message.resource !== undefined && (obj.resource = message.resource);
@@ -654,6 +740,7 @@ export const LogEntity = {
     message.name = object.name ?? "";
     message.creator = object.creator ?? "";
     message.createTime = object.createTime ?? undefined;
+    message.updateTime = object.updateTime ?? undefined;
     message.action = object.action ?? 0;
     message.level = object.level ?? 0;
     message.resource = object.resource ?? "";
@@ -682,15 +769,32 @@ export const LoggingServiceDefinition = {
         },
       },
     },
+    getLog: {
+      name: "GetLog",
+      requestType: GetLogRequest,
+      requestStream: false,
+      responseType: LogEntity,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([19, 18, 17, 47, 118, 49, 47, 123, 110, 97, 109, 101, 61, 108, 111, 103, 115, 47, 42, 125]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
 export interface LoggingServiceImplementation<CallContextExt = {}> {
   listLogs(request: ListLogsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListLogsResponse>>;
+  getLog(request: GetLogRequest, context: CallContext & CallContextExt): Promise<DeepPartial<LogEntity>>;
 }
 
 export interface LoggingServiceClient<CallOptionsExt = {}> {
   listLogs(request: DeepPartial<ListLogsRequest>, options?: CallOptions & CallOptionsExt): Promise<ListLogsResponse>;
+  getLog(request: DeepPartial<GetLogRequest>, options?: CallOptions & CallOptionsExt): Promise<LogEntity>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

@@ -80,6 +80,9 @@ export default {
             state.unreadList = [];
 
             for (const item of list) {
+              if (!item.activity) {
+                continue;
+              }
               if (item.status == "READ") {
                 state.readList.push(item);
               } else if (item.status == "UNREAD") {
