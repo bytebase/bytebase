@@ -1,0 +1,48 @@
+- statement: CREATE TABLE CUSTOMER(NAME VARCHAR(20));
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE CUSTOMER(NAME VARCHAR(3000));
+  want:
+    - status: WARN
+      code: 422
+      title: column.maximum-varchar-length
+      content: The maximum varchar length is 2560.
+      line: 1
+      details: ""
+- statement: ALTER TABLE PUBLIC.CUSTOMER ADD NAME_2 VARCHAR(22225);
+  want:
+    - status: WARN
+      code: 422
+      title: column.maximum-varchar-length
+      content: The maximum varchar length is 2560.
+      line: 1
+      details: ""
+- statement: ALTER TABLE PUBLIC.CUSTOMER MODIFY COLUMN NAME VARCHAR(22225);
+  want:
+    - status: WARN
+      code: 422
+      title: column.maximum-varchar-length
+      content: The maximum varchar length is 2560.
+      line: 1
+      details: ""
+- statement: ALTER TABLE PUBLIC.CUSTOMER MODIFY COLUMN NAME VARCHAR(20);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE PUBLIC.CUSTOMER MODIFY COLUMN NAME SET DATA TYPE VARCHAR(22225);
+  want:
+    - status: WARN
+      code: 422
+      title: column.maximum-varchar-length
+      content: The maximum varchar length is 2560.
+      line: 1
+      details: ""
