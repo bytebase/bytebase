@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -11,6 +12,11 @@ option go_package = "generated-go/v1";
 service LoggingService {
   rpc ListLogs(ListLogsRequest) returns (ListLogsResponse) {
     option (google.api.http) = {get: "/v1/logs:search"};
+  }
+
+  rpc GetLog(GetLogRequest) returns (LogEntity) {
+    option (google.api.http) = {get: "/v1/{name=logs/*}"};
+    option (google.api.method_signature) = "name";
   }
 }
 
@@ -37,7 +43,7 @@ message ListLogsRequest {
   // The order by of the log.
   // Only support order by create_time.
   // For example:
-  //  - order_by = "create_time acs"
+  //  - order_by = "create_time asc"
   //  - order_by = "create_time desc"
   string order_by = 2;
 
@@ -62,6 +68,12 @@ message ListLogsResponse {
   string next_page_token = 2;
 }
 
+message GetLogRequest {
+  // The name of the log to retrieve.
+  // Format: logs/{uid}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
 message LogEntity {
   // The name of the log.
   // Format: logs/{uid}
@@ -71,8 +83,9 @@ message LogEntity {
   // Format: users/{email}
   string creator = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The timestamp when the backup resource was created initally.
   google.protobuf.Timestamp create_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum Action {
     ACTION_UNSPECIFIED = 0;
@@ -142,7 +155,7 @@ message LogEntity {
     // ACTION_DATABASE_SQL_EXPORT is the type for exporting SQL.
     ACTION_DATABASE_SQL_EXPORT = 62;
   }
-  Action action = 4 [(google.api.field_behavior) = REQUIRED];
+  Action action = 5 [(google.api.field_behavior) = REQUIRED];
 
   enum Level {
     LEVEL_UNSPECIFIED = 0;
@@ -153,7 +166,7 @@ message LogEntity {
     // LEVEL_ERROR is the type for error.
     LEVEL_ERROR = 3;
   }
-  Level level = 5 [(google.api.field_behavior) = REQUIRED];
+  Level level = 6 [(google.api.field_behavior) = REQUIRED];
 
   // The name of the resource associated with this log entity. For example, the resource user associated with log entity type of "ACTION_MEMBER_CREATE".
   // Format:
@@ -162,11 +175,11 @@ message LogEntity {
   // For ACTION_PIPELINE_*: pipelines/{pipeline uid}
   // For ACTION_PROJECT_*: projects/{project resource id}
   // For ACTION_DATABASE_*: instances/{instance resource id}
-  string resource = 6 [(google.api.field_behavior) = REQUIRED];
+  string resource = 7 [(google.api.field_behavior) = REQUIRED];
 
   // The payload of the log entity.
   // TODO: use oneof
-  string payload = 7 [(google.api.field_behavior) = REQUIRED];
+  string payload = 8 [(google.api.field_behavior) = REQUIRED];
 
-  string comment = 8;
+  string comment = 9;
 }

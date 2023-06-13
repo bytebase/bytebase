@@ -12,6 +12,7 @@ export const sheetNamePrefix = "sheets/";
 export const databaseGroupNamePrefix = "databaseGroups/";
 export const schemaGroupNamePrefix = "schemaGroups/";
 export const externalVersionControlPrefix = "externalVersionControls/";
+export const logNamePrefix = "logs/";
 
 export const getNameParentTokens = (
   name: string,
@@ -39,6 +40,15 @@ export const getUserId = (name: string): number => {
   const tokens = getNameParentTokens(name, [userNamePrefix]);
   const userId = Number(tokens[0] || UNKNOWN_ID);
   return userId;
+};
+
+export const getNumberId = (name: string, prefix: string): number => {
+  const tokens = getNameParentTokens(name, [prefix]);
+  return Number(tokens[0] || UNKNOWN_ID);
+};
+
+export const getLogId = (name: string): number => {
+  return getNumberId(name, logNamePrefix);
 };
 
 export const getProjectAndSheetId = (name: string): string[] => {
