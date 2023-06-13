@@ -51,13 +51,13 @@
     - status: WARN
       code: 301
       title: naming.table
-      content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 2
       details: ""
     - status: WARN
       code: 301
       title: naming.table
-      content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 2
       details: ""
 - statement: CREATE TABLE literary_book(a int);RENAME TABLE tech_book TO tech_book_copy, literary_book TO literary_book_copy

@@ -19,13 +19,13 @@
     - status: WARN
       code: 304
       title: naming.index.uk
-      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy`
+      content: Unique key `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
       line: 2
       details: ""
     - status: WARN
       code: 304
       title: naming.index.uk
-      content: Unique key `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy`
       line: 2
       details: ""
 - statement: ALTER TABLE tech_book ADD UNIQUE uk_tech_book_id_name (id, name)
