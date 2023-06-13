@@ -511,7 +511,8 @@ const validateResourceId = async (
 
   try {
     const env = await environmentV1Store.getOrFetchEnvironmentByName(
-      environmentNamePrefix + resourceId
+      environmentNamePrefix + resourceId,
+      true /* silent */
     );
     if (env) {
       return [

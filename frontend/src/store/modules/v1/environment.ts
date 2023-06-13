@@ -109,14 +109,17 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       });
       return updatedEnvironmentList;
     },
-    async getOrFetchEnvironmentByName(name: string) {
+    async getOrFetchEnvironmentByName(name: string, silent = false) {
       const cachedData = this.environmentMapByName.get(name);
       if (cachedData) {
         return cachedData;
       }
-      const environment = await environmentServiceClient.getEnvironment({
-        name,
-      });
+      const environment = await environmentServiceClient.getEnvironment(
+        {
+          name,
+        },
+        { silent }
+      );
       this.environmentMapByName.set(environment.name, environment);
       return environment;
     },

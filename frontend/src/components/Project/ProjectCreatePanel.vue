@@ -178,7 +178,8 @@ const validateResourceId = async (
 
   try {
     const project = await projectV1Store.getOrFetchProjectByName(
-      projectNamePrefix + resourceId
+      projectNamePrefix + resourceId,
+      true /* silent */
     );
     if (project) {
       return [

@@ -860,7 +860,8 @@ const validateResourceId = async (
 
   try {
     const idp = await identityProviderStore.getOrFetchIdentityProviderByName(
-      idpNamePrefix + resourceId
+      idpNamePrefix + resourceId,
+      true /* silent */
     );
     if (idp) {
       return [
