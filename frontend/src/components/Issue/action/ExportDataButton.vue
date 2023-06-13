@@ -38,9 +38,9 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive } from "vue";
 import dayjs from "dayjs";
-
+import { head } from "lodash-es";
+import { onMounted, reactive } from "vue";
 import { useExtraIssueLogic, useIssueLogic } from "../logic";
 import {
   GrantRequestPayload,
@@ -94,11 +94,13 @@ onMounted(async () => {
     conditionExpression.databaseResources !== undefined &&
     conditionExpression.databaseResources.length > 0
   ) {
-    const databaseName = String(
-      conditionExpression.databaseResources[0].databaseName
-    );
-    const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
-    state.databaseId = database.uid;
+    const resource = head(conditionExpression.databaseResources);
+    if (resource) {
+      const database = await databaseStore.getOrFetchDatabaseByName(
+        resource.databaseName
+      );
+      state.databaseId = database.uid;
+    }
   }
   if (conditionExpression.statement !== undefined) {
     state.statement = conditionExpression.statement;
