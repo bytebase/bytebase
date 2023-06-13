@@ -125,7 +125,7 @@ func (exec *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSch
 	if err != nil {
 		return nil, err
 	}
-	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database.DatabaseName, exec.dbFactory, newSchema)
+	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database, exec.dbFactory, newSchema)
 	if err != nil {
 		return nil, err
 	}

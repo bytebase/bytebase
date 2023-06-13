@@ -19,8 +19,8 @@ import (
 // ComputeDatabaseSchemaDiff computes the diff between current database schema
 // and the given schema. It returns an empty string if there is no applicable
 // diff.
-func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMessage, databaseName string, dbFactory *dbfactory.DBFactory, newSchema string) (string, error) {
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
+func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, dbFactory *dbfactory.DBFactory, newSchema string) (string, error) {
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return "", errors.Wrap(err, "get admin driver")
 	}
