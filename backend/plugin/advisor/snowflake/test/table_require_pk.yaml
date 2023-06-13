@@ -39,7 +39,7 @@
       code: 601
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
-      line: 0
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE CUSTOMER
@@ -54,7 +54,7 @@
       code: 601
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
-      line: 0
+      line: 7
       details: ""
 - statement: |-
     CREATE TABLE CUSTOMER
@@ -102,11 +102,11 @@
       code: 601
       title: table.require-pk
       content: Table CUSTOMER requires PRIMARY KEY.
-      line: 0
+      line: 24
       details: ""
     - status: WARN
       code: 601
       title: table.require-pk
       content: Table ORDERING requires PRIMARY KEY.
-      line: 0
+      line: 25
       details: ""
