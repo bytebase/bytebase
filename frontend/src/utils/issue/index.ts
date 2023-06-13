@@ -24,5 +24,3 @@ export function isDatabaseRelatedIssueType(issueType: IssueType): boolean {
     "bb.issue.database.restore.pitr",
   ].includes(issueType);
 }
-
-export * from "./expr";

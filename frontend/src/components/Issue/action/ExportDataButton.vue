@@ -39,7 +39,6 @@
 
 <script lang="ts" setup>
 import { onMounted, reactive } from "vue";
-import { head } from "lodash-es";
 import dayjs from "dayjs";
 
 import { useExtraIssueLogic, useIssueLogic } from "../logic";
@@ -57,7 +56,7 @@ import {
   useSQLStore,
 } from "@/store";
 import { BBSpin } from "@/bbkit";
-import { convertFromCEL } from "@/utils/issue/cel";
+import { convertFromCELString } from "@/utils/issue/cel";
 
 interface LocalState {
   databaseId: string;
@@ -88,17 +87,18 @@ onMounted(async () => {
   if (payload.role !== PresetRoleType.EXPORTER) {
     throw "Only support EXPORTER role";
   }
-  const conditionExpression = await convertFromCEL(
+  const conditionExpression = await convertFromCELString(
     payload.condition.expression
   );
   if (
     conditionExpression.databaseResources !== undefined &&
     conditionExpression.databaseResources.length > 0
   ) {
-    const resource = head(conditionExpression.databaseResources);
-    if (resource) {
-      state.databaseId = String(resource.databaseId);
-    }
+    const databaseName = String(
+      conditionExpression.databaseResources[0].databaseName
+    );
+    const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
+    state.databaseId = database.uid;
   }
   if (conditionExpression.statement !== undefined) {
     state.statement = conditionExpression.statement;

@@ -61,7 +61,6 @@
               </div>
               <div class="bb-grid-cell w-12">
                 <button
-                  v-if="item.databaseResource"
                   class="cursor-pointer opacity-60 hover:opacity-100"
                   @click="handleDeleteCondition(item)"
                 >
@@ -110,7 +109,7 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { State } from "@/types/proto/v1/common";
 import { ComposedProjectMember } from "./types";
 import {
-  convertFromCEL,
+  convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
 import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
@@ -276,15 +275,15 @@ const handleDeleteRole = (role: string) => {
 };
 
 const handleDeleteCondition = async (condition: FormattedCondition) => {
-  if (!condition.databaseResource) {
-    return;
+  let role = `${displayRoleTitle(condition.rawRole.role)}`;
+  if (condition.databaseResource) {
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      String(condition.databaseResource.databaseName)
+    );
+    role = `${role} - ${database.name}`;
   }
-
-  const database = await databaseStore.getOrFetchDatabaseByUID(
-    String(condition.databaseResource.databaseId)
-  );
   const title = t("project.settings.members.revoke-role-from-user", {
-    role: `${displayRoleTitle(condition.rawRole.role)} - ${database.name}`,
+    role: role,
     user: props.member.user.title,
   });
   dialog.create({
@@ -317,25 +316,24 @@ const handleDeleteCondition = async (condition: FormattedCondition) => {
         policy.bindings.push(rawRole);
       }
 
-      const conditionExpression = await convertFromCEL(
-        rawRole.condition?.expression || ""
-      );
-      if (conditionExpression.databaseResources === undefined) {
-        return;
+      if (rawRole.parsedExpr?.expr) {
+        const conditionExpr = convertFromExpr(rawRole.parsedExpr.expr);
+        if (conditionExpr.databaseResources) {
+          conditionExpr.databaseResources =
+            conditionExpr.databaseResources.filter(
+              (resource) => !isEqual(resource, condition.databaseResource)
+            );
+          if (conditionExpr.databaseResources.length === 0) {
+            policy.bindings = policy.bindings.filter(
+              (binding) => !isEqual(binding, rawRole)
+            );
+          } else {
+            rawRole.condition!.expression =
+              stringifyConditionExpression(conditionExpr);
+          }
+        }
       }
 
-      conditionExpression.databaseResources =
-        conditionExpression.databaseResources.filter(
-          (resource) => !isEqual(resource, condition.databaseResource)
-        );
-      if (conditionExpression.databaseResources.length === 0) {
-        policy.bindings = policy.bindings.filter(
-          (binding) => !isEqual(binding, rawRole)
-        );
-      } else {
-        rawRole.condition!.expression =
-          stringifyConditionExpression(conditionExpression);
-      }
       await projectIamPolicyStore.updateProjectIamPolicy(
         projectResourceName.value,
         policy
@@ -348,8 +346,8 @@ const extractDatabaseName = (databaseResource?: DatabaseResource) => {
   if (!databaseResource) {
     return "*";
   }
-  const database = databaseStore.getDatabaseByUID(
-    String(databaseResource.databaseId)
+  const database = databaseStore.getDatabaseByName(
+    String(databaseResource.databaseName)
   );
   return database.databaseName;
 };
@@ -401,42 +399,34 @@ watch(
     });
     for (const rawRole of rawRoleList) {
       const formattedConditionList = [];
+      const formatedCondition: FormattedCondition = {
+        databaseResource: undefined,
+        expiration: undefined,
+        description: undefined,
+        rawRole: rawRole,
+      };
 
-      const celExpression = rawRole.condition?.expression || "";
-      if (!celExpression) {
-        formattedConditionList.push({
-          databaseResource: undefined,
-          expiration: undefined,
-          description: undefined,
-          rawRole: rawRole,
-        });
-      } else {
-        const conditionExpression = await convertFromCEL(celExpression);
-        const description = rawRole.condition?.description || "";
+      if (rawRole.parsedExpr?.expr) {
+        const conditionExpr = convertFromExpr(rawRole.parsedExpr.expr);
+        formatedCondition.description = rawRole.condition?.description || "";
+        if (conditionExpr.expiredTime) {
+          formatedCondition.expiration = new Date(conditionExpr.expiredTime);
+        }
         if (
-          Array.isArray(conditionExpression.databaseResources) &&
-          conditionExpression.databaseResources.length > 0
+          Array.isArray(conditionExpr.databaseResources) &&
+          conditionExpr.databaseResources.length > 0
         ) {
-          for (const resource of conditionExpression.databaseResources) {
-            let expiration = undefined;
-            if (conditionExpression.expiredTime) {
-              expiration = new Date(conditionExpression.expiredTime);
-            }
+          for (const resource of conditionExpr.databaseResources) {
             formattedConditionList.push({
+              ...formatedCondition,
               databaseResource: resource,
-              expiration: expiration,
-              description: description,
-              rawRole: rawRole,
             });
           }
         } else {
-          formattedConditionList.push({
-            databaseResource: undefined,
-            expiration: undefined,
-            description: description,
-            rawRole: rawRole,
-          });
+          formattedConditionList.push(formatedCondition);
         }
+      } else {
+        formattedConditionList.push(formatedCondition);
       }
 
       const tempRole = tempRoleList.find((role) => role.role === rawRole.role);

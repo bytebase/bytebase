@@ -3,18 +3,16 @@ import { defineStore } from "pinia";
 
 import { IamPolicy } from "@/types/proto/v1/project_service";
 import { projectServiceClient } from "@/grpcweb";
-import { ComposedDatabase, Database, MaybeRef, PresetRoleType } from "@/types";
+import { ComposedDatabase, MaybeRef, PresetRoleType } from "@/types";
 import { useProjectV1Store } from "./project";
 import { useCurrentUserV1 } from "../auth";
 import {
-  getDatabaseNameById,
   hasWorkspacePermissionV1,
   isDeveloperOfProjectV1,
   isMemberOfProjectV1,
   isOwnerOfProjectV1,
-  parseConditionExpressionString,
 } from "@/utils";
-import { convertFromSimpleExpr } from "@/utils/issue/cel";
+import { convertFromExpr } from "@/utils/issue/cel";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -171,52 +169,6 @@ export const useCurrentUserIamPolicy = () => {
     return isProjectOwnerOrDeveloper(projectName);
   };
 
-  const allowToQueryDatabase = (database: Database) => {
-    if (hasWorkspaceSuperPrivilege) {
-      return true;
-    }
-
-    const policy = iamPolicyStore.getProjectIamPolicy(
-      `projects/${database.project.resourceId}`
-    );
-    if (!policy) {
-      return false;
-    }
-    const iamPolicyCheckResult = policy.bindings.map((binding) => {
-      if (
-        binding.role === PresetRoleType.OWNER &&
-        binding.members.find(
-          (member) => member === `user:${currentUser.value.email}`
-        )
-      ) {
-        return true;
-      }
-      if (
-        binding.role === PresetRoleType.QUERIER &&
-        binding.members.find(
-          (member) => member === `user:${currentUser.value.email}`
-        )
-      ) {
-        const conditionExpression = parseConditionExpressionString(
-          binding.condition?.expression || ""
-        );
-        if (conditionExpression.databases) {
-          const databaseResourceName = getDatabaseNameById(String(database.id));
-          return conditionExpression.databases.includes(databaseResourceName);
-        } else {
-          return true;
-        }
-      }
-      return false;
-    });
-    // If one of the binding is true, then the user is allowed to query the database.
-    if (iamPolicyCheckResult.includes(true)) {
-      return true;
-    }
-
-    return false;
-  };
-
   const allowToQueryDatabaseV1 = (database: ComposedDatabase) => {
     if (hasWorkspaceSuperPrivilege) {
       return true;
@@ -239,7 +191,7 @@ export const useCurrentUserIamPolicy = () => {
         )
       ) {
         if (binding.parsedExpr?.expr) {
-          const conditionExpr = convertFromSimpleExpr(binding.parsedExpr.expr);
+          const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
           if (
             conditionExpr.databaseResources &&
             conditionExpr.databaseResources.length > 0
@@ -287,7 +239,7 @@ export const useCurrentUserIamPolicy = () => {
         )
       ) {
         if (binding.parsedExpr?.expr) {
-          const conditionExpr = convertFromSimpleExpr(binding.parsedExpr.expr);
+          const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
           if (
             conditionExpr.databaseResources &&
             conditionExpr.databaseResources.length > 0
@@ -319,7 +271,6 @@ export const useCurrentUserIamPolicy = () => {
     isMemberOfProject,
     isProjectOwnerOrDeveloper,
     allowToChangeDatabaseOfProject,
-    allowToQueryDatabase,
     allowToQueryDatabaseV1,
     allowToExportDatabaseV1,
   };

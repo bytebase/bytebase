@@ -173,7 +173,7 @@ import { extractUserUID, instanceV1Name, memberListInProjectV1 } from "@/utils";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { convertFromCEL } from "@/utils/issue/cel";
+import { convertFromCELString } from "@/utils/issue/cel";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import DatabaseSelect from "@/components/DatabaseSelect.vue";
 import { Engine } from "@/types/proto/v1/common";
@@ -251,9 +251,11 @@ onMounted(async () => {
       state.statement = context.statement;
     }
     if (context.databaseResources && context.databaseResources.length > 0) {
-      const databaseId = String(context.databaseResources[0].databaseId);
-      const database = await databaseStore.getOrFetchDatabaseByUID(databaseId);
-      state.databaseId = databaseId;
+      const databaseName = String(context.databaseResources[0].databaseName);
+      const database = await databaseStore.getOrFetchDatabaseByName(
+        databaseName
+      );
+      state.databaseId = database.uid;
       state.environmentId = database.instanceEntity.environmentEntity.uid;
     }
   }
@@ -326,7 +328,6 @@ watch(
       if (selectedDatabase.value) {
         context.databaseResources = [
           {
-            databaseId: selectedDatabase.value.uid,
             databaseName: selectedDatabase.value.name,
           },
         ];
@@ -355,7 +356,7 @@ watch(
         throw "Only support EXPORTER role";
       }
 
-      const conditionExpression = await convertFromCEL(
+      const conditionExpression = await convertFromCELString(
         payload.condition.expression
       );
       if (
@@ -364,7 +365,10 @@ watch(
       ) {
         const resource = head(conditionExpression.databaseResources);
         if (resource) {
-          state.databaseId = String(resource.databaseId);
+          const database = await databaseStore.getOrFetchDatabaseByName(
+            resource.databaseName
+          );
+          state.databaseId = database.uid;
         }
       }
       if (conditionExpression.expiredTime !== undefined) {
