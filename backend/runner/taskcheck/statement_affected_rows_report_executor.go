@@ -85,7 +85,7 @@ func (s *StatementAffectedRowsReportExecutor) Run(ctx context.Context, _ *store.
 	if err != nil {
 		return nil, err
 	}
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return nil, err
 	}

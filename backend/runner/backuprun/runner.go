@@ -285,7 +285,7 @@ func (r *Runner) downloadBinlogFilesForInstance(ctx context.Context, instance *s
 		r.downloadBinlogMu.Unlock()
 		r.downloadBinlogWg.Done()
 	}()
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
 			log.Debug("Cannot connect to instance", zap.String("instance", instance.ResourceID), zap.Error(err))
@@ -421,7 +421,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 		return nil, errors.Errorf("environment %q not found", instance.EnvironmentID)
 	}
 
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get admin database driver")
 	}
