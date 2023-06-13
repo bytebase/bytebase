@@ -19,13 +19,13 @@
     - status: WARN
       code: 305
       title: naming.index.fk
-      content: Foreign key in table `tech_book` mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found `rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk`
+      content: Foreign key `rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
       line: 2
       details: ""
     - status: WARN
       code: 305
       title: naming.index.fk
-      content: Foreign key `rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
+      content: Foreign key in table `tech_book` mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found `rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk`
       line: 2
       details: ""
 - statement: CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id))
