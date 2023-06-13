@@ -4,7 +4,7 @@
     :title="$t('common.bookmarks')"
     :item-list="
       bookmarkList.map((item) => {
-        return { id: item.id.toString(), name: item.name, link: item.link };
+        return { id: item.name, name: item.title, link: item.link };
       })
     "
     :allow-delete="true"
@@ -19,32 +19,30 @@ import { UNKNOWN_ID } from "../types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useBookmarkStore, useCurrentUser } from "@/store";
+import { useBookmarkV1Store, useCurrentUser } from "@/store";
 
 export default defineComponent({
   name: "BookmarkListSidePanel",
   setup() {
     const { t } = useI18n();
     const router = useRouter();
-    const bookmarkStore = useBookmarkStore();
+    const bookmarkV1Store = useBookmarkV1Store();
 
     const currentUser = useCurrentUser();
 
     const prepareBookmarkList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        bookmarkStore.fetchBookmarkListByUser(currentUser.value.id);
+        bookmarkV1Store.fetchBookmarkList();
       }
     };
 
     watchEffect(prepareBookmarkList);
 
-    const bookmarkList = computed(() =>
-      bookmarkStore.bookmarkListByUser(currentUser.value.id)
-    );
+    const bookmarkList = computed(() => bookmarkV1Store.bookmarkList);
 
     const deleteIndex = (index: number) => {
-      bookmarkStore.deleteBookmark(bookmarkList.value[index]);
+      bookmarkV1Store.deleteBookmark(bookmarkList.value[index].name);
     };
 
     const kbarActions = computed((): Action[] => {
