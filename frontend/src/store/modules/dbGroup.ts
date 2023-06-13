@@ -80,13 +80,16 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return Array.from(dbGroupMapByName.value.values());
   };
 
-  const getOrFetchDBGroupByName = async (name: string) => {
+  const getOrFetchDBGroupByName = async (name: string, silent = false) => {
     const cached = dbGroupMapByName.value.get(name);
     if (cached) return cached;
 
-    const databaseGroup = await projectServiceClient.getDatabaseGroup({
-      name: name,
-    });
+    const databaseGroup = await projectServiceClient.getDatabaseGroup(
+      {
+        name: name,
+      },
+      { silent }
+    );
     const composedData = await composeDatabaseGroup(databaseGroup);
     dbGroupMapByName.value.set(name, composedData);
     return composedData;
@@ -183,13 +186,16 @@ export const useDBGroupStore = defineStore("db-group", () => {
     dbGroupMapByName.value.delete(name);
   };
 
-  const getOrFetchSchemaGroupByName = async (name: string) => {
+  const getOrFetchSchemaGroupByName = async (name: string, silent = false) => {
     const cached = schemaGroupMapByName.value.get(name);
     if (cached) return cached;
 
-    const schemaGroup = await projectServiceClient.getSchemaGroup({
-      name: name,
-    });
+    const schemaGroup = await projectServiceClient.getSchemaGroup(
+      {
+        name: name,
+      },
+      { silent }
+    );
     const composedData = await composeSchemaGroup(schemaGroup);
     schemaGroupMapByName.value.set(name, composedData);
     return schemaGroup;

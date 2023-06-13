@@ -239,12 +239,14 @@ const validateResourceId = async (
   let request = undefined;
   if (props.resourceType === "DATABASE_GROUP") {
     request = dbGroupStore.getOrFetchDBGroupByName(
-      `${props.project.name}/${databaseGroupNamePrefix}${resourceId}`
+      `${props.project.name}/${databaseGroupNamePrefix}${resourceId}`,
+      true /* silent */
     );
   } else if (props.resourceType === "SCHEMA_GROUP") {
     if (state.selectedDatabaseGroupId) {
       request = dbGroupStore.getOrFetchSchemaGroupByName(
-        `${state.selectedDatabaseGroupId}/${schemaGroupNamePrefix}${resourceId}`
+        `${state.selectedDatabaseGroupId}/${schemaGroupNamePrefix}${resourceId}`,
+        true /* silent */
       );
     }
   }
