@@ -101,6 +101,7 @@ message Value {
     WorkspaceProfileSetting workspace_profile_setting_value = 5;
     WorkspaceApprovalSetting workspace_approval_setting_value = 6;
     WorkspaceTrialSetting workspace_trial_setting_value = 7;
+    ExternalApprovalSetting external_approval_setting_value = 8;
   }
 }
 
@@ -202,6 +203,19 @@ message WorkspaceApprovalSetting {
     google.type.Expr condition = 3;
   }
   repeated Rule rules = 1;
+}
+
+message ExternalApprovalSetting {
+  message Node {
+    // A unique identifier for a node.
+    // We will also include the id in the message sending to the external relay service to identify the node.
+    string id = 1;
+    // The title of the node.
+    string title = 2;
+    // The external endpoint for the relay service, e.g. "http://hello:1234".
+    string endpoint = 3;
+  }
+  repeated Node nodes = 1;
 }
 
 message WorkspaceTrialSetting {
