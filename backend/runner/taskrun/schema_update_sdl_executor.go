@@ -70,7 +70,7 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *store.Ta
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := backendutils.RenderStatement(statement, materials)
 
-	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database.DatabaseName, exec.dbFactory, renderedStatement)
+	ddl, err := utils.ComputeDatabaseSchemaDiff(ctx, instance, database, exec.dbFactory, renderedStatement)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}

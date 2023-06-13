@@ -60,7 +60,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		singleSQLResults, queryErr := func() ([]api.SingleSQLResult, error) {
-			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 			if err != nil {
 				return nil, err
 			}

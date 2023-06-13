@@ -172,7 +172,7 @@ func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api
 	if payload.TransactionID == "" {
 		return nil, errors.New("missing transaction ID, may be there is no data change in the transaction")
 	}
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get admin database driver")
 	}
@@ -280,7 +280,7 @@ func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.
 	}
 	binlogFileNameList := mysql.GenBinlogFileNames(basename, seqStart, seqEnd)
 
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to get admin database driver")
 	}
