@@ -1187,7 +1187,8 @@ const validateResourceId = async (
 
   try {
     const instance = await instanceV1Store.getOrFetchInstanceByName(
-      instanceNamePrefix + resourceId
+      instanceNamePrefix + resourceId,
+      true /* silent */
     );
     if (instance) {
       return [
