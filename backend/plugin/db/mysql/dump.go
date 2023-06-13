@@ -537,7 +537,7 @@ func getTableStmt(txn *sql.Tx, dbType db.Type, dbName, tblName, tblType string) 
 			return "", err
 		}
 		if dbType == db.OceanBase {
-			stmt = trimAfterLastParenthesis(stmt) + ";\n"
+			stmt = trimAfterLastParenthesis(stmt)
 		}
 		return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
 	case viewTableType:
