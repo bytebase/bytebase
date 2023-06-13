@@ -959,8 +959,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return OracleColumnMaximumCharacterLength, nil
 		}
 	case SchemaRuleColumnMaximumVarcharLength:
-		if engine == db.Oracle {
+		switch engine {
+		case db.Oracle:
 			return OracleColumnMaximumVarcharLength, nil
+		case db.Snowflake:
+			return SnowflakeColumnMaximumVarcharLength, nil
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {
