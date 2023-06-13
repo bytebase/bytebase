@@ -50,7 +50,6 @@ const buildNewGrantRequestIssue = async (
     if (database) {
       createContext.databaseResources = [
         {
-          databaseId: database.uid,
           databaseName: database.name,
         },
       ];

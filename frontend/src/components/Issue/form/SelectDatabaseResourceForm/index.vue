@@ -81,12 +81,10 @@ onMounted(async () => {
       database.name
     );
     databaseResourceMap.value.set(`d-${database.uid}`, {
-      databaseId: database.uid,
       databaseName: database.name,
     });
     for (const schema of databaseMetadata.schemas) {
       databaseResourceMap.value.set(`s-${database.uid}-${schema.name}`, {
-        databaseId: database.uid,
         databaseName: database.name,
         schema: schema.name,
       });
@@ -94,7 +92,6 @@ onMounted(async () => {
         databaseResourceMap.value.set(
           `t-${database.uid}-${schema.name}-${table.name}`,
           {
-            databaseId: database.uid,
             databaseName: database.name,
             schema: schema.name,
             table: table.name,
@@ -192,11 +189,11 @@ watch(
     for (const databaseResource of props.selectedDatabaseResourceList) {
       let key = "";
       if (databaseResource.table !== undefined) {
-        key = `t-${databaseResource.databaseId}-${databaseResource.schema}-${databaseResource.table}`;
+        key = `t-${databaseResource.databaseName}-${databaseResource.schema}-${databaseResource.table}`;
       } else if (databaseResource.schema !== undefined) {
-        key = `s-${databaseResource.databaseId}-${databaseResource.schema}`;
+        key = `s-${databaseResource.databaseName}-${databaseResource.schema}`;
       } else {
-        key = `d-${databaseResource.databaseId}`;
+        key = `d-${databaseResource.databaseName}`;
       }
       selectedKeyList.push(key);
     }

@@ -5,7 +5,6 @@ import { ComposedDatabase } from "@/types";
 import { hasSchemaProperty } from "@/utils";
 
 export interface DatabaseResource {
-  databaseId: string;
   databaseName: string;
   schema?: string;
   table?: string;
