@@ -127,7 +127,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err == nil {
 		defer driver.Close(ctx)
 		if _, err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
@@ -225,7 +225,7 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 
 	switch instance.Engine {
 	case db.MySQL:
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {
 			return nil, err
 		}
@@ -254,7 +254,7 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 				continue
 			}
 			if err := func() error {
-				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 				if err != nil {
 					return err
 				}

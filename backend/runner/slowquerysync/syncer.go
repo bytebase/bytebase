@@ -142,7 +142,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		return err
 	}
 
-	var firstDatabase string
+	var firstDatabase *store.DatabaseMessage
 	for _, database := range databases {
 		if database.SyncState != api.OK {
 			continue
@@ -151,7 +151,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			continue
 		}
 		if err := func() error {
-			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 			if err != nil {
 				return err
 			}
@@ -165,12 +165,12 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 				zap.Error(err))
 		}
 
-		if firstDatabase == "" {
-			firstDatabase = database.DatabaseName
+		if firstDatabase == nil {
+			firstDatabase = database
 		}
 	}
 
-	if firstDatabase == "" {
+	if firstDatabase == nil {
 		return errors.Errorf("no database is available for slow query sync in instance %s", instance.ResourceID)
 	}
 
@@ -300,7 +300,7 @@ func (s *Syncer) syncMySQLSlowQuery(ctx context.Context, instance *store.Instanc
 		latestSlowLogDate = &earliestDate
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		return err
 	}

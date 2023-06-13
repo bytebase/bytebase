@@ -117,7 +117,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 		return nil, err
 	}
 
-	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database.DatabaseName)
+	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return nil, err
 	}
