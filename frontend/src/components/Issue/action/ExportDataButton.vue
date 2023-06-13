@@ -38,10 +38,9 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive } from "vue";
-import { head } from "lodash-es";
 import dayjs from "dayjs";
-
+import { head } from "lodash-es";
+import { onMounted, reactive } from "vue";
 import { useExtraIssueLogic, useIssueLogic } from "../logic";
 import {
   GrantRequestPayload,
@@ -57,7 +56,7 @@ import {
   useSQLStore,
 } from "@/store";
 import { BBSpin } from "@/bbkit";
-import { convertFromCEL } from "@/utils/issue/cel";
+import { convertFromCELString } from "@/utils/issue/cel";
 
 interface LocalState {
   databaseId: string;
@@ -88,7 +87,7 @@ onMounted(async () => {
   if (payload.role !== PresetRoleType.EXPORTER) {
     throw "Only support EXPORTER role";
   }
-  const conditionExpression = await convertFromCEL(
+  const conditionExpression = await convertFromCELString(
     payload.condition.expression
   );
   if (
@@ -97,7 +96,10 @@ onMounted(async () => {
   ) {
     const resource = head(conditionExpression.databaseResources);
     if (resource) {
-      state.databaseId = String(resource.databaseId);
+      const database = await databaseStore.getOrFetchDatabaseByName(
+        resource.databaseName
+      );
+      state.databaseId = database.uid;
     }
   }
   if (conditionExpression.statement !== undefined) {

@@ -50,7 +50,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { ProjectSelect, InstanceSelect, DatabaseSelect } from "@/components/v2";
-import { convertFromSimpleExpr } from "@/utils/issue/cel";
+import { convertFromExpr } from "@/utils/issue/cel";
 import ExportRecordTable from "./ExportRecordTable.vue";
 
 interface LocalState {
@@ -114,7 +114,7 @@ watchEffect(async () => {
         continue;
       }
 
-      const conditionExpr = convertFromSimpleExpr(binding.parsedExpr.expr);
+      const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
       const databaseResource = head(conditionExpr.databaseResources);
       if (databaseResource) {
         const description = binding.condition?.description || "";
