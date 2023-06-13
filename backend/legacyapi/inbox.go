@@ -20,7 +20,7 @@ type Inbox struct {
 
 	// Domain specific fields
 	ReceiverID int         `jsonapi:"attr,receiverId"`
-	Activity   *Activity   `jsonapi:"relation,activity"`
+	ActivityID int         `jsonapi:"attr,activityId"`
 	Status     InboxStatus `jsonapi:"attr,status"`
 }
 

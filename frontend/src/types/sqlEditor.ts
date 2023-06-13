@@ -1,6 +1,5 @@
 import type * as monaco from "monaco-editor";
-import { InstanceId, DatabaseId, ActivityId, EngineType } from "../types";
-import { Principal } from "./principal";
+import { InstanceId, DatabaseId, EngineType } from "../types";
 import { Engine } from "./proto/v1/common";
 
 export type EditorModel = monaco.editor.ITextModel;
@@ -73,12 +72,12 @@ export enum SortText {
 }
 
 export interface QueryHistory {
-  id: ActivityId;
+  name: string;
 
   // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updatedTs: number;
+  // creator in users/{email} format.
+  creator: string;
+  createTime: Date;
 
   // Domain fields
   statement: string;
@@ -88,7 +87,4 @@ export interface QueryHistory {
   instanceId: InstanceId;
   databaseId: DatabaseId;
   error: string;
-
-  // Customized fields
-  createdAt: string;
 }

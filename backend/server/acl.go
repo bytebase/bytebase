@@ -315,7 +315,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Activity ID is not a number: %s"+activityIDStr)).SetInternal(err)
 			}
 
-			activity, err := s.store.GetActivityByID(ctx, activityID)
+			activity, err := s.store.GetActivityV2(ctx, activityID)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}

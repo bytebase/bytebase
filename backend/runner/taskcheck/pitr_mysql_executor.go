@@ -65,7 +65,7 @@ func (e *PITRMySQLExecutor) Run(ctx context.Context, _ *store.TaskCheckRunMessag
 		return nil, errors.Wrapf(err, "failed to get instance by ID %d", instanceID)
 	}
 
-	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 	if err != nil {
 		return nil, err
 	}

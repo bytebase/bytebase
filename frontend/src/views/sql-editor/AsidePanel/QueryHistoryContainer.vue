@@ -16,12 +16,14 @@
     <div class="w-full flex flex-col justify-start items-start overflow-y-auto">
       <div
         v-for="history in data"
-        :key="history.id"
+        :key="history.name"
         class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-50"
         @click="handleQueryHistoryClick(history)"
       >
         <div class="w-full flex flex-row justify-between items-center">
-          <span class="text-xs text-gray-500">{{ history.createdAt }}</span>
+          <span class="text-xs text-gray-500">{{
+            dayjs(history.createTime).format("YYYY-MM-DD HH:mm:ss")
+          }}</span>
           <span
             class="p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200"
           >

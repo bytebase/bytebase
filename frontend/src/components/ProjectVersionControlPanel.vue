@@ -124,7 +124,8 @@ const state = reactive<LocalState>({
 
 watchEffect(async () => {
   const repo = await repositoryV1Store.getOrFetchRepositoryByProject(
-    props.project.name
+    props.project.name,
+    true /* silent */
   );
   if (repo) {
     await vcsV1Store.fetchVCSByUid(repo.vcsUid);

@@ -1,5 +1,4 @@
 import { defineStore } from "pinia";
-import dayjs from "dayjs";
 import {
   SQLEditorState,
   QueryInfo,
@@ -8,11 +7,10 @@ import {
   SingleSQLResult,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { useActivityStore } from "./activity";
 import { useLegacySQLStore } from "./sql";
 import { useTabStore } from "./tab";
 import { useDatabaseV1Store } from "./v1/database";
-import { useInstanceV1Store, useSQLStore } from "./v1";
+import { useInstanceV1Store, useSQLStore, useActivityV1Store } from "./v1";
 
 // set the limit to 10000 temporarily to avoid the query timeout and page crash
 export const RESULT_ROWS_LIMIT = 1000;
@@ -72,31 +70,30 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     async fetchQueryHistoryList() {
       this.setIsFetchingQueryHistory(true);
       const activityList =
-        await useActivityStore().fetchActivityListForQueryHistory({
+        await useActivityV1Store().fetchActivityListForQueryHistory({
           limit: 20,
+          order: "desc",
         });
-      const queryHistoryList: QueryHistory[] = activityList.map((history) => {
-        const payload = history.payload as ActivitySQLEditorQueryPayload;
-        return {
-          id: history.id,
-          creator: history.creator,
-          createdTs: history.createdTs,
-          updatedTs: history.updatedTs,
-          statement: payload.statement,
-          durationNs: payload.durationNs,
-          instanceId: payload.instanceId || UNKNOWN_ID,
-          instanceName: payload.instanceName,
-          databaseId: payload.databaseId || UNKNOWN_ID,
-          databaseName: payload.databaseName,
-          error: payload.error,
-          createdAt: dayjs(history.createdTs * 1000).format(
-            "YYYY-MM-DD HH:mm:ss"
-          ),
-        };
-      });
-      this.setQueryHistoryList(
-        queryHistoryList.sort((a, b) => b.createdTs - a.createdTs)
+      const queryHistoryList: QueryHistory[] = activityList.map(
+        (history): QueryHistory => {
+          const payload = JSON.parse(
+            history.payload
+          ) as ActivitySQLEditorQueryPayload;
+          return {
+            name: history.name,
+            creator: history.creator,
+            createTime: history.createTime ?? new Date(),
+            statement: payload.statement,
+            durationNs: payload.durationNs,
+            instanceId: payload.instanceId || UNKNOWN_ID,
+            instanceName: payload.instanceName,
+            databaseId: payload.databaseId || UNKNOWN_ID,
+            databaseName: payload.databaseName,
+            error: payload.error,
+          };
+        }
       );
+      this.setQueryHistoryList(queryHistoryList);
       this.setIsFetchingQueryHistory(false);
     },
   },

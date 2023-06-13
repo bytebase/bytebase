@@ -11,6 +11,9 @@ import (
 func TestSnowflakeRules(t *testing.T) {
 	snowflakeRules := []advisor.SQLReviewRuleType{
 		advisor.SchemaRuleTableNaming,
+		advisor.SchemaRuleTableRequirePK,
+		advisor.SchemaRuleTableNoFK,
+		advisor.SchemaRuleColumnMaximumVarcharLength,
 	}
 
 	for _, rule := range snowflakeRules {

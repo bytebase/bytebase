@@ -62,7 +62,6 @@ p, DEVELOPER, /issue/{issueID}/subscriber, GET
 p, DEVELOPER, /issue/{issueID}/subscriber, POST
 p, DEVELOPER, /issue/{issueID}/subscriber/{subscriberID}, DELETE
 p, DEVELOPER, /activity, POST
-p, DEVELOPER, /activity, GET
 p, DEVELOPER, /activity/{activityID}, PATCH_SELF
 p, DEVELOPER, /inbox/user/{userID}, GET_SELF
 p, DEVELOPER, /inbox/user/{userID}/summary, GET_SELF

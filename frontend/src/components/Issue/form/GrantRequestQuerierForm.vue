@@ -56,7 +56,7 @@
             >
               <div
                 v-for="databaseResource in state.selectedDatabaseResourceList"
-                :key="`${databaseResource.databaseId}`"
+                :key="`${databaseResource.databaseName}`"
                 class="flex flex-row justify-start items-center"
               >
                 <DatabaseResourceView :database-resource="databaseResource" />
@@ -75,7 +75,7 @@
         <div
           v-for="databaseResource in state.selectedDatabaseResourceList"
           v-else
-          :key="`${databaseResource.databaseId}`"
+          :key="`${databaseResource.databaseName}`"
           class="flex flex-row justify-start items-center"
         >
           <DatabaseResourceView :database-resource="databaseResource" />
@@ -156,7 +156,7 @@ import {
 } from "@/types";
 import { extractUserUID, memberListInProjectV1 } from "@/utils";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
-import { convertFromCEL } from "@/utils/issue/cel";
+import { convertFromCELString } from "@/utils/issue/cel";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import RequiredStar from "@/components/RequiredStar.vue";
 import SelectDatabaseResourceForm from "./SelectDatabaseResourceForm/index.vue";
@@ -248,9 +248,7 @@ const handleProjectSelect = async (projectId: string) => {
   }
   state.selectedDatabaseResourceList =
     state.selectedDatabaseResourceList.filter((resource) => {
-      const database = databaseStore.getDatabaseByUID(
-        String(resource.databaseId)
-      );
+      const database = databaseStore.getDatabaseByName(resource.databaseName);
       return database.projectEntity.uid === projectId;
     });
 };
@@ -300,7 +298,7 @@ watch(
         throw "Only support QUERIER role";
       }
 
-      const conditionExpression = await convertFromCEL(
+      const conditionExpression = await convertFromCELString(
         payload.condition.expression
       );
       if (conditionExpression.expiredTime !== undefined) {

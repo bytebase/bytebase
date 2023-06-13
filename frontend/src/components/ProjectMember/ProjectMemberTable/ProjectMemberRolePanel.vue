@@ -11,7 +11,7 @@
       class="w-[60rem] max-w-[100vw] relative"
     >
       <div v-for="role in roleList" :key="role.role" class="mb-4">
-        <template v-if="role.formattedConditionList.length > 0">
+        <template v-if="role.singleBindingList.length > 0">
           <div
             class="w-full px-2 py-2 flex flex-row justify-start items-center"
           >
@@ -40,10 +40,10 @@
           <BBGrid
             :column-list="COLUMNS"
             :row-clickable="false"
-            :data-source="role.formattedConditionList"
+            :data-source="role.singleBindingList"
             class="border"
           >
-            <template #item="{ item }: FormattedConditionRow">
+            <template #item="{ item }: SingleBindingRow">
               <div class="bb-grid-cell">
                 {{ extractDatabaseName(item.databaseResource) }}
               </div>
@@ -61,7 +61,6 @@
               </div>
               <div class="bb-grid-cell w-12">
                 <button
-                  v-if="item.databaseResource"
                   class="cursor-pointer opacity-60 hover:opacity-100"
                   @click="handleDeleteCondition(item)"
                 >
@@ -85,10 +84,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
+import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 import { PresetRoleType } from "@/types";
+import { State } from "@/types/proto/v1/common";
+import { Project } from "@/types/proto/v1/project_service";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -96,33 +99,21 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
-import { Binding, Project } from "@/types/proto/v1/project_service";
-import { watch } from "vue";
 import {
   displayRoleTitle,
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
 } from "@/utils";
-import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
-import { useI18n } from "vue-i18n";
-import RoleDescription from "./RoleDescription.vue";
-import { cloneDeep, isEqual } from "lodash-es";
-import { State } from "@/types/proto/v1/common";
-import { ComposedProjectMember } from "./types";
 import {
-  convertFromCEL,
+  convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
+import { ComposedProjectMember, SingleBinding } from "./types";
+import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
 import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
+import RoleDescription from "./RoleDescription.vue";
 
-export interface FormattedCondition {
-  databaseResource?: DatabaseResource;
-  expiration?: Date;
-  description?: string;
-  rawRole: Binding;
-}
-
-export type FormattedConditionRow = BBGridRow<FormattedCondition>;
+export type SingleBindingRow = BBGridRow<SingleBinding>;
 
 const props = defineProps<{
   project: Project;
@@ -144,7 +135,7 @@ const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 const roleList = ref<
   {
     role: string;
-    formattedConditionList: FormattedCondition[];
+    singleBindingList: SingleBinding[];
   }[]
 >([]);
 
@@ -275,16 +266,16 @@ const handleDeleteRole = (role: string) => {
   });
 };
 
-const handleDeleteCondition = async (condition: FormattedCondition) => {
-  if (!condition.databaseResource) {
-    return;
+const handleDeleteCondition = async (singleBinding: SingleBinding) => {
+  let role = `${displayRoleTitle(singleBinding.rawBinding.role)}`;
+  if (singleBinding.databaseResource) {
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      String(singleBinding.databaseResource.databaseName)
+    );
+    role = `${role} - ${database.name}`;
   }
-
-  const database = await databaseStore.getOrFetchDatabaseByUID(
-    String(condition.databaseResource.databaseId)
-  );
   const title = t("project.settings.members.revoke-role-from-user", {
-    role: `${displayRoleTitle(condition.rawRole.role)} - ${database.name}`,
+    role: role,
     user: props.member.user.title,
   });
   dialog.create({
@@ -302,40 +293,44 @@ const handleDeleteCondition = async (condition: FormattedCondition) => {
     onPositiveClick: async () => {
       const user = `user:${props.member.user.email}`;
       const policy = cloneDeep(iamPolicy.value);
-      let rawRole = policy.bindings.find((binding) =>
-        isEqual(binding, condition.rawRole)
+      let rawBinding = policy.bindings.find((binding) =>
+        isEqual(binding, singleBinding.rawBinding)
       );
-      if (!rawRole || !rawRole.condition) {
-        return;
-      }
-      if (rawRole.members.length > 1) {
-        rawRole.members = rawRole.members.filter((member) => {
-          return member !== user;
-        });
-        rawRole = cloneDeep(rawRole);
-        rawRole.members = [user];
-        policy.bindings.push(rawRole);
-      }
-
-      const conditionExpression = await convertFromCEL(
-        rawRole.condition?.expression || ""
-      );
-      if (conditionExpression.databaseResources === undefined) {
+      if (!rawBinding) {
         return;
       }
 
-      conditionExpression.databaseResources =
-        conditionExpression.databaseResources.filter(
-          (resource) => !isEqual(resource, condition.databaseResource)
-        );
-      if (conditionExpression.databaseResources.length === 0) {
+      rawBinding.members = rawBinding.members.filter((member) => {
+        return member !== user;
+      });
+
+      if (rawBinding.parsedExpr?.expr) {
+        const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
+        if (conditionExpr.databaseResources) {
+          conditionExpr.databaseResources =
+            conditionExpr.databaseResources.filter(
+              (resource) => !isEqual(resource, singleBinding.databaseResource)
+            );
+          if (conditionExpr.databaseResources.length === 0) {
+            policy.bindings = policy.bindings.filter(
+              (binding) => !isEqual(binding, rawBinding)
+            );
+          } else {
+            rawBinding = cloneDeep(rawBinding);
+            rawBinding.members = [user];
+            rawBinding.condition!.expression =
+              stringifyConditionExpression(conditionExpr);
+            policy.bindings.push(rawBinding);
+          }
+        }
+      }
+
+      if (rawBinding.members.length === 0) {
         policy.bindings = policy.bindings.filter(
-          (binding) => !isEqual(binding, rawRole)
+          (binding) => !isEqual(binding, rawBinding)
         );
-      } else {
-        rawRole.condition!.expression =
-          stringifyConditionExpression(conditionExpression);
       }
+
       await projectIamPolicyStore.updateProjectIamPolicy(
         projectResourceName.value,
         policy
@@ -348,8 +343,8 @@ const extractDatabaseName = (databaseResource?: DatabaseResource) => {
   if (!databaseResource) {
     return "*";
   }
-  const database = databaseStore.getDatabaseByUID(
-    String(databaseResource.databaseId)
+  const database = databaseStore.getDatabaseByName(
+    String(databaseResource.databaseName)
   );
   return database.databaseName;
 };
@@ -394,58 +389,52 @@ watch(
   async () => {
     const tempRoleList: {
       role: string;
-      formattedConditionList: FormattedCondition[];
+      singleBindingList: SingleBinding[];
     }[] = [];
-    const rawRoleList = iamPolicy.value?.bindings?.filter((binding) => {
+    const rawBindingList = iamPolicy.value?.bindings?.filter((binding) => {
       return binding.members.includes(`user:${props.member.user.email}`);
     });
-    for (const rawRole of rawRoleList) {
-      const formattedConditionList = [];
+    for (const rawBinding of rawBindingList) {
+      const singleBindingList = [];
+      const singleBinding: SingleBinding = {
+        databaseResource: undefined,
+        expiration: undefined,
+        description: undefined,
+        rawBinding: rawBinding,
+      };
 
-      const celExpression = rawRole.condition?.expression || "";
-      if (!celExpression) {
-        formattedConditionList.push({
-          databaseResource: undefined,
-          expiration: undefined,
-          description: undefined,
-          rawRole: rawRole,
-        });
-      } else {
-        const conditionExpression = await convertFromCEL(celExpression);
-        const description = rawRole.condition?.description || "";
+      if (rawBinding.parsedExpr?.expr) {
+        const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
+        singleBinding.description = rawBinding.condition?.description || "";
+        if (conditionExpr.expiredTime) {
+          singleBinding.expiration = new Date(conditionExpr.expiredTime);
+        }
         if (
-          Array.isArray(conditionExpression.databaseResources) &&
-          conditionExpression.databaseResources.length > 0
+          Array.isArray(conditionExpr.databaseResources) &&
+          conditionExpr.databaseResources.length > 0
         ) {
-          for (const resource of conditionExpression.databaseResources) {
-            let expiration = undefined;
-            if (conditionExpression.expiredTime) {
-              expiration = new Date(conditionExpression.expiredTime);
-            }
-            formattedConditionList.push({
+          for (const resource of conditionExpr.databaseResources) {
+            singleBindingList.push({
+              ...singleBinding,
               databaseResource: resource,
-              expiration: expiration,
-              description: description,
-              rawRole: rawRole,
             });
           }
         } else {
-          formattedConditionList.push({
-            databaseResource: undefined,
-            expiration: undefined,
-            description: description,
-            rawRole: rawRole,
-          });
+          singleBindingList.push(singleBinding);
         }
+      } else {
+        singleBindingList.push(singleBinding);
       }
 
-      const tempRole = tempRoleList.find((role) => role.role === rawRole.role);
+      const tempRole = tempRoleList.find(
+        (role) => role.role === rawBinding.role
+      );
       if (tempRole) {
-        tempRole.formattedConditionList.push(...formattedConditionList);
+        tempRole.singleBindingList.push(...singleBindingList);
       } else {
         tempRoleList.push({
-          role: rawRole.role,
-          formattedConditionList: formattedConditionList,
+          role: rawBinding.role,
+          singleBindingList: singleBindingList,
         });
       }
     }
