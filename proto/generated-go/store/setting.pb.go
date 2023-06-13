@@ -562,7 +562,7 @@ type ExternalApprovalSetting_Node struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// A unique identifier for a node.
+	// A unique identifier for a node in UUID format.
 	// We will also include the id in the message sending to the external relay service to identify the node.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// The title of the node.

@@ -147,7 +147,7 @@
 | type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
 | group_value | [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue) |  |  |
 | role | [string](#string) |  | Format: roles/{role} |
-| external_node_id | [string](#string) |  | Format: hello123. |
+| external_node_id | [string](#string) |  |  |
 
 
 
@@ -1333,7 +1333,7 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | A unique identifier for a node. We will also include the id in the message sending to the external relay service to identify the node. |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. We will also include the id in the message sending to the external relay service to identify the node. |
 | title | [string](#string) |  | The title of the node. |
 | endpoint | [string](#string) |  | The external endpoint for the relay service, e.g. &#34;http://hello:1234&#34;. |
 

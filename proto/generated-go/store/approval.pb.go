@@ -577,7 +577,6 @@ type ApprovalNode_Role struct {
 }
 
 type ApprovalNode_ExternalNodeId struct {
-	// Format: hello123.
 	ExternalNodeId string `protobuf:"bytes,4,opt,name=external_node_id,json=externalNodeId,proto3,oneof"`
 }
 

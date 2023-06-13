@@ -300,7 +300,7 @@ export interface ExternalApprovalSetting {
 
 export interface ExternalApprovalSetting_Node {
   /**
-   * A unique identifier for a node.
+   * A unique identifier for a node in UUID format.
    * We will also include the id in the message sending to the external relay service to identify the node.
    */
   id: string;

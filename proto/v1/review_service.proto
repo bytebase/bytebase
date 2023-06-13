@@ -284,7 +284,6 @@ message ApprovalNode {
     GroupValue group_value = 2;
     // Format: roles/{role}
     string role = 3;
-    // Format: hello123.
     string external_node_id = 4;
   }
 }

@@ -136,10 +136,7 @@ export interface ApprovalNode {
     | ApprovalNode_GroupValue
     | undefined;
   /** Format: roles/{role} */
-  role?:
-    | string
-    | undefined;
-  /** Format: hello123. */
+  role?: string | undefined;
   externalNodeId?: string | undefined;
 }
 
