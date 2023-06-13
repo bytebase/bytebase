@@ -1009,6 +1009,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return PostgreSQLTableNoFK, nil
 		case db.Oracle:
 			return OracleTableNoFK, nil
+		case db.Snowflake:
+			return SnowflakeTableNoFK, nil
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {
