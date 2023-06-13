@@ -22,7 +22,9 @@ async function convert(raw: ResourceObject): Promise<Inbox> {
       inbox.activityId
     );
     inbox.activity = activity;
-  } catch {}
+  } catch {
+    // nothing, we will skip inbox with undefined activity.
+  }
   return inbox;
 }
 
