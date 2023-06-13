@@ -87,6 +87,8 @@
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
+    - [ExternalApprovalSetting](#bytebase-store-ExternalApprovalSetting)
+    - [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node)
     - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
@@ -145,6 +147,7 @@
 | type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
 | group_value | [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue) |  |  |
 | role | [string](#string) |  | Format: roles/{role} |
+| external_node_id | [string](#string) |  |  |
 
 
 
@@ -1301,6 +1304,38 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | url | [string](#string) |  | The URL for the agent API. |
 | token | [string](#string) |  | The token for the agent. |
+
+
+
+
+
+
+<a name="bytebase-store-ExternalApprovalSetting"></a>
+
+### ExternalApprovalSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| nodes | [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ExternalApprovalSetting-Node"></a>
+
+### ExternalApprovalSetting.Node
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. We will also include the id in the message sending to the external relay service to identify the node. |
+| title | [string](#string) |  | The title of the node. |
+| endpoint | [string](#string) |  | The external endpoint for the relay service, e.g. &#34;http://hello:1234&#34;. |
 
 
 

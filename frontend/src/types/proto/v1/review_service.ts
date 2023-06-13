@@ -331,6 +331,7 @@ export interface ApprovalNode {
     | undefined;
   /** Format: roles/{role} */
   role?: string | undefined;
+  externalNodeId?: string | undefined;
 }
 
 /**
@@ -1743,7 +1744,7 @@ export const ApprovalStep = {
 };
 
 function createBaseApprovalNode(): ApprovalNode {
-  return { type: 0, groupValue: undefined, role: undefined };
+  return { type: 0, groupValue: undefined, role: undefined, externalNodeId: undefined };
 }
 
 export const ApprovalNode = {
@@ -1756,6 +1757,9 @@ export const ApprovalNode = {
     }
     if (message.role !== undefined) {
       writer.uint32(26).string(message.role);
+    }
+    if (message.externalNodeId !== undefined) {
+      writer.uint32(34).string(message.externalNodeId);
     }
     return writer;
   },
@@ -1788,6 +1792,13 @@ export const ApprovalNode = {
 
           message.role = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.externalNodeId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1802,6 +1813,7 @@ export const ApprovalNode = {
       type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : 0,
       groupValue: isSet(object.groupValue) ? approvalNode_GroupValueFromJSON(object.groupValue) : undefined,
       role: isSet(object.role) ? String(object.role) : undefined,
+      externalNodeId: isSet(object.externalNodeId) ? String(object.externalNodeId) : undefined,
     };
   },
 
@@ -1813,6 +1825,7 @@ export const ApprovalNode = {
         ? approvalNode_GroupValueToJSON(message.groupValue)
         : undefined);
     message.role !== undefined && (obj.role = message.role);
+    message.externalNodeId !== undefined && (obj.externalNodeId = message.externalNodeId);
     return obj;
   },
 
@@ -1825,6 +1838,7 @@ export const ApprovalNode = {
     message.type = object.type ?? 0;
     message.groupValue = object.groupValue ?? undefined;
     message.role = object.role ?? undefined;
+    message.externalNodeId = object.externalNodeId ?? undefined;
     return message;
   },
 };
