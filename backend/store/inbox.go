@@ -41,11 +41,7 @@ func (s *Store) CreateInbox(ctx context.Context, create *api.InboxCreate) (*api.
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create Inbox with InboxCreate[%+v]", create)
 	}
-	inbox, err := s.composeInbox(ctx, inboxRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Inbox with inboxRaw[%+v]", inboxRaw)
-	}
-	return inbox, nil
+	return inboxRaw.toInbox(), nil
 }
 
 // GetInboxByID gets an instance of Inbox.
@@ -58,11 +54,7 @@ func (s *Store) GetInboxByID(ctx context.Context, id int) (*api.Inbox, error) {
 	if inboxRaw == nil {
 		return nil, nil
 	}
-	inbox, err := s.composeInbox(ctx, inboxRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Inbox with inboxRaw[%+v]", inboxRaw)
-	}
-	return inbox, nil
+	return inboxRaw.toInbox(), nil
 }
 
 // FindInbox finds a list of Inbox instances.
@@ -73,11 +65,7 @@ func (s *Store) FindInbox(ctx context.Context, find *api.InboxFind) ([]*api.Inbo
 	}
 	var inboxList []*api.Inbox
 	for _, raw := range inboxRawList {
-		inbox, err := s.composeInbox(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Inbox with inboxRaw[%+v]", raw)
-		}
-		inboxList = append(inboxList, inbox)
+		inboxList = append(inboxList, raw.toInbox())
 	}
 	return inboxList, nil
 }
@@ -88,11 +76,7 @@ func (s *Store) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.Inb
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Inbox with InboxPatch[%+v]", patch)
 	}
-	inbox, err := s.composeInbox(ctx, inboxRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Inbox with inboxRaw[%+v]", inboxRaw)
-	}
-	return inbox, nil
+	return inboxRaw.toInbox(), nil
 }
 
 // FindInboxSummary returns the inbox summary for a particular principal.
@@ -130,11 +114,6 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 //
 // private function
 //
-
-// composeInbox composes an instance of Inbox by inboxRaw.
-func (s *Store) composeInbox(ctx context.Context, raw *inboxRaw) (*api.Inbox, error) {
-	return raw.toInbox(), nil
-}
 
 // createInboxRaw creates a new inbox.
 func (s *Store) createInboxRaw(ctx context.Context, create *api.InboxCreate) (*inboxRaw, error) {
