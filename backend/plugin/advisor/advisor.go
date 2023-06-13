@@ -399,6 +399,9 @@ const (
 
 	// SnowflakeTableRequirePK is an advisor type for Snowflake table require primary key.
 	SnowflakeTableRequirePK Type = "bb.plugin.advisor.snowflake.table.require-pk"
+
+	// SnowflakeTableNoFK is an advisor type for Snowflake table disallow foreign key.
+	SnowflakeTableNoFK Type = "bb.plugin.advisor.snowflake.table.no-foreign-key"
 )
 
 // Advice is the result of an advisor.
