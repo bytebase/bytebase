@@ -14,7 +14,6 @@ import {
   ProjectId,
   VCSId,
 } from "./id";
-import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
 import { InstanceUser } from "./InstanceUser";
 import { Issue } from "./issue";
@@ -32,11 +31,6 @@ export interface PrincipalState {
 
 export interface BookmarkState {
   bookmarkList: Map<PrincipalId, Bookmark[]>;
-}
-
-export interface InboxState {
-  inboxListByUser: Map<PrincipalId, Inbox[]>;
-  inboxSummaryByUser: Map<PrincipalId, InboxSummary>;
 }
 
 export interface IssueState {

@@ -96,7 +96,7 @@ import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "@/components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
-import { useCurrentUser, useCurrentUserV1, useInboxStore } from "@/store";
+import { useCurrentUser, useCurrentUserV1, useInboxV1Store } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { LogEntity_Action } from "@/types/proto/v1/logging_service";
@@ -110,7 +110,7 @@ export default defineComponent({
   components: { BytebaseLogo, ProfileBrandingLogo, ProfileDropdown },
   setup() {
     const { t, availableLocales, locale } = useI18n();
-    const inboxStore = useInboxStore();
+    const inboxV1Store = useInboxV1Store();
     const settingV1Store = useSettingV1Store();
     const router = useRouter();
 
@@ -135,14 +135,14 @@ export default defineComponent({
     const prepareInboxSummary = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        inboxStore.fetchInboxSummaryByUser(currentUser.value.id);
+        inboxV1Store.fetchInboxSummary();
       }
     };
 
     watchEffect(prepareInboxSummary);
 
     const inboxSummary = computed(() => {
-      return inboxStore.getInboxSummaryByUser(currentUser.value.id);
+      return inboxV1Store.inboxSummary;
     });
 
     const kbarActions = computed(() => [

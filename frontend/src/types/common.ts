@@ -6,7 +6,6 @@ import { Database } from "./database";
 import { DataSource } from "./dataSource";
 import { Environment } from "./environment";
 import { CommandId, CommandRegisterId, PrincipalId } from "./id";
-import { Inbox } from "./inbox";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
 import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
@@ -117,7 +116,6 @@ interface ResourceMaker {
   (type: "STAGE"): Stage;
   (type: "TASK_PROGRESS"): TaskProgress;
   (type: "TASK"): Task;
-  (type: "INBOX"): Inbox;
   (type: "BOOKMARK"): Bookmark;
   (type: "VCS"): VCS;
   (type: "ANOMALY"): Anomaly;
@@ -292,12 +290,6 @@ const makeUnknown = (type: ResourceType) => {
     progress: { ...UNKNOWN_TASK_PROGRESS },
   };
 
-  const UNKNOWN_INBOX: Inbox = {
-    id: UNKNOWN_ID,
-    activityId: UNKNOWN_ID,
-    status: "READ",
-  };
-
   const UNKNOWN_BOOKMARK: Bookmark = {
     id: UNKNOWN_ID,
     creatorID: UNKNOWN_ID,
@@ -362,8 +354,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_TASK_PROGRESS;
     case "TASK":
       return UNKNOWN_TASK;
-    case "INBOX":
-      return UNKNOWN_INBOX;
     case "BOOKMARK":
       return UNKNOWN_BOOKMARK;
     case "VCS":
@@ -543,12 +533,6 @@ const makeEmpty = (type: ResourceType) => {
     progress: { ...EMPTY_TASK_PROGRESS },
   };
 
-  const EMPTY_INBOX: Inbox = {
-    id: EMPTY_ID,
-    activityId: EMPTY_ID,
-    status: "READ",
-  };
-
   const EMPTY_BOOKMARK: Bookmark = {
     id: EMPTY_ID,
     creatorID: EMPTY_ID,
@@ -613,8 +597,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_TASK_PROGRESS;
     case "TASK":
       return EMPTY_TASK;
-    case "INBOX":
-      return EMPTY_INBOX;
     case "BOOKMARK":
       return EMPTY_BOOKMARK;
     case "VCS":

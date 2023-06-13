@@ -517,7 +517,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerTaskRoutes(apiGroup)
 	s.registerStageRoutes(apiGroup)
 	s.registerActivityRoutes(apiGroup)
-	s.registerInboxRoutes(apiGroup)
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSQLRoutes(apiGroup)
 	s.registerAnomalyRoutes(apiGroup)
@@ -602,6 +601,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterSheetServiceServer(s.grpcServer, v1.NewSheetService(s.store))
 	v1pb.RegisterCelServiceServer(s.grpcServer, v1.NewCelService())
 	v1pb.RegisterLoggingServiceServer(s.grpcServer, v1.NewLoggingService(s.store))
+	v1pb.RegisterInboxServiceServer(s.grpcServer, v1.NewInboxService(s.store))
 	reflection.Register(s.grpcServer)
 
 	// REST gateway proxy.
@@ -663,6 +663,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterLoggingServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))

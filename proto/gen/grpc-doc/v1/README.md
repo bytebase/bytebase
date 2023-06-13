@@ -197,6 +197,18 @@
   
     - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
   
+- [v1/inbox_service.proto](#v1_inbox_service-proto)
+    - [GetInboxSummaryRequest](#bytebase-v1-GetInboxSummaryRequest)
+    - [InboxMessage](#bytebase-v1-InboxMessage)
+    - [InboxSummary](#bytebase-v1-InboxSummary)
+    - [ListInboxRequest](#bytebase-v1-ListInboxRequest)
+    - [ListInboxResponse](#bytebase-v1-ListInboxResponse)
+    - [UpdateInboxRequest](#bytebase-v1-UpdateInboxRequest)
+  
+    - [InboxMessage.Status](#bytebase-v1-InboxMessage-Status)
+  
+    - [InboxService](#bytebase-v1-InboxService)
+  
 - [v1/instance_role_service.proto](#v1_instance_role_service-proto)
     - [CreateInstanceRoleRequest](#bytebase-v1-CreateInstanceRoleRequest)
     - [DeleteInstanceRoleRequest](#bytebase-v1-DeleteInstanceRoleRequest)
@@ -3326,6 +3338,139 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteIdentityProvider | [UndeleteIdentityProviderRequest](#bytebase-v1-UndeleteIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) |  |
 | TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) |  |
+
+ 
+
+
+
+<a name="v1_inbox_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/inbox_service.proto
+
+
+
+<a name="bytebase-v1-GetInboxSummaryRequest"></a>
+
+### GetInboxSummaryRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-InboxMessage"></a>
+
+### InboxMessage
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The message name in inbox/{uid} format. |
+| activity_uid | [string](#string) |  |  |
+| status | [InboxMessage.Status](#bytebase-v1-InboxMessage-Status) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-InboxSummary"></a>
+
+### InboxSummary
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| has_unread | [bool](#bool) |  |  |
+| has_unread_error | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInboxRequest"></a>
+
+### ListInboxRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filter | [string](#string) |  | filter is the filter to apply on the list inbox request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; |
+| page_size | [int32](#int32) |  | Not used. The maximum number of inbox to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListInbox` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInboxResponse"></a>
+
+### ListInboxResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| inbox_messages | [InboxMessage](#bytebase-v1-InboxMessage) | repeated | The list of inbox messages. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of inbox. Pass this value in the page_token field in the subsequent call to `ListLogs` method to retrieve the next page of log entities. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateInboxRequest"></a>
+
+### UpdateInboxRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| inbox_message | [InboxMessage](#bytebase-v1-InboxMessage) |  | The inbox message to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-InboxMessage-Status"></a>
+
+### InboxMessage.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| STATUS_UNREAD | 1 |  |
+| STATUS_READ | 2 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-InboxService"></a>
+
+### InboxService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListInbox | [ListInboxRequest](#bytebase-v1-ListInboxRequest) | [ListInboxResponse](#bytebase-v1-ListInboxResponse) |  |
+| GetInboxSummary | [GetInboxSummaryRequest](#bytebase-v1-GetInboxSummaryRequest) | [InboxSummary](#bytebase-v1-InboxSummary) |  |
+| UpdateInbox | [UpdateInboxRequest](#bytebase-v1-UpdateInboxRequest) | [InboxMessage](#bytebase-v1-InboxMessage) |  |
 
  
 

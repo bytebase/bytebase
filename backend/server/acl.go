@@ -282,14 +282,7 @@ func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipa
 }
 
 func isGettingSelf(_ context.Context, c echo.Context, _ *Server, curPrincipalID int, path string) (bool, error) {
-	if strings.HasPrefix(path, "/inbox/user") {
-		userID, err := strconv.Atoi(c.Param("userID"))
-		if err != nil {
-			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
-		}
-
-		return userID == curPrincipalID, nil
-	} else if strings.HasPrefix(path, "/bookmark/user") {
+	if strings.HasPrefix(path, "/bookmark/user") {
 		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
@@ -341,23 +334,6 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			}
 
 			return bookmark.CreatorUID == curPrincipalID, nil
-		}
-	} else if strings.HasPrefix(path, "/inbox") {
-		if inboxIDStr := c.Param("inboxID"); inboxIDStr != "" {
-			inboxID, err := strconv.Atoi(inboxIDStr)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Inbox ID is not a number: %s", inboxIDStr)).SetInternal(err)
-			}
-
-			inbox, err := s.store.GetInboxByID(ctx, inboxID)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
-			}
-			if inbox == nil {
-				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", inboxID)).SetInternal(err)
-			}
-
-			return inbox.ReceiverID == curPrincipalID, nil
 		}
 	} else if strings.HasPrefix(path, "/sheet") {
 		if idStr := c.Param("id"); idStr != "" {
