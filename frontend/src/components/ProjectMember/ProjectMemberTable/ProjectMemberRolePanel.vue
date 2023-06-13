@@ -11,7 +11,7 @@
       class="w-[60rem] max-w-[100vw] relative"
     >
       <div v-for="role in roleList" :key="role.role" class="mb-4">
-        <template v-if="role.formattedConditionList.length > 0">
+        <template v-if="role.singleBindingList.length > 0">
           <div
             class="w-full px-2 py-2 flex flex-row justify-start items-center"
           >
@@ -40,10 +40,10 @@
           <BBGrid
             :column-list="COLUMNS"
             :row-clickable="false"
-            :data-source="role.formattedConditionList"
+            :data-source="role.singleBindingList"
             class="border"
           >
-            <template #item="{ item }: FormattedConditionRow">
+            <template #item="{ item }: SingleBindingRow">
               <div class="bb-grid-cell">
                 {{ extractDatabaseName(item.databaseResource) }}
               </div>
@@ -91,7 +91,7 @@ import { useI18n } from "vue-i18n";
 
 import { PresetRoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { Binding, Project } from "@/types/proto/v1/project_service";
+import { Project } from "@/types/proto/v1/project_service";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -108,19 +108,12 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import { ComposedProjectMember } from "./types";
+import { ComposedProjectMember, SingleBinding } from "./types";
 import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
 import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
 import RoleDescription from "./RoleDescription.vue";
 
-export interface FormattedCondition {
-  databaseResource?: DatabaseResource;
-  expiration?: Date;
-  description?: string;
-  rawBinding: Binding;
-}
-
-export type FormattedConditionRow = BBGridRow<FormattedCondition>;
+export type SingleBindingRow = BBGridRow<SingleBinding>;
 
 const props = defineProps<{
   project: Project;
@@ -142,7 +135,7 @@ const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 const roleList = ref<
   {
     role: string;
-    formattedConditionList: FormattedCondition[];
+    singleBindingList: SingleBinding[];
   }[]
 >([]);
 
@@ -273,11 +266,11 @@ const handleDeleteRole = (role: string) => {
   });
 };
 
-const handleDeleteCondition = async (condition: FormattedCondition) => {
-  let role = `${displayRoleTitle(condition.rawBinding.role)}`;
-  if (condition.databaseResource) {
+const handleDeleteCondition = async (singleBinding: SingleBinding) => {
+  let role = `${displayRoleTitle(singleBinding.rawBinding.role)}`;
+  if (singleBinding.databaseResource) {
     const database = await databaseStore.getOrFetchDatabaseByName(
-      String(condition.databaseResource.databaseName)
+      String(singleBinding.databaseResource.databaseName)
     );
     role = `${role} - ${database.name}`;
   }
@@ -301,7 +294,7 @@ const handleDeleteCondition = async (condition: FormattedCondition) => {
       const user = `user:${props.member.user.email}`;
       const policy = cloneDeep(iamPolicy.value);
       let rawBinding = policy.bindings.find((binding) =>
-        isEqual(binding, condition.rawBinding)
+        isEqual(binding, singleBinding.rawBinding)
       );
       if (!rawBinding) {
         return;
@@ -316,7 +309,7 @@ const handleDeleteCondition = async (condition: FormattedCondition) => {
         if (conditionExpr.databaseResources) {
           conditionExpr.databaseResources =
             conditionExpr.databaseResources.filter(
-              (resource) => !isEqual(resource, condition.databaseResource)
+              (resource) => !isEqual(resource, singleBinding.databaseResource)
             );
           if (conditionExpr.databaseResources.length === 0) {
             policy.bindings = policy.bindings.filter(
@@ -396,14 +389,14 @@ watch(
   async () => {
     const tempRoleList: {
       role: string;
-      formattedConditionList: FormattedCondition[];
+      singleBindingList: SingleBinding[];
     }[] = [];
     const rawBindingList = iamPolicy.value?.bindings?.filter((binding) => {
       return binding.members.includes(`user:${props.member.user.email}`);
     });
     for (const rawBinding of rawBindingList) {
-      const formattedConditionList = [];
-      const formatedCondition: FormattedCondition = {
+      const singleBindingList = [];
+      const singleBinding: SingleBinding = {
         databaseResource: undefined,
         expiration: undefined,
         description: undefined,
@@ -412,36 +405,36 @@ watch(
 
       if (rawBinding.parsedExpr?.expr) {
         const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
-        formatedCondition.description = rawBinding.condition?.description || "";
+        singleBinding.description = rawBinding.condition?.description || "";
         if (conditionExpr.expiredTime) {
-          formatedCondition.expiration = new Date(conditionExpr.expiredTime);
+          singleBinding.expiration = new Date(conditionExpr.expiredTime);
         }
         if (
           Array.isArray(conditionExpr.databaseResources) &&
           conditionExpr.databaseResources.length > 0
         ) {
           for (const resource of conditionExpr.databaseResources) {
-            formattedConditionList.push({
-              ...formatedCondition,
+            singleBindingList.push({
+              ...singleBinding,
               databaseResource: resource,
             });
           }
         } else {
-          formattedConditionList.push(formatedCondition);
+          singleBindingList.push(singleBinding);
         }
       } else {
-        formattedConditionList.push(formatedCondition);
+        singleBindingList.push(singleBinding);
       }
 
       const tempRole = tempRoleList.find(
         (role) => role.role === rawBinding.role
       );
       if (tempRole) {
-        tempRole.formattedConditionList.push(...formattedConditionList);
+        tempRole.singleBindingList.push(...singleBindingList);
       } else {
         tempRoleList.push({
           role: rawBinding.role,
-          formattedConditionList: formattedConditionList,
+          singleBindingList: singleBindingList,
         });
       }
     }
