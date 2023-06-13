@@ -119,16 +119,6 @@ func (l *tableNoForeignKeyChecker) ExitCreate_table(*parser.Create_tableContext)
 	l.currentConstraintAction = currentConstraintActionNone
 }
 
-// EnterDrop_table is called when production drop_table is entered.
-func (l *tableNoForeignKeyChecker) EnterDrop_table(ctx *parser.Drop_tableContext) {
-	originalTableName := ctx.Object_name().GetText()
-	normalizedTableName := normalizeIdentifierName(originalTableName)
-
-	delete(l.tableForeignKeyTimes, normalizedTableName)
-	delete(l.tableOriginalName, normalizedTableName)
-	delete(l.tableLine, normalizedTableName)
-}
-
 // EnterInline_constraint is called when production inline_constraint is entered.
 func (l *tableNoForeignKeyChecker) EnterInline_constraint(ctx *parser.Inline_constraintContext) {
 	if ctx.REFERENCES() == nil || l.currentNormalizedTableName == "" {

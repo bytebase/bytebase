@@ -113,6 +113,16 @@ func (l *tableRequirePkChecker) EnterCreate_table(ctx *parser.Create_tableContex
 	l.currentConstraintAction = currentConstraintActionAdd
 }
 
+// EnterDrop_table is called when production drop_table is entered.
+func (l *tableRequirePkChecker) EnterDrop_table(ctx *parser.Drop_tableContext) {
+	originalTableName := ctx.Object_name().GetText()
+	normalizedTableName := normalizeIdentifierName(originalTableName)
+
+	delete(l.tableHasPrimaryKey, normalizedTableName)
+	delete(l.tableOriginalName, normalizedTableName)
+	delete(l.tableLine, normalizedTableName)
+}
+
 // ExitCreate_table is called when production create_table is exited.
 func (l *tableRequirePkChecker) ExitCreate_table(*parser.Create_tableContext) {
 	l.currentNormalizedTableName = ""

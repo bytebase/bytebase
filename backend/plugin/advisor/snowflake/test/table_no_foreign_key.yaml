@@ -60,27 +60,6 @@
 - statement: |-
     CREATE TABLE CUSTOMER
     (
-        ID            INT REFERENCES PERSON(ID),
-        FULL_NAME     VARCHAR(10),
-        POSITION      VARCHAR(100)
-    );
-    DROP TABLE CUSTOMER;
-    CREATE TABLE CUSTOMER (
-        ID            INT,
-        FULL_NAME     VARCHAR(10),
-        POSITION      VARCHAR(100)
-    );
-    ALTER TABLE CUSTOMER ADD CONSTRAINT FK_CUSTOMER_PERSON FOREIGN KEY (ID) REFERENCES PERSON(ID);
-  want:
-    - status: WARN
-      code: 602
-      title: table.no-foreign-key
-      content: FOREIGN KEY is not allowed in the table CUSTOMER.
-      line: 13
-      details: ""
-- statement: |-
-    CREATE TABLE CUSTOMER
-    (
         ID            INT,
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)

@@ -79,6 +79,28 @@
         POSITION      VARCHAR(100)
     );
     ALTER TABLE CUSTOMER ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
+    DROP TABLE CUSTOMER;
+    CREATE TABLE CUSTOMER
+    (
+        ID            INT,
+        FULL_NAME     VARCHAR(10),
+        POSITION      VARCHAR(100)
+    );
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table CUSTOMER requires PRIMARY KEY.
+      line: 9
+      details: ""
+- statement: |-
+    CREATE TABLE CUSTOMER
+    (
+        ID            INT,
+        FULL_NAME     VARCHAR(10),
+        POSITION      VARCHAR(100)
+    );
+    ALTER TABLE CUSTOMER ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
     CREATE TABLE ORDERING
     (
         ORDER_ID      INT PRIMARY KEY,
