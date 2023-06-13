@@ -19,13 +19,13 @@
     - status: WARN
       code: 303
       title: naming.index.idx
-      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw`
+      content: Index `afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
       line: 2
       details: ""
     - status: WARN
       code: 303
       title: naming.index.idx
-      content: Index `afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw`
       line: 2
       details: ""
 - statement: ALTER TABLE tech_book RENAME INDEX old_index TO idx_tech_book_id_name

@@ -14,6 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -185,6 +186,13 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 		}
 
 		adviceList, err := SQLReviewCheck(tc.Statement, ruleList, ctx)
+		// Sort adviceList by (line, content)
+		slices.SortFunc[Advice](adviceList, func(i, j Advice) bool {
+			if i.Line != j.Line {
+				return i.Line < j.Line
+			}
+			return i.Content < j.Content
+		})
 		require.NoError(t, err)
 		if record {
 			tests[i].Want = adviceList
