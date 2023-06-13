@@ -64,7 +64,7 @@
       </template>
     </ProjectMemberTable>
 
-    <div v-if="inactiveComposedMemberList.length > 0" class="mt-4">
+    <div v-if="inactiveComposedMemberList.length > 0" class="mt-4 ml-2">
       <NCheckbox v-model:checked="state.showInactiveMemberList">
         <span class="textinfolabel">
           {{ $t("project.settings.members.show-inactive") }}

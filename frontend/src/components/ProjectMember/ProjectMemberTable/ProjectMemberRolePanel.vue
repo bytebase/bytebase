@@ -303,17 +303,13 @@ const handleDeleteCondition = async (condition: FormattedCondition) => {
       let rawBinding = policy.bindings.find((binding) =>
         isEqual(binding, condition.rawBinding)
       );
-      if (!rawBinding || !rawBinding.condition) {
+      if (!rawBinding) {
         return;
       }
-      if (rawBinding.members.length > 1) {
-        rawBinding.members = rawBinding.members.filter((member) => {
-          return member !== user;
-        });
-        rawBinding = cloneDeep(rawBinding);
-        rawBinding.members = [user];
-        policy.bindings.push(rawBinding);
-      }
+
+      rawBinding.members = rawBinding.members.filter((member) => {
+        return member !== user;
+      });
 
       if (rawBinding.parsedExpr?.expr) {
         const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
@@ -327,10 +323,19 @@ const handleDeleteCondition = async (condition: FormattedCondition) => {
               (binding) => !isEqual(binding, rawBinding)
             );
           } else {
+            rawBinding = cloneDeep(rawBinding);
+            rawBinding.members = [user];
             rawBinding.condition!.expression =
               stringifyConditionExpression(conditionExpr);
+            policy.bindings.push(rawBinding);
           }
         }
+      }
+
+      if (rawBinding.members.length === 0) {
+        policy.bindings = policy.bindings.filter(
+          (binding) => !isEqual(binding, rawBinding)
+        );
       }
 
       await projectIamPolicyStore.updateProjectIamPolicy(
