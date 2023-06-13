@@ -223,6 +223,7 @@ const icon = computed((): ActionIconType => {
         case "PENDING":
           return "re-request-review";
       }
+    }
   }
 
   return extractUserResourceName(activity.creator) == SYSTEM_BOT_EMAIL
