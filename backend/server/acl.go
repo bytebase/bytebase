@@ -289,13 +289,6 @@ func isGettingSelf(_ context.Context, c echo.Context, _ *Server, curPrincipalID 
 		}
 
 		return userID == curPrincipalID, nil
-	} else if strings.HasPrefix(path, "/bookmark/user") {
-		userID, err := strconv.Atoi(c.Param("userID"))
-		if err != nil {
-			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
-		}
-
-		return userID == curPrincipalID, nil
 	}
 
 	return false, nil
@@ -324,23 +317,6 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			}
 
 			return activity.CreatorID == curPrincipalID, nil
-		}
-	} else if strings.HasPrefix(path, "/bookmark") {
-		if bookmarkIDStr := c.Param("bookmarkID"); bookmarkIDStr != "" {
-			bookmarkID, err := strconv.Atoi(bookmarkIDStr)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bookmark ID is not a number: %s"+bookmarkIDStr)).SetInternal(err)
-			}
-
-			bookmark, err := s.store.GetBookmarkV2(ctx, bookmarkID)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
-			}
-			if bookmark == nil {
-				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Bookmark ID not found: %d", bookmarkID)).SetInternal(err)
-			}
-
-			return bookmark.CreatorUID == curPrincipalID, nil
 		}
 	} else if strings.HasPrefix(path, "/inbox") {
 		if inboxIDStr := c.Param("inboxID"); inboxIDStr != "" {
