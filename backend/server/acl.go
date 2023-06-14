@@ -124,17 +124,8 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 				return projectRoles, nil
 			}
 
-			sheetFinder := func(sheetID int) (*api.Sheet, error) {
-				sheetFind := &api.SheetFind{
-					ID: &sheetID,
-				}
-				return s.store.GetSheet(ctx, sheetFind, principalID)
-			}
-
 			if strings.HasPrefix(path, "/project") {
 				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, projectRolesFinder)
-			} else if strings.HasPrefix(path, "/sheet") {
-				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, projectRolesFinder, sheetFinder)
 			}
 			if aclErr != nil {
 				return aclErr
@@ -190,108 +181,13 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 	return nil
 }
 
-var sheetRouteRegex = regexp.MustCompile(`^/sheet/(?P<sheetID>\d+)`)
-var sheetOrganizeRouteRegex = regexp.MustCompile(`^/sheet/(?P<projectID>\d+)/organize`)
-
-func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, method string, principalID int, projectRolesFinder func(projectID int, principalID int) (map[common.ProjectRole]bool, error), sheetFinder func(sheetID int) (*api.Sheet, error)) *echo.HTTPError {
-	if matches := sheetOrganizeRouteRegex.FindStringSubmatch(path); matches != nil {
-		sheetID, _ := strconv.Atoi(matches[1])
-		sheet, err := sheetFinder(sheetID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-		}
-		if sheet == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", sheetID))
-		}
-		// Creator can always manage her own sheet.
-		if sheet.CreatorID == principalID {
-			return nil
-		}
-		switch sheet.Visibility {
-		case api.PrivateSheet:
-			return echo.NewHTTPError(http.StatusForbidden, "not allowed to access private sheet created by other user")
-		case api.PublicSheet:
-			return nil
-		case api.ProjectSheet:
-			projectRoles, err := projectRolesFinder(sheet.ProjectID, principalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-
-			if len(projectRoles) == 0 {
-				return echo.NewHTTPError(http.StatusForbidden, "is not a member of the project containing the sheet")
-			}
-
-			if !api.ProjectPermission(api.ProjectPermissionOrganizeSheet, plan, projectRoles) {
-				return echo.NewHTTPError(http.StatusForbidden, "not have permission to organize the project sheet")
-			}
-		}
-	} else if matches := sheetRouteRegex.FindStringSubmatch(path); matches != nil {
-		sheetID, _ := strconv.Atoi(matches[1])
-		sheet, err := sheetFinder(sheetID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-		}
-		if sheet == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", sheetID))
-		}
-		// Creator can always manage her own sheet.
-		if sheet.CreatorID == principalID {
-			return nil
-		}
-		switch sheet.Visibility {
-		case api.PrivateSheet:
-			return echo.NewHTTPError(http.StatusForbidden, "not allowed to access private sheet created by other user")
-		case api.PublicSheet:
-			if method == "GET" {
-				return nil
-			}
-			return echo.NewHTTPError(http.StatusForbidden, "not allowed to change public sheet created by other user")
-		case api.ProjectSheet:
-			projectRoles, err := projectRolesFinder(sheet.ProjectID, principalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
-			}
-
-			if len(projectRoles) == 0 {
-				return echo.NewHTTPError(http.StatusForbidden, "is not a member of the project containing the sheet")
-			}
-
-			if method == "GET" {
-				return nil
-			}
-
-			if !api.ProjectPermission(api.ProjectPermissionAdminSheet, plan, projectRoles) {
-				return echo.NewHTTPError(http.StatusForbidden, "not have permission to change the project sheet")
-			}
-		}
-	}
-
-	return nil
-}
-
 func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int, method string, path string) (bool, error) {
 	switch method {
-	case http.MethodGet:
-		return isGettingSelf(ctx, c, s, curPrincipalID, path)
 	case http.MethodPatch, http.MethodDelete:
 		return isUpdatingSelf(ctx, c, s, curPrincipalID, path)
 	default:
 		return false, nil
 	}
-}
-
-func isGettingSelf(_ context.Context, c echo.Context, _ *Server, curPrincipalID int, path string) (bool, error) {
-	if strings.HasPrefix(path, "/inbox/user") {
-		userID, err := strconv.Atoi(c.Param("userID"))
-		if err != nil {
-			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
-		}
-
-		return userID == curPrincipalID, nil
-	}
-
-	return false, nil
 }
 
 func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int, path string) (bool, error) {
@@ -317,43 +213,6 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			}
 
 			return activity.CreatorID == curPrincipalID, nil
-		}
-	} else if strings.HasPrefix(path, "/inbox") {
-		if inboxIDStr := c.Param("inboxID"); inboxIDStr != "" {
-			inboxID, err := strconv.Atoi(inboxIDStr)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Inbox ID is not a number: %s", inboxIDStr)).SetInternal(err)
-			}
-
-			inbox, err := s.store.GetInboxByID(ctx, inboxID)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
-			}
-			if inbox == nil {
-				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", inboxID)).SetInternal(err)
-			}
-
-			return inbox.ReceiverID == curPrincipalID, nil
-		}
-	} else if strings.HasPrefix(path, "/sheet") {
-		if idStr := c.Param("id"); idStr != "" {
-			id, err := strconv.Atoi(idStr)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Sheet ID is not a number: %s", idStr)).SetInternal(err)
-			}
-
-			sheetFind := &api.SheetFind{
-				ID: &id,
-			}
-			sheet, err := s.store.GetSheet(ctx, sheetFind, curPrincipalID)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
-			}
-			if sheet == nil {
-				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", id)).SetInternal(err)
-			}
-
-			return sheet.CreatorID == curPrincipalID, nil
 		}
 	}
 	return false, nil

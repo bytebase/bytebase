@@ -705,15 +705,42 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	return CheckApprovalApproved(issuePayload.Approval)
 }
 
-// SkipApprovalStepIfNeeded skips approval steps if no user can approve the step.
-func SkipApprovalStepIfNeeded(ctx context.Context, s *store.Store, projectUID int, approval *storepb.IssuePayloadApproval) (int, error) {
+// HandleIncomingApprovalSteps handles incoming approval steps.
+// - skips approval steps if no user can approve the step
+// - creates external approvals for external approval nodes.
+func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*api.ActivityCreate, error) {
 	if len(approval.ApprovalTemplates) == 0 {
-		return 0, nil
+		return nil, nil, nil
 	}
 
-	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
+	getActivityCreate := func(status storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_Status, comment string) (*api.ActivityCreate, error) {
+		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
+			Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
+				ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
+					Status: status,
+				},
+			},
+			IssueName: issue.Title,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: issue.UID,
+			Type:        api.ActivityIssueCommentCreate,
+			Level:       api.ActivityInfo,
+			Comment:     comment,
+			Payload:     string(activityPayload),
+		}, nil
+	}
+
+	var approvers []*storepb.IssuePayloadApproval_Approver
+	var activities []*api.ActivityCreate
+
+	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.Project.UID})
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get project policy for project %d", projectUID)
+		return nil, nil, errors.Wrapf(err, "failed to get project policy for project %d", issue.Project.UID)
 	}
 
 	var users []*store.UserMessage
@@ -728,43 +755,88 @@ func SkipApprovalStepIfNeeded(ctx context.Context, s *store.Store, projectUID in
 			Limit: &limit,
 		})
 		if err != nil {
-			return 0, errors.Wrapf(err, "failed to list users for role %s", role)
+			return nil, nil, errors.Wrapf(err, "failed to list users for role %s", role)
 		}
 		if len(userMessages) != 0 {
 			users = append(users, userMessages[0])
 		}
 	}
-	stepsSkipped := 0
 	for {
 		step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
 		if step == nil {
 			break
 		}
-		hasApprover, err := userCanApprove(step, users, policy)
+		if len(step.Nodes) != 1 {
+			return nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
+		}
+		if step.Type != storepb.ApprovalStep_ANY {
+			return nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
+		}
+		node := step.Nodes[0]
+		if v, ok := node.GetPayload().(*storepb.ApprovalNode_ExternalNodeId); ok {
+			if err := handleApprovalNodeExternalNode(ctx, s, v.ExternalNodeId); err != nil {
+				approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
+					Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
+					PrincipalId: api.SystemBotID,
+				})
+				activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED, fmt.Sprintf("failed to handle external node, err: %v", err))
+				if err != nil {
+					return nil, nil, err
+				}
+				activities = append(activities, activity)
+			}
+			break
+		}
+
+		hasApprover, err := userCanApprove(node, users, policy)
 		if err != nil {
-			return 0, errors.Wrapf(err, "failed to check if user can approve")
+			return nil, nil, errors.Wrapf(err, "failed to check if user can approve")
 		}
 		if hasApprover {
 			break
 		}
 
-		stepsSkipped++
-		approval.Approvers = append(approval.Approvers, &storepb.IssuePayloadApproval_Approver{
+		approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
 			Status:      storepb.IssuePayloadApproval_Approver_APPROVED,
 			PrincipalId: api.SystemBotID,
 		})
+		activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED, "")
+		if err != nil {
+			return nil, nil, err
+		}
+		activities = append(activities, activity)
 	}
-	return stepsSkipped, nil
+	return approvers, activities, nil
 }
 
-func userCanApprove(step *storepb.ApprovalStep, users []*store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
-	if len(step.Nodes) != 1 {
-		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
+func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, externalNodeID string) error {
+	setting, err := s.GetWorkspaceExternalApprovalSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get workspace external approval setting")
 	}
-	if step.Type != storepb.ApprovalStep_ANY {
-		return false, errors.Errorf("expecting ANY step type but got %v", step.Type)
+	var node *storepb.ExternalApprovalSetting_Node
+	for i := range setting.Nodes {
+		if setting.Nodes[i].Id == externalNodeID {
+			node = setting.Nodes[i]
+			break
+		}
 	}
-	node := step.Nodes[0]
+	if node == nil {
+		return errors.Errorf("cannot find external node %s", externalNodeID)
+	}
+
+	createExternalApproval := func() error {
+		return nil
+	}
+
+	if err := createExternalApproval(); err != nil {
+		return errors.Wrapf(err, "failed to create external approval, title: %s, endpoint: %s", node.Title, node.Endpoint)
+	}
+
+	return nil
+}
+
+func userCanApprove(node *storepb.ApprovalNode, users []*store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
 	if node.Type != storepb.ApprovalNode_ANY_IN_GROUP {
 		return false, errors.Errorf("expecting ANY_IN_GROUP node type but got %v", node.Type)
 	}

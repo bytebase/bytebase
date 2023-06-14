@@ -202,11 +202,12 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		}
 	}
 
-	stepsSkipped, err := utils.SkipApprovalStepIfNeeded(ctx, s.store, issue.Project.UID, payload.Approval)
+	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, s.store, issue, payload.Approval)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to skip approval step if needed, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
 
+	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
@@ -245,19 +246,9 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 			return err
 		}
 
-		if stepsSkipped > 0 {
-			for i := 0; i < stepsSkipped; i++ {
-				create := &api.ActivityCreate{
-					CreatorID:   api.SystemBotID,
-					ContainerID: issue.UID,
-					Type:        api.ActivityIssueCommentCreate,
-					Level:       api.ActivityInfo,
-					Comment:     "",
-					Payload:     string(activityPayload),
-				}
-				if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
-					return err
-				}
+		for _, create := range activityCreates {
+			if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
+				return err
 			}
 		}
 
@@ -641,6 +632,8 @@ func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy 
 		if userHasProjectRole[val.Role] {
 			return true, nil
 		}
+	case *storepb.ApprovalNode_ExternalNodeId:
+		return false, nil
 	default:
 		return false, errors.Errorf("invalid node payload type")
 	}
@@ -747,12 +740,33 @@ func convertToApprovalNode(node *storepb.ApprovalNode) *v1pb.ApprovalNode {
 	switch payload := node.Payload.(type) {
 	case *storepb.ApprovalNode_GroupValue_:
 		v1node.Payload = &v1pb.ApprovalNode_GroupValue_{
-			GroupValue: v1pb.ApprovalNode_GroupValue(payload.GroupValue),
+			GroupValue: convertToApprovalNodeGroupValue(payload.GroupValue),
 		}
 	case *storepb.ApprovalNode_Role:
 		v1node.Payload = &v1pb.ApprovalNode_Role{
 			Role: payload.Role,
 		}
+	case *storepb.ApprovalNode_ExternalNodeId:
+		v1node.Payload = &v1pb.ApprovalNode_ExternalNodeId{
+			ExternalNodeId: payload.ExternalNodeId,
+		}
 	}
 	return v1node
+}
+
+func convertToApprovalNodeGroupValue(v storepb.ApprovalNode_GroupValue) v1pb.ApprovalNode_GroupValue {
+	switch v {
+	case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
+		return v1pb.ApprovalNode_GROUP_VALUE_UNSPECIFILED
+	case storepb.ApprovalNode_WORKSPACE_OWNER:
+		return v1pb.ApprovalNode_WORKSPACE_OWNER
+	case storepb.ApprovalNode_WORKSPACE_DBA:
+		return v1pb.ApprovalNode_WORKSPACE_DBA
+	case storepb.ApprovalNode_PROJECT_OWNER:
+		return v1pb.ApprovalNode_PROJECT_OWNER
+	case storepb.ApprovalNode_PROJECT_MEMBER:
+		return v1pb.ApprovalNode_PROJECT_MEMBER
+	default:
+		return v1pb.ApprovalNode_GROUP_VALUE_UNSPECIFILED
+	}
 }

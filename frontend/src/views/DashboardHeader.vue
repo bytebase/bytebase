@@ -215,7 +215,7 @@ import {
   useCurrentUser,
   useActuatorV1Store,
   useSubscriptionV1Store,
-  useInboxStore,
+  useInboxV1Store,
   useCurrentUserV1,
 } from "@/store";
 import { storeToRefs } from "pinia";
@@ -236,7 +236,7 @@ export default defineComponent({
   setup() {
     const { t, availableLocales } = useI18n();
     const actuatorV1Store = useActuatorV1Store();
-    const inboxStore = useInboxStore();
+    const inboxV1Store = useInboxV1Store();
     const subscriptionStore = useSubscriptionV1Store();
     const router = useRouter();
     const route = useRoute();
@@ -283,14 +283,14 @@ export default defineComponent({
     const prepareInboxSummary = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        inboxStore.fetchInboxSummaryByUser(currentUser.value.id);
+        inboxV1Store.fetchInboxSummary();
       }
     };
 
     watchEffect(prepareInboxSummary);
 
     const inboxSummary = computed(() => {
-      return inboxStore.getInboxSummaryByUser(currentUser.value.id);
+      return inboxV1Store.inboxSummary;
     });
 
     const kbarActions = computed(() => [

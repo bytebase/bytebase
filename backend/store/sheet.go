@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -656,6 +655,7 @@ func (s *Store) composeSheetMessage(ctx context.Context, sheetMessage *SheetMess
 }
 
 // GetSheetV2 gets a sheet.
+// TODO: use store.FindSheetMessage instead of the api.SheetFind.
 func (s *Store) GetSheetV2(ctx context.Context, find *api.SheetFind, currentPrincipalID int) (*SheetMessage, error) {
 	sheets, err := s.ListSheetsV2(ctx, find, currentPrincipalID)
 	if err != nil {
@@ -670,39 +670,6 @@ func (s *Store) GetSheetV2(ctx context.Context, find *api.SheetFind, currentPrin
 	sheet := sheets[0]
 
 	return sheet, nil
-}
-
-// GetSheetUsedByIssues returns a list of issues that have tasks that are using the sheet.
-func (s *Store) GetSheetUsedByIssues(ctx context.Context, sheetID int) ([]int, error) {
-	query := `
-		SELECT ARRAY_AGG(issue.id)
-		FROM issue
-		JOIN task ON task.pipeline_id = issue.pipeline_id
-		WHERE task.payload ? 'sheetId' AND (task.payload->>'sheetId')::INT = $1
-	`
-
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	var issueIDs []sql.NullInt32
-	if err := tx.QueryRowContext(ctx, query, sheetID).Scan(pq.Array(&issueIDs)); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	var ids []int
-	for _, id := range issueIDs {
-		if id.Valid {
-			ids = append(ids, int(id.Int32))
-		}
-	}
-
-	return ids, nil
 }
 
 // ListSheetsV2 returns a list of sheets.
