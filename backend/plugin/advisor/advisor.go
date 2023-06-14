@@ -405,6 +405,9 @@ const (
 
 	// SnowflakeColumnMaximumVarcharLength is an advisor type for Snowflake maximum varchar length.
 	SnowflakeColumnMaximumVarcharLength Type = "bb.plugin.advisor.snowflake.column.maximum-varchar-length"
+
+	// SnowflakeTableNamingNoKeyword is an advisor type for Snowflake table naming convention without keyword.
+	SnowflakeTableNamingNoKeyword Type = "bb.plugin.advisor.snowflake.naming.table-no-keyword"
 )
 
 // Advice is the result of an advisor.

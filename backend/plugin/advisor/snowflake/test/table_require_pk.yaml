@@ -78,6 +78,21 @@
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
+    ALTER TABLE "PUBLIC"."CUSTOMER" ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE CUSTOMER
+    (
+        ID            INT,
+        FULL_NAME     VARCHAR(10),
+        POSITION      VARCHAR(100)
+    );
     ALTER TABLE CUSTOMER ADD CONSTRAINT PK_CUSTOMER PRIMARY KEY (ID);
     DROP TABLE CUSTOMER;
     CREATE TABLE CUSTOMER
