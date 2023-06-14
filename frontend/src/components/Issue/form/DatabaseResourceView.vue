@@ -30,7 +30,7 @@ const props = defineProps<{
 const databaseStore = useDatabaseV1Store();
 
 const database = computed(() => {
-  return databaseStore.getDatabaseByUID(props.databaseResource.databaseId);
+  return databaseStore.getDatabaseByName(props.databaseResource.databaseName);
 });
 
 const Prefix = () => {

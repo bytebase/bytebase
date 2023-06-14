@@ -6,11 +6,6 @@ import { Empty } from "../google/protobuf/empty";
 export const protobufPackage = "bytebase.v1";
 
 export interface CreateBookmarkRequest {
-  /**
-   * The parent resource of the bookmark.
-   * Format: users/{user}, user is a server-generated unique IDs.
-   */
-  parent: string;
   /** The bookmark to create. */
   bookmark?: Bookmark;
 }
@@ -18,17 +13,12 @@ export interface CreateBookmarkRequest {
 export interface DeleteBookmarkRequest {
   /**
    * The name of the bookmark to delete.
-   * Format: users/{user}/bookmarks/{bookmark}, user and bookmark are server-generated unique IDs.
+   * Format: bookmarks/{bookmark}
    */
   name: string;
 }
 
 export interface ListBookmarksRequest {
-  /**
-   * The parent resource of the bookmark.
-   * Format: users/{user}, user is a server-generated unique ID.
-   */
-  parent: string;
   /**
    * Not used. The maximum number of bookmarks to return. The service may return fewer than
    * this value.
@@ -59,7 +49,7 @@ export interface ListBookmarksResponse {
 export interface Bookmark {
   /**
    * The name of the bookmark.
-   * Format: users/{user}/bookmarks/{bookmark}, user and bookmark are server-generated unique IDs.
+   * Format: bookmarks/{bookmark}, user and bookmark are server-generated unique IDs.
    */
   name: string;
   /** The title of the bookmark. */
@@ -74,16 +64,13 @@ export interface Bookmark {
 }
 
 function createBaseCreateBookmarkRequest(): CreateBookmarkRequest {
-  return { parent: "", bookmark: undefined };
+  return { bookmark: undefined };
 }
 
 export const CreateBookmarkRequest = {
   encode(message: CreateBookmarkRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
     if (message.bookmark !== undefined) {
-      Bookmark.encode(message.bookmark, writer.uint32(18).fork()).ldelim();
+      Bookmark.encode(message.bookmark, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -100,13 +87,6 @@ export const CreateBookmarkRequest = {
             break;
           }
 
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
           message.bookmark = Bookmark.decode(reader, reader.uint32());
           continue;
       }
@@ -119,15 +99,11 @@ export const CreateBookmarkRequest = {
   },
 
   fromJSON(object: any): CreateBookmarkRequest {
-    return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
-      bookmark: isSet(object.bookmark) ? Bookmark.fromJSON(object.bookmark) : undefined,
-    };
+    return { bookmark: isSet(object.bookmark) ? Bookmark.fromJSON(object.bookmark) : undefined };
   },
 
   toJSON(message: CreateBookmarkRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
     message.bookmark !== undefined && (obj.bookmark = message.bookmark ? Bookmark.toJSON(message.bookmark) : undefined);
     return obj;
   },
@@ -138,7 +114,6 @@ export const CreateBookmarkRequest = {
 
   fromPartial(object: DeepPartial<CreateBookmarkRequest>): CreateBookmarkRequest {
     const message = createBaseCreateBookmarkRequest();
-    message.parent = object.parent ?? "";
     message.bookmark = (object.bookmark !== undefined && object.bookmark !== null)
       ? Bookmark.fromPartial(object.bookmark)
       : undefined;
@@ -203,19 +178,16 @@ export const DeleteBookmarkRequest = {
 };
 
 function createBaseListBookmarksRequest(): ListBookmarksRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { pageSize: 0, pageToken: "" };
 }
 
 export const ListBookmarksRequest = {
   encode(message: ListBookmarksRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
     if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
+      writer.uint32(8).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
+      writer.uint32(18).string(message.pageToken);
     }
     return writer;
   },
@@ -228,21 +200,14 @@ export const ListBookmarksRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
+          if (tag !== 8) {
             break;
           }
 
           message.pageSize = reader.int32();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
@@ -259,7 +224,6 @@ export const ListBookmarksRequest = {
 
   fromJSON(object: any): ListBookmarksRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
     };
@@ -267,7 +231,6 @@ export const ListBookmarksRequest = {
 
   toJSON(message: ListBookmarksRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
     return obj;
@@ -279,7 +242,6 @@ export const ListBookmarksRequest = {
 
   fromPartial(object: DeepPartial<ListBookmarksRequest>): ListBookmarksRequest {
     const message = createBaseListBookmarksRequest();
-    message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     return message;
@@ -459,10 +421,10 @@ export const BookmarkServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([15, 112, 97, 114, 101, 110, 116, 44, 98, 111, 111, 107, 109, 97, 114, 107])],
+          8410: [new Uint8Array([0])],
           578365826: [
             new Uint8Array([
-              42,
+              25,
               58,
               8,
               98,
@@ -474,27 +436,10 @@ export const BookmarkServiceDefinition = {
               114,
               107,
               34,
-              30,
+              13,
               47,
               118,
               49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              117,
-              115,
-              101,
-              114,
-              115,
-              47,
-              42,
-              125,
               47,
               98,
               111,
@@ -522,9 +467,9 @@ export const BookmarkServiceDefinition = {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              32,
+              24,
               42,
-              30,
+              22,
               47,
               118,
               49,
@@ -535,14 +480,6 @@ export const BookmarkServiceDefinition = {
               109,
               101,
               61,
-              117,
-              115,
-              101,
-              114,
-              115,
-              47,
-              42,
-              47,
               98,
               111,
               111,
@@ -560,7 +497,7 @@ export const BookmarkServiceDefinition = {
         },
       },
     },
-    /** ListBookmark lists bookmarks. */
+    /** ListBookmarks lists bookmarks. */
     listBookmarks: {
       name: "ListBookmarks",
       requestType: ListBookmarksRequest,
@@ -569,44 +506,8 @@ export const BookmarkServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
-          578365826: [
-            new Uint8Array([
-              32,
-              18,
-              30,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              117,
-              115,
-              101,
-              114,
-              115,
-              47,
-              42,
-              125,
-              47,
-              98,
-              111,
-              111,
-              107,
-              109,
-              97,
-              114,
-              107,
-              115,
-            ]),
-          ],
+          8410: [new Uint8Array([0])],
+          578365826: [new Uint8Array([15, 18, 13, 47, 118, 49, 47, 98, 111, 111, 107, 109, 97, 114, 107, 115])],
         },
       },
     },
@@ -618,7 +519,7 @@ export interface BookmarkServiceImplementation<CallContextExt = {}> {
   createBookmark(request: CreateBookmarkRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Bookmark>>;
   /** DeleteBookmark deletes a bookmark. */
   deleteBookmark(request: DeleteBookmarkRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  /** ListBookmark lists bookmarks. */
+  /** ListBookmarks lists bookmarks. */
   listBookmarks(
     request: ListBookmarksRequest,
     context: CallContext & CallContextExt,
@@ -633,7 +534,7 @@ export interface BookmarkServiceClient<CallOptionsExt = {}> {
   ): Promise<Bookmark>;
   /** DeleteBookmark deletes a bookmark. */
   deleteBookmark(request: DeepPartial<DeleteBookmarkRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  /** ListBookmark lists bookmarks. */
+  /** ListBookmarks lists bookmarks. */
   listBookmarks(
     request: DeepPartial<ListBookmarksRequest>,
     options?: CallOptions & CallOptionsExt,

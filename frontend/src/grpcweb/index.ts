@@ -26,6 +26,7 @@ import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_ser
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { ExternalVersionControlServiceDefinition } from "@/types/proto/v1/externalvs_service";
 import { LoggingServiceDefinition } from "@/types/proto/v1/logging_service";
+import { BookmarkServiceDefinition } from "@/types/proto/v1/bookmark_service";
 import { InboxServiceDefinition } from "@/types/proto/v1/inbox_service";
 
 // Create each grpc service client.
@@ -146,6 +147,11 @@ export const externalVersionControlServiceClient = clientFactory.create(
 
 export const loggingServiceClient = clientFactory.create(
   LoggingServiceDefinition,
+  channel
+);
+
+export const bookmarkServiceClient = clientFactory.create(
+  BookmarkServiceDefinition,
   channel
 );
 

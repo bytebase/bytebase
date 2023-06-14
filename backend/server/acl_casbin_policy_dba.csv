@@ -75,9 +75,6 @@ p, DBA, /issue/{issueID}/subscriber, POST
 p, DBA, /issue/{issueID}/subscriber/{subscriberID}, DELETE
 p, DBA, /activity, POST
 p, DBA, /activity/{activityID}, PATCH_SELF
-p, DBA, /bookmark, POST
-p, DBA, /bookmark/user/{userID}, GET_SELF
-p, DBA, /bookmark/{bookmarkID}, DELETE_SELF
 p, DBA, /pipeline/{pipelineID}/stage/{stageID}/status, PATCH
 p, DBA, /pipeline/{pipelineID}/task/all, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}, PATCH

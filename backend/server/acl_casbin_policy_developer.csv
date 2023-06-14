@@ -63,9 +63,6 @@ p, DEVELOPER, /issue/{issueID}/subscriber, POST
 p, DEVELOPER, /issue/{issueID}/subscriber/{subscriberID}, DELETE
 p, DEVELOPER, /activity, POST
 p, DEVELOPER, /activity/{activityID}, PATCH_SELF
-p, DEVELOPER, /bookmark, POST
-p, DEVELOPER, /bookmark/user/{userID}, GET_SELF
-p, DEVELOPER, /bookmark/{bookmarkID}, DELETE_SELF
 p, DEVELOPER, /pipeline/{pipelineID}/stage/{stageID}/status, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/all, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}, PATCH
