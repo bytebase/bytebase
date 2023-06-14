@@ -129,7 +129,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 
 	options := sql.TxOptions{}
 	// TiDB does not support readonly, so we only set for MySQL and OceanBase.
-	if driver.dbType == "MYSQL" || driver.dbType == "OCEANBASE" {
+	if driver.dbType == db.MySQL || driver.dbType == db.MariaDB || driver.dbType == db.OceanBase {
 		options.ReadOnly = true
 	}
 	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
@@ -317,7 +317,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, dbType db.Type, database string, 
 		}
 
 		// OceanBase doesn't support "Event Scheduler"
-		if dbType != "OCEANBASE" {
+		if dbType != db.OceanBase {
 			// Event statements.
 			events, err := getEvents(txn, dbName)
 			if err != nil {
@@ -331,7 +331,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, dbType db.Type, database string, 
 		}
 
 		// Trigger statements.
-		triggers, err := getTriggers(txn, dbName)
+		triggers, err := getTriggers(txn, dbType, dbName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get triggers of database %q", dbName)
 		}
@@ -658,14 +658,18 @@ func getRoutines(txn *sql.Tx, dbType db.Type, dbName string) ([]*routineSchema, 
 	for _, routineType := range []string{"FUNCTION", "PROCEDURE"} {
 		if err := func() error {
 			var query string
-			if dbType == "OCEANBASE" {
+			if dbType == db.OceanBase {
 				query = fmt.Sprintf("SHOW %s STATUS FROM `%s`;", routineType, dbName)
 			} else {
 				query = fmt.Sprintf("SHOW %s STATUS WHERE Db = '%s';", routineType, dbName)
 			}
 			rows, err := txn.Query(query)
 			if err != nil {
-				return err
+				// Oceanbase starts to support functions since 4.0.
+				if dbType == db.OceanBase {
+					return nil
+				}
+				return errors.Wrapf(err, "failed query %q", query)
 			}
 			defer rows.Close()
 
@@ -789,11 +793,15 @@ func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
 }
 
 // getTriggers gets all triggers of a database.
-func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
+func getTriggers(txn *sql.Tx, dbType db.Type, dbName string) ([]*triggerSchema, error) {
 	var triggers []*triggerSchema
 	query := fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
 	if err != nil {
+		// Oceanbase starts to support trigger since 4.0.
+		if dbType == db.OceanBase {
+			return nil, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()
