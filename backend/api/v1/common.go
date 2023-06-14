@@ -230,32 +230,12 @@ func getIdentityProviderID(name string) (string, error) {
 	return tokens[0], nil
 }
 
-func getUserBookmarkID(name string) (int, int, error) {
-	tokens, err := getNameParentTokens(name, userNamePrefix, bookmarkPrefix)
-	if err != nil {
-		return 0, 0, err
-	}
-	userID, err := strconv.Atoi(tokens[0])
-	if err != nil {
-		return 0, 0, errors.Errorf("invalid user ID %q", tokens[0])
-	}
-	bookmarkID, err := strconv.Atoi(tokens[1])
-	if err != nil {
-		return 0, 0, errors.Errorf("invalid bookmark ID %q", tokens[1])
-	}
-	return userID, bookmarkID, nil
+func getBookmarkID(name string) (int, error) {
+	return getUIDFromName(name, bookmarkPrefix)
 }
 
 func getExternalVersionControlID(name string) (int, error) {
-	tokens, err := getNameParentTokens(name, externalVersionControlPrefix)
-	if err != nil {
-		return 0, err
-	}
-	externalVersionControlID, err := strconv.Atoi(tokens[0])
-	if err != nil {
-		return 0, errors.Errorf("invalid external version control ID %q", tokens[0])
-	}
-	return externalVersionControlID, nil
+	return getUIDFromName(name, externalVersionControlPrefix)
 }
 
 func getRiskID(name string) (int64, error) {
