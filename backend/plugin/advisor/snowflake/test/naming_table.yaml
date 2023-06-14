@@ -74,3 +74,13 @@
       content: '"lower_case_table_name_with_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
       line: 1
       details: ""
+- statement: |-
+    CREATE TABLE "lowercase"(ID INT);
+                ALTER TABLE another_schema."lower_case" RENAME TO another_schema.UPPER_CASE_TABLE_NAME_WITHOUT_DOUBLE_QUOTES;
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '"lowercase" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      line: 1
+      details: ""

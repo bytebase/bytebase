@@ -103,11 +103,11 @@ func (l *tableRequirePkChecker) generateAdvice() ([]advisor.Advice, error) {
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *tableRequirePkChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
-	originalTableName := ctx.Object_name().GetText()
-	normalizedTableName := normalizeIdentifierName(originalTableName)
+	originalTableName := ctx.Object_name()
+	normalizedTableName := normalizeObjectName(originalTableName)
 
 	l.tableHasPrimaryKey[normalizedTableName] = false
-	l.tableOriginalName[normalizedTableName] = originalTableName
+	l.tableOriginalName[normalizedTableName] = originalTableName.GetText()
 	l.tableLine[normalizedTableName] = ctx.GetStart().GetLine()
 	l.currentNormalizedTableName = normalizedTableName
 	l.currentConstraintAction = currentConstraintActionAdd
@@ -115,8 +115,8 @@ func (l *tableRequirePkChecker) EnterCreate_table(ctx *parser.Create_tableContex
 
 // EnterDrop_table is called when production drop_table is entered.
 func (l *tableRequirePkChecker) EnterDrop_table(ctx *parser.Drop_tableContext) {
-	originalTableName := ctx.Object_name().GetText()
-	normalizedTableName := normalizeIdentifierName(originalTableName)
+	originalTableName := ctx.Object_name()
+	normalizedTableName := normalizeObjectName(originalTableName)
 
 	delete(l.tableHasPrimaryKey, normalizedTableName)
 	delete(l.tableOriginalName, normalizedTableName)
@@ -173,11 +173,11 @@ func (l *tableRequirePkChecker) EnterAlter_table(ctx *parser.Alter_tableContext)
 	if ctx.Constraint_action() == nil {
 		return
 	}
-	originalTableName := ctx.Object_name(0).GetText()
-	normalizedTableName := normalizeIdentifierName(originalTableName)
+	originalTableName := ctx.Object_name(0)
+	normalizedTableName := normalizeObjectName(originalTableName)
 
 	l.currentNormalizedTableName = normalizedTableName
-	l.tableOriginalName[normalizedTableName] = originalTableName
+	l.tableOriginalName[normalizedTableName] = originalTableName.GetText()
 }
 
 // ExitAlter_table is called when production alter_table is exited.
