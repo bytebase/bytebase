@@ -71,7 +71,7 @@ func (l *namingTableNoKeywordChecker) generateAdvice() ([]advisor.Advice, error)
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
-	tableName := extractTableNameFromIdentifier(ctx.Object_name().GetText())
+	tableName := extractObjectNameWithoutDoubleQuotes(ctx.Object_name())
 	if bbparser.IsSnowflakeKeyword(tableName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
@@ -87,7 +87,8 @@ func (l *namingTableNoKeywordChecker) EnterAlter_table(ctx *parser.Alter_tableCo
 	if ctx.RENAME() == nil {
 		return
 	}
-	tableName := extractTableNameFromIdentifier(ctx.Object_name(1).GetText())
+
+	tableName := extractObjectNameWithoutDoubleQuotes(ctx.Object_name(1))
 	if bbparser.IsSnowflakeKeyword(tableName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

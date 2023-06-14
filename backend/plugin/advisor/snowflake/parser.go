@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
+	snowparser "github.com/bytebase/snowsql-parser"
 )
 
 func parseStatement(statement string) (antlr.Tree, []advisor.Advice) {
@@ -39,15 +40,12 @@ func parseStatement(statement string) (antlr.Tree, []advisor.Advice) {
 	return tree, nil
 }
 
-func extractTableNameFromIdentifier(identifier string) string {
-	if strings.HasPrefix(identifier, `"`) && strings.HasSuffix(identifier, `"`) {
-		identifier = identifier[1 : len(identifier)-1]
+func extractObjectNameWithoutDoubleQuotes(objectName snowparser.IObject_nameContext) string {
+	tableName := objectName.GetO().GetText()
+	if strings.HasPrefix(tableName, `"`) && strings.HasSuffix(tableName, `"`) {
+		tableName = tableName[1 : len(tableName)-1]
 	}
-	parts := strings.Split(identifier, ".")
-	if len(parts) == 0 {
-		return ""
-	}
-	return parts[len(parts)-1]
+	return tableName
 }
 
 func normalizeIdentifierName(identifier string) string {

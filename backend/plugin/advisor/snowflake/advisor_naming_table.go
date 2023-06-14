@@ -81,7 +81,7 @@ func (l *namingTableListener) generateAdvice() ([]advisor.Advice, error) {
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	tableName := extractTableNameFromIdentifier(ctx.Object_name().GetText())
+	tableName := extractObjectNameWithoutDoubleQuotes(ctx.Object_name())
 
 	if !l.format.MatchString(tableName) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
