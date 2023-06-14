@@ -14,10 +14,13 @@
             v-else-if="step.status === 'REJECTED'"
             class="w-3.5 h-3.5 text-white"
           />
-          <heroicons-outline:user
-            v-else-if="step.status === 'CURRENT'"
-            class="w-3.5 h-3.5"
-          />
+          <template v-else-if="step.status === 'CURRENT'">
+            <heroicons-outline:external-link
+              v-if="isExternalApprovalStep(step.step)"
+              class="w-3.5 h-3.5"
+            />
+            <heroicons-outline:user v-else class="w-3.5 h-3.5" />
+          </template>
           <template v-else>
             {{ step.index + 1 }}
           </template>
@@ -28,26 +31,28 @@
         <div class="whitespace-nowrap shrink-0">
           {{ approvalNodeText(step.step.nodes[0]) }}
         </div>
-        <div class="mr-1.5 shrink-0">:</div>
-        <div class="flex-1 overflow-hidden">
-          <NEllipsis
-            v-if="step.status === 'APPROVED'"
-            class="inline-block"
-            :class="step.approver?.name === currentUser.name && 'font-bold'"
-          >
-            <span>{{ step.approver?.title }}</span>
-            <span v-if="step.approver?.name === currentUser.name">
-              ({{ $t("custom-approval.issue-review.you") }})
-            </span>
-            <span
-              v-if="step.approver?.name === USER_SYSTEM_BOT"
-              class="ml-2 inline-flex items-center px-1 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+        <template v-if="!isExternalApprovalStep(step.step)">
+          <div class="mr-1.5 shrink-0">:</div>
+          <div class="flex-1 overflow-hidden">
+            <NEllipsis
+              v-if="step.status === 'APPROVED'"
+              class="inline-block"
+              :class="step.approver?.name === currentUser.name && 'font-bold'"
             >
-              {{ $t("settings.members.system-bot") }}
-            </span>
-          </NEllipsis>
-          <Candidates v-else :step="step" />
-        </div>
+              <span>{{ step.approver?.title }}</span>
+              <span v-if="step.approver?.name === currentUser.name">
+                ({{ $t("custom-approval.issue-review.you") }})
+              </span>
+              <span
+                v-if="step.approver?.name === USER_SYSTEM_BOT"
+                class="ml-2 inline-flex items-center px-1 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+              >
+                {{ $t("settings.members.system-bot") }}
+              </span>
+            </NEllipsis>
+            <Candidates v-else :step="step" />
+          </div>
+        </template>
       </div>
     </NTimelineItem>
   </NTimeline>
@@ -61,6 +66,7 @@ import { approvalNodeText } from "@/utils";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store";
 import Candidates from "./Candidates.vue";
+import { ApprovalStep } from "@/types/proto/v1/review_service";
 
 const USER_SYSTEM_BOT = "users/1";
 
@@ -69,6 +75,10 @@ defineProps<{
 }>();
 
 const { currentUser } = storeToRefs(useAuthStore());
+
+const isExternalApprovalStep = (step: ApprovalStep) => {
+  return !!step.nodes[0]?.externalNodeId;
+};
 
 const iconClass = (step: WrappedReviewStep) => {
   const { status } = step;
