@@ -23,7 +23,6 @@
 
           <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
             <IssueReviewButtonGroup v-if="showReviewButton" />
-            <ExportDataButton v-if="showExportButton" />
             <CombinedRolloutButtonGroup v-if="showRolloutButton" />
           </div>
         </div>
@@ -94,7 +93,6 @@ import { head } from "lodash-es";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 import {
   activeTask,
-  extractUserUID,
   isDatabaseRelatedIssueType,
   isGrantRequestIssueType,
 } from "@/utils";
@@ -103,14 +101,10 @@ import {
   TaskDatabaseDataUpdatePayload,
   Issue,
   VCSPushEvent,
-  GrantRequestPayload,
-  PresetRoleType,
 } from "@/types";
-import { useCurrentUserV1 } from "@/store";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import { IssueReviewButtonGroup } from "./review";
 import { useIssueReviewContext } from "@/plugins/issue/logic/review/context";
-import ExportDataButton from "./action/ExportDataButton.vue";
 import { CombinedRolloutButtonGroup } from "./StatusTransitionButtonGroup";
 
 interface LocalState {
@@ -119,7 +113,6 @@ interface LocalState {
 }
 
 const logic = useIssueLogic();
-const currentUserV1 = useCurrentUserV1();
 const create = logic.create;
 const issue = logic.issue as Ref<Issue>;
 const { allowEditNameAndDescription, updateName } = useExtraIssueLogic();
@@ -143,25 +136,6 @@ const showRolloutButton = computed(() => {
   if (isGrantRequestIssueType(issue.value.type)) return true;
 
   return reviewDone.value;
-});
-
-const showExportButton = computed(() => {
-  if (create.value) return false;
-  if (!isGrantRequestIssueType(issue.value.type)) return false;
-  if (showReviewButton.value) return false;
-  // Don't show export button when issue is closed or done.
-  if (issue.value.status !== "OPEN") return false;
-
-  const issuePayload = (issue.value.payload as any)
-    .grantRequest as GrantRequestPayload;
-  if (
-    issuePayload.role !== PresetRoleType.EXPORTER ||
-    extractUserUID(currentUserV1.value.name) !== String(issue.value.creator.id)
-  ) {
-    return false;
-  }
-
-  return true;
 });
 
 const issueTaskStatus = computed(() => {
