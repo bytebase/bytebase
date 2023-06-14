@@ -41,7 +41,7 @@
               >
             </template>
             <template #time>{{
-              dayjs(issue.updatedTs * 1000).format("LLL")
+              dayjs(issue.createdTs * 1000).format("LLL")
             }}</template>
           </i18n-t>
           <p
