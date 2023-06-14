@@ -36,7 +36,7 @@
 <script lang="ts">
 import { reactive, watchEffect } from "vue";
 import InboxList from "../components/InboxList.vue";
-import { InboxV1, UNKNOWN_ID } from "@/types";
+import { ComposedInbox, UNKNOWN_ID } from "@/types";
 import { useRouter } from "vue-router";
 import { useCurrentUser, useInboxV1Store } from "@/store";
 import { InboxMessage_Status } from "@/types/proto/v1/inbox_service";
@@ -46,8 +46,8 @@ import { InboxMessage_Status } from "@/types/proto/v1/inbox_service";
 const READ_INBOX_DURATION_STEP = 3600 * 24 * 7;
 
 interface LocalState {
-  readList: InboxV1[];
-  unreadList: InboxV1[];
+  readList: ComposedInbox[];
+  unreadList: ComposedInbox[];
   readCreatedAfterTs: number;
 }
 

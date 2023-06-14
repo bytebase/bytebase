@@ -69,7 +69,7 @@ import {
   ActivityTaskStatusUpdatePayload,
   ActivityTaskStatementUpdatePayload,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
-  InboxV1,
+  ComposedInbox,
 } from "../types";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
@@ -89,7 +89,7 @@ import { InboxMessage_Status } from "@/types/proto/v1/inbox_service";
 defineProps({
   inboxList: {
     required: true,
-    type: Object as PropType<InboxV1[]>,
+    type: Object as PropType<ComposedInbox[]>,
   },
 });
 
@@ -230,7 +230,7 @@ const actionSentence = (activity: LogEntity): string => {
   return "";
 };
 
-const clickInbox = (inbox: InboxV1) => {
+const clickInbox = (inbox: ComposedInbox) => {
   if (inbox.status == InboxMessage_Status.STATUS_UNREAD) {
     inbox.status = InboxMessage_Status.STATUS_READ;
     inboxV1Store.patchInbox(inbox).then(() => {

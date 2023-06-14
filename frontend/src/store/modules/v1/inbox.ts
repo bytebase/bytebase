@@ -5,12 +5,12 @@ import { reactive } from "vue";
 import { InboxMessage, InboxSummary } from "@/types/proto/v1/inbox_service";
 import { inboxServiceClient } from "@/grpcweb";
 import { useActivityV1Store } from "./activity";
-import { InboxV1 } from "@/types";
+import { ComposedInbox } from "@/types";
 
 dayjs.extend(utc);
 
 export const useInboxV1Store = defineStore("inbox_v1", () => {
-  const inboxMessageList = reactive<InboxV1[]>([]);
+  const inboxMessageList = reactive<ComposedInbox[]>([]);
   const inboxSummary = reactive<InboxSummary>({
     hasUnread: false,
     hasUnreadError: false,
@@ -18,7 +18,7 @@ export const useInboxV1Store = defineStore("inbox_v1", () => {
 
   const composeActivity = async (
     inboxMessage: InboxMessage
-  ): Promise<InboxV1 | undefined> => {
+  ): Promise<ComposedInbox | undefined> => {
     try {
       const activity = await useActivityV1Store().fetchActivityByUID(
         inboxMessage.activityUid
