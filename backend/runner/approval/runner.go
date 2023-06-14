@@ -15,8 +15,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -224,7 +222,16 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, r.store, issue, payload.Approval)
 	if err != nil {
-		return false, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
+		err = errors.Wrapf(err, "failed to handle incoming approval steps")
+		if updateErr := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalFindingError: err.Error(),
+			},
+		}); updateErr != nil {
+			return false, multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
+		}
+		return false, err
 	}
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
