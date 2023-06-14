@@ -641,6 +641,8 @@ func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy 
 		if userHasProjectRole[val.Role] {
 			return true, nil
 		}
+	case *storepb.ApprovalNode_ExternalNodeId:
+		return false, nil
 	default:
 		return false, errors.Errorf("invalid node payload type")
 	}
@@ -747,12 +749,33 @@ func convertToApprovalNode(node *storepb.ApprovalNode) *v1pb.ApprovalNode {
 	switch payload := node.Payload.(type) {
 	case *storepb.ApprovalNode_GroupValue_:
 		v1node.Payload = &v1pb.ApprovalNode_GroupValue_{
-			GroupValue: v1pb.ApprovalNode_GroupValue(payload.GroupValue),
+			GroupValue: convertToApprovalNodeGroupValue(payload.GroupValue),
 		}
 	case *storepb.ApprovalNode_Role:
 		v1node.Payload = &v1pb.ApprovalNode_Role{
 			Role: payload.Role,
 		}
+	case *storepb.ApprovalNode_ExternalNodeId:
+		v1node.Payload = &v1pb.ApprovalNode_ExternalNodeId{
+			ExternalNodeId: payload.ExternalNodeId,
+		}
 	}
 	return v1node
+}
+
+func convertToApprovalNodeGroupValue(v storepb.ApprovalNode_GroupValue) v1pb.ApprovalNode_GroupValue {
+	switch v {
+	case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
+		return v1pb.ApprovalNode_GROUP_VALUE_UNSPECIFILED
+	case storepb.ApprovalNode_WORKSPACE_OWNER:
+		return v1pb.ApprovalNode_WORKSPACE_OWNER
+	case storepb.ApprovalNode_WORKSPACE_DBA:
+		return v1pb.ApprovalNode_WORKSPACE_DBA
+	case storepb.ApprovalNode_PROJECT_OWNER:
+		return v1pb.ApprovalNode_PROJECT_OWNER
+	case storepb.ApprovalNode_PROJECT_MEMBER:
+		return v1pb.ApprovalNode_PROJECT_MEMBER
+	default:
+		return v1pb.ApprovalNode_GROUP_VALUE_UNSPECIFILED
+	}
 }
