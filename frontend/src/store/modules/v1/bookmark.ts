@@ -9,6 +9,7 @@ export const useBookmarkV1Store = defineStore("bookmark_v1", () => {
 
   const fetchBookmarkList = async () => {
     const resp = await bookmarkServiceClient.listBookmarks({});
+    bookmarkList.splice(0, bookmarkList.length);
     for (const bookmark of resp.bookmarks) {
       bookmarkList.push(bookmark);
     }
