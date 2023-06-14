@@ -78,7 +78,7 @@ const (
 	// Currently, we only support customizing the logo.
 	FeatureBranding FeatureType = "bb.feature.branding"
 
-	// Change Workflow.
+	// FeatureDBAWorkflow: change Workflow.
 	// FeatureDBAWorkflow enforces the DBA workflow.
 	//
 	// - Developers can't create and view instances since they are exclusively by DBA, they can
