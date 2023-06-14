@@ -773,20 +773,19 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, issue *sto
 			return nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
 		}
 		node := step.Nodes[0]
-		if x, ok := node.GetPayload().(*storepb.ApprovalNode_ExternalNodeId); ok {
-			if err := handleApprovalNodeExternalNode(ctx, s, x.ExternalNodeId); err != nil {
+		if v, ok := node.GetPayload().(*storepb.ApprovalNode_ExternalNodeId); ok {
+			if err := handleApprovalNodeExternalNode(ctx, s, v.ExternalNodeId); err != nil {
 				approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
 					Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
 					PrincipalId: api.SystemBotID,
 				})
-				activity, err1 := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED, fmt.Sprintf("failed to handle external node, err: %v", err))
-				if err1 != nil {
-					return nil, nil, err1
+				activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED, fmt.Sprintf("failed to handle external node, err: %v", err))
+				if err != nil {
+					return nil, nil, err
 				}
 				activities = append(activities, activity)
-			} else {
-				break
 			}
+			break
 		} else {
 			hasApprover, err := userCanApprove(node, users, policy)
 			if err != nil {
