@@ -1443,7 +1443,6 @@
       "success-member-deleted-prompt": "成功将 {name} 从当前项目移除.",
       "member-placeholder": "选择用户",
       "manage-member": "管理成员",
-      "add-member": "添加成员",
       "owner": "@.upper:common.role.owner",
       "developer": "@.upper:common.role.developer",
       "archive": {
@@ -1458,17 +1457,21 @@
       "schema-change-type": "Schema 变更类型",
       "select-schema-change-type-ddl": "命令式 - 面向过程的 DDL 命令，如 ALTER TABLE",
       "select-schema-change-type-sdl": "声明式 - 面向终态的 Schema 描述，如 CREATE TABLE",
-      "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。",
-      "members": {
-        "edit": "编辑成员 - {member}",
-        "view-by-principals": "按用户查看",
-        "view-by-roles": "按角色查看",
-        "cannot-remove-last-owner": "不能移除项目的最后一个所有者",
-        "revoke-role-from-user": "撤销 '{user}' 的 '{role}' 角色",
-        "remove-user": "移除 '{user}'",
-        "inactive-members": "未激活的成员",
-        "show-inactive": "查看未激活的成员"
-      }
+      "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。"
+    },
+    "members": {
+      "add-member": "添加成员",
+      "revoke-member": "撤销成员",
+      "edit": "编辑成员 - {member}",
+      "view-by-principals": "按负责人查看",
+      "view-by-roles": "按角色查看",
+      "cannot-remove-last-owner": "无法移除项目的最后一个所有者",
+      "revoke-role-from-user": "从'{user}'撤销'{role}'",
+      "inactive-members": "未激活成员",
+      "show-inactive": "显示未激活成员",
+      "select-users": "选择用户",
+      "assign-role": "分配角色",
+      "role-never-expires": "此角色没有过期时间。"
     },
     "mode": {
       "standard": "标准模式",

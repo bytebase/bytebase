@@ -33,7 +33,7 @@
                 </NButton>
               </template>
               <div>
-                {{ $t("project.settings.members.cannot-remove-last-owner") }}
+                {{ $t("project.members.cannot-remove-last-owner") }}
               </div>
             </NTooltip>
           </div>
@@ -46,6 +46,15 @@
             <template #item="{ item }: SingleBindingRow">
               <div class="bb-grid-cell">
                 {{ extractDatabaseName(item.databaseResource) }}
+                <template v-if="item.databaseResource">
+                  <InstanceV1Name
+                    class="text-gray-500 ml-0.5"
+                    :instance="
+                      extractDatabase(item.databaseResource).instanceEntity
+                    "
+                    :link="false"
+                  />
+                </template>
               </div>
               <div class="bb-grid-cell">
                 {{ extractSchemaName(item.databaseResource) }}
@@ -59,13 +68,29 @@
               <div class="bb-grid-cell">
                 <RoleDescription :description="item.description || ''" />
               </div>
-              <div class="bb-grid-cell w-12">
-                <button
-                  class="cursor-pointer opacity-60 hover:opacity-100"
-                  @click="handleDeleteCondition(item)"
-                >
-                  <heroicons-outline:trash class="w-4 h-4" />
-                </button>
+              <div class="bb-grid-cell w-12 space-x-1">
+                <NTooltip trigger="hover">
+                  <template #trigger>
+                    <button
+                      class="cursor-pointer opacity-60 hover:opacity-100"
+                      @click="editingBinding = item"
+                    >
+                      <heroicons-outline:pencil class="w-4 h-4" />
+                    </button>
+                  </template>
+                  {{ $t("common.edit") }}
+                </NTooltip>
+                <NTooltip trigger="hover">
+                  <template #trigger>
+                    <button
+                      class="cursor-pointer opacity-60 hover:opacity-100"
+                      @click="handleDeleteCondition(item)"
+                    >
+                      <heroicons-outline:trash class="w-4 h-4" />
+                    </button>
+                  </template>
+                  {{ $t("common.delete") }}
+                </NTooltip>
               </div>
             </template>
           </BBGrid>
@@ -81,11 +106,25 @@
       </template>
     </NDrawerContent>
   </NDrawer>
+
+  <EditProjectMemberPanel
+    v-if="editingBinding"
+    :project="project"
+    :member="member"
+    :single-binding="editingBinding"
+    @close="editingBinding = null"
+  />
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
+import {
+  NButton,
+  NDrawer,
+  NDrawerContent,
+  NTooltip,
+  useDialog,
+} from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
@@ -112,6 +151,7 @@ import { ComposedProjectMember, SingleBinding } from "./types";
 import { BBGridColumn, BBGrid, BBGridRow } from "@/bbkit";
 import { DatabaseResource } from "@/components/Issue/form/SelectDatabaseResourceForm/common";
 import RoleDescription from "./RoleDescription.vue";
+import EditProjectMemberPanel from "../AddProjectMember/EditProjectMemberPanel.vue";
 
 export type SingleBindingRow = BBGridRow<SingleBinding>;
 
@@ -138,9 +178,10 @@ const roleList = ref<
     singleBindingList: SingleBinding[];
   }[]
 >([]);
+const editingBinding = ref<SingleBinding | null>(null);
 
 const panelTitle = computed(() => {
-  return t("project.settings.members.edit", {
+  return t("project.members.edit", {
     member: `${props.member.user.title}(${props.member.user.email})`,
   });
 });
@@ -224,7 +265,7 @@ const allowRemoveRole = (role: string) => {
 };
 
 const handleDeleteRole = (role: string) => {
-  const title = t("project.settings.members.revoke-role-from-user", {
+  const title = t("project.members.revoke-role-from-user", {
     role: displayRoleTitle(role),
     user: props.member.user.title,
   });
@@ -274,7 +315,7 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
     );
     role = `${role} - ${database.name}`;
   }
-  const title = t("project.settings.members.revoke-role-from-user", {
+  const title = t("project.members.revoke-role-from-user", {
     role: role,
     user: props.member.user.title,
   });
@@ -347,6 +388,13 @@ const extractDatabaseName = (databaseResource?: DatabaseResource) => {
     String(databaseResource.databaseName)
   );
   return database.databaseName;
+};
+
+const extractDatabase = (databaseResource: DatabaseResource) => {
+  const database = databaseStore.getDatabaseByName(
+    String(databaseResource.databaseName)
+  );
+  return database;
 };
 
 const extractSchemaName = (databaseResource?: DatabaseResource) => {

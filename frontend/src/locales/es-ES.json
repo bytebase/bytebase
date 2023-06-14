@@ -1441,7 +1441,6 @@
       "success-member-deleted-prompt": "Se revocó el acceso de {name} al proyecto correctamente.",
       "member-placeholder": "Seleccionar usuario",
       "manage-member": "Administrar miembros",
-      "add-member": "Agregar miembro",
       "owner": "@.upper:common.role.owner",
       "developer": "@.upper:common.role.developer",
       "archive": {
@@ -1456,17 +1455,21 @@
       "schema-change-type": "Tipo de cambio de esquema",
       "select-schema-change-type-ddl": "Migración basada en imperativo. Por ejemplo, ALTER TABLE",
       "select-schema-change-type-sdl": "Migración basada en declaración de estado. Por ejemplo, CREATE TABLE",
-      "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos.",
-      "members": {
-        "edit": "Editar miembro - {member}",
-        "view-by-principals": "Ver por principales",
-        "view-by-roles": "Ver por roles",
-        "cannot-remove-last-owner": "No se puede eliminar el último propietario de un proyecto",
-        "revoke-role-from-user": "Revocar '{role}' de '{user}'",
-        "remove-user": "Eliminar '{user}'",
-        "inactive-members": "Miembros inactivos",
-        "show-inactive": "Mostrar miembros inactivos"
-      }
+      "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos."
+    },
+    "members": {
+      "add-member": "Agregar miembro",
+      "revoke-member": "Revocar miembro",
+      "edit": "Editar miembro - {member}",
+      "view-by-principals": "Ver por responsables",
+      "view-by-roles": "Ver por roles",
+      "cannot-remove-last-owner": "No se puede eliminar el último propietario de un proyecto",
+      "revoke-role-from-user": "Revocar '{role}' de '{user}'",
+      "inactive-members": "Miembros inactivos",
+      "show-inactive": "Mostrar miembros inactivos",
+      "select-users": "Seleccionar usuarios",
+      "assign-role": "Asignar rol",
+      "role-never-expires": "Este rol nunca expira."
     },
     "mode": {
       "standard": "Modo Estándar",
