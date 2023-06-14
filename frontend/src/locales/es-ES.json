@@ -772,7 +772,9 @@
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
       "customize": "personalice",
-      "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez."
+      "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez.",
+      "export-method": "Método de exportación",
+      "please-select-database-first": "Por favor, seleccione primero la base de datos"
     },
     "review-sent-back": "Revisión devuelta"
   },
