@@ -202,11 +202,12 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		}
 	}
 
-	stepsSkipped, err := utils.SkipApprovalStepIfNeeded(ctx, s.store, issue.Project.UID, payload.Approval)
+	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, s.store, issue, payload.Approval)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to skip approval step if needed, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
 
+	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
@@ -245,19 +246,9 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 			return err
 		}
 
-		if stepsSkipped > 0 {
-			for i := 0; i < stepsSkipped; i++ {
-				create := &api.ActivityCreate{
-					CreatorID:   api.SystemBotID,
-					ContainerID: issue.UID,
-					Type:        api.ActivityIssueCommentCreate,
-					Level:       api.ActivityInfo,
-					Comment:     "",
-					Payload:     string(activityPayload),
-				}
-				if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
-					return err
-				}
+		for _, create := range activityCreates {
+			if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
+				return err
 			}
 		}
 
