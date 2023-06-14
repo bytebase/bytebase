@@ -15,6 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -220,48 +222,27 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		payload.Approval.ApprovalTemplates = []*storepb.ApprovalTemplate{approvalTemplate}
 	}
 
-	stepsSkipped, err := utils.SkipApprovalStepIfNeeded(ctx, r.store, issue.Project.UID, payload.Approval)
+	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, r.store, issue, payload.Approval)
 	if err != nil {
-		return false, errors.Wrap(err, "failed to skip approval step if needed")
+		return false, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
+	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
 	if err := updateIssuePayload(ctx, r.store, issue.UID, payload); err != nil {
 		return false, errors.Wrap(err, "failed to update issue payload")
 	}
 
-	if stepsSkipped > 0 {
-		// It's ok to fail to create activity.
-		if err := func() error {
-			activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
-				Event: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_{
-					ApprovalEvent: &storepb.ActivityIssueCommentCreatePayload_ApprovalEvent{
-						Status: storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED,
-					},
-				},
-				IssueName: issue.Title,
-			})
-			if err != nil {
+	// It's ok to fail to create activity.
+	if err := func() error {
+		for _, create := range activityCreates {
+			if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 				return err
 			}
-
-			for i := 0; i < stepsSkipped; i++ {
-				create := &api.ActivityCreate{
-					CreatorID:   api.SystemBotID,
-					ContainerID: issue.UID,
-					Type:        api.ActivityIssueCommentCreate,
-					Level:       api.ActivityInfo,
-					Comment:     "",
-					Payload:     string(activityPayload),
-				}
-				if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		}(); err != nil {
-			log.Error("failed to create activity after approving review", zap.Error(err))
 		}
+
+		return nil
+	}(); err != nil {
+		log.Error("failed to create activity after approving review", zap.Error(err))
 	}
 
 	if err := func() error {
