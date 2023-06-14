@@ -171,7 +171,7 @@ func getOracleStatementWithResultLimit(stmt string, limit int) string {
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL parser.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := singleSQL.Text
 	statement = strings.TrimRight(statement, " \n\t;")
-	if !strings.HasPrefix(statement, "EXPLAIN") && queryContext.Limit > 0 {
+	if !strings.HasPrefix(strings.ToUpper(statement), "EXPLAIN") && queryContext.Limit > 0 {
 		statement = getOracleStatementWithResultLimit(statement, queryContext.Limit)
 	}
 
