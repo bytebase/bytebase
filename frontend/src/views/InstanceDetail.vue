@@ -115,7 +115,6 @@ import InstanceForm from "@/components/InstanceForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
 import {
-  featureToRef,
   pushNotification,
   useSubscriptionV1Store,
   useDBSchemaV1Store,
