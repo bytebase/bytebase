@@ -56,13 +56,13 @@
               :key="rowIndex"
               class="group"
             >
-              <!-- eslint-disable vue/no-v-html -->
               <td
                 v-for="(cell, cellIndex) of row.getVisibleCells()"
                 :key="cellIndex"
-                class="px-2 py-1 text-sm dark:text-gray-100 leading-5 whitespace-pre-wrap break-all border border-block-border group-last:border-b-0 group-even:bg-gray-50/50 dark:group-even:bg-gray-700/50"
-                v-html="renderCellValue(cell.getValue())"
-              ></td>
+                class="px-2 py-1 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border border-block-border group-last:border-b-0 group-even:bg-gray-50/50 dark:group-even:bg-gray-700/50"
+              >
+                <TableCell :html="renderCellValue(cell.getValue())" />
+              </td>
             </tr>
           </tbody>
         </table>
@@ -84,6 +84,7 @@ import { escape } from "lodash-es";
 
 import useTableColumnWidthLogic from "./useTableResize";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
+import TableCell from "./TableCell.vue";
 import { getHighlightHTMLByRegExp } from "@/utils";
 
 export type DataTableColumn = {
