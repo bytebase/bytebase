@@ -190,6 +190,9 @@ const prepareConnectionTree = async () => {
 
 const prepareSheet = async () => {
   const sheetSlug = (route.params.sheetSlug as string) || "";
+  if (!sheetSlug) {
+    return false;
+  }
 
   const sheetName = sheetNameFromSlug(sheetSlug);
   const openingSheetTab = tabStore.tabList.find(
@@ -224,33 +227,31 @@ const prepareSheet = async () => {
   } else {
     // Open the sheet in a "temp" tab otherwise.
     tabStore.selectOrAddTempTab();
-
-    let insId = String(UNKNOWN_ID);
-    let dbId = String(UNKNOWN_ID);
-    if (sheet.database) {
-      const [instanceName, databaseId] = getInstanceAndDatabaseId(
-        sheet.database
-      );
-      const ins = await useInstanceV1Store().getOrFetchInstanceByName(
-        `instances/${instanceName}`
-      );
-      insId = ins.uid;
-      dbId = databaseId;
-    }
-
-    tabStore.updateCurrentTab({
-      sheetName,
-      name: sheet.title,
-      statement: new TextDecoder().decode(sheet.content),
-      isSaved: true,
-      connection: {
-        ...emptyConnection(),
-        // TODO: legacy instance id.
-        instanceId: insId,
-        databaseId: dbId,
-      },
-    });
   }
+
+  let insId = String(UNKNOWN_ID);
+  let dbId = String(UNKNOWN_ID);
+  if (sheet.database) {
+    const [instanceName, databaseId] = getInstanceAndDatabaseId(sheet.database);
+    const ins = await useInstanceV1Store().getOrFetchInstanceByName(
+      `instances/${instanceName}`
+    );
+    insId = ins.uid;
+    dbId = databaseId;
+  }
+
+  tabStore.updateCurrentTab({
+    sheetName,
+    name: sheet.title,
+    statement: new TextDecoder().decode(sheet.content),
+    isSaved: true,
+    connection: {
+      ...emptyConnection(),
+      // TODO: legacy instance id.
+      instanceId: insId,
+      databaseId: dbId,
+    },
+  });
 
   return true;
 };
