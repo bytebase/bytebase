@@ -9,7 +9,13 @@ export const useBookmarkV1Store = defineStore("bookmark_v1", () => {
 
   const fetchBookmarkList = async () => {
     const resp = await bookmarkServiceClient.listBookmarks({});
-    bookmarkList = resp.bookmarks;
+    for (const bookmark of resp.bookmarks) {
+      bookmarkList.push(bookmark);
+    }
+    return bookmarkList;
+  };
+
+  const getBookmarkList = () => {
     return bookmarkList;
   };
 
@@ -35,10 +41,7 @@ export const useBookmarkV1Store = defineStore("bookmark_v1", () => {
       name,
     });
     const index = bookmarkList.findIndex((b) => b.name === name);
-    bookmarkList = [
-      ...bookmarkList.slice(0, index),
-      ...bookmarkList.slice(index + 1),
-    ];
+    bookmarkList.splice(index, 1);
   };
 
   const findBookmarkByLink = (link: string) => {
@@ -46,7 +49,7 @@ export const useBookmarkV1Store = defineStore("bookmark_v1", () => {
   };
 
   return {
-    bookmarkList,
+    getBookmarkList,
     fetchBookmarkList,
     createBookmark,
     deleteBookmark,

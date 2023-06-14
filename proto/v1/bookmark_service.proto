@@ -25,7 +25,7 @@ service BookmarkService {
     option (google.api.method_signature) = "name";
   }
 
-  // ListBookmark lists bookmarks.
+  // ListBookmarks lists bookmarks.
   rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
     option (google.api.http) = {get: "/v1/bookmarks"};
     option (google.api.method_signature) = "";

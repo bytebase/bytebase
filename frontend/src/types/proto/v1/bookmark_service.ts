@@ -497,7 +497,7 @@ export const BookmarkServiceDefinition = {
         },
       },
     },
-    /** ListBookmark lists bookmarks. */
+    /** ListBookmarks lists bookmarks. */
     listBookmarks: {
       name: "ListBookmarks",
       requestType: ListBookmarksRequest,
@@ -519,7 +519,7 @@ export interface BookmarkServiceImplementation<CallContextExt = {}> {
   createBookmark(request: CreateBookmarkRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Bookmark>>;
   /** DeleteBookmark deletes a bookmark. */
   deleteBookmark(request: DeleteBookmarkRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  /** ListBookmark lists bookmarks. */
+  /** ListBookmarks lists bookmarks. */
   listBookmarks(
     request: ListBookmarksRequest,
     context: CallContext & CallContextExt,
@@ -534,7 +534,7 @@ export interface BookmarkServiceClient<CallOptionsExt = {}> {
   ): Promise<Bookmark>;
   /** DeleteBookmark deletes a bookmark. */
   deleteBookmark(request: DeepPartial<DeleteBookmarkRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  /** ListBookmark lists bookmarks. */
+  /** ListBookmarks lists bookmarks. */
   listBookmarks(
     request: DeepPartial<ListBookmarksRequest>,
     options?: CallOptions & CallOptionsExt,
