@@ -17,6 +17,7 @@
           >
             <span class="textlabel">{{ displayRoleTitle(role.role) }}</span>
             <NTooltip
+              v-if="allowAdmin"
               :disabled="
                 allowRemoveRole(role.role) || role.role !== 'roles/OWNER'
               "
@@ -69,7 +70,7 @@
                 <RoleDescription :description="item.description || ''" />
               </div>
               <div class="bb-grid-cell w-12 space-x-1">
-                <NTooltip trigger="hover">
+                <NTooltip v-if="allowAdmin" trigger="hover">
                   <template #trigger>
                     <button
                       class="cursor-pointer opacity-60 hover:opacity-100"
@@ -80,7 +81,7 @@
                   </template>
                   {{ $t("common.edit") }}
                 </NTooltip>
-                <NTooltip trigger="hover">
+                <NTooltip v-if="allowAdmin" trigger="hover">
                   <template #trigger>
                     <button
                       class="cursor-pointer opacity-60 hover:opacity-100"
