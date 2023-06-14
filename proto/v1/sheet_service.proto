@@ -237,7 +237,7 @@ message Sheet {
   Type type = 11 [(google.api.field_behavior) = REQUIRED];
 
   // starred indicates whether the sheet is starred by the current authenticated user.
-  bool starred = 12;
+  bool starred = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // TODO: deprecate this field.
   string payload = 13;

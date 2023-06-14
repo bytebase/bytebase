@@ -102,11 +102,4 @@ p, OWNER, /setting/{name}, PATCH
 p, OWNER, /label, GET
 p, OWNER, /label/{labelID}, PATCH
 p, OWNER, /feature, GET
-p, OWNER, /sheet, POST
-p, OWNER, /sheet/my, GET
-p, OWNER, /sheet/shared, GET
-p, OWNER, /sheet/starred, GET
-p, OWNER, /sheet/{sheetID}, GET
-p, OWNER, /sheet/{sheetID}, PATCH
-p, OWNER, /sheet/{sheetID}, DELETE
 p, OWNER, /anomaly, GET
