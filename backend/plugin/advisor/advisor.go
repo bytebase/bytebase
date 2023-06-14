@@ -408,6 +408,9 @@ const (
 
 	// SnowflakeTableNamingNoKeyword is an advisor type for Snowflake table naming convention without keyword.
 	SnowflakeTableNamingNoKeyword Type = "bb.plugin.advisor.snowflake.naming.table-no-keyword"
+
+	// SnowflakeWhereRequirement is an advisor type for Snowflake WHERE clause requirement.
+	SnowflakeWhereRequirement Type = "bb.plugin.advisor.snowflake.where.require"
 )
 
 // Advice is the result of an advisor.
