@@ -21,13 +21,13 @@
           :disabled="state.selectedMemberNameList.size === 0"
           @click="handleRevokeSelectedMembers"
         >
-          Revoke member
+          {{ $t("project.members.revoke-member") }}
         </NButton>
         <NButton type="primary" @click="state.showAddMemberPanel = true">
           <template #icon>
             <heroicons-outline:user-add class="w-4 h-4" />
           </template>
-          {{ $t("project.settings.add-member") }}
+          {{ $t("project.members.add-member") }}
         </NButton>
       </div>
     </div>
@@ -67,14 +67,14 @@
     <div v-if="inactiveComposedMemberList.length > 0" class="mt-4 ml-2">
       <NCheckbox v-model:checked="state.showInactiveMemberList">
         <span class="textinfolabel">
-          {{ $t("project.settings.members.show-inactive") }}
+          {{ $t("project.members.show-inactive") }}
         </span>
       </NCheckbox>
     </div>
 
     <div v-if="state.showInactiveMemberList" class="my-4 space-y-2">
       <div class="text-lg font-medium leading-7 text-main">
-        <span>{{ $t("project.settings.members.inactive-members") }}</span>
+        <span>{{ $t("project.members.inactive-members") }}</span>
         <span class="ml-1 font-normal text-control-light">
           ({{ inactiveComposedMemberList.length }})
         </span>

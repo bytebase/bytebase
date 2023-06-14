@@ -6,7 +6,7 @@
     @update:show="(show: boolean) => !show && $emit('close')"
   >
     <NDrawerContent
-      :title="'Add member'"
+      :title="$t('project.members.add-member')"
       :closable="true"
       class="w-[30rem] max-w-[100vw] relative"
     >
