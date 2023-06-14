@@ -20,6 +20,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
@@ -30,13 +31,15 @@ import (
 // SheetService implements the sheet service.
 type SheetService struct {
 	v1pb.UnimplementedSheetServiceServer
-	store *store.Store
+	store          *store.Store
+	licenseService enterpriseAPI.LicenseService
 }
 
 // NewSheetService creates a new SheetService.
-func NewSheetService(store *store.Store) *SheetService {
+func NewSheetService(store *store.Store, licenseService enterpriseAPI.LicenseService) *SheetService {
 	return &SheetService{
-		store: store,
+		store:          store,
+		licenseService: licenseService,
 	}
 }
 
@@ -154,13 +157,17 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 		find.ProjectID = &project.UID
 	}
 
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	sheet, err := s.store.GetSheetV2(ctx, find, currentPrincipalID)
+	sheet, err := s.findSheet(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+		return nil, err
 	}
-	if sheet == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetIntID))
+
+	canAccess, err := s.canReadSheet(ctx, sheet)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
+	}
+	if !canAccess {
+		return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Name)
 	}
 
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
@@ -255,6 +262,14 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 
 	var v1pbSheets []*v1pb.Sheet
 	for _, sheet := range sheetList {
+		canAccess, err := s.canReadSheet(ctx, sheet)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
+		}
+		if !canAccess {
+			log.Warn("cannot access sheet", zap.String("name", sheet.Name))
+			continue
+		}
 		v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 		if err != nil {
 			st := status.Convert(err)
@@ -316,6 +331,13 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 	if sheet == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetIntID))
 	}
+	canAccess, err := s.canWriteSheet(ctx, sheet)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
+	}
+	if !canAccess {
+		return nil, status.Errorf(codes.PermissionDenied, "cannot write sheet %s", sheet.Name)
+	}
 
 	sheetPatch := &store.PatchSheetMessage{
 		ID:        sheet.UID,
@@ -329,14 +351,6 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 		case "content":
 			statement := string(request.Sheet.Content)
 			sheetPatch.Statement = &statement
-		case "starred":
-			if _, err := s.store.UpsertSheetOrganizer(ctx, &api.SheetOrganizerUpsert{
-				SheetID:     sheet.UID,
-				PrincipalID: currentPrincipalID,
-				Starred:     request.Sheet.Starred,
-			}); err != nil {
-				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update sheet organizer: %v", err))
-			}
 		case "visibility":
 			visibility, err := convertToLegacyAPISheetVisibility(request.Sheet.Visibility)
 			if err != nil {
@@ -396,6 +410,13 @@ func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteShee
 	}
 	if sheet == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetIDInt))
+	}
+	canAccess, err := s.canWriteSheet(ctx, sheet)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
+	}
+	if !canAccess {
+		return nil, status.Errorf(codes.PermissionDenied, "cannot write sheet %s", sheet.Name)
 	}
 
 	if err := s.store.DeleteSheet(ctx, &api.SheetDelete{
@@ -630,6 +651,21 @@ func (s *SheetService) UpdateSheetOrganizer(ctx context.Context, request *v1pb.U
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
 	}
 
+	sheet, err := s.findSheet(ctx, &api.SheetFind{
+		ID: &sheetIntID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	canAccess, err := s.canReadSheet(ctx, sheet)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
+	}
+	if !canAccess {
+		return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Name)
+	}
+
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	sheetOrganizerUpsert := &api.SheetOrganizerUpsert{
 		SheetID:     sheetIntID,
@@ -655,6 +691,88 @@ func (s *SheetService) UpdateSheetOrganizer(ctx context.Context, request *v1pb.U
 		Starred: organizer.Starred,
 		Pinned:  organizer.Pinned,
 	}, nil
+}
+
+func (s *SheetService) findSheet(ctx context.Context, find *api.SheetFind) (*store.SheetMessage, error) {
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	sheet, err := s.store.GetSheetV2(ctx, find, currentPrincipalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+	}
+	if sheet == nil {
+		return nil, status.Errorf(codes.NotFound, "cannot find the sheet")
+	}
+	return sheet, nil
+}
+
+// canWriteSheet check if the principal can write the sheet.
+// sheet if writable when:
+// PRIVATE: the creator only.
+// PROJECT: the creator or project role can manage sheet, workspace Owner and DBA.
+// PUBLIC: the creator only.
+func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMessage) (bool, error) {
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+
+	if sheet.CreatorID == currentPrincipalID {
+		return true, nil
+	}
+
+	if sheet.Visibility == api.ProjectSheet {
+		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, currentPrincipalID)
+		if err != nil {
+			return false, err
+		}
+		if len(projectRoles) == 0 {
+			return false, nil
+		}
+		return projectRoles[common.ProjectOwner], nil
+	}
+
+	return false, nil
+}
+
+// canReadSheet check if the principal can read the sheet.
+// sheet is readable when:
+// PRIVATE: the creator only.
+// PROJECT: the creator and members in the project.
+// PUBLIC: everyone.
+func (s *SheetService) canReadSheet(ctx context.Context, sheet *store.SheetMessage) (bool, error) {
+	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+
+	switch sheet.Visibility {
+	case api.PrivateSheet:
+		return sheet.CreatorID == currentPrincipalID, nil
+	case api.PublicSheet:
+		return true, nil
+	case api.ProjectSheet:
+		if role == api.Owner || role == api.DBA {
+			return true, nil
+		}
+		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, currentPrincipalID)
+		if err != nil {
+			return false, err
+		}
+		return len(projectRoles) > 0, nil
+	}
+	return false, nil
+}
+
+func (s *SheetService) findProjectRoles(ctx context.Context, projectUID int, principalUID int) (map[common.ProjectRole]bool, error) {
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
+	if err != nil {
+		return nil, err
+	}
+	projectRoles := make(map[common.ProjectRole]bool)
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID == principalUID {
+				projectRoles[common.ProjectRole(binding.Role)] = true
+				break
+			}
+		}
+	}
+	return projectRoles, nil
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {

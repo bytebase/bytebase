@@ -263,12 +263,6 @@ const getUpdateMaskForSheet = (
     updateMask.push("visibility");
   }
   if (
-    !isUndefined(update.starred) &&
-    !isEqual(origin.starred, update.starred)
-  ) {
-    updateMask.push("starred");
-  }
-  if (
     !isUndefined(update.payload) &&
     !isEqual(origin.payload, update.payload)
   ) {
