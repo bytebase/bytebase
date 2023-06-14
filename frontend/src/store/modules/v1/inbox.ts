@@ -1,13 +1,17 @@
 import { defineStore } from "pinia";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { reactive } from "vue";
 import { InboxMessage, InboxSummary } from "@/types/proto/v1/inbox_service";
 import { inboxServiceClient } from "@/grpcweb";
 import { useActivityV1Store } from "./activity";
 import { InboxV1 } from "@/types";
 
+dayjs.extend(utc);
+
 export const useInboxV1Store = defineStore("inbox_v1", () => {
-  let inboxMessageList = reactive<InboxV1[]>([]);
-  let inboxSummary = reactive<InboxSummary>({
+  const inboxMessageList = reactive<InboxV1[]>([]);
+  const inboxSummary = reactive<InboxSummary>({
     hasUnread: false,
     hasUnreadError: false,
   });
@@ -33,40 +37,48 @@ export const useInboxV1Store = defineStore("inbox_v1", () => {
   };
 
   const fetchInboxList = async (readCreatedAfterTs: number) => {
-    const resp = await inboxServiceClient.listInbox({});
+    const resp = await inboxServiceClient.listInbox({
+      filter: `create_time >= ${dayjs(readCreatedAfterTs).utc().format()}`,
+    });
 
-    const list = (
-      await Promise.all(resp.inboxMessages.map(composeActivity))
-    ).filter((inbox) => inbox !== undefined) as InboxV1[];
-    inboxMessageList = list;
+    const list = await Promise.all(resp.inboxMessages.map(composeActivity));
+    inboxMessageList.splice(0, inboxMessageList.length);
+    for (const inbox of list) {
+      if (inbox) {
+        inboxMessageList.push(inbox);
+      }
+    }
+
     return inboxMessageList;
   };
 
   const fetchInboxSummary = async () => {
     const summary = await inboxServiceClient.getInboxSummary({});
-    inboxSummary = summary;
+    inboxSummary.hasUnread = summary.hasUnread;
+    inboxSummary.hasUnreadError = summary.hasUnreadError;
     return inboxSummary;
   };
 
   const patchInbox = async (inboxMessage: Partial<InboxMessage>) => {
+    const index = inboxMessageList.findIndex(
+      (i) => i.name === inboxMessage.name
+    );
+    if (index < 0) {
+      return;
+    }
+    const existed = inboxMessageList[index];
+
     const inbox = await inboxServiceClient.updateInbox({
       inboxMessage,
       updateMask: ["status"],
     });
 
-    const inboxV1 = await composeActivity(inbox);
-    if (!inboxV1) {
-      return;
-    }
+    inboxMessageList[index] = {
+      ...inbox,
+      activity: existed.activity,
+    };
 
-    const index = inboxMessageList.findIndex((i) => i.name === inboxV1.name);
-
-    inboxMessageList = [
-      ...inboxMessageList.slice(0, index),
-      inboxV1,
-      ...inboxMessageList.slice(0, index + 1),
-    ];
-    return inboxV1;
+    return inboxMessageList[index];
   };
 
   return {

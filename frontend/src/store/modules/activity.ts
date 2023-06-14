@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import { cloneDeep } from "lodash-es";
-import { ActivityCreate, ActivityId, ActivityPatch, IssueId } from "@/types";
+import { ActivityCreate, IdType, ActivityPatch, IssueId } from "@/types";
 import { useActivityV1Store } from "./v1";
 
 export const useActivityLegacyStore = defineStore("activity", {
@@ -31,7 +31,7 @@ export const useActivityLegacyStore = defineStore("activity", {
       issueId,
       updatedComment,
     }: {
-      activityId: ActivityId;
+      activityId: IdType;
       issueId: IssueId;
       updatedComment: string;
     }) {

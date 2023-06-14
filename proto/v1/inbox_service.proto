@@ -32,8 +32,7 @@ message ListInboxRequest {
   // filter is the filter to apply on the list inbox request,
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
   // The field only support in filter:
-  // - create_time, example:
-  //    - create_time <= "2022-01-01T12:00:00.000Z"
+  // - "create_time" with ">=" operator, example:
   //    - create_time >= "2022-01-01T12:00:00.000Z"
   string filter = 1;
 
