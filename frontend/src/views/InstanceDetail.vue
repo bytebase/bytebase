@@ -4,57 +4,45 @@
 
     <div class="px-6 space-y-6">
       <InstanceForm :instance="instance" />
-      <div
-        v-if="hasDataSourceFeature"
-        class="py-6 space-y-4 border-t divide-control-border"
-      >
-        <!-- 
-          it's always false here,
-          we could postpone to migrate DataSourceTable to v1
-        -->
-        <!-- <DataSourceTable :instance="instance" /> -->
-      </div>
-      <div v-else>
-        <NTabs>
-          <template #suffix>
-            <div class="flex items-center gap-x-4">
-              <NButton
-                v-if="allowEdit"
-                :loading="state.syncingSchema"
-                @click.prevent="syncSchema"
-              >
-                <template v-if="state.syncingSchema">
-                  {{ $t("instance.syncing") }}
-                </template>
-                <template v-else>
-                  {{ $t("common.sync-now") }}
-                </template>
-              </NButton>
-              <NButton
-                v-if="
-                  instance.state === State.ACTIVE &&
-                  instanceV1HasCreateDatabase(instance)
-                "
-                type="primary"
-                @click.prevent="createDatabase"
-              >
-                {{ $t("instance.new-database") }}
-              </NButton>
-            </div>
-          </template>
+      <NTabs>
+        <template #suffix>
+          <div class="flex items-center gap-x-4">
+            <NButton
+              v-if="allowEdit"
+              :loading="state.syncingSchema"
+              @click.prevent="syncSchema"
+            >
+              <template v-if="state.syncingSchema">
+                {{ $t("instance.syncing") }}
+              </template>
+              <template v-else>
+                {{ $t("common.sync-now") }}
+              </template>
+            </NButton>
+            <NButton
+              v-if="
+                instance.state === State.ACTIVE &&
+                instanceV1HasCreateDatabase(instance)
+              "
+              type="primary"
+              @click.prevent="createDatabase"
+            >
+              {{ $t("instance.new-database") }}
+            </NButton>
+          </div>
+        </template>
 
-          <NTabPane name="DATABASES" :tab="$t('common.databases')">
-            <DatabaseV1Table
-              mode="INSTANCE"
-              :scroll-on-page-change="false"
-              :database-list="databaseV1List"
-            />
-          </NTabPane>
-          <NTabPane name="USERS" :tab="$t('instance.users')">
-            <InstanceRoleTable :instance-role-list="instanceRoleList" />
-          </NTabPane>
-        </NTabs>
-      </div>
+        <NTabPane name="DATABASES" :tab="$t('common.databases')">
+          <DatabaseV1Table
+            mode="INSTANCE"
+            :scroll-on-page-change="false"
+            :database-list="databaseV1List"
+          />
+        </NTabPane>
+        <NTabPane name="USERS" :tab="$t('instance.users')">
+          <InstanceRoleTable :instance-role-list="instanceRoleList" />
+        </NTabPane>
+      </NTabs>
       <template v-if="allowArchiveOrRestore">
         <template v-if="instance.state === State.ACTIVE">
           <BBButtonConfirm
@@ -127,7 +115,6 @@ import InstanceForm from "@/components/InstanceForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
 import {
-  featureToRef,
   pushNotification,
   useSubscriptionV1Store,
   useDBSchemaV1Store,
@@ -176,8 +163,6 @@ const environment = computed(() => {
     instance.value.environment
   );
 });
-
-const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
 watchEffect(() => {
   databaseStore.searchDatabaseList({

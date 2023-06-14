@@ -19,7 +19,6 @@ export type FeatureType =
   // Branding
   | "bb.feature.branding"
   // Change Workflow
-  | "bb.feature.data-source"
   | "bb.feature.dba-workflow"
   | "bb.feature.lgtm"
   | "bb.feature.im.approval"
