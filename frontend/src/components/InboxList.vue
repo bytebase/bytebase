@@ -69,14 +69,14 @@ import {
   ActivityTaskStatusUpdatePayload,
   ActivityTaskStatementUpdatePayload,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
-  Inbox,
+  ComposedInbox,
 } from "../types";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { issueActivityActionSentence } from "../utils";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
-import { useCurrentUser, useInboxStore, useActivityV1Store } from "@/store";
+import { useInboxV1Store, useActivityV1Store } from "@/store";
 import {
   LogEntity,
   LogEntity_Action,
@@ -84,24 +84,19 @@ import {
 } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName, extractUserUID } from "@/utils";
 import { useUserStore } from "@/store";
-
-interface LocalInbox extends Inbox {
-  activity: LogEntity;
-}
+import { InboxMessage_Status } from "@/types/proto/v1/inbox_service";
 
 defineProps({
   inboxList: {
     required: true,
-    type: Object as PropType<LocalInbox[]>,
+    type: Object as PropType<ComposedInbox[]>,
   },
 });
 
 const { t } = useI18n();
-const inboxStore = useInboxStore();
+const inboxV1Store = useInboxV1Store();
 const activityV1Store = useActivityV1Store();
 const router = useRouter();
-
-const currentUser = useCurrentUser();
 
 const getUser = (activity: LogEntity) => {
   const email = extractUserResourceName(activity.creator);
@@ -235,18 +230,12 @@ const actionSentence = (activity: LogEntity): string => {
   return "";
 };
 
-const clickInbox = (inbox: LocalInbox) => {
-  if (inbox.status == "UNREAD") {
-    inboxStore
-      .patchInbox({
-        inboxId: inbox.id,
-        inboxPatch: {
-          status: "READ",
-        },
-      })
-      .then(() => {
-        inboxStore.fetchInboxSummaryByUser(currentUser.value.id);
-      });
+const clickInbox = (inbox: ComposedInbox) => {
+  if (inbox.status == InboxMessage_Status.STATUS_UNREAD) {
+    inbox.status = InboxMessage_Status.STATUS_READ;
+    inboxV1Store.patchInbox(inbox).then(() => {
+      inboxV1Store.fetchInboxSummary();
+    });
   }
   const link = actionLink(inbox.activity);
   if (!isEmpty(link)) {

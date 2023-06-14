@@ -27,6 +27,7 @@ import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { ExternalVersionControlServiceDefinition } from "@/types/proto/v1/externalvs_service";
 import { LoggingServiceDefinition } from "@/types/proto/v1/logging_service";
 import { BookmarkServiceDefinition } from "@/types/proto/v1/bookmark_service";
+import { InboxServiceDefinition } from "@/types/proto/v1/inbox_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -151,6 +152,11 @@ export const loggingServiceClient = clientFactory.create(
 
 export const bookmarkServiceClient = clientFactory.create(
   BookmarkServiceDefinition,
+  channel
+);
+
+export const inboxServiceClient = clientFactory.create(
+  InboxServiceDefinition,
   channel
 );
 

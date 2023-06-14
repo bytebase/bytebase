@@ -50,6 +50,7 @@ const (
 	issueNamePrefix              = "issues/"
 	pipelineNamePrefix           = "pipelines/"
 	logNamePrefix                = "logs/"
+	inboxNamePrefix              = "inbox/"
 
 	deploymentConfigSuffix = "/deploymentConfig"
 	backupSettingSuffix    = "/backupSetting"
