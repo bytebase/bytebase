@@ -804,6 +804,19 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (*w
 		return nil, err
 	}
 
+	// initial external approval setting
+	externalApprovalSettingValue, err := protojson.Marshal(&storepb.ExternalApprovalSetting{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal initial external approval setting")
+	}
+	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingWorkspaceExternalApproval,
+		Value:       string(externalApprovalSettingValue),
+		Description: "The external approval setting",
+	}, api.SystemBotID); err != nil {
+		return nil, err
+	}
+
 	// initial workspace approval setting
 	approvalSettingValue, err := protojson.Marshal(&storepb.WorkspaceApprovalSetting{})
 	if err != nil {
