@@ -20,6 +20,7 @@ import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useBookmarkV1Store, useCurrentUser } from "@/store";
+import { Bookmark } from "@/types/proto/v1/bookmark_service";
 
 export default defineComponent({
   name: "BookmarkListSidePanel",
@@ -46,12 +47,12 @@ export default defineComponent({
     };
 
     const kbarActions = computed((): Action[] => {
-      const actions = bookmarkList.value.map((item: any) =>
+      const actions = bookmarkList.value.map((item: Bookmark) =>
         defineAction({
           // here `id` looks like "bb.bookmark.12345"
-          id: `bb.bookmark.${item.id}`,
+          id: `bb.bookmark.${item.name}`,
           section: t("common.bookmarks"),
-          name: item.name,
+          name: item.title,
           keywords: "bookmark",
           perform: () => {
             router.push({ path: item.link });
