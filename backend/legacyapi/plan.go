@@ -79,18 +79,6 @@ const (
 	FeatureBranding FeatureType = "bb.feature.branding"
 
 	// Change Workflow.
-
-	// FeatureDataSource exposes the data source concept.
-	//
-	// Currently, we DO NOT expose this feature.
-	//
-	// Internally Bytebase stores instance username/password in a separate data source model.
-	// This allows a single instance to have multiple data sources (e.g. one RW and one RO).
-	// And from the user's perspective, the username/password
-	// look like the property of the instance, which are not. They are the property of data source which
-	// in turns belongs to the instance.
-	// - Support defining extra data source for a database and exposing the related data source UI.
-	FeatureDataSource FeatureType = "bb.feature.data-source"
 	// FeatureDBAWorkflow enforces the DBA workflow.
 	//
 	// - Developers can't create and view instances since they are exclusively by DBA, they can
@@ -205,8 +193,6 @@ func (e FeatureType) Name() string {
 	case FeatureBranding:
 		return "Branding"
 	// Change Workflow
-	case FeatureDataSource:
-		return "Data source"
 	case FeatureDBAWorkflow:
 		return "DBA workflow"
 	case FeatureIMApproval:
@@ -299,7 +285,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
-	FeatureDataSource:       {false, false, false},
 	FeatureDBAWorkflow:      {false, false, true},
 	FeatureIMApproval:       {false, false, true},
 	FeatureMultiTenancy:     {false, false, true},

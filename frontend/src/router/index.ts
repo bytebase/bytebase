@@ -1289,22 +1289,6 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  if (to.name?.toString().startsWith("workspace.database.datasource")) {
-    if (
-      !hasFeature("bb.feature.data-source") ||
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-instance",
-        currentUserV1.value.userRole
-      )
-    ) {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-      return;
-    }
-  }
-
   if (
     to.name === "error.403" ||
     to.name === "error.404" ||
