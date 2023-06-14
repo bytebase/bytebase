@@ -740,7 +740,14 @@ func SkipApprovalStepIfNeeded(ctx context.Context, s *store.Store, projectUID in
 		if step == nil {
 			break
 		}
-		hasApprover, err := userCanApprove(step, users, policy)
+		if len(step.Nodes) != 1 {
+			return 0, errors.Errorf("expecting one node but got %v", len(step.Nodes))
+		}
+		if step.Type != storepb.ApprovalStep_ANY {
+			return 0, errors.Errorf("expecting ANY step type but got %v", step.Type)
+		}
+		node := step.Nodes[0]
+		hasApprover, err := userCanApprove(node, users, policy)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to check if user can approve")
 		}
@@ -757,14 +764,7 @@ func SkipApprovalStepIfNeeded(ctx context.Context, s *store.Store, projectUID in
 	return stepsSkipped, nil
 }
 
-func userCanApprove(step *storepb.ApprovalStep, users []*store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
-	if len(step.Nodes) != 1 {
-		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
-	}
-	if step.Type != storepb.ApprovalStep_ANY {
-		return false, errors.Errorf("expecting ANY step type but got %v", step.Type)
-	}
-	node := step.Nodes[0]
+func userCanApprove(node *storepb.ApprovalNode, users []*store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
 	if node.Type != storepb.ApprovalNode_ANY_IN_GROUP {
 		return false, errors.Errorf("expecting ANY_IN_GROUP node type but got %v", node.Type)
 	}
