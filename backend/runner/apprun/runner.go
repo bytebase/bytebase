@@ -103,7 +103,10 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					r.scheduleApproval(ctx, issue, stages, &value)
 				}
 
-				externalApprovalList, err := r.store.FindExternalApprovalV2(ctx)
+				externalApprovalType := api.ExternalApprovalTypeFeishu
+				externalApprovalList, err := r.store.ListExternalApprovalV2(ctx, &store.ListExternalApprovalMessage{
+					Type: &externalApprovalType,
+				})
 				if err != nil {
 					log.Error("failed to find external approval list", zap.Error(err))
 					return
