@@ -28,12 +28,12 @@ const validateApprovalFlow = (flow: ApprovalFlow) => {
       return false;
     }
     return nodes.every((node) => {
-      const { type, groupValue, role } = node;
+      const { type, groupValue, role, externalNodeId } = node;
       if (type !== ApprovalNode_Type.ANY_IN_GROUP) {
         return false;
       }
       if (!groupValue) {
-        if (!role) {
+        if (!role && !externalNodeId) {
           return false;
         }
       } else {

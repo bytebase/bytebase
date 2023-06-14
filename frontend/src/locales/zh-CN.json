@@ -2435,7 +2435,15 @@
       "view-approval-flow": "查看审批流",
       "skip": "跳过人工审批",
       "risk-not-configured-tips": "确保你已经定义了{link}。",
-      "the-related-risk-rules": "相关的风险规则"
+      "the-related-risk-rules": "相关的风险规则",
+      "external-approval-node": {
+        "external-approval-nodes": "外部审批节点",
+        "delete": "删除外部审批节点？",
+        "endpoint": "端点",
+        "view-node": "查看外部审批节点",
+        "create-node": "新建外部审批节点",
+        "edit-node": "编辑外部审批节点"
+      }
     },
     "risk": {
       "self": "风险",

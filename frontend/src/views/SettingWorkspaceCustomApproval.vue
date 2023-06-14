@@ -13,6 +13,7 @@
   </div>
 
   <ApprovalRuleDialog />
+  <ExternalApprovalNodeDrawer />
 
   <FeatureModal
     v-if="state.showFeatureModal"
@@ -34,6 +35,7 @@ import { hasWorkspacePermissionV1 } from "@/utils";
 import {
   CustomApproval,
   ApprovalRuleDialog,
+  ExternalApprovalNodeDrawer,
   provideCustomApprovalContext,
   TabValueList,
 } from "@/components/CustomApproval/Settings/components/CustomApproval/";
@@ -66,6 +68,7 @@ provideCustomApprovalContext({
   ready: toRef(state, "ready"),
   tab,
   dialog: ref(),
+  externalApprovalNodeContext: ref(),
 });
 
 onMounted(async () => {
