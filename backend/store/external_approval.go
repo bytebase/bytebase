@@ -43,10 +43,11 @@ type UpdateExternalApprovalMessage struct {
 	Payload *string
 }
 
-// listExternalApprovalMessage is the message for listing external approvals.
-type listExternalApprovalMessage struct {
-	// issueUID is the unique identifier of the issue.
-	issueUID *int
+// ListExternalApprovalMessage is the message for listing external approvals.
+type ListExternalApprovalMessage struct {
+	// IssueUID is the unique identifier of the issue.
+	IssueUID *int
+	Type     *api.ExternalApprovalType
 }
 
 // CreateExternalApprovalV2 creates an ExternalApproval.
@@ -89,14 +90,14 @@ func (s *Store) CreateExternalApprovalV2(ctx context.Context, create *ExternalAp
 	return &externalApproval, nil
 }
 
-// FindExternalApprovalV2 finds a list of ExternalApproval by find and whose RowStatus == NORMAL.
-func (s *Store) FindExternalApprovalV2(ctx context.Context) ([]*ExternalApprovalMessage, error) {
+// ListExternalApprovalV2 finds a list of ExternalApproval by find and whose RowStatus == NORMAL.
+func (s *Store) ListExternalApprovalV2(ctx context.Context, find *ListExternalApprovalMessage) ([]*ExternalApprovalMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	externalApprovals, err := s.findExternalApprovalImplV2(ctx, tx, &listExternalApprovalMessage{})
+	externalApprovals, err := s.findExternalApprovalImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find external approval")
 	}
@@ -115,7 +116,7 @@ func (s *Store) GetExternalApprovalByIssueIDV2(ctx context.Context, issueID int)
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	externalApprovals, err := s.findExternalApprovalImplV2(ctx, tx, &listExternalApprovalMessage{issueUID: &issueID})
+	externalApprovals, err := s.findExternalApprovalImplV2(ctx, tx, &ListExternalApprovalMessage{IssueUID: &issueID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find external approval")
 	}
@@ -168,11 +169,14 @@ func (s *Store) UpdateExternalApprovalV2(ctx context.Context, update *UpdateExte
 	return &externalApproval, nil
 }
 
-func (*Store) findExternalApprovalImplV2(ctx context.Context, tx *Tx, find *listExternalApprovalMessage) ([]*ExternalApprovalMessage, error) {
+func (*Store) findExternalApprovalImplV2(ctx context.Context, tx *Tx, find *ListExternalApprovalMessage) ([]*ExternalApprovalMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
-	if v := find.issueUID; v != nil {
+	if v := find.IssueUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
