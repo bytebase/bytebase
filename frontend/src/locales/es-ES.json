@@ -2420,7 +2420,15 @@
       "view-approval-flow": "Ver flujo de aprobación",
       "skip": "Omitir aprobación manual",
       "risk-not-configured-tips": "Asegúrese de haber definido {link}.",
-      "the-related-risk-rules": "las reglas de riesgo relacionadas"
+      "the-related-risk-rules": "las reglas de riesgo relacionadas",
+      "external-approval-node": {
+        "external-approval-nodes": "Nodos de aprobación externa",
+        "delete": "¿Eliminar nodo de aprobación externo?",
+        "endpoint": "punto final",
+        "view-node": "Ver nodo de aprobación externo",
+        "create-node": "Crear nodo de aprobación externo",
+        "edit-node": "Editar nodo de aprobación externo"
+      }
     },
     "risk": {
       "self": "Riesgo",

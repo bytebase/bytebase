@@ -2,7 +2,7 @@
   <NSelect
     style="width: 12rem"
     :options="options"
-    :value="value.groupValue ?? value.role"
+    :value="value.groupValue ?? value.role ?? value.externalNodeId"
     :placeholder="$t('custom-approval.approval-flow.node.select-approver')"
     :consistent-menu-width="false"
     :disabled="!allowAdmin"
@@ -23,8 +23,9 @@ import {
 } from "@/types/proto/v1/review_service";
 import { useCustomApprovalContext } from "../context";
 import { approvalNodeGroupValueText, approvalNodeRoleText } from "@/utils";
-import { useRoleStore } from "@/store";
+import { useRoleStore, useSettingV1Store } from "@/store";
 import { isCustomRole } from "@/types";
+import { ExternalApprovalSetting } from "@/types/proto/v1/setting_service";
 
 interface ApprovalNodeSelectOption extends SelectOption {
   value: ApprovalNode_GroupValue | string | undefined;
@@ -40,9 +41,20 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const settingStore = useSettingV1Store();
 const context = useCustomApprovalContext();
 const { allowAdmin } = context;
 const { roleList } = storeToRefs(useRoleStore());
+
+const settingValue = computed(() => {
+  const setting = settingStore.getSettingByName(
+    "bb.workspace.approval.external"
+  );
+  return (
+    setting?.value?.externalApprovalSettingValue ??
+    ExternalApprovalSetting.fromJSON({})
+  );
+});
 
 const options = computed(() => {
   const presetGroupValueNodes = [
@@ -70,23 +82,48 @@ const options = computed(() => {
       value: role.name,
     }));
 
+  const externalApprovalNodes =
+    settingValue.value.nodes.map<ApprovalNodeSelectOption>((node) => ({
+      node: {
+        type: ApprovalNode_Type.ANY_IN_GROUP,
+        externalNodeId: node.id,
+      },
+      label: node.title,
+      value: node.id,
+    }));
+
+  if (customRoleNodes.length === 0 && externalApprovalNodes.length === 0) {
+    return presetGroupValueNodes;
+  }
+
+  const system: SelectGroupOption = {
+    type: "group",
+    label: t("custom-approval.approval-flow.node.roles.system"),
+    key: "system",
+    children: presetGroupValueNodes,
+  };
+  const groups = [system];
   if (customRoleNodes.length > 0) {
-    const system: SelectGroupOption = {
-      type: "group",
-      label: t("custom-approval.approval-flow.node.roles.system"),
-      key: "system",
-      children: presetGroupValueNodes,
-    };
     const custom: SelectGroupOption = {
       type: "group",
       label: t("custom-approval.approval-flow.node.roles.custom"),
       key: "custom",
       children: customRoleNodes,
     };
-    return [system, custom];
+    groups.push(custom);
+  }
+  if (externalApprovalNodes.length > 0) {
+    const external: SelectGroupOption = {
+      type: "group",
+      label: t(
+        "custom-approval.approval-flow.external-approval-node.external-approval-nodes"
+      ),
+      children: externalApprovalNodes,
+    };
+    groups.push(external);
   }
 
-  return presetGroupValueNodes;
+  return groups;
 });
 
 const handleUpdate = (

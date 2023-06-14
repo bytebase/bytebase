@@ -25,7 +25,7 @@ import {
   ApprovalNode_Type,
   ApprovalStep_Type,
 } from "@/types/proto/v1/review_service";
-import { useUserStore } from "@/store";
+import { useSettingV1Store, useUserStore } from "@/store";
 import {
   buildCELExpr,
   EqualityExpr,
@@ -54,12 +54,22 @@ export const approvalNodeRoleText = (role: string) => {
 };
 
 export const approvalNodeText = (node: ApprovalNode): string => {
-  const { groupValue, role } = node;
+  const { groupValue, role, externalNodeId } = node;
   if (groupValue && groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
     return approvalNodeGroupValueText(groupValue);
   }
   if (role) {
     return approvalNodeRoleText(role);
+  }
+  if (externalNodeId) {
+    const setting = useSettingV1Store().getSettingByName(
+      "bb.workspace.approval.external"
+    );
+    const nodes = setting?.value?.externalApprovalSettingValue?.nodes ?? [];
+    const node = nodes.find((n) => n.id === externalNodeId);
+    if (node) {
+      return node.title;
+    }
   }
   return "";
 };

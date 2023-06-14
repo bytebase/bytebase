@@ -4,5 +4,6 @@ export type SettingName =
   | "bb.workspace.watermark"
   | "bb.workspace.profile"
   | "bb.workspace.approval"
+  | "bb.workspace.approval.external"
   | "bb.plugin.openai.key"
   | "bb.plugin.openai.endpoint";

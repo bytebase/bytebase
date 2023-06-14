@@ -18,6 +18,17 @@
       >
         <FlowsPanel />
       </NTabPane>
+      <NTabPane
+        name="external-approval-nodes"
+        :tab="
+          $t(
+            'custom-approval.approval-flow.external-approval-node.external-approval-nodes'
+          )
+        "
+        display-directive="show:lazy"
+      >
+        <ExternalApprovalNodesPanel />
+      </NTabPane>
     </NTabs>
   </div>
 </template>
@@ -26,6 +37,7 @@
 import { useCustomApprovalContext } from "./context";
 import RulesPanel from "./RulesPanel";
 import FlowsPanel from "./FlowsPanel";
+import ExternalApprovalNodesPanel from "./ExternalApprovalNodesPanel";
 import Toolbar from "./Toolbar.vue";
 import { provideRiskFilter } from "../common/RiskFilter";
 
