@@ -33,7 +33,7 @@ type BookmarkServiceClient interface {
 	CreateBookmark(ctx context.Context, in *CreateBookmarkRequest, opts ...grpc.CallOption) (*Bookmark, error)
 	// DeleteBookmark deletes a bookmark.
 	DeleteBookmark(ctx context.Context, in *DeleteBookmarkRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// ListBookmark lists bookmarks.
+	// ListBookmarks lists bookmarks.
 	ListBookmarks(ctx context.Context, in *ListBookmarksRequest, opts ...grpc.CallOption) (*ListBookmarksResponse, error)
 }
 
@@ -80,7 +80,7 @@ type BookmarkServiceServer interface {
 	CreateBookmark(context.Context, *CreateBookmarkRequest) (*Bookmark, error)
 	// DeleteBookmark deletes a bookmark.
 	DeleteBookmark(context.Context, *DeleteBookmarkRequest) (*emptypb.Empty, error)
-	// ListBookmark lists bookmarks.
+	// ListBookmarks lists bookmarks.
 	ListBookmarks(context.Context, *ListBookmarksRequest) (*ListBookmarksResponse, error)
 	mustEmbedUnimplementedBookmarkServiceServer()
 }

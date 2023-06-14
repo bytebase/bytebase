@@ -4,7 +4,6 @@ export * from "./anomaly";
 export * from "./auditLog";
 export * from "./auth";
 export * from "./backup";
-export * from "./bookmark";
 export * from "./common";
 export * from "./const";
 export * from "./database";

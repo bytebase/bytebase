@@ -30,44 +30,29 @@ func NewBookmarkService(store *store.Store) *BookmarkService {
 // CreateBookmark creates a new bookmark.
 func (s *BookmarkService) CreateBookmark(ctx context.Context, request *v1pb.CreateBookmarkRequest) (*v1pb.Bookmark, error) {
 	currentPincipalUID := ctx.Value(common.PrincipalIDContextKey).(int)
-	princialUID, err := getUserID(request.Parent)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Invalid parent: %v", err)
-	}
-	if princialUID != currentPincipalUID {
-		return nil, status.Errorf(codes.PermissionDenied, "Permission denied")
-	}
 	if request.Bookmark == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Missing bookmark")
 	}
 
-	bookmark, err := s.store.CreateBookmarkV2(ctx, convertToStoreBookmark(request.Bookmark), princialUID)
+	bookmark, err := s.store.CreateBookmarkV2(ctx, convertToStoreBookmark(request.Bookmark), currentPincipalUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create bookmark: %v", err)
 	}
 
-	return convertToAPIBookmark(bookmark, princialUID), nil
+	return convertToAPIBookmark(bookmark), nil
 }
 
 // ListBookmarks lists bookmarks.
-func (s *BookmarkService) ListBookmarks(ctx context.Context, request *v1pb.ListBookmarksRequest) (*v1pb.ListBookmarksResponse, error) {
+func (s *BookmarkService) ListBookmarks(ctx context.Context, _ *v1pb.ListBookmarksRequest) (*v1pb.ListBookmarksResponse, error) {
 	currentPincipalUID := ctx.Value(common.PrincipalIDContextKey).(int)
-	princialUID, err := getUserID(request.Parent)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "Invalid parent: %v", err)
-	}
-	if princialUID != currentPincipalUID {
-		return nil, status.Errorf(codes.PermissionDenied, "Permission denied")
-	}
-
-	bookmarkList, err := s.store.ListBookmarkV2(ctx, princialUID)
+	bookmarkList, err := s.store.ListBookmarkV2(ctx, currentPincipalUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to list bookmarks: %v", err)
 	}
 
 	var bookmarks []*v1pb.Bookmark
 	for _, bookmark := range bookmarkList {
-		bookmarks = append(bookmarks, convertToAPIBookmark(bookmark, princialUID))
+		bookmarks = append(bookmarks, convertToAPIBookmark(bookmark))
 	}
 
 	return &v1pb.ListBookmarksResponse{
@@ -78,15 +63,15 @@ func (s *BookmarkService) ListBookmarks(ctx context.Context, request *v1pb.ListB
 // DeleteBookmark deletes a bookmark.
 func (s *BookmarkService) DeleteBookmark(ctx context.Context, request *v1pb.DeleteBookmarkRequest) (*emptypb.Empty, error) {
 	currentPincipalUID := ctx.Value(common.PrincipalIDContextKey).(int)
-	principalUID, bookmarkUID, err := getUserBookmarkID(request.Name)
+	bookmarkUID, err := getBookmarkID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid book mark name: %v", err)
 	}
-	if principalUID != currentPincipalUID {
-		return nil, status.Errorf(codes.PermissionDenied, "Permission denied")
-	}
 
-	if err := s.store.DeleteBookmarkV2(ctx, bookmarkUID); err != nil {
+	if err := s.store.DeleteBookmarkV2(ctx, &store.DeleteBookmarkMessage{
+		UID:        bookmarkUID,
+		CreatorUID: currentPincipalUID,
+	}); err != nil {
 		if common.ErrorCode(err) == common.NotFound {
 			return nil, status.Errorf(codes.NotFound, "Bookmark not found: %v", err)
 		}
@@ -103,9 +88,9 @@ func convertToStoreBookmark(request *v1pb.Bookmark) *store.BookmarkMessage {
 	}
 }
 
-func convertToAPIBookmark(bookmark *store.BookmarkMessage, principalUID int) *v1pb.Bookmark {
+func convertToAPIBookmark(bookmark *store.BookmarkMessage) *v1pb.Bookmark {
 	return &v1pb.Bookmark{
-		Name:  fmt.Sprintf("%s%d/%s%d", userNamePrefix, principalUID, bookmarkPrefix, bookmark.ID),
+		Name:  fmt.Sprintf("%s%d", bookmarkPrefix, bookmark.UID),
 		Title: bookmark.Name,
 		Link:  bookmark.Link,
 	}
