@@ -55,22 +55,14 @@ const options = computed(() => {
     });
   }
 
-  const canDeleteSheet = isSheetWritableV1(sheet);
-  if (view === "my") {
-    if (canDeleteSheet) {
-      options.push({
-        key: "delete",
-        label: t("common.delete"),
-      });
-    }
-  } else if (view === "shared") {
-    if (canDeleteSheet) {
-      options.push({
-        key: "delete",
-        label: t("common.delete"),
-      });
-    }
-
+  const canWriteSheet = isSheetWritableV1(sheet);
+  if (canWriteSheet) {
+    options.push({
+      key: "delete",
+      label: t("common.delete"),
+    });
+  }
+  if (view === "shared") {
     options.push({
       key: "duplicate",
       label: t("common.duplicate"),

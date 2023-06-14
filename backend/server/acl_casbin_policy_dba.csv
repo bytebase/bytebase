@@ -95,11 +95,4 @@ p, DBA, /setting, GET
 p, DBA, /label, GET
 p, DBA, /label/{labelID}, PATCH
 p, DBA, /feature, GET
-p, DBA, /sheet, POST
-p, DBA, /sheet/my, GET
-p, DBA, /sheet/shared, GET
-p, DBA, /sheet/starred, GET
-p, DBA, /sheet/{sheetID}, GET
-p, DBA, /sheet/{sheetID}, PATCH
-p, DBA, /sheet/{sheetID}, DELETE
 p, DBA, /anomaly, GET
