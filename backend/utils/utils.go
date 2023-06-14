@@ -786,25 +786,25 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, issue *sto
 				activities = append(activities, activity)
 			}
 			break
-		} else {
-			hasApprover, err := userCanApprove(node, users, policy)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to check if user can approve")
-			}
-			if hasApprover {
-				break
-			}
-
-			approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
-				Status:      storepb.IssuePayloadApproval_Approver_APPROVED,
-				PrincipalId: api.SystemBotID,
-			})
-			activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED, "")
-			if err != nil {
-				return nil, nil, err
-			}
-			activities = append(activities, activity)
 		}
+
+		hasApprover, err := userCanApprove(node, users, policy)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to check if user can approve")
+		}
+		if hasApprover {
+			break
+		}
+
+		approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
+			Status:      storepb.IssuePayloadApproval_Approver_APPROVED,
+			PrincipalId: api.SystemBotID,
+		})
+		activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_APPROVED, "")
+		if err != nil {
+			return nil, nil, err
+		}
+		activities = append(activities, activity)
 	}
 	return approvers, activities, nil
 }
