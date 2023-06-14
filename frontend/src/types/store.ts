@@ -9,11 +9,9 @@ import {
   DataSourceId,
   InstanceId,
   IssueId,
-  PrincipalId,
   ProjectId,
   VCSId,
 } from "./id";
-import { Inbox, InboxSummary } from "./inbox";
 import { Instance, MigrationHistory } from "./instance";
 import { InstanceUser } from "./InstanceUser";
 import { Issue } from "./issue";
@@ -27,11 +25,6 @@ import { DatabaseMetadata } from "./proto/store/database";
 
 export interface PrincipalState {
   principalList: Principal[];
-}
-
-export interface InboxState {
-  inboxListByUser: Map<PrincipalId, Inbox[]>;
-  inboxSummaryByUser: Map<PrincipalId, InboxSummary>;
 }
 
 export interface IssueState {

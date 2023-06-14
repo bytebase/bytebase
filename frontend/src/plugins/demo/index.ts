@@ -1,4 +1,3 @@
-import axios from "axios";
 import { isNull } from "lodash-es";
 import { createApp } from "vue";
 import { isDev } from "@/utils";
@@ -10,6 +9,7 @@ import DemoWrapper from "./components/DemoWrapper.vue";
 import { removeHint } from "./hint";
 import { removeGuideDialog } from "./guide";
 import { waitBodyLoaded } from "./utils";
+import { actuatorServiceClient } from "@/grpcweb";
 
 const initDemo = async (demoName: string) => {
   await waitBodyLoaded();
@@ -40,12 +40,7 @@ const initDemo = async (demoName: string) => {
 };
 
 const mountDemoApp = async () => {
-  const serverInfo = (
-    await axios.get<{
-      demoName: string;
-      version: string;
-    }>(`/v1/actuator/info`)
-  ).data;
+  const serverInfo = await actuatorServiceClient.getActuatorInfo({});
 
   // only show feature demo if it's not the default demo.
   if (serverInfo.demoName && serverInfo.demoName != "default") {

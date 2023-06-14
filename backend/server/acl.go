@@ -183,26 +183,11 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 
 func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int, method string, path string) (bool, error) {
 	switch method {
-	case http.MethodGet:
-		return isGettingSelf(ctx, c, s, curPrincipalID, path)
 	case http.MethodPatch, http.MethodDelete:
 		return isUpdatingSelf(ctx, c, s, curPrincipalID, path)
 	default:
 		return false, nil
 	}
-}
-
-func isGettingSelf(_ context.Context, c echo.Context, _ *Server, curPrincipalID int, path string) (bool, error) {
-	if strings.HasPrefix(path, "/inbox/user") {
-		userID, err := strconv.Atoi(c.Param("userID"))
-		if err != nil {
-			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
-		}
-
-		return userID == curPrincipalID, nil
-	}
-
-	return false, nil
 }
 
 func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int, path string) (bool, error) {
@@ -228,23 +213,6 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			}
 
 			return activity.CreatorID == curPrincipalID, nil
-		}
-	} else if strings.HasPrefix(path, "/inbox") {
-		if inboxIDStr := c.Param("inboxID"); inboxIDStr != "" {
-			inboxID, err := strconv.Atoi(inboxIDStr)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Inbox ID is not a number: %s", inboxIDStr)).SetInternal(err)
-			}
-
-			inbox, err := s.store.GetInboxByID(ctx, inboxID)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
-			}
-			if inbox == nil {
-				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", inboxID)).SetInternal(err)
-			}
-
-			return inbox.ReceiverID == curPrincipalID, nil
 		}
 	}
 	return false, nil
