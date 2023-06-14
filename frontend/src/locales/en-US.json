@@ -75,6 +75,7 @@
     "updated": "Updated",
     "visit": "Visit",
     "role": {
+      "self": "Role",
       "dba": "DBA",
       "owner": "Owner",
       "developer": "Developer",
@@ -1447,7 +1448,6 @@
       "success-member-deleted-prompt": "Successfully revoked {name} access from the project.",
       "member-placeholder": "Select user",
       "manage-member": "Manage members",
-      "add-member": "Add member",
       "owner": "@.upper:common.role.owner",
       "developer": "@.upper:common.role.developer",
       "archive": {
@@ -1462,17 +1462,21 @@
       "schema-change-type": "Schema change type",
       "select-schema-change-type-ddl": "Imperative - Migration-based migration. E.g., ALTER TABLE",
       "select-schema-change-type-sdl": "Declarative - State-based migration. E.g., CREATE TABLE",
-      "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
-      "members": {
-        "edit": "Edit member - {member}",
-        "view-by-principals": "View by principals",
-        "view-by-roles": "View by roles",
-        "cannot-remove-last-owner": "Cannot remove the last owner of a project",
-        "revoke-role-from-user": "Revoke '{role}' from '{user}'",
-        "remove-user": "Remove '{user}'",
-        "inactive-members": "Inactive members",
-        "show-inactive": "Show inactive members"
-      }
+      "schema-path-template-sdl-description": "The schema file describes the database's full schema."
+    },
+    "members": {
+      "add-member": "Add member",
+      "revoke-member": "Revoke member",
+      "edit": "Edit member - {member}",
+      "view-by-principals": "View by principals",
+      "view-by-roles": "View by roles",
+      "cannot-remove-last-owner": "Cannot remove the last owner of a project",
+      "revoke-role-from-user": "Revoke '{role}' from '{user}'",
+      "inactive-members": "Inactive members",
+      "show-inactive": "Show inactive members",
+      "select-users": "Select users",
+      "assign-role": "Assign role",
+      "role-never-expires": "This role will never expires."
     },
     "mode": {
       "standard": "Standard Mode",

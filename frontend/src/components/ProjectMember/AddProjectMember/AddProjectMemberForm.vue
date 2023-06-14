@@ -1,41 +1,49 @@
 <template>
-  <div class="w-full flex flex-col justify-start items-start gap-y-2">
-    <span>Select user</span>
-    <UserSelect
-      v-model:user="state.userUid"
-      :include-all="false"
-      style="width: 100%"
-    />
-    <span>Assign role</span>
-    <ProjectMemberRoleSelect v-model:role="state.role" />
-    <span>Set expiration</span>
+  <div class="w-full flex flex-col justify-start items-start gap-y-4">
     <div class="w-full">
-      <NRadioGroup
-        v-model:value="state.expireDays"
-        class="w-full !grid grid-cols-3 gap-4"
-        name="radiogroup"
-      >
-        <div
-          v-for="day in expireDaysOptions"
-          :key="day.value"
-          class="col-span-1 flex flex-row justify-start items-center"
+      <span>{{ $t("project.members.select-users") }}</span>
+      <UserSelect
+        v-model:users="state.userUidList"
+        class="mt-2"
+        style="width: 100%"
+        :multiple="true"
+        :include-all="false"
+      />
+    </div>
+    <div class="w-full">
+      <span>{{ $t("project.members.assign-role") }}</span>
+      <ProjectMemberRoleSelect v-model:role="state.role" class="mt-2" />
+    </div>
+    <div class="w-full">
+      <span>{{ $t("common.expiration") }}</span>
+      <div class="w-full mt-2">
+        <NRadioGroup
+          v-model:value="state.expireDays"
+          class="w-full !grid grid-cols-3 gap-2"
+          name="radiogroup"
         >
-          <NRadio :value="day.value" :label="day.label" />
-        </div>
-        <div class="col-span-2 flex flex-row justify-start items-center">
-          <NRadio :value="-1" :label="$t('issue.grant-request.customize')" />
-          <NInputNumber
-            v-model:value="state.customDays"
-            class="!w-24 ml-2"
-            :disabled="state.expireDays !== -1"
-            :min="1"
-            :show-button="false"
-            :placeholder="''"
+          <div
+            v-for="day in expireDaysOptions"
+            :key="day.value"
+            class="col-span-1 h-8 flex flex-row justify-start items-center"
           >
-            <template #suffix>{{ $t("common.date.days") }}</template>
-          </NInputNumber>
-        </div>
-      </NRadioGroup>
+            <NRadio :value="day.value" :label="day.label" />
+          </div>
+          <div class="col-span-2 flex flex-row justify-start items-center">
+            <NRadio :value="-1" :label="$t('issue.grant-request.customize')" />
+            <NInputNumber
+              v-model:value="state.customDays"
+              class="!w-24 ml-2"
+              :disabled="state.expireDays !== -1"
+              :min="1"
+              :show-button="false"
+              :placeholder="''"
+            >
+              <template #suffix>{{ $t("common.date.days") }}</template>
+            </NInputNumber>
+          </div>
+        </NRadioGroup>
+      </div>
     </div>
   </div>
 </template>
@@ -59,7 +67,7 @@ const props = defineProps<{
 }>();
 
 interface LocalState {
-  userUid?: string;
+  userUidList: string[];
   role?: string;
   expireDays: number;
   customDays: number;
@@ -68,6 +76,7 @@ interface LocalState {
 const { t } = useI18n();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
+  userUidList: [],
   expireDays: 0,
   customDays: 7,
 });
@@ -106,11 +115,11 @@ const expireDaysOptions = computed(() => [
 watch(
   () => state,
   () => {
-    if (state.userUid) {
-      const user = userStore.getUserById(state.userUid);
-      if (user) {
-        props.binding.members = [`user:${user.email}`];
-      }
+    if (state.userUidList) {
+      props.binding.members = state.userUidList.map((uid) => {
+        const user = userStore.getUserById(uid);
+        return `user:${user!.email}`;
+      });
     }
     if (state.role) {
       props.binding.role = state.role;
