@@ -431,6 +431,11 @@ func queryAdmin(ctx context.Context, dbType db.Type, conn *sql.Conn, statement s
 // TODO(rebelice): remove the readRows and rename readRows2 to readRows if legacy API is deprecated.
 func readRows2(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]*v1pb.QueryRow, error) {
 	var data []*v1pb.QueryRow
+	if len(columnTypes) == 0 {
+		// No rows.
+		// The oracle driver will panic if there is no rows such as EXPLAIN PLAN FOR statement.
+		return data, nil
+	}
 	for rows.Next() {
 		scanArgs := make([]any, len(columnTypes))
 		for i, v := range columnTypeNames {
