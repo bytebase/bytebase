@@ -9,7 +9,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/sql"
-	snowparser "github.com/bytebase/snowsql-parser"
 )
 
 func parseStatement(statement string) (antlr.Tree, []advisor.Advice) {
@@ -40,12 +39,28 @@ func parseStatement(statement string) (antlr.Tree, []advisor.Advice) {
 	return tree, nil
 }
 
-func extractObjectNameWithoutDoubleQuotes(objectName snowparser.IObject_nameContext) string {
-	tableName := objectName.GetO().GetText()
-	if strings.HasPrefix(tableName, `"`) && strings.HasSuffix(tableName, `"`) {
-		tableName = tableName[1 : len(tableName)-1]
+// extractOrdinaryIdentifier extracts the ordinary object name from a string. It follows the following rules:
+//
+// 1. If there are no double quotes on either side, it will be converted to uppercase.
+//
+// 2. If there are double quotes on both sides, the case will not change, the double quotes on both sides will be removed, and `""` in content will be converted to `"`.
+//
+// Caller MUST ensure the identifier is VALID.
+func extractOrdinaryIdentifier(identifier string) string {
+	if strings.HasPrefix(identifier, `"`) && strings.HasSuffix(identifier, `"`) {
+		identifier = identifier[1 : len(identifier)-1]
 	}
-	return tableName
+	runeObjectName := []rune(identifier)
+	var result []rune
+	for i := 0; i < len(runeObjectName); i++ {
+		if i+1 < len(runeObjectName) && runeObjectName[i] == '"' && runeObjectName[i+1] == '"' {
+			result = append(result, '"')
+			i++
+		} else {
+			result = append(result, unicode.ToUpper(runeObjectName[i]))
+		}
+	}
+	return string(result)
 }
 
 func normalizeIdentifierName(identifier string) string {
