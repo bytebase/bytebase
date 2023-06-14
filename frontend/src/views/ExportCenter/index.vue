@@ -23,7 +23,7 @@
         </NInputGroup>
       </div>
       <div>
-        <NButton @click="createExportDataIssue">
+        <NButton @click="state.showRequestExportPanel = true">
           {{ $t("quick-action.request-export") }}
         </NButton>
       </div>
@@ -32,13 +32,17 @@
       <ExportRecordTable :export-records="filterExportRecords" />
     </div>
   </div>
+
+  <RequestExportPanel
+    v-if="state.showRequestExportPanel"
+    @close="state.showRequestExportPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NButton, NInputGroup } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
-import { useRouter } from "vue-router";
 import { UNKNOWN_ID } from "@/types";
 import { FilterParams, ExportRecord } from "./types";
 import {
@@ -52,15 +56,16 @@ import {
 import { ProjectSelect, InstanceSelect, DatabaseSelect } from "@/components/v2";
 import { convertFromExpr } from "@/utils/issue/cel";
 import ExportRecordTable from "./ExportRecordTable.vue";
+import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 
 interface LocalState {
   filterParams: FilterParams;
   exportRecords: ExportRecord[];
+  showRequestExportPanel: boolean;
 }
 
 const issueDescriptionRegexp = /^#(\d+)$/;
 
-const router = useRouter();
 const currentUser = useCurrentUserV1();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const databaseStore = useDatabaseV1Store();
@@ -72,6 +77,7 @@ const state = reactive<LocalState>({
     database: undefined,
   },
   exportRecords: [],
+  showRequestExportPanel: false,
 });
 
 const filterExportRecords = computed(() => {
@@ -161,20 +167,5 @@ const changeDatabaseId = (uid: string | undefined) => {
   } else {
     state.filterParams.database = undefined;
   }
-};
-
-const createExportDataIssue = () => {
-  const routeInfo = {
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query: {
-      template: "bb.issue.grant.request",
-      role: "EXPORTER",
-      name: "New grant exporter request",
-    },
-  };
-  router.push(routeInfo);
 };
 </script>

@@ -776,7 +776,9 @@
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "manually-select": "手动选择",
       "customize": "自定义",
-      "data-export-attention": "数据将被导出到一个文件并自动下载。而且您只能完成一次导出操作。"
+      "data-export-attention": "数据将被导出到一个文件并自动下载。而且您只能完成一次导出操作。",
+      "export-method": "导出方式",
+      "please-select-database-first": "请先选择数据库"
     },
     "review-sent-back": "审核被退回"
   },

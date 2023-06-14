@@ -779,7 +779,9 @@
       "all-databases-tip": "All current and future databases in this project.",
       "manually-select": "Manually select",
       "customize": "Customize",
-      "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once."
+      "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once.",
+      "export-method": "Export method",
+      "please-select-database-first": "Please select database first"
     },
     "review-sent-back": "Review sent back"
   },
