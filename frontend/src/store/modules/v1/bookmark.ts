@@ -5,7 +5,7 @@ import { bookmarkServiceClient } from "@/grpcweb";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
 
 export const useBookmarkV1Store = defineStore("bookmark_v1", () => {
-  let bookmarkList = reactive<Bookmark[]>([]);
+  const bookmarkList = reactive<Bookmark[]>([]);
 
   const fetchBookmarkList = async () => {
     const resp = await bookmarkServiceClient.listBookmarks({});
