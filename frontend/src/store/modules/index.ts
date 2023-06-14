@@ -8,7 +8,6 @@ export * from "./environment";
 export * from "./help";
 export * from "./issue";
 export * from "./issueSubscriber";
-export * from "./inbox";
 export * from "./instance";
 export * from "./notification";
 export * from "./oauth";

@@ -503,32 +503,29 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 
 func (m *Manager) postInboxIssueActivity(ctx context.Context, issue *store.IssueMessage, activityID int) error {
 	if issue.Creator.ID != api.SystemBotID {
-		inboxCreate := &api.InboxCreate{
-			ReceiverID: issue.Creator.ID,
-			ActivityID: activityID,
-		}
-		if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+		if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
+			ReceiverUID: issue.Creator.ID,
+			ActivityUID: activityID,
+		}); err != nil {
 			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.Creator.ID)
 		}
 	}
 
 	if issue.Assignee.ID != api.SystemBotID && issue.Assignee.ID != issue.Creator.ID {
-		inboxCreate := &api.InboxCreate{
-			ReceiverID: issue.Assignee.ID,
-			ActivityID: activityID,
-		}
-		if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+		if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
+			ReceiverUID: issue.Assignee.ID,
+			ActivityUID: activityID,
+		}); err != nil {
 			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.Assignee.ID)
 		}
 	}
 
 	for _, subscriber := range issue.Subscribers {
 		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.Creator.ID && subscriber.ID != issue.Assignee.ID {
-			inboxCreate := &api.InboxCreate{
-				ReceiverID: subscriber.ID,
-				ActivityID: activityID,
-			}
-			if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+			if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
+				ReceiverUID: subscriber.ID,
+				ActivityUID: activityID,
+			}); err != nil {
 				return errors.Wrapf(err, "failed to post activity to subscriber inbox: %d", subscriber.ID)
 			}
 		}

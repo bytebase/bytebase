@@ -36,17 +36,18 @@
 <script lang="ts">
 import { reactive, watchEffect } from "vue";
 import InboxList from "../components/InboxList.vue";
-import { Inbox, UNKNOWN_ID } from "../types";
+import { ComposedInbox, UNKNOWN_ID } from "@/types";
 import { useRouter } from "vue-router";
-import { useCurrentUser, useInboxStore } from "@/store";
+import { useCurrentUser, useInboxV1Store } from "@/store";
+import { InboxMessage_Status } from "@/types/proto/v1/inbox_service";
 
 // We alway fetch all "UNREAD" items. But for "READ" items, by default, we only fetch the most recent 7 days.
 // And each time clicking "View older" will extend 7 days further.
 const READ_INBOX_DURATION_STEP = 3600 * 24 * 7;
 
 interface LocalState {
-  readList: Inbox[];
-  unreadList: Inbox[];
+  readList: ComposedInbox[];
+  unreadList: ComposedInbox[];
   readCreatedAfterTs: number;
 }
 
@@ -54,7 +55,7 @@ export default {
   name: "Inbox",
   components: { InboxList },
   setup() {
-    const inboxStore = useInboxStore();
+    const inboxV1Store = useInboxV1Store();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -70,26 +71,21 @@ export default {
     const prepareInboxList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        inboxStore
-          .fetchInboxListByUser({
-            userId: currentUser.value.id,
-            readCreatedAfterTs: state.readCreatedAfterTs,
-          })
-          .then((list: Inbox[]) => {
-            state.readList = [];
-            state.unreadList = [];
+        inboxV1Store.fetchInboxList(state.readCreatedAfterTs).then((list) => {
+          state.readList = [];
+          state.unreadList = [];
 
-            for (const item of list) {
-              if (!item.activity) {
-                continue;
-              }
-              if (item.status == "READ") {
-                state.readList.push(item);
-              } else if (item.status == "UNREAD") {
-                state.unreadList.push(item);
-              }
+          for (const item of list) {
+            if (!item.activity) {
+              continue;
             }
-          });
+            if (item.status == InboxMessage_Status.STATUS_READ) {
+              state.readList.push(item);
+            } else if (item.status == InboxMessage_Status.STATUS_UNREAD) {
+              state.unreadList.push(item);
+            }
+          }
+        });
       }
     };
 
@@ -99,27 +95,21 @@ export default {
       let count = state.unreadList.length;
       const inboxList = state.unreadList.map((item) => item);
 
-      inboxList.forEach((item: Inbox) => {
-        inboxStore
-          .patchInbox({
-            inboxId: item.id,
-            inboxPatch: {
-              status: "READ",
-            },
-          })
-          .then(() => {
-            const i = state.unreadList.findIndex(
-              (unreadItem) => unreadItem.id == item.id
-            );
-            if (i >= 0) {
-              state.unreadList.splice(i, 1);
-            }
-            count--;
-            if (count == 0) {
-              inboxStore.fetchInboxSummaryByUser(currentUser.value.id);
-            }
-            state.readList.push(item);
-          });
+      inboxList.forEach((item) => {
+        item.status = InboxMessage_Status.STATUS_READ;
+        inboxV1Store.patchInbox(item).then(() => {
+          const i = state.unreadList.findIndex(
+            (unreadItem) => unreadItem.name == item.name
+          );
+          if (i >= 0) {
+            state.unreadList.splice(i, 1);
+          }
+          count--;
+          if (count == 0) {
+            inboxV1Store.fetchInboxSummary();
+          }
+          state.readList.push(item);
+        });
       });
     };
 
