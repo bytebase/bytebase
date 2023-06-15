@@ -2427,8 +2427,8 @@
         "delete": "Delete approval node",
         "select-approver": "Select approver",
         "roles": {
-          "system": "System roles",
-          "custom": "Custom roles"
+          "system": "System Roles",
+          "custom": "Custom Roles"
         }
       },
       "presets": {
@@ -2442,8 +2442,8 @@
       "skip": "Skip manual approval",
       "risk-not-configured-tips": "Make sure you have defined {link}.",
       "the-related-risk-rules": "the related risk rules",
-      "external-approval-node": {
-        "external-approval-nodes": "External Approval Nodes",
+      "external-approval": {
+        "self": "External Approval",
         "delete": "Delete external approval node?",
         "endpoint": "Endpoint",
         "view-node": "View external approval node",

@@ -24,7 +24,7 @@
         <SpinnerButton
           size="small"
           :tooltip="
-            $t('custom-approval.approval-flow.external-approval-node.delete')
+            $t('custom-approval.approval-flow.external-approval.delete')
           "
           :disabled="!allowAdmin"
           :on-confirm="() => deleteNode(node)"
@@ -71,7 +71,7 @@ const COLUMN_LIST = computed(() => {
     { title: t("common.id"), width: "minmax(16rem, auto)" },
     { title: t("common.name"), width: "minmax(auto, 16rem)" },
     {
-      title: t("custom-approval.approval-flow.external-approval-node.endpoint"),
+      title: t("custom-approval.approval-flow.external-approval.endpoint"),
       width: "1fr",
     },
     {
