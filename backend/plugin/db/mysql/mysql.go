@@ -194,7 +194,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 
 	tx, err := driver.migrationConn.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to begin execute transaction")
 	}
 	defer tx.Rollback()
 
@@ -202,7 +202,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	for _, trunk := range trunks {
 		sqlResult, err := tx.ExecContext(ctx, trunk)
 		if err != nil {
-			return 0, err
+			return 0, errors.Wrapf(err, "failed to execute context in a transaction")
 		}
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
@@ -213,7 +213,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	}
 
 	if err := tx.Commit(); err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "failed to commit execute transaction")
 	}
 
 	return totalRowsAffected, nil
