@@ -74,8 +74,11 @@ const retryFindingApprovalFlow = async () => {
   }
 };
 
-// Don't show the tooltip if the issue type is grant request.
 const showApprovalTooltip = computed(() => {
-  return !isGrantRequestIssueType(issue.value.type);
+  // Don't show the tooltip if the issue type is grant request.
+  if (isGrantRequestIssueType(issue.value.type)) {
+    return false;
+  }
+  return true;
 });
 </script>
