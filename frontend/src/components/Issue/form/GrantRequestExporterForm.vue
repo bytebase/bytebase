@@ -33,19 +33,15 @@
       <span class="flex items-center textlabel mb-2">
         {{ $t("issue.grant-request.export-rows") }}
       </span>
-      <input
-        v-model="state.maxRowCount"
-        readonly
-        type="number"
-        class="textfield"
-        placeholder="Max row count"
-      />
+      <div class="flex flex-row justify-start items-start">
+        {{ state.maxRowCount }}
+      </div>
     </div>
     <div class="w-full flex flex-col justify-start items-start">
       <span class="flex items-center textlabel mb-2">
         {{ $t("issue.grant-request.export-format") }}
       </span>
-      <div class="flex flex-row justify-start items-start gap-4">
+      <div class="flex flex-row justify-start items-start">
         {{ state.exportFormat }}
       </div>
     </div>
