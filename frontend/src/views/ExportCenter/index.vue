@@ -128,10 +128,23 @@ watchEffect(async () => {
         const database = await databaseStore.getOrFetchDatabaseByName(
           databaseResource.databaseName
         );
+        let statement = conditionExpr.statement || "";
+        // NOTE: concat schema and table name to statement for table level export.
+        // Maybe we need to move this into backend later.
+        if (statement === "" && databaseResource.table) {
+          const names = [];
+          if (databaseResource.schema) {
+            names.push(databaseResource.schema);
+          }
+          names.push(databaseResource.table);
+          statement = `SELECT * FROM ${names.join(".")};`;
+        }
+
         tempExportRecords.push({
+          databaseResource,
           database,
+          statement,
           expiration: conditionExpr.expiredTime || "",
-          statement: conditionExpr.statement || "",
           maxRowCount: conditionExpr.rowLimit || 0,
           exportFormat: (conditionExpr.exportFormat as any) || "JSON",
           issueId: issueId || String(UNKNOWN_ID),
