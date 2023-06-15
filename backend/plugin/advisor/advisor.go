@@ -411,6 +411,9 @@ const (
 
 	// SnowflakeWhereRequirement is an advisor type for Snowflake WHERE clause requirement.
 	SnowflakeWhereRequirement Type = "bb.plugin.advisor.snowflake.where.require"
+
+	// SnowflakeColumnRequirement is an advisor type for Snowflake column requirement.
+	SnowflakeColumnRequirement Type = "bb.plugin.advisor.snowflake.column.require"
 )
 
 // Advice is the result of an advisor.
