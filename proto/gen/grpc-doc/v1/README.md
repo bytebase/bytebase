@@ -160,12 +160,15 @@
 - [v1/externalvs_service.proto](#v1_externalvs_service-proto)
     - [CreateExternalVersionControlRequest](#bytebase-v1-CreateExternalVersionControlRequest)
     - [DeleteExternalVersionControlRequest](#bytebase-v1-DeleteExternalVersionControlRequest)
+    - [ExchangeToken](#bytebase-v1-ExchangeToken)
+    - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
     - [ExternalVersionControl](#bytebase-v1-ExternalVersionControl)
     - [GetExternalVersionControlRequest](#bytebase-v1-GetExternalVersionControlRequest)
     - [ListExternalVersionControlsRequest](#bytebase-v1-ListExternalVersionControlsRequest)
     - [ListExternalVersionControlsResponse](#bytebase-v1-ListExternalVersionControlsResponse)
     - [ListProjectGitOpsInfoRequest](#bytebase-v1-ListProjectGitOpsInfoRequest)
     - [ListProjectGitOpsInfoResponse](#bytebase-v1-ListProjectGitOpsInfoResponse)
+    - [OAuthToken](#bytebase-v1-OAuthToken)
     - [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo)
     - [SearchExternalVersionControlProjectsRequest](#bytebase-v1-SearchExternalVersionControlProjectsRequest)
     - [SearchExternalVersionControlProjectsResponse](#bytebase-v1-SearchExternalVersionControlProjectsResponse)
@@ -2803,6 +2806,41 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
+<a name="bytebase-v1-ExchangeToken"></a>
+
+### ExchangeToken
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the external version control to retrieve the linked projects. Format: externalVersionControls/{externalVersionControl} |
+| code | [string](#string) |  |  |
+| type | [ExternalVersionControl.Type](#bytebase-v1-ExternalVersionControl-Type) |  |  |
+| instance_url | [string](#string) |  |  |
+| client_id | [string](#string) |  |  |
+| client_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ExchangeTokenRequest"></a>
+
+### ExchangeTokenRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| exchange_token | [ExchangeToken](#bytebase-v1-ExchangeToken) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ExternalVersionControl"></a>
 
 ### ExternalVersionControl
@@ -2895,6 +2933,23 @@ The environment&#39;s `name` field is used to identify the environment to update
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) | repeated | The binding between external version control and project. |
+
+
+
+
+
+
+<a name="bytebase-v1-OAuthToken"></a>
+
+### OAuthToken
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_token | [string](#string) |  |  |
+| refresh_token | [string](#string) |  |  |
+| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -3028,6 +3083,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | ListExternalVersionControls | [ListExternalVersionControlsRequest](#bytebase-v1-ListExternalVersionControlsRequest) | [ListExternalVersionControlsResponse](#bytebase-v1-ListExternalVersionControlsResponse) |  |
 | CreateExternalVersionControl | [CreateExternalVersionControlRequest](#bytebase-v1-CreateExternalVersionControlRequest) | [ExternalVersionControl](#bytebase-v1-ExternalVersionControl) |  |
 | UpdateExternalVersionControl | [UpdateExternalVersionControlRequest](#bytebase-v1-UpdateExternalVersionControlRequest) | [ExternalVersionControl](#bytebase-v1-ExternalVersionControl) |  |
+| ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [OAuthToken](#bytebase-v1-OAuthToken) |  |
 | DeleteExternalVersionControl | [DeleteExternalVersionControlRequest](#bytebase-v1-DeleteExternalVersionControlRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | SearchExternalVersionControlProjects | [SearchExternalVersionControlProjectsRequest](#bytebase-v1-SearchExternalVersionControlProjectsRequest) | [SearchExternalVersionControlProjectsResponse](#bytebase-v1-SearchExternalVersionControlProjectsResponse) |  |
 | ListProjectGitOpsInfo | [ListProjectGitOpsInfoRequest](#bytebase-v1-ListProjectGitOpsInfoRequest) | [ListProjectGitOpsInfoResponse](#bytebase-v1-ListProjectGitOpsInfoResponse) |  |

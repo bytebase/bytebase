@@ -10,7 +10,6 @@ export * from "./issue";
 export * from "./issueSubscriber";
 export * from "./instance";
 export * from "./notification";
-export * from "./oauth";
 export * from "./pipeline";
 export * from "./slowQueryPolicy";
 export * from "./principal";

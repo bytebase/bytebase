@@ -504,7 +504,7 @@ export const ExportRequest = {
 };
 
 function createBaseExportResponse(): ExportResponse {
-  return { content: new Uint8Array() };
+  return { content: new Uint8Array(0) };
 }
 
 export const ExportResponse = {
@@ -539,13 +539,13 @@ export const ExportResponse = {
   },
 
   fromJSON(object: any): ExportResponse {
-    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array() };
+    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0) };
   },
 
   toJSON(message: ExportResponse): unknown {
     const obj: any = {};
     message.content !== undefined &&
-      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array()));
+      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
     return obj;
   },
 
@@ -555,7 +555,7 @@ export const ExportResponse = {
 
   fromPartial(object: DeepPartial<ExportResponse>): ExportResponse {
     const message = createBaseExportResponse();
-    message.content = object.content ?? new Uint8Array();
+    message.content = object.content ?? new Uint8Array(0);
     return message;
   },
 };

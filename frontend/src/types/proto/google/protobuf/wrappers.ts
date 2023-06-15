@@ -543,7 +543,7 @@ export const StringValue = {
 };
 
 function createBaseBytesValue(): BytesValue {
-  return { value: new Uint8Array() };
+  return { value: new Uint8Array(0) };
 }
 
 export const BytesValue = {
@@ -578,13 +578,13 @@ export const BytesValue = {
   },
 
   fromJSON(object: any): BytesValue {
-    return { value: isSet(object.value) ? bytesFromBase64(object.value) : new Uint8Array() };
+    return { value: isSet(object.value) ? bytesFromBase64(object.value) : new Uint8Array(0) };
   },
 
   toJSON(message: BytesValue): unknown {
     const obj: any = {};
     message.value !== undefined &&
-      (obj.value = base64FromBytes(message.value !== undefined ? message.value : new Uint8Array()));
+      (obj.value = base64FromBytes(message.value !== undefined ? message.value : new Uint8Array(0)));
     return obj;
   },
 
@@ -594,7 +594,7 @@ export const BytesValue = {
 
   fromPartial(object: DeepPartial<BytesValue>): BytesValue {
     const message = createBaseBytesValue();
-    message.value = object.value ?? new Uint8Array();
+    message.value = object.value ?? new Uint8Array(0);
     return message;
   },
 };
