@@ -65,7 +65,7 @@ const extractTableName = (databaseResource: DatabaseResource) => {
   if (databaseResource.table) {
     nameList.push(databaseResource.table);
   }
-  return nameList.join(".") ?? "*";
+  return nameList.join(".") || "*";
 };
 
 const extractComposedDatabase = (databaseResource: DatabaseResource) => {

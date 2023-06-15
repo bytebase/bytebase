@@ -1,3 +1,4 @@
+import { DatabaseResource } from "@/components/Issue/panel/RequestExportPanel/SelectTableForm/common";
 import { ComposedDatabase } from "@/types";
 import { Database } from "@/types/proto/v1/database_service";
 import { Instance } from "@/types/proto/v1/instance_service";
@@ -10,6 +11,7 @@ export interface FilterParams {
 }
 
 export interface ExportRecord {
+  databaseResource: DatabaseResource;
   database: ComposedDatabase;
   expiration: string;
   statement: string;
