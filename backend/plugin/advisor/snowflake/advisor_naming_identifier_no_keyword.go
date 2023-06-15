@@ -105,14 +105,14 @@ func (l *namingIdentifierNoKeywordChecker) EnterColumn_decl_item_list(ctx *parse
 
 	for _, item := range allItems {
 		if fullColDecl := item.Full_col_decl(); fullColDecl != nil {
-			originalID_ := fullColDecl.Col_decl().Column_name().Id_()
-			originalColName := normalizeObjectNamePart(originalID_)
+			originalID := fullColDecl.Col_decl().Column_name().Id_()
+			originalColName := normalizeObjectNamePart(originalID)
 			if bbparser.IsSnowflakeKeyword(originalColName, false) {
 				l.adviceList = append(l.adviceList, advisor.Advice{
 					Status:  l.level,
 					Code:    advisor.NameIsKeywordIdentifier,
 					Title:   l.title,
-					Content: fmt.Sprintf("Identifier %s is a keyword and should be avoided", originalID_.GetText()),
+					Content: fmt.Sprintf("Identifier %s is a keyword and should be avoided", originalID.GetText()),
 					Line:    ctx.GetStart().GetLine(),
 				})
 			}
@@ -126,15 +126,15 @@ func (l *namingIdentifierNoKeywordChecker) EnterAlter_table(ctx *parser.Alter_ta
 		return
 	}
 	l.currentOriginalTableName = ctx.Object_name(0).GetText()
-	renameToID_ := ctx.Table_column_action().Column_name(1).Id_()
-	renameToColName := normalizeObjectNamePart(renameToID_)
+	renameToID := ctx.Table_column_action().Column_name(1).Id_()
+	renameToColName := normalizeObjectNamePart(renameToID)
 	if bbparser.IsSnowflakeKeyword(renameToColName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,
 			Title:   l.title,
-			Content: fmt.Sprintf("Identifier %s is a keyword and should be avoided", renameToID_.GetText()),
-			Line:    renameToID_.GetStart().GetLine(),
+			Content: fmt.Sprintf("Identifier %s is a keyword and should be avoided", renameToID.GetText()),
+			Line:    renameToID.GetStart().GetLine(),
 		})
 	}
 }
