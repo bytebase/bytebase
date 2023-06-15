@@ -19,12 +19,8 @@
         <FlowsPanel />
       </NTabPane>
       <NTabPane
-        name="external-approval-nodes"
-        :tab="
-          $t(
-            'custom-approval.approval-flow.external-approval-node.external-approval-nodes'
-          )
-        "
+        name="external-approval"
+        :tab="$t('custom-approval.approval-flow.external-approval.self')"
         display-directive="show:lazy"
       >
         <ExternalApprovalNodesPanel />

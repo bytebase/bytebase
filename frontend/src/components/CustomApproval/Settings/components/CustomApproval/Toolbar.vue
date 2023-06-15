@@ -1,6 +1,6 @@
 <template>
   <FlowsToolbar v-if="tab === 'flows'" />
-  <ExternalApprovalNodesToolbar v-if="tab === 'external-approval-nodes'" />
+  <ExternalApprovalNodesToolbar v-if="tab === 'external-approval'" />
 </template>
 
 <script lang="ts" setup>

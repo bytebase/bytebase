@@ -2406,8 +2406,8 @@
         "delete": "Eliminar nodo de aprobación",
         "select-approver": "Seleccionar aprobador",
         "roles": {
-          "system": "Roles del sistema",
-          "custom": "Roles personalizados"
+          "system": "Funciones del sistema",
+          "custom": "Funciones personalizadas"
         }
       },
       "presets": {
@@ -2421,8 +2421,8 @@
       "skip": "Omitir aprobación manual",
       "risk-not-configured-tips": "Asegúrese de haber definido {link}.",
       "the-related-risk-rules": "las reglas de riesgo relacionadas",
-      "external-approval-node": {
-        "external-approval-nodes": "Nodos de aprobación externa",
+      "external-approval": {
+        "self": "Aprobación externa",
         "delete": "¿Eliminar nodo de aprobación externo?",
         "endpoint": "punto final",
         "view-node": "Ver nodo de aprobación externo",

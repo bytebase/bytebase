@@ -28,11 +28,7 @@
         <div class="space-y-1">
           <label class="block font-medium text-control space-x-1">
             <RequiredStar />
-            {{
-              $t(
-                "custom-approval.approval-flow.external-approval-node.endpoint"
-              )
-            }}
+            {{ $t("custom-approval.approval-flow.external-approval.endpoint") }}
           </label>
           <div>
             <NInput
@@ -119,20 +115,14 @@ const mode = computed(() => {
 const title = computed(() => {
   if (nodeContext.value) {
     if (!allowAdmin.value) {
-      return t(
-        "custom-approval.approval-flow.external-approval-node.view-node"
-      );
+      return t("custom-approval.approval-flow.external-approval.view-node");
     }
     const { mode } = nodeContext.value;
     if (mode === "CREATE") {
-      return t(
-        "custom-approval.approval-flow.external-approval-node.create-node"
-      );
+      return t("custom-approval.approval-flow.external-approval.create-node");
     }
     if (mode === "EDIT") {
-      return t(
-        "custom-approval.approval-flow.external-approval-node.edit-node"
-      );
+      return t("custom-approval.approval-flow.external-approval.edit-node");
     }
   }
   return "";

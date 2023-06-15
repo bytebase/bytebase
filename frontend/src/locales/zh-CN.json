@@ -2436,8 +2436,8 @@
       "skip": "跳过人工审批",
       "risk-not-configured-tips": "确保你已经定义了{link}。",
       "the-related-risk-rules": "相关的风险规则",
-      "external-approval-node": {
-        "external-approval-nodes": "外部审批节点",
+      "external-approval": {
+        "self": "外部审批",
         "delete": "删除外部审批节点？",
         "endpoint": "端点",
         "view-node": "查看外部审批节点",
