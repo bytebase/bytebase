@@ -3,9 +3,10 @@ package snowflake
 
 import (
 	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/snowsql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/db"
-	parser "github.com/bytebase/snowsql-parser"
 )
 
 var (
