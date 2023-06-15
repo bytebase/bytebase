@@ -50,8 +50,6 @@ export type BackupId = IdType;
 
 export type BackupSettingId = IdType;
 
-export type AnomalyId = IdType;
-
 export type CommandId = string;
 export type CommandRegisterId = string;
 

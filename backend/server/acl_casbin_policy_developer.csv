@@ -77,4 +77,3 @@ p, DEVELOPER, /vcs/{vcsID}/external-repository, GET
 p, DEVELOPER, /setting, GET
 p, DEVELOPER, /label, GET
 p, DEVELOPER, /feature, GET
-p, DEVELOPER, /anomaly, GET

@@ -28,6 +28,7 @@ import { ExternalVersionControlServiceDefinition } from "@/types/proto/v1/extern
 import { LoggingServiceDefinition } from "@/types/proto/v1/logging_service";
 import { BookmarkServiceDefinition } from "@/types/proto/v1/bookmark_service";
 import { InboxServiceDefinition } from "@/types/proto/v1/inbox_service";
+import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -157,6 +158,11 @@ export const bookmarkServiceClient = clientFactory.create(
 
 export const inboxServiceClient = clientFactory.create(
   InboxServiceDefinition,
+  channel
+);
+
+export const anomalyServiceClient = clientFactory.create(
+  AnomalyServiceDefinition,
   channel
 );
 

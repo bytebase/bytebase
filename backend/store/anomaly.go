@@ -14,8 +14,8 @@ import (
 
 // AnomalyMessage is the message of the anomaly.
 type AnomalyMessage struct {
-	// InstanceUID is the unique identifier of the instance.
-	InstanceUID int
+	// InstanceID is the instance resource id.
+	InstanceID string
 	// DatabaseUID is the unique identifier of the database, it will be nil if the anomaly is instance level.
 	DatabaseUID *int
 	// Type is the type of the anomaly.
@@ -24,46 +24,32 @@ type AnomalyMessage struct {
 	Payload string
 	// Output only fields.
 	//
-	// ID is the unique identifier of the anomaly.
-	ID int
+	// UID is the unique identifier of the anomaly.
+	UID int
 	// CreatedTs is the timestamp when the anomaly is created.
 	CreatedTs int64
 	// UpdatedTs is the timestamp when the anomaly is updated.
 	UpdatedTs int64
 }
 
-// ToAPIAnomaly converts the anomaly message to the api anomaly.
-func (a *AnomalyMessage) ToAPIAnomaly() *api.Anomaly {
-	return &api.Anomaly{
-		ID:         a.ID,
-		UpdatedTs:  a.UpdatedTs,
-		CreatedTs:  a.CreatedTs,
-		InstanceID: a.InstanceUID,
-		DatabaseID: a.DatabaseUID,
-		Type:       a.Type,
-		Payload:    a.Payload,
-		Severity:   api.AnomalySeverityFromType(a.Type),
-	}
-}
-
 // ListAnomalyMessage is the message to list anomalies.
 type ListAnomalyMessage struct {
 	RowStatus   *api.RowStatus
-	InstanceUID *int
+	InstanceID  *string
 	DatabaseUID *int
 	Types       []api.AnomalyType
 }
 
 // ArchiveAnomalyMessage is the message to archive an anomaly.
 type ArchiveAnomalyMessage struct {
-	InstanceUID *int
+	InstanceID  *string
 	DatabaseUID *int
 	Type        api.AnomalyType
 }
 
 // updateAnomalyMessage is the message to update an anomaly.
 type updateAnomalyMessage struct {
-	ID      int
+	UID     int
 	Payload string
 }
 
@@ -78,7 +64,7 @@ func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, principalUID int, ups
 	status := api.Normal
 	find := &ListAnomalyMessage{
 		RowStatus:   &status,
-		InstanceUID: &upsert.InstanceUID,
+		InstanceID:  &upsert.InstanceID,
 		DatabaseUID: upsert.DatabaseUID,
 		Types:       []api.AnomalyType{upsert.Type},
 	}
@@ -90,7 +76,7 @@ func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, principalUID int, ups
 	var anomaly *AnomalyMessage
 	if len(list) == 0 {
 		anomaly, err = s.createAnomalyImplV2(ctx, tx, principalUID, &AnomalyMessage{
-			InstanceUID: upsert.InstanceUID,
+			InstanceID:  upsert.InstanceID,
 			DatabaseUID: upsert.DatabaseUID,
 			Type:        upsert.Type,
 			Payload:     upsert.Payload,
@@ -101,7 +87,7 @@ func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, principalUID int, ups
 	} else if len(list) == 1 {
 		// Even if field value does not change, we still patch to update the updated_ts.
 		anomaly, err = updateAnomalyV2(ctx, tx, principalUID, &updateAnomalyMessage{
-			ID:      list[0].ID,
+			UID:     list[0].UID,
 			Payload: upsert.Payload,
 		})
 		if err != nil {
@@ -141,10 +127,10 @@ func (s *Store) ListAnomalyV2(ctx context.Context, list *ListAnomalyMessage) ([]
 
 // ArchiveAnomalyV2 archives an anomaly.
 func (s *Store) ArchiveAnomalyV2(ctx context.Context, archive *ArchiveAnomalyMessage) error {
-	if archive.InstanceUID == nil && archive.DatabaseUID == nil {
+	if archive.InstanceID == nil && archive.DatabaseUID == nil {
 		return &common.Error{Code: common.Internal, Err: errors.Errorf("failed to close anomaly, should specify either instanceID or databaseID")}
 	}
-	if archive.InstanceUID != nil && archive.DatabaseUID != nil {
+	if archive.InstanceID != nil && archive.DatabaseUID != nil {
 		return &common.Error{Code: common.Internal, Err: errors.Errorf("failed to close anomaly, should specify either instanceID or databaseID, but not both")}
 	}
 
@@ -155,11 +141,16 @@ func (s *Store) ArchiveAnomalyV2(ctx context.Context, archive *ArchiveAnomalyMes
 	defer tx.Rollback()
 
 	// Remove row from database.
-	if archive.InstanceUID != nil {
-		result, err := tx.ExecContext(ctx,
-			`UPDATE anomaly SET row_status = $1 WHERE instance_id = $2 AND database_id IS NULL AND type = $3`,
+	if archive.InstanceID != nil {
+		result, err := tx.ExecContext(ctx, `
+			UPDATE
+				anomaly
+			SET anomaly.row_status = $1
+			FROM instance
+			WHERE anomaly.instance_id = instance.id AND instance.resource_id = $2 AND anomaly.database_id IS NULL AND anomaly.type = $3
+		`,
 			api.Archived,
-			*archive.InstanceUID,
+			*archive.InstanceID,
 			archive.Type,
 		)
 		if err != nil {
@@ -167,7 +158,7 @@ func (s *Store) ArchiveAnomalyV2(ctx context.Context, archive *ArchiveAnomalyMes
 		}
 
 		if rows, _ := result.RowsAffected(); rows == 0 {
-			return &common.Error{Code: common.NotFound, Err: errors.Errorf("anomaly not found instance: %d type: %s", *archive.InstanceUID, archive.Type)}
+			return &common.Error{Code: common.NotFound, Err: errors.Errorf("anomaly not found with instance %s and type %s", *archive.InstanceID, archive.Type)}
 		}
 	} else if archive.DatabaseUID != nil {
 		result, err := tx.ExecContext(ctx,
@@ -191,11 +182,20 @@ func (s *Store) ArchiveAnomalyV2(ctx context.Context, archive *ArchiveAnomalyMes
 	return nil
 }
 
-func (*Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID int, create *AnomalyMessage) (*AnomalyMessage, error) {
+func (s *Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID int, create *AnomalyMessage) (*AnomalyMessage, error) {
 	// Inserts row into database.
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
+
+	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &create.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", create.InstanceID)
+	}
+
 	query := `
 		INSERT INTO anomaly (
 			creator_id,
@@ -206,20 +206,19 @@ func (*Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID int,
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, instance_id, database_id, type, payload
+		RETURNING id, database_id, type, payload
 	`
 	var anomaly AnomalyMessage
 	var databaseUID sql.NullInt32
 	if err := tx.QueryRowContext(ctx, query,
 		principalUID,
 		principalUID,
-		create.InstanceUID,
+		instance.UID,
 		create.DatabaseUID,
 		create.Type,
 		create.Payload,
 	).Scan(
-		&anomaly.ID,
-		&anomaly.InstanceUID,
+		&anomaly.UID,
 		&databaseUID,
 		&anomaly.Type,
 		&anomaly.Payload,
@@ -233,6 +232,7 @@ func (*Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID int,
 		value := int(databaseUID.Int32)
 		anomaly.DatabaseUID = &value
 	}
+	anomaly.InstanceID = instance.ResourceID
 
 	return &anomaly, nil
 }
@@ -240,37 +240,40 @@ func (*Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID int,
 func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMessage) ([]*AnomalyMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := list.RowStatus; v != nil {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("anomaly.row_status = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := list.InstanceUID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
+	if v := list.InstanceID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := list.DatabaseUID; v != nil {
-		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("anomaly.database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if len(list.Types) > 0 {
 		var sub []string
 		for _, v := range list.Types {
 			sub, args = append(sub, fmt.Sprintf("$%d", len(args)+1)), append(args, v)
 		}
-		where = append(where, fmt.Sprintf("type IN (%s)", strings.Join(sub, `,`)))
+		where = append(where, fmt.Sprintf("anomaly.type IN (%s)", strings.Join(sub, `,`)))
 	}
 
 	query := fmt.Sprintf(`
 		SELECT
-			id,
-			created_ts,
-			updated_ts,
-			instance_id,
-			database_id,
-			type,
-			payload
-		FROM anomaly WHERE (%s
-		AND EXISTS (
-			SELECT 1
-			FROM instance
-			WHERE instance.id = anomaly.instance_id AND instance.row_status != 'ARCHIVED'
-		))
+			anomaly.id,
+			anomaly.created_ts,
+			anomaly.updated_ts,
+			instance.resource_id AS instance_id,
+			anomaly.database_id,
+			anomaly.type,
+			anomaly.payload
+		FROM anomaly
+		LEFT JOIN instance ON anomaly.instance_id = instance.id
+		WHERE (%s
+			AND EXISTS (
+				SELECT 1
+				FROM instance
+				WHERE instance.id = anomaly.instance_id AND instance.row_status != 'ARCHIVED'
+			)
+		)
 	`, strings.Join(where, " AND "))
 
 	rows, err := tx.QueryContext(ctx, query, args...)
@@ -285,10 +288,10 @@ func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMe
 		// DatabaseID field can be NULL in the PostgreSQL database, so we use sql.NullInt32 to represent it.
 		var databaseID sql.NullInt32
 		if err := rows.Scan(
-			&anomaly.ID,
+			&anomaly.UID,
 			&anomaly.CreatedTs,
 			&anomaly.UpdatedTs,
-			&anomaly.InstanceUID,
+			&anomaly.InstanceID,
 			&databaseID,
 			&anomaly.Type,
 			&anomaly.Payload,
@@ -314,24 +317,32 @@ func updateAnomalyV2(ctx context.Context, tx *Tx, principalUID int, update *upda
 	if update.Payload == "" {
 		update.Payload = "{}"
 	}
-	set, args := []string{"updater_id = $1"}, []any{principalUID}
-	set, args = append(set, "payload = $2"), append(args, update.Payload)
-	args = append(args, update.ID)
+	set, args := []string{"anomaly.updater_id = $1"}, []any{principalUID}
+	set, args = append(set, "anomaly.payload = $2"), append(args, update.Payload)
+	args = append(args, update.UID)
 
 	// Execute update query with RETURNING.
 	query := `
 		UPDATE anomaly
 		SET ` + strings.Join(set, ", ") + `
-		WHERE id = $3
-		RETURNING id, created_ts, updated_ts, instance_id, database_id, type, payload
+		FROM instance
+		WHERE anomaly.instance_id = instance.id AND anomaly.id = $3
+		RETURNING
+			anomaly.id,
+			anomaly.created_ts,
+			anomaly.updated_ts,
+			instance.resource_id AS instance_id,
+			anomaly.database_id,
+			anomaly.type,
+			anomaly.payload
 	`
 	var anomaly AnomalyMessage
 	var databaseID sql.NullInt32
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
-		&anomaly.ID,
+		&anomaly.UID,
 		&anomaly.CreatedTs,
 		&anomaly.UpdatedTs,
-		&anomaly.InstanceUID,
+		&anomaly.InstanceID,
 		&databaseID,
 		&anomaly.Type,
 		&anomaly.Payload,

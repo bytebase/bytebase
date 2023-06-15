@@ -145,14 +145,15 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { computed, reactive, watchEffect, PropType } from "vue";
-import { Anomaly, ComposedDatabase, DataSource } from "../types";
-import { useAnomalyList, useDBSchemaV1Store } from "@/store";
+import { ComposedDatabase, DataSource } from "../types";
+import { useAnomalyV1List, useDBSchemaV1Store } from "@/store";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyTable.vue";
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
 import FunctionTable from "../components/FunctionTable.vue";
 import { Engine, State } from "@/types/proto/v1/common";
+import { Anomaly } from "@/types/proto/v1/anomaly_service";
 
 interface LocalState {
   selectedSchemaName: string;
@@ -195,8 +196,8 @@ const prepareDatabaseMetadata = async () => {
 
 watchEffect(prepareDatabaseMetadata);
 
-const anomalyList = useAnomalyList(
-  computed(() => ({ databaseId: Number(props.database.uid) }))
+const anomalyList = useAnomalyV1List(
+  computed(() => ({ database: props.database.name }))
 );
 
 const anomalySectionList = computed((): BBTableSectionDataSource<Anomaly>[] => {

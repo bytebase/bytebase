@@ -92,4 +92,3 @@ p, DBA, /setting, GET
 p, DBA, /label, GET
 p, DBA, /label/{labelID}, PATCH
 p, DBA, /feature, GET
-p, DBA, /anomaly, GET
