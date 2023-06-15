@@ -58,14 +58,15 @@ const extractDatabaseName = (databaseResource: DatabaseResource) => {
 };
 
 const extractTableName = (databaseResource: DatabaseResource) => {
-  const nameList = [];
+  if (!databaseResource.schema && !databaseResource.table) {
+    return "*";
+  }
+  const names = [];
   if (databaseResource.schema) {
-    nameList.push(databaseResource.schema);
+    names.push(databaseResource.schema);
   }
-  if (databaseResource.table) {
-    nameList.push(databaseResource.table);
-  }
-  return nameList.join(".") || "*";
+  names.push(databaseResource.table || "*");
+  return names.join(".");
 };
 
 const extractComposedDatabase = (databaseResource: DatabaseResource) => {

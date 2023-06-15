@@ -11,7 +11,7 @@
       </NInput>
     </div>
     <div ref="treeRef" class="schema-editor-database-tree pb-2 h-auto">
-      <n-tree
+      <NTree
         block-line
         :data="treeDataRef"
         :pattern="searchPattern"
@@ -25,13 +25,14 @@
         :on-update:expanded-keys="handleExpandedKeysChange"
         :on-update:selected-keys="handleSelectedKeysChange"
       />
-      <n-dropdown
+      <NDropdown
         trigger="manual"
         placement="bottom-start"
         :show="contextMenu.showDropdown"
         :options="contextMenuOptions"
         :x="contextMenu.clientX"
         :y="contextMenu.clientY"
+        to="body"
         @select="handleContextMenuDropdownSelect"
         @clickoutside="handleDropdownClickoutside"
       />
@@ -56,7 +57,7 @@
 
 <script lang="ts" setup>
 import { escape, head, isUndefined } from "lodash-es";
-import { TreeOption, NEllipsis, NInput } from "naive-ui";
+import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import scrollIntoView from "scroll-into-view-if-needed";

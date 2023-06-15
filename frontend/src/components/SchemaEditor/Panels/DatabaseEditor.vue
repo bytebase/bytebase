@@ -132,7 +132,7 @@
               {{ table.comment }}
             </div>
             <div class="w-full flex justify-start items-center">
-              <n-tooltip v-if="!isDroppedTable(table)" trigger="hover">
+              <NTooltip v-if="!isDroppedTable(table)" trigger="hover">
                 <template #trigger>
                   <heroicons:trash
                     class="w-[14px] h-auto text-gray-500 cursor-pointer hover:opacity-80"
@@ -140,8 +140,8 @@
                   />
                 </template>
                 <span>{{ $t("schema-editor.actions.drop-table") }}</span>
-              </n-tooltip>
-              <n-tooltip v-else trigger="hover">
+              </NTooltip>
+              <NTooltip v-else trigger="hover">
                 <template #trigger>
                   <heroicons:arrow-uturn-left
                     class="w-[14px] h-auto text-gray-500 cursor-pointer hover:opacity-80"
@@ -149,7 +149,7 @@
                   />
                 </template>
                 <span>{{ $t("schema-editor.actions.restore") }}</span>
-              </n-tooltip>
+              </NTooltip>
             </div>
           </div>
         </div>
@@ -203,7 +203,7 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { NEllipsis } from "naive-ui";
+import { NEllipsis, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
