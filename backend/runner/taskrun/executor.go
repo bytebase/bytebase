@@ -278,7 +278,7 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, 
 	}
 	connID, err := mysqlDriver.GetMigrationConnID(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to get connection ID")
 	}
 	payload.ThreadID = connID
 
