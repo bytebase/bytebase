@@ -397,7 +397,7 @@ const createRequestQueryIssue = () => {
     query: {
       template: "bb.issue.grant.request",
       role: "QUERIER",
-      name: "New grant querier request",
+      name: "Request data query permission",
     },
   };
   const routeSlug = routerStore.routeSlug(route);

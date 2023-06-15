@@ -1,25 +1,25 @@
 <template>
   <div
-    class="w-full mx-auto flex flex-col justify-start items-start space-y-4 my-8 gap-4"
+    class="w-full mx-auto flex flex-col justify-start items-start space-y-4 gap-4 mb-4"
   >
-    <div v-if="create" class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center textlabel !leading-6 mt-2">
+    <div v-if="create" class="w-full flex flex-col justify-start items-start">
+      <span class="flex w-full items-center textlabel mb-2">
         {{ $t("common.project") }}
         <RequiredStar />
       </span>
       <ProjectSelect
-        class="!w-60 shrink-0"
+        class="!w-60"
         :only-userself="false"
         :selected-id="projectId"
         @select-project-id="handleProjectSelect"
       />
     </div>
-    <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-center textlabel shrink-0 !leading-6">
+    <div class="w-full flex flex-col justify-start items-start">
+      <span class="flex w-full items-center textlabel mb-2">
         {{ $t("common.databases") }}
         <RequiredStar />
       </span>
-      <div v-if="create">
+      <div v-if="create" class="w-full">
         <NRadioGroup
           v-model:value="state.allDatabases"
           class="w-full !flex flex-row justify-start items-start gap-4"
@@ -41,49 +41,45 @@
               :value="false"
               :disabled="!state.projectId"
               :label="$t('issue.grant-request.manually-select')"
-              @click="handleManuallySelectClick"
             />
             <button
-              v-if="state.projectId"
+              v-if="state.projectId && state.allDatabases === false"
               class="ml-2 normal-link h-6 disabled:cursor-not-allowed"
               @click="state.showSelectDatabasePanel = true"
             >
               {{ $t("common.select") }}
             </button>
-            <div
-              v-if="state.selectedDatabaseResourceList.length > 0"
-              class="ml-6 flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
-            >
-              <div
-                v-for="databaseResource in state.selectedDatabaseResourceList"
-                :key="`${databaseResource.databaseName}`"
-                class="flex flex-row justify-start items-center"
-              >
-                <DatabaseResourceView :database-resource="databaseResource" />
-              </div>
-            </div>
           </div>
         </NRadioGroup>
+        <div
+          v-if="
+            state.selectedDatabaseResourceList.length > 0 &&
+            state.allDatabases === false
+          "
+          class="w-full max-w-3xl mt-2"
+        >
+          <DatabaseResourceTable
+            class="w-full"
+            :database-resource-list="state.selectedDatabaseResourceList"
+          />
+        </div>
       </div>
       <div
         v-else
-        class="flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
+        class="w-full flex flex-row justify-start items-start flex-wrap gap-2 gap-x-4"
       >
         <span v-if="state.selectedDatabaseResourceList.length === 0">{{
           $t("issue.grant-request.all-databases")
         }}</span>
-        <div
-          v-for="databaseResource in state.selectedDatabaseResourceList"
+        <DatabaseResourceTable
           v-else
-          :key="`${databaseResource.databaseName}`"
-          class="flex flex-row justify-start items-center"
-        >
-          <DatabaseResourceView :database-resource="databaseResource" />
-        </div>
+          class="w-full"
+          :database-resource-list="state.selectedDatabaseResourceList"
+        />
       </div>
     </div>
-    <div class="w-full flex flex-row justify-start items-start">
-      <span class="flex w-40 items-start textlabel !leading-6">
+    <div class="w-full flex flex-col justify-start items-start">
+      <span class="flex w-full items-center textlabel mb-4">
         {{
           create
             ? $t("issue.grant-request.expire-days")
@@ -94,7 +90,7 @@
       <div v-if="create">
         <NRadioGroup
           v-model:value="state.expireDays"
-          class="!grid grid-cols-4 gap-x-4 gap-y-4"
+          class="!grid grid-cols-4 gap-4"
           name="radiogroup"
         >
           <div
@@ -141,6 +137,7 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { NRadioGroup, NRadio, NInputNumber, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
@@ -160,7 +157,7 @@ import { convertFromCELString } from "@/utils/issue/cel";
 import { DatabaseResource } from "./SelectDatabaseResourceForm/common";
 import RequiredStar from "@/components/RequiredStar.vue";
 import SelectDatabaseResourceForm from "./SelectDatabaseResourceForm/index.vue";
-import DatabaseResourceView from "./DatabaseResourceView.vue";
+import DatabaseResourceTable from "../table/DatabaseResourceTable.vue";
 
 interface LocalState {
   showSelectDatabasePanel: boolean;
@@ -253,12 +250,6 @@ const handleProjectSelect = async (projectId: string) => {
     });
 };
 
-const handleManuallySelectClick = () => {
-  if (state.selectedDatabaseResourceList.length === 0) {
-    state.showSelectDatabasePanel = true;
-  }
-};
-
 const handleSelectedDatabaseResourceChanged = (
   databaseResourceList: DatabaseResource[]
 ) => {
@@ -302,9 +293,9 @@ watch(
         payload.condition.expression
       );
       if (conditionExpression.expiredTime !== undefined) {
-        state.expiredAt = new Date(
-          conditionExpression.expiredTime
-        ).toLocaleString();
+        state.expiredAt = dayjs(
+          new Date(conditionExpression.expiredTime)
+        ).format("LLL");
       }
       if (
         conditionExpression.databaseResources !== undefined &&

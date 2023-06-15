@@ -2,47 +2,33 @@
   <div
     class="w-full mx-auto flex flex-col justify-start items-start mb-4 space-y-4"
   >
-    <template v-if="exportMethod === 'SQL'">
-      <div class="w-full flex flex-col justify-start items-start">
-        <span class="flex items-center textlabel mb-2">
-          {{ $t("common.database") }}
-        </span>
-        <div class="flex flex-row justify-start items-center">
-          <InstanceV1EngineIcon
-            :instance="selectedDatabase.instanceEntity"
-            :link="false"
-            class="mr-1"
-          />
-          {{ selectedDatabase.databaseName }}
-        </div>
-      </div>
-      <div class="w-full flex flex-col justify-start items-start">
-        <span class="flex items-center textlabel mb-2">SQL</span>
-        <div class="w-full border rounded">
-          <MonacoEditor
-            class="w-full h-[300px] py-2"
-            readonly
-            :value="state.statement"
-            :auto-focus="false"
-            :language="'sql'"
-            :dialect="dialect"
-          />
-        </div>
-      </div>
-    </template>
-    <template v-else>
-      <div class="w-full flex flex-col justify-start items-start">
-        <span class="flex items-center textlabel mb-2">
-          {{ $t("common.database") }}
-        </span>
-        <DatabaseResourceTable
-          class="w-full"
-          :database-resource-list="
-            selectedDatabaseResource ? [selectedDatabaseResource] : []
-          "
+    <div class="w-full flex flex-col justify-start items-start">
+      <span class="flex items-center textlabel mb-2">
+        {{ $t("common.database") }}
+      </span>
+      <DatabaseResourceTable
+        class="w-full"
+        :database-resource-list="
+          selectedDatabaseResource ? [selectedDatabaseResource] : []
+        "
+      />
+    </div>
+    <div
+      v-if="exportMethod === 'SQL'"
+      class="w-full flex flex-col justify-start items-start"
+    >
+      <span class="flex items-center textlabel mb-2">SQL</span>
+      <div class="w-full border rounded">
+        <MonacoEditor
+          class="w-full h-[300px] py-2"
+          readonly
+          :value="state.statement"
+          :auto-focus="false"
+          :language="'sql'"
+          :dialect="dialect"
         />
       </div>
-    </template>
+    </div>
     <div class="w-full flex flex-col justify-start items-start">
       <span class="flex items-center textlabel mb-2">
         {{ $t("issue.grant-request.export-rows") }}
@@ -89,7 +75,6 @@ import {
 import { useDatabaseV1Store } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor";
 import { convertFromCELString } from "@/utils/issue/cel";
-import { InstanceV1EngineIcon } from "@/components/v2";
 import { Engine } from "@/types/proto/v1/common";
 import dayjs from "dayjs";
 import DatabaseResourceTable from "../table/DatabaseResourceTable.vue";
@@ -114,7 +99,9 @@ const state = reactive<LocalState>({
 const selectedDatabaseResource = ref<DatabaseResource | undefined>(undefined);
 
 const selectedDatabase = computed(() => {
-  return databaseStore.getDatabaseByUID(state.databaseId ?? String(UNKNOWN_ID));
+  return databaseStore.getDatabaseByName(
+    selectedDatabaseResource.value?.databaseName ?? String(UNKNOWN_ID)
+  );
 });
 
 const exportMethod = computed(() => {
