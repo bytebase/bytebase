@@ -1,3 +1,4 @@
+import { stringify } from "qs";
 import {
   ExternalVersionControl_Type,
   externalVersionControl_TypeToJSON,
@@ -9,7 +10,6 @@ export type OAuthWindowEventPayload = {
   error: string;
   code: string;
 };
-
 export function redirectUrl(): string {
   return `${window.location.origin}/oauth/callback`;
 }
@@ -23,45 +23,58 @@ export type OAuthType =
   | "bb.oauth.link-vcs-repository"
   | "bb.oauth.unknown";
 
+export type OAuthState = {
+  event: string;
+  popup?: boolean;
+  redirect?: string;
+};
+
 export function openWindowForOAuth(
   endpoint: string,
   applicationId: string,
   type: OAuthType,
   vcsType: ExternalVersionControl_Type
 ): Window | null {
-  // we use type to determine oauth type when receiving the callback
-  const stateQueryParameter = `${type}.${externalVersionControl_TypeToJSON(
-    vcsType
-  )}-${applicationId}`;
-  sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
+  const state: OAuthState = {
+    // we use type to determine oauth type when receiving the callback
+    event: `${type}.${externalVersionControl_TypeToJSON(
+      vcsType
+    )}-${applicationId}`,
+    popup: true,
+  };
+
+  const endpointQueryParams: Record<string, string> = {
+    client_id: applicationId,
+    state: stringify(state),
+    response_type: "code",
+    redirect_uri: redirectUrl(),
+  };
+
+  // Set proper popup window size for different VCS types
+  let windowOpenOptions = "";
 
   if (vcsType == ExternalVersionControl_Type.GITHUB) {
     // GitHub OAuth App scopes: https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps
     // We need the workflow scope to update GitHub action files.
-    return window.open(
-      `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
-        redirectUrl()
-      )}&state=${stateQueryParameter}&response_type=code&scope=api,repo,workflow`,
-      "oauth",
-      "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
-    );
+
+    endpointQueryParams["scope"] = "api,repo,workflow";
+    windowOpenOptions =
+      "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes";
   } else if (vcsType == ExternalVersionControl_Type.BITBUCKET) {
     // Bitbucket OAuth App scopes: https://developer.atlassian.com/cloud/bitbucket/rest/intro/#authentication
-    return window.open(
-      `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
-        redirectUrl()
-      )}&state=${stateQueryParameter}&response_type=code&scope=account%20repository:write%20webhook`,
-      "oauth",
-      "location=yes,left=200,top=200,height=640,width=720,scrollbars=yes,status=yes"
-    );
+    // Do not call `encodeURIComponent` here, will be encoded later.
+    endpointQueryParams["scope"] = "account repository:write webhook";
+    windowOpenOptions =
+      "location=yes,left=200,top=200,height=640,width=720,scrollbars=yes,status=yes";
+  } else {
+    // GITLAB
+    // GitLab OAuth App scopes: https://docs.gitlab.com/ee/integration/oauth_provider.html#authorized-applications
+    endpointQueryParams["scope"] = "api";
+    windowOpenOptions =
+      "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes";
   }
-  // GITLAB
-  // GitLab OAuth App scopes: https://docs.gitlab.com/ee/integration/oauth_provider.html#authorized-applications
-  return window.open(
-    `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
-      redirectUrl()
-    )}&state=${stateQueryParameter}&response_type=code&scope=api`,
-    "oauth",
-    "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
-  );
+
+  const fullEndpointURL = `${endpoint}?${stringify(endpointQueryParams)}`;
+
+  return window.open(fullEndpointURL, "oauth", windowOpenOptions);
 }

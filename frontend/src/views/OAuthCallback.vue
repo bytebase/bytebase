@@ -3,7 +3,7 @@
     <div>{{ state.message }}</div>
     <div v-if="state.hasError" class="mt-2">
       <button
-        v-if="state.openAsPopup"
+        v-if="state.oAuthState?.popup"
         type="button"
         class="btn-normal"
         @click="window.close()"
@@ -18,26 +18,28 @@
 </template>
 
 <script lang="ts" setup>
-import { useAuthStore } from "@/store";
-import { SSOConfigSessionKey } from "@/utils/sso";
 import { onMounted, reactive } from "vue";
-import { useRouter } from "vue-router";
-import { OAuthWindowEventPayload, OAuthStateSessionKey } from "../types";
+import { useRoute, useRouter } from "vue-router";
+import { parse } from "qs";
+
+import { useAuthStore } from "@/store";
+import { OAuthState, OAuthWindowEventPayload } from "../types";
 
 interface LocalState {
   message: string;
   hasError: boolean;
-  openAsPopup: boolean;
+  oAuthState: OAuthState | undefined;
   payload: OAuthWindowEventPayload;
 }
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 
 const state = reactive<LocalState>({
   message: "",
   hasError: false,
-  openAsPopup: true,
+  oAuthState: undefined,
   payload: {
     error: "",
     code: "",
@@ -45,21 +47,30 @@ const state = reactive<LocalState>({
 });
 
 onMounted(() => {
-  const sessionState = sessionStorage.getItem(OAuthStateSessionKey);
-  if (!sessionState || sessionState !== router.currentRoute.value.query.state) {
+  const queryState = parse((route.query.state as string) || "");
+
+  if (queryState.event) {
+    state.oAuthState = {
+      event: queryState.event as string,
+      popup: queryState.popup === "true" ? true : false,
+      redirect: (queryState.redirect as string) || "",
+    };
+    state.hasError = false;
+    state.message = "Successfully authorized. Redirecting back to Bytebase...";
+    state.payload.code = (route.query.code as string) || "";
+  } else {
     state.hasError = true;
     state.message =
       "Failed to authorize. Invalid state passed to the oauth callback.";
-    state.payload.error = state.message;
-  } else {
-    state.message = "Successfully authorized. Redirecting back to Bytebase...";
-    state.payload.code = router.currentRoute.value.query.code as string;
+    state.oAuthState = undefined;
   }
+
   triggerAuthCallback();
 });
 
 const triggerAuthCallback = async () => {
-  if (state.hasError) {
+  const { oAuthState, hasError } = state;
+  if (hasError || !oAuthState) {
     window.opener.dispatchEvent(
       new CustomEvent("bb.oauth.unknown", {
         detail: state.payload,
@@ -68,13 +79,10 @@ const triggerAuthCallback = async () => {
     return;
   }
 
-  const eventName = sessionStorage.getItem(OAuthStateSessionKey) || "";
+  const eventName = oAuthState.event;
   const eventType = eventName.slice(0, eventName.lastIndexOf("."));
   if (eventName.startsWith("bb.oauth.signin")) {
-    const ssoConfig = JSON.parse(
-      sessionStorage.getItem(SSOConfigSessionKey) || "{}"
-    );
-    if (ssoConfig.openAsPopup) {
+    if (oAuthState.popup) {
       window.opener.dispatchEvent(
         new CustomEvent(eventName, {
           detail: state.payload,
@@ -83,7 +91,7 @@ const triggerAuthCallback = async () => {
       window.close();
     } else {
       const mfaTempToken = await authStore.login({
-        idpName: ssoConfig.identityProviderName,
+        idpName: eventName.split(".").pop()!,
         idpContext: {
           oauth2Context: {
             code: state.payload.code,
@@ -91,17 +99,16 @@ const triggerAuthCallback = async () => {
         },
         web: true,
       });
-      state.openAsPopup = false;
       if (mfaTempToken) {
         router.push({
           name: "auth.mfa",
           query: {
             mfaTempToken,
-            redirect: ssoConfig.redirect || "",
+            redirect: oAuthState.redirect || "",
           },
         });
       } else {
-        router.push(ssoConfig.redirect || "/");
+        router.push(oAuthState.redirect || "/");
       }
     }
   } else if (

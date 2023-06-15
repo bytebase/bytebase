@@ -1,10 +1,12 @@
 import axios from "axios";
 import { trimEnd, uniq } from "lodash-es";
-import { OAuthStateSessionKey } from "@/types";
+import { stringify } from "qs";
+
 import {
   IdentityProvider,
   IdentityProviderType,
 } from "@/types/proto/v1/idp_service";
+import { OAuthState } from "@/types";
 
 export const SSOConfigSessionKey = "sso-config";
 
@@ -13,36 +15,35 @@ const defaultOIDCScopes = ["openid", "profile", "email"];
 
 export async function openWindowForSSO(
   identityProvider: IdentityProvider,
-  openAsPopup = true,
+  popup = true,
   redirect = ""
 ) {
-  const stateQueryParameter = `bb.oauth.signin.${identityProvider.name}`;
-  sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
-  // Set SSO config in session storage so that we can use it in the callback page.
-  sessionStorage.setItem(
-    SSOConfigSessionKey,
-    JSON.stringify({
-      identityProviderName: identityProvider.name,
-      openAsPopup,
-      redirect,
-    })
-  );
+  const state: OAuthState = {
+    // we use type to determine oauth type when receiving the callback
+    event: `bb.oauth.signin.${identityProvider.name}`,
+    popup,
+    redirect,
+  };
 
-  let authUrl = "";
+  const uri = {
+    basePath: "",
+    query: {
+      state: stringify(state),
+      response_type: "code",
+    } as Record<string, string>,
+  };
+
   if (identityProvider.type === IdentityProviderType.OAUTH2) {
     const oauth2Config = identityProvider.config?.oauth2Config;
     if (!oauth2Config) {
       return null;
     }
-
-    const redirectUrl = encodeURIComponent(
-      `${window.location.origin}/oauth/callback`
-    );
-    authUrl = `${oauth2Config.authUrl}?client_id=${
-      oauth2Config.clientId
-    }&redirect_uri=${redirectUrl}&state=${stateQueryParameter}&response_type=code&scope=${encodeURIComponent(
-      oauth2Config.scopes.join(" ")
-    )}`;
+    uri.basePath = oauth2Config.authUrl;
+    Object.assign(uri.query, {
+      client_id: oauth2Config.clientId,
+      scope: oauth2Config.scopes.join(" "),
+      redirect_uri: `${window.location.origin}/oauth/callback`,
+    });
   } else if (identityProvider.type === IdentityProviderType.OIDC) {
     const oidcConfig = identityProvider.config?.oidcConfig;
     if (!oidcConfig) {
@@ -62,24 +63,25 @@ export async function openWindowForSSO(
     }
     oidcConfig.scopes = uniq([...oidcConfig.scopes, ...defaultOIDCScopes]);
 
-    const redirectUrl = encodeURIComponent(
-      `${window.location.origin}/oidc/callback`
-    );
-    authUrl = `${openidConfig.authorization_endpoint}?client_id=${
-      oidcConfig.clientId
-    }&redirect_uri=${redirectUrl}&state=${stateQueryParameter}&response_type=code&scope=${encodeURIComponent(
-      oidcConfig.scopes.join(" ")
-    )}`;
+    uri.basePath = openidConfig.authorization_endpoint;
+    Object.assign(uri.query, {
+      client_id: oidcConfig.clientId,
+      scope: oidcConfig.scopes.join(" "),
+      redirect_uri: `${window.location.origin}/oidc/callback`,
+    });
   } else {
     throw new Error(
       `identity provider type ${identityProvider.type.toString()} is not supported`
     );
   }
 
+  const authUrl = `${uri.basePath}?${stringify(uri.query)}`;
+
   if (!authUrl) {
     throw new Error("Invalid authentication URL");
   }
-  if (openAsPopup) {
+
+  if (popup) {
     window.open(
       authUrl,
       "oauth",
