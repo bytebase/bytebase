@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"io"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -209,18 +208,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 		err = os.WriteFile(filepath, byteValue, 0644)
 		require.NoError(t, err)
 	}
-}
-
-// RandomString returns random string with specific length.
-func RandomString(length int) string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyz")
-	var rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	b := make([]rune, length)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
 }
 
 // MockDriver is the driver for test only.
