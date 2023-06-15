@@ -20,3 +20,4 @@ export * from "./dbSchema";
 export * from "./activity";
 export * from "./bookmark";
 export * from "./inbox";
+export * from "./anomaly";

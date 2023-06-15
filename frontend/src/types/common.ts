@@ -1,4 +1,3 @@
-import { Anomaly } from "./anomaly";
 import { BackupSetting } from "./backup";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import { Database } from "./database";
@@ -12,7 +11,6 @@ import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
 import { VCS } from "./vcs";
 import { SQLReviewPolicy } from "./sqlReview";
-import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -115,7 +113,6 @@ interface ResourceMaker {
   (type: "TASK_PROGRESS"): TaskProgress;
   (type: "TASK"): Task;
   (type: "VCS"): VCS;
-  (type: "ANOMALY"): Anomaly;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
 }
 
@@ -298,25 +295,6 @@ const makeUnknown = (type: ResourceType) => {
     secret: "",
   };
 
-  const UNKNOWN_ANOMALY: Anomaly = {
-    id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
-    instanceId: UNKNOWN_ID,
-    instance: UNKNOWN_INSTANCE,
-    databaseId: UNKNOWN_ID,
-    database: UNKNOWN_DATABASE,
-    type: "bb.anomaly.database.backup.policy-violation",
-    severity: "MEDIUM",
-    payload: {
-      environmentId: UNKNOWN_ID,
-      expectedSchedule: BackupPlanSchedule.DAILY,
-      actualSchedule: BackupPlanSchedule.UNSET,
-    },
-  };
-
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -346,8 +324,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_TASK;
     case "VCS":
       return UNKNOWN_VCS;
-    case "ANOMALY":
-      return UNKNOWN_ANOMALY;
   }
 };
 
@@ -532,25 +508,6 @@ const makeEmpty = (type: ResourceType) => {
     secret: "",
   };
 
-  const EMPTY_ANOMALY: Anomaly = {
-    id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
-    instanceId: EMPTY_ID,
-    instance: EMPTY_INSTANCE,
-    databaseId: EMPTY_ID,
-    database: EMPTY_DATABASE,
-    type: "bb.anomaly.database.backup.policy-violation",
-    severity: "MEDIUM",
-    payload: {
-      environmentId: EMPTY_ID,
-      expectedSchedule: BackupPlanSchedule.DAILY,
-      actualSchedule: BackupPlanSchedule.UNSET,
-    },
-  };
-
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -580,8 +537,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_TASK;
     case "VCS":
       return EMPTY_VCS;
-    case "ANOMALY":
-      return EMPTY_ANOMALY;
   }
 };
 
