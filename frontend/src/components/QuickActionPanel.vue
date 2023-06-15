@@ -196,7 +196,7 @@
         >
           <button
             class="btn-icon-primary p-3"
-            @click.prevent="createExportDataIssue"
+            @click.prevent="state.showRequestExportPanel = true"
           >
             <heroicons-outline:document-download class="w-5 h-5" />
           </button>
@@ -263,6 +263,11 @@
     :feature="state.featureName"
     @cancel="state.showFeatureModal = false"
   />
+
+  <RequestExportPanel
+    v-if="state.showRequestExportPanel"
+    @close="state.showRequestExportPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -288,11 +293,13 @@ import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
+import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 
 interface LocalState {
   featureName: string;
   showFeatureModal: boolean;
   quickActionType: QuickActionType | undefined;
+  showRequestExportPanel: boolean;
 }
 
 const props = defineProps({
@@ -317,6 +324,7 @@ const state = reactive<LocalState>({
   featureName: "",
   showFeatureModal: false,
   quickActionType: undefined,
+  showRequestExportPanel: false,
 });
 
 const projectId = computed((): string | undefined => {
@@ -390,27 +398,6 @@ const createRequestQueryIssue = () => {
       template: "bb.issue.grant.request",
       role: "QUERIER",
       name: "New grant querier request",
-    },
-  };
-  const routeSlug = routerStore.routeSlug(route);
-  const projectSlug = routeSlug.projectSlug;
-  if (projectSlug) {
-    const id = idFromSlug(projectSlug);
-    (routeInfo.query as any).project = id;
-  }
-  router.push(routeInfo);
-};
-
-const createExportDataIssue = () => {
-  const routeInfo = {
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query: {
-      template: "bb.issue.grant.request",
-      role: "EXPORTER",
-      name: "New grant exporter request",
     },
   };
   const routeSlug = routerStore.routeSlug(route);

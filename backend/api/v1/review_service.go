@@ -295,6 +295,8 @@ func (s *ReviewService) ApproveReview(ctx context.Context, request *v1pb.Approve
 		log.Error("failed to create approval step pending activity after creating review", zap.Error(err))
 	}
 
+	s.onReviewApproved(ctx, issue)
+
 	review, err := convertToReview(ctx, s.store, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
@@ -585,6 +587,29 @@ func (s *ReviewService) UpdateReview(ctx context.Context, request *v1pb.UpdateRe
 		return nil, status.Errorf(codes.Internal, "failed to convert to review, error: %v", err)
 	}
 	return review, nil
+}
+
+func (s *ReviewService) onReviewApproved(ctx context.Context, issue *store.IssueMessage) {
+	if issue.Type == api.IssueGrantRequest {
+		if err := func() error {
+			payload := &storepb.IssuePayload{}
+			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
+				return errors.Wrap(err, "failed to unmarshal issue payload")
+			}
+			approved, err := utils.CheckApprovalApproved(payload.Approval)
+			if err != nil {
+				return errors.Wrap(err, "failed to check if the approval is approved")
+			}
+			if approved {
+				if err := s.taskScheduler.ChangeIssueStatus(ctx, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+					return errors.Wrap(err, "failed to update issue status")
+				}
+			}
+			return nil
+		}(); err != nil {
+			log.Debug("failed to update issue status to done if grant request issue is approved", zap.Error(err))
+		}
+	}
 }
 
 func canRequestReview(issueCreator *store.UserMessage, user *store.UserMessage) bool {

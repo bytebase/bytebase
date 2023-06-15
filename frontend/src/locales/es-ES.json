@@ -772,7 +772,9 @@
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
       "customize": "personalice",
-      "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez."
+      "data-export-attention": "Los datos se exportarán a un archivo y se descargarán en su computadora local. Y solo puede realizar la acción de exportación una vez.",
+      "export-method": "Método de exportación",
+      "please-select-database-first": "Por favor, seleccione primero la base de datos"
     },
     "review-sent-back": "Revisión devuelta"
   },
@@ -2404,8 +2406,8 @@
         "delete": "Eliminar nodo de aprobación",
         "select-approver": "Seleccionar aprobador",
         "roles": {
-          "system": "Roles del sistema",
-          "custom": "Roles personalizados"
+          "system": "Funciones del sistema",
+          "custom": "Funciones personalizadas"
         }
       },
       "presets": {
@@ -2418,7 +2420,15 @@
       "view-approval-flow": "Ver flujo de aprobación",
       "skip": "Omitir aprobación manual",
       "risk-not-configured-tips": "Asegúrese de haber definido {link}.",
-      "the-related-risk-rules": "las reglas de riesgo relacionadas"
+      "the-related-risk-rules": "las reglas de riesgo relacionadas",
+      "external-approval": {
+        "self": "Aprobación externa",
+        "delete": "¿Eliminar nodo de aprobación externo?",
+        "endpoint": "punto final",
+        "view-node": "Ver nodo de aprobación externo",
+        "create-node": "Crear nodo de aprobación externo",
+        "edit-node": "Editar nodo de aprobación externo"
+      }
     },
     "risk": {
       "self": "Riesgo",

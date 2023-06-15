@@ -779,7 +779,9 @@
       "all-databases-tip": "All current and future databases in this project.",
       "manually-select": "Manually select",
       "customize": "Customize",
-      "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once."
+      "data-export-attention": "The data will be exported to a file and downloaded to your local machine. And you can only do the export action once.",
+      "export-method": "Export method",
+      "please-select-database-first": "Please select database first"
     },
     "review-sent-back": "Review sent back"
   },
@@ -2399,7 +2401,7 @@
     "approval-flow": {
       "self": "Approval flow",
       "description": "For each operation type, configure custom condition, risk and approval flow. ",
-      "approval-flows": "Approval flows",
+      "approval-flows": "Approval Flows",
       "approval-nodes": "Approval nodes",
       "type": {
         "system": "System",
@@ -2425,8 +2427,8 @@
         "delete": "Delete approval node",
         "select-approver": "Select approver",
         "roles": {
-          "system": "System roles",
-          "custom": "Custom roles"
+          "system": "System Roles",
+          "custom": "Custom Roles"
         }
       },
       "presets": {
@@ -2439,7 +2441,15 @@
       "view-approval-flow": "View approval flow",
       "skip": "Skip manual approval",
       "risk-not-configured-tips": "Make sure you have defined {link}.",
-      "the-related-risk-rules": "the related risk rules"
+      "the-related-risk-rules": "the related risk rules",
+      "external-approval": {
+        "self": "External Approval",
+        "delete": "Delete external approval node?",
+        "endpoint": "Endpoint",
+        "view-node": "View external approval node",
+        "create-node": "Create external approval node",
+        "edit-node": "Edit external approval node"
+      }
     },
     "risk": {
       "self": "Risk",
