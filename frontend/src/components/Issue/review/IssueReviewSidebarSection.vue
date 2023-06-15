@@ -2,7 +2,7 @@
   <h2 class="textlabel flex items-start col-span-1 col-start-1 pt-1">
     <div class="flex items-center gap-x-1">
       <span>{{ $t("issue.approval-flow.self") }}</span>
-      <NTooltip>
+      <NTooltip v-if="showApprovalTooltip">
         <div class="max-w-[24rem]">
           {{ $t("issue.approval-flow.tooltip") }}
         </div>
@@ -54,6 +54,7 @@ import IssueReviewPanel from "./IssueReviewPanel.vue";
 import { useReviewStore } from "@/store";
 import { useIssueLogic } from "../logic";
 import { Issue } from "@/types";
+import { isGrantRequestIssueType } from "@/utils";
 
 const store = useReviewStore();
 const issueContext = useIssueLogic();
@@ -72,4 +73,12 @@ const retryFindingApprovalFlow = async () => {
     retrying.value = false;
   }
 };
+
+const showApprovalTooltip = computed(() => {
+  // Don't show the tooltip if the issue type is grant request.
+  if (isGrantRequestIssueType(issue.value.type)) {
+    return false;
+  }
+  return true;
+});
 </script>

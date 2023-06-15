@@ -1,11 +1,11 @@
 <template>
-  <div class="flex items-center gap-x-1">
+  <div class="w-full flex items-center truncate gap-x-1">
     <span v-if="environment" class="text-gray-400">
       (<EnvironmentV1Name :environment="environment" :link="false" />)
     </span>
     <Prefix />
     <!-- eslint-disable-next-line vue/no-v-html -->
-    <span class="truncate" v-html="optionName" />
+    <span v-html="optionName" />
     <span v-if="database" class="ml-1 text-gray-500 flex flex-row items-center">
       (<InstanceV1Name
         :instance="database.instanceEntity"
