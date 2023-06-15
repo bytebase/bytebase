@@ -145,7 +145,7 @@ func (s *Store) ArchiveAnomalyV2(ctx context.Context, archive *ArchiveAnomalyMes
 		result, err := tx.ExecContext(ctx, `
 			UPDATE
 				anomaly
-			SET anomaly.row_status = $1
+			SET row_status = $1
 			FROM instance
 			WHERE anomaly.instance_id = instance.id AND instance.resource_id = $2 AND anomaly.database_id IS NULL AND anomaly.type = $3
 		`,
@@ -317,8 +317,8 @@ func updateAnomalyV2(ctx context.Context, tx *Tx, principalUID int, update *upda
 	if update.Payload == "" {
 		update.Payload = "{}"
 	}
-	set, args := []string{"anomaly.updater_id = $1"}, []any{principalUID}
-	set, args = append(set, "anomaly.payload = $2"), append(args, update.Payload)
+	set, args := []string{"updater_id = $1"}, []any{principalUID}
+	set, args = append(set, "payload = $2"), append(args, update.Payload)
 	args = append(args, update.UID)
 
 	// Execute update query with RETURNING.
