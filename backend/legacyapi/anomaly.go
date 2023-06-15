@@ -18,31 +18,6 @@ const (
 	AnomalyDatabaseSchemaDrift AnomalyType = "bb.anomaly.database.schema.drift"
 )
 
-// AnomalySeverity is the severity of anomaly.
-type AnomalySeverity string
-
-const (
-	// AnomalySeverityMedium is the medium severity.
-	AnomalySeverityMedium AnomalySeverity = "MEDIUM"
-	// AnomalySeverityHigh is the high severity.
-	AnomalySeverityHigh AnomalySeverity = "HIGH"
-	// AnomalySeverityCritical is the critical severity.
-	AnomalySeverityCritical AnomalySeverity = "CRITICAL"
-)
-
-// AnomalySeverityFromType maps the severity from a anomaly type.
-func AnomalySeverityFromType(anomalyType AnomalyType) AnomalySeverity {
-	switch anomalyType {
-	case AnomalyDatabaseBackupPolicyViolation:
-		return AnomalySeverityMedium
-	case AnomalyDatabaseBackupMissing:
-		return AnomalySeverityHigh
-	case AnomalyInstanceConnection, AnomalyInstanceMigrationSchema, AnomalyDatabaseConnection, AnomalyDatabaseSchemaDrift:
-		return AnomalySeverityCritical
-	}
-	return AnomalySeverityCritical
-}
-
 // AnomalyInstanceConnectionPayload is the API message for instance connection payloads.
 type AnomalyInstanceConnectionPayload struct {
 	// Connection failure detail
@@ -77,30 +52,4 @@ type AnomalyDatabaseSchemaDriftPayload struct {
 	Expect string `json:"expect,omitempty"`
 	// The actual schema dumped from the database
 	Actual string `json:"actual,omitempty"`
-}
-
-// Anomaly is the API message for an anomaly.
-type Anomaly struct {
-	ID int `jsonapi:"primary,anomaly"`
-
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
-	// Related fields
-	InstanceID int       `jsonapi:"attr,instanceId"`
-	Instance   *Instance `jsonapi:"relation,instance"`
-	// Instance anomaly doesn't have databaseID
-	DatabaseID *int      `jsonapi:"attr,databaseId"`
-	Database   *Database `jsonapi:"relation,database"`
-
-	// Domain specific fields
-	Type AnomalyType `jsonapi:"attr,type"`
-	// Calculated field derived from type
-	Severity AnomalySeverity `jsonapi:"attr,severity"`
-	Payload  string          `jsonapi:"attr,payload"`
 }
