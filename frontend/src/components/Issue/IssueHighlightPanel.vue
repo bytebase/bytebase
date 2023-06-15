@@ -22,8 +22,8 @@
           />
 
           <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
-            <IssueReviewButtonGroup v-if="showReviewButton" />
-            <CombinedRolloutButtonGroup v-if="showRolloutButton" />
+            <IssueReviewButtonGroup v-if="showReviewButtonGroup" />
+            <CombinedRolloutButtonGroup v-else-if="showRolloutButtonGroup" />
           </div>
         </div>
         <div v-if="!create">
@@ -124,16 +124,26 @@ const state = reactive<LocalState>({
   name: issue.value.name,
 });
 
-const showReviewButton = computed(() => {
+/**
+ * Send back / Approve
+ * + cancel issue (dropdown)
+ */
+const showReviewButtonGroup = computed(() => {
   if (create.value) return false;
   if (reviewError.value) return false;
+  // User can cancel issue when it's in review.
+  if (isGrantRequestIssueType(issue.value.type)) return true;
   return !reviewDone.value;
 });
 
-const showRolloutButton = computed(() => {
+/**
+ * Rollout / Retry
+ * + cancel issue (dropdown)
+ * * skip all failed tasks in current stage (dropdown)
+ */
+const showRolloutButtonGroup = computed(() => {
   if (create.value) return true;
-  // User can cancel issue when it's in review.
-  if (isGrantRequestIssueType(issue.value.type)) return true;
+  if (isGrantRequestIssueType(issue.value.type)) return false;
 
   return reviewDone.value;
 });
