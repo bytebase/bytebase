@@ -131,7 +131,7 @@ import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 
 import AnomalyTable from "@/components/AnomalyTable.vue";
-import { Anomaly, UNKNOWN_USER_NAME } from "../types";
+import { UNKNOWN_USER_NAME } from "../types";
 import {
   databaseV1Slug,
   instanceV1Slug,
@@ -142,12 +142,16 @@ import {
 import { BBTabFilterItem, BBTableSectionDataSource } from "@/bbkit/types";
 import {
   featureToRef,
-  useAnomalyList,
+  useAnomalyV1List,
   useCurrentUserV1,
   useDatabaseV1Store,
   useEnvironmentV1List,
   useInstanceV1List,
 } from "@/store";
+import {
+  Anomaly,
+  Anomaly_AnomalySeverity,
+} from "@/types/proto/v1/anomaly_service";
 
 const DATABASE_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -202,7 +206,7 @@ export default defineComponent({
 
     const { instanceList } = useInstanceV1List();
 
-    const allAnomalyList = useAnomalyList();
+    const allAnomalyList = useAnomalyV1List();
 
     const databaseAnomalySectionList = computed(
       (): BBTableSectionDataSource<Anomaly>[] => {
@@ -227,7 +231,7 @@ export default defineComponent({
 
         for (const database of dbList) {
           const anomalyListOfDatabase = allAnomalyList.value.filter(
-            (anomaly) => String(anomaly.databaseId) === String(database.uid)
+            (anomaly) => anomaly.resource === database.name
           );
 
           if (anomalyListOfDatabase.length > 0) {
@@ -265,8 +269,8 @@ export default defineComponent({
         insList = sortInstanceV1List(insList);
 
         for (const instance of insList) {
-          const anomalyListOfInstance = allAnomalyList.value.filter(
-            (anomaly) => String(anomaly.instanceId) === instance.uid
+          const anomalyListOfInstance = allAnomalyList.value.filter((anomaly) =>
+            anomaly.resource.startsWith(instance.name)
           );
           if (anomalyListOfInstance.length > 0) {
             sectionList.push({
@@ -288,17 +292,17 @@ export default defineComponent({
         let highCount = 0;
         let mediumCount = 0;
         const anomalyListOfDatabase = allAnomalyList.value.filter(
-          (anomaly) => String(anomaly.databaseId) === database.uid
+          (anomaly) => anomaly.resource === database.name
         );
         for (const anomaly of anomalyListOfDatabase) {
           switch (anomaly.severity) {
-            case "CRITICAL":
+            case Anomaly_AnomalySeverity.CRITICAL:
               criticalCount++;
               break;
-            case "HIGH":
+            case Anomaly_AnomalySeverity.HIGH:
               highCount++;
               break;
-            case "MEDIUM":
+            case Anomaly_AnomalySeverity.MEDIUM:
               mediumCount++;
               break;
           }
@@ -338,17 +342,17 @@ export default defineComponent({
         let highCount = 0;
         let mediumCount = 0;
         const anomalyListOfInstance = allAnomalyList.value.filter(
-          (anomaly) => String(anomaly.instanceId) === instance.uid
+          (anomaly) => anomaly.resource === instance.name
         );
         for (const anomaly of anomalyListOfInstance) {
           switch (anomaly.severity) {
-            case "CRITICAL":
+            case Anomaly_AnomalySeverity.CRITICAL:
               criticalCount++;
               break;
-            case "HIGH":
+            case Anomaly_AnomalySeverity.HIGH:
               highCount++;
               break;
-            case "MEDIUM":
+            case Anomaly_AnomalySeverity.MEDIUM:
               mediumCount++;
               break;
           }

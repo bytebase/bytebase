@@ -85,9 +85,6 @@ export interface VCSState {
   vcsById: Map<VCSId, VCS>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface AnomalyState {}
-
 export interface NotificationState {
   notificationByModule: Map<string, Notification[]>;
 }
