@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/bytebase/bytebase/backend/store"
@@ -53,16 +54,18 @@ type Runner struct {
 	dbFactory       *dbfactory.DBFactory
 	stateCfg        *state.State
 	activityManager *activity.Manager
+	relayRunner     *relay.Runner
 	licenseService  enterpriseAPI.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, relayRunner *relay.Runner, licenseService enterpriseAPI.LicenseService) *Runner {
 	return &Runner{
 		store:           store,
 		dbFactory:       dbFactory,
 		stateCfg:        stateCfg,
 		activityManager: activityManager,
+		relayRunner:     relayRunner,
 		licenseService:  licenseService,
 	}
 }
@@ -220,7 +223,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		payload.Approval.ApprovalTemplates = []*storepb.ApprovalTemplate{approvalTemplate}
 	}
 
-	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, r.store, issue, payload.Approval)
+	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.relayRunner.Client, issue, payload.Approval)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to handle incoming approval steps")
 		if updateErr := updateIssuePayload(ctx, r.store, issue.UID, &storepb.IssuePayload{
