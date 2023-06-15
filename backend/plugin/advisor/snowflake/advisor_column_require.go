@@ -140,7 +140,7 @@ func (l *columnRequireChecker) ExitCreate_table(ctx *parser.Create_tableContext)
 // EnterAlter_table is called when production alter_table is entered.
 func (l *columnRequireChecker) EnterAlter_table(ctx *parser.Alter_tableContext) {
 	l.currentOriginalTableName = ctx.Object_name(0).GetText()
-	l.currentMissingColumn = make(map[string]interface{})
+	l.currentMissingColumn = make(map[string]any)
 }
 
 func (l *columnRequireChecker) EnterTable_column_action(ctx *parser.Table_column_actionContext) {
