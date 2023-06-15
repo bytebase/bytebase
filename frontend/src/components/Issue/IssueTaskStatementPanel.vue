@@ -317,6 +317,12 @@ const getOrFetchSheetStatementByName = async (
   return new TextDecoder().decode(sheet.content);
 };
 
+/**
+ * to set the MonacoEditor as readonly
+ * This happens when
+ * - Not in edit mode
+ * - Disallowed to edit statement
+ */
 const readonly = computed(() => {
   return (
     !state.editing ||
@@ -366,20 +372,25 @@ const isTaskSheetOversize = computed(() => {
 });
 
 const shouldShowStatementEditButtonForUI = computed(() => {
+  // Need not to show "Edit" while the issue is still pending create.
   if (create.value) {
-    return false;
-  }
-  if (readonly.value) {
     return false;
   }
   // For those task sheet oversized, it's readonly.
   if (isTaskSheetOversize.value) {
     return false;
   }
+  // Will show another button group as [Upload][Cancel][Save]
+  // while editing
   if (state.editing) {
     return false;
   }
+  // If the task or issue's statement is not allowed to be change.
   if (!allowEditStatement.value) {
+    return false;
+  }
+  // Not allowed to change statement while grouping.
+  if (isGroupingChangeIssue(issue.value as Issue)) {
     return false;
   }
 
