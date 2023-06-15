@@ -278,6 +278,7 @@ const action = (anomaly: Anomaly): Action => {
       };
     default:
       return {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         onClick: () => {},
         title: "",
       };
