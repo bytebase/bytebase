@@ -1,0 +1,76 @@
+- statement: |-
+    CREATE TABLE t(
+      name    VARCHAR,
+      "CONNECT" VARCHAR
+    );
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: Identifier "CONNECT" is a keyword and should be avoided
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t(
+      name      VARCHAR,
+      "connect" VARCHAR
+    );
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: Identifier "connect" is a keyword and should be avoided
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t(
+      name  VARCHAR,
+      age   INT
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE mytable_copy (
+      name      INT,
+      "connect" INT
+    ) AS SELECT a + 1, b + 2 FROM mytable;
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: Identifier "connect" is a keyword and should be avoided
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE mytable_copy (
+      name INT,
+      age  INT
+    ) AS SELECT a + 1, b + 2 FROM mytable;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE mytable RENAME COLUMN name TO "connect";
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: Identifier "connect" is a keyword and should be avoided
+      line: 1
+      details: ""
+- statement: ALTER TABLE mytable RENAME COLUMN name TO age;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
