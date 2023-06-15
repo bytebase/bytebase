@@ -115,9 +115,7 @@ const options = computed(() => {
   if (externalApprovalNodes.length > 0) {
     const external: SelectGroupOption = {
       type: "group",
-      label: t(
-        "custom-approval.approval-flow.external-approval-node.external-approval-nodes"
-      ),
+      label: t("custom-approval.approval-flow.external-approval.self"),
       children: externalApprovalNodes,
     };
     groups.push(external);
