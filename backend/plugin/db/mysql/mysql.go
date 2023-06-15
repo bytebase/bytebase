@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -115,6 +116,10 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	}
 	driver.dbType = dbType
 	driver.db = db
+	// TODO(d): remove the work-around once we have clean-up the migration connection hack.
+	db.SetConnMaxLifetime(2 * time.Hour)
+	db.SetMaxOpenConns(50)
+	db.SetMaxIdleConns(15)
 	driver.migrationConn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
