@@ -2,11 +2,7 @@ import { inject, provide, type InjectionKey, type Ref } from "vue";
 import type { LocalApprovalRule } from "@/types";
 import { ExternalApprovalSetting_Node } from "@/types/proto/store/setting";
 
-export const TabValueList = [
-  "rules",
-  "flows",
-  "external-approval-nodes",
-] as const;
+export const TabValueList = ["rules", "flows", "external-approval"] as const;
 export type TabValue = typeof TabValueList[number];
 
 export type DialogContext = {
