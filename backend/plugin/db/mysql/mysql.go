@@ -106,7 +106,6 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns()
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		var errList error
