@@ -43,7 +43,7 @@ func (*ColumnRequireAdvisor) Check(ctx advisor.Context, statement string) ([]adv
 	listener := &columnRequireChecker{
 		level:          level,
 		title:          string(ctx.Rule.Type),
-		requireColumns: make(map[string]interface{}),
+		requireColumns: make(map[string]any),
 	}
 
 	for _, column := range columnList {
@@ -65,12 +65,12 @@ type columnRequireChecker struct {
 	adviceList []advisor.Advice
 
 	// requireColumns is the required columns, the key is the normalized column name.
-	requireColumns map[string]interface{}
+	requireColumns map[string]any
 
 	// The following variables should be clean up when ENTER some statement.
 	//
 	// currentMissingColumn is the missing column, the key is the normalized column name.
-	currentMissingColumn map[string]interface{}
+	currentMissingColumn map[string]any
 	// currentOriginalTableName is the original table name, should be reset when QUIT some statement.
 	currentOriginalTableName string
 }
@@ -91,7 +91,7 @@ func (l *columnRequireChecker) generateAdvice() ([]advisor.Advice, error) {
 // EnterCreate_table is called when production create_table is entered.
 func (l *columnRequireChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	l.currentOriginalTableName = ctx.Object_name().GetText()
-	l.currentMissingColumn = make(map[string]interface{})
+	l.currentMissingColumn = make(map[string]any)
 	for column := range l.requireColumns {
 		l.currentMissingColumn[column] = true
 	}
