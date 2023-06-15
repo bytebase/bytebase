@@ -412,6 +412,9 @@ const (
 	// SnowflakeWhereRequirement is an advisor type for Snowflake WHERE clause requirement.
 	SnowflakeWhereRequirement Type = "bb.plugin.advisor.snowflake.where.require"
 
+	// SnowflakeIdentifierNamingNoKeyword is an advisor type for Snowflake identifier naming convention without keyword.
+	SnowflakeIdentifierNamingNoKeyword Type = "bb.plugin.advisor.snowflake.naming.identifier-no-keyword"
+
 	// SnowflakeColumnRequirement is an advisor type for Snowflake column requirement.
 	SnowflakeColumnRequirement Type = "bb.plugin.advisor.snowflake.column.require"
 )
