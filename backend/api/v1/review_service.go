@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
@@ -35,6 +36,7 @@ type ReviewService struct {
 	activityManager    *activity.Manager
 	taskScheduler      *taskrun.Scheduler
 	taskCheckScheduler *taskcheck.Scheduler
+	relayRunner        *relay.Runner
 	stateCfg           *state.State
 }
 

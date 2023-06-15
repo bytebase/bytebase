@@ -3,8 +3,12 @@ package api
 // ExternalApprovalType is the type of the ExternalApproval.
 type ExternalApprovalType string
 
-// ExternalApprovalTypeFeishu is the ExternalApproval from feishu.
-const ExternalApprovalTypeFeishu ExternalApprovalType = "bb.plugin.app.feishu"
+const (
+	// ExternalApprovalTypeFeishu is the ExternalApproval from feishu.
+	ExternalApprovalTypeFeishu ExternalApprovalType = "bb.plugin.app.feishu"
+	// ExternalApprovalTypeRelay is the ExternalApproval from relay.
+	ExternalApprovalTypeRelay ExternalApprovalType = "bb.plugin.app.relay"
+)
 
 // ExternalApprovalPayloadFeishu is the payload for feishu type ExternalApproval.
 type ExternalApprovalPayloadFeishu struct {
@@ -16,6 +20,11 @@ type ExternalApprovalPayloadFeishu struct {
 	RequesterID  string
 	// Rejected tells if the approval has been rejected on Feishu.
 	Rejected bool
+}
+
+// ExternalApprovalPayloadReply is the payload for relay type ExternalApproval.
+type ExternalApprovalPayloadRelay struct {
+	URI string `json:"uri"`
 }
 
 // ExternalApprovalEventActionType is the type of the action which the user took.
