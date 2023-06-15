@@ -132,7 +132,7 @@
               {{ table.comment }}
             </div>
             <div class="w-full flex justify-start items-center">
-              <NTooltip v-if="!isDroppedTable(table)" trigger="hover">
+              <NTooltip v-if="!isDroppedTable(table)" trigger="hover" to="body">
                 <template #trigger>
                   <heroicons:trash
                     class="w-[14px] h-auto text-gray-500 cursor-pointer hover:opacity-80"
@@ -141,7 +141,7 @@
                 </template>
                 <span>{{ $t("schema-editor.actions.drop-table") }}</span>
               </NTooltip>
-              <NTooltip v-else trigger="hover">
+              <NTooltip v-else trigger="hover" to="body">
                 <template #trigger>
                   <heroicons:arrow-uturn-left
                     class="w-[14px] h-auto text-gray-500 cursor-pointer hover:opacity-80"
