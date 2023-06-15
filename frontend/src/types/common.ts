@@ -11,7 +11,6 @@ import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
 import { VCS } from "./vcs";
 import { SQLReviewPolicy } from "./sqlReview";
-import { BackupPlanSchedule } from "@/types/proto/v1/org_policy_service";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
