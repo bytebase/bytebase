@@ -72,7 +72,6 @@
       line: 1
       details: ""
 - statement: |-
-    // Why syntax error o.0?
     MERGE INTO target_table USING (
       SELECT id, description FROM source_table
     ) AS filtered_source_table
@@ -80,8 +79,8 @@
     WHEN MATCHED THEN UPDATE SET target_table.a = filtered_source_table.b;
   want:
     - status: WARN
-      code: 201
-      title: Syntax error
-      content: line 6:41 missing '=' at '.'
-      line: 6
+      code: 202
+      title: statement.where.require
+      content: WHERE clause is required for SELECT statement.
+      line: 3
       details: ""
