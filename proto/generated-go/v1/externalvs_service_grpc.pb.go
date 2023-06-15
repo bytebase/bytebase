@@ -24,6 +24,7 @@ const (
 	ExternalVersionControlService_ListExternalVersionControls_FullMethodName          = "/bytebase.v1.ExternalVersionControlService/ListExternalVersionControls"
 	ExternalVersionControlService_CreateExternalVersionControl_FullMethodName         = "/bytebase.v1.ExternalVersionControlService/CreateExternalVersionControl"
 	ExternalVersionControlService_UpdateExternalVersionControl_FullMethodName         = "/bytebase.v1.ExternalVersionControlService/UpdateExternalVersionControl"
+	ExternalVersionControlService_ExchangeToken_FullMethodName                        = "/bytebase.v1.ExternalVersionControlService/ExchangeToken"
 	ExternalVersionControlService_DeleteExternalVersionControl_FullMethodName         = "/bytebase.v1.ExternalVersionControlService/DeleteExternalVersionControl"
 	ExternalVersionControlService_SearchExternalVersionControlProjects_FullMethodName = "/bytebase.v1.ExternalVersionControlService/SearchExternalVersionControlProjects"
 	ExternalVersionControlService_ListProjectGitOpsInfo_FullMethodName                = "/bytebase.v1.ExternalVersionControlService/ListProjectGitOpsInfo"
@@ -37,6 +38,7 @@ type ExternalVersionControlServiceClient interface {
 	ListExternalVersionControls(ctx context.Context, in *ListExternalVersionControlsRequest, opts ...grpc.CallOption) (*ListExternalVersionControlsResponse, error)
 	CreateExternalVersionControl(ctx context.Context, in *CreateExternalVersionControlRequest, opts ...grpc.CallOption) (*ExternalVersionControl, error)
 	UpdateExternalVersionControl(ctx context.Context, in *UpdateExternalVersionControlRequest, opts ...grpc.CallOption) (*ExternalVersionControl, error)
+	ExchangeToken(ctx context.Context, in *ExchangeTokenRequest, opts ...grpc.CallOption) (*OAuthToken, error)
 	DeleteExternalVersionControl(ctx context.Context, in *DeleteExternalVersionControlRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	SearchExternalVersionControlProjects(ctx context.Context, in *SearchExternalVersionControlProjectsRequest, opts ...grpc.CallOption) (*SearchExternalVersionControlProjectsResponse, error)
 	ListProjectGitOpsInfo(ctx context.Context, in *ListProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ListProjectGitOpsInfoResponse, error)
@@ -86,6 +88,15 @@ func (c *externalVersionControlServiceClient) UpdateExternalVersionControl(ctx c
 	return out, nil
 }
 
+func (c *externalVersionControlServiceClient) ExchangeToken(ctx context.Context, in *ExchangeTokenRequest, opts ...grpc.CallOption) (*OAuthToken, error) {
+	out := new(OAuthToken)
+	err := c.cc.Invoke(ctx, ExternalVersionControlService_ExchangeToken_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *externalVersionControlServiceClient) DeleteExternalVersionControl(ctx context.Context, in *DeleteExternalVersionControlRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, ExternalVersionControlService_DeleteExternalVersionControl_FullMethodName, in, out, opts...)
@@ -121,6 +132,7 @@ type ExternalVersionControlServiceServer interface {
 	ListExternalVersionControls(context.Context, *ListExternalVersionControlsRequest) (*ListExternalVersionControlsResponse, error)
 	CreateExternalVersionControl(context.Context, *CreateExternalVersionControlRequest) (*ExternalVersionControl, error)
 	UpdateExternalVersionControl(context.Context, *UpdateExternalVersionControlRequest) (*ExternalVersionControl, error)
+	ExchangeToken(context.Context, *ExchangeTokenRequest) (*OAuthToken, error)
 	DeleteExternalVersionControl(context.Context, *DeleteExternalVersionControlRequest) (*emptypb.Empty, error)
 	SearchExternalVersionControlProjects(context.Context, *SearchExternalVersionControlProjectsRequest) (*SearchExternalVersionControlProjectsResponse, error)
 	ListProjectGitOpsInfo(context.Context, *ListProjectGitOpsInfoRequest) (*ListProjectGitOpsInfoResponse, error)
@@ -142,6 +154,9 @@ func (UnimplementedExternalVersionControlServiceServer) CreateExternalVersionCon
 }
 func (UnimplementedExternalVersionControlServiceServer) UpdateExternalVersionControl(context.Context, *UpdateExternalVersionControlRequest) (*ExternalVersionControl, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateExternalVersionControl not implemented")
+}
+func (UnimplementedExternalVersionControlServiceServer) ExchangeToken(context.Context, *ExchangeTokenRequest) (*OAuthToken, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExchangeToken not implemented")
 }
 func (UnimplementedExternalVersionControlServiceServer) DeleteExternalVersionControl(context.Context, *DeleteExternalVersionControlRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteExternalVersionControl not implemented")
@@ -238,6 +253,24 @@ func _ExternalVersionControlService_UpdateExternalVersionControl_Handler(srv int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ExternalVersionControlService_ExchangeToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExchangeTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExternalVersionControlServiceServer).ExchangeToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ExternalVersionControlService_ExchangeToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExternalVersionControlServiceServer).ExchangeToken(ctx, req.(*ExchangeTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ExternalVersionControlService_DeleteExternalVersionControl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteExternalVersionControlRequest)
 	if err := dec(in); err != nil {
@@ -314,6 +347,10 @@ var ExternalVersionControlService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateExternalVersionControl",
 			Handler:    _ExternalVersionControlService_UpdateExternalVersionControl_Handler,
+		},
+		{
+			MethodName: "ExchangeToken",
+			Handler:    _ExternalVersionControlService_ExchangeToken_Handler,
 		},
 		{
 			MethodName: "DeleteExternalVersionControl",

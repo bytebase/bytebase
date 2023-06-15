@@ -38,12 +38,12 @@ import {
   VCSConfig,
   openWindowForOAuth,
   OAuthWindowEventPayload,
-  OAuthToken,
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useOAuthStore, useVCSV1Store } from "@/store";
+import { pushNotification, useVCSV1Store } from "@/store";
 import {
+  OAuthToken,
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
@@ -96,8 +96,8 @@ const eventListener = (event: Event) => {
       state.config.type === ExternalVersionControl_Type.GITHUB ||
       state.config.type === ExternalVersionControl_Type.BITBUCKET
     ) {
-      useOAuthStore()
-        .exchangeVCSToken({
+      vcsV1Store
+        .exchangeToken({
           vcsType: state.config.type,
           instanceUrl: state.config.instanceUrl,
           clientId: state.config.applicationId,

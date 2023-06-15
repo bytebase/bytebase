@@ -134,11 +134,7 @@ import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
 import { cloneDeep } from "lodash-es";
 import { BBStepTabItem } from "../bbkit/types";
-import {
-  ExternalRepositoryInfo,
-  OAuthToken,
-  ProjectRepositoryConfig,
-} from "../types";
+import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
 import { projectSlugV1 } from "../utils";
 import { useI18n } from "vue-i18n";
 import { useRepositoryV1Store, hasFeature, useProjectV1Store } from "@/store";
@@ -149,6 +145,7 @@ import {
   SchemaChange,
 } from "@/types/proto/v1/project_service";
 import {
+  OAuthToken,
   ProjectGitOpsInfo,
   ExternalVersionControl,
   ExternalVersionControl_Type,
@@ -223,7 +220,6 @@ const state = reactive<LocalState>({
     code: "",
     token: {
       accessToken: "",
-      expiresTs: 0,
       refreshToken: "",
     },
     repositoryInfo: {
@@ -332,7 +328,7 @@ const tryFinishSetup = async (allowFinishCallback: () => void) => {
       sheetPathTemplate: state.config.repositoryConfig.sheetPathTemplate,
       externalId: externalId,
       accessToken: state.config.token.accessToken,
-      expiresTime: new Date(state.config.token.expiresTs * 1000),
+      expiresTime: state.config.token.expiresTime,
       refreshToken: state.config.token.refreshToken,
       enableSqlReviewCi: false,
     };

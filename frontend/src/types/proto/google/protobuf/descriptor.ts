@@ -4045,7 +4045,7 @@ function createBaseUninterpretedOption(): UninterpretedOption {
     positiveIntValue: 0,
     negativeIntValue: 0,
     doubleValue: 0,
-    stringValue: new Uint8Array(),
+    stringValue: new Uint8Array(0),
     aggregateValue: "",
   };
 }
@@ -4148,7 +4148,7 @@ export const UninterpretedOption = {
       positiveIntValue: isSet(object.positiveIntValue) ? Number(object.positiveIntValue) : 0,
       negativeIntValue: isSet(object.negativeIntValue) ? Number(object.negativeIntValue) : 0,
       doubleValue: isSet(object.doubleValue) ? Number(object.doubleValue) : 0,
-      stringValue: isSet(object.stringValue) ? bytesFromBase64(object.stringValue) : new Uint8Array(),
+      stringValue: isSet(object.stringValue) ? bytesFromBase64(object.stringValue) : new Uint8Array(0),
       aggregateValue: isSet(object.aggregateValue) ? String(object.aggregateValue) : "",
     };
   },
@@ -4165,7 +4165,7 @@ export const UninterpretedOption = {
     message.negativeIntValue !== undefined && (obj.negativeIntValue = Math.round(message.negativeIntValue));
     message.doubleValue !== undefined && (obj.doubleValue = message.doubleValue);
     message.stringValue !== undefined &&
-      (obj.stringValue = base64FromBytes(message.stringValue !== undefined ? message.stringValue : new Uint8Array()));
+      (obj.stringValue = base64FromBytes(message.stringValue !== undefined ? message.stringValue : new Uint8Array(0)));
     message.aggregateValue !== undefined && (obj.aggregateValue = message.aggregateValue);
     return obj;
   },
@@ -4181,7 +4181,7 @@ export const UninterpretedOption = {
     message.positiveIntValue = object.positiveIntValue ?? 0;
     message.negativeIntValue = object.negativeIntValue ?? 0;
     message.doubleValue = object.doubleValue ?? 0;
-    message.stringValue = object.stringValue ?? new Uint8Array();
+    message.stringValue = object.stringValue ?? new Uint8Array(0);
     message.aggregateValue = object.aggregateValue ?? "";
     return message;
   },

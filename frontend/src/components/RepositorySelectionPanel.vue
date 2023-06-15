@@ -41,17 +41,13 @@ export default { name: "RepositorySelectionPanel" };
 
 <script setup lang="ts">
 import { reactive, computed, onMounted } from "vue";
+import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
+import { useVCSV1Store } from "@/store";
 import {
-  ExternalRepositoryInfo,
   OAuthToken,
-  ProjectRepositoryConfig,
-} from "../types";
-import { useOAuthStore, useVCSV1Store } from "@/store";
-import {
   ExternalVersionControl_Type,
   SearchExternalVersionControlProjectsResponse_Project,
 } from "@/types/proto/v1/externalvs_service";
-import { getVCSUid } from "@/store/modules/v1/common";
 
 interface LocalState {
   repositoryList: SearchExternalVersionControlProjectsResponse_Project[];
@@ -77,9 +73,9 @@ onMounted(() => {
 });
 
 const prepareRepositoryList = () => {
-  useOAuthStore()
-    .exchangeVCSTokenWithID({
-      vcsId: getVCSUid(props.config.vcs.name),
+  vcsV1Store
+    .exchangeToken({
+      vcsName: props.config.vcs.name,
       code: props.config.code,
     })
     .then((token: OAuthToken) => {
