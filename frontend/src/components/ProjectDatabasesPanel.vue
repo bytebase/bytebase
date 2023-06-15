@@ -49,14 +49,20 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed } from "vue";
+import { reactive, PropType, computed, ref, watchEffect } from "vue";
 import { NInputGroup } from "naive-ui";
 import { uniqBy } from "lodash-es";
 
 import { ComposedDatabase, ComposedInstance, UNKNOWN_ID } from "../types";
-import { filterDatabaseV1ByKeyword } from "@/utils";
+import { filterDatabaseV1ByKeyword, isDatabaseV1Accessible } from "@/utils";
 import { DatabaseV1Table } from "./v2";
 import { EnvironmentTabFilter, InstanceSelect, SearchBox } from "./v2";
+import {
+  Policy,
+  PolicyResourceType,
+  PolicyType,
+} from "@/types/proto/v1/org_policy_service";
+import { useCurrentUserV1, usePolicyV1Store } from "@/store";
 
 interface LocalState {
   environment: string;
@@ -71,14 +77,29 @@ const props = defineProps({
   },
 });
 
+const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>({
   environment: String(UNKNOWN_ID),
   instance: String(UNKNOWN_ID),
   keyword: "",
 });
+const policyList = ref<Policy[]>([]);
+
+const preparePolicyList = () => {
+  usePolicyV1Store()
+    .fetchPolicies({
+      resourceType: PolicyResourceType.DATABASE,
+      policyType: PolicyType.ACCESS_CONTROL,
+    })
+    .then((list) => (policyList.value = list));
+};
+
+watchEffect(preparePolicyList);
 
 const filteredDatabaseList = computed(() => {
-  let list = [...props.databaseList];
+  let list = [...props.databaseList].filter((database) =>
+    isDatabaseV1Accessible(database, policyList.value, currentUserV1.value)
+  );
   if (state.environment !== String(UNKNOWN_ID)) {
     list = list.filter(
       (db) => db.instanceEntity.environmentEntity.uid === state.environment
