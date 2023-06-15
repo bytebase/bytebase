@@ -183,16 +183,11 @@ import { idFromSlug, getVCSUIType } from "../utils";
 import {
   openWindowForOAuth,
   OAuthWindowEventPayload,
-  OAuthToken,
   VCSUIType,
 } from "../types";
+import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
 import {
-  pushNotification,
-  useOAuthStore,
-  useRepositoryV1Store,
-  useVCSV1Store,
-} from "@/store";
-import {
+  OAuthToken,
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
@@ -248,10 +243,10 @@ const eventListener = (event: Event) => {
       vcs.value?.type === ExternalVersionControl_Type.GITHUB ||
       vcs.value?.type === ExternalVersionControl_Type.BITBUCKET
     ) {
-      useOAuthStore()
-        .exchangeVCSTokenWithID({
+      vcsV1Store
+        .exchangeToken({
           code: payload.code,
-          vcsId: idFromSlug(props.vcsSlug),
+          vcsName: vcs.value.name,
           clientId: state.applicationId,
           clientSecret: state.secret,
         })

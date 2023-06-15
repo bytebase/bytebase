@@ -38,6 +38,14 @@ service ExternalVersionControlService {
     option (google.api.method_signature) = "external_version_control,update_mask";
   }
 
+  rpc ExchangeToken(ExchangeTokenRequest) returns (OAuthToken) {
+    option (google.api.http) = {
+      post: "/v1/{exchange_token.name=externalVersionControls/*}:exchangeToken"
+      body: "exchange_token"
+    };
+    option (google.api.method_signature) = "";
+  }
+
   rpc DeleteExternalVersionControl(DeleteExternalVersionControlRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=externalVersionControls/*}"};
   }
@@ -219,4 +227,32 @@ message ProjectGitOpsInfo {
   google.protobuf.Timestamp expires_time = 15 [(google.api.field_behavior) = INPUT_ONLY];
 
   string refresh_token = 16 [(google.api.field_behavior) = INPUT_ONLY];
+}
+
+message ExchangeTokenRequest {
+  ExchangeToken exchange_token = 1;
+}
+
+message ExchangeToken {
+  // The name of the external version control to retrieve the linked projects.
+  // Format: externalVersionControls/{externalVersionControl}
+  string name = 1;
+
+  string code = 2;
+
+  ExternalVersionControl.Type type = 3;
+
+  string instance_url = 4;
+
+  string client_id = 5;
+
+  string client_secret = 6;
+}
+
+message OAuthToken {
+  string access_token = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string refresh_token = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp expires_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
