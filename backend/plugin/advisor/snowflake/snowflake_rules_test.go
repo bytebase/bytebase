@@ -10,15 +10,15 @@ import (
 
 func TestSnowflakeRules(t *testing.T) {
 	snowflakeRules := []advisor.SQLReviewRuleType{
-		//advisor.SchemaRuleTableNaming,
-		//advisor.SchemaRuleTableRequirePK,
-		//advisor.SchemaRuleTableNoFK,
-		//advisor.SchemaRuleColumnMaximumVarcharLength,
-		//advisor.SchemaRuleTableNameNoKeyword,
+		advisor.SchemaRuleTableNaming,
+		advisor.SchemaRuleTableRequirePK,
+		advisor.SchemaRuleTableNoFK,
+		advisor.SchemaRuleColumnMaximumVarcharLength,
+		advisor.SchemaRuleTableNameNoKeyword,
 		advisor.SchemaRuleStatementRequireWhere,
 	}
 
 	for _, rule := range snowflakeRules {
-		advisor.RunSQLReviewRuleTest(t, rule, db.Snowflake, true /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, db.Snowflake, false /* record */)
 	}
 }
