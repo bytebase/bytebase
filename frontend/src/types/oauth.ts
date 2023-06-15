@@ -3,19 +3,6 @@ import {
   externalVersionControl_TypeToJSON,
 } from "@/types/proto/v1/externalvs_service";
 
-export type OAuthConfig = {
-  endpoint: string;
-  applicationId: string;
-  secret: string;
-  redirectUrl: string;
-};
-
-export type OAuthToken = {
-  accessToken: string;
-  expiresTs: number;
-  refreshToken: string;
-};
-
 export const OAuthStateSessionKey = "oauth-state";
 
 export type OAuthWindowEventPayload = {
