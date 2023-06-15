@@ -99,4 +99,3 @@ p, OWNER, /setting/{name}, PATCH
 p, OWNER, /label, GET
 p, OWNER, /label/{labelID}, PATCH
 p, OWNER, /feature, GET
-p, OWNER, /anomaly, GET

@@ -986,7 +986,7 @@ function createBaseSheet(): Sheet {
     creator: "",
     createTime: undefined,
     updateTime: undefined,
-    content: new Uint8Array(),
+    content: new Uint8Array(0),
     contentSize: 0,
     visibility: 0,
     source: 0,
@@ -1155,7 +1155,7 @@ export const Sheet = {
       creator: isSet(object.creator) ? String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-      content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(),
+      content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
       contentSize: isSet(object.contentSize) ? Number(object.contentSize) : 0,
       visibility: isSet(object.visibility) ? sheet_VisibilityFromJSON(object.visibility) : 0,
       source: isSet(object.source) ? sheet_SourceFromJSON(object.source) : 0,
@@ -1174,7 +1174,7 @@ export const Sheet = {
     message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
     message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
     message.content !== undefined &&
-      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array()));
+      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
     message.contentSize !== undefined && (obj.contentSize = Math.round(message.contentSize));
     message.visibility !== undefined && (obj.visibility = sheet_VisibilityToJSON(message.visibility));
     message.source !== undefined && (obj.source = sheet_SourceToJSON(message.source));
@@ -1196,7 +1196,7 @@ export const Sheet = {
     message.creator = object.creator ?? "";
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
-    message.content = object.content ?? new Uint8Array();
+    message.content = object.content ?? new Uint8Array(0);
     message.contentSize = object.contentSize ?? 0;
     message.visibility = object.visibility ?? 0;
     message.source = object.source ?? 0;

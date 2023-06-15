@@ -14,6 +14,42 @@
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
+- [v1/common.proto](#v1_common-proto)
+    - [Engine](#bytebase-v1-Engine)
+    - [State](#bytebase-v1-State)
+  
+- [v1/deployment.proto](#v1_deployment-proto)
+    - [DeploymentType](#bytebase-v1-DeploymentType)
+  
+- [v1/org_policy_service.proto](#v1_org_policy_service-proto)
+    - [AccessControlPolicy](#bytebase-v1-AccessControlPolicy)
+    - [AccessControlRule](#bytebase-v1-AccessControlRule)
+    - [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy)
+    - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
+    - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
+    - [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy)
+    - [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy)
+    - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
+    - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
+    - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
+    - [Policy](#bytebase-v1-Policy)
+    - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
+    - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
+    - [SensitiveData](#bytebase-v1-SensitiveData)
+    - [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy)
+    - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
+    - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
+  
+    - [ApprovalGroup](#bytebase-v1-ApprovalGroup)
+    - [ApprovalStrategy](#bytebase-v1-ApprovalStrategy)
+    - [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule)
+    - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
+    - [PolicyType](#bytebase-v1-PolicyType)
+    - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
+    - [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType)
+  
+    - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
+  
 - [v1/anomaly_service.proto](#v1_anomaly_service-proto)
     - [Anomaly](#bytebase-v1-Anomaly)
     - [Anomaly.DatabaseBackupMissingDetail](#bytebase-v1-Anomaly-DatabaseBackupMissingDetail)
@@ -26,13 +62,8 @@
   
     - [Anomaly.AnomalySeverity](#bytebase-v1-Anomaly-AnomalySeverity)
     - [Anomaly.AnomalyType](#bytebase-v1-Anomaly-AnomalyType)
-    - [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule)
   
     - [AnomalyService](#bytebase-v1-AnomalyService)
-  
-- [v1/common.proto](#v1_common-proto)
-    - [Engine](#bytebase-v1-Engine)
-    - [State](#bytebase-v1-State)
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
@@ -137,9 +168,6 @@
     - [ChangeHistoryView](#bytebase-v1-ChangeHistoryView)
   
     - [DatabaseService](#bytebase-v1-DatabaseService)
-  
-- [v1/deployment.proto](#v1_deployment-proto)
-    - [DeploymentType](#bytebase-v1-DeploymentType)
   
 - [v1/environment_service.proto](#v1_environment_service-proto)
     - [CreateEnvironmentRequest](#bytebase-v1-CreateEnvironmentRequest)
@@ -252,35 +280,6 @@
     - [LogEntity.Level](#bytebase-v1-LogEntity-Level)
   
     - [LoggingService](#bytebase-v1-LoggingService)
-  
-- [v1/org_policy_service.proto](#v1_org_policy_service-proto)
-    - [AccessControlPolicy](#bytebase-v1-AccessControlPolicy)
-    - [AccessControlRule](#bytebase-v1-AccessControlRule)
-    - [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy)
-    - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
-    - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
-    - [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy)
-    - [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy)
-    - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
-    - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
-    - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
-    - [Policy](#bytebase-v1-Policy)
-    - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
-    - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
-    - [SensitiveData](#bytebase-v1-SensitiveData)
-    - [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy)
-    - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
-    - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
-  
-    - [ApprovalGroup](#bytebase-v1-ApprovalGroup)
-    - [ApprovalStrategy](#bytebase-v1-ApprovalStrategy)
-    - [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule)
-    - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
-    - [PolicyType](#bytebase-v1-PolicyType)
-    - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
-    - [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType)
-  
-    - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
 - [v1/project_service.proto](#v1_project_service-proto)
     - [Activity](#bytebase-v1-Activity)
@@ -671,6 +670,513 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 
 
 
+<a name="v1_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/common.proto
+
+
+ 
+
+
+<a name="bytebase-v1-Engine"></a>
+
+### Engine
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENGINE_UNSPECIFIED | 0 |  |
+| CLICKHOUSE | 1 |  |
+| MYSQL | 2 |  |
+| POSTGRES | 3 |  |
+| SNOWFLAKE | 4 |  |
+| SQLITE | 5 |  |
+| TIDB | 6 |  |
+| MONGODB | 7 |  |
+| REDIS | 8 |  |
+| ORACLE | 9 |  |
+| SPANNER | 10 |  |
+| MSSQL | 11 |  |
+| REDSHIFT | 12 |  |
+| MARIADB | 13 |  |
+| OCEANBASE | 14 |  |
+
+
+
+<a name="bytebase-v1-State"></a>
+
+### State
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATE_UNSPECIFIED | 0 |  |
+| ACTIVE | 1 |  |
+| DELETED | 2 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v1_deployment-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/deployment.proto
+
+
+ 
+
+
+<a name="bytebase-v1-DeploymentType"></a>
+
+### DeploymentType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DEPLOYMENT_TYPE_UNSPECIFIED | 0 |  |
+| DATABASE_CREATE | 1 |  |
+| DATABASE_DDL | 2 |  |
+| DATABASE_DDL_GHOST | 3 |  |
+| DATABASE_DML | 4 |  |
+| DATABASE_RESTORE_PITR | 5 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v1_org_policy_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/org_policy_service.proto
+
+
+
+<a name="bytebase-v1-AccessControlPolicy"></a>
+
+### AccessControlPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| disallow_rules | [AccessControlRule](#bytebase-v1-AccessControlRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AccessControlRule"></a>
+
+### AccessControlRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| full_database | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BackupPlanPolicy"></a>
+
+### BackupPlanPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schedule | [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule) |  |  |
+| retention_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CreatePolicyRequest"></a>
+
+### CreatePolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| policy | [Policy](#bytebase-v1-Policy) |  | The policy to create. |
+| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeletePolicyRequest"></a>
+
+### DeletePolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeploymentApprovalPolicy"></a>
+
+### DeploymentApprovalPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| default_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
+| deployment_approval_strategies | [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeploymentApprovalStrategy"></a>
+
+### DeploymentApprovalStrategy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| deployment_type | [DeploymentType](#bytebase-v1-DeploymentType) |  |  |
+| approval_group | [ApprovalGroup](#bytebase-v1-ApprovalGroup) |  |  |
+| approval_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetPolicyRequest"></a>
+
+### GetPolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the policy to retrieve. Format: {resource type}/{resource id}/policies/{policy type} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPoliciesRequest"></a>
+
+### ListPoliciesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id}/policies/{policy type} |
+| policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
+| page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `GetPolicies` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPoliciesResponse"></a>
+
+### ListPoliciesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| policies | [Policy](#bytebase-v1-Policy) | repeated | The policies from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-Policy"></a>
+
+### Policy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
+| inherit_from_parent | [bool](#bool) |  |  |
+| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
+| deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
+| backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
+| sensitive_data_policy | [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy) |  |  |
+| access_control_policy | [AccessControlPolicy](#bytebase-v1-AccessControlPolicy) |  |  |
+| sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
+| slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
+| enforce | [bool](#bool) |  |  |
+| resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
+| resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewPolicy"></a>
+
+### SQLReviewPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule"></a>
+
+### SQLReviewRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [string](#string) |  |  |
+| level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  |  |
+| payload | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SensitiveData"></a>
+
+### SensitiveData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| mask_type | [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SensitiveDataPolicy"></a>
+
+### SensitiveDataPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sensitive_data | [SensitiveData](#bytebase-v1-SensitiveData) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SlowQueryPolicy"></a>
+
+### SlowQueryPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdatePolicyRequest"></a>
+
+### UpdatePolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| policy | [Policy](#bytebase-v1-Policy) |  | The policy to update.
+
+The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the policy is not found, a new policy will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-ApprovalGroup"></a>
+
+### ApprovalGroup
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ASSIGNEE_GROUP_UNSPECIFIED | 0 |  |
+| APPROVAL_GROUP_DBA | 1 |  |
+| APPROVAL_GROUP_PROJECT_OWNER | 2 |  |
+
+
+
+<a name="bytebase-v1-ApprovalStrategy"></a>
+
+### ApprovalStrategy
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| APPROVAL_STRATEGY_UNSPECIFIED | 0 |  |
+| AUTOMATIC | 1 |  |
+| MANUAL | 2 |  |
+
+
+
+<a name="bytebase-v1-BackupPlanSchedule"></a>
+
+### BackupPlanSchedule
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SCHEDULE_UNSPECIFIED | 0 |  |
+| UNSET | 1 |  |
+| DAILY | 2 |  |
+| WEEKLY | 3 |  |
+
+
+
+<a name="bytebase-v1-PolicyResourceType"></a>
+
+### PolicyResourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESOURCE_TYPE_UNSPECIFIED | 0 |  |
+| WORKSPACE | 1 |  |
+| ENVIRONMENT | 2 |  |
+| PROJECT | 3 |  |
+| INSTANCE | 4 |  |
+| DATABASE | 5 |  |
+
+
+
+<a name="bytebase-v1-PolicyType"></a>
+
+### PolicyType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| POLICY_TYPE_UNSPECIFIED | 0 |  |
+| DEPLOYMENT_APPROVAL | 1 |  |
+| BACKUP_PLAN | 2 |  |
+| SQL_REVIEW | 3 |  |
+| SENSITIVE_DATA | 4 |  |
+| ACCESS_CONTROL | 5 |  |
+| SLOW_QUERY | 6 |  |
+
+
+
+<a name="bytebase-v1-SQLReviewRuleLevel"></a>
+
+### SQLReviewRuleLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+| DISABLED | 3 |  |
+
+
+
+<a name="bytebase-v1-SensitiveDataMaskType"></a>
+
+### SensitiveDataMaskType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASK_TYPE_UNSPECIFIED | 0 |  |
+| DEFAULT | 1 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-OrgPolicyService"></a>
+
+### OrgPolicyService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetPolicy | [GetPolicyRequest](#bytebase-v1-GetPolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
+| ListPolicies | [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest) | [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse) |  |
+| CreatePolicy | [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
+| UpdatePolicy | [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
+| DeletePolicy | [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+
+ 
+
+
+
 <a name="v1_anomaly_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -694,6 +1200,8 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | database_backup_policy_violation_detail | [Anomaly.DatabaseBackupPolicyViolationDetail](#bytebase-v1-Anomaly-DatabaseBackupPolicyViolationDetail) |  |  |
 | database_backup_missing_detail | [Anomaly.DatabaseBackupMissingDetail](#bytebase-v1-Anomaly-DatabaseBackupMissingDetail) |  |  |
 | database_schema_drift_detail | [Anomaly.DatabaseSchemaDriftDetail](#bytebase-v1-Anomaly-DatabaseSchemaDriftDetail) |  |  |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -708,7 +1216,7 @@ DatabaseBackupMissingDetail is the detail for database backup missing anomaly.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| expected_schedule | [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule) |  | expected_schedule is the expected backup plan schedule in the database. |
+| expected_schedule | [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule) |  | expected_schedule is the expected backup plan schedule in the database. |
 | latest_backup_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | latest_backup_time is the latest backup time in the database. |
 
 
@@ -725,8 +1233,8 @@ DatabaseBackupPolicyViolationDetail is the detail for database backup policy vio
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | parent is the parent of the database. Format: environments/{environment} |
-| expected_schedule | [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule) |  | expected_schedule is the expected backup plan schedule in the parent. |
-| actual_schedule | [Anomaly.BackupPlanSchedule](#bytebase-v1-Anomaly-BackupPlanSchedule) |  | actual_schedule is the actual backup plan schedule in the database. |
+| expected_schedule | [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule) |  | expected_schedule is the expected backup plan schedule in the parent. |
+| actual_schedule | [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule) |  | actual_schedule is the actual backup plan schedule in the database. |
 
 
 
@@ -855,20 +1363,6 @@ DATABASE_BACKUP_POLICY_VIOLATION is the anomaly type for database backup policy 
 | DATABASE_SCHEMA_DRIFT | 6 | DATABASE_SCHEMA_DRIFT is the anomaly type for database schema drift, e.g. the database schema had been changed without bytebase migration. |
 
 
-
-<a name="bytebase-v1-Anomaly-BackupPlanSchedule"></a>
-
-### Anomaly.BackupPlanSchedule
-BackupPlanSchedule is the backup plan schedule.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| BACKUP_PLAN_SCHEDULE_UNSPECIFIED | 0 | Unspecified backup plan schedule. |
-| UNSET | 1 | UNSET is the unset backup plan schedule. |
-| DAILY | 2 | DAILY is the daily backup plan schedule. |
-| WEEKLY | 3 | WEEKLY is the weekly backup plan schedule. |
-
-
  
 
  
@@ -882,60 +1376,6 @@ BackupPlanSchedule is the backup plan schedule.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | SearchAnomalies | [SearchAnomaliesRequest](#bytebase-v1-SearchAnomaliesRequest) | [SearchAnomaliesResponse](#bytebase-v1-SearchAnomaliesResponse) |  |
-
- 
-
-
-
-<a name="v1_common-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/common.proto
-
-
- 
-
-
-<a name="bytebase-v1-Engine"></a>
-
-### Engine
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENGINE_UNSPECIFIED | 0 |  |
-| CLICKHOUSE | 1 |  |
-| MYSQL | 2 |  |
-| POSTGRES | 3 |  |
-| SNOWFLAKE | 4 |  |
-| SQLITE | 5 |  |
-| TIDB | 6 |  |
-| MONGODB | 7 |  |
-| REDIS | 8 |  |
-| ORACLE | 9 |  |
-| SPANNER | 10 |  |
-| MSSQL | 11 |  |
-| REDSHIFT | 12 |  |
-| MARIADB | 13 |  |
-| OCEANBASE | 14 |  |
-
-
-
-<a name="bytebase-v1-State"></a>
-
-### State
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATE_UNSPECIFIED | 0 |  |
-| ACTIVE | 1 |  |
-| DELETED | 2 |  |
-
-
- 
-
- 
 
  
 
@@ -2522,38 +2962,6 @@ The type of the backup.
 
 
 
-<a name="v1_deployment-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/deployment.proto
-
-
- 
-
-
-<a name="bytebase-v1-DeploymentType"></a>
-
-### DeploymentType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DEPLOYMENT_TYPE_UNSPECIFIED | 0 |  |
-| DATABASE_CREATE | 1 |  |
-| DATABASE_DDL | 2 |  |
-| DATABASE_DDL_GHOST | 3 |  |
-| DATABASE_DML | 4 |  |
-| DATABASE_RESTORE_PITR | 5 |  |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="v1_environment_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -4103,427 +4511,6 @@ ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
 | ----------- | ------------ | ------------- | ------------|
 | ListLogs | [ListLogsRequest](#bytebase-v1-ListLogsRequest) | [ListLogsResponse](#bytebase-v1-ListLogsResponse) |  |
 | GetLog | [GetLogRequest](#bytebase-v1-GetLogRequest) | [LogEntity](#bytebase-v1-LogEntity) |  |
-
- 
-
-
-
-<a name="v1_org_policy_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/org_policy_service.proto
-
-
-
-<a name="bytebase-v1-AccessControlPolicy"></a>
-
-### AccessControlPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disallow_rules | [AccessControlRule](#bytebase-v1-AccessControlRule) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-AccessControlRule"></a>
-
-### AccessControlRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| full_database | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-BackupPlanPolicy"></a>
-
-### BackupPlanPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schedule | [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule) |  |  |
-| retention_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CreatePolicyRequest"></a>
-
-### CreatePolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-| policy | [Policy](#bytebase-v1-Policy) |  | The policy to create. |
-| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeletePolicyRequest"></a>
-
-### DeletePolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeploymentApprovalPolicy"></a>
-
-### DeploymentApprovalPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| default_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
-| deployment_approval_strategies | [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeploymentApprovalStrategy"></a>
-
-### DeploymentApprovalStrategy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| deployment_type | [DeploymentType](#bytebase-v1-DeploymentType) |  |  |
-| approval_group | [ApprovalGroup](#bytebase-v1-ApprovalGroup) |  |  |
-| approval_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetPolicyRequest"></a>
-
-### GetPolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the policy to retrieve. Format: {resource type}/{resource id}/policies/{policy type} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPoliciesRequest"></a>
-
-### ListPoliciesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id}/policies/{policy type} |
-| policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
-| page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `GetPolicies` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPoliciesResponse"></a>
-
-### ListPoliciesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policies | [Policy](#bytebase-v1-Policy) | repeated | The policies from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-Policy"></a>
-
-### Policy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| inherit_from_parent | [bool](#bool) |  |  |
-| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
-| deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
-| backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
-| sensitive_data_policy | [SensitiveDataPolicy](#bytebase-v1-SensitiveDataPolicy) |  |  |
-| access_control_policy | [AccessControlPolicy](#bytebase-v1-AccessControlPolicy) |  |  |
-| sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
-| slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
-| enforce | [bool](#bool) |  |  |
-| resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
-| resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
-
-
-
-
-
-
-<a name="bytebase-v1-SQLReviewPolicy"></a>
-
-### SQLReviewPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SQLReviewRule"></a>
-
-### SQLReviewRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [string](#string) |  |  |
-| level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  |  |
-| payload | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SensitiveData"></a>
-
-### SensitiveData
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
-| column | [string](#string) |  |  |
-| mask_type | [SensitiveDataMaskType](#bytebase-v1-SensitiveDataMaskType) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SensitiveDataPolicy"></a>
-
-### SensitiveDataPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sensitive_data | [SensitiveData](#bytebase-v1-SensitiveData) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryPolicy"></a>
-
-### SlowQueryPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdatePolicyRequest"></a>
-
-### UpdatePolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policy | [Policy](#bytebase-v1-Policy) |  | The policy to update.
-
-The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the policy is not found, a new policy will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-ApprovalGroup"></a>
-
-### ApprovalGroup
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ASSIGNEE_GROUP_UNSPECIFIED | 0 |  |
-| APPROVAL_GROUP_DBA | 1 |  |
-| APPROVAL_GROUP_PROJECT_OWNER | 2 |  |
-
-
-
-<a name="bytebase-v1-ApprovalStrategy"></a>
-
-### ApprovalStrategy
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| APPROVAL_STRATEGY_UNSPECIFIED | 0 |  |
-| AUTOMATIC | 1 |  |
-| MANUAL | 2 |  |
-
-
-
-<a name="bytebase-v1-BackupPlanSchedule"></a>
-
-### BackupPlanSchedule
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SCHEDULE_UNSPECIFIED | 0 |  |
-| UNSET | 1 |  |
-| DAILY | 2 |  |
-| WEEKLY | 3 |  |
-
-
-
-<a name="bytebase-v1-PolicyResourceType"></a>
-
-### PolicyResourceType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RESOURCE_TYPE_UNSPECIFIED | 0 |  |
-| WORKSPACE | 1 |  |
-| ENVIRONMENT | 2 |  |
-| PROJECT | 3 |  |
-| INSTANCE | 4 |  |
-| DATABASE | 5 |  |
-
-
-
-<a name="bytebase-v1-PolicyType"></a>
-
-### PolicyType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| POLICY_TYPE_UNSPECIFIED | 0 |  |
-| DEPLOYMENT_APPROVAL | 1 |  |
-| BACKUP_PLAN | 2 |  |
-| SQL_REVIEW | 3 |  |
-| SENSITIVE_DATA | 4 |  |
-| ACCESS_CONTROL | 5 |  |
-| SLOW_QUERY | 6 |  |
-
-
-
-<a name="bytebase-v1-SQLReviewRuleLevel"></a>
-
-### SQLReviewRuleLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LEVEL_UNSPECIFIED | 0 |  |
-| ERROR | 1 |  |
-| WARNING | 2 |  |
-| DISABLED | 3 |  |
-
-
-
-<a name="bytebase-v1-SensitiveDataMaskType"></a>
-
-### SensitiveDataMaskType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASK_TYPE_UNSPECIFIED | 0 |  |
-| DEFAULT | 1 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-OrgPolicyService"></a>
-
-### OrgPolicyService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetPolicy | [GetPolicyRequest](#bytebase-v1-GetPolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| ListPolicies | [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest) | [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse) |  |
-| CreatePolicy | [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| UpdatePolicy | [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| DeletePolicy | [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

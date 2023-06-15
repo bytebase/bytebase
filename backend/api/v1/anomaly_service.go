@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -48,7 +49,6 @@ func NewAnomalyService(store *store.Store) *AnomalyService {
 func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.SearchAnomaliesRequest) (*v1pb.
 	SearchAnomaliesResponse, error) {
 	var find store.ListAnomalyMessage
-	var environmentID, instanceID, databaseName string
 	if request.Filter != "" {
 		// We only support filter by type and resource now.
 		types, err := getEBNFTokens(request.Filter, typeFilterKey)
@@ -59,7 +59,7 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 			if v, ok := typesMap[tp]; ok {
 				find.Types = append(find.Types, v)
 			} else {
-				return nil, status.Errorf(codes.InvalidArgument, "Invalid type filter %q", tp)
+				return nil, status.Errorf(codes.InvalidArgument, "invalid type filter %q", tp)
 			}
 		}
 		resources, err := getEBNFTokens(request.Filter, resourceFilterKey)
@@ -67,46 +67,37 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		if len(resources) > 1 {
-			return nil, status.Errorf(codes.InvalidArgument, "Only one resource can be specified")
-		}
-
-		// For resources filter, we only support filter by instance and database.
-		insID, err := getInstanceID(resources[0])
-		if err != nil {
-			// Try to treat as database resource.
-			insID, dbName, err := getInstanceDatabaseID(resources[0])
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "Only support filter by instance and database in resource filter")
+			return nil, status.Errorf(codes.InvalidArgument, "only one resource can be specified")
+		} else if len(resources) == 1 {
+			sections := strings.Split(resources[0], "/")
+			if len(sections) == 2 {
+				// Treat as instances/{resource id}
+				insID, err := getInstanceID(resources[0])
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, `invalid resource filter "%s": %v`, resources[0], err.Error())
+				}
+				find.InstanceID = &insID
+			} else if len(sections) == 4 {
+				// Treat as instances/{resource id}/databases/{db name}
+				insID, dbName, err := getInstanceDatabaseID(resources[0])
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, `invalid resource filter "%s": %v`, resources[0], err.Error())
+				}
+				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+					InstanceID:   &insID,
+					DatabaseName: &dbName,
+				})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, err.Error())
+				}
+				if database == nil {
+					return nil, status.Errorf(codes.NotFound, "cannot found the database %s", resources[0])
+				}
+				find.InstanceID = &insID
+				find.DatabaseUID = &database.UID
+			} else {
+				return nil, status.Errorf(codes.InvalidArgument, `invalid resource filter "%s"`, resources[0])
 			}
-			instanceID, databaseName = insID, dbName
-		} else {
-			// Treat as instance resource.
-			instanceID = insID
-		}
-		if instanceID != "" {
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-				ResourceID: &instanceID,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-			if instance == nil {
-				return nil, status.Errorf(codes.NotFound, "Instance %q not found", instanceID)
-			}
-			find.InstanceUID = &instance.UID
-		}
-		if instanceID != "" && databaseName != "" {
-			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &instanceID,
-				DatabaseName: &databaseName,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-			if database == nil {
-				return nil, status.Errorf(codes.NotFound, "Database %q not found in environment %q instance %q", databaseName, environmentID, instanceID)
-			}
-			find.DatabaseUID = &database.UID
 		}
 	}
 
@@ -117,7 +108,7 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 
 	var response v1pb.SearchAnomaliesResponse
 	for _, anomaly := range anomalies {
-		pbAnomaly, err := convertToAnomaly(anomaly, environmentID, instanceID, databaseName)
+		pbAnomaly, err := s.convertToAnomaly(ctx, anomaly)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
@@ -126,12 +117,26 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 	return &response, nil
 }
 
-func convertToAnomaly(anomaly *store.AnomalyMessage, environmentID, instanceID, databaseName string) (*v1pb.Anomaly, error) {
-	var pbAnomaly v1pb.Anomaly
-	if environmentID != "" && instanceID != "" && databaseName != "" {
-		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, instanceID, databaseIDPrefix, databaseName)
-	} else if environmentID != "" && instanceID != "" {
-		pbAnomaly.Resource = fmt.Sprintf("%s%s", instanceNamePrefix, instanceID)
+func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.AnomalyMessage) (*v1pb.Anomaly, error) {
+	pbAnomaly := &v1pb.Anomaly{
+		CreateTime: timestamppb.New(time.Unix(anomaly.CreatedTs, 0)),
+		UpdateTime: timestamppb.New(time.Unix(anomaly.UpdatedTs, 0)),
+	}
+
+	if v := anomaly.DatabaseUID; v != nil {
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			UID:         v,
+			ShowDeleted: true,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find database with id %d", v)
+		}
+		if database == nil {
+			return nil, errors.Errorf("cannot found database with id %d", v)
+		}
+		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", instanceNamePrefix, database.InstanceID, databaseIDPrefix, database.DatabaseName)
+	} else {
+		pbAnomaly.Resource = fmt.Sprintf("%s%s", instanceNamePrefix, anomaly.InstanceID)
 	}
 
 	switch anomaly.Type {
@@ -151,12 +156,16 @@ func convertToAnomaly(anomaly *store.AnomalyMessage, environmentID, instanceID, 
 		if err := json.Unmarshal([]byte(anomaly.Payload), &detail); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal database backup policy violation anomaly payload")
 		}
+		environment, err := s.store.GetEnvironmentByID(ctx, detail.EnvironmentID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find environment with id %d", detail.EnvironmentID)
+		}
 		pbAnomaly.Type = v1pb.Anomaly_DATABASE_BACKUP_POLICY_VIOLATION
 		pbAnomaly.Detail = &v1pb.Anomaly_DatabaseBackupPolicyViolationDetail_{
 			DatabaseBackupPolicyViolationDetail: &v1pb.Anomaly_DatabaseBackupPolicyViolationDetail{
 				// The instance are bind to a specify environment, and cannot be moved to another environment in Bytebase.
 				// So it's safe to use environmentID here.
-				Parent:           fmt.Sprintf("%s%s", instanceNamePrefix, instanceID),
+				Parent:           fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
 				ExpectedSchedule: convertBackupPlanSchedule(detail.ExpectedBackupSchedule),
 				ActualSchedule:   convertBackupPlanSchedule(detail.ActualBackupSchedule),
 			},
@@ -199,7 +208,7 @@ func convertToAnomaly(anomaly *store.AnomalyMessage, environmentID, instanceID, 
 		}
 	}
 	pbAnomaly.Severity = getSeverityFromAnomalyType(pbAnomaly.Type)
-	return &pbAnomaly, nil
+	return pbAnomaly, nil
 }
 
 func getSeverityFromAnomalyType(tp v1pb.Anomaly_AnomalyType) v1pb.Anomaly_AnomalySeverity {
@@ -214,14 +223,14 @@ func getSeverityFromAnomalyType(tp v1pb.Anomaly_AnomalyType) v1pb.Anomaly_Anomal
 	return v1pb.Anomaly_ANOMALY_SEVERITY_UNSPECIFIED
 }
 
-func convertBackupPlanSchedule(s api.BackupPlanPolicySchedule) v1pb.Anomaly_BackupPlanSchedule {
+func convertBackupPlanSchedule(s api.BackupPlanPolicySchedule) v1pb.BackupPlanSchedule {
 	switch s {
 	case api.BackupPlanPolicyScheduleUnset:
-		return v1pb.Anomaly_UNSET
+		return v1pb.BackupPlanSchedule_UNSET
 	case api.BackupPlanPolicyScheduleDaily:
-		return v1pb.Anomaly_DAILY
+		return v1pb.BackupPlanSchedule_DAILY
 	case api.BackupPlanPolicyScheduleWeekly:
-		return v1pb.Anomaly_WEEKLY
+		return v1pb.BackupPlanSchedule_WEEKLY
 	}
-	return v1pb.Anomaly_BACKUP_PLAN_SCHEDULE_UNSPECIFIED
+	return v1pb.BackupPlanSchedule_SCHEDULE_UNSPECIFIED
 }

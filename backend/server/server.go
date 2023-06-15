@@ -518,7 +518,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerStageRoutes(apiGroup)
 	s.registerActivityRoutes(apiGroup)
 	s.registerSQLRoutes(apiGroup)
-	s.registerAnomalyRoutes(apiGroup)
 
 	// Register healthz endpoint.
 	e.GET("/healthz", func(c echo.Context) error {
