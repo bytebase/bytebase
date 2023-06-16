@@ -160,11 +160,14 @@ const tryRollbackTask = async () => {
       `${issue.value.name}`,
     ].join(" ");
 
-    const sheetUid = payload.value!.rollbackSheetId!;
-    const rollbackSheet = await sheetV1Store.getOrFetchSheetByUid(sheetUid);
+    const originalSheetUID = payload.value!.sheetId!;
+    const rollbackSheetUID = payload.value!.rollbackSheetId!;
+    const originalSheet = await sheetV1Store.getOrFetchSheetByUid(
+      originalSheetUID
+    );
     const description = [
       "The original SQL statement:",
-      `${new TextDecoder().decode(rollbackSheet?.content)}`,
+      `${new TextDecoder().decode(originalSheet?.content)}`,
     ].join("\n");
 
     router.push({
@@ -179,7 +182,7 @@ const tryRollbackTask = async () => {
         databaseList: [task.value.database!.id].join(","),
         rollbackIssueId: issue.value.id,
         rollbackTaskIdList: [task.value.id].join(","),
-        sheetId: sheetUid,
+        sheetId: rollbackSheetUID,
         description,
       },
     });
